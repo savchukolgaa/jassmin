@@ -98,7 +98,7 @@ and all forms will use.
 | delete | `app/components/.gitkeep` | Folder now has real files |
 
 ## Steps
-- [ ] **1. Theme tokens** — In `app/app.css`, extend the existing `@theme` block:
+- [x] **1. Theme tokens** — In `app/app.css`, extend the existing `@theme` block:
   ```css
   --color-primary: #ff5c77;
   --color-primary-light: #ff8fa1;

@@ -1,0 +1,14 @@
+.DS_Store
+.env
+/node_modules/
+/coverage/
+
+# React Router
+/.react-router/
+/build/
+
+# Aspire (generated SDK, regenerate with `aspire restore`)
+/aspire-apphost/.aspire/modules/
+
+# Local notes, never committed
+/Project Overview & Guidelines for Claude.md

@@ -83,8 +83,8 @@ Shoppers get the same header on every public page: the "Jassmin" brand on the le
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Set up the worktree.** In `../jassmin-worktrees/issue-6`, run `pnpm install` and copy `.env` from the main checkout. Check that `pnpm typecheck` passes on the untouched tree.
-- [ ] **2. Add the route skeleton.** Create `PagePlaceholder({ title })`, which renders `<main className="container mx-auto p-4 pt-16">` with an `h1` and "Coming soon", and the placeholder route modules (each with `meta` and a default component typed via `./+types/<route>`). `catalog.tsx` gets a `loader` that returns `{ gender }` and throws `data(null, { status: 404 })` when `params.gender` is not `"men"`/`"women"`. Create a minimal `_shop.tsx` that renders only `<Outlet />`. Rewrite `app/routes.ts`:
+- [x] **1. Set up the worktree.** In `../jassmin-worktrees/issue-6`, run `pnpm install` and copy `.env` from the main checkout. Check that `pnpm typecheck` passes on the untouched tree.
+- [x] **2. Add the route skeleton.** Create `PagePlaceholder({ title })`, which renders `<main className="container mx-auto p-4 pt-16">` with an `h1` and "Coming soon", and the placeholder route modules (each with `meta` and a default component typed via `./+types/<route>`). `catalog.tsx` gets a `loader` that returns `{ gender }` and throws `data(null, { status: 404 })` when `params.gender` is not `"men"`/`"women"`. Create a minimal `_shop.tsx` that renders only `<Outlet />`. Rewrite `app/routes.ts`:
   ```ts
   export default [
     layout("routes/_shop.tsx", [

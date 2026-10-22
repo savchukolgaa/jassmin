@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router";
 import { formatCartCount, type HeaderState } from "~/lib/header";
 import { CatalogMenu } from "./CatalogMenu";
 import { CartIcon, UserIcon } from "./icons";
+import { MobileMenu } from "./MobileMenu";
 import { ABOUT_LINK, CONTACTS_LINK, iconButtonClasses, navItemClasses } from "./nav";
 
 export type HeaderProps = HeaderState;
@@ -59,6 +60,7 @@ export function Header({ user, cartCount }: HeaderProps) {
               </span>
             )}
           </NavLink>
+          <MobileMenu />
         </nav>
       </div>
     </header>

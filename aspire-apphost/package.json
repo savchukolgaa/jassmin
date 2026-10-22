@@ -1,0 +1,23 @@
+{
+  "name": "aspire-apphost",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.apphost.json",
+    "watch": "tsc --watch -p tsconfig.apphost.json"
+  },
+  "dependencies": {
+    "vscode-jsonrpc": "^8.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "packageManager": "pnpm@12.15.0"
+}

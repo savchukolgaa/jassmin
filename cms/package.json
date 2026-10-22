@@ -1,0 +1,38 @@
+{
+  "name": "jassmin-cms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Strapi CMS for Jassmin editorial content (blog, home page, site settings)",
+  "scripts": {
+    "build": "strapi build",
+    "console": "strapi console",
+    "develop": "strapi develop",
+    "seed": "tsx scripts/seed.ts",
+    "start": "strapi start",
+    "strapi": "strapi"
+  },
+  "dependencies": {
+    "@strapi/database": "5.59.0",
+    "@strapi/plugin-users-permissions": "5.59.0",
+    "@strapi/strapi": "5.59.0",
+    "pg": "8.20.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22.0.0 <=26.x.x"
+  },
+  "strapi": {
+    "uuid": "85f8df74-82be-4841-8ed1-64d95aa896ce",
+    "installId": "96b3d9b9353f02bb00a7e948d1f9f0389a9093004c9de32905f49c5ef297cbf2"
+  }
+}

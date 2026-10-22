@@ -6,18 +6,26 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32),
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  STRAPI_URL: z.url().default("http://localhost:1337"),
+  // Optional so the app boots before the first Strapi admin has created the token;
+  // CMS-backed pages answer with a 503 until it is set.
+  STRAPI_API_TOKEN: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
 
 /**
- * Validates environment variables. `DATABASE_URL` falls back to `JASSMINDB_URI`,
- * which Aspire injects for the `jassmindb` database resource.
+ * Validates environment variables. The database URL is `JASSMINDB_URI` when Aspire injects it
+ * for the `jassmindb` resource, otherwise `DATABASE_URL`: under `aspire run` the Aspire database
+ * wins over a `DATABASE_URL` left in `.env` for non-Aspire runs. `STRAPI_URL` falls back
+ * to the service-discovery URL Aspire injects for the `cms` resource.
  */
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
   const result = envSchema.safeParse({
     ...source,
-    DATABASE_URL: source.DATABASE_URL ?? source.JASSMINDB_URI,
+    DATABASE_URL: source.JASSMINDB_URI || source.DATABASE_URL,
+    STRAPI_URL: source.STRAPI_URL || source.CMS_HTTP || undefined,
+    STRAPI_API_TOKEN: source.STRAPI_API_TOKEN || undefined,
   });
 
   if (!result.success) {

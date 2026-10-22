@@ -11,6 +11,7 @@ export default defineConfig({
   out: "./app/.server/db/migrations",
   casing: "snake_case",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? process.env.JASSMINDB_URI ?? "",
+    // Same precedence as app/.server/env.ts: the Aspire-injected URL wins over .env.
+    url: process.env.JASSMINDB_URI || process.env.DATABASE_URL || "",
   },
 });

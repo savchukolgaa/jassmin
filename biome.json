@@ -13,7 +13,11 @@
       "!**/*.md",
       "!pnpm-lock.yaml",
       "!aspire.config.json",
-      "!app/.server/db/migrations"
+      "!app/.server/db/migrations",
+      "!cms/types/generated",
+      "!cms/database/migrations",
+      "!cms/dist",
+      "!cms/.strapi"
     ]
   },
   "formatter": {

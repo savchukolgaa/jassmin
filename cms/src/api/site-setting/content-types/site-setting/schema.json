@@ -1,0 +1,19 @@
+{
+  "kind": "singleType",
+  "collectionName": "site_settings",
+  "info": {
+    "singularName": "site-setting",
+    "pluralName": "site-settings",
+    "displayName": "Site settings",
+    "description": "Store contact details and social links"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "phone": { "type": "string", "required": true, "maxLength": 50 },
+    "email": { "type": "email", "required": true },
+    "customerServiceHours": { "type": "string", "maxLength": 200 },
+    "socialLinks": { "type": "component", "repeatable": true, "component": "shared.social-link" }
+  }
+}

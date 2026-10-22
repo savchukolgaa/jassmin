@@ -37,7 +37,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
 
-  if (isRouteErrorResponse(error)) {
+  if (isRouteErrorResponse(error) && error.status === 503) {
+    // Thrown by `cmsUnavailable` when Strapi is down or answers unexpectedly.
+    message = "503";
+    details = "This content is temporarily unavailable. Please try again in a few minutes.";
+  } else if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? "404" : "Error";
     details =
       error.status === 404 ? "The requested page could not be found." : error.statusText || details;

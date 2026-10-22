@@ -1,0 +1,17 @@
+{
+  "collectionName": "components_shared_social_links",
+  "info": {
+    "displayName": "Social link",
+    "icon": "link",
+    "description": "A link to one of the store's social profiles"
+  },
+  "options": {},
+  "attributes": {
+    "platform": {
+      "type": "enumeration",
+      "enum": ["instagram", "facebook", "tiktok", "telegram", "viber", "youtube"],
+      "required": true
+    },
+    "url": { "type": "string", "required": true, "maxLength": 500 }
+  }
+}

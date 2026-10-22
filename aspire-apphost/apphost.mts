@@ -12,8 +12,36 @@ const postgres = builder.addPostgres("postgres").withDataVolume();
 const db = postgres.addDatabase("jassmindb");
 const strapiDb = postgres.addDatabase("strapidb");
 
+// Applies pending app migrations (`pnpm db:migrate`) on every run; `web` starts only after it
+// completes. It owns the root `pnpm install`, which also installs the cms workspace package,
+// so every other resource here uses `withPnpm({ install: false })`.
+const dbMigrate = builder
+  .addJavaScriptApp("db-migrate", "..", { runScriptName: "db:migrate" })
+  .withPnpm()
+  .withReference(db)
+  .waitFor(db)
+  .withParentRelationship(db);
+
+// One-off scripts against `jassmindb`, whose password only Aspire knows: seed the sample
+// products (`pnpm db:seed`) or roll back the latest migration (`pnpm db:rollback`).
+// Start them from the dashboard.
+await builder
+  .addJavaScriptApp("db-seed", "..", { runScriptName: "db:seed" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
+await builder
+  .addJavaScriptApp("db-rollback", "..", { runScriptName: "db:rollback" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitFor(db)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
 // Strapi secrets (APP_KEYS, …) come from cms/.env; the variables set here take precedence.
-// The root `pnpm install` run for `web` also installs the cms workspace package.
 const cms = builder
   .addJavaScriptApp("cms", "../cms", { runScriptName: "develop" })
   .withPnpm({ install: false })
@@ -43,9 +71,10 @@ await builder
 // and CMS-backed pages answer with a 503 instead.
 await builder
   .addViteApp("web", "..")
-  .withPnpm()
+  .withPnpm({ install: false })
   .withReference(db)
   .waitFor(db)
+  .waitForCompletion(dbMigrate)
   .withReference(cms)
   .withEnvironment("STRAPI_URL", cms.getEndpoint("http"))
   .withExternalHttpEndpoints();

@@ -20,9 +20,12 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 
 ## Database: `db/`
 
-- `db/index.ts` exports the single Drizzle client `db` (with `casing: "snake_case"`) and the `Db` type. Don't create other pools.
-- Define tables and enums in `db/schema.ts`, in TypeScript camelCase. The `snake_case` casing maps them to snake_case columns.
-- Migrations are generated into `db/migrations/` with drizzle-kit (set up in #3). Never edit an applied migration.
+- `db/index.ts` exports the single Drizzle client `db` (with `casing: "snake_case"`) and the `Db` type. Don't create other pools in app code. `db/client.ts` (`createDb(url)`) is only for CLI scripts (`db/scripts/`) and integration tests, which connect without `getEnv()` and close their own pool.
+- Define tables and enums in `db/schema.ts`, in TypeScript camelCase. The `snake_case` casing maps them to snake_case columns. drizzle-kit doesn't apply the casing to auto-generated constraint names, so give `.unique()` and similar constraints an explicit snake_case name (e.g. `products_public_id_unique`).
+- Build enums from the value arrays in `~/lib/enums` (`pgEnum("gender_type", GENDERS)`), so the TS unions and the database can't drift apart.
+- `products.price` is `numeric(10, 2)` and comes back as a string, so never use floats for money. `volume_ml` is the volume of one unit, and the total is `pack_size * volume_ml`. `public_id` (UUID v7 from `uuidv7()`, PostgreSQL 18+) is the stable external key, while `id` stays the FK target.
+- Migrations: `pnpm db:generate --name <name>` writes them to `db/migrations/`. Every migration needs a hand-written reverse in `db/rollbacks/<tag>.sql`, which `pnpm db:rollback` (`rollbackLatest` in `db/migrator.ts`) runs. Never edit an applied migration.
+- `pnpm db:seed` (`db/seed.ts`) inserts `SAMPLE_PRODUCTS` from `db/seed-data.ts` with `onConflictDoNothing` on `public_id`. Give new sample products a fresh fixed UUID v7, and never change an existing one.
 - Put query functions in `db/queries/<area>.ts` and keep them small and typed. Put business rules that combine several queries in `services/`.
 - Use `db.transaction(async (tx) => …)` whenever multiple writes must succeed together, and pass `tx` down instead of `db`.
 - Raw `db.execute(sql\`…\`)` returns `timestamptz` values as **strings**, so convert them with `new Date()`. Typed queries built with the query builder return `Date`s.
@@ -35,3 +38,4 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 
 - Unit tests sit next to the code (`*.test.ts`).
 - DB integration tests use `describe.skipIf(!hasDatabase)`, import modules dynamically inside the test (so the env is only validated when a DB exists) and close the pool in `afterAll` (`db.$client.end()`).
+- Tests that migrate or write data use `createTestDatabase()` from `db/test-utils.ts` (a throwaway database, dropped in `afterAll`), never the development database.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseEnv } from "./env";
+import { getDatabaseUrl, parseEnv } from "./env";
 
 const valid = {
   DATABASE_URL: "postgres://jassmin:jassmin@localhost:5432/jassmin",
@@ -93,5 +93,23 @@ describe("parseEnv", () => {
 
   it("rejects an invalid STRAPI_URL", () => {
     expect(() => parseEnv({ ...valid, STRAPI_URL: "not a url" })).toThrow(/STRAPI_URL/);
+  });
+});
+
+describe("getDatabaseUrl", () => {
+  it("prefers JASSMINDB_URI over DATABASE_URL", () => {
+    expect(
+      getDatabaseUrl({ JASSMINDB_URI: "postgres://aspire", DATABASE_URL: "postgres://env" }),
+    ).toBe("postgres://aspire");
+  });
+
+  it("falls back to DATABASE_URL when JASSMINDB_URI is empty", () => {
+    expect(getDatabaseUrl({ JASSMINDB_URI: "", DATABASE_URL: "postgres://env" })).toBe(
+      "postgres://env",
+    );
+  });
+
+  it("returns undefined when neither is set", () => {
+    expect(getDatabaseUrl({})).toBeUndefined();
   });
 });

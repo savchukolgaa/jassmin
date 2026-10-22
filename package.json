@@ -15,7 +15,11 @@
     "cms:build": "pnpm --filter jassmin-cms build",
     "cms:seed": "pnpm --filter jassmin-cms seed",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:rollback": "tsx app/.server/db/scripts/rollback.ts",
+    "db:seed": "tsx app/.server/db/scripts/seed.ts"
   },
   "dependencies": {
     "@react-router/node": "^8.5.0",
@@ -38,6 +42,7 @@
     "@types/react-dom": "^19.2.7",
     "drizzle-kit": "^0.31.11",
     "tailwindcss": "^4.2.2",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.0.3",
     "vitest": "^5.0.5"

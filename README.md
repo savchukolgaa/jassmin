@@ -24,6 +24,7 @@ It's a single full-stack, server-rendered app. Pages load data in route `loader`
 - **Node.js 24 LTS** (see `.nvmrc`)
 - **pnpm 12**: `npm install -g pnpm` (the version is pinned in `package.json` → `packageManager`)
 - **Docker Desktop**, running
+- **PostgreSQL 18+** if you run without Aspire (the schema uses the built-in `uuidv7()`). Aspire and the Docker command below already use `postgres:18`.
 - **Aspire CLI ≥ 13.4**:
   - Windows: `irm https://aspire.dev/install.ps1 | iex`
   - macOS/Linux: `curl -sSL https://aspire.dev/install.sh | bash`
@@ -38,6 +39,8 @@ pnpm install
 pnpm aspire run             # starts PostgreSQL, Strapi and the dev server, prints the dashboard URL
 ```
 
+Under Aspire, the `db-migrate` resource applies the database migrations on every run, before `web` starts. To load the sample products, start the `db-seed` resource from the dashboard.
+
 Open the Aspire dashboard and click the `web` resource's endpoint. The home page shows the hero headline from Strapi plus the database time and PostgreSQL version, all rendered on the server. Until you've created the Strapi API token (see below), it shows a 503 "content temporarily unavailable" page instead.
 
 > Use `pnpm aspire …` rather than plain `aspire …`. Aspire installs the AppHost with `pnpm install --ignore-workspace`, and pnpm then rejects esbuild's build script. The wrapper `scripts/aspire.mjs` approves only that one build and then runs the Aspire CLI with your arguments (`run`, `start`, `stop`, `ps`, …).
@@ -49,6 +52,8 @@ Point `DATABASE_URL` in `.env` at any PostgreSQL database, for example:
 ```bash
 docker run -d --name jassmin-pg -p 5432:5432 \
   -e POSTGRES_USER=jassmin -e POSTGRES_PASSWORD=jassmin -e POSTGRES_DB=jassmin postgres:18
+pnpm db:migrate             # create the schema
+pnpm db:seed                # optional: sample products
 pnpm dev                    # http://localhost:5173
 ```
 
@@ -81,8 +86,24 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm cms:dev` | Strapi in development mode (admin at http://localhost:1337/admin) |
 | `pnpm cms:build` | Build the Strapi admin panel |
 | `pnpm cms:seed` | Seed Strapi with demo content (`-- --token` also creates the app's API token) |
+| `pnpm db:generate` | Generate a migration from `app/.server/db/schema.ts` (`--name <name>`) |
+| `pnpm db:migrate` | Apply pending migrations |
+| `pnpm db:rollback` | Roll back the latest applied migration |
+| `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
 
-`app/.server/db/queries/health.test.ts` is an integration test. It runs only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and is reported as skipped otherwise.
+The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed` and `db-rollback` start by hand) instead of from a terminal.
+
+The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration and seed tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
+
+## Database migrations
+
+The schema lives in `app/.server/db/schema.ts`, and the migrations generated from it live in `app/.server/db/migrations/`. Drizzle Kit has no down migrations, so each migration has a hand-written reverse in `app/.server/db/rollbacks/<tag>.sql`. To change the schema:
+
+1. Edit `schema.ts`, then run `pnpm db:generate --name <what_changed>` and review the generated SQL.
+2. Write `rollbacks/<tag>.sql` with the reverse statements, separated by `--> statement-breakpoint`.
+3. Run `pnpm db:migrate`, then `pnpm db:rollback` and `pnpm db:migrate` again to check that both directions work.
+
+Never edit a migration that has already been applied anywhere.
 
 ## Project structure
 
@@ -97,7 +118,7 @@ app/
   .server/             server-only code, never bundled for the browser
     env.ts             zod-validated environment
     session.ts         cookie session storage
-    db/                Drizzle client, schema, queries (migrations from #3)
+    db/                Drizzle client, schema, migrations + rollbacks, seed, queries
     services/          business logic (orders, auth, cart, …)
     cms/               Strapi client: content queries, zod schemas, CmsError
 cms/                   Strapi v5 CMS (content types in src/api, components in src/components)

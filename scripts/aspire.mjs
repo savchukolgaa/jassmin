@@ -1,7 +1,7 @@
 // Runs the Aspire CLI (e.g. `pnpm aspire run`) with pnpm's build-script approvals passed through.
 // Aspire installs the AppHost with `pnpm install --ignore-workspace`, which skips every
 // pnpm-workspace.yaml, so `allowBuilds` has to be passed through the environment instead.
-// The variable also reaches the `pnpm install` Aspire runs for `web`, where it replaces the
+// The variable also reaches the root `pnpm install` Aspire runs for `db-migrate`, where it replaces the
 // workspace's `allowBuilds`, so keep this list in sync with pnpm-workspace.yaml.
 import { spawn } from "node:child_process";
 

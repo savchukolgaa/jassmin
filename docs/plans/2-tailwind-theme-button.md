@@ -108,7 +108,7 @@ and all forms will use.
   ```
   Check: `pnpm build`, then grep `build/client/assets/*.css` for `--color-primary:#ff5c77` and confirm
   `bg-primary` / `text-primary` / `border-primary` are emitted once used (step 5 uses them).
-- [ ] **2. `cn` helper** — `app/lib/cn.ts`:
+- [x] **2. `cn` helper** — `app/lib/cn.ts`:
   `export function cn(...classes: Array<string | false | null | undefined>): string` returning
   `classes.filter(Boolean).join(" ")`. Add `cn.test.ts` (joins, skips falsy values, empty → `""`).
 - [ ] **3. `buttonClasses`** — `app/components/ui/button-styles.ts` exports `ButtonVariant`,

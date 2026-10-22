@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/20
 Branch: `issue/20`
 Worktree: `../jassmin-worktrees/issue-20`
-Status: Planned
+Status: Implemented (Aspire runtime check pending, see step 7)
 
 ## Goal
 Store admins should be able to publish blog articles and edit home page copy and contact details without code changes, using Strapi instead of a custom CMS. This issue adds a Strapi v5 TypeScript project in `cms/` that runs under Aspire on its own `strapidb` database. It also gives the React Router app a typed, zod-validated, server-only client (`app/.server/cms/`) that loaders use to read published content as app-level DTOs.
@@ -122,7 +122,7 @@ Each step is small, ordered, and leaves the app in a working state.
 - [x] **4. Add the content types and components.** Create the schema JSON plus the default `factories.createCoreController/Router/Service` files for `blog-post`, `home-page` and `site-setting`, and the five component JSONs, with the fields, constraints and options in Decisions (the `slug` uid has `targetField: "title"`, `required`, and is unique by definition, and `blog-post` has `draftAndPublish: true`). Run `strapi develop` once to regenerate `cms/types/generated/*.d.ts` and commit them. Check: the admin's Content-Type Builder shows all types and fields exactly as listed.
 - [x] **5. Lock down access.** In `cms/src/index.ts` `bootstrap`, query `plugin::users-permissions.permission` for the Public and Authenticated roles and log a warning if any action on the three UIDs is enabled. Check: `curl -i http://localhost:1337/api/blog-posts` and `/api/home-page` return 403 with no token.
 - [x] **6. Write the seed script.** Create `cms/scripts/seed.ts` and add a `"seed": "tsx scripts/seed.ts"` script (with `tsx` as a dev dependency) or use Strapi's `strapi console`-compatible approach. Boot with `compileStrapi`/`createStrapi`. Upload the seed images, create the home page and site settings if they're missing, upsert 2 published posts plus 1 draft by slug (`strapi.documents("api::blog-post.blog-post").create({ data, status: "published" })`), and with `--token` create the custom API token with the 4 permissions (Q2). Always call `strapi.destroy()`. Check: running it twice gives the same data, and the admin shows 2 published and 1 draft post.
-- [ ] **7. Wire Aspire.** In `apphost.mts`, add `strapidb` and the `cms` resource as in Decisions, and give `web` `.withReference(cms)` + `.withEnvironment("STRAPI_URL", cms.getEndpoint("http"))` (keeping `waitFor(db)` only). Update the header comment and `aspire-apphost/AGENTS.md`. Check: `pnpm aspire:build` passes, and `pnpm aspire run` shows `postgres`, `jassmindb`, `strapidb`, `cms` and `web` as healthy. The `web` env contains `STRAPI_URL`, and the Strapi tables are in `strapidb`, not `jassmindb`.
+- [ ] **7. Wire Aspire.** *(Code done and `pnpm aspire:build` passes. Not yet run: on the dev machine `aspire run` fails before any resource starts ("container volumes did not become ready", and `aspire doctor` reports "DCP connection … SSL connection could not be established") because Avast's HTTPS scanning blocks DCP. Also still to check in the dashboard: whether Aspire injects `CMS_HTTP` into `web`.)* In `apphost.mts`, add `strapidb` and the `cms` resource as in Decisions, and give `web` `.withReference(cms)` + `.withEnvironment("STRAPI_URL", cms.getEndpoint("http"))` (keeping `waitFor(db)` only). Update the header comment and `aspire-apphost/AGENTS.md`. Check: `pnpm aspire:build` passes, and `pnpm aspire run` shows `postgres`, `jassmindb`, `strapidb`, `cms` and `web` as healthy. The `web` env contains `STRAPI_URL`, and the Strapi tables are in `strapidb`, not `jassmindb`.
 - [x] **8. Add app env and DTO types.** Extend `envSchema` with `STRAPI_URL: z.url().default("http://localhost:1337")` and `STRAPI_API_TOKEN: z.string().min(1).optional()` (Q1), with the Aspire fallback in `parseEnv` and its doc comment. Add both to `.env.example`. Add `env.test.ts` cases for the default, the explicit value, the Aspire fallback, precedence, and rejecting an invalid URL (also update the first test's `toEqual`). Create `app/lib/cms.ts` with the DTO types. Check: `pnpm typecheck && pnpm test`.
 - [x] **9. Build the CMS client.** Write `errors.ts`, `schemas.ts`, `client.ts` and `content.ts` as described in Decisions. Record fixtures from the running seeded Strapi (`curl -H "Authorization: Bearer $TOKEN" ...` for home page, site settings, the blog list page 1 and a single post, plus an empty list) into `app/.server/cms/__fixtures__/`. Extend `root.tsx` `ErrorBoundary` for 503 and update the placeholder `home.tsx` loader to `Promise.all([getDatabaseInfo(), getHomePage().catch(cmsUnavailable)])` and render `hero.headline` (Q4). Add the CMS section to `app/.server/AGENTS.md`: always go through `content.ts`, never return raw Strapi shapes, and wrap loader calls with `cmsUnavailable`. Check: with Strapi up the headline renders, and with Strapi stopped `/` shows the 503 page and the server keeps running.
 - [x] **10. Write the unit tests.** Use these files:
@@ -141,7 +141,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - media stored in `cms/public/uploads`
 
   Also update the env var table, the scripts table and the project structure. Check: follow the README from scratch in a fresh worktree.
-- [ ] **12. Final verification.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm aspire:build` and `pnpm cms:build`, then do the manual checks below. Set the plan status to "Implemented".
+- [x] **12. Final verification.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm aspire:build` and `pnpm cms:build`, then do the manual checks below. Set the plan status to "Implemented".
 
 ## Testing & verification
 - **Automated:**
@@ -157,14 +157,14 @@ Each step is small, ordered, and leaves the app in a working state.
   5. The draft post is not returned by `listBlogPosts` or `getBlogPostBySlug` (check via the client test and a quick `curl` with `status=published`).
 
 ## Acceptance criteria
-- [ ] `aspire run` starts PostgreSQL, Strapi (on its own `strapidb` database) and the web app, and the app receives the Strapi URL — steps 3, 7, 8
-- [ ] The Strapi admin panel shows the `blog-post`, `home-page` and `site-settings` content types with the fields listed above, and their schemas are committed — step 4
-- [ ] Unauthenticated requests to the Strapi content API are rejected, and the app's read-only token can only read these three types — steps 5, 6, 11
-- [ ] The seed creates home page content, site settings and at least one published blog post — step 6
-- [ ] `getHomePage`, `getSiteSettings`, `listBlogPosts` and `getBlogPostBySlug` return typed, zod-validated DTOs, and draft posts are never returned — steps 8, 9, 10
-- [ ] When Strapi is down or returns an unexpected response, the app shows a 503 error, not a crash — steps 9, 10
-- [ ] `pnpm typecheck`, `pnpm lint` and `pnpm test` pass — steps 2, 8, 10, 12
-- [ ] The README documents the Strapi setup and the content model — step 11
+- [ ] `aspire run` starts PostgreSQL, Strapi (on its own `strapidb` database) and the web app, and the app receives the Strapi URL — steps 3, 7, 8 *(not verified: Avast blocks Aspire DCP on the dev machine. Strapi itself was verified against a standalone PostgreSQL 18 container on its own `strapidb` database.)*
+- [x] The Strapi admin panel shows the `blog-post`, `home-page` and `site-settings` content types with the fields listed above, and their schemas are committed — step 4
+- [x] Unauthenticated requests to the Strapi content API are rejected, and the app's read-only token can only read these three types — steps 5, 6, 11
+- [x] The seed creates home page content, site settings and at least one published blog post — step 6
+- [x] `getHomePage`, `getSiteSettings`, `listBlogPosts` and `getBlogPostBySlug` return typed, zod-validated DTOs, and draft posts are never returned — steps 8, 9, 10
+- [x] When Strapi is down or returns an unexpected response, the app shows a 503 error, not a crash — steps 9, 10
+- [x] `pnpm typecheck`, `pnpm lint` and `pnpm test` pass — steps 2, 8, 10, 12
+- [x] The README documents the Strapi setup and the content model — step 11
 
 ## Out of scope
 - The real home page sections (#7), and the blog listing/article routes with Markdown rendering and sanitizing (#13).

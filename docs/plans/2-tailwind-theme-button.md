@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/2
 Branch: `issue/2`
 Worktree: `../jassmin-worktrees/issue-2`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a developer, I want Tailwind configured with Jassmin's brand color and button shadow styles so every
@@ -140,7 +140,7 @@ and all forms will use.
     `aria-hidden="true"`, label still rendered;
   - `variant="secondary"` / `"ghost"` produce their classes;
   - `ButtonLink` inside `createElement(MemoryRouter, …)` renders `<a href="/catalog"` with button classes.
-- [ ] **7. Clean up & verify** — delete `app/components/.gitkeep`; run `pnpm format`, `pnpm typecheck`,
+- [x] **7. Clean up & verify** — delete `app/components/.gitkeep`; run `pnpm format`, `pnpm typecheck`,
   `pnpm lint`, `pnpm test`, `pnpm build`. Commit only the listed paths.
 
 ## Testing & verification
@@ -153,10 +153,10 @@ and all forms will use.
   submit `Button` inside a `<Form>` submits, and dark mode looks right. Revert the home page afterwards.
 
 ## Acceptance criteria
-- [ ] `bg-primary`, `text-primary`, `border-primary` resolve to `#FF5C77` — step 1 (verified in steps 1, 7)
-- [ ] Primary `Button` shows `shadow-md` by default and `shadow-lg` on hover — steps 3, 4 (tests 3, 6)
-- [ ] Button is fully typed (no `any`) and supports disabled/loading states — steps 3, 4, 5 (tests 6)
-- [ ] Button has visible focus styles for keyboard users — step 3 (`focus-visible:outline-*`), tests 3
+- [x] `bg-primary`, `text-primary`, `border-primary` resolve to `#FF5C77` — step 1 (verified in steps 1, 7)
+- [x] Primary `Button` shows `shadow-md` by default and `shadow-lg` on hover — steps 3, 4 (tests 3, 6)
+- [x] Button is fully typed (no `any`) and supports disabled/loading states — steps 3, 4, 5 (tests 6)
+- [x] Button has visible focus styles for keyboard users — step 3 (`focus-visible:outline-*`), tests 3
 
 ## Out of scope
 - The hero "Order Now" CTA and any page using the button (#7) and form pages.

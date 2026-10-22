@@ -8,7 +8,7 @@ export interface DatabaseInfo {
 
 /** Round-trips to PostgreSQL; used by the placeholder home page until real data exists. */
 export async function getDatabaseInfo(): Promise<DatabaseInfo> {
-  const result = await db.execute<{ server_time: Date; pg_version: string }>(
+  const result = await db.execute<{ server_time: string; pg_version: string }>(
     sql`select now() as server_time, version() as pg_version`,
   );
   const row = result.rows[0];
@@ -17,5 +17,6 @@ export async function getDatabaseInfo(): Promise<DatabaseInfo> {
     throw new Error("Database info query returned no rows");
   }
 
-  return { serverTime: row.server_time, pgVersion: row.pg_version };
+  // Drizzle's node-postgres driver returns raw timestamptz values as strings.
+  return { serverTime: new Date(row.server_time), pgVersion: row.pg_version };
 }

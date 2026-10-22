@@ -15,7 +15,9 @@
     "cms:build": "pnpm --filter jassmin-cms build",
     "cms:seed": "pnpm --filter jassmin-cms seed",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@react-router/node": "^8.5.0",

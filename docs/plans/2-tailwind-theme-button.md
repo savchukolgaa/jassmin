@@ -132,7 +132,7 @@ and all forms will use.
   `export type ButtonLinkProps = ComponentProps<typeof Link> & { variant?; size? }`, rendering
   `<Link {...props} className={buttonClasses(...)} />`. Restrict `className` to `string` (Link also accepts
   a function form): `Omit<ComponentProps<typeof Link>, "className"> & { className?: string }`.
-- [ ] **6. Render tests** — `app/components/ui/Button.test.ts` using `createElement` +
+- [x] **6. Render tests** — `app/components/ui/Button.test.ts` using `createElement` +
   `renderToStaticMarkup`:
   - default renders `<button` with `bg-primary`, `shadow-md`, `hover:shadow-lg`, no `type` attribute
     (native submit inside forms); `type="button"`, `name`/`value` pass through;

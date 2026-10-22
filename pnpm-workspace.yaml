@@ -1,0 +1,3 @@
+# Packages whose install/build scripts may run (pnpm blocks all others).
+allowBuilds:
+  esbuild: true

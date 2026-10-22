@@ -56,7 +56,7 @@ pnpm dev                    # http://localhost:5173
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | yes* | PostgreSQL connection string. *Under Aspire, `JASSMINDB_URI` is injected instead and used as a fallback. |
+| `DATABASE_URL` | yes* | PostgreSQL connection string. *Under Aspire, the injected `JASSMINDB_URI` takes precedence, so a `DATABASE_URL` in `.env` is ignored there. |
 | `SESSION_SECRET` | yes | Secret for signing the session cookie, at least 32 characters. |
 | `PORT` | no | Port for `pnpm start` (default `3000`). |
 | `STRAPI_URL` | no | Strapi base URL (default `http://localhost:1337`). Under Aspire it's set to the `cms` endpoint. |

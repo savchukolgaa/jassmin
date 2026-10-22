@@ -34,8 +34,17 @@ describe("parseEnv", () => {
     expect(env.DATABASE_URL).toBe("postgresql://postgres:secret@localhost:55432/jassmindb");
   });
 
-  it("prefers DATABASE_URL over JASSMINDB_URI", () => {
-    const env = parseEnv({ ...valid, JASSMINDB_URI: "postgresql://other/db" });
+  it("prefers the Aspire-injected JASSMINDB_URI over a DATABASE_URL from .env", () => {
+    const env = parseEnv({
+      ...valid,
+      JASSMINDB_URI: "postgresql://postgres:secret@aspire/jassmindb",
+    });
+
+    expect(env.DATABASE_URL).toBe("postgresql://postgres:secret@aspire/jassmindb");
+  });
+
+  it("ignores an empty JASSMINDB_URI", () => {
+    const env = parseEnv({ ...valid, JASSMINDB_URI: "" });
 
     expect(env.DATABASE_URL).toBe(valid.DATABASE_URL);
   });

@@ -5,7 +5,7 @@ if (existsSync(".env")) {
   process.loadEnvFile(".env");
 }
 
-const hasDatabase = Boolean(process.env.DATABASE_URL ?? process.env.JASSMINDB_URI);
+const hasDatabase = Boolean(process.env.JASSMINDB_URI || process.env.DATABASE_URL);
 
 // Integration test: runs only when a database is configured (e.g. Aspire's Postgres is up).
 describe.skipIf(!hasDatabase)("getDatabaseInfo", () => {

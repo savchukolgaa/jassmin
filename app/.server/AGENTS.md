@@ -6,7 +6,7 @@ Server-only code. Nothing in this folder may be imported by code that ends up in
 
 - Read configuration only through `getEnv()`, never through `process.env` directly. `getEnv()` loads `.env` (existing variables win), validates with zod and memoizes the result.
 - To add a variable, extend `envSchema`, add it to `.env.example` and the README table, and add a case to `env.test.ts`.
-- `DATABASE_URL` falls back to `JASSMINDB_URI`, which Aspire injects for the `jassmindb` resource. Keep that fallback.
+- The database URL is `JASSMINDB_URI` (injected by Aspire for the `jassmindb` resource) when it's set, otherwise `DATABASE_URL`. Aspire's value must win, because `.env` usually keeps a `DATABASE_URL` for runs without Aspire. Keep this precedence in `env.ts` and `drizzle.config.ts`.
 - `STRAPI_URL` defaults to `http://localhost:1337` and falls back to `CMS_HTTP` (Aspire's `cms` reference). `STRAPI_API_TOKEN` is optional on purpose, so the app boots before a Strapi admin has created the token.
 
 ## CMS: `cms/`

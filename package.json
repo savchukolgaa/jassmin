@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:rollback": "tsx app/.server/db/scripts/rollback.ts"
+    "db:rollback": "tsx app/.server/db/scripts/rollback.ts",
+    "db:seed": "tsx app/.server/db/scripts/seed.ts"
   },
   "dependencies": {
     "@react-router/node": "^8.5.0",

@@ -86,7 +86,7 @@ As a developer, I want the core PostgreSQL schema (shared enums, `users`, `produ
   6. `migrateLatest` again succeeds.
 
   In `afterAll`, close the pools and drop the database. This covers "up and down cleanly on an empty database".
-- [ ] **6. Seed.** `seed-data.ts`: `export const SAMPLE_PRODUCTS: (typeof products.$inferInsert & { publicId: string })[]` with about 9 perfumes: 3 women, 3 men, 2 unisex, plus "Набір тестерів 3 × 10 мл" (unisex, `packSize: 3`, `volumeMl: 10`), with realistic UAH prices as strings (e.g. `"2450.00"`), stock and fragrance families. Each product has a fixed UUID v7 `publicId` written into the file (generated once, e.g. with `select uuidv7()`).
+- [x] **6. Seed.** `seed-data.ts`: `export const SAMPLE_PRODUCTS: (typeof products.$inferInsert & { publicId: string })[]` with about 9 perfumes: 3 women, 3 men, 2 unisex, plus "Набір тестерів 3 × 10 мл" (unisex, `packSize: 3`, `volumeMl: 10`), with realistic UAH prices as strings (e.g. `"2450.00"`), stock and fragrance families. Each product has a fixed UUID v7 `publicId` written into the file (generated once, e.g. with `select uuidv7()`).
   - `seed.ts`: `seedProducts(db)` runs `db.insert(products).values(SAMPLE_PRODUCTS).onConflictDoNothing({ target: products.publicId }).returning({ id: products.id })` in `db.transaction` and returns `{ inserted }`.
   - `scripts/seed.ts` is the CLI, wired to `"db:seed": "tsx app/.server/db/scripts/seed.ts"`.
   - `seed.test.ts` unit checks: every gender is present, a tester set with `packSize: 3` exists, prices match `/^\d+\.\d{2}$/`, stock is ≥ 0, `packSize` is ≥ 1, and every `publicId` is a unique UUID v7.

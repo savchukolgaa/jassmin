@@ -8,7 +8,8 @@
 /build/
 
 # Aspire (generated SDK, regenerate with `aspire restore`)
-/aspire-apphost/.aspire/modules/
+/aspire-apphost/.aspire/
+/.aspire/
 
 # Local notes, never committed
 /Project Overview & Guidelines for Claude.md

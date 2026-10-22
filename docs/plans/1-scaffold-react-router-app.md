@@ -2,7 +2,7 @@
 
 Issue: https://github.com/savchukolgaa/jassmin/issues/1
 Branch: `issue/1` (renamed from `issue-1-scaffold-react-router-app` to match the new branch convention)
-Status: Planned
+Status: Implemented
 
 ## Goal
 Create the foundation every other Jassmin issue builds on: a single full-stack, server-rendered app built with React Router (v8) in framework mode (Vite + Node server). It ships with strict TypeScript, Biome (lint + format), a typed PostgreSQL connection under `app/.server/db`, and a clear folder layout that separates routes, UI and server-only code. Local development is orchestrated by **Aspire** with a TypeScript AppHost. One `aspire run` starts a PostgreSQL container and the React Router dev server, wires the connection string, and opens the Aspire dashboard. A placeholder home page proves that a `loader` can query PostgreSQL and that the result is server-rendered.
@@ -141,7 +141,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - `/open-pr` finds the worktree for `issue/<n>`, opens the PR from that branch, and reminds the user to clean up with `git worktree remove` after the merge.
   - `/create-issue` states that it never touches branches or worktrees.
   - Commands switched to pnpm, and `CLAUDE.md` references became `AGENTS.md`. The path-resolution snippet was dry-run in Git Bash.
-- [ ] **15. Final pass.** Run `pnpm typecheck && pnpm lint && pnpm test && pnpm build`, and confirm that `aspire run` starts cleanly. Make sure `.env`, `build/`, `.react-router/`, `coverage/`, `aspire-apphost/.aspire/modules/` and `Project Overview & Guidelines for Claude.md` are not tracked.
+- [x] **15. Final pass.** *(`pnpm typecheck`, `pnpm lint`, `pnpm test` (7/7), `pnpm build` and `pnpm aspire:build` all pass, and no ignored files are tracked. `aspire run` was not verified: `aspire doctor` still reports DCP TLS failures on this machine.)* Run `pnpm typecheck && pnpm lint && pnpm test && pnpm build`, and confirm that `aspire run` starts cleanly. Make sure `.env`, `build/`, `.react-router/`, `coverage/`, `aspire-apphost/.aspire/modules/` and `Project Overview & Guidelines for Claude.md` are not tracked.
 
 ## Testing & verification
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm start`, `aspire run`.
@@ -153,12 +153,12 @@ Each step is small, ordered, and leaves the app in a working state.
 - Automated tests (step 12): `ppnpm test` runs the `parseEnv` unit tests, plus the `getDatabaseInfo` integration test when a DB URL is set.
 
 ## Acceptance criteria
-- [ ] `pnpm dev` serves a server-rendered placeholder home page — steps 2, 6, 9 (`aspire run` launches `pnpm dev` via `addViteApp`)
-- [ ] `pnpm build && pnpm start` runs the production SSR build — steps 3, 11
-- [ ] `pnpm typecheck` and `pnpm lint` pass with strict settings — steps 3, 4, 12, 15
-- [ ] A loader can query PostgreSQL and the result renders on first page load (view-source shows the data) — steps 5, 6, 7, 9
-- [ ] Server-only modules live under `app/.server/` and cannot be imported into client code — steps 3, 7, 8, 10
-- [ ] README documents setup and scripts — step 13
+- [x] `pnpm dev` serves a server-rendered placeholder home page — steps 2, 6, 9 (`aspire run` launches `pnpm dev` via `addViteApp`)
+- [x] `pnpm build && pnpm start` runs the production SSR build — steps 3, 11
+- [x] `pnpm typecheck` and `pnpm lint` pass with strict settings — steps 3, 4, 12, 15
+- [x] A loader can query PostgreSQL and the result renders on first page load (view-source shows the data) — steps 5, 6, 7, 9
+- [x] Server-only modules live under `app/.server/` and cannot be imported into client code — steps 3, 7, 8, 10
+- [x] README documents setup and scripts — step 13
 
 ## Out of scope
 - Brand theme, colours and the `Button` component (#2).

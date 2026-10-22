@@ -120,7 +120,7 @@ and all forms will use.
   listed in *Decisions*. Add `button-styles.test.ts`: primary contains `bg-primary`, `text-white`,
   `shadow-md`, `hover:shadow-lg`, a `transition` class; every variant contains the `focus-visible:outline`
   classes and `disabled:` classes; sizes map correctly; custom `className` is appended last.
-- [ ] **4. `Button`** — `app/components/ui/Button.tsx`:
+- [x] **4. `Button`** — `app/components/ui/Button.tsx`:
   ```tsx
   export type ButtonProps = ComponentProps<"button"> & { variant?: ButtonVariant; size?: ButtonSize; loading?: boolean };
   export function Button({ variant, size, loading = false, disabled, className, children, ...props }: ButtonProps)

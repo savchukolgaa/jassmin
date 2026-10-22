@@ -7,10 +7,19 @@ import { spawn } from "node:child_process";
 
 const allowBuilds = { "@swc/core": true, "core-js-pure": false, esbuild: true };
 
+// No `shell`: the Aspire CLI installs as a native executable (aspire.exe on Windows), which
+// spawn finds on PATH directly. Passing args through a shell is deprecated (DEP0190).
 const child = spawn("aspire", process.argv.slice(2), {
   stdio: "inherit",
-  shell: process.platform === "win32",
   env: { ...process.env, pnpm_config_allow_builds: JSON.stringify(allowBuilds) },
 });
 
+child.on("error", (error) => {
+  console.error(
+    error.code === "ENOENT"
+      ? "Aspire CLI not found on PATH. Install it: https://aspire.dev (see README → Prerequisites)."
+      : error,
+  );
+  process.exit(1);
+});
 child.on("exit", (code) => process.exit(code ?? 1));

@@ -96,7 +96,7 @@ As a developer, I want the core PostgreSQL schema (shared enums, `users`, `produ
   - **Deviation:** `db-migrate` owns the root `pnpm install` (`.withPnpm()`), and `web` switches to `.withPnpm({ install: false })`. Because `web` waits for `db-migrate` to complete, dependencies are installed before both, and two concurrent root installs never race.
   - Add `db-seed` (`db:seed`) and `db-rollback` (`db:rollback`) the same way, with `.withExplicitStart()`; `db-seed` also does `.waitForCompletion(dbMigrate)`.
   - Check the method signatures against `.aspire/modules/aspire.mts`, then run `pnpm aspire:build`. Manual check: `pnpm aspire run` shows `db-migrate` finishing before `web` starts.
-- [ ] **8. Docs.**
+- [x] **8. Docs.**
   - README: the `db:*` scripts in the scripts table, a "Database migrations" section (generate → review → write the rollback file → migrate; seeding; running under Aspire through the dashboard resources), and the `db/` line in the project structure.
   - `app/.server/AGENTS.md`: replace "(set up in #3)" with the real workflow, the rule that every migration needs a matching `rollbacks/<tag>.sql`, that enums come from `~/lib/enums`, that `price` is a string, that `volume_ml` is per unit (total = `pack_size * volume_ml`), and that `public_id` is the stable external key.
   - README: note that PostgreSQL 18+ is required (for `uuidv7()`).

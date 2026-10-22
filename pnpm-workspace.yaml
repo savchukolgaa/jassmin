@@ -3,6 +3,7 @@ packages:
   - cms
 
 # Packages whose install/build scripts may run (pnpm blocks all others).
+# Keep in sync with scripts/aspire.mjs, which passes the same list to pnpm under Aspire.
 allowBuilds:
   "@swc/core": true
   core-js-pure: false

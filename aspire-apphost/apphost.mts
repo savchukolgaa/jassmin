@@ -26,6 +26,19 @@ const cms = builder
   .withHttpHealthCheck({ path: "/_health", statusCode: 204 })
   .withExternalHttpEndpoints();
 
+// One-off seed (`pnpm cms:seed -- --token`) against the Aspire-managed `strapidb`, whose password
+// only Aspire knows. Start it from the dashboard; the app's API token is printed in its logs.
+await builder
+  .addJavaScriptApp("cms-seed", "../cms", { runScriptName: "seed" })
+  .withRunScript("seed", { args: ["--token"] })
+  .withPnpm({ install: false })
+  .withEnvironment("DATABASE_CLIENT", "postgres")
+  .withEnvironment("DATABASE_URL", await strapiDb.uriExpression())
+  .withReference(strapiDb)
+  .waitFor(cms)
+  .withParentRelationship(cms)
+  .withExplicitStart();
+
 // `web` doesn't wait for `cms`: the shop keeps working while the CMS is down,
 // and CMS-backed pages answer with a 503 instead.
 await builder

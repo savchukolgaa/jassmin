@@ -12,7 +12,8 @@
       "!aspire-apphost/.aspire",
       "!**/*.md",
       "!pnpm-lock.yaml",
-      "!aspire.config.json"
+      "!aspire.config.json",
+      "!app/.server/db/migrations"
     ]
   },
   "formatter": {

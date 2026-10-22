@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/3
 Branch: `issue/3`
 Worktree: `../jassmin-worktrees/issue-3`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a developer, I want the core PostgreSQL schema (shared enums, `users`, `products`) created through migrations, so that catalog and authentication features have a reliable data foundation. This issue sets up Drizzle Kit migrations with `db:migrate` / `db:rollback` / `db:seed` scripts, creates the four enums and the two tables, seeds sample perfumes, and exports the enum values as TypeScript unions from `app/lib/`.
@@ -101,19 +101,20 @@ As a developer, I want the core PostgreSQL schema (shared enums, `users`, `produ
   - `app/.server/AGENTS.md`: replace "(set up in #3)" with the real workflow, the rule that every migration needs a matching `rollbacks/<tag>.sql`, that enums come from `~/lib/enums`, that `price` is a string, that `volume_ml` is per unit (total = `pack_size * volume_ml`), and that `public_id` is the stable external key.
   - README: note that PostgreSQL 18+ is required (for `uuidv7()`).
   - `aspire-apphost/AGENTS.md`: list the new resources.
-- [ ] **9. Final verification.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` (with a DB available so the integration tests actually run) and `pnpm build`.
+- [x] **9. Final verification.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` (with a DB available so the integration tests actually run) and `pnpm build`.
 
 ## Testing & verification
 - Unit: `app/lib/enums.test.ts`, `app/.server/db/schema.test.ts`, `env.test.ts` (`getDatabaseUrl`), the seed-data checks in `seed.test.ts`.
 - Integration (need PostgreSQL, skipped otherwise): `migrator.test.ts` (up/down/up, constraints, defaults), `seed.test.ts` (idempotent seed), plus the existing `health.test.ts`.
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm aspire:build`.
 - Manual: in an empty local DB, run `pnpm db:migrate` → `pnpm db:seed` (twice; the second run inserts 0) → inspect with `psql` (`\d users`, `\d products`, `\dT+`) → `pnpm db:rollback` → `\d` shows nothing → `pnpm db:migrate` again. Under Aspire, check that `db-migrate` completes before `web` starts and that `db-seed` populates products.
+- **Verification note:** the up/down/up cycle, seed (run twice) and all integration tests were checked against a local `postgres:18` container. The Aspire wiring passes `pnpm aspire:build`, but `pnpm aspire start` could not run on the implementation machine: `aspire doctor` reports a DCP SSL connection failure (the known antivirus/TLS issue in `aspire-apphost/AGENTS.md`). So the `db-migrate` → `web` ordering has not been observed at runtime yet.
 
 ## Acceptance criteria
-- [ ] Migrations run up and down cleanly on an empty database — steps 3, 4, 5
-- [ ] All columns, defaults and constraints match the spec — steps 2, 3, 5. Additions agreed in Q1–Q3: NOT NULL on the defaulted columns, `pack_size`, `public_id`.
-- [ ] Seed script populates sample products — step 6
-- [ ] Shared TS types match the enums — steps 1, 2 (`schema.test.ts`)
+- [x] Migrations run up and down cleanly on an empty database — steps 3, 4, 5
+- [x] All columns, defaults and constraints match the spec — steps 2, 3, 5. Additions agreed in Q1–Q3: NOT NULL on the defaulted columns, `pack_size`, `public_id`.
+- [x] Seed script populates sample products — step 6
+- [x] Shared TS types match the enums — steps 1, 2 (`schema.test.ts`)
 
 ## Out of scope
 - Commerce tables (#4) and analytics tables (#5). Their enums are created here, but no tables use them yet.

@@ -56,7 +56,9 @@ and all forms will use.
 - **Focus styles:** `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`
   on every variant (keyboard-only ring, no ring on mouse click).
 - **Disabled / loading:** `disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none`
-  (and no hover shadow while disabled). `loading` renders an inline SVG spinner (`animate-spin`,
+  (and no hover shadow while disabled). Each variant also resets its hover background while disabled
+  (`disabled:bg-primary`, `disabled:bg-white`, `disabled:bg-transparent`) so a disabled button does not
+  look interactive on hover; added during implementation. `loading` renders an inline SVG spinner (`animate-spin`,
   `aria-hidden`), sets `disabled`, and `aria-busy="true"`; the label stays visible so the button width
   doesn't jump. The component does **not** read `useNavigation()` itself — callers pass
   `loading={navigation.state === "submitting"}` or `fetcher.state !== "idle"`, which keeps `Button`
@@ -111,7 +113,7 @@ and all forms will use.
 - [x] **2. `cn` helper** — `app/lib/cn.ts`:
   `export function cn(...classes: Array<string | false | null | undefined>): string` returning
   `classes.filter(Boolean).join(" ")`. Add `cn.test.ts` (joins, skips falsy values, empty → `""`).
-- [ ] **3. `buttonClasses`** — `app/components/ui/button-styles.ts` exports `ButtonVariant`,
+- [x] **3. `buttonClasses`** — `app/components/ui/button-styles.ts` exports `ButtonVariant`,
   `ButtonSize`, `ButtonStyleOptions` and `buttonClasses({ variant = "primary", size = "md", className })`
   built from `base`, `variants: Record<ButtonVariant, string>` and `sizes: Record<ButtonSize, string>`
   (`sm: "h-9 px-4 text-sm"`, `md: "h-11 px-6 text-base"`, `lg: "h-13 px-8 text-lg"`), using the classes

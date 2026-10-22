@@ -91,8 +91,9 @@ As a developer, I want the core PostgreSQL schema (shared enums, `users`, `produ
   - `scripts/seed.ts` is the CLI, wired to `"db:seed": "tsx app/.server/db/scripts/seed.ts"`.
   - `seed.test.ts` unit checks: every gender is present, a tester set with `packSize: 3` exists, prices match `/^\d+\.\d{2}$/`, stock is ≥ 0, `packSize` is ≥ 1, and every `publicId` is a unique UUID v7.
   - `seed.test.ts` integration check, on the throwaway-DB helper from step 5 (extract it into a small test util): the first run inserts every sample product, and a second run inserts 0 with the row count unchanged.
-- [ ] **7. Aspire wiring (`aspire-apphost/apphost.mts`).**
+- [x] **7. Aspire wiring (`aspire-apphost/apphost.mts`).**
   - Add `db-migrate` with `addJavaScriptApp("db-migrate", "..", { runScriptName: "db:migrate" })`, `.withPnpm({ install: false })`, `.withReference(db)`, `.waitFor(db)` and `.withParentRelationship(db)`. `web` gets `.waitForCompletion(dbMigrate)`.
+  - **Deviation:** `db-migrate` owns the root `pnpm install` (`.withPnpm()`), and `web` switches to `.withPnpm({ install: false })`. Because `web` waits for `db-migrate` to complete, dependencies are installed before both, and two concurrent root installs never race.
   - Add `db-seed` (`db:seed`) and `db-rollback` (`db:rollback`) the same way, with `.withExplicitStart()`; `db-seed` also does `.waitForCompletion(dbMigrate)`.
   - Check the method signatures against `.aspire/modules/aspire.mts`, then run `pnpm aspire:build`. Manual check: `pnpm aspire run` shows `db-migrate` finishing before `web` starts.
 - [ ] **8. Docs.**

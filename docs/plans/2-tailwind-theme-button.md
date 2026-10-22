@@ -128,7 +128,7 @@ and all forms will use.
   Renders `<button {...props} disabled={disabled || loading} aria-busy={loading || undefined}
   className={buttonClasses(...)}>` with a `Spinner` (local inline SVG, `aria-hidden="true"`,
   `size-4 animate-spin`) before `children` when loading. Export types with `export type`.
-- [ ] **5. `ButtonLink`** — `app/components/ui/ButtonLink.tsx`:
+- [x] **5. `ButtonLink`** — `app/components/ui/ButtonLink.tsx`:
   `export type ButtonLinkProps = ComponentProps<typeof Link> & { variant?; size? }`, rendering
   `<Link {...props} className={buttonClasses(...)} />`. Restrict `className` to `string` (Link also accepts
   a function form): `Omit<ComponentProps<typeof Link>, "className"> & { className?: string }`.

@@ -37,8 +37,8 @@ Create the foundation every other Jassmin issue builds on: a single full-stack, 
   await builder.build().run();
   ```
   Treat the exact method names and chaining (`withDataVolume`, awaits) as **(unconfirmed)** until checked against the generated `.aspire/modules` typings in step 6. The CLI type-checks the AppHost before it starts.
-- **Connection string mapping.** `withReference(db)` injects `JASSMINDB_URI` (plus `_HOST`, `_PORT`, `_USERNAME`, `_PASSWORD`, `_DATABASENAME`). `app/.server/env.ts` reads `DATABASE_URL` and falls back to `JASSMINDB_URI`. The app keeps one canonical setting (`DATABASE_URL`, used in production and in non-Aspire runs) while working unchanged under Aspire. **(unconfirmed, Q4)**
-- **`SESSION_SECRET` under Aspire** stays in the root `.env`, which `npm run dev` loads through `--env-file-if-exists`. That also works when Aspire launches the app. Moving it to an Aspire secret parameter is deferred (Q4).
+- **Connection string mapping.** `withReference(db)` injects `JASSMINDB_URI` (plus `_HOST`, `_PORT`, `_USERNAME`, `_PASSWORD`, `_DATABASENAME`). `app/.server/env.ts` reads `DATABASE_URL` and falls back to `JASSMINDB_URI`. The app keeps one canonical setting (`DATABASE_URL`, used in production and in non-Aspire runs) while working unchanged under Aspire.
+- **`SESSION_SECRET` under Aspire** stays in the root `.env`, which `npm run dev` loads through `--env-file-if-exists`. That also works when Aspire launches the app. Aspire secret parameters are not used.
 - **Aspire covers local dev only.** Production still runs `npm run build && npm run start` (`react-router-serve`). Aspire publish/deploy is out of scope.
 - **Server runtime: `react-router-serve`, no custom Express server.** #19 runs its job as a standalone script on an external scheduler (see Resolved questions).
 - **DB access: Drizzle ORM + `pg` (node-postgres driver).** Tables are defined in TypeScript (`app/.server/db/schema.ts`), queries are fully typed, and there is a relational query API (`db.query.<table>.findMany({ with: … })`). It runs on a `pg.Pool`, so `db.transaction()` covers the checkout integrity rule. `drizzle-kit` generates SQL migrations from the schema. `drizzle.config.ts` is added here so #3 only has to define tables and add the `db:*` scripts.
@@ -48,15 +48,15 @@ Create the foundation every other Jassmin issue builds on: a single full-stack, 
 - **Session storage.** `app/.server/session.ts` exports a `createCookieSessionStorage` instance. Auth logic stays in #9.
 - **Placeholder data.** Without a schema (#3), the home loader runs ``db.execute(sql`select now() as server_time, version() as pg_version`)`` using Drizzle's `sql` tag.
 - **The root lint and typecheck exclude `aspire-apphost/`.** The AppHost has its own `tsconfig.apphost.json`, generated code and validation. Generated `.aspire/modules/` is git-ignored, because `aspire restore` regenerates it.
-- **No test runner yet** **(unconfirmed, Q2).**
+- **Vitest as the test runner.** It is Vite-native, so it shares the TS/alias setup. It gets its own `vitest.config.ts` (with `vite-tsconfig-paths`, without the `reactRouter()` plugin, which must not run under tests) and `environment: "node"`. Tests sit next to the code as `*.test.ts`. Unit tests always run. DB integration tests use `describe.skipIf(!dbUrl)` and run whenever `DATABASE_URL`/`JASSMINDB_URI` is set, for example with Aspire's Postgres up. Component tests (jsdom, Testing Library) wait for the first UI issue (#2).
+- **Testable env parsing.** `app/.server/env.ts` exports a pure `parseEnv(source: NodeJS.ProcessEnv)` alongside the `env` singleton, so tests can check validation without changing `process.env`.
+- **Guidelines file stays local.** `Project Overview & Guidelines for Claude.md` is added to `.gitignore` and never committed.
 - **The guidelines doc vs. the issue.** `Project Overview & Guidelines for Claude.md` lists Express/Supabase, React Query/Axios and Zustand. Issue #1 supersedes those choices: data flows through loaders and actions.
 
-## Open questions
-- [ ] **Q2: Add a test runner (Vitest) now?** Recommended default: **not in #1**. Add it with the first issue that has testable business logic. Affects steps: none.
-- [ ] **Q3: Should the untracked `Project Overview & Guidelines for Claude.md` be committed (e.g. as `CLAUDE.md`)?** Recommended default: leave it untouched in this issue. Affects steps: none.
-- [ ] **Q4: How far should Aspire go in #1?** Options include passing `DATABASE_URL`/`SESSION_SECRET` through `withEnvironment` and secret parameters, wiring OpenTelemetry to the Aspire dashboard, and using Aspire for deployment. Why it matters: these add deps and AppHost code that later issues would inherit. Recommended default: **local orchestration only**. The app reads `JASSMINDB_URI` as a fallback, `SESSION_SECRET` comes from `.env`, OpenTelemetry is deferred, and there is no deployment. Affects steps: 5, 6.
-
 ## Resolved questions
+- **Add a test runner now?** Yes, Vitest, with unit tests plus DB integration tests that skip when there is no DB (step 12) (source: user).
+- **Commit `Project Overview & Guidelines for Claude.md`?** No. Add it to `.gitignore` as a safeguard (step 2) (source: user).
+- **How far should Aspire go in #1?** Local orchestration only. The app reads `JASSMINDB_URI` as a fallback, `SESSION_SECRET` comes from `.env`, and there are no secret parameters, OpenTelemetry or Aspire deployment (source: user).
 - **Query builder or ORM?** ORM: **Drizzle ORM**. The user asked for an ORM, and the issue (#1 Technical) and #3 ("e.g. Drizzle Kit") both name Drizzle. Prisma was not chosen because it is heavier (its own schema language and code generation) and also lacks automatic down migrations (source: user, #1, #3).
 - **Does production need a custom Express server for background jobs?** No. #19 specifies a standalone `scripts/mark-abandoned-carts.ts` run by an external scheduler, so `react-router-serve` is enough (source: #19).
 - **Is the Tailwind theme or DB schema part of this issue?** No. Both are explicitly out of scope: the theme is #2 and the schema/migrations are #3 (source: #1 Context, #2, #3).
@@ -67,14 +67,17 @@ Create the foundation every other Jassmin issue builds on: a single full-stack, 
 ## Files
 | Action | Path | Purpose |
 |--------|------|---------|
-| create | `package.json`, `package-lock.json` | Template deps plus Drizzle/pg/zod/ESLint/Prettier; scripts `dev`, `build`, `start`, `typecheck`, `lint`, `format`, plus `aspire:*` delegates added by `aspire init`; `engines.node >= 22` |
+| create | `package.json`, `package-lock.json` | Template deps plus Drizzle/pg/zod/ESLint/Prettier/Vitest; scripts `dev`, `build`, `start`, `typecheck`, `lint`, `format`, `test`, `test:watch`, plus `aspire:*` delegates added by `aspire init`; `engines.node >= 22` |
 | create | `.nvmrc` | Pin Node 24 |
 | create | `react-router.config.ts` | `ssr: true` |
 | create | `vite.config.ts` | Template config (`reactRouter()`, `tailwindcss()`, `tsconfigPaths()`) |
 | create | `tsconfig.json` | `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `verbatimModuleSyntax`, `~/*` alias; excludes `aspire-apphost` |
 | create | `eslint.config.js` | Flat config: typescript-eslint (type-checked), react, react-hooks, jsx-a11y, prettier; `@typescript-eslint/no-explicit-any: error` |
 | create | `.prettierrc`, `.prettierignore` | Formatting rules |
-| create | `.gitignore` | `node_modules`, `build`, `.react-router`, `.env`, `aspire-apphost/.aspire/modules` |
+| create | `.gitignore` | `node_modules`, `build`, `.react-router`, `.env`, `aspire-apphost/.aspire/modules`, `coverage`, `Project Overview & Guidelines for Claude.md` |
+| create | `vitest.config.ts` | Vitest config: node environment, `~` alias via `vite-tsconfig-paths`, `app/**/*.test.ts` |
+| create | `app/.server/env.test.ts` | Unit tests for `parseEnv` |
+| create | `app/.server/db/queries/health.test.ts` | DB integration test for `getDatabaseInfo` (skipped without a DB) |
 | create | `.env.example` | `DATABASE_URL`, `SESSION_SECRET`, `PORT` |
 | create | `aspire.config.json` | Aspire CLI config pointing at the AppHost (generated by `aspire init`) |
 | create | `aspire-apphost/apphost.mts` | Postgres container + database, Vite app with reference and wait |
@@ -100,18 +103,27 @@ Template files not listed (e.g. `app/welcome/`, the Dockerfile) are deleted when
 Each step is small, ordered, and leaves the app in a working state.
 
 - [ ] **1. Install prerequisites.** Install Node.js 24 LTS and the Aspire CLI (`irm https://aspire.dev/install.ps1 | iex`), and make sure Docker Desktop is running. Check: `node -v` (24.x), `npm -v`, `aspire --version` (≥ 13.4), `docker info`.
-- [ ] **2. Scaffold from the template.** Run `npx create-react-router@latest "<scratchpad>/jassmin" --no-install --no-git-init` (default template). Copy `app/`, `public/`, `package.json`, `react-router.config.ts`, `vite.config.ts`, `tsconfig.json` and `.gitignore` into the repo root. Drop `app/welcome/`, the template `Dockerfile` and `.dockerignore`. Set `"name": "jassmin"`, add `.nvmrc` (`24`) and `"engines": { "node": ">=22" }`, then run `npm install`. Check: `npm run dev` serves the template page at http://localhost:5173.
+- [ ] **2. Scaffold from the template.** Run `npx create-react-router@latest "<scratchpad>/jassmin" --no-install --no-git-init` (default template). Copy `app/`, `public/`, `package.json`, `react-router.config.ts`, `vite.config.ts`, `tsconfig.json` and `.gitignore` into the repo root. Drop `app/welcome/`, the template `Dockerfile` and `.dockerignore`. Add `Project Overview & Guidelines for Claude.md` to `.gitignore`, and check that `git status` no longer lists it. Set `"name": "jassmin"`, add `.nvmrc` (`24`) and `"engines": { "node": ">=22" }`, then run `npm install`. Check: `npm run dev` serves the template page at http://localhost:5173.
 - [ ] **3. Harden TypeScript and set up the folder layout.** In `tsconfig.json`, keep `strict: true`, add `noUncheckedIndexedAccess`, `noImplicitOverride` and `noFallthroughCasesInSwitch`, and add `"exclude": ["aspire-apphost"]`. Create `app/components/`, `app/features/`, `app/lib/` and `app/.server/{db/queries,services}/`. Make `react-router.config.ts` explicit: `{ ssr: true } satisfies Config`. Add the scripts `"typecheck": "react-router typegen && tsc"` and `"start": "react-router-serve ./build/server/index.js"`. Check: `npm run typecheck` passes.
 - [ ] **4. Add ESLint and Prettier.** Create `eslint.config.js` (flat config) with `@eslint/js` recommended, `typescript-eslint` `strictTypeChecked` + `stylisticTypeChecked` (`parserOptions.projectService`), `eslint-plugin-react` (jsx-runtime), `react-hooks`, `jsx-a11y` and `eslint-config-prettier` last. Set the rules `@typescript-eslint/no-explicit-any: "error"` and `@typescript-eslint/consistent-type-imports`. Ignore `build/`, `.react-router/`, `node_modules/`, `.claude/` and `aspire-apphost/`. Add `.prettierrc` (with `prettier-plugin-tailwindcss`) and `.prettierignore` (also ignoring `aspire-apphost/.aspire/`). Add the scripts `"lint": "eslint ."` and `"format": "prettier --write ."`. Check: `npm run lint` passes, and a temporary `const x: any = 1` fails it.
-- [ ] **5. Configure the env.** Add `.env.example` (`DATABASE_URL=postgres://jassmin:jassmin@localhost:5432/jassmin`, used only when running without Aspire; `SESSION_SECRET=change-me-to-a-long-random-string`; `PORT=3000`). Create `app/.server/env.ts` with a zod schema: `DATABASE_URL: z.string().url()`, filled from `process.env.DATABASE_URL ?? process.env.JASSMINDB_URI`; `SESSION_SECRET: z.string().min(32)`; `PORT: z.coerce.number().int().positive().default(3000)`; `NODE_ENV: z.enum(["development","production","test"]).default("development")`. It is parsed once, exports `env`, and throws a readable error listing any invalid keys. Load `.env` with `node --env-file-if-exists=.env` in the `dev`/`start` scripts, or with `process.loadEnvFile()` guarded by an existence check in `env.ts`. Check: with no `.env`, startup fails with a clear error.
+- [ ] **5. Configure the env.** Add `.env.example` (`DATABASE_URL=postgres://jassmin:jassmin@localhost:5432/jassmin`, used only when running without Aspire; `SESSION_SECRET=change-me-to-a-long-random-string`; `PORT=3000`). Create `app/.server/env.ts` with a zod schema: `DATABASE_URL: z.string().url()`, filled from `process.env.DATABASE_URL ?? process.env.JASSMINDB_URI`; `SESSION_SECRET: z.string().min(32)`; `PORT: z.coerce.number().int().positive().default(3000)`; `NODE_ENV: z.enum(["development","production","test"]).default("development")`. It exports a pure `parseEnv(source)` and an `env` singleton (`parseEnv(process.env)`, parsed once), and throws a readable error listing any invalid keys. Load `.env` with `node --env-file-if-exists=.env` in the `dev`/`start` scripts, or with `process.loadEnvFile()` guarded by an existence check in `env.ts`. Check: with no `.env`, startup fails with a clear error.
 - [ ] **6. Add the Aspire AppHost.** From the repo root, run `aspire init --language typescript` and accept the nested `aspire-apphost/` layout, then run `aspire add postgres`. Write `aspire-apphost/apphost.mts` as shown in Decisions: `addPostgres("postgres").withDataVolume()`, `.addDatabase("jassmindb")`, `addViteApp("web", "..")` with `.withReference(db).waitFor(db).withExternalHttpEndpoints()`. Adjust the method names to the generated `.aspire/modules` typings if they differ. Make sure `.aspire/modules/` is git-ignored and that the root `package.json` has the `aspire:*` delegate scripts. Check: `aspire run` starts the Postgres container and the `web` resource, the dashboard shows both healthy, and the `web` resource's environment in the dashboard contains `JASSMINDB_URI`. If `addViteApp` does not pick up React Router's dev port, add `.withHttpEndpoint({ env: "PORT" })` and read `PORT` in `vite.config.ts` `server.port`.
 - [ ] **7. Add the Drizzle ORM module.** Install `drizzle-orm pg` and `-D drizzle-kit @types/pg`. Create `app/.server/db/schema.ts` (`export {}`, with a comment that #3 adds tables and enums). `app/.server/db/index.ts` creates `new Pool({ connectionString: env.DATABASE_URL, max: 10 })` and `drizzle({ client: pool, schema, casing: "snake_case" })` from `drizzle-orm/node-postgres`, caches both on `globalThis` outside production, and exports `db` and the `Db` type (`typeof db`). Add `drizzle.config.ts` (`defineConfig({ dialect: "postgresql", schema: "./app/.server/db/schema.ts", out: "./app/.server/db/migrations", casing: "snake_case", dbCredentials: { url: process.env.DATABASE_URL ?? process.env.JASSMINDB_URI ?? "" } })`), loading `.env` the same way as step 5. `app/.server/db/queries/health.ts` exports `getDatabaseInfo(): Promise<{ serverTime: Date; pgVersion: string }>`, using ``db.execute<{ server_time: Date; pg_version: string }>(sql`select now() as server_time, version() as pg_version`)`` and handling `result.rows[0]` being `undefined`. Check: typecheck and lint pass, and `npx drizzle-kit check` runs against the config.
 - [ ] **8. Add session storage.** Create `app/.server/session.ts` with `createCookieSessionStorage<SessionData, SessionFlashData>` (cookie `__jassmin_session`, `httpOnly`, `sameSite: "lax"`, `path: "/"`, `secure: env.NODE_ENV === "production"`, `secrets: [env.SESSION_SECRET]`, `maxAge` 30 days). It exports `getSession`, `commitSession` and `destroySession`. `SessionData` holds an optional `userId: number` for #9. Check: typecheck passes.
 - [ ] **9. Build the placeholder home route.** `app/routes.ts`: `[index("routes/home.tsx")] satisfies RouteConfig`. In `app/routes/home.tsx`: `meta` (title "Jassmin"), an `async loader()` that calls `getDatabaseInfo()` and returns `{ serverTime: serverTime.toISOString(), pgVersion }`, and a component typed with `Route.ComponentProps` that renders "Jassmin — coming soon" plus the DB time and version. In `app/root.tsx`: set `lang="uk"`, keep the typed `ErrorBoundary`, and remove unused template font links. Check: `aspire run`, open the `web` endpoint from the dashboard, and confirm that view-source on `/` contains the Postgres version string.
 - [ ] **10. Verify the `.server` boundary.** Temporarily import `~/.server/db` from client code (e.g. use `db` inside the home component body) and confirm that `npm run build` fails with React Router's server-only module error. Revert the change.
 - [ ] **11. Verify the production build.** With the Aspire Postgres running (or any Postgres at `DATABASE_URL`), run `npm run build && npm run start` and open http://localhost:3000. Check that the page renders with DB data and that view-source shows it. When running outside Aspire, take the connection string from the dashboard's `postgres`/`jassmindb` resource or use a fixed `DATABASE_URL`.
-- [ ] **12. Write the README.** Cover: what Jassmin is; the stack (React Router v7 framework mode, SSR, strict TypeScript, Drizzle ORM/Postgres, zod, Tailwind, Aspire for local dev); prerequisites (Node 24, Docker Desktop, Aspire CLI ≥ 13.4); quick start (`cp .env.example .env`, set `SESSION_SECRET`, `npm install`, `aspire run`, open the dashboard and the `web` endpoint); running without Aspire (`DATABASE_URL` + `npm run dev`); a script table (`dev`, `build`, `start`, `typecheck`, `lint`, `format`, `aspire:*`); the folder structure, including `aspire-apphost/`; and conventions (data in loaders, mutations in actions validated with zod, server-only code in `app/.server/`, no `any`).
-- [ ] **13. Final pass.** Run `npm run typecheck && npm run lint && npm run build`, and confirm that `aspire run` starts cleanly. Make sure `.env`, `build/`, `.react-router/` and `aspire-apphost/.aspire/modules/` are not tracked.
+- [ ] **12. Add Vitest.** Install `-D vitest vite-tsconfig-paths` (the latter is already in the template). Create `vitest.config.ts` (`defineConfig({ plugins: [tsconfigPaths()], test: { environment: "node", include: ["app/**/*.test.ts"] } })`) and add the scripts `"test": "vitest run"` and `"test:watch": "vitest"`. Write the tests:
+  - `app/.server/env.test.ts`:
+    - `parseEnv` accepts a valid env and coerces `PORT`.
+    - It defaults `PORT` to 3000.
+    - It falls back from `DATABASE_URL` to `JASSMINDB_URI`.
+    - It rejects a short `SESSION_SECRET` and a missing DB URL with a message naming the key.
+  - `app/.server/db/queries/health.test.ts`: under `describe.skipIf(!process.env.DATABASE_URL && !process.env.JASSMINDB_URI)`, `getDatabaseInfo()` returns a `Date` and a version string containing `PostgreSQL`. Close the pool in `afterAll`.
+
+  Make sure ESLint type-checks the test files (they're covered by `tsconfig.json`'s include). Check: `npm test` passes, the integration test runs with a DB URL set and is reported as skipped otherwise, and `npm run typecheck`/`npm run lint` still pass.
+- [ ] **13. Write the README.** Cover: what Jassmin is; the stack (React Router v7 framework mode, SSR, strict TypeScript, Drizzle ORM/Postgres, zod, Tailwind, Aspire for local dev); prerequisites (Node 24, Docker Desktop, Aspire CLI ≥ 13.4); quick start (`cp .env.example .env`, set `SESSION_SECRET`, `npm install`, `aspire run`, open the dashboard and the `web` endpoint); running without Aspire (`DATABASE_URL` + `npm run dev`); a script table (`dev`, `build`, `start`, `typecheck`, `lint`, `format`, `test`, `test:watch`, `aspire:*`); how to run DB integration tests (start Aspire's Postgres, set `DATABASE_URL`, run `npm test`); the folder structure, including `aspire-apphost/`; and conventions (data in loaders, mutations in actions validated with zod, server-only code in `app/.server/`, no `any`).
+- [ ] **14. Final pass.** Run `npm run typecheck && npm run lint && npm test && npm run build`, and confirm that `aspire run` starts cleanly. Make sure `.env`, `build/`, `.react-router/`, `coverage/`, `aspire-apphost/.aspire/modules/` and `Project Overview & Guidelines for Claude.md` are not tracked.
 
 ## Testing & verification
 - Commands: `npm run typecheck`, `npm run lint`, `npm run build`, `npm run start`, `aspire run`.
@@ -120,15 +132,15 @@ Each step is small, ordered, and leaves the app in a working state.
 - Aspire check: the dashboard shows `postgres`, `jassmindb` and `web` as running/healthy, and `web` has `JASSMINDB_URI` in its environment (step 6).
 - Manual: view-source on `/` contains the Postgres version and time, both under `aspire run` (step 9) and in the production build (step 11). Stopping the Postgres resource from the dashboard should render the root `ErrorBoundary`, not crash the server.
 - Env check: a missing `SESSION_SECRET`, or a missing DB URL with Aspire not running, must give a clear startup error (step 5).
-- No automated test suite in this issue (see Q2).
+- Automated tests (step 12): `npm test` runs the `parseEnv` unit tests, plus the `getDatabaseInfo` integration test when a DB URL is set.
 
 ## Acceptance criteria
 - [ ] `npm run dev` serves a server-rendered placeholder home page — steps 2, 6, 9 (`aspire run` launches `npm run dev` via `addViteApp`)
 - [ ] `npm run build && npm run start` runs the production SSR build — steps 3, 11
-- [ ] `npm run typecheck` and `npm run lint` pass with strict settings — steps 3, 4, 13
+- [ ] `npm run typecheck` and `npm run lint` pass with strict settings — steps 3, 4, 12, 14
 - [ ] A loader can query PostgreSQL and the result renders on first page load (view-source shows the data) — steps 5, 6, 7, 9
 - [ ] Server-only modules live under `app/.server/` and cannot be imported into client code — steps 3, 7, 8, 10
-- [ ] README documents setup and scripts — step 12
+- [ ] README documents setup and scripts — step 13
 
 ## Out of scope
 - Brand theme, colours and the `Button` component (#2).
@@ -136,5 +148,5 @@ Each step is small, ordered, and leaves the app in a working state.
 - Authentication logic (#9). Only session storage is set up here.
 - Header/layout UI (#6) and real home page content (#7).
 - Background jobs or a custom Express server (#19).
-- Aspire deployment/publishing, OpenTelemetry instrumentation and Aspire secret parameters (see Q4).
-- A test runner and CI (see Q2).
+- Aspire deployment/publishing, OpenTelemetry instrumentation and Aspire secret parameters (local orchestration only).
+- Component/UI tests (jsdom + Testing Library), coverage thresholds and CI.

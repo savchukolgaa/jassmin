@@ -64,6 +64,8 @@ Store admins should be able to publish blog articles and edit home page copy and
 - **Postgres only:** `cms/config/database.ts` drops the scaffold's MySQL/SQLite branches.
 - **Seed:** runs with `tsx` (a `cms` dev dependency) and creates the token through `strapi.service("admin::api-token-content-api")`. The seed images (`hero.jpg`, `blog-cover.jpg`) are small generated JPEG placeholders.
 - **CMS URL building:** `cmsFetch` resolves `api/<path>` relative to `STRAPI_URL` with a trailing slash, so a base URL with a path prefix keeps it. `listBlogPosts` throws a `RangeError` for out-of-range pagination, because that's a programmer error rather than a CMS outage. Routes (#13) validate `?page=` before calling it.
+- **`cms-seed` Aspire resource (added):** under Aspire, the `strapidb` password is generated, so `pnpm cms:seed` in a terminal can't reach it. `apphost.mts` adds an explicit-start child resource `cms-seed` that runs `seed --token` with the Aspire `DATABASE_URL`, and the token shows up in its console logs.
+- **`scripts/aspire.mjs` allowBuilds (fixed):** the wrapper's `pnpm_config_allow_builds` env var replaces the workspace `allowBuilds` for every pnpm process Aspire spawns, including `web`'s root install. Verified with `pnpm config get allowBuilds`. Without the fix, the install would reject `@swc/core`. The wrapper now passes the same list as `pnpm-workspace.yaml`.
 - **Drafts and the token:** Strapi's `find` permission lets the token request `?status=draft` too. Strapi has no published-only permission, so drafts are kept out by the client, which always sends `status=published`, rather than by the token. The README documents this.
 
 ## Resolved questions
@@ -129,7 +131,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - `client.test.ts` (with `vi.stubGlobal("fetch", …)` and `vi.useFakeTimers` where useful): the request URL contains `status=published`, `populate`, `sort=publishedAt:desc` and an encoded slug filter, plus the `Authorization` header. `getBlogPostBySlug` returns `null` for an empty `data`. Network failures, timeouts, 500s, 404s on single types and malformed JSON or schema mismatches throw `CmsError` with the right `kind`. A missing token throws `not_configured`. `cmsUnavailable` turns `CmsError` into a 503 and rethrows other errors.
 
   The tests mock `../env` (`vi.mock`) instead of resetting modules, and stub `fetch` with `vi.stubGlobal`. Check: `pnpm test`.
-- [ ] **11. Write the docs.** Add a README section "Content (Strapi CMS)" that covers:
+- [x] **11. Write the docs.** Add a README section "Content (Strapi CMS)" that covers:
   - running Strapi through Aspire and standalone (`pnpm cms:dev`)
   - copying `cms/.env.example` and generating secrets
   - creating the first Strapi admin at `/admin` (separate from Jassmin accounts)

@@ -1,0 +1,14 @@
+{
+  "collectionName": "components_home_locations",
+  "info": {
+    "displayName": "Location",
+    "icon": "pinMap",
+    "description": "Store address and opening hours"
+  },
+  "options": {},
+  "attributes": {
+    "address": { "type": "string", "required": true, "maxLength": 300 },
+    "openingHours": { "type": "text" },
+    "mapEmbedUrl": { "type": "string", "required": true, "maxLength": 2000 }
+  }
+}

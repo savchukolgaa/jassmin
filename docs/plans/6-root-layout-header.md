@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/6
 Branch: `issue/6`
 Worktree: `../jassmin-worktrees/issue-6`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Shoppers get the same header on every public page: the "Jassmin" brand on the left, and About us · Catalog ▾ · Kontakt · Profile · Cart on the right. The header is rendered by a `_shop` layout route whose `loader` provides `{ user, cartCount }`, so auth state and the cart badge are correct on the first server render. The issue also registers the app's full route skeleton in `app/routes.ts`, with placeholder pages where needed.
@@ -35,6 +35,12 @@ Shoppers get the same header on every public page: the "Jassmin" brand on the le
 - **Labels:** the text follows the issue exactly ("About us", "Catalog", "Men Perfumes", "Women Perfumes", "Kontakt"), even though `<html lang="uk">`. Translation is out of scope.
 - **Placeholders:** each route that has no page yet renders a shared `PagePlaceholder` with a title and "Coming soon". `catalog/:gender` throws a 404 for anything other than `men`/`women`, which keeps junk URLs out. #8 refines this.
 - **Errors keep the header:** `_shop.tsx` exports an `ErrorBoundary`. It renders `<Header />` from `useRouteLoaderData("routes/_shop")`, falling back to the logged-out state with 0 items, plus the shared error content. Child errors such as the home page's CMS 503 or the catalog 404 then still show the header. The message logic moves out of `root.tsx` into `app/lib/route-error.ts`, and both boundaries reuse it. The root boundary still handles unmatched URLs and errors in the layout loader itself.
+- **Changes made during implementation:**
+  - `useDisclosure()` returns spreadable `{ detailsProps, summaryProps }` instead of the separate fields listed in step 4. It closes on navigation by adjusting state during render when `location.key` changes, rather than with an effect, which avoids Biome's exhaustive-deps warning.
+  - The shared link data and class helpers live in a new `app/components/layout/nav.ts`, so the inline nav and the mobile menu can't drift apart.
+  - `LOGGED_OUT_HEADER` in `app/lib/header.ts` is the error boundary's fallback.
+  - `describeRouteError(error, dev = import.meta.env.DEV)` takes `dev` as a parameter so the production branch can be tested.
+  - `useDisclosure` has no automated test, because Vitest runs in the `node` environment with no DOM library and adding one is out of scope. Escape and outside-click behaviour is a manual check.
 
 ## Resolved questions
 - **Q1: Should the header link to the Blog (`/blog`)?** No. The header has no Blog link; `/blog` is only registered as a route (source: user answer on the plan).
@@ -115,7 +121,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - logged out gives `href="/login"` and `aria-label="Log in"`, and logged in gives `href="/account"`;
   - the badge is absent at 0, shows `3` and shows `99+`;
   - the catalog uses `<details>`/`<summary` with `aria-expanded="false"`.
-- [ ] **8. Verify and commit.** Run `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Do the manual checks below. Commit in logical chunks (routes, header data, header UI, error boundary), staging paths explicitly.
+- [x] **8. Verify and commit.** Run `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Do the manual checks below. Commit in logical chunks (routes, header data, header UI, error boundary), staging paths explicitly.
 
 ## Testing & verification
 - **Unit:** `app/routes.test.ts`, `app/lib/header.test.ts`, `app/lib/route-error.test.ts`, `app/.server/services/header.test.ts` and `app/components/layout/Header.test.ts`.
@@ -129,10 +135,10 @@ Each step is small, ordered, and leaves the app in a working state.
   - `/admin`: there is no shop header.
 
 ## Acceptance criteria
-- [ ] Header renders server-side on all public pages with items in the specified order — steps 2, 3, 4, 6, 7
-- [ ] Catalog dropdown links to men's and women's catalogs and works with the keyboard — steps 4, 7
-- [ ] Profile icon routes to login or account depending on auth state, without a flash on load — steps 3, 4, 7
-- [ ] Mobile layout works at 375px width — step 5
+- [x] Header renders server-side on all public pages with items in the specified order — steps 2, 3, 4, 6, 7
+- [x] Catalog dropdown links to men's and women's catalogs and works with the keyboard — steps 4, 7
+- [x] Profile icon routes to login or account depending on auth state, without a flash on load — steps 3, 4, 7
+- [x] Mobile layout works at 375px width — step 5
 
 ## Out of scope
 - Real authentication and user lookup (#9) and a real cart count (#10). Both are stubbed behind `getHeaderState`.

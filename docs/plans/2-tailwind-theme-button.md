@@ -24,8 +24,10 @@ and all forms will use.
   `tailwind.config.ts`. Defining `--color-primary` automatically generates `bg-primary`, `text-primary`,
   `border-primary`, `outline-primary`, `ring-primary`, etc.
 - **Shades:** `--color-primary-light: #FF8FA1` (hover/tint backgrounds), `--color-primary-dark: #E0405C`
-  (hover/pressed state for the primary variant). Exact hex values are hand-picked tints of `#FF5C77`
-  **(unconfirmed — see Q1)**.
+  (hover/pressed state for the primary variant). Hand-picked tints of `#FF5C77`, confirmed by the user.
+- **Contrast:** white text on `#FF5C77` is ~3.0:1 (below WCAG AA 4.5:1 for normal text). Confirmed with
+  the user: keep the brand colour as the primary background as the issue specifies, and improve legibility
+  with `font-semibold` and `text-base` on `md`/`lg`. Reaching AA is a possible follow-up.
 - **Brand-tinted shadows:** `--shadow-button` and `--shadow-button-hover` (pink-tinted `rgb(255 92 119 / …)`)
   are added as optional tokens, but the primary variant uses the stock `shadow-md` / `hover:shadow-lg`
   utilities literally, because the acceptance criteria name them. A tinted colour is applied with
@@ -49,7 +51,7 @@ and all forms will use.
   - secondary: `border border-primary bg-white text-primary hover:bg-primary-light/15`, dark-mode
     `dark:bg-gray-950`
   - ghost: `text-primary hover:bg-primary-light/15`
-  - shared base: `inline-flex items-center justify-center gap-2 rounded-full font-semibold
+  - shared base: `inline-flex items-center justify-center gap-2 rounded-lg font-semibold
     transition-[box-shadow,background-color,color] duration-200`
 - **Focus styles:** `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`
   on every variant (keyboard-only ring, no ring on mouse click).
@@ -66,18 +68,12 @@ and all forms will use.
 - **File naming:** the issue asks for `app/components/ui/Button.tsx`; PascalCase is kept for component
   files, kebab/lowercase for non-component modules, matching the issue and React convention.
 
-## Open questions
-- [ ] **Q1: Exact hex values for `primary-light` / `primary-dark`?** — Why it matters: they're the hover
-  colour of every primary CTA. Recommended default: `#FF8FA1` / `#E0405C`. Affects steps: 1.
-- [ ] **Q2: White text on `#FF5C77` has a contrast ratio of ~3.0:1, below WCAG AA for normal text
-  (4.5:1).** — Why it matters: accessibility of every primary button. Recommended default: keep the brand
-  colour as the background as the issue specifies, use `font-semibold` and `text-base` on `md`/`lg` to
-  improve legibility, and note it; a follow-up can darken text or the background if the store wants AA.
-  Affects steps: 1, 3.
-- [ ] **Q3: Pill (`rounded-full`) or soft-rounded (`rounded-lg`) buttons?** — Why it matters: visual
-  identity; the issue doesn't specify. Recommended default: `rounded-full`. Affects steps: 2.
-
 ## Resolved questions
+- **Exact hex values for `primary-light` / `primary-dark`?** — `#FF8FA1` / `#E0405C` (source: user,
+  2026-10-22).
+- **White text on `#FF5C77` is ~3.0:1, below WCAG AA — change it?** — No: keep the brand background,
+  use `font-semibold` and `text-base` on `md`/`lg`; AA can be a follow-up (source: user, 2026-10-22).
+- **Pill or soft-rounded buttons?** — Soft-rounded, `rounded-lg` (source: user, 2026-10-22).
 - **Tailwind v3 or v4?** — v4 with `@tailwindcss/vite`; theme lives in `app/app.css` `@theme`
   (source: `package.json`, `vite.config.ts`, `app/app.css`).
 - **Where do shared UI components go?** — `app/components/` (source: `AGENTS.md` → Architecture rules).

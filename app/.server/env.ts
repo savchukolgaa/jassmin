@@ -15,6 +15,14 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 
 /**
+ * The app database URL: `JASSMINDB_URI` (injected by Aspire) wins over `DATABASE_URL`.
+ * Returns `undefined` when neither is set.
+ */
+export function getDatabaseUrl(source: NodeJS.ProcessEnv): string | undefined {
+  return source.JASSMINDB_URI || source.DATABASE_URL || undefined;
+}
+
+/**
  * Validates environment variables. The database URL is `JASSMINDB_URI` when Aspire injects it
  * for the `jassmindb` resource, otherwise `DATABASE_URL`: under `aspire run` the Aspire database
  * wins over a `DATABASE_URL` left in `.env` for non-Aspire runs. `STRAPI_URL` falls back
@@ -23,7 +31,7 @@ export type Env = z.infer<typeof envSchema>;
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
   const result = envSchema.safeParse({
     ...source,
-    DATABASE_URL: source.JASSMINDB_URI || source.DATABASE_URL,
+    DATABASE_URL: getDatabaseUrl(source),
     STRAPI_URL: source.STRAPI_URL || source.CMS_HTTP || undefined,
     STRAPI_API_TOKEN: source.STRAPI_API_TOKEN || undefined,
   });

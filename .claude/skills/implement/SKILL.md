@@ -14,7 +14,7 @@ If no issue number is given, ask for one.
 
 1. Find the plan: `docs/plans/$ARGUMENTS-*.md`. If none exists, stop and suggest running `/create-plan $ARGUMENTS` first.
 2. Read the whole plan, then the issue (`gh issue view $ARGUMENTS --json title,body,comments`) to check nothing changed since the plan was written. If the issue now contradicts the plan, tell the user and update the plan before coding.
-3. If the plan lists **(unconfirmed)** decisions that materially change the implementation, ask the user to confirm them before starting.
+3. Check the plan's **Open questions**. First check whether the code, the issue comments or the user have answered any of them since the plan was written; if so, move them to **Resolved questions** with the source. For questions still open that materially change the implementation, ask the user before starting; otherwise proceed with the recommended default and say so in your final report. Record every answer in the plan.
 
 ## 2. Switch to the branch
 

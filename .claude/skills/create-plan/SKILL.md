@@ -18,7 +18,12 @@ If no issue number is given, ask for one. Do not write any application code in t
    - Read the comments too; they may change the scope or answer the issue's open assumptions.
 2. Read every issue referenced in its Context section (`#<n>`, "Depends on #<n>") so you know what already exists and what the dependencies provide. If a dependency is still open and its work is not in the codebase, flag it in the plan.
 3. Explore the codebase (Glob/Grep/Read) to find the files, patterns and conventions the work must follow. Read `CLAUDE.md` / `README.md` if present. The app is a full-stack SSR app built with React Router (framework mode): data is loaded in route `loader`s, mutations go through route `action`s, and server-only code lives under `app/.server/`. Follow what the code actually does if it differs.
-4. If something essential is ambiguous (an unconfirmed assumption in the issue that changes the design), ask the user before writing the plan rather than guessing.
+4. Collect open questions: anything ambiguous, unconfirmed or missing in the issue (including its "Assumption:" notes), conflicts between the issue and the code, and choices the issue leaves open.
+5. Try to answer each open question yourself before asking anyone:
+   - Search the source code, config, migrations, existing plans in `docs/plans/`, and `CLAUDE.md` / `README.md` for an existing answer or convention.
+   - Check related issues and their comments (`gh issue view <n> --comments`).
+   - If you find the answer, record it in the plan under **Resolved questions** with where you found it (file path / issue), and design the plan accordingly.
+   - Only questions you genuinely cannot answer from the repo or issues stay **open**. For each, propose a recommended default so the plan is still complete.
 
 ## 2. Prepare the branch
 
@@ -51,7 +56,15 @@ Status: Planned
 <Issues/features this relies on and whether they exist yet; env vars, packages, migrations needed.>
 
 ## Decisions & assumptions
-<Design choices made for this plan and why; issue assumptions and how they are resolved. Mark anything still unconfirmed with **(unconfirmed)**.>
+<Design choices made for this plan and why. Mark anything that depends on an open question with **(unconfirmed)**.>
+
+## Open questions
+<Questions that could not be answered from the source code or issues. Omit the section if there are none.>
+- [ ] **Q1: <question>** — Why it matters: <impact on the design>. Recommended default: <what the plan assumes until answered>. Affects steps: <n>.
+
+## Resolved questions
+<Questions answered from the codebase or issues. Omit if none.>
+- **<question>** — <answer> (source: `<file path>` / #<issue>)
 
 ## Files
 | Action | Path | Purpose |
@@ -90,4 +103,4 @@ Guidelines:
    ```
    Include any commit attribution trailer your instructions require.
 2. Do not push unless the user asks; `/implement` and `/open-pr` push later.
-3. Report to the user: the plan path, the branch, a short summary of the steps, and any **(unconfirmed)** decisions they should review. Suggest `/implement <number>` as the next step.
+3. Report to the user: the plan path, the branch, a short summary of the steps, the questions you resolved yourself (with sources), and the remaining **open questions** with their recommended defaults so the user can answer them. Suggest `/implement <number>` as the next step.

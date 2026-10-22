@@ -1,7 +1,7 @@
 # Plan: Scaffold full-stack SSR app with React Router framework mode (#1)
 
 Issue: https://github.com/savchukolgaa/jassmin/issues/1
-Branch: `issue-1-scaffold-react-router-app`
+Branch: `issue/1` (renamed from `issue-1-scaffold-react-router-app` to match the new branch convention)
 Status: Planned
 
 ## Goal
@@ -135,7 +135,13 @@ Each step is small, ordered, and leaves the app in a working state.
 
   Test files are linted by Biome and type-checked by `tsc`, since they're covered by `tsconfig.json`'s include. Check: `ppnpm test` passes, the integration test runs with a DB URL set and is reported as skipped otherwise, and `pnpm typecheck`/`pnpm lint` still pass.
 - [x] **13. Write the README and AGENTS.md files.** *(User request: also add AGENTS.md files. Root `AGENTS.md` covers the project, commands, architecture and code rules, plus the worktree/`issue/<n>` workflow and things to never do. Scoped `app/.server/AGENTS.md` covers env, DB, transactions and the timestamp quirk, and `aspire-apphost/AGENTS.md` covers the standalone pnpm package, the wrapper and DCP troubleshooting. A one-line `CLAUDE.md` (`@AGENTS.md`) makes Claude Code load the root file.)* Cover: what Jassmin is; the stack (React Router v7 framework mode, SSR, strict TypeScript, Drizzle ORM/Postgres, zod, Tailwind, Aspire for local dev); prerequisites (Node 24, Docker Desktop, Aspire CLI ≥ 13.4); quick start (`cp .env.example .env`, set `SESSION_SECRET`, `pnpm install`, `aspire run`, open the dashboard and the `web` endpoint); running without Aspire (`DATABASE_URL` + `pnpm dev`); a script table (`dev`, `build`, `start`, `typecheck`, `lint`, `format`, `test`, `test:watch`, `aspire:*`); how to run DB integration tests (start Aspire's Postgres, set `DATABASE_URL`, run `ppnpm test`); the folder structure, including `aspire-apphost/`; and conventions (data in loaders, mutations in actions validated with zod, server-only code in `app/.server/`, no `any`).
-- [ ] **14. Final pass.** Run `pnpm typecheck && pnpm lint && pnpm test && pnpm build`, and confirm that `aspire run` starts cleanly. Make sure `.env`, `build/`, `.react-router/`, `coverage/`, `aspire-apphost/.aspire/modules/` and `Project Overview & Guidelines for Claude.md` are not tracked.
+- [x] **14. Rewrite the repo skills to enforce worktrees (user request, part of this PR).** Every issue is worked on branch `issue/<n>` in its own worktree at `<main checkout>/../jassmin-worktrees/issue-<n>`, and nothing is edited or committed in the main checkout.
+  - `/create-plan` creates or reuses the worktree (from an existing worktree, local branch, remote branch, or `origin/main`, in that order) and commits the plan there.
+  - `/implement` enters the worktree, copies `.env` and runs `pnpm install`, then commits each step to `issue/<n>` and pushes.
+  - `/open-pr` finds the worktree for `issue/<n>`, opens the PR from that branch, and reminds the user to clean up with `git worktree remove` after the merge.
+  - `/create-issue` states that it never touches branches or worktrees.
+  - Commands switched to pnpm, and `CLAUDE.md` references became `AGENTS.md`. The path-resolution snippet was dry-run in Git Bash.
+- [ ] **15. Final pass.** Run `pnpm typecheck && pnpm lint && pnpm test && pnpm build`, and confirm that `aspire run` starts cleanly. Make sure `.env`, `build/`, `.react-router/`, `coverage/`, `aspire-apphost/.aspire/modules/` and `Project Overview & Guidelines for Claude.md` are not tracked.
 
 ## Testing & verification
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm start`, `aspire run`.
@@ -149,7 +155,7 @@ Each step is small, ordered, and leaves the app in a working state.
 ## Acceptance criteria
 - [ ] `pnpm dev` serves a server-rendered placeholder home page — steps 2, 6, 9 (`aspire run` launches `pnpm dev` via `addViteApp`)
 - [ ] `pnpm build && pnpm start` runs the production SSR build — steps 3, 11
-- [ ] `pnpm typecheck` and `pnpm lint` pass with strict settings — steps 3, 4, 12, 14
+- [ ] `pnpm typecheck` and `pnpm lint` pass with strict settings — steps 3, 4, 12, 15
 - [ ] A loader can query PostgreSQL and the result renders on first page load (view-source shows the data) — steps 5, 6, 7, 9
 - [ ] Server-only modules live under `app/.server/` and cannot be imported into client code — steps 3, 7, 8, 10
 - [ ] README documents setup and scripts — step 13

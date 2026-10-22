@@ -9,6 +9,8 @@ allowed-tools: Bash(gh issue create:*), Bash(gh issue list:*), Bash(gh label lis
 
 Create one or more GitHub issues for the current repository with `gh`, following the body template below exactly.
 
+**Worktree rule:** this skill only talks to GitHub. It never creates branches or worktrees and never writes files inside the repository or any worktree (temporary files go to the scratchpad/temp directory). Branch `issue/<number>` and its worktree are created later by `/create-plan <number>` (see `AGENTS.md` → "Workflow").
+
 ## Input
 
 `$ARGUMENTS` is either:

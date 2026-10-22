@@ -1,10 +1,7 @@
 import type { Route } from "./+types/home";
 
 export function meta(_args: Route.MetaArgs) {
-  return [
-    { title: "Jassmin" },
-    { name: "description", content: "Jassmin perfume store" },
-  ];
+  return [{ title: "Jassmin" }, { name: "description", content: "Jassmin perfume store" }];
 }
 
 export default function Home() {

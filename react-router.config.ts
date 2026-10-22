@@ -1,7 +1,6 @@
 import type { Config } from "@react-router/dev/config";
 
 export default {
-  // Config options...
-  // Server-side render by default, to enable SPA mode set this to `false`
+  // Full-stack SSR: data is loaded in route loaders and mutated in route actions.
   ssr: true,
 } satisfies Config;

@@ -97,6 +97,9 @@ outage shows a 503.
   and `alt` (empty alt falls back to `""` = decorative, since the title is right next to it). The
   article cover loads eagerly, list covers lazily. No cover → a blush placeholder block.
 
+- *Implementation order:* step 7 (UI components) was done before steps 5–6, so each route
+  commit is complete on its own.
+
 ## Resolved questions
 - **Q1: Cache policy** — Use the cookie-aware policy: `public, max-age=60, stale-while-revalidate=300`
   only without a `__jassmin_session` cookie, `private, no-cache` with one, always `Vary: Cookie`;
@@ -142,7 +145,8 @@ outage shows a 503.
 | modify | `app/components/ui/RichText.tsx` | `variant="article"` styles for h2, img, hr, code |
 | create | `app/features/blog/BlogPostCard.tsx` | Card for the list: cover, date, title, excerpt |
 | create | `app/features/blog/BlogCover.tsx` | Cover image with srcset / placeholder |
-| create | `app/features/blog/BlogArticle.tsx` | Article layout: title, meta line, cover, `RichText` |
+| create | `app/features/blog/BlogArticle.tsx` | Article layout: title, meta line, cover, `RichText`; `BackToBlogLink` |
+| create | `app/features/blog/blog-ui.test.ts` | Render tests for the card and article |
 | modify | `app/routes/blog.tsx` | Loader, meta, headers, list UI, ErrorBoundary |
 | modify | `app/routes/blog-post.tsx` | Loader, meta, headers, article UI, ErrorBoundary |
 | create | `app/routes/blog.test.ts` | Loader tests with mocked `~/.server/cms/content` |
@@ -200,7 +204,7 @@ outage shows a 503.
   - UI via `BlogArticle`: back link to `/blog`, `h1`, `<time>` + author, cover (eager, `srcSet`,
     `sizes`), `RichText variant="article"` in a `max-w-prose` column.
   - `ErrorBoundary` with a "Back to the blog" link inside `ErrorContent`.
-- [ ] **7. Blog UI components** — `BlogCover` (aspect 3/2, `rounded-card`, `object-cover`,
+- [x] **7. Blog UI components** — `BlogCover` (aspect 3/2, `rounded-card`, `object-cover`,
   `width`/`height`/`srcSet`/`sizes`, blush placeholder), `BlogPostCard` (whole card is one link
   with a visible focus ring from `focusRing("onLight")`, `lift` hover with
   `motion-reduce:transform-none`), `BlogArticle`. Add the `article` variant to `RichText`.

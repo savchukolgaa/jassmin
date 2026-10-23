@@ -9,12 +9,12 @@ const renderButton = (props: ButtonProps = {}) =>
   renderToStaticMarkup(createElement(Button, props, "Order Now"));
 
 describe("Button", () => {
-  it("renders a primary button with shadow-md and shadow-lg on hover", () => {
+  it("renders a primary pill button with the brand shadow", () => {
     const html = renderButton();
     expect(html).toMatch(/^<button /);
     expect(html).toContain("bg-primary");
-    expect(html).toContain("shadow-md");
-    expect(html).toContain("hover:shadow-lg");
+    expect(html).toContain("rounded-pill");
+    expect(html).toContain("shadow-button");
     expect(html).toContain("Order Now");
   });
 
@@ -43,8 +43,9 @@ describe("Button", () => {
     expect(html).toContain("Order Now");
   });
 
-  it("renders the secondary and ghost variants", () => {
-    expect(renderButton({ variant: "secondary" })).toContain("border-primary");
+  it("renders the dark, outline-light and ghost variants", () => {
+    expect(renderButton({ variant: "dark" })).toContain("bg-ink");
+    expect(renderButton({ variant: "outline-light" })).toContain("border-white");
     expect(renderButton({ variant: "ghost" })).not.toContain("bg-primary ");
   });
 
@@ -65,7 +66,7 @@ describe("ButtonLink", () => {
     expect(html).toMatch(/^<a /);
     expect(html).toContain('href="/catalog"');
     expect(html).toContain("bg-primary");
-    expect(html).toContain("h-13");
+    expect(html).toContain("min-h-14.5");
     expect(html).toContain("Shop");
   });
 });

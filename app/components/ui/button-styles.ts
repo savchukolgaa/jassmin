@@ -1,6 +1,6 @@
 import { cn } from "~/lib/cn";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonVariant = "primary" | "dark" | "outline-light" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export type ButtonStyleOptions = {
@@ -9,29 +9,37 @@ export type ButtonStyleOptions = {
   className?: string;
 };
 
+// Pill buttons from the C+ design (docs/design.md). The hover scale only runs when motion is allowed.
 const base = cn(
-  "inline-flex items-center justify-center gap-2 rounded-lg font-semibold",
-  "transition-[box-shadow,background-color,color] duration-200",
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+  "inline-flex items-center justify-center gap-2 rounded-pill font-extrabold tracking-tight",
+  "transition-[box-shadow,background-color,color,scale] duration-200",
+  "motion-safe:not-disabled:hover:scale-[1.03]",
+  "focus-visible:outline-3 focus-visible:outline-offset-2",
   "disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none",
 );
 
 const variants: Record<ButtonVariant, string> = {
   primary: cn(
-    "bg-primary text-white shadow-md shadow-primary/25",
-    "hover:bg-primary-dark hover:shadow-lg disabled:bg-primary",
+    "bg-primary text-white shadow-button focus-visible:outline-primary",
+    "hover:bg-primary-dark hover:shadow-button-hover disabled:bg-primary",
   ),
-  secondary: cn(
-    "border border-primary bg-white text-primary dark:bg-gray-950",
-    "hover:bg-primary-light/15 disabled:bg-white dark:disabled:bg-gray-950",
+  // For "Order Now" and other CTAs on blush or pink-tinted sections.
+  dark: "bg-ink text-white focus-visible:outline-ink hover:bg-black disabled:bg-ink",
+  // For use on deep-pink surfaces (header, footer, hero bands).
+  "outline-light": cn(
+    "border-2 border-white text-white focus-visible:outline-white",
+    "hover:bg-white hover:text-primary disabled:bg-transparent disabled:text-white",
   ),
-  ghost: "text-primary hover:bg-primary-light/15 disabled:bg-transparent",
+  ghost: cn(
+    "text-primary-dark focus-visible:outline-primary",
+    "hover:bg-primary/10 disabled:bg-transparent",
+  ),
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-9 px-4 text-sm",
-  md: "h-11 px-6 text-base",
-  lg: "h-13 px-8 text-lg",
+  sm: "min-h-11 px-5 text-sm",
+  md: "min-h-13 px-7 text-base",
+  lg: "min-h-14.5 px-9 text-lg",
 };
 
 /** Class names shared by `Button` and `ButtonLink`, so both always look the same. */

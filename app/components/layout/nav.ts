@@ -2,31 +2,62 @@ import { cn } from "~/lib/cn";
 
 export const ABOUT_LINK = { to: "/#about", label: "About us" } as const;
 export const CONTACTS_LINK = { to: "/#contacts", label: "Kontakt" } as const;
+export const BLOG_LINK = { to: "/blog", label: "Blog" } as const;
 export const CATALOG_LINKS = [
-  { to: "/catalog/men", label: "Men Perfumes" },
-  { to: "/catalog/women", label: "Women Perfumes" },
+  { to: "/catalog/men", label: "Men Perfumes", shortLabel: "Men" },
+  { to: "/catalog/women", label: "Women Perfumes", shortLabel: "Women" },
 ] as const;
 
-const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+const [MEN_CATALOG, WOMEN_CATALOG] = CATALOG_LINKS;
 
-/** Text link in the header nav; `active` highlights the current section. */
-export function navItemClasses(active = false): string {
+/** Links row of the site footer (women first, as in the C+ design). */
+export const FOOTER_LINKS = [
+  { to: WOMEN_CATALOG.to, label: WOMEN_CATALOG.shortLabel },
+  { to: MEN_CATALOG.to, label: MEN_CATALOG.shortLabel },
+  BLOG_LINK,
+  ABOUT_LINK,
+  CONTACTS_LINK,
+] as const;
+
+// On deep pink, hover and active states darken to `primary-dark`: a translucent white overlay
+// would drop white text below 4.5:1.
+
+/**
+ * Which surface a nav item sits on: the deep-pink header/footer bar (`onPrimary`) or a white
+ * panel such as the catalog dropdown and mobile menu (`onLight`).
+ */
+export type NavTone = "onPrimary" | "onLight";
+
+/** 3px focus ring that keeps at least 3:1 contrast with the surface (see docs/design.md). */
+export function focusRing(tone: NavTone = "onPrimary"): string {
   return cn(
-    "inline-flex h-11 items-center gap-1 rounded-lg px-3 text-sm font-medium",
-    "transition-colors hover:text-primary",
-    focusRing,
-    active ? "text-primary" : "text-gray-700 dark:text-gray-200",
+    "focus-visible:outline-3 focus-visible:outline-offset-2",
+    tone === "onPrimary" ? "focus-visible:outline-white" : "focus-visible:outline-primary",
   );
 }
 
-/** Round icon-only link or button in the header (profile, cart, menu). */
-export function iconButtonClasses(active = false): string {
+/** Text link in the header nav; `active` highlights the current section. */
+export function navItemClasses(active = false, tone: NavTone = "onPrimary"): string {
   return cn(
-    "relative inline-flex size-11 items-center justify-center rounded-full",
-    "transition-colors hover:bg-primary-light/15 hover:text-primary",
-    focusRing,
-    active ? "text-primary" : "text-gray-700 dark:text-gray-200",
+    "inline-flex min-h-11 items-center gap-1 rounded-pill px-3 text-sm font-bold transition-colors",
+    focusRing(tone),
+    tone === "onPrimary"
+      ? cn(
+          "text-white hover:bg-primary-dark",
+          active && "underline decoration-2 underline-offset-8",
+        )
+      : cn("hover:bg-blush", active ? "text-primary" : "text-ink hover:text-primary-dark"),
+  );
+}
+
+/** Round icon-only link or button in the header bar (profile, menu). */
+export function iconButtonClasses(active = false, tone: NavTone = "onPrimary"): string {
+  return cn(
+    "relative inline-flex size-11 items-center justify-center rounded-full transition-colors",
+    focusRing(tone),
+    tone === "onPrimary"
+      ? cn("text-white hover:bg-primary-dark", active && "bg-primary-dark")
+      : cn("hover:bg-blush", active ? "text-primary" : "text-ink"),
   );
 }
 

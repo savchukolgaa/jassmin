@@ -1,24 +1,125 @@
 @import "tailwindcss";
 
+/* Option C+ design tokens; see docs/design.md for usage and contrast ratios. */
 @theme {
   --font-sans:
-    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-    "Noto Color Emoji";
+    "Manrope", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
 
-  --color-primary: #ff5c77;
+  --color-primary: #c22f4b;
+  --color-primary-dark: #a8233d;
   --color-primary-light: #ff8fa1;
-  --color-primary-dark: #e0405c;
+  --color-brand-legacy: #ff5c77;
 
-  --shadow-button: 0 4px 6px -1px rgb(255 92 119 / 0.25), 0 2px 4px -2px rgb(255 92 119 / 0.25);
-  --shadow-button-hover:
-    0 10px 15px -3px rgb(255 92 119 / 0.3), 0 4px 6px -4px rgb(255 92 119 / 0.3);
+  --color-ink: #1f1a1c;
+  --color-muted: #5f5558;
+  --color-body: #4a4245;
+  --color-blush: #fff4f5;
+  --color-card: #f7f3f4;
+  --color-line: #e5dadd;
+  --color-on-dark-muted: #d9cfd2;
+  --color-success: #1d6b48;
+  --color-success-bg: #e8f4ee;
+
+  --radius-pill: 999px;
+  --radius-card: 1.5rem;
+  --radius-card-lg: 2rem;
+
+  --shadow-button: 0 4px 6px -1px rgb(194 47 75 / 0.25), 0 2px 4px -2px rgb(194 47 75 / 0.25);
+  --shadow-button-hover: 0 10px 15px -3px rgb(194 47 75 / 0.3), 0 4px 6px -4px rgb(194 47 75 / 0.3);
+
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-pop: pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  --animate-spin-in: spin-in 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  --animate-marquee: marquee 30s linear infinite;
+  --animate-toast: toast 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-white text-ink dark:bg-gray-950;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
   }
+}
+
+/*
+ * Motion (docs/design.md). Keyframes only define their start state, so with animations turned off
+ * (reduced motion below) every element simply shows in its final, visible state.
+ */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes spin-in {
+  from {
+    opacity: 0;
+    transform: rotate(-180deg) scale(0.6);
+  }
+}
+
+/* Scrolls a track holding its content twice, so -50% lands on a seamless loop. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes toast {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.96);
+  }
+}
+
+/* Staggered entrance steps: `animate-fade-up anim-delay-2` starts 160ms later. */
+@utility anim-delay-* {
+  animation-delay: calc(--value(integer) * 80ms);
+}
+
+/* Hover lift for cards. */
+@utility lift {
+  transition:
+    translate 0.25s ease,
+    box-shadow 0.25s ease;
+
+  &:hover {
+    translate: 0 -4px;
+    box-shadow:
+      0 20px 25px -5px rgb(31 26 28 / 0.12),
+      0 8px 10px -6px rgb(31 26 28 / 0.08);
+  }
+}
+
+/* Scroll reveal, only where scroll-driven animations exist; elsewhere content is simply visible. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: fade-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+}
+
+/* Turns off every animation and transition, including the button hover scale and the marquee. */
+@media (prefers-reduced-motion: reduce) {
+  /* biome-ignore-start lint/complexity/noImportantStyles: reduced motion must beat every utility. */
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  /* biome-ignore-end lint/complexity/noImportantStyles: see above. */
 }

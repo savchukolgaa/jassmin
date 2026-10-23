@@ -31,6 +31,7 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 - **Server-only code goes under `app/.server/`** (DB, services, session, env). Never import it from client code; the build fails if you do.
 - Shared enums and DTO types go in `app/lib/` (isomorphic, with no server imports).
 - Shared UI goes in `app/components/`, feature UI in `app/features/<feature>/`.
+- UI work follows the Option C+ design in `docs/design.md` (tokens, typeface, buttons, focus rings, motion).
 
 ## Code rules
 

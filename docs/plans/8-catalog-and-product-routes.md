@@ -253,7 +253,7 @@ Each step is small, ordered and leaves the app working.
     gives `aria-busy` and `opacity-60 transition-opacity` on the grid.
   - Add an `ErrorBoundary` (generic `describeRouteError`).
 
-- [ ] **9. Product detail page.** In `routes/product.tsx`, following the C+ Product canvas page:
+- [x] **9. Product detail page.** In `routes/product.tsx`, following the C+ Product canvas page:
   - The image (left on desktop, top on mobile).
   - Brand, `<h1>` title, fragrance family chip, `formatVolume` and `formatPrice`.
   - `StockStatus` with `stockQuantity` (e.g. "Only 3 left" when ≤ 3), then the description.

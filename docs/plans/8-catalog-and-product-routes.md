@@ -35,7 +35,7 @@ stock status and an "Add to cart" button. All data is loaded in route `loader`s.
 - **Keep the existing route files.** `routes/catalog.tsx` and `routes/product.tsx` stay as they
   are. Don't rename them to `catalog.$gender.tsx` / `products.$id.tsx` (the issue's names), because
   `app/routes.ts` and `app/routes.test.ts` already point at them.
-- **Unisex products appear in both catalogs** (unconfirmed, Q1). The query is
+- **Unisex products appear in both catalogs** (confirmed, Q1). The query is
   `gender in (<catalog gender>, 'unisex')`.
 - **`:id` is the product's `public_id` (UUID v7), not the serial `id`.** An `:id` that isn't a valid
   UUID is a 404 without a DB query.
@@ -86,26 +86,16 @@ stock status and an "Add to cart" button. All data is loaded in route `loader`s.
 - **UI language:** labels are in English, matching the existing header ("Men Perfumes", "Add to
   cart", "In stock", "Out of stock"). Product content stays as seeded (Ukrainian).
 
-## Open questions
-- [ ] **Q1: Do unisex products appear in both the men's and the women's catalog?**
-  - Why it matters: it changes the catalog query and the filter options.
-  - Recommended default: yes, `gender in (<g>, 'unisex')`. The value is a single `CATALOG_GENDERS`
-    mapping in `services/products.ts`, so it's easy to flip.
-  - Affects steps: 3, 4.
-- [ ] **Q2: What should "Add to cart" do before #10 lands?**
-  - Why it matters: posting to `/cart` without an `action` returns a 405 error.
-  - Recommended default: add a minimal `action` to `routes/cart.tsx` that validates
-    `{ intent: "add", productId: uuid }` with zod and returns a typed
-    `{ ok: false, error: "cart-unavailable" }`. `AddToCartForm` shows "Cart coming soon" for that
-    result. #10 replaces the action body.
-  - Affects steps: 6.
-- [ ] **Q3: Should #8 also add a `/catalog/unisex` page?**
-  - Why it matters: the #27 footer mentions a Unisex link "if #8 adds one", and the C+ footer lists
-    one.
-  - Recommended default: no. The issue only asks for men/women, and unisex is covered by Q1.
-  - Affects steps: none (out of scope).
-
 ## Resolved questions
+- **Q1: Do unisex products appear in both the men's and the women's catalog?** Yes:
+  `gender in (<g>, 'unisex')`, via the `GENDER_SCOPE` mapping in `services/products.ts`. (source:
+  confirmed by the issue owner, 2026-10-23)
+- **Q2: What should "Add to cart" do before #10 lands?** A minimal `action` in `routes/cart.tsx`
+  validates `{ intent: "add", productId: uuid }` with zod and returns a typed
+  `{ ok: false, error: "cart-unavailable" }`. `AddToCartForm` shows "Cart coming soon" for that
+  result, and #10 replaces the action body. (source: confirmed by the issue owner, 2026-10-23)
+- **Q3: Should #8 also add a `/catalog/unisex` page?** No, it's out of scope. Unisex products are
+  covered by Q1. (source: confirmed by the issue owner, 2026-10-23)
 - **Which route files do the catalog and product pages use?** `routes/catalog.tsx` and
   `routes/product.tsx`, already registered for `catalog/:gender` and `products/:id`. (source:
   `app/routes.ts`, `app/routes.test.ts`)
@@ -313,7 +303,7 @@ Each step is small, ordered and leaves the app working.
   - Tab order and labels on the filters are accessible.
 
 ## Acceptance criteria
-- [ ] `/catalog/men` shows only men's (and unisex, if confirmed) products; same for
+- [ ] `/catalog/men` shows only men's (and unisex) products; same for
   `/catalog/women`. Steps 2, 3, 4, 8.
 - [ ] Product data is present in the server-rendered HTML. Steps 4, 5, 8, 9 (manual `curl` check).
 - [ ] Filtering and sorting are reflected in the URL and work without JS. Steps 1, 7, 8.

@@ -30,6 +30,24 @@ export const PAYMENT_METHODS = ["card", "cod"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+/**
+ * Behavioural events stored in `user_events.event_type`, which a CHECK constraint limits to
+ * these values.
+ */
+export const EVENT_TYPES = [
+  "page_view",
+  "product_view",
+  "search",
+  "add_to_cart",
+  "remove_from_cart",
+  "checkout_start",
+  "purchase",
+  "login",
+  "review_submit",
+] as const;
+
+export type EventType = (typeof EVENT_TYPES)[number];
+
 /** Bottle sizes a perfume can be sold in, ascending: decants/samples (7, 10 ml) to full bottles. */
 export const PERFUME_VOLUMES_ML = [7, 10, 30, 50, 100] as const;
 

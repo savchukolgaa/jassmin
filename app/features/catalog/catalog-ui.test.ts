@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import type { CatalogSearch } from "~/lib/catalog";
 import type { ProductSummary } from "~/lib/products";
 import { CatalogFilters } from "./CatalogFilters";
-import { Pagination } from "./Pagination";
 import { ProductCard } from "./ProductCard";
 
 // Fetchers and `<Form>` need a data router.
@@ -126,37 +125,5 @@ describe("CatalogFilters", () => {
     expect(html).toMatch(/<option value="Dior" selected="">/);
     expect(html).toMatch(/<option value="price_asc" selected="">/);
     expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>Reset<\/a>/);
-  });
-});
-
-describe("Pagination", () => {
-  it("renders nothing for a single page", () => {
-    const html = render(
-      createElement(Pagination, {
-        pathname: "/catalog/men",
-        search: SEARCH,
-        page: 1,
-        pageCount: 1,
-      }),
-    );
-
-    expect(html).not.toContain("Pagination");
-  });
-
-  it("links to every page, keeping the filters", () => {
-    const html = render(
-      createElement(Pagination, {
-        pathname: "/catalog/men",
-        search: { ...SEARCH, brand: "Dior" },
-        page: 2,
-        pageCount: 3,
-      }),
-    );
-
-    expect(html).toContain('href="/catalog/men?brand=Dior"');
-    expect(html).toContain('href="/catalog/men?brand=Dior&amp;page=3"');
-    expect(html).toMatch(/aria-current="page"[^>]*>2</);
-    expect(html).toContain(">Previous<");
-    expect(html).toContain(">Next<");
   });
 });

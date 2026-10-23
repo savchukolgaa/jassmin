@@ -1,4 +1,4 @@
--- Rolls back 0002_product_variants.sql. Cart lines for several sizes of one product would break
+-- Rolls back 0003_product_variants.sql. Cart lines for several sizes of one product would break
 -- the restored unique (cart_id, product_id), so all but the oldest line per product are dropped.
 ALTER TABLE "cart_items" DROP CONSTRAINT "cart_items_cart_id_variant_id_unique";--> statement-breakpoint
 DELETE FROM "cart_items" a USING "cart_items" b

@@ -19,8 +19,15 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1792763278993,
-      "tag": "0002_product_variants",
+      "when": 1792761322608,
+      "tag": "0002_analytics_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792765470738,
+      "tag": "0003_product_variants",
       "breakpoints": true
     }
   ]

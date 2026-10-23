@@ -243,7 +243,7 @@ Each step is small, ordered and leaves the app working.
     - The pagination hrefs keep the filters.
     - Use `createMemoryRouter` / `RouterProvider` where a fetcher needs a data router.
 
-- [ ] **8. Catalog page.** Replace the placeholder in `routes/catalog.tsx`:
+- [x] **8. Catalog page.** Replace the placeholder in `routes/catalog.tsx`:
   - An `<h1>` with the title and a "N perfumes" count, then `CatalogFilters`.
   - A responsive grid of `ProductCard`s (1 col at 375px, 2 at `sm`, 3–4 at `lg`), then
     `Pagination`.

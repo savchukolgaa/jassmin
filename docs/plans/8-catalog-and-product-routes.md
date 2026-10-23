@@ -210,7 +210,7 @@ Each step is small, ordered and leaves the app working.
   - `ErrorBoundary` uses the product-specific 404 copy.
   - Check: `/products/not-a-uuid` and an unknown UUID both render the 404 inside the shop layout.
 
-- [ ] **6. Add-to-cart form and cart stub.**
+- [x] **6. Add-to-cart form and cart stub.**
   - Create `app/features/cart/AddToCartForm.tsx` with props `{ productId: string; inStock: boolean;
     size?: ButtonSize }`. It uses `useFetcher<typeof cartAction>()`, hidden inputs for `intent` and
     `productId`, and a `Button` that's `disabled={!inStock}` and has

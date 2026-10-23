@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/9
 Branch: `issue/9`
 Worktree: `../jassmin-worktrees/issue-9`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Customers can create an account, log in and log out so they can track orders and check out faster.
@@ -242,7 +242,7 @@ Each step is small, ordered, and leaves the app in a working state.
   returning `{ fullName }`. The page keeps the placeholder content (the full dashboard is #12),
   adds "Hi, {fullName}" and a `<Form method="post" action="/logout">` with a secondary "Log out"
   button. Update `routes.test.ts` so it expects `/logout` outside the shop layout.
-- [ ] **10. Update the docs and do the final checks.** In `app/.server/AGENTS.md`, add an "Auth"
+- [x] **10. Update the docs and do the final checks.** In `app/.server/AGENTS.md`, add an "Auth"
   section covering `requireUser` for protected loaders, never returning `passwordHash`,
   `safeRedirect` for every redirect target, and `onUserAuthenticated` as the place for post-login
   side effects. Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
@@ -273,12 +273,29 @@ Each step is small, ordered, and leaves the app in a working state.
   7. `/login?redirectTo=//evil.com` lands you on `/account` after login.
   8. While logged in, visiting `/login` or `/register` redirects away.
 
+## Verification results
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (26 files, 180 tests, DB integration tests included)
+  and `pnpm build` pass.
+- Checked without JS against the production build (`pnpm start`) with curl:
+  - Logged out, `/account` → `302 /login?redirectTo=%2Faccount`.
+  - `/register?utm_source=Instagram` renders `acquisitionChannel=instagram`.
+  - Invalid input → 400 with field errors.
+  - Registering → `302 /account` with an `HttpOnly; Secure; SameSite=Lax` cookie, and the first
+    SSR of `/account` shows "My account" in the header.
+  - Logged in, `/login?redirectTo=/cart` → `/cart`.
+  - A duplicate email in a different case is rejected.
+  - `GET /logout` only redirects; `POST /logout` clears the cookie.
+  - A wrong password and an unknown email give the same message.
+  - `redirectTo=/products/1` is honoured; `//evil.com` → `/account`.
+  - The DB row has an `$argon2id$` hash, `acquisition_channel = instagram`, and `last_login_at`
+    moved forward on later logins. The test user was deleted afterwards.
+
 ## Acceptance criteria
-- [ ] Users can register, log in and log out (forms work without client JS) — steps 5, 7, 8, 9
-- [ ] Passwords are never stored or returned in plain text — steps 1, 2 (`PublicUser` without the hash), 5, 7, 8 (passwords never echoed back)
-- [ ] `last_login_at` updates on each successful login — steps 2, 5, 8
-- [ ] Protected routes redirect to `/login` and return to the original page after login — steps 4 (`safeRedirect`), 5 (`requireUser`), 8, 9
-- [ ] Header reflects logged-in state on first render — step 6
+- [x] Users can register, log in and log out (forms work without client JS) — steps 5, 7, 8, 9
+- [x] Passwords are never stored or returned in plain text — steps 1, 2 (`PublicUser` without the hash), 5, 7, 8 (passwords never echoed back)
+- [x] `last_login_at` updates on each successful login — steps 2, 5, 8
+- [x] Protected routes redirect to `/login` and return to the original page after login — steps 4 (`safeRedirect`), 5 (`requireUser`), 8, 9
+- [x] Header reflects logged-in state on first render — step 6
 
 ## Out of scope
 - Recording the `login` event and linking anonymous sessions and events (#18, after #5). Only the

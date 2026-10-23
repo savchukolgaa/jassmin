@@ -33,6 +33,17 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 ## Session: `session.ts`
 
 - Cookie session storage (`__jassmin_session`, httpOnly, sameSite lax, secure in production). Use `getSession`, `commitSession` and `destroySession`, and type new fields in `SessionData`.
+- `createUserSession({ request, userId, redirectTo })` logs a user in (sets `userId`, returns the redirect with `Set-Cookie`), and `logout(request)` destroys the session. `getUserId` only reads the cookie; use `getUser` when you need to know that the user exists.
+
+## Auth: `services/auth.ts`, `password.ts`, `rate-limit.ts`
+
+- Protected loaders and actions call `requireUser(request)`, which throws a redirect to `/login?redirectTo=<current path>` when logged out. Use `getUser(request)` (`null` when logged out) when the page works for both.
+- Never select or return `users.password_hash` outside `findUserByEmail` / `verifyLogin`. `PublicUser` is the shape the app gets.
+- Passwords are hashed with argon2id in `password.ts` (`hashPassword`, `verifyPassword`). Emails are trimmed and lowercased by the zod schemas in `~/lib/auth` before every lookup or insert.
+- Pass every redirect target that comes from the request (e.g. `redirectTo`) through `safeRedirect` from `~/lib/auth`.
+- `verifyLogin` updates `last_login_at` (a churn-model feature) on every successful login; `registerUser` sets it too.
+- Side effects after a login or registration (linking analytics visitors, the `login` event, merging the guest cart) go in `onUserAuthenticated`. It must never make logging in fail.
+- Failed logins are rate-limited in memory (`loginLimiters`: 5 per email, 20 per IP per 15 minutes). The counters are per process and reset on restart.
 
 ## Tests
 

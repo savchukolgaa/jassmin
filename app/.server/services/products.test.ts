@@ -12,6 +12,15 @@ const titlesOf = (genders: string[]) =>
 const PAGING_BRAND = "Paging House";
 const PAGING_COUNT = 13;
 
+// A men's product without variants: it has nothing for sale, so it's never listed.
+const UNSOLD_BRAND = "Unsold House";
+
+const sampleNamed = (prefix: string) => {
+  const product = SAMPLE_PRODUCTS.find((p) => p.title.startsWith(prefix));
+  if (!product) throw new Error(`No sample product ${prefix}`);
+  return product;
+};
+
 // Integration test: runs only when a database is configured, on its own throwaway database.
 describe.skipIf(!hasDatabase)("products service", () => {
   let testDb: TestDatabase;
@@ -20,19 +29,32 @@ describe.skipIf(!hasDatabase)("products service", () => {
     const { createTestDatabase } = await import("../db/test-utils");
     const { migrateLatest } = await import("../db/migrator");
     const { seedProducts } = await import("../db/seed");
-    const { products } = await import("../db/schema");
+    const { productVariants, products } = await import("../db/schema");
     testDb = await createTestDatabase("jassmin_products_test");
     await migrateLatest(testDb.db);
     await seedProducts(testDb.db);
-    await testDb.db.insert(products).values(
-      Array.from({ length: PAGING_COUNT }, (_, i) => ({
-        title: `Paging ${i}`,
-        brand: PAGING_BRAND,
-        gender: "women" as const,
-        price: `${100 + i}.00`,
-        volumeMl: 30,
-      })),
-    );
+    const paging = await testDb.db
+      .insert(products)
+      .values(
+        Array.from({ length: PAGING_COUNT }, (_, i) => ({
+          title: `Paging ${i}`,
+          brand: PAGING_BRAND,
+          gender: "women" as const,
+          price: `${100 + i}.00`,
+          volumeMl: 30,
+        })),
+      )
+      .returning({ id: products.id });
+    await testDb.db
+      .insert(productVariants)
+      .values(paging.map(({ id }, i) => ({ productId: id, volumeMl: 30, price: `${100 + i}.00` })));
+    await testDb.db.insert(products).values({
+      title: "Unsold",
+      brand: UNSOLD_BRAND,
+      gender: "men",
+      price: "1.00",
+      volumeMl: 75,
+    });
   });
 
   afterAll(async () => {
@@ -74,15 +96,15 @@ describe.skipIf(!hasDatabase)("products service", () => {
     expect((await catalog("men", { brand: "Nobody" })).products).toEqual([]);
   });
 
-  it("sorts by price and by newest", async () => {
+  it("sorts by the lowest variant price and by newest", async () => {
     const prices = (await catalog("men", { sort: "price_asc" })).products.map((p) =>
-      Number(p.price),
+      Number(p.minPrice),
     );
     expect(prices).toEqual([...prices].sort((a, b) => a - b));
 
-    const desc = (await catalog("men", { sort: "price_desc" })).products.map((p) => p.price);
+    const desc = (await catalog("men", { sort: "price_desc" })).products.map((p) => p.minPrice);
     expect(desc).toEqual(
-      (await catalog("men", { sort: "price_asc" })).products.map((p) => p.price).reverse(),
+      (await catalog("men", { sort: "price_asc" })).products.map((p) => p.minPrice).reverse(),
     );
 
     // Seeded together, so the newest is the last inserted.
@@ -112,23 +134,89 @@ describe.skipIf(!hasDatabase)("products service", () => {
     );
   });
 
-  it("returns a product's details by public id", async () => {
-    const { getProduct } = await import("./products");
-    const sauvage = SAMPLE_PRODUCTS.find((p) => p.title.startsWith("Sauvage"));
+  it("summarises each product's variants on its card", async () => {
+    const { products } = await catalog("men", { brand: "Giorgio Armani" });
+    const [acqua] = products;
 
-    expect(await getProduct(sauvage?.publicId ?? "", testDb.db)).toEqual({
-      id: sauvage?.publicId,
+    // Sold out in every size: listed, out of stock, and the default is the smallest size.
+    expect(acqua).toMatchObject({
+      minPrice: "1990.00",
+      hasPriceRange: true,
+      volumes: [30, 100],
+      inStock: false,
+      defaultVariant: { id: expect.any(String), volumeMl: 30 },
+    });
+
+    const coco = (await catalog("women", { brand: "Chanel" })).products[0];
+    // 7 ml is the smallest size in stock (10 ml is sold out).
+    expect(coco).toMatchObject({
+      minPrice: "990.00",
+      hasPriceRange: true,
+      volumes: [7, 10, 30, 50, 100],
+      inStock: true,
+      defaultVariant: { volumeMl: 7 },
+    });
+
+    const testers = (await catalog("women", { brand: "Jassmin" })).products[0];
+    expect(testers).toMatchObject({ hasPriceRange: false, volumes: [10], packSize: 3 });
+  });
+
+  it("doesn't list products without variants", async () => {
+    const page = await catalog("men", { brand: UNSOLD_BRAND });
+
+    expect(page.products).toEqual([]);
+    expect(page.total).toBe(0);
+    expect(page.filterOptions.brands).not.toContain(UNSOLD_BRAND);
+  });
+
+  it("returns a product's details with its variants by public id, smallest first", async () => {
+    const { getProduct } = await import("./products");
+    const sauvage = sampleNamed("Sauvage");
+
+    expect(await getProduct(sauvage.publicId, testDb.db)).toEqual({
+      id: sauvage.publicId,
       title: "Sauvage Eau de Toilette",
       brand: "Dior",
       gender: "men",
-      price: "4450.00",
-      volumeMl: 100,
       packSize: 1,
       imageUrl: null,
-      inStock: true,
-      description: sauvage?.description,
+      description: sauvage.description,
       fragranceFamily: "фужерні",
-      stockQuantity: 12,
+      variants: [
+        { id: expect.any(String), volumeMl: 10, price: "790.00", stockQuantity: 15, inStock: true },
+        { id: expect.any(String), volumeMl: 50, price: "3290.00", stockQuantity: 6, inStock: true },
+        {
+          id: expect.any(String),
+          volumeMl: 100,
+          price: "4450.00",
+          stockQuantity: 12,
+          inStock: true,
+        },
+      ],
+    });
+  });
+
+  it("checks that a variant belongs to the product and is in stock", async () => {
+    const { checkVariantForCart, getProduct } = await import("./products");
+    const coco = await getProduct(sampleNamed("Coco").publicId, testDb.db);
+    const sauvage = await getProduct(sampleNamed("Sauvage").publicId, testDb.db);
+    const size = (volumeMl: number) => coco?.variants.find((v) => v.volumeMl === volumeMl)?.id;
+    const check = (variantId: string | undefined, productId = coco?.id) =>
+      checkVariantForCart(productId ?? "", variantId ?? "", testDb.db);
+
+    expect(await check(size(50))).toEqual({
+      ok: true,
+      variant: expect.objectContaining({ volumeMl: 50, price: "6850.00", stockQuantity: 6 }),
+    });
+    expect(await check(size(10))).toEqual({ ok: false, error: "out-of-stock" });
+    expect(await check(sauvage?.variants[0]?.id)).toEqual({ ok: false, error: "invalid-variant" });
+    expect(await check("01a1652b-6e25-7c00-8000-000000000000")).toEqual({
+      ok: false,
+      error: "invalid-variant",
+    });
+    expect(await check(size(50), "01a1652b-6e25-7c00-8000-000000000000")).toEqual({
+      ok: false,
+      error: "invalid-variant",
     });
   });
 

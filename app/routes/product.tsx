@@ -3,13 +3,10 @@ import { z } from "zod";
 import { getProduct } from "~/.server/services/products";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
-import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { ProductImage } from "~/features/catalog/ProductImage";
-import { StockStatus } from "~/features/catalog/StockStatus";
+import { ProductPurchase } from "~/features/product/ProductPurchase";
 import { CATALOG_TITLES, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
-import { formatPrice } from "~/lib/money";
-import { formatVolume } from "~/lib/products";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/product";
 
@@ -75,28 +72,12 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
             {product.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-2">
-            {product.fragranceFamily && (
-              <span className="rounded-pill bg-blush px-3 py-1 text-sm font-bold text-primary-dark">
-                {product.fragranceFamily}
-              </span>
-            )}
-            <span className="text-muted">{formatVolume(product)}</span>
-          </div>
-          <p className="animate-spin-in text-3xl font-extrabold text-ink">
-            {formatPrice(product.price)}
-          </p>
-          <StockStatus
-            inStock={product.inStock}
-            stockQuantity={product.stockQuantity}
-            className="self-start"
-          />
-          <AddToCartForm
-            productId={product.id}
-            inStock={product.stockQuantity > 0}
-            size="lg"
-            className="max-w-sm"
-          />
+          {product.fragranceFamily && (
+            <span className="self-start rounded-pill bg-blush px-3 py-1 text-sm font-bold text-primary-dark">
+              {product.fragranceFamily}
+            </span>
+          )}
+          <ProductPurchase product={product} />
           {product.description && (
             <section aria-labelledby="description-heading" className="mt-2">
               <h2

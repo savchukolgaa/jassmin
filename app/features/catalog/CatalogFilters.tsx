@@ -16,7 +16,7 @@ export interface CatalogFiltersProps {
 }
 
 // The muted border keeps the 3:1 boundary contrast that `line` lacks (docs/design.md).
-const selectClasses = `min-h-11 w-full rounded-pill border border-muted bg-white px-4 text-base text-ink ${focusRing("onLight")}`;
+export const selectClasses = `min-h-11 w-full rounded-pill border border-muted bg-white px-4 text-base text-ink ${focusRing("onLight")}`;
 
 /**
  * A plain GET form, so filters live in the URL and work without JS. It doesn't send `page`, so

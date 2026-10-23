@@ -6,6 +6,7 @@ import {
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
+  PERFUME_VOLUMES_ML,
 } from "./enums";
 
 describe("enum values", () => {
@@ -49,5 +50,9 @@ describe("enum values", () => {
       "login",
       "review_submit",
     ]);
+  });
+
+  it("lists the perfume volumes in ascending order", () => {
+    expect(PERFUME_VOLUMES_ML).toEqual([7, 10, 30, 50, 100]);
   });
 });

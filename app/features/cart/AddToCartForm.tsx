@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
 import type { ButtonSize } from "~/components/ui/button-styles";
@@ -6,13 +7,28 @@ import { CART_ERROR_MESSAGES, type CartActionResult } from "~/lib/cart";
 export interface AddToCartFormProps {
   /** The product's public id. */
   productId: string;
+  /** The chosen variant's public id, sent as a hidden field. Omit it when `children` render a
+   * `variantId` field (the product page's volume select). */
+  variantId?: string;
   inStock: boolean;
+  /** The button text when in stock. */
+  label?: string;
   size?: ButtonSize;
   className?: string;
+  /** Fields rendered inside the form, before the button. */
+  children?: ReactNode;
 }
 
 /** Posts `intent=add` to the cart action without navigating away. */
-export function AddToCartForm({ productId, inStock, size = "md", className }: AddToCartFormProps) {
+export function AddToCartForm({
+  productId,
+  variantId,
+  inStock,
+  label = "Add to cart",
+  size = "md",
+  className,
+  children,
+}: AddToCartFormProps) {
   const fetcher = useFetcher<CartActionResult>({ key: `add-to-cart-${productId}` });
   const error = fetcher.state === "idle" && fetcher.data?.ok === false ? fetcher.data.error : null;
 
@@ -20,6 +36,8 @@ export function AddToCartForm({ productId, inStock, size = "md", className }: Ad
     <fetcher.Form method="post" action="/cart" className={className}>
       <input type="hidden" name="intent" value="add" />
       <input type="hidden" name="productId" value={productId} />
+      {variantId && <input type="hidden" name="variantId" value={variantId} />}
+      {children}
       <Button
         type="submit"
         size={size}
@@ -27,7 +45,7 @@ export function AddToCartForm({ productId, inStock, size = "md", className }: Ad
         disabled={!inStock}
         loading={fetcher.state !== "idle"}
       >
-        {inStock ? "Add to cart" : "Out of stock"}
+        {inStock ? label : "Out of stock"}
       </Button>
       <p aria-live="polite" className="mt-2 min-h-5 text-sm text-muted">
         {error ? CART_ERROR_MESSAGES[error] : null}

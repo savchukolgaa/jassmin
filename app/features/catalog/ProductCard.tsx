@@ -1,8 +1,9 @@
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
+import { ButtonLink } from "~/components/ui/ButtonLink";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { formatPrice } from "~/lib/money";
-import { formatVolume, type ProductSummary } from "~/lib/products";
+import { formatVolume, formatVolumes, type ProductSummary } from "~/lib/products";
 import { ProductImage } from "./ProductImage";
 
 export function productHref(id: string): string {
@@ -11,6 +12,12 @@ export function productHref(id: string): string {
 
 export function ProductCard({ product }: { product: ProductSummary }) {
   const href = productHref(product.id);
+  const price = formatPrice(product.minPrice);
+  // The card can't show a size picker, so its button says which size it adds.
+  const defaultSize = formatVolume({
+    volumeMl: product.defaultVariant.volumeMl,
+    packSize: product.packSize,
+  });
 
   return (
     <article className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line">
@@ -26,15 +33,26 @@ export function ProductCard({ product }: { product: ProductSummary }) {
             {product.title}
           </Link>
         </h2>
-        <p className="text-sm text-muted">{formatVolume(product)}</p>
-        <p className="mt-auto pt-3 text-xl font-extrabold text-ink">{formatPrice(product.price)}</p>
+        <p className="text-sm text-muted">{formatVolumes(product)}</p>
+        <p className="mt-auto pt-3 text-xl font-extrabold text-ink">
+          {product.hasPriceRange ? `from ${price}` : price}
+        </p>
       </div>
-      <AddToCartForm
-        productId={product.id}
-        inStock={product.inStock}
-        size="sm"
-        className="px-2 pt-3"
-      />
+      <div className="flex flex-wrap items-start gap-2 px-2 pt-3">
+        <AddToCartForm
+          productId={product.id}
+          variantId={product.defaultVariant.id}
+          inStock={product.inStock}
+          label={`Add ${defaultSize}`}
+          size="sm"
+          className="min-w-32 flex-1"
+        />
+        {product.volumes.length > 1 && (
+          <ButtonLink to={href} variant="ghost" size="sm" className="min-w-32 flex-1">
+            Choose volume
+          </ButtonLink>
+        )}
+      </div>
     </article>
   );
 }

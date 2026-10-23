@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { GENDERS } from "~/lib/enums";
+import { GENDERS, PERFUME_VOLUMES_ML } from "~/lib/enums";
 import { SAMPLE_PRODUCTS } from "./seed-data";
 import { hasDatabase, type TestDatabase } from "./test-utils";
 
@@ -22,6 +22,41 @@ describe("SAMPLE_PRODUCTS", () => {
       expect(product.stockQuantity ?? 0).toBeGreaterThanOrEqual(0);
       expect(product.fragranceFamily).toBeTruthy();
     }
+  });
+
+  it("sells each product in unique allowed sizes with valid prices and stock", () => {
+    for (const product of SAMPLE_PRODUCTS) {
+      const volumes = product.variants.map((v) => v.volumeMl);
+
+      expect(volumes.length).toBeGreaterThan(0);
+      expect(new Set(volumes).size).toBe(volumes.length);
+      for (const variant of product.variants) {
+        expect(PERFUME_VOLUMES_ML).toContain(variant.volumeMl);
+        expect(variant.price).toMatch(/^\d{1,8}\.\d{2}$/);
+        expect(variant.stockQuantity).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it("repeats the legacy size as one of the variants", () => {
+    for (const product of SAMPLE_PRODUCTS) {
+      expect(product.variants).toContainEqual({
+        volumeMl: product.volumeMl,
+        price: product.price,
+        stockQuantity: product.stockQuantity ?? 0,
+      });
+    }
+  });
+
+  it("includes several sizes, sold-out sizes and a sold-out product", () => {
+    const inStock = (p: (typeof SAMPLE_PRODUCTS)[number]) =>
+      p.variants.filter((v) => v.stockQuantity > 0).length;
+
+    expect(SAMPLE_PRODUCTS.filter((p) => p.variants.length > 2).length).toBeGreaterThan(3);
+    expect(SAMPLE_PRODUCTS.some((p) => inStock(p) > 0 && inStock(p) < p.variants.length)).toBe(
+      true,
+    );
+    expect(SAMPLE_PRODUCTS.some((p) => inStock(p) === 0)).toBe(true);
   });
 
   it("has a unique UUID v7 publicId per product", () => {
@@ -49,12 +84,31 @@ describe.skipIf(!hasDatabase)("seedProducts", () => {
     await testDb?.drop();
   });
 
-  it("inserts the sample products once", async () => {
-    const { seedProducts } = await import("./seed");
-    const { products } = await import("./schema");
+  const VARIANT_COUNT = SAMPLE_PRODUCTS.reduce((sum, p) => sum + p.variants.length, 0);
 
-    expect(await seedProducts(testDb.db)).toEqual({ inserted: SAMPLE_PRODUCTS.length });
-    expect(await seedProducts(testDb.db)).toEqual({ inserted: 0 });
+  it("inserts the sample products and their sizes once", async () => {
+    const { seedProducts } = await import("./seed");
+    const { productVariants, products } = await import("./schema");
+
+    expect(await seedProducts(testDb.db)).toEqual({
+      inserted: SAMPLE_PRODUCTS.length,
+      variantsInserted: VARIANT_COUNT,
+    });
+    expect(await seedProducts(testDb.db)).toEqual({ inserted: 0, variantsInserted: 0 });
     expect(await testDb.db.$count(products)).toBe(SAMPLE_PRODUCTS.length);
+    expect(await testDb.db.$count(productVariants)).toBe(VARIANT_COUNT);
+  });
+
+  it("adds missing sizes to products that already exist", async () => {
+    const { seedProducts } = await import("./seed");
+    const { productVariants } = await import("./schema");
+    const { inArray } = await import("drizzle-orm");
+
+    await testDb.db.delete(productVariants).where(inArray(productVariants.volumeMl, [7, 10]));
+    const missing = VARIANT_COUNT - (await testDb.db.$count(productVariants));
+
+    expect(missing).toBeGreaterThan(0);
+    expect(await seedProducts(testDb.db)).toEqual({ inserted: 0, variantsInserted: missing });
+    expect(await testDb.db.$count(productVariants)).toBe(VARIANT_COUNT);
   });
 });

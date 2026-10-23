@@ -2,7 +2,7 @@ import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { AnalyticsSession, UserEvent } from "~/lib/analytics";
-import type { Cart, CartItem, Order, OrderItem } from "~/lib/commerce";
+import type { Cart, CartItem, Order, OrderItem, ProductVariant } from "~/lib/commerce";
 import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES } from "~/lib/enums";
 import {
   cartItems,
@@ -14,6 +14,7 @@ import {
   orders,
   paymentStatusType,
   products,
+  productVariants,
   sessions,
   userEvents,
   users,
@@ -115,6 +116,36 @@ describe("products", () => {
   });
 });
 
+describe("product_variants", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(productVariants)).toEqual({
+      id: ["serial", true, true],
+      publicId: ["uuid", true, true],
+      productId: ["integer", true, false],
+      volumeMl: ["integer", true, false],
+      price: ["numeric(10, 2)", true, false],
+      stockQuantity: ["integer", true, true],
+      createdAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("cascades product deletes and has the checks, uniques and product index", () => {
+    const { columns } = getTableConfig(productVariants);
+
+    expect(describeForeignKeys(productVariants)).toEqual({ productId: ["products", "cascade"] });
+    expect(describeConstraints(productVariants)).toEqual({
+      checks: [
+        "product_variants_price_check",
+        "product_variants_stock_quantity_check",
+        "product_variants_volume_ml_check",
+      ],
+      uniques: ["product_variants_product_id_volume_ml_unique"],
+      indexes: ["product_variants_product_id_idx"],
+    });
+    expect(columns.find((c) => c.name === "publicId")?.isUnique).toBe(true);
+  });
+});
+
 describe("carts", () => {
   it("has the specified columns", () => {
     expect(describeColumns(carts)).toEqual({
@@ -153,19 +184,21 @@ describe("cart_items", () => {
       id: ["serial", true, true],
       cartId: ["integer", true, false],
       productId: ["integer", true, false],
+      variantId: ["integer", true, false],
       quantity: ["integer", true, true],
       addedAt: ["timestamp with time zone", true, true],
     });
   });
 
-  it("cascades deletes and has the quantity check and the unique (cart_id, product_id)", () => {
+  it("cascades deletes and has the quantity check and the unique (cart_id, variant_id)", () => {
     expect(describeForeignKeys(cartItems)).toEqual({
       cartId: ["carts", "cascade"],
       productId: ["products", "cascade"],
+      variantId: ["product_variants", "cascade"],
     });
     expect(describeConstraints(cartItems)).toEqual({
       checks: ["cart_items_quantity_check"],
-      uniques: ["cart_items_cart_id_product_id_unique"],
+      uniques: ["cart_items_cart_id_variant_id_unique"],
       indexes: [],
     });
   });
@@ -218,15 +251,18 @@ describe("order_items", () => {
       id: ["serial", true, true],
       orderId: ["integer", true, false],
       productId: ["integer", false, false],
+      variantId: ["integer", false, false],
+      volumeMl: ["integer", false, false],
       quantity: ["integer", true, false],
       priceAtPurchase: ["numeric(10, 2)", true, false],
     });
   });
 
-  it("cascades order deletes and keeps the row when its product is deleted", () => {
+  it("cascades order deletes and keeps the row when its product or variant is deleted", () => {
     expect(describeForeignKeys(orderItems)).toEqual({
       orderId: ["orders", "cascade"],
       productId: ["products", "set null"],
+      variantId: ["product_variants", "set null"],
     });
     expect(describeConstraints(orderItems)).toEqual({
       checks: ["order_items_price_at_purchase_check", "order_items_quantity_check"],
@@ -238,6 +274,7 @@ describe("order_items", () => {
 
 describe("shared commerce types", () => {
   it("match the rows the tables return", () => {
+    expectTypeOf<typeof productVariants.$inferSelect>().toEqualTypeOf<ProductVariant>();
     expectTypeOf<typeof carts.$inferSelect>().toEqualTypeOf<Cart>();
     expectTypeOf<typeof cartItems.$inferSelect>().toEqualTypeOf<CartItem>();
     expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();

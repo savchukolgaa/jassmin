@@ -142,7 +142,7 @@ feature.
 | create | `app/features/auth/AuthLayout.tsx`, `TextField.tsx` | Shared C+ two-column layout (with tabs, `FormAlert`) and field with error |
 | modify | `app/routes/register.tsx` (+ new `register.test.ts`) | loader + action + form; action tests with mocked services |
 | modify | `app/routes/login.tsx` (+ new `login.test.ts`) | loader + action + form; action tests incl. rate limiting |
-| create | `app/routes/logout.ts` | POST-only logout |
+| create | `app/routes/logout.ts` (+ `.test.ts`) | POST-only logout |
 | modify | `app/routes/account.tsx` | `requireUser`, logout button |
 | modify | `app/routes.ts`, `app/routes.test.ts` | Register `/logout` outside the shop layout |
 | modify | `app/.server/AGENTS.md` | Document the auth helpers |
@@ -236,7 +236,7 @@ Each step is small, ordered, and leaves the app in a working state.
     `createUserSession({ redirectTo: safeRedirect(redirectTo) })`.
   - UI: email and password (`autoComplete="current-password"`), and a link to `/register` that
     keeps `redirectTo`.
-- [ ] **9. Add `/logout` and protect `/account`.** Add `route("logout", "routes/logout.ts")` in
+- [x] **9. Add `/logout` and protect `/account`.** Add `route("logout", "routes/logout.ts")` in
   `app/routes.ts` next to `admin/*`, outside the layout. `routes/logout.ts`: `action` → `logout(request)`;
   `loader` → `redirect("/")`. `account.tsx` `loader`: `const user = await requireUser(request)`,
   returning `{ fullName }`. The page keeps the placeholder content (the full dashboard is #12),

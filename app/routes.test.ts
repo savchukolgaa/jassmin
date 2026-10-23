@@ -24,6 +24,10 @@ describe("route config", () => {
     ]);
   });
 
+  it("keeps the POST-only logout route outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "logout")?.file).toBe("routes/logout.ts");
+  });
+
   it("keeps the admin area outside the shop layout", () => {
     expect(routes.find((entry) => entry.path === "admin/*")?.file).toBe("routes/admin.tsx");
   });

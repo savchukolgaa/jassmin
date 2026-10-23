@@ -169,7 +169,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   - keep all other tests as they are
 
   Add the header pairs to `theme.test.ts`.
-- [ ] **7. Footer.** Create `app/components/layout/Footer.tsx`:
+- [x] **7. Footer.** Create `app/components/layout/Footer.tsx`:
   - `<footer className="relative overflow-hidden bg-primary text-white">`, with a container holding
     a `<nav aria-label="Footer">` list of `FOOTER_LINKS` (white, `onPrimary` focus ring, `min-h-11`
     tap targets, wrapping with `flex-wrap`) and `<p>© {year} Jassmin</p>`

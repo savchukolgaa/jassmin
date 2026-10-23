@@ -1,5 +1,7 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from "react-router";
+import { getLocale } from "~/.server/locale";
 import { ErrorContent } from "~/components/layout/ErrorContent";
+import { DEFAULT_LOCALE, I18nProvider } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -13,9 +15,18 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+// Runs on every request and after every action, so switching language (`routes/locale.ts`)
+// re-renders the page in the new locale.
+export async function loader({ request }: Route.LoaderArgs) {
+  return { locale: await getLocale(request) };
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  // `undefined` when the root loader failed; the error page then renders in the default locale.
+  const locale = useRouteLoaderData<typeof loader>("root")?.locale ?? DEFAULT_LOCALE;
+
   return (
-    <html lang="uk">
+    <html lang={locale}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -23,7 +34,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <I18nProvider locale={locale}>{children}</I18nProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

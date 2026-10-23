@@ -219,7 +219,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   calls it. Update `money.test.ts` for `uk` (`6 850 ₴`, normalising ` `/` `) and `en`
   (`₴6,850`).
 
-- [ ] **3. Server locale resolution.** `app/.server/locale.ts`: `localeCookie` (D9),
+- [x] **3. Server locale resolution.** `app/.server/locale.ts`: `localeCookie` (D9),
   `parseAcceptLanguage(header: string | null): Locale | undefined` (D10) and
   `getLocale(request): Promise<Locale>`. `getLocale` tries the parsed cookie when `isLocale`
   accepts it, then `parseAcceptLanguage`, then `DEFAULT_LOCALE`. Also
@@ -227,7 +227,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   invalid cookie falls back, `en-US,en;q=0.9` → `en`, `de, en;q=0.5` → `en`, `ru` → `uk`, an
   empty or missing header → `uk`.
 
-- [ ] **4. Root loader, `<html lang>` and the provider.**
+- [x] **4. Root loader, `<html lang>` and the provider.**
   - `app/root.tsx`: `export async function loader({ request }) { return { locale: await
     getLocale(request) }; }`. In `Layout`, read `useRouteLoaderData<typeof loader>("root")`
     (`undefined` on a root error, so fall back to `DEFAULT_LOCALE`), render `<html lang={locale}>`
@@ -239,7 +239,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   - Check manually: `curl -H "Accept-Language: en" localhost:…/` returns `<html lang="en">`,
     and the default is `lang="uk"`.
 
-- [ ] **5. `locale` resource route.** Create `app/routes/locale.ts` as in D11 and register
+- [x] **5. `locale` resource route.** Create `app/routes/locale.ts` as in D11 and register
   `route("locale", "routes/locale.ts")` next to `logout` in `app/routes.ts`, with a comment. Add a
   "keeps the locale route outside the shop layout" case to `routes.test.ts`.
   `locale.test.ts` checks that a valid POST returns a 302 to `redirectTo` with a `locale=` cookie

@@ -140,7 +140,7 @@ outage shows a 503.
 | create | `app/routes/blog-post.test.ts` | Loader + meta tests with mocked `~/.server/cms/content` |
 
 ## Steps
-- [ ] **1. Article Markdown profile** — In `app/.server/markdown.ts`, add
+- [x] **1. Article Markdown profile** — In `app/.server/markdown.ts`, add
   `renderArticleMarkdown(markdown: string, options: { mediaBaseUrl: string }): string`. Build its
   `sanitize-html` options from the existing ones (same link transform, `allowProtocolRelative:
   false`) plus `h2`, `hr`, `code`, `pre`, `del`, `img`; `transformTags.h1` → `h2`;

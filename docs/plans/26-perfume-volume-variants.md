@@ -202,7 +202,7 @@ chosen variant.
   `rollbackLatest` and migrate again. Add this as an integration test (`describe.skipIf(!hasDatabase)`,
   `createTestDatabase`) next to the existing migrator tests. **If #5 or #14 merged first, rebase
   and regenerate as described under Dependencies before continuing.**
-- [ ] **4. Lib DTOs and helpers**: in `app/lib/products.ts` add `ProductVariant { id; volumeMl;
+- [x] **4. Lib DTOs and helpers** (the `ProductSummary`/`ProductDetail` reshaping moved to step 6, so each commit typechecks together with its consumers): in `app/lib/products.ts` add `ProductVariant { id; volumeMl;
   price; stockQuantity; inStock }`. Change `ProductSummary` to `{ id, title, brand, gender,
   minPrice, hasPriceRange, volumes: number[], packSize, imageUrl, inStock, variantCount,
   defaultVariant: { id: string; volumeMl: number } | null }`, and `ProductDetail` to the product fields plus `variants: ProductVariant[]`

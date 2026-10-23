@@ -29,3 +29,21 @@ export type CartStatus = (typeof CART_STATUSES)[number];
 export const PAYMENT_METHODS = ["card", "cod"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/**
+ * Behavioural events stored in `user_events.event_type`, which a CHECK constraint limits to
+ * these values.
+ */
+export const EVENT_TYPES = [
+  "page_view",
+  "product_view",
+  "search",
+  "add_to_cart",
+  "remove_from_cart",
+  "checkout_start",
+  "purchase",
+  "login",
+  "review_submit",
+] as const;
+
+export type EventType = (typeof EVENT_TYPES)[number];

@@ -107,7 +107,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
 | modify | `app/.server/AGENTS.md` | Document the analytics tables in "Database: `db/`" |
 
 ## Steps
-- [ ] **1. Shared event types** — In `app/lib/enums.ts` add
+- [x] **1. Shared event types** — In `app/lib/enums.ts` add
   `EVENT_TYPES = ["page_view", "product_view", "search", "add_to_cart", "remove_from_cart",
   "checkout_start", "purchase", "login", "review_submit"] as const` and
   `type EventType = (typeof EVENT_TYPES)[number]`, with a short doc comment (stored in

@@ -265,7 +265,7 @@ Each step is small, ordered, and leaves the app in a working state.
   optimistic logic in pure helpers (`optimisticQuantity(formData, fallback)`,
   `isPendingRemove(formData)`) tested in `cart-ui.test.ts`. Responsive: lines stack on mobile,
   summary sits beside the list from `lg:`; no horizontal scroll at 375px.
-- [ ] **9. Add-to-cart feedback** — `AddToCartForm`: on `fetcher.data?.ok` show an "Added to
+- [x] **9. Add-to-cart feedback** — `AddToCartForm`: on `fetcher.data?.ok` show an "Added to
   cart" toast (`role="status"`, `animate-toast`, `bg-success-bg text-success`, link "View cart"
   to `/cart`); errors use `cartErrorMessage`. Check catalog cards and the product page still
   submit `variantId` correctly.

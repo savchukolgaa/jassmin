@@ -53,8 +53,11 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
   the cart count). Never use `primary-light` or `brand-legacy` as text on light.
 - `primary-light` is only an accent on dark or deep-pink surfaces: the wordmark dot, decorative
   wordmarks, and text on `ink`.
-- Dark mode isn't part of C+. Existing `dark:` variants may stay but aren't designed; the header and
-  footer are always deep pink.
+- The storefront is light-only: C+ has no dark theme. `app/app.css` forces `color-scheme: light` on
+  `html` and `app/root.tsx` sets `<meta name="color-scheme" content="light">`, so pages, native form
+  controls and scrollbars stay light when the OS or browser uses dark mode. Don't add `dark:`
+  variants (`app/theme.test.ts` fails if one appears); a dark theme would need its own design issue.
+  The header and footer are always deep pink.
 
 ## Typeface and scale
 

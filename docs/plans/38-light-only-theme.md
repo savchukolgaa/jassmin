@@ -52,6 +52,15 @@ dark theme is designed.
   `/(?<![\w-])dark:(?=[\w[!-])/`. That ignores `primary-dark:` (preceded by `-`) and `dark: "`
   (followed by a space).
 
+- **Tailwind scans every non-ignored file for class names** (v4 automatic source detection), so
+  `dark:` class names written as plain strings, even in a test or a markdown file, still emit dead
+  `@media (prefers-color-scheme: dark)` rules into the build. They match no element, so they're
+  harmless, but the test builds its sample variant strings at runtime (`${dark}:bg-gray-950`) to
+  keep them out of the CSS. While this plan file exists it causes the same dead rules; they disappear
+  once the plan is removed before merge (checked: no other tracked file mentions them).
+- **The `html` block check uses `/^html \{\s*color-scheme: light;/m`**, since a comment line now
+  precedes the block.
+
 ## Resolved questions
 
 - **Is there already a theme test file to extend?** Yes: `app/theme.test.ts` reads `app/app.css`
@@ -84,19 +93,19 @@ dark theme is designed.
 
 ## Steps
 
-- [ ] **1. Install and baseline** — In the worktree run `pnpm install`, then `pnpm typecheck`,
+- [x] **1. Install and baseline** — In the worktree run `pnpm install`, then `pnpm typecheck`,
   `pnpm lint`, `pnpm test` to confirm a green baseline.
-- [ ] **2. Force light in `app/app.css`** — In the `html { … }` block add `color-scheme: light;`
+- [x] **2. Force light in `app/app.css`** — In the `html { … }` block add `color-scheme: light;`
   above the nested `@media (prefers-reduced-motion: no-preference)`. Change `html, body` to just
   `@apply bg-white text-ink;` and delete the `@media (prefers-color-scheme: dark)` block. Optionally
   add a one-line comment: `/* Light-only: C+ has no dark theme (docs/design.md). */`.
-- [ ] **3. Add the meta tag in `app/root.tsx`** — After
+- [x] **3. Add the meta tag in `app/root.tsx`** — After
   `<meta name="viewport" … />` add `<meta name="color-scheme" content="light" />`. Touch nothing
   else in `Layout` (keeps #28's `lang` change conflict-free).
-- [ ] **4. Remove leftover `dark:` variants** — In `PagePlaceholder.tsx` and `account.tsx`, replace
+- [x] **4. Remove leftover `dark:` variants** — In `PagePlaceholder.tsx` and `account.tsx`, replace
   `text-gray-600 dark:text-gray-400` with `text-muted`. Re-run
   `grep -rnE "(^|[^-[:alnum:]_])dark:[[:alnum:]_[!-]" app/` — expect no matches.
-- [ ] **5. Regression tests in `app/theme.test.ts`** — Add `describe("light-only theme", …)`:
+- [x] **5. Regression tests in `app/theme.test.ts`** — Add `describe("light-only theme", …)`:
   - `app.css` has no `prefers-color-scheme: dark` and no `color-scheme: dark`;
   - `app.css` contains `color-scheme: light;` inside the `html {` block (e.g. match
     `/\nhtml \{\s*color-scheme: light;/`);
@@ -111,7 +120,7 @@ dark theme is designed.
     names in the assertion (`expect(offenders).toEqual([])`).
   Verify the tests fail against the pre-change files (e.g. temporarily revert step 2) and pass
   after.
-- [ ] **6. Update `docs/design.md`** — Replace the colour-rules bullet "Dark mode isn't part of C+.
+- [x] **6. Update `docs/design.md`** — Replace the colour-rules bullet "Dark mode isn't part of C+.
   Existing `dark:` variants may stay but aren't designed; …" with: the storefront is light-only; it
   forces `color-scheme: light` on `html` and via `<meta name="color-scheme" content="light">` in
   `app/root.tsx` so pages and native controls stay light under OS dark mode; don't add `dark:`

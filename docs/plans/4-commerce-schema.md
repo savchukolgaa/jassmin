@@ -73,12 +73,12 @@ Each step is small, ordered, and leaves the app in a working state.
   - `expectTypeOf<typeof carts.$inferSelect>().toEqualTypeOf<Cart>()` and the same for the other three tables
 
   Check: `pnpm test`.
-- [ ] **6. Integration tests in `migrator.test.ts`.**
+- [x] **6. Integration tests in `migrator.test.ts`.**
   - `listTables()` returns `["cart_items", "carts", "order_items", "orders", "products", "users"]`.
   - Defaults: cart `status = 'active'`; order `status = 'pending'`, `payment_status = 'unpaid'`, `currency = 'UAH'`, discount and shipping `"0.00"`; cart item `quantity = 1`.
   - Constraints: `23514` for quantity 0, a negative amount, or `payment_method = 'cash'`; `23505` for a duplicate `(cart_id, product_id)`; `23502` for a missing guest field or `payment_method`.
   - `guest_email` / `guest_phone` indexes exist in `pg_indexes`.
-  - Delete behaviour: deleting a product leaves its `order_items` row with `product_id IS NULL` and deletes its `cart_items`; deleting an order cascades to its items; deleting a cart cascades to its items; deleting a user who has a cart or an order fails with `23503` (foreign_key_violation) and leaves `user_id` unchanged.
+  - Delete behaviour: deleting a product leaves its `order_items` row with `product_id IS NULL` and deletes its `cart_items`; deleting an order cascades to its items; deleting a cart cascades to its items; deleting a user who has a cart or an order fails with `23001` (restrict_violation) and leaves `user_id` unchanged.
   - `$onUpdate`: updating a cart's status through Drizzle advances `updated_at`.
   - The rollback test first expects `0001_commerce_schema` (leaving only `products`, `users`), then `0000_core_schema`, then `null`, then migrates up again to all six tables. The existing constraint query, which is limited to `products`/`users`, keeps passing.
 

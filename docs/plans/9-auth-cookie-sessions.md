@@ -84,6 +84,12 @@ feature.
 - **Deviation: `vitest.config.ts` `testTimeout: 20_000`.** On this machine, the first dynamic
   import of the server modules takes over 5s, so `health.test.ts` and `header.test.ts` already
   timed out on `main`, and the new auth tests did too.
+- **Design deviations from the C+ canvas:** the "Show password" toggle (JS-only) and the
+  "Forgot password?" link (password reset is out of scope) are left out. The tabs are links
+  between `/login` and `/register`, not client-side tabs, so they work without JS. Colours use
+  the current theme tokens (`bg-primary` etc.), which pick up the C+ values when #27 repoints them.
+- **Logged-in check uses `getUser`, not `getUserId`:** a stale cookie for a deleted user would
+  otherwise bounce between `/login` and `/account` forever.
 - **Forms work without JS:** plain `<Form method="post">`, errors from `actionData`, submitted
   values (except passwords) echoed back as `defaultValue`, and `redirectTo` carried in a hidden
   input. `useNavigation` shows the `Button`'s `loading` state when JS is available.
@@ -133,7 +139,7 @@ feature.
 | create | `app/.server/services/auth.ts` (+ `.test.ts`) | `getUser`, `requireUser`, `registerUser`, `verifyLogin`, `onUserAuthenticated` |
 | modify | `app/.server/services/header.ts` (+ `.test.ts`) | Use `getUser` instead of the session stub |
 | create | `app/lib/auth.ts` (+ `.test.ts`) | zod schemas, `AuthFormErrors`, `safeRedirect`, `resolveAcquisitionChannel` |
-| create | `app/features/auth/AuthForm.tsx`, `TextField.tsx` | Shared form layout and field with error |
+| create | `app/features/auth/AuthLayout.tsx`, `TextField.tsx` | Shared C+ two-column layout (with tabs, `FormAlert`) and field with error |
 | modify | `app/routes/register.tsx` | loader + action + form |
 | modify | `app/routes/login.tsx` | loader + action + form |
 | create | `app/routes/logout.ts` | POST-only logout |
@@ -209,13 +215,14 @@ Each step is small, ordered, and leaves the app in a working state.
 - [x] **6. Show the real user in the header.** `getHeaderState` calls `getUser(request)`. Update
   `header.test.ts` to `vi.mock("./auth")`, covering "no user → logged out" and "user → `{ id }`".
   Check that the header shows the account icon on the very first SSR response after login.
-- [ ] **7. Build `/register`.**
+- [x] **7. Build `/register`.**
   - `loader`: redirect when already logged in; return
     `{ acquisitionChannel: resolveAcquisitionChannel(...) }`.
   - `action`: `formData` → `registerSchema.safeParse` → return `data(errors, { status: 400 })` on
     failure → `registerUser(db, …)` → `email_taken` → field error → `onUserAuthenticated` →
     `createUserSession({ redirectTo: safeRedirect(redirectTo) })`.
-  - UI: `app/features/auth/AuthForm.tsx` (heading, card and footer link) and `TextField.tsx`
+  - UI: `app/features/auth/AuthLayout.tsx` (brand panel, Sign in / Create account tabs as links,
+    guest-checkout note, `FormAlert`) and `TextField.tsx`
     (label, input, `aria-invalid`, `aria-describedby` error text), following the C+ Sign up page.
     Fields: full name, email, password (`autoComplete="new-password"`), optional phone, plus
     hidden `acquisitionChannel` and `redirectTo`. Add a link to `/login` that keeps `redirectTo`.

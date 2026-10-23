@@ -85,6 +85,11 @@ outage shows a 503.
   has no `__jassmin_session` cookie (crawlers, first-time visitors) and `private, no-cache`
   otherwise, always with `Vary: Cookie`; the route `headers` export forwards `loaderHeaders`. 404 and
   503 responses aren't cached (`no-store`).
+  - *Implementation note:* the cookie name moved to `app/.server/session-cookie.ts`
+    (`SESSION_COOKIE_NAME`, `hasSessionCookie`) because `session.ts` validates the env on import,
+    which would make the cache helper and the route tests need a database URL. The `headers` export
+    uses `blogResponseHeaders(loaderHeaders)` from `app/lib/blog.ts`, which returns `no-store` when
+    the loader threw (no `Cache-Control` of its own).
 - **Card UI**: blog cards follow the C+ tokens (`rounded-card`, `bg-card`, the `lift` motion from
   `docs/design.md`, Manrope 800 headings, `text-primary-dark` for links). There is no blog page on
   the design canvas yet, so the list and article reuse the catalog page's spacing and heading style.
@@ -126,6 +131,8 @@ outage shows a 503.
 | create | `app/lib/blog.ts` | `BLOG_PAGE_SIZE`, `parseBlogSearch`, `blogHref`, `isBlogSlug`, `BlogListView`, `BlogPostView`, `DEFAULT_BLOG_DESCRIPTION` |
 | create | `app/lib/blog.test.ts` | Param parsing, href and slug tests |
 | create | `app/.server/services/blog.ts` | `buildBlogListView`, `buildBlogPostView` (HTML, dates, SEO fallbacks), `blogCacheHeaders(request)` |
+| create | `app/.server/session-cookie.ts` | `SESSION_COOKIE_NAME`, `hasSessionCookie(request)` (env-free) |
+| modify | `app/.server/session.ts` | Use `SESSION_COOKIE_NAME` |
 | create | `app/.server/services/blog.test.ts` | Mapping, SEO fallback and cache header tests (fixture-based DTOs) |
 | create | `app/components/ui/Pagination.tsx` | Generic pagination (moved from catalog, `hrefForPage` prop) |
 | delete | `app/features/catalog/Pagination.tsx` | Replaced by the generic one |
@@ -156,7 +163,7 @@ outage shows a 503.
   `publishedAt` ISO, `publishedLabel`), `BlogListView` (`posts`, `page`, `pageCount`, `total`),
   `BlogPostView` (card fields + `authorName`, `contentHtml`, `seo: { title, description, image,
   canonicalUrl }`). Isomorphic: no server imports. Unit tests in `app/lib/blog.test.ts`.
-- [ ] **3. Blog view service** — `app/.server/services/blog.ts`:
+- [x] **3. Blog view service** — `app/.server/services/blog.ts`:
   `buildBlogListView(paginated: Paginated<BlogPostSummary>)` and
   `buildBlogPostView(post: BlogPost, { origin, mediaBaseUrl })` using `renderArticleMarkdown`,
   `toPlainText` and the date formatter from Decisions; SEO fallbacks

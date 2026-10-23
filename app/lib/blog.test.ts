@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { blogHref, blogPostHref, isBlogSlug, parseBlogSearch } from "./blog";
+import { blogHref, blogPostHref, blogResponseHeaders, isBlogSlug, parseBlogSearch } from "./blog";
+
+describe("blogResponseHeaders", () => {
+  it("forwards the loader's cache headers", () => {
+    const headers = blogResponseHeaders(
+      new Headers({ "Cache-Control": "public, max-age=60", Vary: "Cookie" }),
+    );
+    expect(headers.get("Cache-Control")).toBe("public, max-age=60");
+    expect(headers.get("Vary")).toBe("Cookie");
+  });
+
+  it("stores nothing when the loader threw", () => {
+    expect(blogResponseHeaders(new Headers()).get("Cache-Control")).toBe("no-store");
+  });
+});
 
 describe("parseBlogSearch", () => {
   const parse = (query: string) => parseBlogSearch(new URLSearchParams(query));

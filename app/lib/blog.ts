@@ -38,6 +38,21 @@ export function isBlogSlug(value: string | undefined): value is string {
   return value !== undefined && BLOG_SLUG.test(value);
 }
 
+/**
+ * The blog routes' `headers` export: forwards the loader's cache headers, and stores nothing when
+ * the loader threw (404, CMS 503), since those responses have no `Cache-Control` of their own.
+ */
+export function blogResponseHeaders(loaderHeaders: Headers): Headers {
+  const cacheControl = loaderHeaders.get("Cache-Control");
+  if (!cacheControl) {
+    return new Headers({ "Cache-Control": "no-store" });
+  }
+  return new Headers({
+    "Cache-Control": cacheControl,
+    Vary: loaderHeaders.get("Vary") ?? "Cookie",
+  });
+}
+
 export interface BlogPostCardView {
   slug: string;
   title: string;

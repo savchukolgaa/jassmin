@@ -123,6 +123,10 @@ on login or registration.
   them; step 6 adds the form schema. Writes take a `CartWriter` (`getVisitor`'s ids, required),
   reads a `CartOwner` (cookie ids, optional). Changes to one cart are serialised with
   `select … for update` on the cart row (`lockCart`).
+  Only the `add` intent calls `getVisitor` (it's the only one that can create a cart);
+  `update` / `remove` use `getCartOwner`, so they never create sessions rows or set cookies.
+  `getCartOwner` treats a stale user cookie as a guest (like the header), so a deleted user can't
+  hit the `carts.user_id` FK. Steps 6 and 7 are one commit, because the route uses the new schema.
 
 ## Resolved questions
 - **What happens to the guest cart after merging into an existing user cart?** — Delete the
@@ -234,12 +238,12 @@ Each step is small, ordered, and leaves the app in a working state.
   when there's an anonymous id, inside `try/catch` that logs and swallows. Update
   `header.test.ts` (mock the cart service) and add `auth.test.ts` cases: merge called with the
   cookie's anonymous id; a rejecting merge doesn't throw; no cookie → no merge.
-- [ ] **6. Form contract** — In `app/lib/cart.ts`: `cartActionSchema` (discriminated union),
+- [x] **6. Form contract** — In `app/lib/cart.ts`: `cartActionSchema` (discriminated union),
   `parseCartAction(formData)`, `CartActionError`, `CartActionResult`, `CartLine`, `CartView`,
   `MAX_LINE_QUANTITY = 99`, updated `CART_ERROR_MESSAGES` (`exceeds-stock` takes `available`, e.g.
   "Only 3 left in this volume."), and a `cartErrorMessage(result)` helper. Rewrite
   `app/lib/cart.test.ts` for all three intents, coercion, bounds and unknown intents.
-- [ ] **7. Cart route** — `routes/cart.tsx`:
+- [x] **7. Cart route** — `routes/cart.tsx`:
   - `loader`: `getCartView(await getCartOwner(request))`.
   - `action`: `parseCartAction` → 400 `invalid`. Then `const visitor = await getVisitor(request)`,
     owner = `{ userId: await getUserId(request) ?? null, ...visitor }`. `add`:

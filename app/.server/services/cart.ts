@@ -18,6 +18,7 @@ import {
   lockCart,
   touchCart,
 } from "../db/queries/cart";
+import { findUserById } from "../db/queries/users";
 import { cartItems, carts } from "../db/schema";
 import { getUserId } from "../session";
 
@@ -34,9 +35,11 @@ export interface CartWriter {
 }
 
 /** The cart owner from the request's cookies, without creating anything. */
-export async function getCartOwner(request: Request): Promise<CartOwner> {
+export async function getCartOwner(request: Request, db: Db = defaultDb): Promise<CartOwner> {
   const [userId, visitor] = await Promise.all([getUserId(request), readVisitor(request)]);
-  return { userId: userId ?? null, ...visitor };
+  // A stale cookie whose user no longer exists counts as a guest, like in the header.
+  const user = userId === undefined ? undefined : await findUserById(db, userId);
+  return { userId: user?.id ?? null, ...visitor };
 }
 
 /** The id of the owner's active cart, or `undefined` when they have none. */

@@ -1,7 +1,8 @@
-import { createElement } from "react";
+import { type ComponentProps, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MemoryRouter } from "react-router";
+import { createRoutesStub } from "react-router";
 import { describe, expect, it } from "vitest";
+import type { ContactActionResult } from "~/lib/contact";
 import type { HomePageView } from "~/lib/home";
 import { HomePage } from "./HomePage";
 
@@ -34,10 +35,19 @@ const view: HomePageView = {
   seo: { title: "Jassmin", description: "Story", image: null },
 };
 
-const render = (overrides: Partial<HomePageView> = {}) =>
-  renderToStaticMarkup(
-    createElement(MemoryRouter, null, createElement(HomePage, { view: { ...view, ...overrides } })),
-  );
+let props: ComponentProps<typeof HomePage> = { view };
+
+function TestHome() {
+  return createElement(HomePage, props);
+}
+
+// `ContactForm` uses `useFetcher`, which needs a data router.
+const Stub = createRoutesStub([{ path: "/", Component: TestHome }]);
+
+function render(overrides: Partial<HomePageView> = {}, actionData?: ContactActionResult) {
+  props = { view: { ...view, ...overrides }, actionData };
+  return renderToStaticMarkup(createElement(Stub, { initialEntries: ["/"] }));
+}
 
 describe("HomePage", () => {
   it("renders Hero, About Us, Location and Contacts in that order", () => {
@@ -81,5 +91,47 @@ describe("HomePage", () => {
     const html = render({ hero: { ...view.hero, image: null } });
 
     expect(html).not.toContain("<img");
+  });
+
+  it("renders a contact form that posts to the home route action", () => {
+    const html = render();
+
+    const form = html.match(/<form[^>]*>/)?.[0];
+    expect(form).toContain('method="post"');
+    expect(form).toContain('action="/?index#contacts"');
+    for (const name of ["name", "email", "message", "website"]) {
+      expect(html).toContain(`name="${name}"`);
+    }
+    expect(html).toContain('<label for="contact-email"');
+  });
+
+  it("shows field errors and keeps the submitted values after a failed submission", () => {
+    const html = render(
+      {},
+      {
+        status: "invalid",
+        fieldErrors: { email: "Please enter a valid email address." },
+        values: { name: "Olha", email: "nope", message: "Hello there, Jassmin" },
+      },
+    );
+
+    expect(html).toMatch(/id="contact-email"[^>]*aria-invalid="true"/);
+    expect(html).toContain('aria-describedby="contact-email-error"');
+    expect(html).toContain("Please enter a valid email address.");
+    expect(html).toContain('value="Olha"');
+    expect(html).toContain("Hello there, Jassmin</textarea>");
+  });
+
+  it("confirms a sent message", () => {
+    expect(render({}, { status: "success" })).toContain("Your message was sent");
+  });
+
+  it("explains rate limiting and delivery failures", () => {
+    const values = { name: "Olha", email: "olha@example.com", message: "Hello there, Jassmin" };
+
+    expect(render({}, { status: "rate_limited", retryAfterSeconds: 90, values })).toContain(
+      "try again in 2 min",
+    );
+    expect(render({}, { status: "delivery_failed", values })).toContain("send your message");
   });
 });

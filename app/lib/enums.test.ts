@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "./enums";
+import {
+  CART_STATUSES,
+  EVENT_TYPES,
+  GENDERS,
+  ORDER_STATUSES,
+  PAYMENT_METHODS,
+  PAYMENT_STATUSES,
+} from "./enums";
 
 describe("enum values", () => {
   it("lists the genders", () => {
@@ -28,5 +35,19 @@ describe("enum values", () => {
 
   it("lists the payment methods", () => {
     expect(PAYMENT_METHODS).toEqual(["card", "cod"]);
+  });
+
+  it("lists the event types", () => {
+    expect(EVENT_TYPES).toEqual([
+      "page_view",
+      "product_view",
+      "search",
+      "add_to_cart",
+      "remove_from_cart",
+      "checkout_start",
+      "purchase",
+      "login",
+      "review_submit",
+    ]);
   });
 });

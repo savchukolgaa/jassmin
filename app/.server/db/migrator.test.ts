@@ -22,7 +22,16 @@ const sampleOrder = {
   totalAmount: "100.00",
 } as const;
 
-const ALL_TABLES = ["cart_items", "carts", "order_items", "orders", "products", "users"];
+const ALL_TABLES = [
+  "cart_items",
+  "carts",
+  "order_items",
+  "orders",
+  "products",
+  "sessions",
+  "user_events",
+  "users",
+];
 
 // Integration test: runs only when a database is configured, on its own throwaway database.
 describe.skipIf(!hasDatabase)("migrations", () => {
@@ -348,9 +357,185 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(updatedOrder?.updatedAt.getTime()).toBeGreaterThan(past.getTime());
   });
 
+  it("applies the analytics defaults", async () => {
+    const { sessions, userEvents } = await import("./schema");
+    const { db } = testDb;
+
+    const [session] = await db.insert(sessions).values({ anonymousId: "anon-1" }).returning();
+    const [event] = await db
+      .insert(userEvents)
+      .values({
+        anonymousId: "anon-1",
+        sessionId: session?.sessionId ?? "",
+        eventType: "search",
+        eventProperties: { query: "rose", filters: { gender: "women" } },
+      })
+      .returning();
+
+    const uuidV7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-/;
+    expect(session?.sessionId).toMatch(uuidV7);
+    expect(session?.startedAt).toBeInstanceOf(Date);
+    expect(session).toMatchObject({
+      userId: null,
+      endedAt: null,
+      landingPage: null,
+      trafficSource: null,
+      deviceType: null,
+    });
+    expect(event?.eventId).toMatch(uuidV7);
+    expect(event?.createdAt).toBeInstanceOf(Date);
+    expect(event).toMatchObject({
+      userId: null,
+      productId: null,
+      eventProperties: { query: "rose", filters: { gender: "women" } },
+      source: null,
+      medium: null,
+      campaign: null,
+      deviceType: null,
+      referrer: null,
+    });
+  });
+
+  it("enforces the analytics constraints", async () => {
+    const { sessions, userEvents } = await import("./schema");
+    const { pgErrorCode } = await import("./test-utils");
+    const { db } = testDb;
+
+    const [session] = await db.insert(sessions).values({ anonymousId: "anon-2" }).returning();
+    const event = {
+      anonymousId: "anon-2",
+      sessionId: session?.sessionId ?? "",
+      eventType: "page_view",
+    } as const;
+    await db.insert(userEvents).values(event);
+
+    // 23514 check_violation, 23503 foreign_key_violation, 23502 not_null_violation
+    expect(
+      await pgErrorCode(db.execute(sql`update user_events set event_type = 'page_click'`)),
+    ).toBe("23514");
+    expect(
+      await pgErrorCode(
+        db
+          .insert(userEvents)
+          .values({ ...event, sessionId: "00000000-0000-7000-8000-000000000000" }),
+      ),
+    ).toBe("23503");
+    expect(
+      await pgErrorCode(
+        db.execute(sql`update carts set session_id = '00000000-0000-7000-8000-000000000000'`),
+      ),
+    ).toBe("23503");
+    for (const column of ["anonymous_id", "session_id", "event_type", "created_at"]) {
+      expect(
+        await pgErrorCode(db.execute(sql`update user_events set ${sql.identifier(column)} = null`)),
+      ).toBe("23502");
+    }
+    for (const column of ["anonymous_id", "started_at"]) {
+      expect(
+        await pgErrorCode(db.execute(sql`update sessions set ${sql.identifier(column)} = null`)),
+      ).toBe("23502");
+    }
+  });
+
+  it("stores analytics timestamps with time zone and indexes the analytics queries", async () => {
+    const columns = await testDb.db.execute<{ column: string; data_type: string }>(
+      sql`select table_name || '.' || column_name as column, data_type
+          from information_schema.columns
+          where table_name in ('sessions', 'user_events') and data_type like 'timestamp%'
+          order by 1`,
+    );
+    expect(columns.rows).toEqual([
+      { column: "sessions.ended_at", data_type: "timestamp with time zone" },
+      { column: "sessions.started_at", data_type: "timestamp with time zone" },
+      { column: "user_events.created_at", data_type: "timestamp with time zone" },
+    ]);
+
+    const indexes = await testDb.db.execute<{ indexname: string; indexdef: string }>(
+      sql`select indexname, indexdef from pg_indexes
+          where tablename in ('sessions', 'user_events') and indexname like '%_idx'
+          order by indexname`,
+    );
+    expect(
+      Object.fromEntries(
+        indexes.rows.map((r) => [r.indexname, r.indexdef.replace(/^.*USING btree /, "")]),
+      ),
+    ).toEqual({
+      sessions_anonymous_id_idx: "(anonymous_id)",
+      sessions_user_id_idx: "(user_id)",
+      user_events_anonymous_id_idx: "(anonymous_id)",
+      user_events_event_type_created_at_idx: "(event_type, created_at)",
+      user_events_session_id_idx: "(session_id)",
+      user_events_user_id_created_at_idx: "(user_id, created_at)",
+    });
+  });
+
+  it("cascades or unlinks analytics rows on delete", async () => {
+    const { carts, products, sessions, userEvents, users } = await import("./schema");
+    const { db } = testDb;
+
+    const [user] = await db
+      .insert(users)
+      .values({ ...sampleUser, email: "visitor@example.com" })
+      .returning();
+    const [product] = await db.insert(products).values(sampleProduct).returning();
+    const userId = user?.id ?? 0;
+    const productId = product?.id ?? 0;
+    const [kept] = await db.insert(sessions).values({ anonymousId: "anon-3", userId }).returning();
+    const [dropped] = await db.insert(sessions).values({ anonymousId: "anon-3" }).returning();
+    const keptId = kept?.sessionId ?? "";
+    const droppedId = dropped?.sessionId ?? "";
+    const [keptEvent] = await db
+      .insert(userEvents)
+      .values({
+        anonymousId: "anon-3",
+        userId,
+        sessionId: keptId,
+        eventType: "product_view",
+        productId,
+      })
+      .returning();
+    await db
+      .insert(userEvents)
+      .values({ anonymousId: "anon-3", sessionId: droppedId, eventType: "page_view" });
+    const [cart] = await db.insert(carts).values({ sessionId: droppedId }).returning();
+
+    await db.delete(sessions).where(eq(sessions.sessionId, droppedId));
+    expect(await db.select().from(userEvents).where(eq(userEvents.sessionId, droppedId))).toEqual(
+      [],
+    );
+    const [cartAfter] = await db
+      .select()
+      .from(carts)
+      .where(eq(carts.id, cart?.id ?? 0));
+    expect(cartAfter?.sessionId).toBeNull();
+
+    await db.delete(products).where(eq(products.id, productId));
+    await db.delete(users).where(eq(users.id, userId));
+    const [sessionAfter] = await db.select().from(sessions).where(eq(sessions.sessionId, keptId));
+    const [eventAfter] = await db
+      .select()
+      .from(userEvents)
+      .where(eq(userEvents.eventId, keptEvent?.eventId ?? ""));
+    expect(sessionAfter).toMatchObject({ userId: null, anonymousId: "anon-3" });
+    expect(eventAfter).toMatchObject({ userId: null, productId: null, eventType: "product_view" });
+  });
+
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0002_analytics_schema");
+    expect(await listTables()).toEqual([
+      "cart_items",
+      "carts",
+      "order_items",
+      "orders",
+      "products",
+      "users",
+    ]);
+    const cartFks = await testDb.db.execute<{ conname: string }>(
+      sql`select conname from pg_constraint where conrelid = 'carts'::regclass and contype = 'f'`,
+    );
+    expect(cartFks.rows.map((r) => r.conname)).toEqual(["carts_user_id_users_id_fk"]);
     expect(await rollbackLatest(testDb.db)).toBe("0001_commerce_schema");
     expect(await listTables()).toEqual(["products", "users"]);
     expect(await rollbackLatest(testDb.db)).toBe("0000_core_schema");

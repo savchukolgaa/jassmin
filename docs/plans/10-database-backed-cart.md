@@ -228,7 +228,7 @@ Each step is small, ordered, and leaves the app in a working state.
   anonymous id sees the same cart; two concurrent `getOrCreateActiveCart` calls return one cart;
   merge — no user cart (adopted), both carts (quantities summed and capped, guest cart gone),
   no guest cart (no-op); lines and subtotal use the variant price, not `products.price`.
-- [ ] **5. Header badge and merge on login** — `getHeaderState` reads the owner and calls
+- [x] **5. Header badge and merge on login** — `getHeaderState` reads the owner and calls
   `getCartCount` (logged-in user → by user id; guest → by anonymous id; neither → 0 without a DB
   hit). `onUserAuthenticated` calls `mergeGuestCart(userId, readVisitor(request).anonymousId)`
   when there's an anonymous id, inside `try/catch` that logs and swallows. Update

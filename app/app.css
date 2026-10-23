@@ -1,22 +1,37 @@
 @import "tailwindcss";
 
+/* Option C+ design tokens; see docs/design.md for usage and contrast ratios. */
 @theme {
   --font-sans:
-    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-    "Noto Color Emoji";
+    "Manrope", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
 
-  --color-primary: #ff5c77;
+  --color-primary: #c22f4b;
+  --color-primary-dark: #a8233d;
   --color-primary-light: #ff8fa1;
-  --color-primary-dark: #e0405c;
+  --color-brand-legacy: #ff5c77;
 
-  --shadow-button: 0 4px 6px -1px rgb(255 92 119 / 0.25), 0 2px 4px -2px rgb(255 92 119 / 0.25);
-  --shadow-button-hover:
-    0 10px 15px -3px rgb(255 92 119 / 0.3), 0 4px 6px -4px rgb(255 92 119 / 0.3);
+  --color-ink: #1f1a1c;
+  --color-muted: #5f5558;
+  --color-body: #4a4245;
+  --color-blush: #fff4f5;
+  --color-card: #f7f3f4;
+  --color-line: #e5dadd;
+  --color-on-dark-muted: #d9cfd2;
+  --color-success: #1d6b48;
+  --color-success-bg: #e8f4ee;
+
+  --radius-pill: 999px;
+  --radius-card: 1.5rem;
+  --radius-card-lg: 2rem;
+
+  --shadow-button: 0 4px 6px -1px rgb(194 47 75 / 0.25), 0 2px 4px -2px rgb(194 47 75 / 0.25);
+  --shadow-button-hover: 0 10px 15px -3px rgb(194 47 75 / 0.3), 0 4px 6px -4px rgb(194 47 75 / 0.3);
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-white text-ink dark:bg-gray-950;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;

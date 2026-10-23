@@ -110,7 +110,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
 | modify | `AGENTS.md` | One line pointing UI work to `docs/design.md` |
 
 ## Steps
-- [ ] **1. Theme tokens and font.** In `app/app.css` `@theme`, set the colour tokens from the issue
+- [x] **1. Theme tokens and font.** In `app/app.css` `@theme`, set the colour tokens from the issue
   (`primary`, `primary-dark`, `primary-light`, `brand-legacy`, `ink`, `muted`, `body`, `blush`,
   `card`, `line`, `on-dark-muted`, `success`, `success-bg`). Add `--radius-pill: 999px`,
   `--radius-card: 1.5rem` (24px) and `--radius-card-lg: 2rem` (32px). Change `--shadow-button` and

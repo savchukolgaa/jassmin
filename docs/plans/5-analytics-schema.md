@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/5
 Branch: `issue/5`
 Worktree: `.claude/worktrees/issue-5`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a data analyst, I want visitor sessions and a granular behavioural event stream stored in
@@ -172,7 +172,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   gets its FK to `sessions` in #5" with a bullet on the analytics tables (visitor sessions ≠
   cookie session; `event_type` limited to `EVENT_TYPES` by a CHECK, row types mirrored in
   `~/lib/analytics`; FK delete actions; writes come from #18). Run `pnpm format`.
-- [ ] **7. Rebase before the PR (parallel migrations)** — `git fetch origin` and
+- [x] **7. Rebase before the PR (parallel migrations)** — Checked on 2026-10-23: `origin/main` was still at `b4d2b6e`, so no rebase was needed. Repeat this check before merging. `git fetch origin` and
   `git rebase origin/main`. If #26 or #14 (or any other migration) landed first, the rebase
   conflicts in `meta/_journal.json` and the `0002_*` numbering. Don't hand-merge generated
   files: keep `origin/main`'s versions, delete this branch's `0002_analytics_schema.sql`,
@@ -192,10 +192,10 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   `web` starts.
 
 ## Acceptance criteria
-- [ ] Migrations create both tables with the specified columns and FKs — steps 2, 3, 4, 5
-- [ ] `user_events.created_at` is `timestamptz` — steps 2, 5
-- [ ] Indexes for common analytics queries exist — steps 2, 4, 5
-- [ ] Event type union is exported from `app/lib/` — step 1
+- [x] Migrations create both tables with the specified columns and FKs — steps 2, 3, 4, 5
+- [x] `user_events.created_at` is `timestamptz` — steps 2, 5
+- [x] Indexes for common analytics queries exist — steps 2, 4, 5
+- [x] Event type union is exported from `app/lib/` — step 1
 
 ## Out of scope
 - Recording sessions and events, the `anonymous_id` cookie, the client tracker and

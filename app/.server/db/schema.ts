@@ -1,5 +1,5 @@
 // Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
-// product volume variants (#26) and the user role (#14).
+// product volume variants (#26), the user role (#14) and one active cart per owner (#10).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -17,6 +17,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -198,6 +199,13 @@ export const carts = pgTable(
     index("carts_session_id_idx").on(t.sessionId),
     // For the abandoned-cart job (#19): active carts not updated for a while.
     index("carts_status_updated_at_idx").on(t.status, t.updatedAt),
+    // One active cart per user and per guest session (#10), so concurrent adds can't create two.
+    uniqueIndex("carts_active_user_id_unique")
+      .on(t.userId)
+      .where(sql`${t.status} = 'active' and ${t.userId} is not null`),
+    uniqueIndex("carts_active_guest_session_id_unique")
+      .on(t.sessionId)
+      .where(sql`${t.status} = 'active' and ${t.userId} is null`),
   ],
 );
 

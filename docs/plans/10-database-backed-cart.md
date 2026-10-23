@@ -186,7 +186,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `describe.skipIf(!hasDatabase)` block on `createTestDatabase("jassmin_analytics_test")` for:
   first visit sets both cookies and inserts one session; repeat visit reuses both and returns no
   headers; a session cookie whose row was deleted gets a fresh session with the same anonymous id.
-- [ ] **2. One active cart per owner** — Add the two partial `uniqueIndex(...).on(...).where(sql…)`
+- [x] **2. One active cart per owner** — Add the two partial `uniqueIndex(...).on(...).where(sql…)`
   entries to `carts` in `schema.ts`; `pnpm db:generate --name cart_active_unique`; write
   `db/rollbacks/0005_cart_active_unique.sql` (`drop index if exists …` ×2). Update the carts index
   list in `schema.test.ts` and the index expectations in `migrator.test.ts`; add a migrator test

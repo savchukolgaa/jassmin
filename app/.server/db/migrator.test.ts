@@ -279,6 +279,46 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     }
   });
 
+  it("allows one active cart per user and per guest session", async () => {
+    const { carts, sessions, users } = await import("./schema");
+    const { pgErrorCode } = await import("./test-utils");
+    const { db } = testDb;
+
+    const [user] = await db
+      .insert(users)
+      .values({ ...sampleUser, email: "one-cart@example.com" })
+      .returning();
+    const [session] = await db.insert(sessions).values({ anonymousId: "anon-cart" }).returning();
+    const userId = user?.id ?? 0;
+    const sessionId = session?.sessionId ?? "";
+
+    await db.insert(carts).values({ userId, sessionId });
+    expect(await pgErrorCode(db.insert(carts).values({ userId }))).toBe("23505");
+    // Finished carts don't count.
+    await db.insert(carts).values({ userId, status: "converted" });
+
+    await db.insert(carts).values({ sessionId });
+    expect(await pgErrorCode(db.insert(carts).values({ sessionId }))).toBe("23505");
+    await db.insert(carts).values({ sessionId, status: "abandoned" });
+
+    const indexes = await db.execute<{ indexname: string; indexdef: string }>(
+      sql`select indexname, indexdef from pg_indexes where indexname like 'carts_active_%'
+          order by indexname`,
+    );
+    expect(
+      indexes.rows.map((r) => [r.indexname, r.indexdef.replace(/^.*USING btree /, "")]),
+    ).toEqual([
+      [
+        "carts_active_guest_session_id_unique",
+        "(session_id) WHERE ((status = 'active'::cart_status_type) AND (user_id IS NULL))",
+      ],
+      [
+        "carts_active_user_id_unique",
+        "(user_id) WHERE ((status = 'active'::cart_status_type) AND (user_id IS NOT NULL))",
+      ],
+    ]);
+  });
+
   it("indexes the guest contact fields", async () => {
     const indexes = await testDb.db.execute<{ indexname: string; indexdef: string }>(
       sql`select indexname, indexdef from pg_indexes
@@ -483,7 +523,11 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ).toBe("23503");
     expect(
       await pgErrorCode(
-        db.execute(sql`update carts set session_id = '00000000-0000-7000-8000-000000000000'`),
+        // One cart, so the one-active-cart-per-session index can't fire first.
+        db.execute(
+          sql`update carts set session_id = '00000000-0000-7000-8000-000000000000'
+              where id = (select min(id) from carts)`,
+        ),
       ),
     ).toBe("23503");
     for (const column of ["anonymous_id", "session_id", "event_type", "created_at"]) {
@@ -585,7 +629,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004_user_role sits on top of 0003; migrateLatest below reapplies both.
+    // 0004 and 0005 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0005_cart_active_unique");
     expect(await rollbackLatest(db)).toBe("0004_user_role");
     expect(await rollbackLatest(db)).toBe("0003_product_variants");
     expect(await listTables()).not.toContain("product_variants");
@@ -666,6 +711,11 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0005_cart_active_unique");
+    const activeCartIndexes = await testDb.db.execute(
+      sql`select 1 from pg_indexes where indexname like 'carts_active_%'`,
+    );
+    expect(activeCartIndexes.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0004_user_role");
     const roleColumn = await testDb.db.execute(
       sql`select 1 from information_schema.columns where table_name = 'users' and column_name = 'role'`,

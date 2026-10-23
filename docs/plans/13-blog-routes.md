@@ -149,7 +149,7 @@ outage shows a 503.
   "https"] }`. Tests: `## Heading` → `<h2>`, `# Title` → `<h2>`, `![a](/uploads/x.jpg)` →
   absolute `src` on the CMS origin, `javascript:`/`data:` image `src` and `onerror` are stripped,
   `<script>`/`<iframe>`/`style` attributes are stripped, code blocks are escaped. `pnpm test`.
-- [ ] **2. Shared blog helpers in `app/lib/blog.ts`** — `BLOG_PAGE_SIZE = 12`;
+- [x] **2. Shared blog helpers in `app/lib/blog.ts`** — `BLOG_PAGE_SIZE = 12`;
   `parseBlogSearch(params): { page: number }` (zod, `.catch(1)`); `blogHref(page)` (`/blog` for 1,
   `/blog?page=N` otherwise); `blogPostHref(slug)`; `isBlogSlug(value)`;
   `DEFAULT_BLOG_DESCRIPTION`; view types `BlogPostCardView` (slug, title, excerpt, coverImage,

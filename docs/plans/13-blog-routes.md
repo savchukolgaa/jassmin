@@ -181,7 +181,7 @@ outage shows a 503.
   `app/components/ui/Pagination.tsx` with props `{ page, pageCount, hrefForPage }` and update
   `app/routes/catalog.tsx`. Behaviour and classes unchanged. `pnpm typecheck && pnpm test`, and
   check `/catalog/women?page=2` still paginates.
-- [ ] **5. `/blog` list route** — `app/routes/blog.tsx`:
+- [x] **5. `/blog` list route** — `app/routes/blog.tsx`:
   - `loader({ request })`: `parseBlogSearch`, `listBlogPosts({ page, pageSize: BLOG_PAGE_SIZE })
     .catch(cmsUnavailable)`; `throw data(null, { status: 404 })` when `page > pageCount &&
     total > 0`; return `data(buildBlogListView(…), { headers: blogCacheHeaders(request) })`.

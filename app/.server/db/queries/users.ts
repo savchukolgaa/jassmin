@@ -1,4 +1,5 @@
 import { eq, sql } from "drizzle-orm";
+import type { UserRole } from "~/lib/enums";
 import type { Db } from "../client";
 import { users } from "../schema";
 
@@ -7,6 +8,8 @@ export interface PublicUser {
   id: number;
   fullName: string;
   email: string;
+  /** Read fresh on every request, so demoting an admin takes effect immediately. */
+  role: UserRole;
 }
 
 export interface UserCredentials {
@@ -36,7 +39,7 @@ export async function findUserByEmail(db: Db, email: string): Promise<UserCreden
 
 export async function findUserById(db: Db, id: number): Promise<PublicUser | undefined> {
   const [user] = await db
-    .select({ id: users.id, fullName: users.fullName, email: users.email })
+    .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);
@@ -55,4 +58,17 @@ export async function insertUser(db: Db, values: NewUser): Promise<{ id: number 
 /** Records a successful login (`last_login_at` is a churn-model feature). */
 export async function touchLastLogin(db: Db, id: number): Promise<void> {
   await db.update(users).set({ lastLoginAt: sql`now()` }).where(eq(users.id, id));
+}
+
+/**
+ * Sets the role of the user with this (already normalised) email. `false` when no user has it.
+ * Used by `pnpm db:make-admin`.
+ */
+export async function setUserRole(db: Db, email: string, role: UserRole): Promise<boolean> {
+  const updated = await db
+    .update(users)
+    .set({ role })
+    .where(eq(users.email, email))
+    .returning({ id: users.id });
+  return updated.length > 0;
 }

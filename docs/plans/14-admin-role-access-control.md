@@ -161,7 +161,7 @@ The same applies the other way round to #5 and #26 if this one lands first.
   `DROP TYPE "public"."user_role";`, with `--> statement-breakpoint`). Extend `migrator.test.ts`.
   Check: `pnpm db:migrate`, `pnpm db:rollback`, `pnpm db:migrate` against the dev DB. **If #5 or
   #26 merged first, follow "Parallel migrations" above.**
-- [ ] **3. User queries** — Add `role` to `PublicUser` and the `findUserById` select. Add
+- [x] **3. User queries** — Add `role` to `PublicUser` and the `findUserById` select. Add
   `setUserRole(db, email, role): Promise<boolean>` (`update … returning id`, `true` when a row
   changed). Tests in `users.test.ts` (DB-backed, `createTestDatabase`).
 - [ ] **4. `requireAdmin`** — In `services/auth.ts`: `await requireUser(request, database)`; if

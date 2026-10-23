@@ -148,6 +148,7 @@ describe.skipIf(!hasDatabase)("auth service", () => {
       id: registered.userId,
       fullName: "Session",
       email: "session@example.com",
+      role: "customer",
     });
     expect(await getUser(request(await cookieFor(999_999)), testDb.db)).toBeNull();
   });

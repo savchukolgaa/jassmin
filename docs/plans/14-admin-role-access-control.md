@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/14
 Branch: `issue/14`
 Worktree: `.claude/worktrees/issue-14`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a store admin, I want a secure admin area so that only authorised staff can manage products
@@ -205,7 +205,7 @@ The same applies the other way round to #5 and #26 if this one lands first.
   note Strapi admins are separate. Add the command to the scripts table. Update
   `app/.server/AGENTS.md` (Auth: `requireAdmin`, role read from DB per request, every admin
   loader *and* action calls it; Database: `users.role`).
-- [ ] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual checks below.
+- [x] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual checks below.
 
 ## Testing & verification
 - Unit: `enums.test.ts`, `schema.test.ts`, `route-error.test.ts`, `admin-nav.test.ts`,
@@ -218,13 +218,24 @@ The same applies the other way round to #5 and #26 if this one lands first.
   Products/Orders nav with active state, and the Strapi link opens `http://localhost:1337/admin` in a
   new tab; `--revoke` → next request is 403; keyboard focus rings visible; mobile width usable.
 
+## Verification results
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (45 files, 379 tests, DB integration tests included) and
+  `pnpm build` pass.
+- End to end on the production build (`pnpm start`) with a throwaway, freshly migrated database:
+  logged out `/admin/orders` → 302 to `/login?redirectTo=%2Fadmin%2Forders`; a new customer gets
+  403 on `/admin/products` (HTML and `.data`) with the 403 text and no admin nav; after
+  `pnpm db:make-admin` `/admin` → 302 to `/admin/products`, which renders the layout (Products
+  marked `aria-current`, Orders, Strapi link to `http://localhost:1337/admin`, the admin's name,
+  `noindex`); after `--revoke` the same cookie gets 403; an unknown email exits 1 with a message.
+- Not checked: visual review in a browser (focus rings, mobile width).
+
 ## Acceptance criteria
-- [ ] Non-admins get 403 on all `/admin/*` loaders and actions — steps 4, 6, 7, 8 (actions arrive
+- [x] Non-admins get 403 on all `/admin/*` loaders and actions — steps 4, 6, 7, 8 (actions arrive
   in #16/#17; the rule is documented in step 10)
-- [ ] Logged-out users are redirected to login — steps 4, 8
-- [ ] Admins see the admin layout with Products and Orders navigation and a link to the Strapi
+- [x] Logged-out users are redirected to login — steps 4, 8
+- [x] Admins see the admin layout with Products and Orders navigation and a link to the Strapi
   admin — steps 6, 7
-- [ ] There is a documented way to create the first admin — steps 9, 10
+- [x] There is a documented way to create the first admin — steps 9, 10
 
 ## Out of scope
 - Product management (#16) and order management (#17) screens and their actions.

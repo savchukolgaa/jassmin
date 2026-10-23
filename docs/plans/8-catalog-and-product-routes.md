@@ -200,7 +200,7 @@ Each step is small, ordered and leaves the app working.
   - Update `meta`. Keep the placeholder body for now, rendering the count, so the app still works.
   - Check: `pnpm typecheck` shows that `loaderData` is typed through `Route.ComponentProps`.
 
-- [ ] **5. Product loader.** In `routes/product.tsx`:
+- [x] **5. Product loader.** In `routes/product.tsx`:
   - `loader({ params })`:
     - `z.uuid().safeParse(params.id)`, and on failure throw a 404.
     - `const product = await getProduct(id)`, and if it's null throw a 404.

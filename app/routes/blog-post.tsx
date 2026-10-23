@@ -6,6 +6,7 @@ import { blogCacheHeaders, buildBlogPostView } from "~/.server/services/blog";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { BackToBlogLink, BlogArticle } from "~/features/blog/BlogArticle";
 import { blogResponseHeaders, isBlogSlug } from "~/lib/blog";
+import { useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/blog-post";
 
@@ -59,8 +60,9 @@ export default function BlogPost({ loaderData }: Route.ComponentProps) {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const { t } = useT();
   return (
-    <ErrorContent {...describeRouteError(error)}>
+    <ErrorContent {...describeRouteError(error, t)}>
       <div className="mt-4">
         <BackToBlogLink />
       </div>

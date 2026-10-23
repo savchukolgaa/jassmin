@@ -2,6 +2,7 @@ import { data } from "react-router";
 import { checkVariantForCart } from "~/.server/services/products";
 import { PagePlaceholder } from "~/components/layout/PagePlaceholder";
 import { type CartActionResult, parseAddToCart } from "~/lib/cart";
+import { useT } from "~/lib/i18n";
 import type { Route } from "./+types/cart";
 
 export function meta(_args: Route.MetaArgs) {
@@ -28,5 +29,6 @@ export async function action({ request }: Route.ActionArgs) {
 
 // Placeholder until #10.
 export default function Cart() {
-  return <PagePlaceholder title="Cart" />;
+  const { t } = useT();
+  return <PagePlaceholder title={t("cart.title")} />;
 }

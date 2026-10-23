@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { describeRouteError } from "./route-error";
+import { createTranslator } from "./i18n";
+import { describeRouteError as describe_ } from "./route-error";
+
+const { t } = createTranslator("en");
+const describeRouteError = (error: unknown, dev?: boolean) => describe_(error, t, dev);
 
 // The shape the router gives a boundary for a thrown `data(…, { status })` response.
 const routeError = (status: number, statusText = "") => ({
@@ -42,6 +46,18 @@ describe("describeRouteError", () => {
     expect(describeRouteError(error, false)).toEqual({
       message: "Oops!",
       details: "An unexpected error occurred.",
+    });
+  });
+
+  it("describes errors in Ukrainian", () => {
+    const uk = createTranslator("uk");
+    expect(describe_(routeError(404), uk.t)).toEqual({
+      message: "404",
+      details: "Сторінку не знайдено.",
+    });
+    expect(describe_(new Error("boom"), uk.t, false)).toEqual({
+      message: "Ой!",
+      details: "Сталася неочікувана помилка.",
     });
   });
 });

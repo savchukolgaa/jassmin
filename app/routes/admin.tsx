@@ -4,6 +4,7 @@ import { requireAdmin } from "~/.server/services/auth";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { AdminLayout } from "~/features/admin/AdminLayout";
 import { strapiAdminUrl } from "~/features/admin/admin-nav";
+import { useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/admin";
 
@@ -31,11 +32,12 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
 
 // Without the sidebar, so a forbidden (403) user never sees the admin navigation.
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const { t } = useT();
   return (
-    <ErrorContent {...describeRouteError(error)}>
+    <ErrorContent {...describeRouteError(error, t)}>
       <p className="mt-4">
         <Link to="/" className="font-bold text-primary-dark underline">
-          Back to shop
+          {t("admin.nav.backToShop")}
         </Link>
       </p>
     </ErrorContent>

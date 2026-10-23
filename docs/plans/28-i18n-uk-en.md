@@ -269,7 +269,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   "Catalog") and `Footer.tsx` (link labels, footer nav label). Update `Header.test.ts` and
   `Footer.test.ts` to render inside `I18nProvider` and assert both the `uk` default and `en`.
 
-- [ ] **8. Errors and placeholders.** `describeRouteError(error, t, dev?)` returns translated text
+- [x] **8. Errors and placeholders.** `describeRouteError(error, t, dev?)` returns translated text
   (`errors.notFound`, `errors.forbidden`, `errors.unavailable`, `errors.unexpected`, `errors.title`
   for "Oops!"). Leave `error.statusText` untranslated, since it comes from code, not users.
   Update every caller: `root.tsx`, `_shop.tsx`, `catalog.tsx`, `product.tsx` (and its "This

@@ -7,6 +7,7 @@ import { ProductImage } from "~/features/catalog/ProductImage";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
 import { CATALOG_TITLES, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
+import { useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/product";
 
@@ -96,9 +97,10 @@ export default function Product({ loaderData }: Route.ComponentProps) {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const { t } = useT();
   if (isRouteErrorResponse(error) && error.status === 404) {
     return (
-      <ErrorContent message="404" details="This perfume could not be found.">
+      <ErrorContent message="404" details={t("product.notFound")}>
         <p className="mt-4 flex gap-4">
           <Link
             to="/catalog/women"
@@ -116,5 +118,5 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       </ErrorContent>
     );
   }
-  return <ErrorContent {...describeRouteError(error)} />;
+  return <ErrorContent {...describeRouteError(error, t)} />;
 }

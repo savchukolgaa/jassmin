@@ -1,7 +1,7 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from "react-router";
 import { getLocale } from "~/.server/locale";
 import { ErrorContent } from "~/components/layout/ErrorContent";
-import { DEFAULT_LOCALE, I18nProvider } from "~/lib/i18n";
+import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -49,5 +49,6 @@ export default function App() {
 // Errors in public pages are caught by the `_shop` layout's boundary (which keeps the header);
 // this one handles unmatched URLs, the admin area and failures of the layout loader itself.
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  return <ErrorContent {...describeRouteError(error)} />;
+  const { t } = useT();
+  return <ErrorContent {...describeRouteError(error, t)} />;
 }

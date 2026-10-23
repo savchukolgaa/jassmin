@@ -7,6 +7,7 @@ import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { CATALOG_TITLES, catalogHref, isCatalogGender, parseCatalogSearch } from "~/lib/catalog";
 import { cn } from "~/lib/cn";
+import { useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/catalog";
 
@@ -81,5 +82,6 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  return <ErrorContent {...describeRouteError(error)} />;
+  const { t } = useT();
+  return <ErrorContent {...describeRouteError(error, t)} />;
 }

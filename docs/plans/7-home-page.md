@@ -137,6 +137,21 @@ JS and emails the store over SMTP (smtp4dev locally).
   `LocationSection.tsx`, `ContactsSection.tsx`, `ContactForm.tsx`, `icons.tsx`); `home.tsx` only
   composes them.
 
+- **Implementation notes (step 4, deviations from the first draft):**
+  - The loader's mapping lives in `buildHomePageView()` (`app/.server/services/home.ts`, tested),
+    returning `HomePageView` from `app/lib/home.ts` (also holds `DEFAULT_HOME_DESCRIPTION`, because
+    `meta` runs on the client and can't import `.server` code).
+  - Sanitized HTML is rendered by a shared `RichText` component (`app/components/ui/RichText.tsx`)
+    so #13 can reuse it. Home icons (`MapPinIcon`, `ClockIcon`, `PhoneIcon`, `MailIcon`) were added
+    to the shared `app/components/layout/icons.tsx` instead of a new file, to reuse its `Icon` base.
+  - The hero has no hard-coded eyebrow or "499₴" badge: the offer text comes only from Strapi, so
+    editors can change the offer without a deploy.
+  - Interim styling until #27 lands: light blush hero (`bg-primary-light/15`) with dark text and a
+    `primary` CTA, contacts on `bg-gray-950`. Once #27 is on `main`, switch to its tokens: hero
+    `bg-primary` + `dark` CTA, contacts `bg-ink`, about `bg-blush`, social links `outline-light`.
+  - Vitest `testTimeout` raised to 30 s (`vitest.config.ts`): the existing DB health and header
+    tests timed out at 5 s on cold dynamic imports when the whole suite runs in parallel.
+
 ## Resolved questions
 - **How are contact form submissions delivered?** — Emailed over SMTP; locally they go to smtp4dev
   (source: user answer on the plan, 2026-10-23).
@@ -205,7 +220,7 @@ JS and emails the store over SMTP (smtp4dev locally).
 - [x] **3. Link helpers** — `app/lib/links.ts`: `resolveCtaHref`, `safeMapEmbedUrl`, `telHref`,
   `directionsUrl`. Tests incl. `javascript:`, protocol-relative `//evil.com`, non-Google map hosts,
   empty strings.
-- [ ] **4. Loader, meta and static sections** — Rewrite `app/routes/home.tsx`: parallel CMS loader
+- [x] **4. Loader, meta and static sections** — Rewrite `app/routes/home.tsx`: parallel CMS loader
   returning `{ hero, about: { title, bodyHtml }, location: { …, mapEmbedUrl: safe | null },
   contacts, metaDescription }`, `meta`, and `HeroSection`, `AboutSection` (`id="about"`),
   `LocationSection`, `ContactsSection` (`id="contacts"`, form slot empty for now) inside `<main>`

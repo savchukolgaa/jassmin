@@ -1,32 +1,34 @@
-import { getHomePage } from "~/.server/cms/content";
+import { getHomePage, getSiteSettings } from "~/.server/cms/content";
 import { cmsUnavailable } from "~/.server/cms/errors";
-import { getDatabaseInfo } from "~/.server/db/queries/health";
+import { buildHomePageView } from "~/.server/services/home";
+import { HomePage } from "~/features/home/HomePage";
+import { DEFAULT_HOME_DESCRIPTION } from "~/lib/home";
 import type { Route } from "./+types/home";
 
-export function meta(_args: Route.MetaArgs) {
-  return [{ title: "Jassmin" }, { name: "description", content: "Jassmin perfume store" }];
+export function meta({ loaderData }: Route.MetaArgs) {
+  if (!loaderData) {
+    return [{ title: "Jassmin" }, { name: "description", content: DEFAULT_HOME_DESCRIPTION }];
+  }
+  const { title, description, image } = loaderData.seo;
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:type", content: "website" },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    ...(image ? [{ property: "og:image", content: image }] : []),
+  ];
 }
 
-// Placeholder until the real home page (#7): proves the DB and the Strapi CMS are both wired up.
+// Content is edited in Strapi (`home-page`, `site-settings`); an outage becomes a 503 page.
 export async function loader() {
-  const [{ serverTime, pgVersion }, homePage] = await Promise.all([
-    getDatabaseInfo(),
+  const [homePage, siteSettings] = await Promise.all([
     getHomePage().catch(cmsUnavailable),
+    getSiteSettings().catch(cmsUnavailable),
   ]);
-  return { serverTime: serverTime.toISOString(), pgVersion, headline: homePage.hero.headline };
+  return buildHomePageView(homePage, siteSettings);
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  return (
-    <main className="container mx-auto p-4 pt-16">
-      <h1 className="text-2xl font-semibold">Jassmin — coming soon</h1>
-      <p className="mt-2 text-lg">{loaderData.headline}</p>
-      <dl className="mt-6 text-sm text-gray-600 dark:text-gray-400">
-        <dt className="font-medium">Database time</dt>
-        <dd>{loaderData.serverTime}</dd>
-        <dt className="mt-2 font-medium">PostgreSQL</dt>
-        <dd>{loaderData.pgVersion}</dd>
-      </dl>
-    </main>
-  );
+  return <HomePage view={loaderData} />;
 }

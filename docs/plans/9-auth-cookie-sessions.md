@@ -36,7 +36,7 @@ feature.
 - **Hashing with argon2id** (`@node-rs/argon2`, library defaults) rather than bcrypt. Argon2id is
   the current OWASP recommendation, it has no 72-byte password limit and needs no native build
   step. It's wrapped in `app/.server/password.ts` (`hashPassword`, `verifyPassword`), so the
-  library can be swapped in one place. **(unconfirmed, see Q1)**
+  library can be swapped in one place. (confirmed, Q1)
 - **Module layout** follows `app/.server/AGENTS.md`:
   - `session.ts`: cookie-only helpers (`getUserId`, `createUserSession`, `logout`). The issue
     names these.
@@ -53,18 +53,18 @@ feature.
   password. When the email is unknown, the action still verifies against a fixed dummy hash, so
   the response time doesn't reveal whether an account exists.
 - **Registration logs the user in** and also sets `last_login_at = now()`. A brand-new customer
-  then has a non-null recency value for the churn model. **(unconfirmed, see Q3)**
+  then has a non-null recency value for the churn model. (confirmed, Q3)
 - **`acquisition_channel`:** the `/register` loader works it out from `utm_source` in the URL,
   otherwise from an external `Referer` host (without `www.`), otherwise `'direct'`. It sends the
   value through a hidden form field, which the action validates (max 100 characters, lowercased).
   Doing this in the loader matters because when the form is posted, `Referer` is our own
   `/register` page. When #18 adds analytics sessions, the session's `traffic_source` should take
-  over. **(unconfirmed, see Q2)**
+  over. (confirmed, Q2)
 - **Rate limiting** is an in-memory fixed window in `app/.server/rate-limit.ts`: at most 5 failed
   logins per normalised email and 20 per client IP in 15 minutes. The IP comes from the first
   `X-Forwarded-For` entry and the limit is skipped when there's none. Over the limit, the action
   returns a typed error with HTTP 429, and a successful login clears the email's counter. A single
-  Node process is enough for a small shop. **(unconfirmed, see Q4)**
+  Node process is enough for a small shop. (confirmed, Q4)
 - **Open-redirect protection:** `safeRedirect(to, fallback = "/account")` only accepts paths that
   start with a single `/` (not `//`, not `/\`).
 - **`/logout` is an action-only resource route** (`routes/logout.ts`), registered **outside** the
@@ -83,25 +83,15 @@ feature.
   values (except passwords) echoed back as `defaultValue`, and `redirectTo` carried in a hidden
   input. `useNavigation` shows the `Button`'s `loading` state when JS is available.
 
-## Open questions
-- [ ] **Q1: argon2id (`@node-rs/argon2`) or bcrypt?** — Why it matters: it sets the stored hash
-  format, and switching later means rehashing at login. Recommended default: argon2id via
-  `@node-rs/argon2`. Affects steps: 1, 2.
-- [ ] **Q2: What should `acquisition_channel` contain?** — Why it matters: it's an ML feature, so
-  its value set should be stable. Recommended default: the raw `utm_source` (lowercased), else the
-  referrer host (e.g. `google.com`), else `'direct'`. Analysts can bucket the values later, and
-  #18 can refine it with first-touch session data. Affects steps: 4, 7.
-- [ ] **Q3: Should registration also set `last_login_at`?** — Why it matters: churn features. Null
-  would mean "registered but never logged in", even though registration starts a logged-in
-  session. Recommended default: yes, set it at registration. Affects step: 4.
-- [ ] **Q4: Is an in-memory limiter enough?** — Why it matters: it resets on restart and isn't
-  shared between instances. Recommended default: yes for a single-instance deployment; move it to
-  PostgreSQL if the app is ever scaled out. Affects step: 3.
-- [ ] **Q5: Which language should the auth copy use?** The header mixes English with "Kontakt",
-  and `<html lang="uk">`. Recommended default: English, like the existing UI, with all strings in
-  the feature folder so they're easy to translate. Affects steps: 7, 8.
-
 ## Resolved questions
+- **Q1: argon2id or bcrypt?** — argon2id via `@node-rs/argon2` (answered by the user, 2026-10-23).
+- **Q2: What does `acquisition_channel` contain?** — The default: lowercased `utm_source`, else
+  the external referrer host, else `'direct'` (answered by the user).
+- **Q3: Does registration also set `last_login_at`?** — Yes (answered by the user).
+- **Q4: Is an in-memory limiter enough?** — Yes (answered by the user).
+- **Q5: Which language for the auth copy?** — English for now, with the strings kept in
+  `app/features/auth/` for easy translation. Multi-language support is tracked in #28 (answered by
+  the user).
 - **Is a new session storage needed?** — No. `createCookieSessionStorage` with exactly the
   required cookie options and `SessionData.userId` already exists (source:
   `app/.server/session.ts`, `app/.server/AGENTS.md` → "Session").
@@ -274,5 +264,6 @@ Each step is small, ordered, and leaves the app in a working state.
 - The account dashboard and orders (#12), and admin auth and roles (#14).
 - Password reset, email verification, "remember me", OAuth and CSRF tokens. SameSite=lax plus
   POST-only mutations cover the basic CSRF risk.
-- A distributed or persistent rate limiter (see Q4).
+- A distributed or persistent rate limiter (Q4: in-memory is enough).
+- Translating the auth forms (#28).
 - C+ header changes such as the white profile circle (#27).

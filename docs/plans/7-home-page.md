@@ -228,7 +228,7 @@ JS and emails the store over SMTP (smtp4dev locally).
   `app/app.css` under `prefers-reduced-motion: no-preference` (unless #27 already does). C+ styling,
   single column under `md`, no horizontal scroll at 375px. Check: view source of `/`; header links
   scroll to About/Kontakt.
-- [ ] **5. Contact form validation** — `app/lib/contact.ts` (limits + `ContactActionResult`),
+- [x] **5. Contact form validation** — `app/lib/contact.ts` (limits + `ContactActionResult`),
   `app/features/home/contact-form.ts`: `contactFormSchema` (trimmed strings) and
   `parseContactForm(formData)` → `{ ok: true, data, honeypot } | { ok: false, fieldErrors, values }`
   via `z.flattenError`. Tests: valid input, each field's errors, whitespace-only, over-long values,

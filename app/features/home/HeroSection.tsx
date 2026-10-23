@@ -5,27 +5,30 @@ import { resolveCtaHref } from "~/lib/links";
 
 type HeroSectionProps = { hero: HomePageView["hero"] };
 
-/** The current offer from Strapi: headline and CTA on the left, the hero image on the right. */
+// "Order Now" uses the `dark` variant, which stands out on the deep-pink band (docs/design.md).
+const ctaStyle = { variant: "dark", size: "lg" } as const;
+
+/** The current offer from Strapi on a deep-pink band: headline and CTA, then the arched image. */
 export function HeroSection({ hero }: HeroSectionProps) {
   const cta = resolveCtaHref(hero.ctaHref);
 
   return (
-    <section aria-labelledby="hero-title" className="bg-primary-light/15">
-      <div className="container mx-auto grid items-center gap-10 px-4 py-12 md:grid-cols-2 md:py-20">
+    <section aria-labelledby="hero-title" className="overflow-hidden bg-primary text-white">
+      <div className="container mx-auto grid items-center gap-10 px-4 py-14 md:grid-cols-2 md:py-20">
         <div>
           <h1
             id="hero-title"
-            className="text-4xl font-extrabold tracking-tight text-balance text-gray-950 sm:text-5xl lg:text-6xl dark:text-white"
+            className="animate-fade-up text-5xl leading-none font-extrabold tracking-[-0.05em] text-balance md:text-7xl"
           >
             {hero.headline}
           </h1>
-          <div className="mt-8">
+          <div className="mt-8 animate-fade-up anim-delay-2">
             {cta.kind === "internal" ? (
-              <ButtonLink to={cta.to} size="lg">
+              <ButtonLink to={cta.to} {...ctaStyle}>
                 {hero.ctaLabel}
               </ButtonLink>
             ) : (
-              <a href={cta.href} className={buttonClasses({ size: "lg" })}>
+              <a href={cta.href} className={buttonClasses(ctaStyle)}>
                 {hero.ctaLabel}
               </a>
             )}
@@ -37,11 +40,12 @@ export function HeroSection({ hero }: HeroSectionProps) {
   );
 }
 
-const imageFrame = "aspect-[4/5] w-full max-w-md justify-self-center rounded-t-full";
+const imageFrame =
+  "aspect-[4/5] w-full max-w-md justify-self-center rounded-t-full bg-primary-dark animate-fade-up anim-delay-3";
 
 function HeroImage({ image }: { image: HomePageView["hero"]["image"] }) {
   if (!image) {
-    return <div aria-hidden="true" className={`${imageFrame} bg-primary-light/30`} />;
+    return <div aria-hidden="true" className={imageFrame} />;
   }
   return (
     <img
@@ -53,7 +57,7 @@ function HeroImage({ image }: { image: HomePageView["hero"]["image"] }) {
       alt={image.alt}
       fetchPriority="high"
       decoding="async"
-      className={`${imageFrame} object-cover shadow-lg`}
+      className={`${imageFrame} object-cover shadow-xl`}
     />
   );
 }

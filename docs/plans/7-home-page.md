@@ -146,9 +146,11 @@ JS and emails the store over SMTP (smtp4dev locally).
     to the shared `app/components/layout/icons.tsx` instead of a new file, to reuse its `Icon` base.
   - The hero has no hard-coded eyebrow or "499₴" badge: the offer text comes only from Strapi, so
     editors can change the offer without a deploy.
-  - Interim styling until #27 lands: light blush hero (`bg-primary-light/15`) with dark text and a
-    `primary` CTA, contacts on `bg-gray-950`. Once #27 is on `main`, switch to its tokens: hero
-    `bg-primary` + `dark` CTA, contacts `bg-ink`, about `bg-blush`, social links `outline-light`.
+  - Styling follows the C+ design from #27 (`docs/design.md`), applied after rebasing onto `main`:
+    deep-pink hero (`bg-primary`) with the `dark` "Order Now" CTA and an arched image, About on
+    `bg-blush`, Location on white with a `primary` "Get directions" button, Contacts on `bg-ink`
+    with `outline-light` social links and `primary-light` focus rings, and the `fade-up` / `reveal`
+    / `pop` motion utilities.
   - Vitest `testTimeout` raised to 30 s (`vitest.config.ts`): the existing DB health and header
     tests timed out at 5 s on cold dynamic imports when the whole suite runs in parallel.
 
@@ -169,6 +171,17 @@ JS and emails the store over SMTP (smtp4dev locally).
     semantics and the render tests), the scroll offset under the sticky header, and the 375px
     layout. A full `pnpm aspire run` with the `smtp4dev` resource wasn't started from the worktree;
     `pnpm aspire:build` type-checks the AppHost.
+
+- **Rebase onto `main` (after #9 and #27 merged):**
+  - #9 added its own `app/.server/rate-limit.ts` (`isBlocked` / `hit` / `reset`, `getClientIp`,
+    login limiters). That version is kept unchanged; the contact service uses
+    `createRateLimiter(CONTACT_RATE_LIMIT)` through `isBlocked` + `hit`, keyed by
+    `getClientIp(request) ?? "anonymous"`. That API doesn't expose when a window ends, so a blocked
+    client is told to retry after the full window (10 min) as an upper bound. The contact limiter
+    survives Vite HMR via `globalThis`, like the login limiters.
+  - The Vitest timeout commit was dropped: `main` already raised `testTimeout` for the same reason.
+  - `app/routes/account.tsx` used the `secondary` button variant that #27 removed; #8 fixed it on
+    `main` (`dark`), so this PR doesn't touch it.
 
 ## Resolved questions
 - **How are contact form submissions delivered?** — Emailed over SMTP; locally they go to smtp4dev

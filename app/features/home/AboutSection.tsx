@@ -10,19 +10,19 @@ export function AboutSection({ about }: AboutSectionProps) {
     <section
       id="about"
       aria-labelledby="about-title"
-      className="scroll-mt-20 bg-white py-16 md:py-24 dark:bg-gray-950"
+      className="scroll-mt-20 bg-blush py-16 md:py-24"
     >
-      <div className="container mx-auto max-w-3xl px-4">
+      <div className="reveal container mx-auto max-w-3xl px-4">
         <Eyebrow>About us</Eyebrow>
         <h2
           id="about-title"
-          className="mt-2 text-3xl font-extrabold tracking-tight text-gray-950 md:text-4xl dark:text-white"
+          className="mt-2 text-3xl leading-tight font-extrabold tracking-[-0.04em] text-ink md:text-4xl"
         >
           {about.title}
         </h2>
         <RichText
           html={about.bodyHtml}
-          className="mt-6 text-lg text-gray-700 [&_a]:text-primary-dark dark:text-gray-300"
+          className="mt-6 text-lg text-body [&_a]:text-primary-dark"
         />
       </div>
     </section>

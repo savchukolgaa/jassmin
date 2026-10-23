@@ -46,9 +46,9 @@ export function ContactForm({ actionData }: ContactFormProps) {
       action="/?index#contacts"
       noValidate
       aria-labelledby="contact-form-title"
-      className="relative flex flex-col gap-5 rounded-3xl bg-white p-6 text-gray-950 shadow-lg sm:p-8"
+      className="relative flex flex-col gap-5 rounded-card-lg bg-white p-6 text-ink shadow-lg sm:p-9"
     >
-      <h3 id="contact-form-title" className="text-2xl font-extrabold tracking-tight">
+      <h3 id="contact-form-title" className="text-2xl font-extrabold tracking-[-0.03em]">
         Send us a message
       </h3>
 
@@ -98,19 +98,19 @@ export function ContactForm({ actionData }: ContactFormProps) {
 
       <div role="status" aria-live="polite">
         {result?.status === "success" && (
-          <p className="rounded-xl bg-green-50 p-4 font-semibold text-green-800">
+          <p className="animate-pop rounded-card bg-success-bg p-4 font-bold text-success">
             Thanks! Your message was sent. We'll reply by email.
           </p>
         )}
       </div>
       {result?.status === "rate_limited" && (
-        <p role="alert" className="rounded-xl bg-red-50 p-4 font-semibold text-red-800">
+        <p role="alert" className="rounded-card bg-red-50 p-4 font-bold text-red-800">
           You've sent several messages in a short time. Please try again in{" "}
           {Math.max(1, Math.ceil(result.retryAfterSeconds / 60))} min.
         </p>
       )}
       {result?.status === "delivery_failed" && (
-        <p role="alert" className="rounded-xl bg-red-50 p-4 font-semibold text-red-800">
+        <p role="alert" className="rounded-card bg-red-50 p-4 font-bold text-red-800">
           Sorry, we couldn't send your message right now. Please try again later or call or email us
           directly.
         </p>
@@ -136,9 +136,9 @@ function Field({ name, label, error, multiline = false, ...inputProps }: FieldPr
     "aria-invalid": error ? true : undefined,
     "aria-describedby": error ? errorId : undefined,
     className: cn(
-      "w-full rounded-xl border bg-white px-4 py-3 text-base text-gray-950",
-      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-      error ? "border-red-700" : "border-gray-300",
+      "w-full rounded-2xl border bg-card px-4 py-3 text-base text-ink",
+      "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary",
+      error ? "border-red-700" : "border-muted",
     ),
   };
 
@@ -158,7 +158,7 @@ function Field({ name, label, error, multiline = false, ...inputProps }: FieldPr
         <input {...shared} {...inputProps} type={inputProps.type ?? "text"} />
       )}
       {error && (
-        <p id={errorId} className="text-sm font-semibold text-red-700">
+        <p id={errorId} className="text-sm font-bold text-red-700">
           {error}
         </p>
       )}

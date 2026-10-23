@@ -13,12 +13,14 @@ import {
   safeRedirect,
   toFieldErrors,
 } from "~/lib/auth";
+import { metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/register";
 
 const FIELDS = ["fullName", "email", "password", "phone"] as const satisfies RegisterField[];
 
-export function meta(_args: Route.MetaArgs) {
-  return [{ title: "Sign up — Jassmin" }];
+export function meta({ matches }: Route.MetaArgs) {
+  const { t } = metaTranslator(matches);
+  return [{ title: t("meta.title", { page: t("auth.register.title") }) }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -55,7 +57,7 @@ export async function action({ request }: Route.ActionArgs) {
   const result = await registerUser(db, registration);
   if (!result.ok) {
     return data<AuthFormErrors<RegisterField>>(
-      { fieldErrors: { email: "An account with this email already exists." }, values },
+      { fieldErrors: { email: "auth.errors.emailTaken" }, values },
       { status: 400 },
     );
   }
@@ -69,53 +71,59 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Register({ loaderData, actionData }: Route.ComponentProps) {
+  const { t } = useT();
   const submitting = useNavigation().state === "submitting";
   const errors = actionData?.fieldErrors;
   const values = actionData?.values;
 
   return (
     <AuthLayout mode="register" redirectTo={loaderData.redirectTo}>
-      <Form method="post" aria-label="Create account" className="flex flex-col gap-4" noValidate>
-        {actionData?.formError && <FormAlert>{actionData.formError}</FormAlert>}
+      <Form
+        method="post"
+        aria-label={t("auth.register.form")}
+        className="flex flex-col gap-4"
+        noValidate
+      >
+        {actionData?.formError && <FormAlert>{t(actionData.formError)}</FormAlert>}
         <TextField
           name="fullName"
-          label="Full name"
+          label={t("auth.fields.fullName")}
           autoComplete="name"
           defaultValue={values?.fullName}
-          error={errors?.fullName}
+          error={errors?.fullName && t(errors.fullName)}
         />
         <TextField
           name="email"
-          label="Email"
+          label={t("auth.fields.email")}
           type="email"
           autoComplete="email"
           defaultValue={values?.email}
-          error={errors?.email}
+          error={errors?.email && t(errors.email)}
         />
         <TextField
           name="password"
-          label="Password"
+          label={t("auth.fields.password")}
           type="password"
           autoComplete="new-password"
-          hint="At least 8 characters."
-          error={errors?.password}
+          hint={t("auth.fields.passwordHint")}
+          error={errors?.password && t(errors.password)}
         />
         <TextField
           name="phone"
-          label="Phone"
+          label={t("auth.fields.phone")}
           type="tel"
           autoComplete="tel"
           placeholder="+380"
           optional
           defaultValue={values?.phone}
-          error={errors?.phone}
+          error={errors?.phone && t(errors.phone)}
         />
         <input type="hidden" name="acquisitionChannel" value={loaderData.acquisitionChannel} />
         {loaderData.redirectTo && (
           <input type="hidden" name="redirectTo" value={loaderData.redirectTo} />
         )}
         <Button type="submit" size="lg" className="rounded-full" loading={submitting}>
-          Create account
+          {t("auth.register.submit")}
         </Button>
       </Form>
     </AuthLayout>

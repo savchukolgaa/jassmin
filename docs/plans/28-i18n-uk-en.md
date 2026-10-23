@@ -279,7 +279,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   `title` already translated from the caller. Update `route-error.test.ts` to pass
   `createTranslator("en")` and `createTranslator("uk")`.
 
-- [ ] **9. Auth forms and validation messages (#9).** In `app/lib/auth.ts`, every zod message
+- [x] **9. Auth forms and validation messages (#9).** In `app/lib/auth.ts`, every zod message
   becomes `msg("auth.errors.…")`. `AuthFormErrors` changes to `fieldErrors?: Partial<Record<Field,
   MessageKey>>` and `formError?: MessageKey`, and `toFieldErrors` narrows with `isMessageKey`. In
   `login.tsx`/`register.tsx`, action errors ("Too many attempts…", "Email or password is

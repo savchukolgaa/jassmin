@@ -1,5 +1,6 @@
 import type { ComponentProps } from "react";
 import { cn } from "~/lib/cn";
+import { useT } from "~/lib/i18n";
 
 export type TextFieldProps = Omit<ComponentProps<"input">, "id" | "name"> & {
   name: string;
@@ -21,6 +22,7 @@ export function TextField({
   className,
   ...props
 }: TextFieldProps) {
+  const { t } = useT();
   const id = `field-${name}`;
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
@@ -30,7 +32,7 @@ export function TextField({
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-extrabold">
         {label}
-        {optional && <span className="font-semibold text-gray-600"> (optional)</span>}
+        {optional && <span className="font-semibold text-gray-600"> {t("common.optional")}</span>}
       </label>
       <input
         {...props}

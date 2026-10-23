@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync(new URL("./app.css", import.meta.url), "utf8");
@@ -106,5 +106,44 @@ describe("motion", () => {
     expect(blocks).toHaveLength(2);
     expect(blocks[1]).toContain("animation: none !important;");
     expect(blocks[1]).toContain("transition: none !important;");
+  });
+});
+
+describe("light-only theme", () => {
+  /** A Tailwind `dark:` variant, but not the `primary-dark` token or the `dark` button key. */
+  const darkVariant = /(?<![\w-])dark:(?=[\w[!-])/;
+
+  it("matches dark: variants and nothing else", () => {
+    // Built at runtime so Tailwind's source scan doesn't emit these classes into the CSS.
+    const dark = "dark";
+    expect(darkVariant.test(`${dark}:bg-gray-950`)).toBe(true);
+    expect(darkVariant.test(`md:${dark}:text-white`)).toBe(true);
+    expect(darkVariant.test("--color-primary-dark: #a8233d;")).toBe(false);
+    expect(darkVariant.test('dark: "bg-ink text-white"')).toBe(false);
+  });
+
+  it("has no dark-mode rule in app.css", () => {
+    expect(css).not.toContain("prefers-color-scheme: dark");
+    expect(css).not.toContain("color-scheme: dark");
+    expect(css).not.toMatch(darkVariant);
+  });
+
+  it("forces color-scheme: light on html", () => {
+    expect(css).toMatch(/^html \{\s*color-scheme: light;/m);
+  });
+
+  it("sets the color-scheme meta tag in the root layout", () => {
+    const root = readFileSync(new URL("./root.tsx", import.meta.url), "utf8");
+    expect(root).toContain('<meta name="color-scheme" content="light" />');
+  });
+
+  it("uses no dark: variants anywhere in app/", () => {
+    const appDir = new URL(".", import.meta.url);
+    const offenders = readdirSync(appDir, { recursive: true, encoding: "utf8" })
+      .filter((file) => /\.(tsx?|css)$/.test(file) && !file.endsWith(".test.ts"))
+      .filter((file) =>
+        darkVariant.test(readFileSync(new URL(file.replaceAll("\\", "/"), appDir), "utf8")),
+      );
+    expect(offenders).toEqual([]);
   });
 });

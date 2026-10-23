@@ -71,7 +71,7 @@ outage shows a 503.
 - **Dates** are formatted on the server in the view (`Intl.DateTimeFormat("en-GB", { dateStyle:
   "long", timeZone: "Europe/Kyiv" })`, e.g. "22 October 2026"), with a `<time dateTime>` holding the
   ISO value, so server and client output can't differ. UI copy is in English like the rest of the
-  storefront. **(unconfirmed, Q2)**
+  storefront.
 - **Meta** on `/blog/:slug`: `title` = `seo.metaTitle ?? post.title` + " — Jassmin";
   `description` = `seo.metaDescription ?? excerpt ?? toPlainText(content)`; `og:type` = `article`,
   `og:title`, `og:description`, `og:image` = `seo.ogImage ?? coverImage` (absolute URLs from the
@@ -84,7 +84,7 @@ outage shows a 503.
   Loaders set `Cache-Control: public, max-age=60, stale-while-revalidate=300` only when the request
   has no `__jassmin_session` cookie (crawlers, first-time visitors) and `private, no-cache`
   otherwise, always with `Vary: Cookie`; the route `headers` export forwards `loaderHeaders`. 404 and
-  503 responses aren't cached (`no-store`). **(unconfirmed, Q1)**
+  503 responses aren't cached (`no-store`).
 - **Card UI**: blog cards follow the C+ tokens (`rounded-card`, `bg-card`, the `lift` motion from
   `docs/design.md`, Manrope 800 headings, `text-primary-dark` for links). There is no blog page on
   the design canvas yet, so the list and article reuse the catalog page's spacing and heading style.
@@ -92,20 +92,14 @@ outage shows a 503.
   and `alt` (empty alt falls back to `""` = decorative, since the title is right next to it). The
   article cover loads eagerly, list covers lazily. No cover → a blush placeholder block.
 
-## Open questions
-- [ ] **Q1: Is the cookie-aware `Cache-Control` policy OK, or should the blog send no cache headers
-  at all for now?** — Why it matters: the HTML contains the per-user header, so a naive
-  `public, max-age=60` could serve one visitor's cart count/login state to another through a CDN.
-  Recommended default: public 60 s (+ SWR 300 s) only without a session cookie, `private, no-cache`
-  with one, `Vary: Cookie`. Affects steps: 5, 6.
-- [ ] **Q2: Date format and UI language for the blog.** — Why it matters: `<html lang="uk">` but
-  the storefront copy is English. Recommended default: English copy, `en-GB` long dates in
-  Europe/Kyiv time. Affects steps: 3.
-- [ ] **Q3: Should an article page show "related"/"more articles" or links to products?** — Why it
-  matters: extra Strapi query and UI. Recommended default: no; just a "Back to the blog" link.
-  Affects steps: 6.
-
 ## Resolved questions
+- **Q1: Cache policy** — Use the cookie-aware policy: `public, max-age=60, stale-while-revalidate=300`
+  only without a `__jassmin_session` cookie, `private, no-cache` with one, always `Vary: Cookie`;
+  404/503 are `no-store` (source: user answer, 2026-10-23).
+- **Q2: Date format and UI language** — English copy, `en-GB` long dates in Europe/Kyiv time, e.g.
+  "22 October 2026" (source: user answer, 2026-10-23).
+- **Q3: Related articles / product links on the article page** — No; only a "Back to the blog" link
+  (source: user answer, 2026-10-23).
 - **Do the CMS functions and DTOs exist?** — Yes, `listBlogPosts` / `getBlogPostBySlug` with
   absolute media URLs and published-only filtering (source: `app/.server/cms/content.ts`,
   `app/.server/cms/client.ts`, #20).

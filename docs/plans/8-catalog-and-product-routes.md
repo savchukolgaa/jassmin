@@ -159,7 +159,7 @@ Each step is small, ordered and leaves the app working.
   - Add the three `*.test.ts` files.
   - Check: `pnpm test` and `pnpm typecheck`.
 
-- [ ] **2. Product queries.** Create `app/.server/db/queries/products.ts`, taking `db: Db` (default
+- [x] **2. Product queries.** Create `app/.server/db/queries/products.ts`, taking `db: Db` (default
   the shared `db`):
   - `listProducts(db, { genders, fragranceFamily?, brand?, sort, limit, offset })` uses
     `inArray(products.gender, genders)` and optional `eq` filters, `orderBy` per sort (see

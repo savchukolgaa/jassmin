@@ -241,7 +241,7 @@ JS and emails the store over SMTP (smtp4dev locally).
   `aspire-apphost/apphost.mts` add the `smtp4dev` container (HTTP UI + SMTP endpoints, external
   HTTP endpoint so the UI opens from the dashboard) and pass `SMTP_URL` to `web` without
   `waitFor`. Check: `pnpm aspire:build`, then `pnpm aspire run` shows `smtp4dev` with a UI link.
-- [ ] **7. Rate limiter and contact service** — `app/.server/rate-limit.ts`:
+- [x] **7. Rate limiter and contact service** — `app/.server/rate-limit.ts`:
   `createRateLimiter({ limit, windowMs, now? })` → `check(key): { allowed, retryAfterMs }`, and
   `clientKey(request)`. `app/.server/services/contact.ts`: `submitContactMessage(input, { key,
   transport })` → honeypot short-circuit → limiter → `deliverContactMessage()` → result. Tests with

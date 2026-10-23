@@ -83,7 +83,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - The rollback test first expects `0001_commerce_schema` (leaving only `products`, `users`), then `0000_core_schema`, then `null`, then migrates up again to all six tables. The existing constraint query, which is limited to `products`/`users`, keeps passing.
 
   Check: `pnpm test` with a database configured.
-- [ ] **7. Docs.** In `app/.server/AGENTS.md` → Database, note that `updated_at` uses `$onUpdate` (raw SQL must set it), that order amounts are `numeric(10, 2)` strings computed server-side, and that `carts.session_id` gets its FK in #5.
+- [x] **7. Docs.** In `app/.server/AGENTS.md` → Database, note that `updated_at` uses `$onUpdate` (raw SQL must set it), that order amounts are `numeric(10, 2)` strings computed server-side, and that `carts.session_id` gets its FK in #5.
 - [ ] **8. Final checks.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
 
 ## Testing & verification

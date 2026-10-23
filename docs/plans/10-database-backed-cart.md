@@ -83,7 +83,7 @@ on login or registration.
 - **Merge on login/register** (`mergeGuestCart(userId, anonymousId)`, one transaction):
   - No guest cart → nothing. User has no active cart → adopt the guest cart (`set user_id`).
   - Both exist → move each guest line into the user cart; same variant → quantities add up,
-    capped at the variant's stock; then delete the emptied guest cart **(unconfirmed, Q1)**. Bump
+    capped at the variant's stock; then delete the emptied guest cart. Bump
     the user cart's `updated_at`.
   - Called from `onUserAuthenticated` with `readVisitor(request).anonymousId`, wrapped in
     `try/catch` + `console.error` so a merge failure never blocks logging in.
@@ -118,18 +118,13 @@ on login or registration.
   only (no Unisex). Volume label via `formatVolume({ volumeMl, packSize })`, price via
   `formatPrice` of the **variant** price.
 
-## Open questions
-- [ ] **Q1: What happens to the guest cart after merging into an existing user cart?** — Why it
-  matters: deleting it loses an analytics row; keeping it needs a status that isn't `abandoned`
-  (the enum is `active | converted | abandoned`, and #19 would count it as abandoned).
-  Recommended default: delete the emptied guest cart (its lines now live in the user cart).
-  Affects steps: 4.
-- [ ] **Q2: Should guests see a cart count on cached blog pages?** — Why it matters: treating
-  `anonymous_id` as a session cookie turns off public caching for every guest who has added to
-  cart (and for everyone once #18 lands). Recommended default: yes, correctness over caching; #18
-  revisits. Affects steps: 3.
-
 ## Resolved questions
+- **What happens to the guest cart after merging into an existing user cart?** — Delete the
+  emptied guest cart; its lines now live in the user cart, and marking it `abandoned` would
+  skew #19 (source: user decision, 2026-10-23).
+- **Should guests with a cart get uncached blog pages?** — Yes: treat `anonymous_id` as a session
+  cookie, so a guest's cart count is never cached publicly; #18 revisits caching once every
+  visitor gets the cookie (source: user decision, 2026-10-23).
 - **Cart lines per size?** — Yes: `cart_items.variant_id` is required, unique
   `(cart_id, variant_id)`, keep `product_id` equal to the variant's product; validate with
   `checkVariantForCart` (source: #10 comment, `app/.server/AGENTS.md`).

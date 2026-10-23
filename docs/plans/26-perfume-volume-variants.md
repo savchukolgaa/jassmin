@@ -263,7 +263,7 @@ chosen variant.
   { status: 400 | 409 })` on failure, otherwise keep returning `cart-unavailable` with a comment
   pointing #10 at the validated `variant`. Add a route test (`app/routes/cart.test.ts`, mocking
   the service like the other route tests) for invalid input, unknown variant and out-of-stock.
-- [ ] **10. Docs**: update `app/.server/AGENTS.md` (Database section): `product_variants`, its
+- [x] **10. Docs**: update `app/.server/AGENTS.md` (Database section): `product_variants`, its
   `public_id`, the deprecated product columns, that stock checks/decrements and
   `price_at_purchase` use the variant (#11), and that `cart_items` lines are per variant. Leave a
   comment on #10/#11 summarising the contract (Q1).

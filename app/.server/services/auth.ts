@@ -1,0 +1,111 @@
+import { redirect } from "react-router";
+import { loginRedirectPath } from "~/lib/auth";
+import { type Db, db } from "../db";
+import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
+import {
+  findUserByEmail,
+  findUserById,
+  insertUser,
+  type PublicUser,
+  touchLastLogin,
+} from "../db/queries/users";
+import { getDummyPasswordHash, hashPassword, verifyPassword } from "../password";
+import { getUserId } from "../session";
+
+export type { PublicUser } from "../db/queries/users";
+
+/** The logged-in user, or `null` when logged out or the session's user no longer exists. */
+export async function getUser(request: Request, database: Db = db): Promise<PublicUser | null> {
+  const userId = await getUserId(request);
+  if (userId === undefined) return null;
+  return (await findUserById(database, userId)) ?? null;
+}
+
+/**
+ * The logged-in user. For protected loaders and actions: when logged out, throws a redirect to
+ * `/login?redirectTo=<this page>`, so the user comes back here after logging in.
+ */
+export async function requireUser(request: Request, database: Db = db): Promise<PublicUser> {
+  const user = await getUser(request, database);
+  if (!user) {
+    throw redirect(loginRedirectPath(new URL(request.url)));
+  }
+  return user;
+}
+
+export interface Registration {
+  fullName: string;
+  /** Already normalised (trimmed, lowercased). */
+  email: string;
+  password: string;
+  phone?: string;
+  /** `undefined` keeps the column default `'direct'`. */
+  acquisitionChannel?: string;
+}
+
+export type RegisterResult = { ok: true; userId: number } | { ok: false; error: "email_taken" };
+
+/**
+ * Creates an account with a hashed password. Registering logs the user in, so `last_login_at`
+ * is set too.
+ */
+export async function registerUser(database: Db, input: Registration): Promise<RegisterResult> {
+  if (await findUserByEmail(database, input.email)) {
+    return { ok: false, error: "email_taken" };
+  }
+
+  try {
+    const { id } = await insertUser(database, {
+      fullName: input.fullName,
+      email: input.email,
+      passwordHash: await hashPassword(input.password),
+      phone: input.phone ?? null,
+      acquisitionChannel: input.acquisitionChannel,
+      lastLoginAt: new Date(),
+    });
+    return { ok: true, userId: id };
+  } catch (error: unknown) {
+    // Two sign-ups with the same email raced past the check above.
+    if (pgErrorCode(error) === UNIQUE_VIOLATION) {
+      return { ok: false, error: "email_taken" };
+    }
+    throw error;
+  }
+}
+
+export type LoginResult = { ok: true; userId: number } | { ok: false };
+
+/**
+ * Checks an (already normalised) email and password and records the login in `last_login_at`.
+ * An unknown email and a wrong password give the same result in about the same time.
+ */
+export async function verifyLogin(
+  database: Db,
+  email: string,
+  password: string,
+): Promise<LoginResult> {
+  const user = await findUserByEmail(database, email);
+  if (!user) {
+    await verifyPassword(await getDummyPasswordHash(), password);
+    return { ok: false };
+  }
+
+  if (!(await verifyPassword(user.passwordHash, password))) {
+    return { ok: false };
+  }
+
+  await touchLastLogin(database, user.id);
+  return { ok: true, userId: user.id };
+}
+
+/**
+ * Runs after every successful login or registration, before the session cookie is set. Side
+ * effects that belong here are still to come: linking the visitor's analytics sessions and
+ * events and recording the `login` event (#18), and merging the guest cart (#10). Whatever is
+ * added must never make logging in fail.
+ */
+export async function onUserAuthenticated(
+  _request: Request,
+  _userId: number,
+  _kind: "login" | "register",
+): Promise<void> {}

@@ -79,6 +79,11 @@ feature.
   when the design needs it.
 - **Logged-in users on `/login` or `/register`** are redirected to `safeRedirect(redirectTo)` by
   the loaders.
+- **Deviation: `registerUser` doesn't use a transaction.** It's a single `INSERT` that sets
+  `last_login_at` too, so a transaction adds nothing.
+- **Deviation: `vitest.config.ts` `testTimeout: 20_000`.** On this machine, the first dynamic
+  import of the server modules takes over 5s, so `health.test.ts` and `header.test.ts` already
+  timed out on `main`, and the new auth tests did too.
 - **Forms work without JS:** plain `<Form method="post">`, errors from `actionData`, submitted
   values (except passwords) echoed back as `defaultValue`, and `redirectTo` carried in a hidden
   input. `useNavigation` shows the `Button`'s `loading` state when JS is available.
@@ -123,6 +128,8 @@ feature.
 | create | `app/.server/rate-limit.ts` (+ `.test.ts`) | In-memory fixed-window limiter, `getClientIp` |
 | modify | `app/.server/session.ts` (+ new `session.test.ts`) | `getUserId`, `createUserSession`, `logout` |
 | create | `app/.server/db/queries/users.ts` (+ `.test.ts`) | `findUserByEmail`, `findUserById`, `insertUser`, `touchLastLogin` |
+| create | `app/.server/db/errors.ts` | `pgErrorCode`, `UNIQUE_VIOLATION` (shared with `test-utils.ts`) |
+| modify | `vitest.config.ts` | Raise `testTimeout` to 20s |
 | create | `app/.server/services/auth.ts` (+ `.test.ts`) | `getUser`, `requireUser`, `registerUser`, `verifyLogin`, `onUserAuthenticated` |
 | modify | `app/.server/services/header.ts` (+ `.test.ts`) | Use `getUser` instead of the session stub |
 | create | `app/lib/auth.ts` (+ `.test.ts`) | zod schemas, `AuthFormErrors`, `safeRedirect`, `resolveAcquisitionChannel` |
@@ -174,7 +181,7 @@ Each step is small, ordered, and leaves the app in a working state.
 
   Unit-test every rule, including the open-redirect cases (`//evil.com`, `/\evil.com`,
   `https://evil.com`, `undefined`).
-- [ ] **5. Add the session helpers and the auth service.**
+- [x] **5. Add the session helpers and the auth service.**
   - `session.ts`: `getUserId(request)`, `createUserSession({ request, userId, redirectTo })`,
     which sets `userId`, commits and returns `redirect(redirectTo, { headers: { "Set-Cookie" } })`,
     and `logout(request)`, which destroys the session and redirects to `/`.
@@ -184,8 +191,10 @@ Each step is small, ordered, and leaves the app in a working state.
     - `requireUser(request)`: throws
       `redirect("/login?redirectTo=" + encodeURIComponent(pathname + search))` when there's no
       user.
-    - `registerUser(database, input)`: hashes the password; in one `database.transaction`, inserts
-      the user with `lastLoginAt = now()`; maps `23505` to `{ ok: false, error: "email_taken" }`.
+    - `registerUser(database, input)`: hashes the password and inserts the user with
+      `lastLoginAt` set (a single insert, so no transaction is needed); maps `23505` (via the new
+      `db/errors.ts` `pgErrorCode`, also reused by `test-utils.ts`) to
+      `{ ok: false, error: "email_taken" }`.
     - `verifyLogin(database, email, password)`: verifies against `getDummyPasswordHash()` when the
       email is unknown; on success calls `touchLastLogin`; returns `{ ok: true, userId }` or
       `{ ok: false }`.

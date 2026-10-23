@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { Client } from "pg";
 import { getDatabaseUrl } from "../env";
 import { createDb, type Db } from "./client";
+import { pgErrorCode as codeOf } from "./errors";
 
 if (existsSync(".env")) {
   process.loadEnvFile(".env");
@@ -57,10 +58,8 @@ export async function pgErrorCode(query: PromiseLike<unknown>): Promise<string |
   try {
     await query;
   } catch (error: unknown) {
-    const cause = error instanceof Error && error.cause !== undefined ? error.cause : error;
-    if (typeof cause === "object" && cause !== null && "code" in cause) {
-      return String(cause.code);
-    }
+    const code = codeOf(error);
+    if (code !== undefined) return code;
     throw error;
   }
   return undefined;

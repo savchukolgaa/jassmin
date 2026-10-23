@@ -148,7 +148,7 @@ stock status and an "Add to cart" button. All data is loaded in route `loader`s.
 ## Steps
 Each step is small, ordered and leaves the app working.
 
-- [ ] **1. Shared catalog types and helpers.**
+- [x] **1. Shared catalog types and helpers.**
   - Create `app/lib/catalog.ts`:
     - Move `isCatalogGender` and the titles out of `routes/catalog.tsx` (`CATALOG_TITLES`).
     - `CATALOG_SORTS = ["newest", "price_asc", "price_desc"] as const`.

@@ -1,17 +1,10 @@
 import { data } from "react-router";
 import { PagePlaceholder } from "~/components/layout/PagePlaceholder";
+import { CATALOG_TITLES, isCatalogGender } from "~/lib/catalog";
 import type { Route } from "./+types/catalog";
 
-const TITLES = { men: "Men Perfumes", women: "Women Perfumes" } as const;
-
-type CatalogGender = keyof typeof TITLES;
-
-function isCatalogGender(value: string): value is CatalogGender {
-  return Object.hasOwn(TITLES, value);
-}
-
 export function meta({ loaderData }: Route.MetaArgs) {
-  return [{ title: loaderData ? `${TITLES[loaderData.gender]} — Jassmin` : "Jassmin" }];
+  return [{ title: loaderData ? `${CATALOG_TITLES[loaderData.gender]} — Jassmin` : "Jassmin" }];
 }
 
 // Placeholder until the real catalog (#8).
@@ -23,5 +16,5 @@ export function loader({ params }: Route.LoaderArgs) {
 }
 
 export default function Catalog({ loaderData }: Route.ComponentProps) {
-  return <PagePlaceholder title={TITLES[loaderData.gender]} />;
+  return <PagePlaceholder title={CATALOG_TITLES[loaderData.gender]} />;
 }

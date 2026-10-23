@@ -46,7 +46,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   `EventProperties = Record<string, unknown>` lives in `app/lib/analytics.ts`.
 - **FK delete actions**:
   - `sessions.user_id → users.id` and `user_events.user_id → users.id`: `on delete set null`
-    **(unconfirmed, Q1)**. Rows keep `anonymous_id`, so behaviour stays usable as anonymous data.
+    (confirmed). Rows keep `anonymous_id`, so behaviour stays usable as anonymous data.
   - `user_events.session_id → sessions.session_id`: `not null`, `on delete cascade` (an event
     can't outlive its session).
   - `user_events.product_id → products.id`: `on delete set null`, like `order_items.product_id`,
@@ -71,17 +71,12 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   the row type is `AnalyticsSession` to avoid confusion with the cookie session in
   `app/.server/session.ts` (#9).
 
-## Open questions
-- [ ] **Q1: What happens to analytics rows when a user is deleted?** — Why it matters: `restrict`
-  (the choice for `carts`/`orders`) would block deleting any user who ever visited, while
-  `set null` keeps the rows but un-links them, and `cascade` erases the behaviour history.
-  Recommended default: `on delete set null` for `sessions.user_id` and `user_events.user_id`.
-  Affects steps: 2, 4, 5.
-- [ ] **Q2: Keep the two extra indexes (`sessions_user_id_idx`, `user_events_session_id_idx`)?**
-  — Why it matters: each adds write cost on the busiest table, but #18's visitor linking and
-  session cascades would otherwise scan. Recommended default: add both. Affects steps: 2, 5.
-
 ## Resolved questions
+- **What happens to analytics rows when a user is deleted?** — `on delete set null` for
+  `sessions.user_id` and `user_events.user_id`: `restrict` would block deleting anyone who ever
+  visited, and `cascade` would erase the behaviour history (source: confirmed by the user).
+- **Keep the two extra indexes (`sessions_user_id_idx`, `user_events_session_id_idx`)?** — Yes,
+  add both (source: confirmed by the user).
 - **Does the `carts.session_id` FK belong here?** — Yes, #4 left it out on purpose
   (source: `app/.server/db/schema.ts:88`, `app/.server/AGENTS.md` "gets its FK to `sessions` in
   #5", #5 Technical).

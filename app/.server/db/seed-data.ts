@@ -1,11 +1,25 @@
+import type { PerfumeVolumeMl } from "~/lib/enums";
 import type { products } from "./schema";
 
-export type SampleProduct = typeof products.$inferInsert & { publicId: string };
+export interface SampleVariant {
+  volumeMl: PerfumeVolumeMl;
+  price: string;
+  stockQuantity: number;
+}
+
+export type SampleProduct = typeof products.$inferInsert & {
+  publicId: string;
+  /** Sizes for sale. One of them repeats the legacy `volumeMl`/`price`/`stockQuantity`. */
+  variants: SampleVariant[];
+};
 
 /**
  * Sample catalog for local development (`pnpm db:seed`). Each product has a fixed UUID v7
  * `publicId`, so re-running the seed skips products that already exist. Never change an
  * existing `publicId`; add new products with a fresh one (`select uuidv7()`).
+ *
+ * The legacy `price`/`volumeMl`/`stockQuantity` columns are deprecated (#26) but still NOT NULL,
+ * so each product keeps them, equal to one of its variants (the one the migration backfills).
  */
 export const SAMPLE_PRODUCTS: SampleProduct[] = [
   {
@@ -18,6 +32,13 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "6850.00",
     volumeMl: 50,
     stockQuantity: 6,
+    variants: [
+      { volumeMl: 7, price: "990.00", stockQuantity: 10 },
+      { volumeMl: 10, price: "1350.00", stockQuantity: 0 },
+      { volumeMl: 30, price: "4450.00", stockQuantity: 3 },
+      { volumeMl: 50, price: "6850.00", stockQuantity: 6 },
+      { volumeMl: 100, price: "9900.00", stockQuantity: 2 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c39-a4ce-d1efe1e47081",
@@ -29,6 +50,12 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "4790.00",
     volumeMl: 50,
     stockQuantity: 10,
+    variants: [
+      { volumeMl: 10, price: "950.00", stockQuantity: 8 },
+      { volumeMl: 30, price: "3290.00", stockQuantity: 5 },
+      { volumeMl: 50, price: "4790.00", stockQuantity: 10 },
+      { volumeMl: 100, price: "6890.00", stockQuantity: 0 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c3f-9567-5f694e414a33",
@@ -40,6 +67,11 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "5990.00",
     volumeMl: 50,
     stockQuantity: 4,
+    variants: [
+      { volumeMl: 7, price: "890.00", stockQuantity: 6 },
+      { volumeMl: 50, price: "5990.00", stockQuantity: 4 },
+      { volumeMl: 100, price: "8650.00", stockQuantity: 1 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c44-8d5b-bce46a20ad83",
@@ -51,6 +83,11 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "4450.00",
     volumeMl: 100,
     stockQuantity: 12,
+    variants: [
+      { volumeMl: 10, price: "790.00", stockQuantity: 15 },
+      { volumeMl: 50, price: "3290.00", stockQuantity: 6 },
+      { volumeMl: 100, price: "4450.00", stockQuantity: 12 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c48-8efe-b797385135f1",
@@ -62,6 +99,11 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "6290.00",
     volumeMl: 100,
     stockQuantity: 5,
+    variants: [
+      { volumeMl: 10, price: "1090.00", stockQuantity: 4 },
+      { volumeMl: 50, price: "4590.00", stockQuantity: 3 },
+      { volumeMl: 100, price: "6290.00", stockQuantity: 5 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c4c-90c3-90721a76a8ea",
@@ -73,6 +115,10 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "3890.00",
     volumeMl: 100,
     stockQuantity: 0,
+    variants: [
+      { volumeMl: 30, price: "1990.00", stockQuantity: 0 },
+      { volumeMl: 100, price: "3890.00", stockQuantity: 0 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c51-bcf8-0d0dd7accc0a",
@@ -84,6 +130,11 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "5350.00",
     volumeMl: 100,
     stockQuantity: 3,
+    variants: [
+      { volumeMl: 7, price: "690.00", stockQuantity: 12 },
+      { volumeMl: 30, price: "2690.00", stockQuantity: 2 },
+      { volumeMl: 100, price: "5350.00", stockQuantity: 3 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c55-8003-478f2d6abfb1",
@@ -95,6 +146,13 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "4200.00",
     volumeMl: 100,
     stockQuantity: 7,
+    variants: [
+      { volumeMl: 7, price: "590.00", stockQuantity: 20 },
+      { volumeMl: 10, price: "790.00", stockQuantity: 15 },
+      { volumeMl: 30, price: "1890.00", stockQuantity: 4 },
+      { volumeMl: 50, price: "2890.00", stockQuantity: 0 },
+      { volumeMl: 100, price: "4200.00", stockQuantity: 7 },
+    ],
   },
   {
     publicId: "01a1652b-6e25-7c59-9e70-834bee97963a",
@@ -107,5 +165,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 10,
     packSize: 3,
     stockQuantity: 20,
+    variants: [{ volumeMl: 10, price: "990.00", stockQuantity: 20 }],
   },
 ];

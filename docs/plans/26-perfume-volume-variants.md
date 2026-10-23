@@ -211,7 +211,7 @@ chosen variant.
   `formatVariantOption(variant, packSize)` (`30 ml — 1 450 ₴`, plus ` (out of stock)`).
   Unit-test all three in `products.test.ts`. In `app/lib/cart.ts` add `variantId: z.uuid()` and
   the error codes `"invalid-variant" | "out-of-stock"` with messages, and update `cart.test.ts`.
-- [ ] **5. Seed data**: add `variants: { volumeMl: PerfumeVolumeMl; price; stockQuantity }[]` to
+- [x] **5. Seed data**: add `variants: { volumeMl: PerfumeVolumeMl; price; stockQuantity }[]` to
   `SampleProduct` (kept out of the `products` insert). Give most perfumes 2–5 sizes with different
   prices/stock, including at least one out-of-stock size and one fully out-of-stock product. Keep
   the 3 × 10 ml set single-variant. Each product's legacy `volumeMl/price/stockQuantity` must equal

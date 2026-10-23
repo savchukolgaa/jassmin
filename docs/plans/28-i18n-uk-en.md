@@ -102,6 +102,11 @@ copy, in the storefront and the admin area, moves into the dictionaries. Prices 
   natural, shop-like register (`ви`, not `Ви`), with correct plural forms and Ukrainian
   typography (`«»` quotes, `—` dashes, `₴` after the amount). No separate owner review of
   `uk.ts` is required before merge.
+- **Implementation notes.** All dictionary keys were written in step 1 instead of growing per
+  step. Validation keys are `TextKey`s (plain, non-plural keys) and `isTextKey` replaces the
+  planned `isMessageKey`. The home and blog services no longer embed a default description: the
+  home view leaves it empty for `meta` to fill in, and `buildBlogPostView` takes the locale. Step
+  15 merges `origin/main` instead of rebasing, as the user asked.
 - **D15. The switcher shows flags** (answer to Q3): 🇺🇦 for `uk` and 🇬🇧 for `en` (matching
   `en-GB`, D8). Flags are **inline SVGs** in `app/components/layout/icons.tsx` (`FlagUaIcon`,
   `FlagGbIcon`), not emoji, because Windows doesn't render flag emoji (it shows the letters
@@ -348,7 +353,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   grep for quoted capitalised phrases. Every remaining hit must be a brand, a class name, or a
   comment.
 
-- [ ] **14. Docs for later issues.** Add a short "Translations (i18n)" section to `AGENTS.md`
+- [x] **14. Docs for later issues.** Add a short "Translations (i18n)" section to `AGENTS.md`
   covering these rules:
   - Storefront copy lives in `app/lib/i18n/uk.ts` + `en.ts` under a namespace per feature. Add
     every key to both files. This includes the admin area (`admin.<section>.*`).
@@ -361,10 +366,10 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   Mention in the PR that #10 adds its strings under the existing `cart` namespace and #16 under
   `admin.products`.
 
-- [ ] **15. Rebase and verify.** After #38 merges: `git fetch origin && git rebase origin/main`,
-  resolve `root.tsx`/`PagePlaceholder.tsx`/`account.tsx`, then run `pnpm typecheck`, `pnpm lint`,
-  `pnpm test` and `pnpm build`, and do the manual checks below. Remove this plan file before the
-  PR is merged.
+- [ ] **15. Merge main and verify.** `git fetch origin && git merge origin/main` (a merge, not a
+  rebase, per the user's merge instructions; never force-push), resolve conflicts with #38/#10/#16
+  keeping both sides' intent, then run `pnpm install`, `pnpm typecheck`, `pnpm lint`, `pnpm test`
+  and `pnpm build`. Remove this plan file before the PR is merged.
 
 ## Testing & verification
 

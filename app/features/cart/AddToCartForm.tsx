@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { useFetcher } from "react-router";
+import { Link, useFetcher } from "react-router";
+import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import type { ButtonSize } from "~/components/ui/button-styles";
-import { CART_ERROR_KEYS, type CartActionResult } from "~/lib/cart";
+import { type CartActionResult, cartErrorMessage } from "~/lib/cart";
 import { useT } from "~/lib/i18n";
 
 export interface AddToCartFormProps {
@@ -30,9 +31,10 @@ export function AddToCartForm({
   className,
   children,
 }: AddToCartFormProps) {
-  const { t } = useT();
+  const translator = useT();
+  const { t } = translator;
   const fetcher = useFetcher<CartActionResult>({ key: `add-to-cart-${productId}` });
-  const error = fetcher.state === "idle" && fetcher.data?.ok === false ? fetcher.data.error : null;
+  const result = fetcher.state === "idle" ? fetcher.data : undefined;
 
   return (
     <fetcher.Form method="post" action="/cart" className={className}>
@@ -49,9 +51,25 @@ export function AddToCartForm({
       >
         {inStock ? (label ?? t("cart.add")) : t("product.outOfStock")}
       </Button>
-      <p aria-live="polite" className="mt-2 min-h-5 text-sm text-muted">
-        {error ? t(CART_ERROR_KEYS[error]) : null}
-      </p>
+      <div aria-live="polite" className="mt-2 min-h-5 text-sm">
+        {result?.ok === true && (
+          <p
+            role="status"
+            className="inline-flex animate-toast items-center gap-2 rounded-pill bg-success-bg px-3 py-1 font-bold text-success"
+          >
+            {t("cart.added")}
+            <Link
+              to="/cart"
+              className={`rounded underline underline-offset-2 ${focusRing("onLight")}`}
+            >
+              {t("cart.view")}
+            </Link>
+          </p>
+        )}
+        {result?.ok === false && (
+          <p className="text-muted">{cartErrorMessage(result, translator)}</p>
+        )}
+      </div>
     </fetcher.Form>
   );
 }

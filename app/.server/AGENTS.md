@@ -37,14 +37,30 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 - Cart lines are per variant: `cart_items.variant_id` is required, and `(cart_id, variant_id)` is unique. Keep `cart_items.product_id` equal to the variant's product. Validate a submitted `variantId` with `checkVariantForCart` (`services/products.ts`) before you store it.
 - At checkout (#11), check and decrement `product_variants.stock_quantity` inside the order transaction, copy the variant price into `order_items.price_at_purchase`, and set `order_items.variant_id` and the `order_items.volume_ml` snapshot.
 - Commerce tables (`carts`, `cart_items`, `orders`, `order_items`): every order amount and `order_items.price_at_purchase` is also `numeric(10, 2)`, computed on the server. Their row types (and `product_variants`') are mirrored in `~/lib/commerce`, and `schema.test.ts` fails if the two drift apart. `orders.payment_method` is limited to `PAYMENT_METHODS` by a CHECK constraint. `carts.user_id` and `orders.user_id` use `on delete restrict`, so a user with carts or orders can't be deleted. `carts.session_id` references `sessions` with `on delete set null`.
-- Analytics tables (`sessions`, `user_events`): these are visitor sessions for traffic and conversion analysis, not the auth cookie session in `session.ts`. Their row types are mirrored in `~/lib/analytics` (`AnalyticsSession`, `UserEvent`) and checked by `schema.test.ts`. `user_events.event_type` is limited to `EVENT_TYPES` by a CHECK constraint, so adding an event type means a migration that rewrites the check. `user_id` is filled in after login and set to `null` when the user is deleted (rows keep `anonymous_id`); deleting a session cascades to its events, and deleting a product nulls `user_events.product_id`. Sessions and events are written by #18.
+- Analytics tables (`sessions`, `user_events`): these are visitor sessions for traffic and conversion analysis, not the auth cookie session in `session.ts`. Their row types are mirrored in `~/lib/analytics` (`AnalyticsSession`, `UserEvent`) and checked by `schema.test.ts`. `user_events.event_type` is limited to `EVENT_TYPES` by a CHECK constraint, so adding an event type means a migration that rewrites the check. `user_id` is filled in after login and set to `null` when the user is deleted (rows keep `anonymous_id`); deleting a session cascades to its events, and deleting a product nulls `user_events.product_id`. Sessions are created by `getVisitor` (below); #18 adds the events.
 - `carts.updated_at` and `orders.updated_at` are refreshed by Drizzle's `$onUpdate` on every query-builder update. Raw SQL updates must set `updated_at = now()` themselves, and changes to `cart_items` must bump their cart's `updated_at` (the abandoned-cart job relies on it).
+- One active cart per owner: the partial unique indexes `carts_active_user_id_unique` and `carts_active_guest_session_id_unique` (#10) allow a single `active` cart per user and per guest session, so `insertActiveCart` uses `onConflictDoNothing` and re-reads.
 - `users.role` (`user_role` enum from `USER_ROLES`: `customer` | `admin`, default `customer`) controls access to `/admin` (#14). Change it only with `setUserRole` / `pnpm db:make-admin`.
 - Migrations: `pnpm db:generate --name <name>` writes them to `db/migrations/`. Every migration needs a hand-written reverse in `db/rollbacks/<tag>.sql`, which `pnpm db:rollback` (`rollbackLatest` in `db/migrator.ts`) runs. Never edit an applied migration.
 - `pnpm db:seed` (`db/seed.ts`) inserts `SAMPLE_PRODUCTS` from `db/seed-data.ts` with `onConflictDoNothing` on `public_id`, then their `variants` with `onConflictDoNothing` on `(product_id, volume_ml)`, so new sample sizes reach existing databases. Give new sample products a fresh fixed UUID v7, and never change an existing one.
 - Put query functions in `db/queries/<area>.ts` and keep them small and typed. Put business rules that combine several queries in `services/`.
 - Use `db.transaction(async (tx) => …)` whenever multiple writes must succeed together, and pass `tx` down instead of `db`.
 - Raw `db.execute(sql\`…\`)` returns `timestamptz` values as **strings**, so convert them with `new Date()`. Typed queries built with the query builder return `Date`s.
+
+## Visitor: `analytics.ts`
+
+- `getVisitor(request)` returns the visitor's `anonymousId` and current analytics `sessionId`, creating them when missing (a `sessions` row plus the signed `anonymous_id` and `analytics_session` cookies), and the `headers` with their `Set-Cookie`. Send `headers` with the response. Only actions that write call it (today: adding to the cart).
+- `readVisitor(request)` only parses the cookies and never writes. Loaders use it, so browsing doesn't create sessions rows.
+- The cookie names live in `visitor-cookie.ts` (env-free). `hasSessionCookie` also counts `anonymous_id`, so blog pages with a guest's cart count aren't cached publicly.
+- This is the minimal version from #10. #18 extends it (30-minute session windows, traffic source and device, `trackEvent`, `linkVisitorToUser`) without changing the signatures or the cookie names.
+
+## Cart: `services/cart.ts`
+
+- A user's active cart is found by `user_id`; a guest's by `anonymous_id`, through any of their `sessions` (so it survives a new session), with `user_id` null.
+- Loaders read through `getCartOwner(request)` (a stale user cookie counts as a guest) and `getCartView` / `getCartCount`. Writes take a `CartWriter` with the ids from `getVisitor`. Only `addItem` may create the cart (`getOrCreateActiveCart`).
+- Every change runs in a transaction that locks the cart row (`lockCart`) and ends with `touchCart`. A line's quantity may never exceed its variant's `stock_quantity`; stock isn't reserved, so checkout (#11) checks again.
+- `mergeGuestCart` runs from `onUserAuthenticated`: without a user cart the guest cart is adopted; otherwise its lines are added to the user's (capped at stock, sold-out sizes dropped) and the guest cart is deleted.
+- Line totals and the subtotal are computed in SQL as `numeric`, never in JS.
 
 ## Session: `session.ts`
 
@@ -59,7 +75,7 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 - Passwords are hashed with argon2id in `password.ts` (`hashPassword`, `verifyPassword`). Emails are trimmed and lowercased by the zod schemas in `~/lib/auth` before every lookup or insert.
 - Pass every redirect target that comes from the request (e.g. `redirectTo`) through `safeRedirect` from `~/lib/auth`.
 - `verifyLogin` updates `last_login_at` (a churn-model feature) on every successful login; `registerUser` sets it too.
-- Side effects after a login or registration (linking analytics visitors, the `login` event, merging the guest cart) go in `onUserAuthenticated`. It must never make logging in fail.
+- Side effects after a login or registration go in `onUserAuthenticated`: it merges the guest cart (#10); linking analytics visitors and the `login` event come with #18. It must never make logging in fail, so it catches and logs its errors.
 - Failed logins are rate-limited in memory (`loginLimiters`: 5 per email, 20 per IP per 15 minutes). The counters are per process and reset on restart.
 
 ## Tests

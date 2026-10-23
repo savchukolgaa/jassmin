@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
+const cart = vi.hoisted(() => ({ mergeGuestCart: vi.fn() }));
+const analytics = vi.hoisted(() => ({ readVisitor: vi.fn() }));
+
+vi.mock("./cart", () => cart);
+vi.mock("../analytics", () => analytics);
+
 beforeAll(() => {
   vi.stubEnv("DATABASE_URL", process.env.DATABASE_URL || "postgres://u:p@localhost:5432/jassmin");
   vi.stubEnv("SESSION_SECRET", "s".repeat(32));
@@ -16,6 +22,42 @@ async function cookieFor(userId: number): Promise<string> {
   session.set("userId", userId);
   return (await commitSession(session)).split(";")[0] ?? "";
 }
+
+describe("onUserAuthenticated", () => {
+  const request = new Request("http://localhost/login", { method: "POST" });
+  const ANONYMOUS_ID = "0b6f1b8e-3f7e-4a52-9a43-3c1f7f1f2c11";
+
+  it("merges the visitor's guest cart into the user's", async () => {
+    analytics.readVisitor.mockResolvedValueOnce({ anonymousId: ANONYMOUS_ID });
+    const { onUserAuthenticated } = await import("./auth");
+
+    await onUserAuthenticated(request, 5, "login");
+
+    expect(analytics.readVisitor).toHaveBeenCalledWith(request);
+    expect(cart.mergeGuestCart).toHaveBeenCalledWith(5, ANONYMOUS_ID);
+  });
+
+  it("skips the merge for a visitor without a visitor cookie", async () => {
+    cart.mergeGuestCart.mockClear();
+    analytics.readVisitor.mockResolvedValueOnce({});
+    const { onUserAuthenticated } = await import("./auth");
+
+    await onUserAuthenticated(request, 5, "register");
+
+    expect(cart.mergeGuestCart).not.toHaveBeenCalled();
+  });
+
+  it("never makes logging in fail", async () => {
+    analytics.readVisitor.mockResolvedValueOnce({ anonymousId: ANONYMOUS_ID });
+    cart.mergeGuestCart.mockRejectedValueOnce(new Error("db down"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { onUserAuthenticated } = await import("./auth");
+
+    await expect(onUserAuthenticated(request, 5, "login")).resolves.toBeUndefined();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+});
 
 describe("requireUser", () => {
   it("redirects a logged-out visitor to login with the current page as redirectTo", async () => {

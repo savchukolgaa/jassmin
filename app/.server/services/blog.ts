@@ -66,8 +66,9 @@ export function buildBlogPostView(
 
 /**
  * Cache headers for blog pages. The HTML includes the visitor's header (login state, cart count),
- * so only responses for visitors without a session cookie may be stored by shared caches, and it
- * is in the visitor's locale, so caches must key on the locale's sources too (`BLOG_VARY`).
+ * so only responses for visitors without a session or visitor cookie may be stored by shared
+ * caches. It is also in the visitor's locale, so caches must key on the locale's sources too
+ * (`BLOG_VARY`).
  */
 export function blogCacheHeaders(request: Request): Headers {
   return new Headers({

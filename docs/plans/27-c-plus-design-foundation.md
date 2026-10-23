@@ -15,8 +15,8 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
 ## Dependencies & prerequisites
 - #2 (theme and `Button`) and #6 (header, nav, `_shop` layout) are closed and on `main`. This plan
   restyles what they added.
-- #8 (catalog) is still open. `/catalog/:gender` only accepts `men` and `women` today, so there is
-  no Unisex catalog to link to yet (see Q3).
+- #8 (catalog) is still open. `/catalog/:gender` only accepts `men` and `women`, and there won't be
+  a Unisex catalog, so the footer has no Unisex link.
 - No new packages, env vars or migrations. Manrope comes from Google Fonts through a `<link>`.
 - Design canvas: https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW ("Chosen direction: Option C+"
   row). Use it as the visual reference, not options A–G.
@@ -71,22 +71,16 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   footer are always deep pink, and the dropdown panels lose their `dark:` styles so they stay
   readable against the pink bar.
 
-## Open questions
-- [ ] **Q1: Focus ring colour on the pink bar.** The issue asks for a 3px `#FF8FA1` ring, but
-  `#FF8FA1` on `#C22F4B` is only ≈ 2.5:1. That fails WCAG 1.4.11 (3:1 for focus indicators) and
-  conflicts with the AA acceptance criterion. Why it matters: keyboard users may not see focus in
-  the header and footer. Recommended default: a 3px **white** ring (≈ 5.5:1) with a 2px offset on
-  deep-pink surfaces, `#FF8FA1` on ink surfaces (≈ 7.9:1), and `primary` on white. Affects steps 3, 5,
-  6, 7.
-- [ ] **Q2: Should the white cart pill show "0" for an empty cart?** Why it matters: the current
-  test "shows no badge for an empty cart" and the design's "pill showing the item count".
-  Recommended default: always show the pill, and show the count only when it's above 0, keeping
-  `formatCartCount`. Affects step 5.
-- [ ] **Q3: Unisex footer link.** The design's footer row includes Unisex, but `/catalog/unisex`
-  doesn't exist and #8 is still open. Recommended default: leave it out for now. #8 can add it to
-  `CATALOG_LINKS`, and the footer then picks it up automatically. Affects step 7.
-
 ## Resolved questions
+- **Focus ring colour on the pink bar?** The issue's `#FF8FA1` is only ≈ 2.5:1 on `#C22F4B`, which fails
+  WCAG 1.4.11. Use a 3px **white** ring with a 2px offset on deep-pink surfaces (≈ 5.5:1),
+  `#FF8FA1` on ink surfaces (≈ 7.9:1) and `primary` on white (source: owner's answer on the plan,
+  2026-10-23).
+- **Should the cart pill show "0" for an empty cart?** No. Always show the white pill, and show the
+  count only when it's above 0, keeping `formatCartCount` (source: owner, 2026-10-23, "okay for
+  now").
+- **Unisex footer link?** No. There won't be a Unisex catalog, so the footer links are only Women,
+  Men, Blog, About us and Kontakt (source: owner, 2026-10-23).
 - **Does anything use the `secondary` button variant?** No. It's only used in `Button.test.ts` and
   `button-styles.test.ts` (source: `grep variant app/routes`).
 - **Does `/blog` exist for the footer?** Yes, `route("blog", "routes/blog.tsx")` (source: `app/routes.ts`).
@@ -113,6 +107,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
 | create | `app/components/layout/Footer.test.ts` | Links, ©, `aria-hidden` wordmark, `overflow-hidden` |
 | modify | `app/routes/_shop.tsx` | Render `<Footer />` in the layout and the error boundary |
 | create | `docs/design.md` | Design reference for later UI issues |
+| modify | `AGENTS.md` | One line pointing UI work to `docs/design.md` |
 
 ## Steps
 - [ ] **1. Theme tokens and font.** In `app/app.css` `@theme`, set the colour tokens from the issue
@@ -143,7 +138,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   Update `ButtonVariant` and both test files: variant list, focus classes, `rounded-full`,
   `font-extrabold`, size→`min-h-*` mapping, and `ButtonLink` asserting `min-h-14.5` instead of `h-13`.
 - [ ] **4. Nav helpers.** In `nav.ts`:
-  - Replace `focusRing` with `focusRingOnPrimary` (white 3px, see Q1) and `focusRingOnLight`
+  - Replace `focusRing` with `focusRingOnPrimary` (white 3px, see Resolved questions) and `focusRingOnLight`
     (`outline-primary`).
   - Change `navItemClasses(active, tone = "onPrimary")` and `iconButtonClasses(active, tone)` as
     described in Decisions. Active `onPrimary` gets `underline decoration-2 underline-offset-8`, plus
@@ -157,7 +152,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   - Profile `NavLink`: logged in, `bg-white text-primary` circle; logged out, white outline icon.
   - Cart `NavLink`: `inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white px-4
     text-primary font-extrabold`, with the count in `<span aria-hidden="true">`, shown only when
-    `badge` isn't empty (Q2).
+    `badge` isn't empty.
   - Keep link order, `aria-label`s and `formatCartCount`. The layout stays within 375px: on mobile,
     the hamburger, profile and cart are each 44px.
 - [ ] **6. Dropdowns.** `CatalogMenu`: the trigger uses `navItemClasses(inCatalog, "onPrimary")`.
@@ -219,7 +214,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   4. typeface and scale (Manrope 400–800; headings 800 with −0.03 to −0.05em tracking; suggested sizes)
   5. radius and spacing (pill 999px, cards 24–32px, arch images `rounded-t-[50%]` / top radius = half
      the width; 16px mobile gutter, `container mx-auto px-4`)
-  6. focus rings per surface (the Q1 outcome)
+  6. focus rings per surface (white on deep pink, `#FF8FA1` on ink, `primary` on white)
   7. buttons: variants and sizes, with a usage example
   8. motion: the utilities and when to use them, and that everything is off under reduced motion
   9. the issue-to-canvas-page table from #27
@@ -254,7 +249,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
 - [ ] The header matches C+ (sticky deep pink, white cart pill with count, visible focus ring on pink) and still passes its existing behaviour tests and works at 375px — steps 4, 5, 6, 10
 - [ ] A C+ footer renders on all public pages and causes no horizontal scroll at 375px — steps 7, 10
 - [ ] The motion utilities exist and all animation stops under `prefers-reduced-motion: reduce` — steps 3, 8
-- [ ] Every text and background pair in the header, buttons and footer meets WCAG AA: 4.5:1 for normal text, 3:1 for large text and icons — steps 2, 6, 10 (Q1)
+- [ ] Every text and background pair in the header, buttons and footer meets WCAG AA: 4.5:1 for normal text, 3:1 for large text and icons — steps 2, 6, 10
 - [ ] `docs/design.md` documents the canvas link, the tokens with their contrast ratios, the typeface, the motion rules and the page-to-issue table — step 9
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
 
@@ -263,6 +258,6 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   arch images, price badge, offer banner and "Added to cart" popup themselves. This issue only adds
   the utilities they use.
 - The tester-trio picker logic and the volume dropdown (#26).
-- A Unisex catalog route (#8).
+- A Unisex catalog. There won't be one, per the owner.
 - Designing dark mode. Restyling `ErrorContent` and `PagePlaceholder` beyond the inherited font and
   colours.

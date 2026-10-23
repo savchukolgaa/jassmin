@@ -191,7 +191,7 @@ Each step is small, ordered and leaves the app working.
     - Filter options are scoped by gender.
     - `getProduct` returns the full product, and `null` for an unknown UUID.
 
-- [ ] **4. Catalog loader.** In `routes/catalog.tsx`:
+- [x] **4. Catalog loader.** In `routes/catalog.tsx`:
   - `loader({ params, request })`:
     - `isCatalogGender(params.gender)`, else `throw data(null, { status: 404 })`.
     - `const search = parseCatalogSearch(new URL(request.url).searchParams)`.

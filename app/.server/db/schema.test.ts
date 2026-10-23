@@ -1,10 +1,16 @@
+import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import type { Cart, CartItem, Order, OrderItem } from "~/lib/commerce";
 import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES } from "~/lib/enums";
 import {
+  cartItems,
   cartStatusType,
+  carts,
   genderType,
+  orderItems,
   orderStatusType,
+  orders,
   paymentStatusType,
   products,
   users,
@@ -18,6 +24,26 @@ function describeColumns(table: Parameters<typeof getTableConfig>[0]) {
       [column.getSQLType(), column.notNull, column.hasDefault],
     ]),
   );
+}
+
+/** TS column key → [referenced table, on delete action], for each foreign key. */
+function describeForeignKeys(table: Parameters<typeof getTableConfig>[0]) {
+  return Object.fromEntries(
+    getTableConfig(table).foreignKeys.map((fk) => {
+      const { columns, foreignTable } = fk.reference();
+      return [columns.map((c) => c.name).join(","), [getTableName(foreignTable), fk.onDelete]];
+    }),
+  );
+}
+
+/** Names of the table's checks, unique constraints and indexes, each sorted. */
+function describeConstraints(table: Parameters<typeof getTableConfig>[0]) {
+  const { checks, uniqueConstraints, indexes } = getTableConfig(table);
+  return {
+    checks: checks.map((c) => c.name).sort(),
+    uniques: uniqueConstraints.map((u) => u.getName()).sort(),
+    indexes: indexes.map((i) => i.config.name).sort(),
+  };
 }
 
 describe("enums", () => {
@@ -83,5 +109,132 @@ describe("products", () => {
     ]);
     expect(columns.find((c) => c.name === "publicId")?.isUnique).toBe(true);
     expect(indexes.map((i) => i.config.name)).toEqual(["products_gender_idx"]);
+  });
+});
+
+describe("carts", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(carts)).toEqual({
+      id: ["serial", true, true],
+      userId: ["integer", false, false],
+      sessionId: ["uuid", false, false],
+      status: ["cart_status_type", true, true],
+      createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("restricts deleting a user and has the lookup indexes", () => {
+    expect(describeForeignKeys(carts)).toEqual({ userId: ["users", "restrict"] });
+    expect(describeConstraints(carts)).toEqual({
+      checks: [],
+      uniques: [],
+      indexes: ["carts_session_id_idx", "carts_status_updated_at_idx", "carts_user_id_idx"],
+    });
+  });
+
+  it("defaults status to 'active' and refreshes updated_at on update", () => {
+    const { columns } = getTableConfig(carts);
+
+    expect(columns.find((c) => c.name === "status")?.default).toBe("active");
+    expect(columns.find((c) => c.name === "updatedAt")?.onUpdateFn?.()).toBeInstanceOf(Date);
+  });
+});
+
+describe("cart_items", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(cartItems)).toEqual({
+      id: ["serial", true, true],
+      cartId: ["integer", true, false],
+      productId: ["integer", true, false],
+      quantity: ["integer", true, true],
+      addedAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("cascades deletes and has the quantity check and the unique (cart_id, product_id)", () => {
+    expect(describeForeignKeys(cartItems)).toEqual({
+      cartId: ["carts", "cascade"],
+      productId: ["products", "cascade"],
+    });
+    expect(describeConstraints(cartItems)).toEqual({
+      checks: ["cart_items_quantity_check"],
+      uniques: ["cart_items_cart_id_product_id_unique"],
+      indexes: [],
+    });
+  });
+});
+
+describe("orders", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(orders)).toEqual({
+      id: ["serial", true, true],
+      userId: ["integer", false, false],
+      guestFullName: ["varchar(255)", true, false],
+      guestEmail: ["varchar(255)", true, false],
+      guestPhone: ["varchar(50)", true, false],
+      shippingAddress: ["text", true, false],
+      status: ["order_status_type", true, true],
+      paymentStatus: ["payment_status_type", true, true],
+      paymentMethod: ["text", true, false],
+      subtotal: ["numeric(10, 2)", true, false],
+      discountAmount: ["numeric(10, 2)", true, true],
+      shippingAmount: ["numeric(10, 2)", true, true],
+      totalAmount: ["numeric(10, 2)", true, false],
+      currency: ["text", true, true],
+      createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
+      paidAt: ["timestamp with time zone", false, false],
+      cancelledAt: ["timestamp with time zone", false, false],
+      refundedAt: ["timestamp with time zone", false, false],
+    });
+  });
+
+  it("restricts deleting a user and indexes the guest contact fields", () => {
+    expect(describeForeignKeys(orders)).toEqual({ userId: ["users", "restrict"] });
+    expect(describeConstraints(orders)).toEqual({
+      checks: ["orders_amounts_check", "orders_payment_method_check"],
+      uniques: [],
+      indexes: ["orders_guest_email_idx", "orders_guest_phone_idx", "orders_user_id_idx"],
+    });
+  });
+
+  it("refreshes updated_at on update", () => {
+    const { columns } = getTableConfig(orders);
+
+    expect(columns.find((c) => c.name === "updatedAt")?.onUpdateFn?.()).toBeInstanceOf(Date);
+  });
+});
+
+describe("order_items", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(orderItems)).toEqual({
+      id: ["serial", true, true],
+      orderId: ["integer", true, false],
+      productId: ["integer", false, false],
+      quantity: ["integer", true, false],
+      priceAtPurchase: ["numeric(10, 2)", true, false],
+    });
+  });
+
+  it("cascades order deletes and keeps the row when its product is deleted", () => {
+    expect(describeForeignKeys(orderItems)).toEqual({
+      orderId: ["orders", "cascade"],
+      productId: ["products", "set null"],
+    });
+    expect(describeConstraints(orderItems)).toEqual({
+      checks: ["order_items_price_at_purchase_check", "order_items_quantity_check"],
+      uniques: [],
+      indexes: ["order_items_order_id_idx"],
+    });
+  });
+});
+
+describe("shared commerce types", () => {
+  it("match the rows the tables return", () => {
+    expectTypeOf<typeof carts.$inferSelect>().toEqualTypeOf<Cart>();
+    expectTypeOf<typeof cartItems.$inferSelect>().toEqualTypeOf<CartItem>();
+    expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();
+    expectTypeOf<typeof orderItems.$inferSelect>().toEqualTypeOf<OrderItem>();
   });
 });

@@ -119,7 +119,7 @@ feature.
 | Action | Path | Purpose |
 |--------|------|---------|
 | modify | `package.json`, `pnpm-lock.yaml` | Add `@node-rs/argon2` |
-| create | `app/.server/password.ts` (+ `.test.ts`) | `hashPassword`, `verifyPassword`, `DUMMY_PASSWORD_HASH` |
+| create | `app/.server/password.ts` (+ `.test.ts`) | `hashPassword`, `verifyPassword`, `getDummyPasswordHash` |
 | create | `app/.server/rate-limit.ts` (+ `.test.ts`) | In-memory fixed-window limiter, `getClientIp` |
 | modify | `app/.server/session.ts` (+ new `session.test.ts`) | `getUserId`, `createUserSession`, `logout` |
 | create | `app/.server/db/queries/users.ts` (+ `.test.ts`) | `findUserByEmail`, `findUserById`, `insertUser`, `touchLastLogin` |
@@ -137,11 +137,11 @@ feature.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Add password hashing.** `pnpm add @node-rs/argon2`. In `app/.server/password.ts`:
+- [x] **1. Add password hashing.** `pnpm add -w @node-rs/argon2` (`-w` because the repo is a pnpm workspace with `cms`). In `app/.server/password.ts`:
   `hashPassword(plain): Promise<string>` (argon2id, library defaults) and
   `verifyPassword(hash, plain): Promise<boolean>`, which returns `false` instead of throwing for a
-  malformed hash. Also export `DUMMY_PASSWORD_HASH`, a precomputed constant used for
-  timing-equalised checks. Tests: a hash doesn't contain the plain password and starts with
+  malformed hash. Also export `getDummyPasswordHash()`, which hashes a random password once
+  (memoised) for timing-equalised checks, so it always matches the current hash parameters. Tests: a hash doesn't contain the plain password and starts with
   `$argon2id$`; a correct password verifies; a wrong one and garbage input don't.
 - [ ] **2. Add the user queries.** `app/.server/db/queries/users.ts`, where each function takes
   `db: Db` first:
@@ -183,7 +183,7 @@ Each step is small, ordered, and leaves the app in a working state.
       user.
     - `registerUser(database, input)`: hashes the password; in one `database.transaction`, inserts
       the user with `lastLoginAt = now()`; maps `23505` to `{ ok: false, error: "email_taken" }`.
-    - `verifyLogin(database, email, password)`: verifies against `DUMMY_PASSWORD_HASH` when the
+    - `verifyLogin(database, email, password)`: verifies against `getDummyPasswordHash()` when the
       email is unknown; on success calls `touchLastLogin`; returns `{ ok: true, userId }` or
       `{ ok: false }`.
     - `onUserAuthenticated(request, userId, kind: "login" | "register")`: a no-op hook with a

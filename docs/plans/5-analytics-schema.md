@@ -168,7 +168,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
     user nulls `user_id` in both tables); a `jsonb` round trip for `event_properties`. Update
     the rollback test: first `rollbackLatest` returns `"0002_analytics_schema"` and leaves the
     commerce tables, then `0001`, `0000`, as today.
-- [ ] **6. Docs** — In `app/.server/AGENTS.md` "Database: `db/`": replace "`carts.session_id`
+- [x] **6. Docs** — In `app/.server/AGENTS.md` "Database: `db/`": replace "`carts.session_id`
   gets its FK to `sessions` in #5" with a bullet on the analytics tables (visitor sessions ≠
   cookie session; `event_type` limited to `EVENT_TYPES` by a CHECK, row types mirrored in
   `~/lib/analytics`; FK delete actions; writes come from #18). Run `pnpm format`.

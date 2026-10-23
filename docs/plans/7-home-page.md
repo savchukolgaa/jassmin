@@ -202,7 +202,7 @@ JS and emails the store over SMTP (smtp4dev locally).
   built in `toImage` (sorted by width, absolute URLs, `null` without widths); `SOCIAL_LABELS`.
   Update `content.test.ts` / `schemas.test.ts`. Set `ctaLabel: "Order Now"`, `ctaHref: "/popular"`
   in `cms/scripts/seed.ts` and `__fixtures__/home-page.json`. Check: `pnpm typecheck && pnpm test`.
-- [ ] **3. Link helpers** — `app/lib/links.ts`: `resolveCtaHref`, `safeMapEmbedUrl`, `telHref`,
+- [x] **3. Link helpers** — `app/lib/links.ts`: `resolveCtaHref`, `safeMapEmbedUrl`, `telHref`,
   `directionsUrl`. Tests incl. `javascript:`, protocol-relative `//evil.com`, non-Google map hosts,
   empty strings.
 - [ ] **4. Loader, meta and static sections** — Rewrite `app/routes/home.tsx`: parallel CMS loader

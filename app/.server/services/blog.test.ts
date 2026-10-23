@@ -122,9 +122,16 @@ describe("blogCacheHeaders", () => {
     expect(headers.get("Vary")).toBe("Cookie");
   });
 
+  it("keeps pages private for a guest with a visitor id (their cart count is in the header)", () => {
+    const request = new Request("http://localhost/blog", {
+      headers: { Cookie: "anonymous_id=abc" },
+    });
+    expect(blogCacheHeaders(request).get("Cache-Control")).toBe("private, no-cache");
+  });
+
   it("ignores other cookies", () => {
     const request = new Request("http://localhost/blog", {
-      headers: { Cookie: "x__jassmin_session=abc; other=1" },
+      headers: { Cookie: "x__jassmin_session=abc; xanonymous_id=1; other=1" },
     });
     expect(blogCacheHeaders(request).get("Cache-Control")).toMatch(/^public/);
   });

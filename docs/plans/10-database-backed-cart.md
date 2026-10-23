@@ -192,7 +192,7 @@ Each step is small, ordered, and leaves the app in a working state.
   list in `schema.test.ts` and the index expectations in `migrator.test.ts`; add a migrator test
   that a second active cart for the same user (and for the same guest session) fails with
   `23505`, while a `converted` one doesn't. Run `pnpm test`.
-- [ ] **3. Blog cache stays private for guests with a cart** — `hasSessionCookie` also matches
+- [x] **3. Blog cache stays private for guests with a cart** — `hasSessionCookie` also matches
   `ANONYMOUS_ID_COOKIE`; update its doc comment and add a case to the blog cache-header tests
   (`services/blog.test.ts`).
 - [ ] **4. Cart queries and service** — `db/queries/cart.ts`: `findActiveUserCart(db, userId)`,

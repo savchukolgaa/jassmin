@@ -206,7 +206,7 @@ Each step is small, ordered, and leaves the app in a working state.
   DB integration tests for `registerUser` / `verifyLogin`. These check the stored hash ≠ the
   password, a duplicate email, a wrong password, an unknown email and that `last_login_at` moves
   forward on each login.
-- [ ] **6. Show the real user in the header.** `getHeaderState` calls `getUser(request)`. Update
+- [x] **6. Show the real user in the header.** `getHeaderState` calls `getUser(request)`. Update
   `header.test.ts` to `vi.mock("./auth")`, covering "no user → logged out" and "user → `{ id }`".
   Check that the header shows the account icon on the very first SSR response after login.
 - [ ] **7. Build `/register`.**

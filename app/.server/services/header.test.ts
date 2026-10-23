@@ -1,16 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-beforeAll(() => {
-  vi.stubEnv("DATABASE_URL", "postgres://jassmin:jassmin@localhost:5432/jassmin");
-  vi.stubEnv("SESSION_SECRET", "s".repeat(32));
-});
+const getUser = vi.hoisted(() => vi.fn());
 
-afterAll(() => {
-  vi.unstubAllEnvs();
-});
+vi.mock("./auth", () => ({ getUser }));
 
 describe("getHeaderState", () => {
-  it("is logged out with an empty cart without a session cookie", async () => {
+  it("is logged out with an empty cart without a user", async () => {
+    getUser.mockResolvedValueOnce(null);
     const { getHeaderState } = await import("./header");
 
     expect(await getHeaderState(new Request("http://localhost/"))).toEqual({
@@ -19,17 +15,14 @@ describe("getHeaderState", () => {
     });
   });
 
-  it("returns the user from the session cookie", async () => {
-    const { commitSession, getSession } = await import("../session");
+  it("returns the logged-in user's id", async () => {
+    getUser.mockResolvedValueOnce({ id: 7, fullName: "Olena", email: "olena@example.com" });
     const { getHeaderState } = await import("./header");
-    const session = await getSession();
-    session.set("userId", 7);
-    const cookie = (await commitSession(session)).split(";")[0] ?? "";
+    const request = new Request("http://localhost/");
 
-    const state = await getHeaderState(
-      new Request("http://localhost/", { headers: { Cookie: cookie } }),
-    );
+    const state = await getHeaderState(request);
 
     expect(state.user).toEqual({ id: 7 });
+    expect(getUser).toHaveBeenCalledWith(request);
   });
 });

@@ -1,6 +1,7 @@
 import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import type { AnalyticsSession, UserEvent } from "~/lib/analytics";
 import type { Cart, CartItem, Order, OrderItem } from "~/lib/commerce";
 import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES } from "~/lib/enums";
 import {
@@ -13,6 +14,8 @@ import {
   orders,
   paymentStatusType,
   products,
+  sessions,
+  userEvents,
   users,
 } from "./schema";
 
@@ -239,5 +242,77 @@ describe("shared commerce types", () => {
     expectTypeOf<typeof cartItems.$inferSelect>().toEqualTypeOf<CartItem>();
     expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();
     expectTypeOf<typeof orderItems.$inferSelect>().toEqualTypeOf<OrderItem>();
+  });
+});
+
+describe("sessions", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(sessions)).toEqual({
+      sessionId: ["uuid", true, true],
+      userId: ["integer", false, false],
+      anonymousId: ["text", true, false],
+      startedAt: ["timestamp with time zone", true, true],
+      endedAt: ["timestamp with time zone", false, false],
+      landingPage: ["text", false, false],
+      trafficSource: ["text", false, false],
+      deviceType: ["text", false, false],
+    });
+  });
+
+  it("keeps sessions when their user is deleted and has the lookup indexes", () => {
+    expect(describeForeignKeys(sessions)).toEqual({ userId: ["users", "set null"] });
+    expect(describeConstraints(sessions)).toEqual({
+      checks: [],
+      uniques: [],
+      indexes: ["sessions_anonymous_id_idx", "sessions_user_id_idx"],
+    });
+  });
+});
+
+describe("user_events", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(userEvents)).toEqual({
+      eventId: ["uuid", true, true],
+      userId: ["integer", false, false],
+      anonymousId: ["text", true, false],
+      sessionId: ["uuid", true, false],
+      eventType: ["text", true, false],
+      productId: ["integer", false, false],
+      eventProperties: ["jsonb", false, false],
+      source: ["text", false, false],
+      medium: ["text", false, false],
+      campaign: ["text", false, false],
+      deviceType: ["text", false, false],
+      referrer: ["text", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("cascades session deletes and keeps events when their user or product is deleted", () => {
+    expect(describeForeignKeys(userEvents)).toEqual({
+      userId: ["users", "set null"],
+      sessionId: ["sessions", "cascade"],
+      productId: ["products", "set null"],
+    });
+  });
+
+  it("checks the event type and has the analytics indexes", () => {
+    expect(describeConstraints(userEvents)).toEqual({
+      checks: ["user_events_event_type_check"],
+      uniques: [],
+      indexes: [
+        "user_events_anonymous_id_idx",
+        "user_events_event_type_created_at_idx",
+        "user_events_session_id_idx",
+        "user_events_user_id_created_at_idx",
+      ],
+    });
+  });
+});
+
+describe("shared analytics types", () => {
+  it("match the rows the tables return", () => {
+    expectTypeOf<typeof sessions.$inferSelect>().toEqualTypeOf<AnalyticsSession>();
+    expectTypeOf<typeof userEvents.$inferSelect>().toEqualTypeOf<UserEvent>();
   });
 });

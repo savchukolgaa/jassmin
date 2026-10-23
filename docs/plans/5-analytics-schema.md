@@ -149,7 +149,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   `ALTER TABLE "carts" DROP CONSTRAINT "carts_session_id_sessions_session_id_fk";`, then
   `DROP TABLE "user_events";`, `DROP TABLE "sessions";`, separated by
   `--> statement-breakpoint`. Check: `pnpm db:migrate`, `pnpm db:rollback`, `pnpm db:migrate`.
-- [ ] **5. Tests** —
+- [x] **5. Tests** —
   - `schema.test.ts`: `describe("sessions")` and `describe("user_events")` using
     `describeColumns`, `describeForeignKeys` and `describeConstraints` (columns with SQL type,
     not-null, default; FKs `users set null`, `sessions cascade`, `products set null`;

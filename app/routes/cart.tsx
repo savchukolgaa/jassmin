@@ -2,11 +2,12 @@ import { data } from "react-router";
 import { checkVariantForCart } from "~/.server/services/products";
 import { PagePlaceholder } from "~/components/layout/PagePlaceholder";
 import { type CartActionResult, parseAddToCart } from "~/lib/cart";
-import { useT } from "~/lib/i18n";
+import { metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/cart";
 
-export function meta(_args: Route.MetaArgs) {
-  return [{ title: "Cart — Jassmin" }];
+export function meta({ matches }: Route.MetaArgs) {
+  const { t } = metaTranslator(matches);
+  return [{ title: t("meta.title", { page: t("cart.title") }) }];
 }
 
 // Stub until #10: validates add-to-cart submissions (product, chosen size and its stock) but

@@ -49,7 +49,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="container mx-auto px-4 pt-8 pb-16">
-      <nav aria-label="Breadcrumb" className="text-sm">
+      <nav aria-label={t("nav.breadcrumb")} className="text-sm">
         <Link
           to={`/catalog/${catalog}`}
           className={`rounded-pill font-bold text-primary-dark hover:underline ${focusRing("onLight")}`}

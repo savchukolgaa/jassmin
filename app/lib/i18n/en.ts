@@ -22,6 +22,7 @@ export const en = {
     menu: "Menu",
     account: "My account",
     logIn: "Log in",
+    breadcrumb: "Breadcrumb",
     cart: {
       one: "Cart, {count} item",
       other: "Cart, {count} items",

@@ -330,13 +330,13 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   `blogCacheHeaders` sends `Vary: Cookie, Accept-Language` (D13). Update `blog.test.ts`,
   `blog-post.test.ts`, `services/blog.test.ts` and `blog-ui.test.ts`.
 
-- [ ] **13. Remaining pages and meta titles.** In `account.tsx`, translate the heading, "Hi,
+- [x] **13. Remaining pages and meta titles.** In `account.tsx`, translate the heading, "Hi,
   {name}!", the orders note and "Log out". In `cart.tsx` and `checkout.tsx`, translate the
   placeholder titles. Every storefront route's `meta` uses `metaTranslator(matches)` and
   `meta.title` (`"{page} — Jassmin"`): login, register, account, cart, checkout, catalog,
   product, blog and blog-post. Then run the sweep in step 13a.
 
-- [ ] **13a. Admin area (D1).** `admin-nav.ts`: `ADMIN_NAV_ITEMS` get `labelKey`
+- [x] **13a. Admin area (D1).** `admin-nav.ts`: `ADMIN_NAV_ITEMS` get `labelKey`
   (`admin.nav.products`, `admin.nav.orders`). `AdminLayout.tsx`: the wordmark `aria-label`,
   "admin" suffix, "Log out", the "Admin" nav label, "Content (Strapi)", "(opens in a new tab)" and
   "Back to shop" become keys. `AdminPlaceholder.tsx`: "Coming in #{issue}." becomes

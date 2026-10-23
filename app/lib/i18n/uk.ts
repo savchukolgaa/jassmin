@@ -22,6 +22,7 @@ export const uk = {
     menu: "Меню",
     account: "Мій кабінет",
     logIn: "Увійти",
+    breadcrumb: "Навігаційний ланцюжок",
     cart: {
       one: "Кошик, {count} товар",
       few: "Кошик, {count} товари",

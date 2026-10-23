@@ -4,12 +4,16 @@ import { requireAdmin } from "~/.server/services/auth";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { AdminLayout } from "~/features/admin/AdminLayout";
 import { strapiAdminUrl } from "~/features/admin/admin-nav";
-import { useT } from "~/lib/i18n";
+import { metaTranslator, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/admin";
 
-export function meta(_args: Route.MetaArgs) {
-  return [{ title: "Admin — Jassmin" }, { name: "robots", content: "noindex" }];
+export function meta({ matches }: Route.MetaArgs) {
+  const { t } = metaTranslator(matches);
+  return [
+    { title: t("meta.title", { page: t("admin.title") }) },
+    { name: "robots", content: "noindex" },
+  ];
 }
 
 // Guards the layout only: every nested admin loader and action must call `requireAdmin` too,

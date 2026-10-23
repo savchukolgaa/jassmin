@@ -24,3 +24,8 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const CART_STATUSES = ["active", "converted", "abandoned"] as const;
 
 export type CartStatus = (typeof CART_STATUSES)[number];
+
+/** How the shopper pays: online by card or cash on delivery (`cod`). */
+export const PAYMENT_METHODS = ["card", "cod"] as const;
+
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];

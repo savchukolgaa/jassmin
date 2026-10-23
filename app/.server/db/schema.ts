@@ -1,4 +1,4 @@
-// Drizzle schema. Core tables (#3) live here; commerce (#4) and analytics (#5) tables follow.
+// Drizzle schema: core tables (#3) and commerce tables (#4); analytics tables (#5) follow.
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -14,10 +14,18 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES } from "~/lib/enums";
+import {
+  CART_STATUSES,
+  GENDERS,
+  ORDER_STATUSES,
+  PAYMENT_METHODS,
+  PAYMENT_STATUSES,
+  type PaymentMethod,
+} from "~/lib/enums";
 
 export const genderType = pgEnum("gender_type", GENDERS);
 export const orderStatusType = pgEnum("order_status_type", ORDER_STATUSES);
@@ -60,5 +68,117 @@ export const products = pgTable(
     check("products_stock_quantity_check", sql`${t.stockQuantity} >= 0`),
     check("products_pack_size_check", sql`${t.packSize} > 0`),
     index("products_gender_idx").on(t.gender),
+  ],
+);
+
+// Shared by the carts and orders tables: refreshed by every query-builder update. Raw SQL
+// updates must set `updated_at` themselves.
+const updatedAt = () =>
+  timestamp({ withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date());
+
+export const carts = pgTable(
+  "carts",
+  {
+    id: serial().primaryKey(),
+    /** Restrict: a user with carts can't be deleted, so the cart history stays linked. */
+    userId: integer().references(() => users.id, { onDelete: "restrict" }),
+    /** Analytics visitor session; the FK to `sessions.session_id` is added in #5. */
+    sessionId: uuid(),
+    status: cartStatusType().notNull().default("active"),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("carts_user_id_idx").on(t.userId),
+    index("carts_session_id_idx").on(t.sessionId),
+    // For the abandoned-cart job (#19): active carts not updated for a while.
+    index("carts_status_updated_at_idx").on(t.status, t.updatedAt),
+  ],
+);
+
+export const cartItems = pgTable(
+  "cart_items",
+  {
+    id: serial().primaryKey(),
+    cartId: integer()
+      .notNull()
+      .references(() => carts.id, { onDelete: "cascade" }),
+    productId: integer()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    quantity: integer().notNull().default(1),
+    addedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("cart_items_cart_id_product_id_unique").on(t.cartId, t.productId),
+    check("cart_items_quantity_check", sql`${t.quantity} > 0`),
+  ],
+);
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: serial().primaryKey(),
+    /** `null` for guests. Restrict: a user with orders can't be deleted. */
+    userId: integer().references(() => users.id, { onDelete: "restrict" }),
+    // Always stored, also for registered users, for identity resolution in LTV models.
+    guestFullName: varchar({ length: 255 }).notNull(),
+    guestEmail: varchar({ length: 255 }).notNull(),
+    guestPhone: varchar({ length: 50 }).notNull(),
+    /** Nova Poshta delivery details. */
+    shippingAddress: text().notNull(),
+    status: orderStatusType().notNull().default("pending"),
+    paymentStatus: paymentStatusType().notNull().default("unpaid"),
+    paymentMethod: text().$type<PaymentMethod>().notNull(),
+    // Exact decimals, returned as strings and computed on the server.
+    subtotal: numeric({ precision: 10, scale: 2 }).notNull(),
+    discountAmount: numeric({ precision: 10, scale: 2 }).notNull().default("0"),
+    shippingAmount: numeric({ precision: 10, scale: 2 }).notNull().default("0"),
+    totalAmount: numeric({ precision: 10, scale: 2 }).notNull(),
+    currency: text().notNull().default("UAH"),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updatedAt(),
+    paidAt: timestamp({ withTimezone: true }),
+    cancelledAt: timestamp({ withTimezone: true }),
+    refundedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    check(
+      "orders_payment_method_check",
+      sql`${t.paymentMethod} in (${sql.join(
+        PAYMENT_METHODS.map((m) => sql.raw(`'${m}'`)),
+        sql`, `,
+      )})`,
+    ),
+    check(
+      "orders_amounts_check",
+      sql`${t.subtotal} >= 0 and ${t.discountAmount} >= 0 and ${t.shippingAmount} >= 0 and ${t.totalAmount} >= 0`,
+    ),
+    index("orders_guest_email_idx").on(t.guestEmail),
+    index("orders_guest_phone_idx").on(t.guestPhone),
+    index("orders_user_id_idx").on(t.userId),
+  ],
+);
+
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: serial().primaryKey(),
+    orderId: integer()
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    /** Set to `null` when the product is deleted, so historical revenue is kept. */
+    productId: integer().references(() => products.id, { onDelete: "set null" }),
+    quantity: integer().notNull(),
+    /** Unit price when the order was placed; later price changes don't affect it. */
+    priceAtPurchase: numeric({ precision: 10, scale: 2 }).notNull(),
+  },
+  (t) => [
+    check("order_items_quantity_check", sql`${t.quantity} > 0`),
+    check("order_items_price_at_purchase_check", sql`${t.priceAtPurchase} >= 0`),
+    index("order_items_order_id_idx").on(t.orderId),
   ],
 );

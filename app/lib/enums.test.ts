@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES } from "./enums";
+import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "./enums";
 
 describe("enum values", () => {
   it("lists the genders", () => {
@@ -24,5 +24,9 @@ describe("enum values", () => {
 
   it("lists the cart statuses", () => {
     expect(CART_STATUSES).toEqual(["active", "converted", "abandoned"]);
+  });
+
+  it("lists the payment methods", () => {
+    expect(PAYMENT_METHODS).toEqual(["card", "cod"]);
   });
 });

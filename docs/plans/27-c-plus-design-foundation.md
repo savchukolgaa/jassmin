@@ -206,7 +206,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   that contains `animation: none`. Check manually with a test element on `/` (remove it afterwards),
   then turn on DevTools → Rendering → "prefers-reduced-motion: reduce" and check that everything
   is static.
-- [ ] **9. `docs/design.md`.** Sections:
+- [x] **9. `docs/design.md`.** Sections:
   1. the canvas link and the "C+ only" note
   2. a token table (name, hex, Tailwind class, intended use, contrast ratio against its pair)
   3. rules ("`#FF8FA1` only on ink or deep pink; pink text on light is `primary-dark`; `#FF5C77` never

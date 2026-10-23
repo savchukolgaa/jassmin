@@ -29,3 +29,8 @@ export type CartStatus = (typeof CART_STATUSES)[number];
 export const PAYMENT_METHODS = ["card", "cod"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** Bottle sizes a perfume can be sold in, ascending: decants/samples (7, 10 ml) to full bottles. */
+export const PERFUME_VOLUMES_ML = [7, 10, 30, 50, 100] as const;
+
+export type PerfumeVolumeMl = (typeof PERFUME_VOLUMES_ML)[number];

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "./enums";
+import {
+  CART_STATUSES,
+  GENDERS,
+  ORDER_STATUSES,
+  PAYMENT_METHODS,
+  PAYMENT_STATUSES,
+  PERFUME_VOLUMES_ML,
+} from "./enums";
 
 describe("enum values", () => {
   it("lists the genders", () => {
@@ -28,5 +35,9 @@ describe("enum values", () => {
 
   it("lists the payment methods", () => {
     expect(PAYMENT_METHODS).toEqual(["card", "cod"]);
+  });
+
+  it("lists the perfume volumes in ascending order", () => {
+    expect(PERFUME_VOLUMES_ML).toEqual([7, 10, 30, 50, 100]);
   });
 });

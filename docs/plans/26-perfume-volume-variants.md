@@ -167,7 +167,7 @@ chosen variant.
 
 ## Steps
 
-- [ ] **1. Volume enum**: add `PERFUME_VOLUMES_ML` and `PerfumeVolumeMl` to `app/lib/enums.ts`,
+- [x] **1. Volume enum**: add `PERFUME_VOLUMES_ML` and `PerfumeVolumeMl` to `app/lib/enums.ts`,
   plus a test in `enums.test.ts` (exact values, ascending). Check: `pnpm test app/lib/enums`.
 - [ ] **2. Schema**: in `schema.ts` add `productVariants` as described in Decisions, with the
   volume check `sql\`${t.volumeMl} in (${sql.join(PERFUME_VOLUMES_ML.map((v) => sql.raw(String(v))), sql\`, \`)})\``.

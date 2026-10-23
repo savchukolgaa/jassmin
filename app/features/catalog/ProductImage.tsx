@@ -17,15 +17,12 @@ export function ProductImage({
   className,
   eager = false,
 }: ProductImageProps) {
-  const frame = cn(
-    "aspect-[4/5] w-full overflow-hidden rounded-3xl bg-primary-light/15",
-    className,
-  );
+  const frame = cn("aspect-[4/5] w-full overflow-hidden rounded-card bg-blush", className);
 
   if (!imageUrl) {
     return (
       <div className={cn(frame, "flex items-center justify-center")} role="img" aria-label={title}>
-        <span aria-hidden="true" className="text-5xl font-extrabold text-primary-dark/60">
+        <span aria-hidden="true" className="text-5xl font-extrabold text-primary-dark">
           {brand.charAt(0)}
         </span>
       </div>

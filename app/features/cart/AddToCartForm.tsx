@@ -29,7 +29,7 @@ export function AddToCartForm({ productId, inStock, size = "md", className }: Ad
       >
         {inStock ? "Add to cart" : "Out of stock"}
       </Button>
-      <p aria-live="polite" className="mt-2 min-h-5 text-sm text-gray-600 dark:text-gray-400">
+      <p aria-live="polite" className="mt-2 min-h-5 text-sm text-muted">
         {error ? CART_ERROR_MESSAGES[error] : null}
       </p>
     </fetcher.Form>

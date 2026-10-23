@@ -2,6 +2,7 @@ import { data, isRouteErrorResponse, Link } from "react-router";
 import { z } from "zod";
 import { getProduct } from "~/.server/services/products";
 import { ErrorContent } from "~/components/layout/ErrorContent";
+import { focusRing } from "~/components/layout/nav";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { StockStatus } from "~/features/catalog/StockStatus";
@@ -52,7 +53,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
       <nav aria-label="Breadcrumb" className="text-sm">
         <Link
           to={`/catalog/${catalog}`}
-          className="font-semibold text-primary-dark hover:underline"
+          className={`rounded-pill font-bold text-primary-dark hover:underline ${focusRing("onLight")}`}
         >
           ← {CATALOG_TITLES[catalog]}
         </Link>
@@ -68,19 +69,23 @@ export default function Product({ loaderData }: Route.ComponentProps) {
         />
 
         <div className="flex flex-col gap-4">
-          <p className="text-sm font-semibold uppercase tracking-wide text-primary-dark">
+          <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">
             {product.brand}
           </p>
-          <h1 className="text-4xl font-extrabold leading-tight tracking-tight">{product.title}</h1>
+          <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+            {product.title}
+          </h1>
           <div className="flex flex-wrap items-center gap-2">
             {product.fragranceFamily && (
-              <span className="rounded-full bg-primary-light/15 px-3 py-1 text-sm font-semibold">
+              <span className="rounded-pill bg-blush px-3 py-1 text-sm font-bold text-primary-dark">
                 {product.fragranceFamily}
               </span>
             )}
-            <span className="text-gray-600 dark:text-gray-400">{formatVolume(product)}</span>
+            <span className="text-muted">{formatVolume(product)}</span>
           </div>
-          <p className="text-3xl font-extrabold">{formatPrice(product.price)}</p>
+          <p className="animate-spin-in text-3xl font-extrabold text-ink">
+            {formatPrice(product.price)}
+          </p>
           <StockStatus
             inStock={product.inStock}
             stockQuantity={product.stockQuantity}
@@ -94,12 +99,13 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           />
           {product.description && (
             <section aria-labelledby="description-heading" className="mt-2">
-              <h2 id="description-heading" className="text-lg font-bold">
+              <h2
+                id="description-heading"
+                className="text-xl font-extrabold tracking-[-0.03em] text-ink"
+              >
                 Description
               </h2>
-              <p className="mt-2 leading-relaxed text-gray-700 dark:text-gray-300">
-                {product.description}
-              </p>
+              <p className="mt-2 leading-relaxed text-body">{product.description}</p>
             </section>
           )}
         </div>
@@ -113,10 +119,16 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     return (
       <ErrorContent message="404" details="This perfume could not be found.">
         <p className="mt-4 flex gap-4">
-          <Link to="/catalog/women" className="font-semibold text-primary-dark underline">
+          <Link
+            to="/catalog/women"
+            className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
+          >
             {CATALOG_TITLES.women}
           </Link>
-          <Link to="/catalog/men" className="font-semibold text-primary-dark underline">
+          <Link
+            to="/catalog/men"
+            className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
+          >
             {CATALOG_TITLES.men}
           </Link>
         </p>

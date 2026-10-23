@@ -15,8 +15,8 @@ export function StockStatus({ inStock, stockQuantity, className }: StockStatusPr
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold",
-        inStock ? "bg-green-50 text-green-800" : "bg-gray-100 text-gray-700",
+        "inline-flex items-center rounded-pill px-3 py-1 text-sm font-bold",
+        inStock ? "bg-success-bg text-success" : "bg-card text-muted",
         className,
       )}
     >

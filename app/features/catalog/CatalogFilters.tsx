@@ -1,4 +1,5 @@
 import { Form, Link } from "react-router";
+import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import {
   CATALOG_SORT_LABELS,
@@ -14,8 +15,8 @@ export interface CatalogFiltersProps {
   options: CatalogFilterOptions;
 }
 
-const selectClasses =
-  "h-11 w-full rounded-full border border-gray-300 bg-white px-4 text-base dark:border-gray-700 dark:bg-gray-950";
+// The muted border keeps the 3:1 boundary contrast that `line` lacks (docs/design.md).
+const selectClasses = `min-h-11 w-full rounded-pill border border-muted bg-white px-4 text-base text-ink ${focusRing("onLight")}`;
 
 /**
  * A plain GET form, so filters live in the URL and work without JS. It doesn't send `page`, so
@@ -31,7 +32,7 @@ export function CatalogFilters({ pathname, search, options }: CatalogFiltersProp
       aria-label="Filter and sort"
       className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end"
     >
-      <label className="grid gap-1 text-sm font-semibold">
+      <label className="grid gap-1 text-sm font-bold text-ink">
         Fragrance family
         <select
           name="fragrance_family"
@@ -46,7 +47,7 @@ export function CatalogFilters({ pathname, search, options }: CatalogFiltersProp
           ))}
         </select>
       </label>
-      <label className="grid gap-1 text-sm font-semibold">
+      <label className="grid gap-1 text-sm font-bold text-ink">
         Brand
         <select name="brand" defaultValue={search.brand ?? ""} className={selectClasses}>
           <option value="">All brands</option>
@@ -57,7 +58,7 @@ export function CatalogFilters({ pathname, search, options }: CatalogFiltersProp
           ))}
         </select>
       </label>
-      <label className="grid gap-1 text-sm font-semibold">
+      <label className="grid gap-1 text-sm font-bold text-ink">
         Sort by
         <select name="sort" defaultValue={search.sort} className={selectClasses}>
           {CATALOG_SORTS.map((sort) => (
@@ -70,7 +71,10 @@ export function CatalogFilters({ pathname, search, options }: CatalogFiltersProp
       <div className="flex items-center gap-3">
         <Button type="submit">Apply</Button>
         {hasActiveFilters(search) && (
-          <Link to={pathname} className="text-sm font-semibold text-primary-dark underline">
+          <Link
+            to={pathname}
+            className={`rounded-pill text-sm font-bold text-primary-dark underline ${focusRing("onLight")}`}
+          >
             Reset
           </Link>
         )}

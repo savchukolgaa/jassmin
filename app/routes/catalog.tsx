@@ -1,6 +1,7 @@
 import { data, Link, useLocation, useNavigation } from "react-router";
 import { getCatalogPage } from "~/.server/services/products";
 import { ErrorContent } from "~/components/layout/ErrorContent";
+import { focusRing } from "~/components/layout/nav";
 import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { Pagination } from "~/features/catalog/Pagination";
 import { ProductCard } from "~/features/catalog/ProductCard";
@@ -32,10 +33,10 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-4xl font-extrabold tracking-tight">{CATALOG_TITLES[gender]}</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          {total === 1 ? "1 perfume" : `${total} perfumes`}
-        </p>
+        <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+          {CATALOG_TITLES[gender]}
+        </h1>
+        <p className="text-muted">{total === 1 ? "1 perfume" : `${total} perfumes`}</p>
       </div>
 
       <div className="mt-6">
@@ -56,11 +57,11 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
             ))}
           </ul>
         ) : (
-          <div className="rounded-3xl bg-primary-light/10 p-8 text-center">
-            <p className="text-lg font-semibold">No perfumes match these filters.</p>
+          <div className="rounded-card-lg bg-blush p-8 text-center">
+            <p className="text-lg font-bold text-ink">No perfumes match these filters.</p>
             <Link
               to={pathname}
-              className="mt-2 inline-block font-semibold text-primary-dark underline"
+              className={`mt-2 inline-block rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
             >
               Show all {CATALOG_TITLES[gender].toLowerCase()}
             </Link>

@@ -33,9 +33,9 @@ export function Pagination({ pathname, search, page, pageCount }: PaginationProp
           to={link(target)}
           aria-current={target === page ? "page" : undefined}
           className={buttonClasses({
-            variant: target === page ? "primary" : "secondary",
+            variant: target === page ? "primary" : "ghost",
             size: "sm",
-            className: "min-w-9 px-3",
+            className: "min-w-11 px-3",
           })}
         >
           {target}

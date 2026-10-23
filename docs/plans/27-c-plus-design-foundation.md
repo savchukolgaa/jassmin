@@ -123,7 +123,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   the test. Assert the "Decisions" table pairs (≥ 4.5 for text, ≥ 3 for icons and focus rings),
   that `--color-primary` is `#c22f4b`, and that `#ff5c77` appears only on the
   `--color-brand-legacy` line. Steps 6 and 8 extend this test.
-- [ ] **3. Buttons.** Rewrite `button-styles.ts`:
+- [x] **3. Buttons.** Rewrite `button-styles.ts`:
   - base: `rounded-full font-extrabold tracking-tight`, the transition list including `transform`,
     `motion-safe:hover:scale-[1.03]`, and `focus-visible:outline-3 focus-visible:outline-offset-2`
     (the colour is set per variant)

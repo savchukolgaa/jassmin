@@ -233,7 +233,7 @@ JS and emails the store over SMTP (smtp4dev locally).
   `parseContactForm(formData)` → `{ ok: true, data, honeypot } | { ok: false, fieldErrors, values }`
   via `z.flattenError`. Tests: valid input, each field's errors, whitespace-only, over-long values,
   `File` entries.
-- [ ] **6. Env vars + mail transport + smtp4dev** — `pnpm add nodemailer`,
+- [x] **6. Env vars + mail transport + smtp4dev** — `pnpm add nodemailer`,
   `pnpm add -D @types/nodemailer`. In `env.ts` add `SMTP_URL` (optional URL with `smtp:`/`smtps:`
   scheme), `CONTACT_INBOX` (`z.email()`, default `hello@jassmin.ua`), `CONTACT_FROM` (string,
   default `Jassmin website <no-reply@jassmin.ua>`); cases in `env.test.ts`; `.env.example` and the

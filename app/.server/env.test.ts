@@ -15,6 +15,8 @@ describe("parseEnv", () => {
       PORT: 4000,
       NODE_ENV: "production",
       STRAPI_URL: "http://localhost:1337",
+      CONTACT_INBOX: "hello@jassmin.ua",
+      CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
     });
   });
 
@@ -111,5 +113,36 @@ describe("getDatabaseUrl", () => {
 
   it("returns undefined when neither is set", () => {
     expect(getDatabaseUrl({})).toBeUndefined();
+  });
+
+  it("leaves SMTP unset by default and treats empty mail variables as unset", () => {
+    const env = parseEnv({ ...valid, SMTP_URL: "", CONTACT_INBOX: "", CONTACT_FROM: "" });
+
+    expect(env.SMTP_URL).toBeUndefined();
+    expect(env.CONTACT_INBOX).toBe("hello@jassmin.ua");
+    expect(env.CONTACT_FROM).toBe("Jassmin website <no-reply@jassmin.ua>");
+  });
+
+  it("accepts smtp and smtps URLs and custom mail addresses", () => {
+    const env = parseEnv({
+      ...valid,
+      SMTP_URL: "smtp://localhost:2525",
+      CONTACT_INBOX: "shop@example.com",
+      CONTACT_FROM: "Shop <no-reply@example.com>",
+    });
+
+    expect(env).toMatchObject({
+      SMTP_URL: "smtp://localhost:2525",
+      CONTACT_INBOX: "shop@example.com",
+      CONTACT_FROM: "Shop <no-reply@example.com>",
+    });
+    expect(
+      parseEnv({ ...valid, SMTP_URL: "smtps://user:pass@mail.example.com:465" }).SMTP_URL,
+    ).toBe("smtps://user:pass@mail.example.com:465");
+  });
+
+  it("rejects a non-SMTP SMTP_URL and an invalid CONTACT_INBOX", () => {
+    expect(() => parseEnv({ ...valid, SMTP_URL: "http://localhost:5000" })).toThrow(/SMTP_URL/);
+    expect(() => parseEnv({ ...valid, CONTACT_INBOX: "not-an-email" })).toThrow(/CONTACT_INBOX/);
   });
 });

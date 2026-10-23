@@ -1,7 +1,7 @@
 // Aspire TypeScript AppHost: local development orchestration for Jassmin.
-// `aspire run` starts PostgreSQL in a container, the Strapi CMS and the React Router dev server.
-// The app gets its database as JASSMINDB_URI and the CMS URL as STRAPI_URL; Strapi gets its own
-// `strapidb` database on the same server as DATABASE_URL.
+// `aspire run` starts PostgreSQL in a container, the Strapi CMS, smtp4dev and the React Router dev
+// server. The app gets its database as JASSMINDB_URI, the CMS URL as STRAPI_URL and smtp4dev as
+// SMTP_URL; Strapi gets its own `strapidb` database on the same server as DATABASE_URL.
 // See https://aspire.dev
 
 import { createBuilder } from "./.aspire/modules/aspire.mjs";
@@ -67,8 +67,17 @@ await builder
   .withParentRelationship(cms)
   .withExplicitStart();
 
-// `web` doesn't wait for `cms`: the shop keeps working while the CMS is down,
-// and CMS-backed pages answer with a 503 instead.
+// Fake SMTP server for local development: catches every email the app sends (contact form) and
+// shows it in its web UI, so nothing reaches real inboxes.
+const smtp4dev = builder
+  .addContainer("smtp4dev", "rnwood/smtp4dev")
+  .withImageTag("v3")
+  .withHttpEndpoint({ targetPort: 80, name: "http" })
+  .withEndpoint({ targetPort: 25, name: "smtp", scheme: "smtp" })
+  .withExternalHttpEndpoints();
+
+// `web` doesn't wait for `cms` or `smtp4dev`: the shop keeps working while either is down;
+// CMS-backed pages answer with a 503 and the contact form shows a "couldn't send" error instead.
 await builder
   .addViteApp("web", "..")
   .withPnpm({ install: false })
@@ -77,6 +86,7 @@ await builder
   .waitForCompletion(dbMigrate)
   .withReference(cms)
   .withEnvironment("STRAPI_URL", cms.getEndpoint("http"))
+  .withEnvironment("SMTP_URL", smtp4dev.getEndpoint("smtp"))
   .withExternalHttpEndpoints();
 
 await builder.build().run();

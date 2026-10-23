@@ -66,6 +66,9 @@ pnpm dev                    # http://localhost:5173
 | `PORT` | no | Port for `pnpm start` (default `3000`). |
 | `STRAPI_URL` | no | Strapi base URL (default `http://localhost:1337`). Under Aspire it's set to the `cms` endpoint. |
 | `STRAPI_API_TOKEN` | no* | Read-only Strapi API token. *Without it the app still starts, but CMS-backed pages answer with a 503. |
+| `SMTP_URL` | no* | SMTP server for contact form emails (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container. *Without it, development logs contact messages instead of sending them, and production shows a "couldn't send" error. |
+| `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
+| `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
 
 The variables are validated with zod in `app/.server/env.ts`, and the server fails at startup with a readable error if any are missing or invalid. A `.env` file is loaded automatically, but variables already set in the environment take precedence.
 

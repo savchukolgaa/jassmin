@@ -3,12 +3,16 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { BlogPostCardView, BlogPostView } from "~/lib/blog";
+import { I18nProvider } from "~/lib/i18n";
 import { BlogArticle } from "./BlogArticle";
 import { BlogPostCard } from "./BlogPostCard";
 
 const render = (element: ReactElement) => {
   const router = createMemoryRouter([{ path: "*", element }]);
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+  // In English, like the assertions.
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+  );
 };
 
 const card: BlogPostCardView = {

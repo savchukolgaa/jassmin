@@ -4,6 +4,7 @@ import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import type { ButtonSize } from "~/components/ui/button-styles";
 import { type CartActionResult, cartErrorMessage } from "~/lib/cart";
+import { useT } from "~/lib/i18n";
 
 export interface AddToCartFormProps {
   /** The product's public id. */
@@ -12,7 +13,7 @@ export interface AddToCartFormProps {
    * `variantId` field (the product page's volume select). */
   variantId?: string;
   inStock: boolean;
-  /** The button text when in stock. */
+  /** The button text when in stock; "Додати в кошик" / "Add to cart" by default. */
   label?: string;
   size?: ButtonSize;
   className?: string;
@@ -25,11 +26,13 @@ export function AddToCartForm({
   productId,
   variantId,
   inStock,
-  label = "Add to cart",
+  label,
   size = "md",
   className,
   children,
 }: AddToCartFormProps) {
+  const translator = useT();
+  const { t } = translator;
   const fetcher = useFetcher<CartActionResult>({ key: `add-to-cart-${productId}` });
   const result = fetcher.state === "idle" ? fetcher.data : undefined;
 
@@ -46,7 +49,7 @@ export function AddToCartForm({
         disabled={!inStock}
         loading={fetcher.state !== "idle"}
       >
-        {inStock ? label : "Out of stock"}
+        {inStock ? (label ?? t("cart.add")) : t("product.outOfStock")}
       </Button>
       <div aria-live="polite" className="mt-2 min-h-5 text-sm">
         {result?.ok === true && (
@@ -54,16 +57,18 @@ export function AddToCartForm({
             role="status"
             className="inline-flex animate-toast items-center gap-2 rounded-pill bg-success-bg px-3 py-1 font-bold text-success"
           >
-            Added to cart
+            {t("cart.added")}
             <Link
               to="/cart"
               className={`rounded underline underline-offset-2 ${focusRing("onLight")}`}
             >
-              View cart
+              {t("cart.view")}
             </Link>
           </p>
         )}
-        {result?.ok === false && <p className="text-muted">{cartErrorMessage(result)}</p>}
+        {result?.ok === false && (
+          <p className="text-muted">{cartErrorMessage(result, translator)}</p>
+        )}
       </div>
     </fetcher.Form>
   );

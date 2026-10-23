@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { cartErrorMessage, parseCartAction } from "./cart";
+import { cartErrorMessage as cartErrorMessage_, parseCartAction } from "./cart";
+import { createTranslator } from "./i18n";
+
+const en = createTranslator("en");
+const cartErrorMessage = (result: Parameters<typeof cartErrorMessage_>[0]) =>
+  cartErrorMessage_(result, en);
 
 const form = (fields: Record<string, string>) => {
   const formData = new FormData();
@@ -49,6 +54,14 @@ describe("parseCartAction", () => {
   it("rejects unknown or missing intents", () => {
     expect(parseCartAction(form({ ...add, intent: "clear" })).success).toBe(false);
     expect(parseCartAction(form({})).success).toBe(false);
+  });
+});
+
+describe("cartErrorMessage in Ukrainian", () => {
+  it("is the default", () => {
+    expect(cartErrorMessage_({ error: "exceeds-stock", available: 3 })).toBe(
+      "Цього об’єму доступно лише 3 шт.",
+    );
   });
 });
 

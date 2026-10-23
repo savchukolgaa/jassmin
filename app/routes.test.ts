@@ -28,6 +28,10 @@ describe("route config", () => {
     expect(routes.find((entry) => entry.path === "logout")?.file).toBe("routes/logout.ts");
   });
 
+  it("keeps the POST-only locale route outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "locale")?.file).toBe("routes/locale.ts");
+  });
+
   it("nests the admin pages under their own layout, outside the shop layout", () => {
     const admin = routes.find((entry) => entry.path === "admin");
 

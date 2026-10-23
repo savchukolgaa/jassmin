@@ -1,11 +1,12 @@
 import { focusRing } from "~/components/layout/nav";
 import { cn } from "~/lib/cn";
+import { useT } from "~/lib/i18n";
 
 export interface QuantityStepperProps {
   quantity: number;
   /** The highest allowed quantity (the stock); `+` is disabled at it. */
   max: number;
-  /** What is counted, for the button labels, e.g. "Coco Mademoiselle, 50 ml". */
+  /** What is counted, for the button labels, e.g. "Coco Mademoiselle, 50 мл". */
   label: string;
 }
 
@@ -21,6 +22,7 @@ const stepButton = cn(
  * goes inside the line's update form and works without JS.
  */
 export function QuantityStepper({ quantity, max, label }: QuantityStepperProps) {
+  const { t } = useT();
   // Above stock (it dropped since), `−` goes straight down to what's left.
   const lower = Math.min(quantity - 1, max);
 
@@ -31,13 +33,13 @@ export function QuantityStepper({ quantity, max, label }: QuantityStepperProps) 
         name="quantity"
         value={lower}
         disabled={lower < 1}
-        aria-label={`Decrease quantity of ${label}`}
+        aria-label={t("cart.decrease", { item: label })}
         className={stepButton}
       >
         <span aria-hidden="true">−</span>
       </button>
       <output aria-live="polite" className="min-w-8 text-center text-base font-extrabold text-ink">
-        <span className="sr-only">Quantity </span>
+        <span className="sr-only">{t("cart.quantity")}</span>
         {quantity}
       </output>
       <button
@@ -45,7 +47,7 @@ export function QuantityStepper({ quantity, max, label }: QuantityStepperProps) 
         name="quantity"
         value={quantity + 1}
         disabled={quantity >= max}
-        aria-label={`Increase quantity of ${label}`}
+        aria-label={t("cart.increase", { item: label })}
         className={stepButton}
       >
         <span aria-hidden="true">+</span>

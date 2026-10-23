@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { CartLine } from "~/lib/cart";
+import { createTranslator, I18nProvider } from "~/lib/i18n";
 import { CartLineItem } from "./CartLineItem";
 import { CartSummary, formatItemCount } from "./CartSummary";
 import {
@@ -17,7 +18,10 @@ import { EmptyCart } from "./EmptyCart";
 // Fetchers and `<Form>` need a data router.
 const render = (element: ReactElement) => {
   const router = createMemoryRouter([{ path: "/cart", element }], { initialEntries: ["/cart"] });
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+  // In English, like the assertions.
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+  );
 };
 
 const form = (fields: Record<string, string>) => {
@@ -61,11 +65,15 @@ describe("cart line state", () => {
   });
 
   it("warns when the stock has dropped below the line's quantity", () => {
-    expect(stockNotice({ quantity: 2, stockQuantity: 6 })).toBeNull();
-    expect(stockNotice({ quantity: 4, stockQuantity: 3 })).toBe(
+    const en = createTranslator("en");
+    expect(stockNotice({ quantity: 2, stockQuantity: 6 }, en)).toBeNull();
+    expect(stockNotice({ quantity: 4, stockQuantity: 3 }, en)).toBe(
       "Only 3 left. Lower the quantity to check out.",
     );
-    expect(stockNotice({ quantity: 1, stockQuantity: 0 })).toMatch(/out of stock/);
+    expect(stockNotice({ quantity: 1, stockQuantity: 0 }, en)).toMatch(/out of stock/);
+    expect(stockNotice({ quantity: 4, stockQuantity: 3 })).toBe(
+      "Залишилося лише 3 шт. Зменште кількість, щоб оформити замовлення.",
+    );
   });
 
   it("keys each line's fetcher by its variant", () => {
@@ -73,8 +81,11 @@ describe("cart line state", () => {
   });
 
   it("pluralises the item count", () => {
-    expect(formatItemCount(1)).toBe("1 item");
-    expect(formatItemCount(3)).toBe("3 items");
+    const en = createTranslator("en");
+    expect(formatItemCount(1, en)).toBe("1 item");
+    expect(formatItemCount(3, en)).toBe("3 items");
+    expect(formatItemCount(3)).toBe("3 товари");
+    expect(formatItemCount(5)).toBe("5 товарів");
   });
 });
 
@@ -89,7 +100,7 @@ describe("CartLineItem", () => {
       2,
     );
     expect(html).toContain("50 ml");
-    expect(html).toMatch(/6\s850\s₴ each/u);
+    expect(html).toContain("₴6,850 each");
   });
 
   it("steps the quantity by one within the stock", () => {
@@ -125,7 +136,7 @@ describe("CartSummary", () => {
     );
 
     expect(html).toContain("2 items");
-    expect(html).toMatch(/13\s700\s₴/u);
+    expect(html).toContain("₴13,700");
     expect(html).toMatch(/<a[^>]*href="\/checkout"[^>]*>Proceed to checkout<\/a>/);
   });
 });

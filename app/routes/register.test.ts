@@ -81,7 +81,7 @@ describe("register action", () => {
 
     expect(status).toBe(400);
     expect(body).toEqual({
-      fieldErrors: { email: "An account with this email already exists." },
+      fieldErrors: { email: "auth.errors.emailTaken" },
       values: { fullName: "Olena Petrenko", email: "Olena@Example.com", phone: "" },
     });
     expect(JSON.stringify(body)).not.toContain("correct horse");
@@ -96,7 +96,10 @@ describe("register action", () => {
 
     expect(status).toBe(400);
     expect(body).toMatchObject({
-      fieldErrors: { fullName: "Enter your name", password: "Use at least 8 characters" },
+      fieldErrors: {
+        fullName: "auth.errors.nameRequired",
+        password: "auth.errors.passwordTooShort",
+      },
     });
     expect(auth.registerUser).not.toHaveBeenCalled();
   });

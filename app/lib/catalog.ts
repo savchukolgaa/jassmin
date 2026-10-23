@@ -1,13 +1,20 @@
 // Catalog URL contract: which genders have a catalog page, and the filter/sort/page search params.
 // Parsed with zod on the server; invalid values fall back to their defaults so a bad URL never errors.
 import { z } from "zod";
+import type { TextKey } from "./i18n";
 
-export const CATALOG_TITLES = { men: "Men Perfumes", women: "Women Perfumes" } as const;
+export const CATALOG_GENDERS = ["men", "women"] as const;
 
-export type CatalogGender = keyof typeof CATALOG_TITLES;
+export type CatalogGender = (typeof CATALOG_GENDERS)[number];
+
+/** Each catalog's title, e.g. "Жіночі парфуми" / "Women Perfumes". */
+export const CATALOG_TITLE_KEYS = {
+  men: "catalog.title.men",
+  women: "catalog.title.women",
+} as const satisfies Record<CatalogGender, TextKey>;
 
 export function isCatalogGender(value: string): value is CatalogGender {
-  return Object.hasOwn(CATALOG_TITLES, value);
+  return (CATALOG_GENDERS as readonly string[]).includes(value);
 }
 
 export const CATALOG_SORTS = ["newest", "price_asc", "price_desc"] as const;
@@ -16,10 +23,10 @@ export type CatalogSort = (typeof CATALOG_SORTS)[number];
 
 export const DEFAULT_CATALOG_SORT: CatalogSort = "newest";
 
-export const CATALOG_SORT_LABELS: Record<CatalogSort, string> = {
-  newest: "Newest",
-  price_asc: "Price: low to high",
-  price_desc: "Price: high to low",
+export const CATALOG_SORT_LABEL_KEYS: Record<CatalogSort, TextKey> = {
+  newest: "catalog.sort.newest",
+  price_asc: "catalog.sort.price_asc",
+  price_desc: "catalog.sort.price_desc",
 };
 
 export const CATALOG_PAGE_SIZE = 12;

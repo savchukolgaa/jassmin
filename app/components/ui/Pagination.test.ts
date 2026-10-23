@@ -4,11 +4,15 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import { blogHref } from "~/lib/blog";
 import { catalogHref } from "~/lib/catalog";
+import { I18nProvider } from "~/lib/i18n";
 import { Pagination, type PaginationProps } from "./Pagination";
 
 const render = (props: PaginationProps) => {
   const router = createMemoryRouter([{ path: "*", element: createElement(Pagination, props) }]);
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+  // Rendered in English, like the assertions.
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+  );
 };
 
 describe("Pagination", () => {

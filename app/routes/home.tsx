@@ -7,14 +7,16 @@ import { buildHomePageView } from "~/.server/services/home";
 import { parseContactForm } from "~/features/home/contact-form";
 import { HomePage } from "~/features/home/HomePage";
 import type { ContactActionResult } from "~/lib/contact";
-import { DEFAULT_HOME_DESCRIPTION } from "~/lib/home";
+import { metaTranslator } from "~/lib/i18n";
 import type { Route } from "./+types/home";
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ loaderData, matches }: Route.MetaArgs) {
+  const { t } = metaTranslator(matches);
   if (!loaderData) {
-    return [{ title: "Jassmin" }, { name: "description", content: DEFAULT_HOME_DESCRIPTION }];
+    return [{ title: "Jassmin" }, { name: "description", content: t("home.defaultDescription") }];
   }
-  const { title, description, image } = loaderData.seo;
+  const { title, image } = loaderData.seo;
+  const description = loaderData.seo.description || t("home.defaultDescription");
   return [
     { title },
     { name: "description", content: description },

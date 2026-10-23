@@ -31,9 +31,9 @@ describe("parseContactForm", () => {
     expect(result).toEqual({
       ok: false,
       fieldErrors: {
-        name: "Please enter your name.",
-        email: "Please enter a valid email address.",
-        message: "Your message needs at least 10 characters.",
+        name: "contact.errors.nameRequired",
+        email: "contact.errors.emailInvalid",
+        message: "contact.errors.messageTooShort",
       },
       values: { name: "   ", email: "nope", message: "short" },
     });
@@ -44,7 +44,7 @@ describe("parseContactForm", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      fieldErrors: { email: "Please enter your email address." },
+      fieldErrors: { email: "contact.errors.emailRequired" },
     });
   });
 
@@ -63,7 +63,7 @@ describe("parseContactForm", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      fieldErrors: { name: "Please enter your name.", email: "Please enter your email address." },
+      fieldErrors: { name: "contact.errors.nameRequired", email: "contact.errors.emailRequired" },
       values: { name: "", email: "", message: valid.message },
     });
   });

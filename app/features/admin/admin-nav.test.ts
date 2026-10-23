@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createRoutesStub } from "react-router";
 import { describe, expect, it } from "vitest";
+import { createTranslator, I18nProvider } from "~/lib/i18n";
 import { AdminLayout } from "./AdminLayout";
 import { ADMIN_NAV_ITEMS, strapiAdminUrl } from "./admin-nav";
 
@@ -16,8 +17,11 @@ function TestAdmin() {
 // A data router, because the layout's logout `<Form>` needs one.
 const Stub = createRoutesStub([{ path: "/admin/*", Component: TestAdmin }]);
 
+// In English, like the assertions.
 const renderLayout = (path = "/admin/products") =>
-  renderToStaticMarkup(createElement(Stub, { initialEntries: [path] }));
+  renderToStaticMarkup(
+    createElement(I18nProvider, { locale: "en" }, createElement(Stub, { initialEntries: [path] })),
+  );
 
 describe("strapiAdminUrl", () => {
   it("points at /admin on the Strapi URL", () => {
@@ -35,7 +39,8 @@ describe("AdminLayout", () => {
     const html = renderLayout();
     const positions = ADMIN_NAV_ITEMS.map((item) => html.indexOf(`href="${item.to}"`));
 
-    expect(ADMIN_NAV_ITEMS.map((item) => item.label)).toEqual(["Products", "Orders"]);
+    const { t } = createTranslator("en");
+    expect(ADMIN_NAV_ITEMS.map((item) => t(item.labelKey))).toEqual(["Products", "Orders"]);
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
@@ -59,5 +64,13 @@ describe("AdminLayout", () => {
     expect(html).toMatch(/<form(?=[^>]*method="post")(?=[^>]*action="\/logout")/);
     expect(html).toContain("<main");
     expect(html).toContain("Page body");
+  });
+
+  it("has the language switcher and renders in Ukrainian by default", () => {
+    const html = renderToStaticMarkup(createElement(Stub, { initialEntries: ["/admin/orders"] }));
+
+    expect(html).toMatch(/<form(?=[^>]*method="post")(?=[^>]*action="\/locale")/);
+    expect(html).toMatch(/aria-current="page"[^>]*>Замовлення<\/a>/);
+    expect(html).toContain("До магазину");
   });
 });

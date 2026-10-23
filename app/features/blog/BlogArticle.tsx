@@ -2,16 +2,19 @@ import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { RichText } from "~/components/ui/RichText";
 import type { BlogPostView } from "~/lib/blog";
+import { useT } from "~/lib/i18n";
 import { BlogCover } from "./BlogCover";
 
 /** Link back to the article list, shown above an article and on its error page. */
 export function BackToBlogLink() {
+  const { t } = useT();
+
   return (
     <Link
       to="/blog"
       className={`inline-flex min-h-11 items-center rounded-pill font-bold text-primary-dark underline-offset-2 hover:underline ${focusRing("onLight")}`}
     >
-      ← Back to the blog
+      {t("blog.back")}
     </Link>
   );
 }

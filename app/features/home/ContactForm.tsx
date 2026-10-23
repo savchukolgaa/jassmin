@@ -9,6 +9,7 @@ import {
   type ContactValues,
   HONEYPOT_FIELD,
 } from "~/lib/contact";
+import { useT } from "~/lib/i18n";
 
 type ContactFormProps = {
   /** The action result after a full-page (no-JS) submission. */
@@ -20,6 +21,7 @@ type ContactFormProps = {
  * browser posts the form and lands back on `#contacts` with the result in `actionData`.
  */
 export function ContactForm({ actionData }: ContactFormProps) {
+  const { t } = useT();
   const fetcher = useFetcher<ContactActionResult>();
   const result = fetcher.data ?? actionData;
   const busy = fetcher.state !== "idle";
@@ -37,7 +39,13 @@ export function ContactForm({ actionData }: ContactFormProps) {
   }, [fetcher.state, fetcher.data]);
 
   const values: Partial<ContactValues> = result && "values" in result ? result.values : {};
-  const errors = result?.status === "invalid" ? result.fieldErrors : {};
+  const fieldErrors = result?.status === "invalid" ? result.fieldErrors : {};
+  // Messages such as "at most {messageMax} characters" take their numbers from the limits.
+  const errors: Partial<Record<ContactField, string>> = {};
+  for (const field of ["name", "email", "message"] as const) {
+    const key = fieldErrors[field];
+    if (key) errors[field] = t(key, CONTACT_LIMITS);
+  }
 
   return (
     <fetcher.Form
@@ -49,12 +57,12 @@ export function ContactForm({ actionData }: ContactFormProps) {
       className="relative flex flex-col gap-5 rounded-card-lg bg-white p-6 text-ink shadow-lg sm:p-9"
     >
       <h3 id="contact-form-title" className="text-2xl font-extrabold tracking-[-0.03em]">
-        Send us a message
+        {t("contact.title")}
       </h3>
 
       <Field
         name="name"
-        label="Name"
+        label={t("contact.name")}
         autoComplete="name"
         maxLength={CONTACT_LIMITS.nameMax}
         defaultValue={values.name}
@@ -62,7 +70,7 @@ export function ContactForm({ actionData }: ContactFormProps) {
       />
       <Field
         name="email"
-        label="Email"
+        label={t("contact.email")}
         type="email"
         autoComplete="email"
         maxLength={CONTACT_LIMITS.emailMax}
@@ -71,7 +79,7 @@ export function ContactForm({ actionData }: ContactFormProps) {
       />
       <Field
         name="message"
-        label="Message"
+        label={t("contact.message")}
         multiline
         maxLength={CONTACT_LIMITS.messageMax}
         defaultValue={values.message}
@@ -80,7 +88,7 @@ export function ContactForm({ actionData }: ContactFormProps) {
 
       {/* Honeypot: hidden from people and assistive tech; bots that fill it are ignored. */}
       <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
-        <label htmlFor={`contact-${HONEYPOT_FIELD}`}>Leave this field empty</label>
+        <label htmlFor={`contact-${HONEYPOT_FIELD}`}>{t("contact.honeypot")}</label>
         <input
           id={`contact-${HONEYPOT_FIELD}`}
           name={HONEYPOT_FIELD}
@@ -92,27 +100,27 @@ export function ContactForm({ actionData }: ContactFormProps) {
 
       <div>
         <Button type="submit" size="lg" loading={busy}>
-          {busy ? "Sending…" : "Send message"}
+          {busy ? t("contact.sending") : t("contact.send")}
         </Button>
       </div>
 
       <div role="status" aria-live="polite">
         {result?.status === "success" && (
           <p className="animate-pop rounded-card bg-success-bg p-4 font-bold text-success">
-            Thanks! Your message was sent. We'll reply by email.
+            {t("contact.success")}
           </p>
         )}
       </div>
       {result?.status === "rate_limited" && (
         <p role="alert" className="rounded-card bg-red-50 p-4 font-bold text-red-800">
-          You've sent several messages in a short time. Please try again in{" "}
-          {Math.max(1, Math.ceil(result.retryAfterSeconds / 60))} min.
+          {t("contact.rateLimited", {
+            minutes: Math.max(1, Math.ceil(result.retryAfterSeconds / 60)),
+          })}
         </p>
       )}
       {result?.status === "delivery_failed" && (
         <p role="alert" className="rounded-card bg-red-50 p-4 font-bold text-red-800">
-          Sorry, we couldn't send your message right now. Please try again later or call or email us
-          directly.
+          {t("contact.deliveryFailed")}
         </p>
       )}
     </fetcher.Form>

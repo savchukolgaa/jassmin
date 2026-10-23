@@ -51,10 +51,10 @@ describe("registerSchema", () => {
     expect(
       toFieldErrors(result.error, ["fullName", "email", "password", "phone"] as const),
     ).toEqual({
-      fullName: "Enter your name",
-      email: "Enter a valid email address",
-      password: "Use at least 8 characters",
-      phone: "Enter a valid phone number",
+      fullName: "auth.errors.nameRequired",
+      email: "auth.errors.emailInvalid",
+      password: "auth.errors.passwordTooShort",
+      phone: "auth.errors.phoneInvalid",
     });
   });
 

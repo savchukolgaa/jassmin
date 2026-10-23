@@ -1,11 +1,12 @@
 import { focusRing } from "~/components/layout/nav";
 import { cn } from "~/lib/cn";
+import type { TextKey } from "~/lib/i18n";
 
 /** Sidebar links of the admin area. Product (#16) and order (#17) management nest under these. */
 export const ADMIN_NAV_ITEMS = [
-  { to: "/admin/products", label: "Products" },
-  { to: "/admin/orders", label: "Orders" },
-] as const;
+  { to: "/admin/products", labelKey: "admin.nav.products" },
+  { to: "/admin/orders", labelKey: "admin.nav.orders" },
+] as const satisfies { to: string; labelKey: TextKey }[];
 
 /**
  * The Strapi admin panel on `strapiUrl` (blog and site content are edited there, #20). Keeps a

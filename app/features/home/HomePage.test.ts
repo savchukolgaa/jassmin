@@ -4,6 +4,7 @@ import { createRoutesStub } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { ContactActionResult } from "~/lib/contact";
 import type { HomePageView } from "~/lib/home";
+import { I18nProvider } from "~/lib/i18n";
 import { HomePage } from "./HomePage";
 
 const view: HomePageView = {
@@ -46,7 +47,10 @@ const Stub = createRoutesStub([{ path: "/", Component: TestHome }]);
 
 function render(overrides: Partial<HomePageView> = {}, actionData?: ContactActionResult) {
   props = { view: { ...view, ...overrides }, actionData };
-  return renderToStaticMarkup(createElement(Stub, { initialEntries: ["/"] }));
+  // In English, like the assertions.
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale: "en" }, createElement(Stub, { initialEntries: ["/"] })),
+  );
 }
 
 describe("HomePage", () => {
@@ -110,7 +114,7 @@ describe("HomePage", () => {
       {},
       {
         status: "invalid",
-        fieldErrors: { email: "Please enter a valid email address." },
+        fieldErrors: { email: "contact.errors.emailInvalid" },
         values: { name: "Olha", email: "nope", message: "Hello there, Jassmin" },
       },
     );
@@ -120,6 +124,20 @@ describe("HomePage", () => {
     expect(html).toContain("Please enter a valid email address.");
     expect(html).toContain('value="Olha"');
     expect(html).toContain("Hello there, Jassmin</textarea>");
+  });
+
+  it("translates field errors that use the form's limits", () => {
+    const values = { name: "Olha", email: "olha@example.com", message: "x" };
+    const html = render(
+      {},
+      {
+        status: "invalid",
+        fieldErrors: { message: "contact.errors.messageTooShort" },
+        values,
+      },
+    );
+
+    expect(html).toContain("Your message needs at least 10 characters.");
   });
 
   it("confirms a sent message", () => {

@@ -4,7 +4,7 @@ import { productHref } from "~/features/catalog/ProductCard";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { type CartActionResult, type CartLine, cartErrorMessage } from "~/lib/cart";
 import { cn } from "~/lib/cn";
-import { formatPrice } from "~/lib/money";
+import { useT } from "~/lib/i18n";
 import { formatVolume } from "~/lib/products";
 import {
   cartLineFetcherKey,
@@ -17,6 +17,8 @@ import { QuantityStepper } from "./QuantityStepper";
 
 /** One line of the cart page: quantity changes and removal show at once, before the server answers. */
 export function CartLineItem({ line }: { line: CartLine }) {
+  const translator = useT();
+  const { t, formatPrice } = translator;
   const fetcher = useFetcher<CartActionResult>({ key: cartLineFetcherKey(line.variantId) });
   if (isPendingRemove(fetcher.formData)) {
     return null;
@@ -24,10 +26,12 @@ export function CartLineItem({ line }: { line: CartLine }) {
 
   const quantity = optimisticQuantity(fetcher.formData, line.quantity);
   const href = productHref(line.productId);
-  const volume = formatVolume(line);
+  const volume = formatVolume(line, translator);
   const error =
-    fetcher.state === "idle" && fetcher.data?.ok === false ? cartErrorMessage(fetcher.data) : null;
-  const notice = error ?? stockNotice({ quantity, stockQuantity: line.stockQuantity });
+    fetcher.state === "idle" && fetcher.data?.ok === false
+      ? cartErrorMessage(fetcher.data, translator)
+      : null;
+  const notice = error ?? stockNotice({ quantity, stockQuantity: line.stockQuantity }, translator);
 
   return (
     <li className="flex gap-4 rounded-card bg-white p-3 ring-1 ring-line sm:p-4">
@@ -47,7 +51,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
           </Link>
         </h2>
         <p className="text-sm text-muted">
-          {volume} · {formatPrice(line.unitPrice)} each
+          {volume} · {t("cart.each", { price: formatPrice(line.unitPrice) })}
         </p>
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-3">
@@ -80,14 +84,14 @@ export function CartLineItem({ line }: { line: CartLine }) {
             <input type="hidden" name="variantId" value={line.variantId} />
             <button
               type="submit"
-              aria-label={`Remove ${line.title}, ${volume}`}
+              aria-label={t("cart.removeItem", { item: `${line.title}, ${volume}` })}
               className={cn(
                 "min-h-11 rounded-pill px-3 text-sm font-bold text-muted underline-offset-4",
                 "hover:text-primary-dark hover:underline",
                 focusRing("onLight"),
               )}
             >
-              Remove
+              {t("cart.remove")}
             </button>
           </fetcher.Form>
         </div>

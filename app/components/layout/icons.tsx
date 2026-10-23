@@ -96,3 +96,28 @@ export function MailIcon(props: IconProps) {
     </Icon>
   );
 }
+
+// Flags for the language switcher, drawn as SVG because Windows shows flag emoji as letters.
+// Decorative: the switcher's buttons also show the language code.
+
+export function FlagUaIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 3 2" aria-hidden="true" {...props}>
+      <rect width="3" height="1" fill="#0057B7" />
+      <rect y="1" width="3" height="1" fill="#FFD700" />
+    </svg>
+  );
+}
+
+/** The Union Jack, simplified for a 16px-high icon. */
+export function FlagGbIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 60 30" preserveAspectRatio="xMidYMid slice" aria-hidden="true" {...props}>
+      <rect width="60" height="30" fill="#012169" />
+      <path d="M0 0L60 30M60 0L0 30" stroke="#FFFFFF" strokeWidth="6" />
+      <path d="M0 0L60 30M60 0L0 30" stroke="#C8102E" strokeWidth="2" />
+      <path d="M30 0V30M0 15H60" stroke="#FFFFFF" strokeWidth="10" />
+      <path d="M30 0V30M0 15H60" stroke="#C8102E" strokeWidth="6" />
+    </svg>
+  );
+}

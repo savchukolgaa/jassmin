@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { Form, Link, NavLink } from "react-router";
+import { LocaleSwitcher } from "~/components/layout/LocaleSwitcher";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { cn } from "~/lib/cn";
+import { useT } from "~/lib/i18n";
 import { ADMIN_NAV_ITEMS, adminNavItemClasses } from "./admin-nav";
 
 export interface AdminLayoutProps {
@@ -14,13 +16,15 @@ export interface AdminLayoutProps {
 
 /** Shell of every `/admin` page: deep-pink top bar, sidebar navigation (a row on mobile), content. */
 export function AdminLayout({ adminName, strapiAdminUrl, children }: AdminLayoutProps) {
+  const { t } = useT();
+
   return (
     <div className="flex min-h-dvh flex-col bg-blush">
       <header className="bg-primary text-white">
         <div className="flex h-16 items-center justify-between gap-2 px-4">
           <Link
             to="/admin"
-            aria-label="Jassmin admin, home"
+            aria-label={t("admin.home")}
             className={cn(
               "rounded-pill text-2xl font-extrabold tracking-[-0.05em] text-white",
               focusRing(),
@@ -30,13 +34,14 @@ export function AdminLayout({ adminName, strapiAdminUrl, children }: AdminLayout
             <span aria-hidden="true" className="text-primary-light">
               .
             </span>
-            <span className="ml-2 text-sm font-bold tracking-normal">admin</span>
+            <span className="ml-2 text-sm font-bold tracking-normal">{t("admin.badge")}</span>
           </Link>
           <div className="flex items-center gap-3">
+            <LocaleSwitcher />
             <span className="hidden text-sm font-bold sm:inline">{adminName}</span>
             <Form method="post" action="/logout">
               <Button type="submit" variant="outline-light" size="sm">
-                Log out
+                {t("admin.logOut")}
               </Button>
             </Form>
           </div>
@@ -45,14 +50,14 @@ export function AdminLayout({ adminName, strapiAdminUrl, children }: AdminLayout
 
       <div className="flex flex-1 flex-col md:flex-row">
         <nav
-          aria-label="Admin"
+          aria-label={t("admin.nav.label")}
           className="border-line border-b bg-white md:w-60 md:shrink-0 md:border-r md:border-b-0"
         >
           <ul className="flex gap-1 overflow-x-auto p-3 md:flex-col">
             {ADMIN_NAV_ITEMS.map((item) => (
               <li key={item.to}>
                 <NavLink to={item.to} className={({ isActive }) => adminNavItemClasses(isActive)}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </NavLink>
               </li>
             ))}
@@ -63,14 +68,14 @@ export function AdminLayout({ adminName, strapiAdminUrl, children }: AdminLayout
                 rel="noopener noreferrer"
                 className={adminNavItemClasses()}
               >
-                Content (Strapi)
+                {t("admin.nav.content")}
                 <span aria-hidden="true">↗</span>
-                <span className="sr-only">(opens in a new tab)</span>
+                <span className="sr-only">{t("admin.nav.newTab")}</span>
               </a>
             </li>
             <li className="md:mt-4">
               <Link to="/" className={adminNavItemClasses()}>
-                Back to shop
+                {t("admin.nav.backToShop")}
               </Link>
             </li>
           </ul>

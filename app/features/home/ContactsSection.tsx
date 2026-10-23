@@ -4,6 +4,7 @@ import { buttonClasses } from "~/components/ui/button-styles";
 import { SOCIAL_LABELS } from "~/lib/cms";
 import { cn } from "~/lib/cn";
 import type { HomePageView } from "~/lib/home";
+import { useT } from "~/lib/i18n";
 import { telHref } from "~/lib/links";
 import { Eyebrow } from "./Eyebrow";
 
@@ -23,8 +24,10 @@ const contactLink = cn(
   onInkFocus,
 );
 
-/** Customer service details from Strapi site settings; the header's "Kontakt" scrolls here. */
+/** Customer service details from Strapi site settings; the header's "Contacts" scrolls here. */
 export function ContactsSection({ contacts, children }: ContactsSectionProps) {
+  const { t } = useT();
+
   return (
     <section
       id="contacts"
@@ -33,12 +36,12 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
     >
       <div className="reveal container mx-auto grid gap-12 px-4 md:grid-cols-2">
         <div>
-          <Eyebrow tone="onDark">Kontakt</Eyebrow>
+          <Eyebrow tone="onDark">{t("home.contacts.eyebrow")}</Eyebrow>
           <h2
             id="contacts-title"
             className="mt-2 text-3xl leading-tight font-extrabold tracking-[-0.04em] md:text-4xl"
           >
-            Questions? Ask us anything.
+            {t("home.contacts.title")}
           </h2>
           <ul className="mt-8 space-y-3">
             <li>
@@ -57,14 +60,14 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
               <li className="flex items-start gap-3 py-2.5 text-on-dark-muted">
                 <ClockIcon className="size-6 shrink-0 text-primary-light" />
                 <span className="whitespace-pre-line">
-                  <span className="sr-only">Customer service hours: </span>
+                  <span className="sr-only">{t("home.contacts.serviceHours")}</span>
                   {contacts.customerServiceHours}
                 </span>
               </li>
             )}
           </ul>
           {contacts.socialLinks.length > 0 && (
-            <ul aria-label="Social media" className="mt-8 flex flex-wrap gap-3">
+            <ul aria-label={t("home.contacts.social")} className="mt-8 flex flex-wrap gap-3">
               {contacts.socialLinks.map((link) => (
                 <li key={`${link.platform}-${link.url}`}>
                   <a

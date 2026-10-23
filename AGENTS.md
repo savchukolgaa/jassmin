@@ -43,6 +43,25 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 - Add or update Vitest tests next to the code (`*.test.ts`) for the behaviour you add.
 - Match the surrounding code's style. Biome formats the code: 2 spaces, double quotes, LF, width 100.
 
+## Translations (i18n)
+
+The site is in Ukrainian (default) and English, storefront and `/admin` alike. The locale comes
+from the `locale` cookie, then `Accept-Language`, then `uk` (`app/.server/locale.ts`).
+
+- **No hard-coded user-facing strings.** Copy lives in `app/lib/i18n/uk.ts` (the source of truth)
+  and `app/lib/i18n/en.ts`, under one namespace per feature (`cart`, `checkout`,
+  `admin.products`, …). Add every key to both files; `pnpm typecheck` fails when they differ.
+- Components use `const { t } = useT()`, route `meta` uses `metaTranslator(matches)`, and server
+  code uses `createTranslator(await getLocale(request))`.
+- Placeholders are `{name}`. A plural message is `{ one, few, many, other }` in `uk` (`one`/`other`
+  in `en`) and needs `t(key, { count })`.
+- zod messages and action errors are message keys (`msg("cart.errors.…")`), translated when
+  rendered, so action results stay locale-independent.
+- Format prices and dates with the translator's `formatPrice` / `formatDate`, never a fixed
+  `Intl` locale.
+- Component tests render Ukrainian by default; wrap in `<I18nProvider locale="en">` to assert
+  English copy.
+
 ## Workflow: issues, plans, worktrees
 
 Work happens through the repo skills in `.agents/skills/` (Antigravity) and `.claude/skills/` (Claude): `/create-issue`, `/create-plan <n>`, `/implement <n>` and `/open-pr <n>`. Reusable workflow documentation and templates live in `docs/skills/`.

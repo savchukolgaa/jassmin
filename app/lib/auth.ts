@@ -1,6 +1,7 @@
 // Validation and helpers shared by the login/register routes and their forms. Isomorphic: no
-// server imports.
+// server imports. Error messages are message keys, translated when the form renders them.
 import { z } from "zod";
+import { isTextKey, msg, type TextKey } from "./i18n";
 
 const PHONE = /^\+?[0-9 ()-]{7,20}$/;
 
@@ -9,7 +10,7 @@ export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .pipe(z.email("Enter a valid email address").max(255, "Email is too long"));
+  .pipe(z.email(msg("auth.errors.emailInvalid")).max(255, msg("auth.errors.emailTooLong")));
 
 /** An optional text field: blank or missing becomes `undefined`. */
 const optionalText = z
@@ -19,11 +20,18 @@ const optionalText = z
   .transform((value) => value || undefined);
 
 export const registerSchema = z.object({
-  fullName: z.string().trim().min(1, "Enter your name").max(255, "Name is too long"),
+  fullName: z
+    .string()
+    .trim()
+    .min(1, msg("auth.errors.nameRequired"))
+    .max(255, msg("auth.errors.nameTooLong")),
   email: emailSchema,
-  password: z.string().min(8, "Use at least 8 characters").max(128, "Use at most 128 characters"),
+  password: z
+    .string()
+    .min(8, msg("auth.errors.passwordTooShort"))
+    .max(128, msg("auth.errors.passwordTooLong")),
   phone: optionalText.refine((value) => value === undefined || PHONE.test(value), {
-    message: "Enter a valid phone number",
+    message: msg("auth.errors.phoneInvalid"),
   }),
   // Analytics only: an unusable value falls back to the column default instead of failing.
   acquisitionChannel: z.string().trim().toLowerCase().min(1).max(100).optional().catch(undefined),
@@ -34,7 +42,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, "Enter your password"),
+  password: z.string().min(1, msg("auth.errors.passwordRequired")),
   redirectTo: optionalText,
 });
 
@@ -43,25 +51,28 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterField = "fullName" | "email" | "password" | "phone";
 export type LoginField = "email" | "password";
 
-/** What a login/register `action` returns when the form can't be accepted. */
+/** What a login/register `action` returns when the form can't be accepted. Errors are keys. */
 export interface AuthFormErrors<Field extends string> {
-  fieldErrors?: Partial<Record<Field, string>>;
+  fieldErrors?: Partial<Record<Field, TextKey>>;
   /** An error about the whole form, e.g. wrong credentials. */
-  formError?: string;
+  formError?: TextKey;
   /** Submitted values to refill the form with. Never includes passwords. */
   values?: Partial<Record<Field, string>>;
 }
 
-/** The first message per field of a failed parse. */
+/**
+ * The first message key per field of a failed parse. A message that isn't one of ours (e.g. a zod
+ * default) becomes the generic `errors.invalid`.
+ */
 export function toFieldErrors<Field extends string>(
   error: z.ZodError,
   fields: readonly Field[],
-): Partial<Record<Field, string>> {
+): Partial<Record<Field, TextKey>> {
   const flattened: Partial<Record<string, string[]>> = z.flattenError(error).fieldErrors;
-  const result: Partial<Record<Field, string>> = {};
+  const result: Partial<Record<Field, TextKey>> = {};
   for (const field of fields) {
     const message = flattened[field]?.[0];
-    if (message) result[field] = message;
+    if (message) result[field] = isTextKey(message) ? message : "errors.invalid";
   }
   return result;
 }

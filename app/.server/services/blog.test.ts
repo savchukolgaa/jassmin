@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_BLOG_DESCRIPTION } from "~/lib/blog";
 import type { BlogPost } from "~/lib/cms";
+import { createTranslator } from "~/lib/i18n";
 import blogPostBySlug from "../cms/__fixtures__/blog-post-by-slug.json";
 import blogPosts from "../cms/__fixtures__/blog-posts.json";
 import { toBlogPost, toBlogPostSummary, toPaginated } from "../cms/content";
@@ -13,7 +13,7 @@ import {
 } from "./blog";
 
 const CMS = "http://cms.test";
-const SITE = { origin: "https://jassmin.ua", mediaBaseUrl: CMS };
+const SITE = { origin: "https://jassmin.ua", mediaBaseUrl: CMS, locale: "en" } as const;
 
 function fixturePost(): BlogPost {
   const [entry] = collectionResponse(blogPostEntry).parse(blogPostBySlug).data;
@@ -23,9 +23,15 @@ function fixturePost(): BlogPost {
 
 describe("formatPublishedDate", () => {
   it("formats in Kyiv time", () => {
-    expect(formatPublishedDate("2026-10-22T19:06:58.498Z")).toBe("22 October 2026");
+    expect(formatPublishedDate("2026-10-22T19:06:58.498Z", "en")).toBe("22 October 2026");
     // 22:30 UTC is already the next day in Kyiv.
-    expect(formatPublishedDate("2026-10-22T22:30:00.000Z")).toBe("23 October 2026");
+    expect(formatPublishedDate("2026-10-22T22:30:00.000Z", "en")).toBe("23 October 2026");
+  });
+
+  it("formats in Ukrainian by default", () => {
+    expect(formatPublishedDate("2026-10-22T19:06:58.498Z").replace(/\s/gu, " ")).toBe(
+      "22 жовтня 2026 р.",
+    );
   });
 });
 
@@ -37,6 +43,7 @@ describe("buildBlogListView", () => {
         data.map((entry) => toBlogPostSummary(entry, CMS)),
         meta.pagination,
       ),
+      "en",
     );
 
     expect(view.posts.map((post) => post.slug)).toEqual(data.map((entry) => entry.slug));
@@ -102,7 +109,7 @@ describe("buildBlogPostView", () => {
     expect(fromText.seo.image).toBeNull();
 
     const empty = buildBlogPostView({ ...post, content: "" }, SITE);
-    expect(empty.seo.description).toBe(DEFAULT_BLOG_DESCRIPTION);
+    expect(empty.seo.description).toBe(createTranslator("en").t("blog.defaultDescription"));
   });
 });
 
@@ -110,7 +117,7 @@ describe("blogCacheHeaders", () => {
   it("lets shared caches store pages for visitors without a session", () => {
     const headers = blogCacheHeaders(new Request("http://localhost/blog"));
     expect(headers.get("Cache-Control")).toBe("public, max-age=60, stale-while-revalidate=300");
-    expect(headers.get("Vary")).toBe("Cookie");
+    expect(headers.get("Vary")).toBe("Cookie, Accept-Language");
   });
 
   it("keeps pages private when the visitor has a session", () => {
@@ -119,7 +126,7 @@ describe("blogCacheHeaders", () => {
     });
     const headers = blogCacheHeaders(request);
     expect(headers.get("Cache-Control")).toBe("private, no-cache");
-    expect(headers.get("Vary")).toBe("Cookie");
+    expect(headers.get("Vary")).toBe("Cookie, Accept-Language");
   });
 
   it("keeps pages private for a guest with a visitor id (their cart count is in the header)", () => {

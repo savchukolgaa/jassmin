@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Button } from "~/components/ui/Button";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { StockStatus } from "~/features/catalog/StockStatus";
-import { formatPrice } from "~/lib/money";
+import { useT } from "~/lib/i18n";
 import { defaultVariant, type ProductDetail } from "~/lib/products";
 import { VolumeSelect } from "./VolumeSelect";
 
 /** Price, stock and add to cart for the size chosen in the volume dropdown. */
 export function ProductPurchase({ product }: { product: ProductDetail }) {
+  const { t, formatPrice } = useT();
   const [selectedId, setSelectedId] = useState(() => defaultVariant(product.variants)?.id);
   const selected = product.variants.find((v) => v.id === selectedId);
 
@@ -16,7 +17,7 @@ export function ProductPurchase({ product }: { product: ProductDetail }) {
       <>
         <StockStatus inStock={false} className="self-start" />
         <Button size="lg" className="w-full max-w-sm" disabled>
-          Currently unavailable
+          {t("product.unavailable")}
         </Button>
       </>
     );

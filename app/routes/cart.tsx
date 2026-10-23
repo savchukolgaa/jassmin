@@ -18,10 +18,12 @@ import {
   cartErrorMessage,
   parseCartAction,
 } from "~/lib/cart";
+import { metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/cart";
 
-export function meta(_args: Route.MetaArgs) {
-  return [{ title: "Cart — Jassmin" }];
+export function meta({ matches }: Route.MetaArgs) {
+  const { t } = metaTranslator(matches);
+  return [{ title: t("meta.title", { page: t("cart.title") }) }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -78,13 +80,15 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Cart({ loaderData: cart, actionData }: Route.ComponentProps) {
+  const translator = useT();
+  const { t } = translator;
   // Only set after a plain form post without JS; fetchers show their errors on the line.
-  const error = actionData?.ok === false ? cartErrorMessage(actionData) : null;
+  const error = actionData?.ok === false ? cartErrorMessage(actionData, translator) : null;
 
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
       <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
-        Your cart
+        {t("cart.heading")}
       </h1>
       {error && (
         <p
@@ -98,7 +102,7 @@ export default function Cart({ loaderData: cart, actionData }: Route.ComponentPr
         <EmptyCart />
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-          <ul aria-label="Cart items" className="flex flex-col gap-4">
+          <ul aria-label={t("cart.lines")} className="flex flex-col gap-4">
             {cart.lines.map((line) => (
               <CartLineItem key={line.variantId} line={line} />
             ))}

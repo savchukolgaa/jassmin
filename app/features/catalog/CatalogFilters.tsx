@@ -2,11 +2,12 @@ import { Form, Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import {
-  CATALOG_SORT_LABELS,
+  CATALOG_SORT_LABEL_KEYS,
   CATALOG_SORTS,
   type CatalogSearch,
   hasActiveFilters,
 } from "~/lib/catalog";
+import { useT } from "~/lib/i18n";
 import type { CatalogFilterOptions } from "~/lib/products";
 
 export interface CatalogFiltersProps {
@@ -23,23 +24,25 @@ export const selectClasses = `min-h-11 w-full rounded-pill border border-muted b
  * changing a filter goes back to the first page.
  */
 export function CatalogFilters({ pathname, search, options }: CatalogFiltersProps) {
+  const { t } = useT();
+
   return (
     <Form
       method="get"
       action={pathname}
       // Re-mount after navigation so the selects show the URL's values.
       key={JSON.stringify(search)}
-      aria-label="Filter and sort"
+      aria-label={t("catalog.filters.label")}
       className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end"
     >
       <label className="grid gap-1 text-sm font-bold text-ink">
-        Fragrance family
+        {t("catalog.filters.family")}
         <select
           name="fragrance_family"
           defaultValue={search.fragranceFamily ?? ""}
           className={selectClasses}
         >
-          <option value="">All families</option>
+          <option value="">{t("catalog.filters.allFamilies")}</option>
           {options.fragranceFamilies.map((family) => (
             <option key={family} value={family}>
               {family}
@@ -48,9 +51,9 @@ export function CatalogFilters({ pathname, search, options }: CatalogFiltersProp
         </select>
       </label>
       <label className="grid gap-1 text-sm font-bold text-ink">
-        Brand
+        {t("catalog.filters.brand")}
         <select name="brand" defaultValue={search.brand ?? ""} className={selectClasses}>
-          <option value="">All brands</option>
+          <option value="">{t("catalog.filters.allBrands")}</option>
           {options.brands.map((brand) => (
             <option key={brand} value={brand}>
               {brand}
@@ -59,23 +62,23 @@ export function CatalogFilters({ pathname, search, options }: CatalogFiltersProp
         </select>
       </label>
       <label className="grid gap-1 text-sm font-bold text-ink">
-        Sort by
+        {t("catalog.filters.sort")}
         <select name="sort" defaultValue={search.sort} className={selectClasses}>
           {CATALOG_SORTS.map((sort) => (
             <option key={sort} value={sort}>
-              {CATALOG_SORT_LABELS[sort]}
+              {t(CATALOG_SORT_LABEL_KEYS[sort])}
             </option>
           ))}
         </select>
       </label>
       <div className="flex items-center gap-3">
-        <Button type="submit">Apply</Button>
+        <Button type="submit">{t("catalog.filters.apply")}</Button>
         {hasActiveFilters(search) && (
           <Link
             to={pathname}
             className={`rounded-pill text-sm font-bold text-primary-dark underline ${focusRing("onLight")}`}
           >
-            Reset
+            {t("catalog.filters.reset")}
           </Link>
         )}
       </div>

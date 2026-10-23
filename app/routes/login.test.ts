@@ -81,7 +81,7 @@ describe("login action", () => {
 
     expect(status).toBe(400);
     expect(body).toEqual({
-      formError: "Email or password is incorrect. Try again.",
+      formError: "auth.errors.invalidCredentials",
       values: { email: "olena@example.com" },
     });
     expect(JSON.stringify(body)).not.toContain("wrong");
@@ -94,7 +94,7 @@ describe("login action", () => {
 
     expect(status).toBe(400);
     expect(body).toMatchObject({
-      fieldErrors: { email: "Enter a valid email address", password: "Enter your password" },
+      fieldErrors: { email: "auth.errors.emailInvalid", password: "auth.errors.passwordRequired" },
     });
     expect(auth.verifyLogin).not.toHaveBeenCalled();
   });
@@ -111,7 +111,7 @@ describe("login action", () => {
     );
 
     expect(status).toBe(429);
-    expect(body).toMatchObject({ formError: expect.stringContaining("Too many attempts") });
+    expect(body).toMatchObject({ formError: "auth.errors.tooManyAttempts" });
     expect(auth.verifyLogin).toHaveBeenCalledTimes(5);
   });
 

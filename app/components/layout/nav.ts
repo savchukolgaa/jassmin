@@ -1,19 +1,29 @@
 import { cn } from "~/lib/cn";
+import type { TextKey } from "~/lib/i18n";
 
-export const ABOUT_LINK = { to: "/#about", label: "About us" } as const;
-export const CONTACTS_LINK = { to: "/#contacts", label: "Kontakt" } as const;
-export const BLOG_LINK = { to: "/blog", label: "Blog" } as const;
+/** A nav link; the label is a message key, translated where it's rendered. */
+export interface NavLinkItem {
+  to: string;
+  labelKey: TextKey;
+}
+
+export const ABOUT_LINK = { to: "/#about", labelKey: "nav.about" } as const satisfies NavLinkItem;
+export const CONTACTS_LINK = {
+  to: "/#contacts",
+  labelKey: "nav.contacts",
+} as const satisfies NavLinkItem;
+export const BLOG_LINK = { to: "/blog", labelKey: "nav.blog" } as const satisfies NavLinkItem;
 export const CATALOG_LINKS = [
-  { to: "/catalog/men", label: "Men Perfumes", shortLabel: "Men" },
-  { to: "/catalog/women", label: "Women Perfumes", shortLabel: "Women" },
-] as const;
+  { to: "/catalog/men", labelKey: "catalog.title.men", shortLabelKey: "catalog.short.men" },
+  { to: "/catalog/women", labelKey: "catalog.title.women", shortLabelKey: "catalog.short.women" },
+] as const satisfies (NavLinkItem & { shortLabelKey: TextKey })[];
 
 const [MEN_CATALOG, WOMEN_CATALOG] = CATALOG_LINKS;
 
 /** Links row of the site footer (women first, as in the C+ design). */
 export const FOOTER_LINKS = [
-  { to: WOMEN_CATALOG.to, label: WOMEN_CATALOG.shortLabel },
-  { to: MEN_CATALOG.to, label: MEN_CATALOG.shortLabel },
+  { to: WOMEN_CATALOG.to, labelKey: WOMEN_CATALOG.shortLabelKey },
+  { to: MEN_CATALOG.to, labelKey: MEN_CATALOG.shortLabelKey },
   BLOG_LINK,
   ABOUT_LINK,
   CONTACTS_LINK,

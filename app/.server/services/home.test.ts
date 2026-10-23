@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { HomePage, SiteSettings } from "~/lib/cms";
-import { DEFAULT_HOME_DESCRIPTION } from "~/lib/home";
 import { buildHomePageView } from "./home";
 
 const homePage: HomePage = {
@@ -70,13 +69,13 @@ describe("buildHomePageView", () => {
     });
   });
 
-  it("falls back to a default description and no image", () => {
+  it("leaves the description empty for the route's default, and has no image", () => {
     const { seo } = buildHomePageView(
       { ...homePage, hero: { ...homePage.hero, image: null }, about: { title: "A", body: " " } },
       siteSettings,
     );
 
-    expect(seo.description).toBe(DEFAULT_HOME_DESCRIPTION);
+    expect(seo.description).toBe("");
     expect(seo.image).toBeNull();
   });
 });

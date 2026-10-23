@@ -1,24 +1,19 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { cn } from "~/lib/cn";
+import { type TextKey, useT } from "~/lib/i18n";
 
 export type AuthMode = "login" | "register";
 
-const COPY: Record<AuthMode, { headline: string; sub: string }> = {
-  login: {
-    headline: "Welcome back.",
-    sub: "Sign in to see your orders and pick up where you left off.",
-  },
-  register: {
-    headline: "Join jassmin.",
-    sub: "Create an account in a minute. Your cart comes with you.",
-  },
+const COPY: Record<AuthMode, { headline: TextKey; sub: TextKey }> = {
+  login: { headline: "auth.login.headline", sub: "auth.login.sub" },
+  register: { headline: "auth.register.headline", sub: "auth.register.sub" },
 };
 
-const BENEFITS = [
-  "Track current and previous orders",
-  "Your cart, saved across devices",
-  "Faster checkout next time",
+const BENEFITS: TextKey[] = [
+  "auth.benefits.orders",
+  "auth.benefits.cart",
+  "auth.benefits.checkout",
 ];
 
 /** `?redirectTo=…` to carry between the login and register pages. */
@@ -39,6 +34,7 @@ export function AuthLayout({
   redirectTo?: string;
   children: ReactNode;
 }) {
+  const { t } = useT();
   const { headline, sub } = COPY[mode];
 
   return (
@@ -52,9 +48,9 @@ export function AuthLayout({
             id="auth-heading"
             className="max-w-[8ch] text-5xl leading-[0.92] font-extrabold tracking-tighter sm:text-7xl"
           >
-            {headline}
+            {t(headline)}
           </h1>
-          <p className="max-w-sm text-lg leading-relaxed">{sub}</p>
+          <p className="max-w-sm text-lg leading-relaxed">{t(sub)}</p>
         </div>
         <ul className="flex flex-col gap-3 font-bold">
           {BENEFITS.map((benefit) => (
@@ -65,7 +61,7 @@ export function AuthLayout({
               >
                 ✓
               </span>
-              {benefit}
+              {t(benefit)}
             </li>
           ))}
         </ul>
@@ -73,25 +69,25 @@ export function AuthLayout({
 
       <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-6">
         <nav
-          aria-label="Account"
+          aria-label={t("auth.tabs.label")}
           className="flex gap-1.5 self-start rounded-full bg-gray-100 p-1.5"
         >
           <AuthTab to={withRedirect("/login", redirectTo)} active={mode === "login"}>
-            Sign in
+            {t("auth.tabs.login")}
           </AuthTab>
           <AuthTab to={withRedirect("/register", redirectTo)} active={mode === "register"}>
-            Create account
+            {t("auth.tabs.register")}
           </AuthTab>
         </nav>
 
         {children}
 
         <p className="rounded-2xl bg-primary-light/10 px-5 py-4 leading-normal">
-          Just shopping? You can{" "}
+          {t("auth.guest.before")}
           <Link to="/cart" className="font-extrabold text-primary-dark underline">
-            check out as a guest
+            {t("auth.guest.link")}
           </Link>
-          , no account needed.
+          {t("auth.guest.after")}
         </p>
       </div>
     </main>

@@ -1,6 +1,7 @@
 // Cart form contract shared by the cart route's `action` and the forms that post to it, plus the
 // cart DTOs its `loader` returns.
 import { z } from "zod";
+import { createTranslator, type TextKey, type Translator } from "./i18n";
 
 /** Most of one size a single cart line may hold, whatever the stock. */
 export const MAX_LINE_QUANTITY = 99;
@@ -66,22 +67,28 @@ export type CartActionResult =
   /** `available` is the variant's stock, for `exceeds-stock`. */
   | { ok: false; error: CartActionError; available?: number };
 
-export const CART_ERROR_MESSAGES: Record<CartActionError, string> = {
-  invalid: "This perfume could not be added to the cart.",
-  "invalid-variant": "Please choose one of the available volumes.",
-  "out-of-stock": "This volume is out of stock.",
-  "exceeds-stock": "There isn't enough of this volume in stock.",
-  "not-in-cart": "This perfume is no longer in your cart.",
+export const CART_ERROR_KEYS: Record<CartActionError, TextKey> = {
+  invalid: "cart.errors.invalid",
+  "invalid-variant": "cart.errors.invalidVariant",
+  "out-of-stock": "cart.errors.outOfStock",
+  "exceeds-stock": "cart.errors.exceedsStock",
+  "not-in-cart": "cart.errors.notInCart",
 };
 
-/** The message for a failed cart action, with the stock left when it's known. */
-export function cartErrorMessage(result: { error: CartActionError; available?: number }): string {
+/**
+ * The message for a failed cart action in the translator's locale, with the stock left when it's
+ * known.
+ */
+export function cartErrorMessage(
+  result: { error: CartActionError; available?: number },
+  { t }: Translator = createTranslator(),
+): string {
   if (result.error === "exceeds-stock" && result.available !== undefined) {
     return result.available > 0
-      ? `Only ${result.available} available in this volume.`
-      : CART_ERROR_MESSAGES["out-of-stock"];
+      ? t("cart.errors.onlyAvailable", { count: result.available })
+      : t(CART_ERROR_KEYS["out-of-stock"]);
   }
-  return CART_ERROR_MESSAGES[result.error];
+  return t(CART_ERROR_KEYS[result.error]);
 }
 
 /** Validates a cart form submission (`add`, `update` or `remove`). */

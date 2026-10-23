@@ -1,11 +1,14 @@
 import { RichText } from "~/components/ui/RichText";
 import type { HomePageView } from "~/lib/home";
+import { useT } from "~/lib/i18n";
 import { Eyebrow } from "./Eyebrow";
 
 type AboutSectionProps = { about: HomePageView["about"] };
 
 /** Brand story from Strapi; the header's "About us" link scrolls here (`/#about`). */
 export function AboutSection({ about }: AboutSectionProps) {
+  const { t } = useT();
+
   return (
     <section
       id="about"
@@ -13,7 +16,7 @@ export function AboutSection({ about }: AboutSectionProps) {
       className="scroll-mt-20 bg-blush py-16 md:py-24"
     >
       <div className="reveal container mx-auto max-w-3xl px-4">
-        <Eyebrow>About us</Eyebrow>
+        <Eyebrow>{t("home.about")}</Eyebrow>
         <h2
           id="about-title"
           className="mt-2 text-3xl leading-tight font-extrabold tracking-[-0.04em] text-ink md:text-4xl"

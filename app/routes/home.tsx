@@ -1,7 +1,7 @@
 import { data, type ShouldRevalidateFunctionArgs } from "react-router";
 import { getHomePage, getSiteSettings } from "~/.server/cms/content";
 import { cmsUnavailable } from "~/.server/cms/errors";
-import { clientKey } from "~/.server/rate-limit";
+import { getClientIp } from "~/.server/rate-limit";
 import { submitContactMessage } from "~/.server/services/contact";
 import { buildHomePageView } from "~/.server/services/home";
 import { parseContactForm } from "~/features/home/contact-form";
@@ -47,7 +47,7 @@ export async function action({ request }: Route.ActionArgs) {
   const result = await submitContactMessage({
     message: parsed.data,
     honeypot: parsed.honeypot,
-    clientKey: clientKey(request),
+    clientKey: getClientIp(request) ?? "anonymous",
   });
   switch (result.status) {
     case "rate_limited":

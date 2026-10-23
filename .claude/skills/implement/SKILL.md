@@ -10,7 +10,7 @@ Implement GitHub issue `#$ARGUMENTS` by following its plan in `docs/plans/`.
 
 If no issue number is given, ask for one.
 
-**Worktree rule (mandatory):** all work for issue `<n>` happens on branch `issue/<n>` in its own git worktree at `<main checkout>/../jassmin-worktrees/issue-<n>`. Never edit, build, stage or commit in the main checkout, and never switch the main checkout's branch. See `AGENTS.md` → "Workflow".
+**Worktree rule (mandatory):** all work for issue `<n>` happens on branch `issue/<n>` in its own git worktree at `<main checkout>/.claude/worktrees/issue-<n>`. Never edit, build, stage or commit in the main checkout, and never switch the main checkout's branch. See `AGENTS.md` → "Workflow".
 
 ## 1. Enter the issue's worktree
 
@@ -18,7 +18,7 @@ Set `N` to the issue number and resolve the paths from the main checkout (first 
 
 ```bash
 MAIN=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
-WT="$(dirname "$MAIN")/jassmin-worktrees/issue-$N"
+WT="$MAIN/.claude/worktrees/issue-$N"
 git -C "$MAIN" fetch origin
 git -C "$MAIN" worktree list
 ```

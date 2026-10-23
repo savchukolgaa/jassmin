@@ -13,3 +13,6 @@
 
 # Local notes, never committed
 /Project Overview & Guidelines for Claude.md
+
+# Issue worktrees (see AGENTS.md -> Workflow)
+/.claude/worktrees/

@@ -48,15 +48,15 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 Work happens through the repo skills in `.claude/skills/`: `/create-issue`, `/create-plan <n>`, `/implement <n>` and `/open-pr <n>`.
 
 - **One issue = one branch `issue/<number>` = one git worktree.** Never do issue work in the main checkout.
-- Worktrees live **next to** the repo, not inside it: `<parent of repo>/jassmin-worktrees/issue-<number>`. Create one with:
+- Worktrees live **inside** the repo at `.claude/worktrees/issue-<number>` (git-ignored, and excluded from Biome, `tsc` and Vite watching). Create one from the main checkout with:
   ```bash
   git fetch origin
-  git worktree add -b issue/<n> ../jassmin-worktrees/issue-<n> origin/main
+  git worktree add -b issue/<n> .claude/worktrees/issue-<n> origin/main
   ```
   In a new worktree, run `pnpm install` and copy `.env` from the main checkout.
 - All commits for an issue go to `issue/<number>`, inside its worktree. Stage paths explicitly and never use `git add -A` / `git add .`.
 - Plans live in `docs/plans/<n>-<slug>.md` while an issue is in progress, and are removed before the PR is merged.
-- Remove a worktree only after its PR is merged: `git worktree remove ../jassmin-worktrees/issue-<n>`.
+- Remove a worktree only after its PR is merged: `git worktree remove .claude/worktrees/issue-<n>`.
 
 ## Never
 

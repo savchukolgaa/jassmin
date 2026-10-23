@@ -9,7 +9,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr list:*), Bash(gh pr view:*), Ba
 
 Open a pull request against `main` for the work on issue `#$ARGUMENTS`.
 
-**Worktree rule (mandatory):** the PR branch is `issue/<n>`, and all git operations for it run in the issue's worktree at `<main checkout>/../jassmin-worktrees/issue-<n>`. Never switch branches or commit in the main checkout. See `AGENTS.md` → "Workflow".
+**Worktree rule (mandatory):** the PR branch is `issue/<n>`, and all git operations for it run in the issue's worktree at `<main checkout>/.claude/worktrees/issue-<n>`. Never switch branches or commit in the main checkout. See `AGENTS.md` → "Workflow".
 
 ## 1. Find the worktree, branch and issue
 
@@ -18,7 +18,7 @@ MAIN=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 git -C "$MAIN" worktree list
 ```
 
-- If an issue number `N` is given, the branch is `issue/$N`. Use the worktree that has it checked out (shown as `[issue/$N]`). If none does but the branch exists locally or on `origin`, create the worktree at `$(dirname "$MAIN")/jassmin-worktrees/issue-$N` (`git -C "$MAIN" worktree add "$WT" "issue/$N"`, or `--track -b "issue/$N" "$WT" "origin/issue/$N"` for a remote-only branch). If the branch doesn't exist at all, stop and say so.
+- If an issue number `N` is given, the branch is `issue/$N`. Use the worktree that has it checked out (shown as `[issue/$N]`). If none does but the branch exists locally or on `origin`, create the worktree at `$MAIN/.claude/worktrees/issue-$N` (`git -C "$MAIN" worktree add "$WT" "issue/$N"`, or `--track -b "issue/$N" "$WT" "origin/issue/$N"` for a remote-only branch). If the branch doesn't exist at all, stop and say so.
 - If no number is given, use the current worktree's branch and parse `N` from `issue/<n>`. If that fails, ask the user which issue the PR is for.
 - Refuse to open a PR from `main`.
 - Check for an existing PR: `gh pr list --head "issue/$N" --state open`. If one exists, give the user its URL instead of creating another (offer to update its description).
@@ -83,7 +83,7 @@ Add the same labels as the issue when they exist (`--label`). Use `--draft` if t
 Report the PR URL and the worktree path to the user. Remind them that once the PR is merged the worktree and branch can be cleaned up from the main checkout:
 
 ```bash
-git worktree remove ../jassmin-worktrees/issue-<n>
+git worktree remove .claude/worktrees/issue-<n>
 git branch -d issue/<n>
 ```
 

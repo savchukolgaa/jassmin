@@ -11,7 +11,7 @@ Turn GitHub issue `#$ARGUMENTS` into a concrete, step-by-step implementation pla
 
 If no issue number is given, ask for one. Do not write any application code in this skill — only the plan.
 
-**Worktree rule (mandatory):** all work for issue `<n>` happens on branch `issue/<n>` in its own git worktree at `<main checkout>/../jassmin-worktrees/issue-<n>`. Never create branches with `git switch`/`git checkout` and never write or commit files in the main checkout. See `AGENTS.md` → "Workflow".
+**Worktree rule (mandatory):** all work for issue `<n>` happens on branch `issue/<n>` in its own git worktree at `<main checkout>/.claude/worktrees/issue-<n>`. Never create branches with `git switch`/`git checkout` and never write or commit files in the main checkout. See `AGENTS.md` → "Workflow".
 
 ## 1. Gather context
 
@@ -33,7 +33,7 @@ Set `N` to the issue number. Resolve the paths from the main checkout (the first
 
 ```bash
 MAIN=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
-WT="$(dirname "$MAIN")/jassmin-worktrees/issue-$N"
+WT="$MAIN/.claude/worktrees/issue-$N"
 git -C "$MAIN" fetch origin
 git -C "$MAIN" worktree list            # is issue/$N already checked out somewhere?
 ```
@@ -58,7 +58,7 @@ Use this structure:
 
 Issue: <issue URL>
 Branch: `issue/<number>`
-Worktree: `../jassmin-worktrees/issue-<number>`
+Worktree: `.claude/worktrees/issue-<number>`
 Status: Planned
 
 ## Goal

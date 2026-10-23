@@ -7,4 +7,8 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  server: {
+    // Issue worktrees live inside the repo (see AGENTS.md); don't watch their files.
+    watch: { ignored: ["**/.claude/worktrees/**"] },
+  },
 });

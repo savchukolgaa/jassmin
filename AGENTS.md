@@ -45,7 +45,7 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 
 ## Workflow: issues, plans, worktrees
 
-Work happens through the repo skills in `.claude/skills/`: `/create-issue`, `/create-plan <n>`, `/implement <n>` and `/open-pr <n>`.
+Work happens through the repo skills in `.agents/skills/` (Antigravity) and `.claude/skills/` (Claude): `/create-issue`, `/create-plan <n>`, `/implement <n>` and `/open-pr <n>`. Reusable workflow documentation and templates live in `docs/skills/`.
 
 - **One issue = one branch `issue/<number>` = one git worktree.** Never do issue work in the main checkout.
 - Worktrees live **inside** the repo at `.claude/worktrees/issue-<number>` (git-ignored, and excluded from Biome, `tsc` and Vite watching). Create one from the main checkout with:

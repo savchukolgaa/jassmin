@@ -9,6 +9,7 @@
     "includes": [
       "**",
       "!.claude",
+      "!.agents",
       "!aspire-apphost/.aspire",
       "!**/*.md",
       "!pnpm-lock.yaml",

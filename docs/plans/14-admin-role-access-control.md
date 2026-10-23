@@ -95,6 +95,10 @@ The same applies the other way round to #5 and #26 if this one lands first.
 - **Layout component name (deviation):** the shell is `AdminLayout.tsx` (top bar + nav + `<main>`)
   rather than a nav-only `AdminNav.tsx`, so the route module stays small and the whole shell is
   render-tested with `createRoutesStub` (the logout `<Form>` needs a data router).
+- **First admin under Aspire (deviation from the README wording "run them through the dashboard").**
+  `db:make-admin` needs an email argument, so instead of a new explicit-start AppHost resource the
+  README tells you to copy `web`'s `JASSMINDB_URI` from the dashboard and pass it to the terminal
+  run. This keeps `aspire-apphost/` untouched.
 - **Meta:** admin pages set `{ name: "robots", content: "noindex" }`.
 
 ## Open questions
@@ -196,7 +200,7 @@ The same applies the other way round to #5 and #26 if this one lands first.
   Usage: `pnpm db:make-admin you@example.com` (`--revoke` to demote). Parse/normalise the email with
   the same zod `email` rule as `~/lib/auth` (export it if needed); print usage and exit 1 on bad
   input or unknown user.
-- [ ] **10. Docs** — README "Admin area": register at `/register`, run `pnpm db:make-admin <email>`
+- [x] **10. Docs** — README "Admin area": register at `/register`, run `pnpm db:make-admin <email>`
   (under Aspire, with `JASSMINDB_URI`/`DATABASE_URL` pointing at the app DB), log in, open `/admin`;
   note Strapi admins are separate. Add the command to the scripts table. Update
   `app/.server/AGENTS.md` (Auth: `requireAdmin`, role read from DB per request, every admin

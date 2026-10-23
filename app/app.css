@@ -35,6 +35,12 @@
   --animate-toast: toast 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+html {
+  @media (prefers-reduced-motion: no-preference) {
+    scroll-behavior: smooth;
+  }
+}
+
 html,
 body {
   @apply bg-white text-ink dark:bg-gray-950;

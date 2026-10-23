@@ -38,6 +38,27 @@ const listBlogPostsInput = z.object({
 
 export type ListBlogPostsInput = z.input<typeof listBlogPostsInput>;
 
+/**
+ * Builds an `srcset` from Strapi's resized formats and the original image, smallest first.
+ * Returns `null` when no candidate has a known width.
+ */
+export function toSrcSet(media: StrapiMedia, baseUrl: string): string | null {
+  const candidates = new Map<number, string>();
+  for (const format of Object.values(media.formats ?? {})) {
+    candidates.set(format.width, format.url);
+  }
+  if (media.width) {
+    candidates.set(media.width, media.url);
+  }
+  if (candidates.size === 0) {
+    return null;
+  }
+  return [...candidates]
+    .sort(([a], [b]) => a - b)
+    .map(([width, url]) => `${new URL(url, baseUrl).toString()} ${width}w`)
+    .join(", ");
+}
+
 /** Resolves Strapi's relative `/uploads/…` URLs against the CMS origin. */
 export function toImage(media: StrapiMedia | null | undefined, baseUrl: string): CmsImage | null {
   if (!media) {
@@ -48,6 +69,7 @@ export function toImage(media: StrapiMedia | null | undefined, baseUrl: string):
     alt: media.alternativeText ?? "",
     width: media.width ?? null,
     height: media.height ?? null,
+    srcSet: toSrcSet(media, baseUrl),
   };
 }
 

@@ -66,6 +66,9 @@ pnpm dev                    # http://localhost:5173
 | `PORT` | no | Port for `pnpm start` (default `3000`). |
 | `STRAPI_URL` | no | Strapi base URL (default `http://localhost:1337`). Under Aspire it's set to the `cms` endpoint. |
 | `STRAPI_API_TOKEN` | no* | Read-only Strapi API token. *Without it the app still starts, but CMS-backed pages answer with a 503. |
+| `SMTP_URL` | no* | SMTP server for contact form emails (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container. *Without it, development logs contact messages instead of sending them, and production shows a "couldn't send" error. |
+| `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
+| `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
 
 The variables are validated with zod in `app/.server/env.ts`, and the server fails at startup with a readable error if any are missing or invalid. A `.env` file is loaded automatically, but variables already set in the environment take precedence.
 
@@ -186,6 +189,19 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 | `shared.social-link` | `platform` (`instagram`, `facebook`, `tiktok`, `telegram`, `viber`, `youtube`), `url` |
 
 The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/site-setting`. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
+
+## Home page and contact form
+
+The home page (`/`) shows four sections: Hero, About us (`/#about`), Location and Contacts (`/#contacts`). All their text, images, the address, opening hours, map and contact details come from Strapi (`home-page` and `site-settings`), so editors change them in the Strapi admin without a deploy. The "About us" body is Markdown, rendered and sanitized on the server. If Strapi is unreachable, the page shows a 503 error page.
+
+The contact form posts to the home route's `action` and works without JavaScript. Valid messages are emailed as plain text to `CONTACT_INBOX`, with the visitor's address as reply-to; they aren't stored. Each client can send 5 messages per 10 minutes (in memory, per server process), and a hidden honeypot field silently drops bots.
+
+Locally, emails go to **smtp4dev**, which catches every message instead of delivering it:
+
+- **With Aspire:** `pnpm aspire run` starts the `smtp4dev` container and passes its SMTP endpoint to `web` as `SMTP_URL`. Open its web UI from the dashboard to read the messages.
+- **Without Aspire:** run `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev:v3`, set `SMTP_URL=smtp://localhost:2525` in `.env`, and open http://localhost:5000.
+
+Without `SMTP_URL`, development logs the message to the server console instead, and production shows a "couldn't send" error.
 
 ## Conventions
 

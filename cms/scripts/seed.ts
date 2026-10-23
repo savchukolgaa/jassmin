@@ -62,8 +62,8 @@ async function seedHomePage(strapi: Core.Strapi, heroImageId: number): Promise<v
     data: {
       hero: {
         headline: "Order 3 Testers only for 499₴",
-        ctaLabel: "Choose your testers",
-        ctaHref: "/catalog",
+        ctaLabel: "Order Now",
+        ctaHref: "/popular",
         image: heroImageId,
       },
       about: {

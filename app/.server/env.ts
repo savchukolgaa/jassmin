@@ -10,6 +10,11 @@ const envSchema = z.object({
   // Optional so the app boots before the first Strapi admin has created the token;
   // CMS-backed pages answer with a 503 until it is set.
   STRAPI_API_TOKEN: z.string().min(1).optional(),
+  // SMTP server for contact form emails, e.g. smtp://localhost:2525 (smtp4dev). Under Aspire it's
+  // the `smtp4dev` container. Optional: without it, development logs messages instead of sending.
+  SMTP_URL: z.url({ protocol: /^smtps?$/ }).optional(),
+  CONTACT_INBOX: z.email().default("hello@jassmin.ua"),
+  CONTACT_FROM: z.string().min(1).default("Jassmin website <no-reply@jassmin.ua>"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -34,6 +39,9 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     DATABASE_URL: getDatabaseUrl(source),
     STRAPI_URL: source.STRAPI_URL || source.CMS_HTTP || undefined,
     STRAPI_API_TOKEN: source.STRAPI_API_TOKEN || undefined,
+    SMTP_URL: source.SMTP_URL || undefined,
+    CONTACT_INBOX: source.CONTACT_INBOX || undefined,
+    CONTACT_FROM: source.CONTACT_FROM || undefined,
   });
 
   if (!result.success) {

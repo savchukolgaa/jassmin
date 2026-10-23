@@ -35,7 +35,32 @@ describe("toImage", () => {
   it("resolves relative upload URLs against the CMS origin", () => {
     expect(
       toImage({ url: "/uploads/a.jpg", alternativeText: "A", width: 10, height: 5 }, BASE_URL),
-    ).toEqual({ url: "http://cms.test/uploads/a.jpg", alt: "A", width: 10, height: 5 });
+    ).toEqual({
+      url: "http://cms.test/uploads/a.jpg",
+      alt: "A",
+      width: 10,
+      height: 5,
+      srcSet: "http://cms.test/uploads/a.jpg 10w",
+    });
+  });
+
+  it("builds a srcset from the resized formats and the original, smallest first", () => {
+    const image = toImage(
+      {
+        url: "/uploads/a.jpg",
+        width: 1200,
+        height: 800,
+        formats: {
+          medium: { url: "/uploads/medium_a.jpg", width: 750, height: 500 },
+          small: { url: "/uploads/small_a.jpg", width: 500, height: 333 },
+        },
+      },
+      BASE_URL,
+    );
+
+    expect(image?.srcSet).toBe(
+      "http://cms.test/uploads/small_a.jpg 500w, http://cms.test/uploads/medium_a.jpg 750w, http://cms.test/uploads/a.jpg 1200w",
+    );
   });
 
   it("keeps absolute URLs from other upload providers", () => {
@@ -46,6 +71,7 @@ describe("toImage", () => {
       alt: "",
       width: null,
       height: null,
+      srcSet: null,
     });
   });
 
@@ -87,13 +113,20 @@ describe("getHomePage", () => {
 
     expect(page.hero).toEqual({
       headline: "Order 3 Testers only for 499₴",
-      ctaLabel: "Choose your testers",
-      ctaHref: "/catalog",
+      ctaLabel: "Order Now",
+      ctaHref: "/popular",
       image: {
         url: `http://cms.test${homePage.data.hero.image.url}`,
         alt: "Jassmin perfume testers",
         width: 1200,
         height: 800,
+        srcSet: [
+          "http://cms.test/uploads/thumbnail_hero_ed6cf55422.jpg 234w",
+          "http://cms.test/uploads/small_hero_ed6cf55422.jpg 500w",
+          "http://cms.test/uploads/medium_hero_ed6cf55422.jpg 750w",
+          "http://cms.test/uploads/large_hero_ed6cf55422.jpg 1000w",
+          "http://cms.test/uploads/hero_ed6cf55422.jpg 1200w",
+        ].join(", "),
       },
     });
     expect(page.about.title).toBe("About Jassmin");

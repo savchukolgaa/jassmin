@@ -22,7 +22,16 @@ const sampleOrder = {
   totalAmount: "100.00",
 } as const;
 
-const ALL_TABLES = ["cart_items", "carts", "order_items", "orders", "products", "users"];
+const ALL_TABLES = [
+  "cart_items",
+  "carts",
+  "order_items",
+  "orders",
+  "products",
+  "sessions",
+  "user_events",
+  "users",
+];
 
 // Integration test: runs only when a database is configured, on its own throwaway database.
 describe.skipIf(!hasDatabase)("migrations", () => {
@@ -351,6 +360,19 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0002_analytics_schema");
+    expect(await listTables()).toEqual([
+      "cart_items",
+      "carts",
+      "order_items",
+      "orders",
+      "products",
+      "users",
+    ]);
+    const cartFks = await testDb.db.execute<{ conname: string }>(
+      sql`select conname from pg_constraint where conrelid = 'carts'::regclass and contype = 'f'`,
+    );
+    expect(cartFks.rows.map((r) => r.conname)).toEqual(["carts_user_id_users_id_fk"]);
     expect(await rollbackLatest(testDb.db)).toBe("0001_commerce_schema");
     expect(await listTables()).toEqual(["products", "users"]);
     expect(await rollbackLatest(testDb.db)).toBe("0000_core_schema");

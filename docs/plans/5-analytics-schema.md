@@ -67,6 +67,11 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   `rollbacks/0002_analytics_schema.sql`: drop the carts FK, then `user_events`, then `sessions`.
 - **No backfill before adding the carts FK**: nothing writes `carts.session_id` yet (only the
   schema and `Cart` type mention it), so existing rows are all `NULL` and the FK applies cleanly.
+- **Deviation (step 4): the migration was not applied to the shared dev database.** #26 and
+  #14 generate their own `0002_*` migrations from the same base, and Drizzle's `migrate()`
+  skips any migration whose timestamp is older than the latest applied one, so applying this
+  branch's `0002` there could silently skip theirs. Migrate → rollback → migrate is verified
+  on a throwaway database by `migrator.test.ts` instead. Apply it to the dev DB after merging.
 - Table names stay `sessions` / `user_events` as in the issue. The TS export is `sessions`, and
   the row type is `AnalyticsSession` to avoid confusion with the cookie session in
   `app/.server/session.ts` (#9).
@@ -135,7 +140,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
 - [x] **3. carts FK** — Change `carts.sessionId` to
   `uuid().references(() => sessions.sessionId, { onDelete: "set null" })`. Check:
   `pnpm typecheck` (the `Cart` mirror in `schema.test.ts` must still match).
-- [ ] **4. Generate the migration and rollback** — With the dev DB up (Aspire or
+- [x] **4. Generate the migration and rollback** — With the dev DB up (Aspire or
   `DATABASE_URL`), run `pnpm db:generate --name analytics_schema` in the worktree. Review the
   SQL: two `CREATE TABLE`s, the CHECK, four FKs (`carts_session_id_sessions_session_id_fk`,
   `sessions_user_id_users_id_fk`, `user_events_*_fk`) with the right `ON DELETE`, six indexes,

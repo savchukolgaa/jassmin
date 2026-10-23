@@ -85,6 +85,7 @@ describe("Header", () => {
     const loggedOut = profileClass(renderHeader());
     expect(loggedOut).toContain("text-white");
     expect(loggedOut).not.toContain("bg-white ");
+    expect(loggedOut).toContain("hover:bg-primary-dark");
   });
 
   it("renders the cart as a white pill", () => {

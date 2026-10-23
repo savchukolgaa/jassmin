@@ -56,6 +56,9 @@ describe("buttonClasses", () => {
         "border-white",
         "text-white",
         "focus-visible:outline-white",
+        // Inverts on hover: a translucent white overlay would drop white text below 4.5:1.
+        "hover:bg-white",
+        "hover:text-primary",
       ]),
     );
   });

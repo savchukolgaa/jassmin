@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/27
 Branch: `issue/27`
 Worktree: `../jassmin-worktrees/issue-27`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a shopper I want a storefront that matches the agreed design and uses readable, accessible
@@ -67,6 +67,27 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
 - **Footer** renders in `ShopLayout` and in the `_shop` `ErrorBoundary`, so it appears on every
   public page, including error pages. The root `ErrorBoundary` (unmatched URLs and admin) stays
   without header and footer, as it is today.
+- **Hover on deep pink (changed during step 10).** The step 4 plan used `hover:bg-white/15`, but
+  axe measured white text on it at 4.35:1. Nav items and icon buttons on pink now darken to
+  `bg-primary-dark` (7.06:1), and the `outline-light` button inverts to `bg-white` with
+  `text-primary` (5.52:1). This is documented in `docs/design.md`.
+- **Steps 4–6 were committed together:** changing the nav helper signatures and the header tests
+  only makes sense as one change.
+- **Audit results (step 10).** axe-core 4.10 ran in headless Edge against `pnpm dev`, on `/` and
+  `/catalog/women` at 1280px and 375px, with the catalog dropdown and mobile menu open:
+  - `scrollWidth` equals the viewport everywhere, so there's no horizontal scroll.
+  - Manrope loads (`document.fonts.check("800 16px Manrope")`).
+  - Every focus ring on the pink bar computes to white, 3px.
+  - With reduced motion, `animation-name` is `none` and transitions are `0s`.
+
+  Remaining findings:
+  - **Footer wordmark:** `color-contrast` at 2.55:1 on the `aria-hidden` footer wordmark. Kept on
+    purpose: it's pure decoration, which WCAG 1.4.3 exempts, and the design specifies it.
+  - **Error page title:** `document-title` on `/`. The CMS wasn't running, so `/` rendered the
+    `_shop` error page, which has no `<title>`. This existed before and is out of scope.
+
+  The logged-in header wasn't audited live, because there's no login until #9. Its colours are
+  covered by `Header.test.ts` and `theme.test.ts` (`primary` on white is 5.52:1).
 - **Dark mode** isn't designed. Existing `dark:` variants on non-header UI may stay. The header and
   footer are always deep pink, and the dropdown panels lose their `dark:` styles so they stay
   readable against the pink bar.
@@ -220,7 +241,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   9. the issue-to-canvas-page table from #27
 
   Mention it in `AGENTS.md` under "Architecture rules", in one line: UI work follows `docs/design.md`.
-- [ ] **10. Contrast audit and polish.** With `pnpm aspire run`, run axe DevTools (or Lighthouse
+- [x] **10. Contrast audit and polish.** With `pnpm aspire run`, run axe DevTools (or Lighthouse
   Accessibility) on `/` and `/catalog/women` at desktop width and at 375px, logged out and logged in
   with a non-empty cart, and with the catalog dropdown and mobile menu open. Fix any findings and
   check that there is no horizontal scroll at 375px
@@ -243,15 +264,15 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
 
 ## Acceptance criteria
 - [x] The final design direction is chosen and recorded in this issue: **Option C+**
-- [ ] The theme tokens above exist in `app/app.css`; `--color-primary` is `#C22F4B`, and `#FF5C77` is no longer behind any text — steps 1, 2
-- [ ] Manrope loads and is the primary sans font, with the system fallback kept — step 1
-- [ ] `Button` / `ButtonLink` are pill-shaped with `primary`, `dark`, `outline-light` and `ghost` variants, and their tests are updated — step 3
-- [ ] The header matches C+ (sticky deep pink, white cart pill with count, visible focus ring on pink) and still passes its existing behaviour tests and works at 375px — steps 4, 5, 6, 10
-- [ ] A C+ footer renders on all public pages and causes no horizontal scroll at 375px — steps 7, 10
-- [ ] The motion utilities exist and all animation stops under `prefers-reduced-motion: reduce` — steps 3, 8
-- [ ] Every text and background pair in the header, buttons and footer meets WCAG AA: 4.5:1 for normal text, 3:1 for large text and icons — steps 2, 6, 10
-- [ ] `docs/design.md` documents the canvas link, the tokens with their contrast ratios, the typeface, the motion rules and the page-to-issue table — step 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] The theme tokens above exist in `app/app.css`; `--color-primary` is `#C22F4B`, and `#FF5C77` is no longer behind any text — steps 1, 2
+- [x] Manrope loads and is the primary sans font, with the system fallback kept — step 1
+- [x] `Button` / `ButtonLink` are pill-shaped with `primary`, `dark`, `outline-light` and `ghost` variants, and their tests are updated — step 3
+- [x] The header matches C+ (sticky deep pink, white cart pill with count, visible focus ring on pink) and still passes its existing behaviour tests and works at 375px — steps 4, 5, 6, 10
+- [x] A C+ footer renders on all public pages and causes no horizontal scroll at 375px — steps 7, 10
+- [x] The motion utilities exist and all animation stops under `prefers-reduced-motion: reduce` — steps 3, 8
+- [x] Every text and background pair in the header, buttons and footer meets WCAG AA: 4.5:1 for normal text, 3:1 for large text and icons — steps 2, 6, 10
+- [x] `docs/design.md` documents the canvas link, the tokens with their contrast ratios, the typeface, the motion rules and the page-to-issue table — step 9
+- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10 (typecheck, lint and build pass. `pnpm test`: 159/160 pass; the existing DB integration test `app/.server/db/queries/health.test.ts` times out at 5s against the local Postgres, takes about 20s, fails on `main` too, and doesn't touch this branch's code)
 
 ## Out of scope
 - Page layouts: home (#7), catalog and product (#8), auth (#9), account (#12). Also the hero bands,

@@ -28,7 +28,7 @@ const variants: Record<ButtonVariant, string> = {
   // For use on deep-pink surfaces (header, footer, hero bands).
   "outline-light": cn(
     "border-2 border-white text-white focus-visible:outline-white",
-    "hover:bg-white/15 disabled:bg-transparent",
+    "hover:bg-white hover:text-primary disabled:bg-transparent disabled:text-white",
   ),
   ghost: cn(
     "text-primary-dark focus-visible:outline-primary",

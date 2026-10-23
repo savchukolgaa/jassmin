@@ -19,6 +19,9 @@ export const FOOTER_LINKS = [
   CONTACTS_LINK,
 ] as const;
 
+// On deep pink, hover and active states darken to `primary-dark`: a translucent white overlay
+// would drop white text below 4.5:1.
+
 /**
  * Which surface a nav item sits on: the deep-pink header/footer bar (`onPrimary`) or a white
  * panel such as the catalog dropdown and mobile menu (`onLight`).
@@ -39,7 +42,10 @@ export function navItemClasses(active = false, tone: NavTone = "onPrimary"): str
     "inline-flex min-h-11 items-center gap-1 rounded-pill px-3 text-sm font-bold transition-colors",
     focusRing(tone),
     tone === "onPrimary"
-      ? cn("text-white hover:bg-white/15", active && "underline decoration-2 underline-offset-8")
+      ? cn(
+          "text-white hover:bg-primary-dark",
+          active && "underline decoration-2 underline-offset-8",
+        )
       : cn("hover:bg-blush", active ? "text-primary" : "text-ink hover:text-primary-dark"),
   );
 }
@@ -50,7 +56,7 @@ export function iconButtonClasses(active = false, tone: NavTone = "onPrimary"): 
     "relative inline-flex size-11 items-center justify-center rounded-full transition-colors",
     focusRing(tone),
     tone === "onPrimary"
-      ? cn("text-white hover:bg-white/15", active && "bg-white/15")
+      ? cn("text-white hover:bg-primary-dark", active && "bg-primary-dark")
       : cn("hover:bg-blush", active ? "text-primary" : "text-ink"),
   );
 }

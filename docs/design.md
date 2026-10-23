@@ -103,6 +103,9 @@ keeps at least 3:1 against its surface:
 `primary-light` isn't used on deep pink, because it's only 2.55:1 there. In layout code, use
 `focusRing("onPrimary" | "onLight")` from `app/components/layout/nav.ts`.
 
+**Hover on deep pink:** darken to `primary-dark` (white text stays at 7.06:1) or invert to white.
+Don't use a translucent white overlay such as `bg-white/15`: white text on it drops to about 4.35:1.
+
 ## Buttons
 
 `Button` (a `<button>`) and `ButtonLink` (a React Router `<Link>`) share `buttonClasses()`:
@@ -111,7 +114,7 @@ keeps at least 3:1 against its surface:
 |---|---|---|
 | `primary` (default) | `bg-primary`, white text, brand shadow; hover `primary-dark` | white or blush |
 | `dark` | `bg-ink`, white text | light or pink-tinted sections, e.g. "Order Now" |
-| `outline-light` | 2px white border, white text | deep pink (hero bands, footer) |
+| `outline-light` | 2px white border, white text; hover turns white with `primary` text | deep pink (hero bands, footer) |
 | `ghost` | `primary-dark` text, no background | white |
 
 | Size | Minimum height |

@@ -20,7 +20,7 @@ export default function Account({ loaderData }: Route.ComponentProps) {
       <p className="mt-2 text-lg">Hi, {loaderData.fullName}!</p>
       <p className="mt-2 text-gray-600 dark:text-gray-400">Your orders will appear here soon.</p>
       <Form method="post" action="/logout" className="mt-6">
-        <Button type="submit" variant="secondary">
+        <Button type="submit" variant="dark">
           Log out
         </Button>
       </Form>

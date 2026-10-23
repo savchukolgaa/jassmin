@@ -118,7 +118,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   the existing stack after it. Set `html, body` to `text-ink` (keep `bg-white dark:bg-gray-950`).
   Add `links()` to `app/root.tsx` as described in Decisions. Check with `pnpm dev`: DevTools shows
   Manrope as the rendered font, and Cyrillic text also renders in Manrope.
-- [ ] **2. Theme test.** Create `app/theme.test.ts`. Read `app/app.css` with `node:fs`, extract
+- [x] **2. Theme test.** Create `app/theme.test.ts`. Read `app/app.css` with `node:fs`, extract
   `--color-*: #hex` with a regex, and implement `relativeLuminance` and `contrastRatio` locally in
   the test. Assert the "Decisions" table pairs (≥ 4.5 for text, ≥ 3 for icons and focus rings),
   that `--color-primary` is `#c22f4b`, and that `#ff5c77` appears only on the

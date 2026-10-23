@@ -14,8 +14,14 @@ const renderHeader = (props: Partial<HeaderProps> = {}, path = "/") =>
   );
 
 describe("Header", () => {
-  it("links the brand to the home page", () => {
-    expect(renderHeader()).toMatch(/<a[^>]*href="\/"[^>]*>Jassmin<\/a>/);
+  it("links the jassmin. wordmark to the home page", () => {
+    expect(renderHeader()).toMatch(
+      /<a(?=[^>]*href="\/")(?=[^>]*aria-label="Jassmin, home")[^>]*>jassmin<span aria-hidden="true" class="text-primary-light">\.<\/span><\/a>/,
+    );
+  });
+
+  it("renders a sticky deep-pink bar", () => {
+    expect(renderHeader()).toMatch(/^<header class="sticky top-0[^"]*bg-primary text-white"/);
   });
 
   it("renders the nav items in the specified order", () => {
@@ -48,7 +54,7 @@ describe("Header", () => {
 
   it("highlights the catalog trigger on catalog pages", () => {
     expect(renderHeader({}, "/catalog/women")).toMatch(
-      /<summary[^>]*class="[^"]*text-primary[^"]*"[^>]*>Catalog/,
+      /<summary[^>]*class="[^"]*underline decoration-2[^"]*"[^>]*>Catalog/,
     );
   });
 
@@ -69,8 +75,34 @@ describe("Header", () => {
     expect(html).not.toContain('href="/login"');
   });
 
-  it("shows no badge for an empty cart", () => {
-    expect(renderHeader()).not.toContain("bg-primary px-1");
+  it("shows the logged-in profile as a white circle and logged out as a white icon", () => {
+    const profileClass = (html: string) =>
+      html.match(/<a[^>]*aria-label="(?:My account|Log in)"[^>]*class="([^"]*)"/)?.[1] ?? "";
+
+    expect(profileClass(renderHeader({ user: { id: 1 } }))).toContain(
+      "rounded-full bg-white text-primary",
+    );
+    const loggedOut = profileClass(renderHeader());
+    expect(loggedOut).toContain("text-white");
+    expect(loggedOut).not.toContain("bg-white ");
+  });
+
+  it("renders the cart as a white pill", () => {
+    expect(renderHeader()).toMatch(
+      /<a[^>]*aria-label="Cart, 0 items"[^>]*class="[^"]*rounded-pill[^"]*bg-white[^"]*text-primary/,
+    );
+  });
+
+  it("uses a white focus ring on the pink bar", () => {
+    expect(renderHeader()).toMatch(
+      /<a[^>]*aria-label="Cart, 0 items"[^>]*class="[^"]*focus-visible:outline-3[^"]*focus-visible:outline-white/,
+    );
+  });
+
+  it("shows no count for an empty cart", () => {
+    expect(renderHeader()).not.toMatch(
+      /aria-label="Cart, 0 items"[^>]*>.*<span aria-hidden="true">/,
+    );
   });
 
   it("shows the cart count in a badge", () => {

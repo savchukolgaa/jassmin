@@ -1,9 +1,10 @@
 import { Link, NavLink } from "react-router";
+import { cn } from "~/lib/cn";
 import { formatCartCount, type HeaderState } from "~/lib/header";
 import { CatalogMenu } from "./CatalogMenu";
 import { CartIcon, UserIcon } from "./icons";
 import { MobileMenu } from "./MobileMenu";
-import { ABOUT_LINK, CONTACTS_LINK, iconButtonClasses, navItemClasses } from "./nav";
+import { ABOUT_LINK, CONTACTS_LINK, focusRing, iconButtonClasses, navItemClasses } from "./nav";
 
 export type HeaderProps = HeaderState;
 
@@ -12,13 +13,20 @@ export function Header({ user, cartCount }: HeaderProps) {
   const badge = formatCartCount(cartCount);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-gray-800 dark:bg-gray-950/90">
-      <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
+    <header className="sticky top-0 z-40 bg-primary text-white">
+      <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-4">
         <Link
           to="/"
-          className="rounded-lg text-2xl font-semibold tracking-tight text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          aria-label="Jassmin, home"
+          className={cn(
+            "rounded-pill text-2xl font-extrabold tracking-[-0.05em] text-white",
+            focusRing(),
+          )}
         >
-          Jassmin
+          jassmin
+          <span aria-hidden="true" className="text-primary-light">
+            .
+          </span>
         </Link>
 
         <nav aria-label="Main" className="flex items-center gap-1">
@@ -41,24 +49,29 @@ export function Header({ user, cartCount }: HeaderProps) {
           <NavLink
             to={user ? "/account" : "/login"}
             aria-label={user ? "My account" : "Log in"}
-            className={({ isActive }) => iconButtonClasses(isActive)}
+            className={({ isActive }) =>
+              user
+                ? cn(
+                    "inline-flex size-11 items-center justify-center rounded-full bg-white text-primary",
+                    "transition-colors hover:bg-blush",
+                    focusRing(),
+                  )
+                : iconButtonClasses(isActive)
+            }
           >
             <UserIcon className="size-6" />
           </NavLink>
           <NavLink
             to="/cart"
             aria-label={`Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}`}
-            className={({ isActive }) => iconButtonClasses(isActive)}
-          >
-            <CartIcon className="size-6" />
-            {badge && (
-              <span
-                aria-hidden="true"
-                className="absolute -top-0.5 -right-0.5 h-5 min-w-5 rounded-full bg-primary px-1 text-center text-xs leading-5 font-semibold text-white"
-              >
-                {badge}
-              </span>
+            className={cn(
+              "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-pill",
+              "bg-white px-3 text-sm font-extrabold text-primary transition-colors hover:bg-blush",
+              focusRing(),
             )}
+          >
+            <CartIcon className="size-5" />
+            {badge && <span aria-hidden="true">{badge}</span>}
           </NavLink>
           <MobileMenu />
         </nav>

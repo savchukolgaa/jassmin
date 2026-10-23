@@ -65,6 +65,9 @@ describe("contrast (WCAG AA)", () => {
     ["body", "white"],
     ["ink", "card"],
     ["success", "success-bg"],
+    ["ink", "white"],
+    ["primary", "blush"],
+    ["primary-dark", "blush"],
   ])("%s text on %s is at least 4.5:1", (foreground, background) => {
     expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(4.5);
   });

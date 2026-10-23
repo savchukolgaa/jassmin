@@ -26,15 +26,15 @@ export function MobileMenu() {
         <CloseIcon className="hidden size-6 group-open:block" />
       </summary>
       {/* Positioned against the sticky <header>, so it spans the full width below the bar. */}
-      <div className="absolute inset-x-0 top-full border-b border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-950">
+      <div className="absolute inset-x-0 top-full rounded-b-card bg-white text-ink shadow-xl">
         <ul className="container mx-auto flex flex-col gap-1 p-4">
           <li>
-            <Link to={ABOUT_LINK.to} className={cn(navItemClasses(), "flex")}>
+            <Link to={ABOUT_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
               {ABOUT_LINK.label}
             </Link>
           </li>
           <li>
-            <span className="block px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+            <span className="block px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">
               Catalog
             </span>
             <ul className="flex flex-col gap-1 pl-3">
@@ -42,7 +42,7 @@ export function MobileMenu() {
                 <li key={link.to}>
                   <NavLink
                     to={link.to}
-                    className={({ isActive }) => cn(navItemClasses(isActive), "flex")}
+                    className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
                   >
                     {link.label}
                   </NavLink>
@@ -51,7 +51,7 @@ export function MobileMenu() {
             </ul>
           </li>
           <li>
-            <Link to={CONTACTS_LINK.to} className={cn(navItemClasses(), "flex")}>
+            <Link to={CONTACTS_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
               {CONTACTS_LINK.label}
             </Link>
           </li>

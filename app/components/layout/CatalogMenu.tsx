@@ -15,12 +15,12 @@ export function CatalogMenu() {
         Catalog
         <ChevronDownIcon className="size-4 transition-transform group-open:rotate-180" />
       </summary>
-      <ul className="absolute top-full right-0 z-10 mt-1 w-52 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+      <ul className="absolute top-full right-0 z-10 mt-2 w-56 rounded-card bg-white p-2 text-ink shadow-xl">
         {CATALOG_LINKS.map((link) => (
           <li key={link.to}>
             <NavLink
               to={link.to}
-              className={({ isActive }) => cn(navItemClasses(isActive), "flex")}
+              className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
             >
               {link.label}
             </NavLink>

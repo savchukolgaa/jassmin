@@ -137,7 +137,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
 
   Update `ButtonVariant` and both test files: variant list, focus classes, `rounded-full`,
   `font-extrabold`, size→`min-h-*` mapping, and `ButtonLink` asserting `min-h-14.5` instead of `h-13`.
-- [ ] **4. Nav helpers.** In `nav.ts`:
+- [x] **4. Nav helpers.** In `nav.ts`:
   - Replace `focusRing` with `focusRingOnPrimary` (white 3px, see Resolved questions) and `focusRingOnLight`
     (`outline-primary`).
   - Change `navItemClasses(active, tone = "onPrimary")` and `iconButtonClasses(active, tone)` as
@@ -146,7 +146,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   - Add `FOOTER_LINKS`: women, then men (short labels "Women" and "Men", same `to` as
     `CATALOG_LINKS`), `/blog` "Blog", `ABOUT_LINK` and `CONTACTS_LINK`. Add a `shortLabel` field
     to `CATALOG_LINKS` so they stay one source of truth.
-- [ ] **5. Header.** In `Header.tsx`:
+- [x] **5. Header.** In `Header.tsx`:
   - The bar is `sticky top-0 z-40 bg-primary text-white` (no blur or border).
   - The wordmark is described in Decisions (`text-2xl font-extrabold tracking-[-0.05em]`).
   - Profile `NavLink`: logged in, `bg-white text-primary` circle; logged out, white outline icon.
@@ -155,7 +155,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
     `badge` isn't empty.
   - Keep link order, `aria-label`s and `formatCartCount`. The layout stays within 375px: on mobile,
     the hamburger, profile and cart are each 44px.
-- [ ] **6. Dropdowns.** `CatalogMenu`: the trigger uses `navItemClasses(inCatalog, "onPrimary")`.
+- [x] **6. Dropdowns.** `CatalogMenu`: the trigger uses `navItemClasses(inCatalog, "onPrimary")`.
   The panel is `rounded-3xl bg-white p-2 text-ink shadow-xl`, and its items use
   `navItemClasses(isActive, "onLight")`. `MobileMenu`: the summary uses
   `iconButtonClasses(false, "onPrimary")`, and the panel is white with `onLight` items and a muted

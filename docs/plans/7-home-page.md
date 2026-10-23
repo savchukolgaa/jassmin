@@ -192,7 +192,7 @@ JS and emails the store over SMTP (smtp4dev locally).
 | create | `app/routes/home.test.ts` | loader/action tests with mocked CMS + services |
 
 ## Steps
-- [ ] **1. Markdown helper** — `pnpm add marked sanitize-html` and `pnpm add -D @types/sanitize-html`.
+- [x] **1. Markdown helper** — `pnpm add marked sanitize-html` and `pnpm add -D @types/sanitize-html`.
   Create `app/.server/markdown.ts`: `renderMarkdown(md)` (`marked.parse(md, { async: false, gfm:
   true })` → `sanitizeHtml` with the allowlist, `transformTags` adding `rel`/`target` on absolute
   links) and `toPlainText(md, maxLength)`. Tests: paragraphs/lists survive; `<script>`, `onerror=`,

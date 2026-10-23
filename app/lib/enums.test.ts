@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  CART_STATUSES,
-  GENDERS,
-  ORDER_STATUSES,
-  PAYMENT_METHODS,
-  PAYMENT_STATUSES,
-} from "./enums";
+import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "./enums";
 
 describe("enum values", () => {
   it("lists the genders", () => {

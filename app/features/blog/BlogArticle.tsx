@@ -1,0 +1,47 @@
+import { Link } from "react-router";
+import { focusRing } from "~/components/layout/nav";
+import { RichText } from "~/components/ui/RichText";
+import type { BlogPostView } from "~/lib/blog";
+import { BlogCover } from "./BlogCover";
+
+/** Link back to the article list, shown above an article and on its error page. */
+export function BackToBlogLink() {
+  return (
+    <Link
+      to="/blog"
+      className={`inline-flex min-h-11 items-center rounded-pill font-bold text-primary-dark underline-offset-2 hover:underline ${focusRing("onLight")}`}
+    >
+      ← Back to the blog
+    </Link>
+  );
+}
+
+/** The `/blog/:slug` page body: title, date and author, cover and the sanitized article. */
+export function BlogArticle({ post }: { post: BlogPostView }) {
+  return (
+    <main className="container mx-auto px-4 pt-6 pb-16">
+      <article className="mx-auto max-w-3xl">
+        <BackToBlogLink />
+        <header className="mt-4">
+          <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+            {post.title}
+          </h1>
+          <p className="mt-3 text-sm font-bold text-muted">
+            <time dateTime={post.publishedAt}>{post.publishedLabel}</time>
+            {post.authorName && <> · {post.authorName}</>}
+          </p>
+          {post.excerpt && <p className="mt-4 text-lg text-body">{post.excerpt}</p>}
+        </header>
+        {post.coverImage && (
+          <BlogCover
+            image={post.coverImage}
+            sizes="(min-width: 768px) 768px, 100vw"
+            eager
+            className="mt-8 rounded-card-lg"
+          />
+        )}
+        <RichText variant="article" html={post.contentHtml} className="mx-auto mt-10 max-w-prose" />
+      </article>
+    </main>
+  );
+}

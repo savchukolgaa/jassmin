@@ -1,5 +1,6 @@
 import { createCookieSessionStorage, redirect } from "react-router";
 import { getEnv } from "./env";
+import { SESSION_COOKIE_NAME } from "./session-cookie";
 
 export interface SessionData {
   /** Set on login (#9). */
@@ -17,7 +18,7 @@ export const { getSession, commitSession, destroySession } = createCookieSession
   SessionFlashData
 >({
   cookie: {
-    name: "__jassmin_session",
+    name: SESSION_COOKIE_NAME,
     httpOnly: true,
     sameSite: "lax",
     path: "/",

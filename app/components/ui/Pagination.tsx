@@ -1,26 +1,25 @@
 import { Link } from "react-router";
 import { buttonClasses } from "~/components/ui/button-styles";
-import { type CatalogSearch, catalogHref } from "~/lib/catalog";
 
 export interface PaginationProps {
-  pathname: string;
-  search: CatalogSearch;
   page: number;
   pageCount: number;
+  /** Link to a page, keeping the list's other search params (e.g. catalog filters). */
+  hrefForPage: (page: number) => string;
 }
 
-export function Pagination({ pathname, search, page, pageCount }: PaginationProps) {
+/** Previous / page numbers / Next links for a paginated list (catalog, blog). */
+export function Pagination({ page, pageCount, hrefForPage }: PaginationProps) {
   if (pageCount <= 1) {
     return null;
   }
   const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
-  const link = (target: number) => catalogHref(pathname, search, target);
 
   return (
     <nav aria-label="Pagination" className="flex flex-wrap items-center justify-center gap-2">
       {page > 1 && (
         <Link
-          to={link(page - 1)}
+          to={hrefForPage(page - 1)}
           rel="prev"
           className={buttonClasses({ variant: "ghost", size: "sm" })}
         >
@@ -30,7 +29,7 @@ export function Pagination({ pathname, search, page, pageCount }: PaginationProp
       {pages.map((target) => (
         <Link
           key={target}
-          to={link(target)}
+          to={hrefForPage(target)}
           aria-current={target === page ? "page" : undefined}
           className={buttonClasses({
             variant: target === page ? "primary" : "ghost",
@@ -43,7 +42,7 @@ export function Pagination({ pathname, search, page, pageCount }: PaginationProp
       ))}
       {page < pageCount && (
         <Link
-          to={link(page + 1)}
+          to={hrefForPage(page + 1)}
           rel="next"
           className={buttonClasses({ variant: "ghost", size: "sm" })}
         >

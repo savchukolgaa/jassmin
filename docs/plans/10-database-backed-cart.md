@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/10
 Branch: `issue/10`
 Worktree: `.claude/worktrees/issue-10`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Shoppers, guests or logged in, can add perfumes (a chosen volume variant) to a cart, change
@@ -274,7 +274,7 @@ Each step is small, ordered, and leaves the app in a working state.
   cart per owner via partial unique indexes, guest lookup by `anonymous_id`, merge in
   `onUserAuthenticated`, stock checks). Mention the cart's `Set-Cookie` in the README only if it
   lists cookies.
-- [ ] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, then the manual
+- [x] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, then the manual
   checks below.
 
 ## Testing & verification
@@ -297,11 +297,20 @@ Each step is small, ordered, and leaves the app in a working state.
   - 375px width: no horizontal scroll; keyboard focus rings visible on stepper and remove.
 
 ## Acceptance criteria
-- [ ] Guests and logged-in users can add, update and remove items — steps 1, 4, 6, 7, 8
-- [ ] Cart persists across reloads and is stored in `carts` / `cart_items` — steps 1, 2, 4, 7
-- [ ] Header cart count updates after adding items without a full reload — steps 5, 9
-- [ ] Quantity cannot exceed available stock — steps 4, 6, 7, 8
-- [ ] Guest cart merges into the user cart on login — steps 4, 5
+- [x] Guests and logged-in users can add, update and remove items — steps 1, 4, 6, 7, 8
+- [x] Cart persists across reloads and is stored in `carts` / `cart_items` — steps 1, 2, 4, 7
+- [x] Header cart count updates after adding items without a full reload — steps 5, 9
+- [x] Quantity cannot exceed available stock — steps 4, 6, 7, 8
+- [x] Guest cart merges into the user cart on login — steps 4, 5
+
+**Verification log:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (510 tests, including the DB
+integration tests) and `pnpm build` pass. HTTP smoke test of the production build against a
+throwaway database: guest add (cookies set, badge 2, subtotal 8 900 ₴), add/update above stock →
+409, update within stock → badge 3, another visitor removing the line → 404, blog
+`Cache-Control: private, no-cache` for the guest, remove → empty cart; registered user with a cart
+logs out, adds as a guest, logs back in → lines merged (1 + 2 → 3 of 7 ml, plus 50 ml), guest cart
+deleted. Not checked in a real browser: the optimistic stepper feel, the toast, the JS-free forms
+in the UI, 375px layout and focus rings.
 
 ## Out of scope
 - `add_to_cart` / `remove_from_cart` events, 30-minute session windows, UTM/device capture and

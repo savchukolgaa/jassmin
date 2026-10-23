@@ -93,6 +93,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:rollback` | Roll back the latest applied migration |
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
+| `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin area](#admin-area) |
 
 The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed` and `db-rollback` start by hand) instead of from a terminal.
 
@@ -202,6 +203,28 @@ Locally, emails go to **smtp4dev**, which catches every message instead of deliv
 - **Without Aspire:** run `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev:v3`, set `SMTP_URL=smtp://localhost:2525` in `.env`, and open http://localhost:5000.
 
 Without `SMTP_URL`, development logs the message to the server console instead, and production shows a "couldn't send" error.
+
+## Admin area
+
+`/admin` is where staff manage products (`/admin/products`, #16) and orders (`/admin/orders`, #17). Blog and site content aren't managed here: the sidebar's "Content (Strapi)" link opens the Strapi admin (`STRAPI_URL` + `/admin`), which has its own accounts.
+
+Every user has a role, `customer` (the default) or `admin`, in `users.role`. Logged-out visitors are sent to `/login` and come back afterwards; logged-in customers get a 403 page. The role is read from the database on every request, so promoting or demoting someone takes effect immediately, without logging in again.
+
+### Creating the first admin
+
+1. Register a normal account at `/register` (or use an existing one).
+2. Give it the admin role:
+   - **Without Aspire:** with `DATABASE_URL` in `.env` pointing at the app database, run
+     ```bash
+     pnpm db:make-admin you@example.com
+     ```
+   - **With Aspire:** Aspire generates the database password, so copy the connection string first. In the dashboard, open the `web` resource's details, reveal the `JASSMINDB_URI` environment variable and copy it. Then run (the variable wins over `DATABASE_URL` in `.env`):
+     ```bash
+     JASSMINDB_URI='postgresql://…' pnpm db:make-admin you@example.com
+     ```
+3. Open `/admin`. If you were logged in already, just reload the page.
+
+`pnpm db:make-admin you@example.com --revoke` turns an admin back into a customer. The email is matched case-insensitively, and the command fails with a message if no account has it.
 
 ## Conventions
 

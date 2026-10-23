@@ -19,7 +19,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:rollback": "tsx app/.server/db/scripts/rollback.ts",
-    "db:seed": "tsx app/.server/db/scripts/seed.ts"
+    "db:seed": "tsx app/.server/db/scripts/seed.ts",
+    "db:make-admin": "tsx app/.server/db/scripts/make-admin.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",

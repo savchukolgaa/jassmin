@@ -33,6 +33,7 @@ describe.skipIf(!hasDatabase)("user queries", () => {
       id,
       fullName: "Olena Petrenko",
       email: "olena@example.com",
+      role: "customer",
     });
   });
 
@@ -87,5 +88,25 @@ describe.skipIf(!hasDatabase)("user queries", () => {
 
     expect(row?.lastLoginAt).toBeInstanceOf(Date);
     expect(Math.abs((row?.lastLoginAt?.getTime() ?? 0) - Date.now())).toBeLessThan(60_000);
+  });
+
+  it("promotes and demotes a user by email", async () => {
+    const { findUserById, insertUser, setUserRole } = await import("./users");
+    const { id } = await insertUser(testDb.db, {
+      fullName: "Admin",
+      email: "admin@example.com",
+      passwordHash: "x",
+    });
+
+    expect(await setUserRole(testDb.db, "admin@example.com", "admin")).toBe(true);
+    expect((await findUserById(testDb.db, id))?.role).toBe("admin");
+    expect(await setUserRole(testDb.db, "admin@example.com", "customer")).toBe(true);
+    expect((await findUserById(testDb.db, id))?.role).toBe("customer");
+  });
+
+  it("reports an unknown email when setting a role", async () => {
+    const { setUserRole } = await import("./users");
+
+    expect(await setUserRole(testDb.db, "nobody@example.com", "admin")).toBe(false);
   });
 });

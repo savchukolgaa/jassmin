@@ -52,3 +52,8 @@ export type EventType = (typeof EVENT_TYPES)[number];
 export const PERFUME_VOLUMES_ML = [7, 10, 30, 50, 100] as const;
 
 export type PerfumeVolumeMl = (typeof PERFUME_VOLUMES_ML)[number];
+
+/** What a user may do: `admin` can open the `/admin` area (#14). */
+export const USER_ROLES = ["customer", "admin"] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];

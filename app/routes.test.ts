@@ -28,7 +28,10 @@ describe("route config", () => {
     expect(routes.find((entry) => entry.path === "logout")?.file).toBe("routes/logout.ts");
   });
 
-  it("keeps the admin area outside the shop layout", () => {
-    expect(routes.find((entry) => entry.path === "admin/*")?.file).toBe("routes/admin.tsx");
+  it("nests the admin pages under their own layout, outside the shop layout", () => {
+    const admin = routes.find((entry) => entry.path === "admin");
+
+    expect(admin?.file).toBe("routes/admin.tsx");
+    expect(paths(admin?.children ?? [])).toEqual(["/", "/products", "/orders"]);
   });
 });

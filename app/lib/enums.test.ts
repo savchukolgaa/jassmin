@@ -7,6 +7,7 @@ import {
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
   PERFUME_VOLUMES_ML,
+  USER_ROLES,
 } from "./enums";
 
 describe("enum values", () => {
@@ -54,5 +55,9 @@ describe("enum values", () => {
 
   it("lists the perfume volumes in ascending order", () => {
     expect(PERFUME_VOLUMES_ML).toEqual([7, 10, 30, 50, 100]);
+  });
+
+  it("lists the user roles", () => {
+    expect(USER_ROLES).toEqual(["customer", "admin"]);
   });
 });

@@ -1,4 +1,4 @@
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 import { loginRedirectPath } from "~/lib/auth";
 import { type Db, db } from "../db";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
@@ -29,6 +29,19 @@ export async function requireUser(request: Request, database: Db = db): Promise<
   const user = await getUser(request, database);
   if (!user) {
     throw redirect(loginRedirectPath(new URL(request.url)));
+  }
+  return user;
+}
+
+/**
+ * The logged-in admin. Every `/admin` loader **and** action calls it (a layout loader doesn't
+ * protect child actions): logged out → redirect to login like `requireUser`; logged in without
+ * the `admin` role → 403. The role comes from the database on every call, never from the cookie.
+ */
+export async function requireAdmin(request: Request, database: Db = db): Promise<PublicUser> {
+  const user = await requireUser(request, database);
+  if (user.role !== "admin") {
+    throw data(null, { status: 403 });
   }
   return user;
 }

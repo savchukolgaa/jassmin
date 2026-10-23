@@ -21,10 +21,17 @@ describe("describeRouteError", () => {
     expect(describeRouteError(routeError(503)).message).toBe("503");
   });
 
-  it("uses the status text for other route errors", () => {
+  it("describes a forbidden admin page (403)", () => {
     expect(describeRouteError(routeError(403, "Forbidden"))).toEqual({
+      message: "403",
+      details: "You don't have access to this page.",
+    });
+  });
+
+  it("uses the status text for other route errors", () => {
+    expect(describeRouteError(routeError(401, "Unauthorized"))).toEqual({
       message: "Error",
-      details: "Forbidden",
+      details: "Unauthorized",
     });
   });
 

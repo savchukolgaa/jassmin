@@ -32,6 +32,21 @@ describe("requireUser", () => {
   });
 });
 
+describe("requireAdmin", () => {
+  it("redirects a logged-out visitor to login like requireUser", async () => {
+    const { requireAdmin } = await import("./auth");
+
+    const thrown = await requireAdmin(new Request("http://localhost/admin/orders?x=1")).catch(
+      (error: unknown) => error,
+    );
+
+    expect(thrown).toBeInstanceOf(Response);
+    expect((thrown as Response).headers.get("Location")).toBe(
+      "/login?redirectTo=%2Fadmin%2Forders%3Fx%3D1",
+    );
+  });
+});
+
 // Integration tests: run only when a database is configured, on their own throwaway database.
 describe.skipIf(!hasDatabase)("auth service", () => {
   let testDb: TestDatabase;
@@ -148,7 +163,50 @@ describe.skipIf(!hasDatabase)("auth service", () => {
       id: registered.userId,
       fullName: "Session",
       email: "session@example.com",
+      role: "customer",
     });
     expect(await getUser(request(await cookieFor(999_999)), testDb.db)).toBeNull();
+  });
+
+  it("lets admins through and answers 403 to customers", async () => {
+    const { registerUser, requireAdmin } = await import("./auth");
+    const { setUserRole } = await import("../db/queries/users");
+    const registered = await registerUser(testDb.db, {
+      fullName: "Staff",
+      email: "staff@example.com",
+      password: "correct horse",
+    });
+    if (!registered.ok) throw new Error("registration failed");
+    const request = new Request("http://localhost/admin", {
+      headers: { Cookie: await cookieFor(registered.userId) },
+    });
+
+    // `data()` result; React Router turns it into the 403 the ErrorBoundary sees.
+    expect(await requireAdmin(request, testDb.db).catch((error: unknown) => error)).toMatchObject({
+      init: { status: 403 },
+    });
+
+    await setUserRole(testDb.db, "staff@example.com", "admin");
+    expect(await requireAdmin(request, testDb.db)).toMatchObject({
+      id: registered.userId,
+      role: "admin",
+    });
+
+    // Demoting takes effect on the next request, with the same cookie.
+    await setUserRole(testDb.db, "staff@example.com", "customer");
+    expect(await requireAdmin(request, testDb.db).catch((error: unknown) => error)).toMatchObject({
+      init: { status: 403 },
+    });
+  });
+
+  it("redirects to login when the session's user no longer exists", async () => {
+    const { requireAdmin } = await import("./auth");
+    const request = new Request("http://localhost/admin", {
+      headers: { Cookie: await cookieFor(999_999) },
+    });
+
+    const thrown = await requireAdmin(request, testDb.db).catch((error: unknown) => error);
+
+    expect((thrown as Response).headers.get("Location")).toBe("/login?redirectTo=%2Fadmin");
   });
 });

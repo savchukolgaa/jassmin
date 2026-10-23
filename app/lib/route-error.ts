@@ -19,6 +19,10 @@ export function describeRouteError(
       details: "This content is temporarily unavailable. Please try again in a few minutes.",
     };
   }
+  if (isRouteErrorResponse(error) && error.status === 403) {
+    // Thrown by `requireAdmin` for logged-in users without the admin role.
+    return { message: "403", details: "You don't have access to this page." };
+  }
   if (isRouteErrorResponse(error)) {
     return error.status === 404
       ? { message: "404", details: "The requested page could not be found." }

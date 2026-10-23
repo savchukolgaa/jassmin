@@ -164,11 +164,11 @@ The same applies the other way round to #5 and #26 if this one lands first.
 - [x] **3. User queries** — Add `role` to `PublicUser` and the `findUserById` select. Add
   `setUserRole(db, email, role): Promise<boolean>` (`update … returning id`, `true` when a row
   changed). Tests in `users.test.ts` (DB-backed, `createTestDatabase`).
-- [ ] **4. `requireAdmin`** — In `services/auth.ts`: `await requireUser(request, database)`; if
-  `user.role !== "admin"` throw `data("Forbidden", { status: 403 })`; return the user. Unit tests
+- [x] **4. `requireAdmin`** — In `services/auth.ts`: `await requireUser(request, database)`; if
+  `user.role !== "admin"` throw `data(null, { status: 403 })` (same style as the 404s in `catalog.tsx`); return the user. Unit tests
   with the DB mocked / a test DB: logged out → 302 to `/login?redirectTo=/admin/orders?x=1`;
   customer → 403; admin → user; deleted user with a cookie → redirect.
-- [ ] **5. 403 error text** — Add the 403 branch to `describeRouteError` and a test.
+- [x] **5. 403 error text** — Add the 403 branch to `describeRouteError` and a test.
 - [ ] **6. Admin layout route** — Update `routes.ts` as in Decisions and `routes.test.ts` (admin is a
   layout with `""`/`products`/`orders` children, still outside the shop layout). Rewrite
   `routes/admin.tsx`: `loader` → `requireAdmin`, returns `{ admin: { fullName }, strapiAdminUrl }`;

@@ -170,7 +170,7 @@ Each step is small, ordered and leaves the app working.
   - `findProductByPublicId(db, publicId)` returns the detail columns or `undefined`.
   - Build the `where` once in a shared helper so the count and the list can't drift.
 
-- [ ] **3. Products service.** Create `app/.server/services/products.ts`:
+- [x] **3. Products service.** Create `app/.server/services/products.ts`:
   - `GENDER_SCOPE: Record<CatalogGender, Gender[]> = { men: ["men", "unisex"], women: ["women",
     "unisex"] }` (Q1).
   - `getCatalogPage(gender, search): Promise<CatalogPage>` runs the list, count and filter options

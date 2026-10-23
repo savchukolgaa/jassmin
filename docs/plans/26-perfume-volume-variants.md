@@ -220,7 +220,7 @@ chosen variant.
   [productVariants.productId, productVariants.volumeMl] })`, all in the existing transaction.
   Return `{ inserted, variantsInserted }`. Extend `seed.test.ts`: allowed volumes, unique per
   product, legacy size included, idempotent re-run.
-- [ ] **6. Queries and service**: in `queries/products.ts` build a `variantStats` subquery
+- [x] **6. Queries and service** (committed together with steps 7 and 8, because the reshaped DTOs break the card and the product page until they're updated): in `queries/products.ts` build a `variantStats` subquery
   (`groupBy(productVariants.productId)`: `minPrice: min(price)`, `maxPrice`, `maxStock`,
   `volumes: sql<number[]>\`array_agg(volume_ml order by volume_ml)\``, `variantCount`, and the
   default variant's `public_id` + `volume_ml`: the first by `(stock_quantity = 0), volume_ml`, so
@@ -235,7 +235,7 @@ chosen variant.
   Extend `services/products.test.ts`: catalog min price and "from" flag, price sort by min price,
   products without variants hidden, totals match, detail variants ascending, and
   `checkVariantForCart` ok / unknown / other product's variant / out of stock.
-- [ ] **7. Catalog card**: in `ProductCard` show `formatVolumes(product)` and
+- [x] **7. Catalog card**: in `ProductCard` show `formatVolumes(product)` and
   `from {formatPrice(minPrice)}` when `hasPriceRange`. Render `AddToCartForm` with
   `variantId={defaultVariant.id}` and the label `Add {volumeMl} ml` ("Out of stock" when
   `!inStock`). When `variantCount > 1`, put a secondary `ButtonLink` "Choose volume" to
@@ -244,7 +244,7 @@ chosen variant.
   `catalog-ui.test.ts`: the posted `variantId` is the default variant, the button names its size,
   "Choose volume" appears only for multi-variant products, and an out-of-stock product disables
   the add button but keeps "Choose volume".
-- [ ] **8. Product page**: extend `AddToCartForm` with an optional `variantId` (hidden input) and
+- [x] **8. Product page**: extend `AddToCartForm` with an optional `variantId` (hidden input) and
   `children` rendered inside the form before the button. Its fetcher key stays per product.
   Create `app/features/product/VolumeSelect.tsx`: `<label htmlFor="volume">Volume</label>` +
   `<select id="volume" name="variantId" value onChange>` with one `<option value={v.id}

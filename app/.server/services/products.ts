@@ -1,15 +1,19 @@
+import type { CartActionError } from "~/lib/cart";
 import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
-import type { CatalogPage, ProductDetail, ProductSummary } from "~/lib/products";
+import type { CatalogPage, ProductDetail, ProductSummary, ProductVariant } from "~/lib/products";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import {
   countProducts,
   findProductByPublicId,
+  findVariantForProduct,
   listFilterOptions,
   listProducts,
+  listVariantsByProductId,
   type ProductDetailRow,
   type ProductSummaryRow,
+  type ProductVariantRow,
 } from "../db/queries/products";
 
 /** Unisex perfumes appear in both the men's and the women's catalog. */
@@ -18,27 +22,44 @@ const GENDER_SCOPE: Record<CatalogGender, readonly Gender[]> = {
   women: ["women", "unisex"],
 };
 
-// The only place rows become DTOs, so moving price and stock to variants (#26) changes just this.
+// The only place rows become DTOs.
 function toSummary(row: ProductSummaryRow): ProductSummary {
   return {
     id: row.publicId,
     title: row.title,
     brand: row.brand,
     gender: row.gender,
-    price: row.price,
-    volumeMl: row.volumeMl,
     packSize: row.packSize,
     imageUrl: row.imageUrl,
+    minPrice: row.minPrice,
+    hasPriceRange: row.minPrice !== row.maxPrice,
+    volumes: row.volumes,
+    inStock: row.inStock,
+    defaultVariant: { id: row.defaultVariantId, volumeMl: row.defaultVolumeMl },
+  };
+}
+
+function toVariant(row: ProductVariantRow): ProductVariant {
+  return {
+    id: row.publicId,
+    volumeMl: row.volumeMl,
+    price: row.price,
+    stockQuantity: row.stockQuantity,
     inStock: row.stockQuantity > 0,
   };
 }
 
-function toDetail(row: ProductDetailRow): ProductDetail {
+function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): ProductDetail {
   return {
-    ...toSummary(row),
+    id: row.publicId,
+    title: row.title,
+    brand: row.brand,
+    gender: row.gender,
+    packSize: row.packSize,
+    imageUrl: row.imageUrl,
     description: row.description,
     fragranceFamily: row.fragranceFamily,
-    stockQuantity: row.stockQuantity,
+    variants: variants.map(toVariant),
   };
 }
 
@@ -75,5 +96,28 @@ export async function getProduct(
   db: Db = defaultDb,
 ): Promise<ProductDetail | null> {
   const row = await findProductByPublicId(db, publicId);
-  return row ? toDetail(row) : null;
+  return row ? toDetail(row, await listVariantsByProductId(db, row.id)) : null;
+}
+
+export type VariantCheck =
+  | { ok: true; variant: NonNullable<Awaited<ReturnType<typeof findVariantForProduct>>> }
+  | { ok: false; error: Extract<CartActionError, "invalid-variant" | "out-of-stock"> };
+
+/**
+ * Whether the variant can be added to the cart: it must exist, belong to the product and be in
+ * stock. Both ids are `public_id`s from the add-to-cart form.
+ */
+export async function checkVariantForCart(
+  productId: string,
+  variantId: string,
+  db: Db = defaultDb,
+): Promise<VariantCheck> {
+  const variant = await findVariantForProduct(db, productId, variantId);
+  if (!variant) {
+    return { ok: false, error: "invalid-variant" };
+  }
+  if (variant.stockQuantity <= 0) {
+    return { ok: false, error: "out-of-stock" };
+  }
+  return { ok: true, variant };
 }

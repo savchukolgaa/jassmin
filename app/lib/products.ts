@@ -1,24 +1,38 @@
-// Product DTOs returned by the catalog and product loaders. `id` is the product's `public_id`;
-// the serial id and `created_at` never leave the server. `price` is the exact decimal string.
+// Product DTOs returned by the catalog and product loaders. `id` is the product's (and a
+// variant's) `public_id`; serial ids and `created_at` never leave the server. Prices are exact
+// decimal strings. Price, volume and stock belong to a product's variants (#26).
 import type { Gender } from "./enums";
 import { formatPrice } from "./money";
 
-export interface ProductSummary {
+interface ProductBase {
   id: string;
   title: string;
   brand: string;
   gender: Gender;
-  price: string;
-  volumeMl: number;
+  /** Units per variant, e.g. 3 for a set of three testers. */
   packSize: number;
   imageUrl: string | null;
-  inStock: boolean;
 }
 
-export interface ProductDetail extends ProductSummary {
+/** A catalog card. Only products with at least one variant are listed. */
+export interface ProductSummary extends ProductBase {
+  /** The lowest variant price. */
+  minPrice: string;
+  /** Whether the variants have different prices, so the card says "from". */
+  hasPriceRange: boolean;
+  /** The variants' volumes in ml, ascending. */
+  volumes: number[];
+  /** Whether any variant is in stock. */
+  inStock: boolean;
+  /** The variant the card's add button adds (see `defaultVariant`). */
+  defaultVariant: { id: string; volumeMl: number };
+}
+
+export interface ProductDetail extends ProductBase {
   description: string | null;
   fragranceFamily: string | null;
-  stockQuantity: number;
+  /** Ascending by volume; empty when the product has no sizes for sale. */
+  variants: ProductVariant[];
 }
 
 export interface CatalogFilterOptions {
@@ -40,10 +54,7 @@ export interface CatalogPage {
 export const LOW_STOCK_THRESHOLD = 3;
 
 /** `50 ml`, or `3 × 10 ml` for a pack of several units. */
-export function formatVolume({
-  volumeMl,
-  packSize,
-}: Pick<ProductSummary, "volumeMl" | "packSize">) {
+export function formatVolume({ volumeMl, packSize }: { volumeMl: number; packSize: number }) {
   return packSize > 1 ? `${packSize} × ${volumeMl} ml` : `${volumeMl} ml`;
 }
 

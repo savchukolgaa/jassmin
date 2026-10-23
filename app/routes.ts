@@ -13,6 +13,8 @@ export default [
     route("checkout", "routes/checkout.tsx"),
     route("account", "routes/account.tsx"),
   ]),
+  // Action-only (POST); outside the layout so its loader doesn't run for it.
+  route("logout", "routes/logout.ts"),
   // Outside the shop layout so the admin area (#14) can have its own.
   route("admin/*", "routes/admin.tsx"),
 ] satisfies RouteConfig;

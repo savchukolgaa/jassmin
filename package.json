@@ -22,6 +22,7 @@
     "db:seed": "tsx app/.server/db/scripts/seed.ts"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
     "@react-router/node": "^8.5.0",
     "@react-router/serve": "^8.5.0",
     "drizzle-orm": "^0.45.4",

@@ -1,0 +1,105 @@
+// Validation and helpers shared by the login/register routes and their forms. Isomorphic: no
+// server imports.
+import { z } from "zod";
+
+const PHONE = /^\+?[0-9 ()-]{7,20}$/;
+
+/** Trimmed and lowercased, so `A@x.com` and `a@x.com` are the same account. */
+const email = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email("Enter a valid email address").max(255, "Email is too long"));
+
+/** An optional text field: blank or missing becomes `undefined`. */
+const optionalText = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => value || undefined);
+
+export const registerSchema = z.object({
+  fullName: z.string().trim().min(1, "Enter your name").max(255, "Name is too long"),
+  email,
+  password: z.string().min(8, "Use at least 8 characters").max(128, "Use at most 128 characters"),
+  phone: optionalText.refine((value) => value === undefined || PHONE.test(value), {
+    message: "Enter a valid phone number",
+  }),
+  // Analytics only: an unusable value falls back to the column default instead of failing.
+  acquisitionChannel: z.string().trim().toLowerCase().min(1).max(100).optional().catch(undefined),
+  redirectTo: optionalText,
+});
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const loginSchema = z.object({
+  email,
+  password: z.string().min(1, "Enter your password"),
+  redirectTo: optionalText,
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
+
+export type RegisterField = "fullName" | "email" | "password" | "phone";
+export type LoginField = "email" | "password";
+
+/** What a login/register `action` returns when the form can't be accepted. */
+export interface AuthFormErrors<Field extends string> {
+  fieldErrors?: Partial<Record<Field, string>>;
+  /** An error about the whole form, e.g. wrong credentials. */
+  formError?: string;
+  /** Submitted values to refill the form with. Never includes passwords. */
+  values?: Partial<Record<Field, string>>;
+}
+
+/** The first message per field of a failed parse. */
+export function toFieldErrors<Field extends string>(
+  error: z.ZodError,
+  fields: readonly Field[],
+): Partial<Record<Field, string>> {
+  const flattened: Partial<Record<string, string[]>> = z.flattenError(error).fieldErrors;
+  const result: Partial<Record<Field, string>> = {};
+  for (const field of fields) {
+    const message = flattened[field]?.[0];
+    if (message) result[field] = message;
+  }
+  return result;
+}
+
+/**
+ * A same-site path to redirect to after login, or `fallback`. Rejects absolute and
+ * protocol-relative URLs (`//evil.com`, `/\evil.com`) so `redirectTo` can't send users away.
+ */
+export function safeRedirect(to: unknown, fallback = "/account"): string {
+  if (typeof to !== "string" || !to.startsWith("/") || to.startsWith("//") || to.includes("\\")) {
+    return fallback;
+  }
+  return to;
+}
+
+/** The login URL that returns to `url` (path and query) afterwards. */
+export function loginRedirectPath(url: URL): string {
+  return `/login?${new URLSearchParams({ redirectTo: url.pathname + url.search })}`;
+}
+
+/**
+ * Where a new customer came from, for `users.acquisition_channel`: the `utm_source` parameter,
+ * otherwise the host of an external referrer (without `www.`), otherwise `"direct"`.
+ */
+export function resolveAcquisitionChannel(url: URL, referer: string | null): string {
+  const utmSource = url.searchParams.get("utm_source")?.trim().toLowerCase();
+  if (utmSource) return utmSource.slice(0, 100);
+
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      if (refererUrl.host !== url.host && refererUrl.hostname) {
+        return refererUrl.hostname.replace(/^www\./, "").slice(0, 100);
+      }
+    } catch {
+      // Not a URL: treat as no referrer.
+    }
+  }
+
+  return "direct";
+}

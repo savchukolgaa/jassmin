@@ -1,13 +1,12 @@
 import type { HeaderState } from "~/lib/header";
-import { getSession } from "../session";
+import { getUser } from "./auth";
 
 /** Who is logged in and how many items are in their cart, for the shop header. */
 export async function getHeaderState(request: Request): Promise<HeaderState> {
-  const session = await getSession(request.headers.get("Cookie"));
-  // Stub until #9: trust the session's userId instead of loading the user.
-  const userId = session.get("userId");
+  // `null` for a stale cookie whose user no longer exists, so the header shows "Log in".
+  const user = await getUser(request);
   // Stub until #10: count the active cart's items.
   const cartCount = 0;
 
-  return { user: userId ? { id: userId } : null, cartCount };
+  return { user: user ? { id: user.id } : null, cartCount };
 }

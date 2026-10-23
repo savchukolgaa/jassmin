@@ -9,8 +9,15 @@ import {
   updateQuantity,
 } from "~/.server/services/cart";
 import { checkVariantForCart } from "~/.server/services/products";
-import { PagePlaceholder } from "~/components/layout/PagePlaceholder";
-import { type CartActionResult, type CartIntent, parseCartAction } from "~/lib/cart";
+import { CartLineItem } from "~/features/cart/CartLineItem";
+import { CartSummary } from "~/features/cart/CartSummary";
+import { EmptyCart } from "~/features/cart/EmptyCart";
+import {
+  type CartActionResult,
+  type CartIntent,
+  cartErrorMessage,
+  parseCartAction,
+} from "~/lib/cart";
 import type { Route } from "./+types/cart";
 
 export function meta(_args: Route.MetaArgs) {
@@ -70,7 +77,35 @@ export async function action({ request }: Route.ActionArgs) {
   }
 }
 
-// Replaced by the cart page in the next step.
-export default function Cart() {
-  return <PagePlaceholder title="Cart" />;
+export default function Cart({ loaderData: cart, actionData }: Route.ComponentProps) {
+  // Only set after a plain form post without JS; fetchers show their errors on the line.
+  const error = actionData?.ok === false ? cartErrorMessage(actionData) : null;
+
+  return (
+    <main className="container mx-auto px-4 pt-10 pb-16">
+      <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+        Your cart
+      </h1>
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 rounded-card bg-blush px-4 py-3 font-bold text-primary-dark"
+        >
+          {error}
+        </p>
+      )}
+      {cart.lines.length === 0 ? (
+        <EmptyCart />
+      ) : (
+        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+          <ul aria-label="Cart items" className="flex flex-col gap-4">
+            {cart.lines.map((line) => (
+              <CartLineItem key={line.variantId} line={line} />
+            ))}
+          </ul>
+          <CartSummary cart={cart} />
+        </div>
+      )}
+    </main>
+  );
 }

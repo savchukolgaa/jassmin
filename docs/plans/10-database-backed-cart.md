@@ -255,7 +255,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - Rewrite `routes/cart.test.ts` mocking `services/cart`, `services/products`, `analytics` and
     `session`: each intent's success and error paths, status codes, `Set-Cookie` passed through,
     nothing written on invalid input.
-- [ ] **8. Cart UI** — `QuantityStepper` (pill, `−` / value / `+`, `size-11` buttons,
+- [x] **8. Cart UI** — `QuantityStepper` (pill, `−` / value / `+`, `size-11` buttons,
   `aria-label`s, `−` disabled at 1, `+` disabled at stock or 99); `CartLine` (image, title + brand,
   `formatVolume`, unit price, stepper, line total, remove link-style button, "Only N left" notice
   when `quantity > stockQuantity`, inline error from its fetcher with `aria-live`); `CartSummary`

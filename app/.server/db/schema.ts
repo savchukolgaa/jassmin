@@ -1,4 +1,5 @@
-// Drizzle schema: core tables (#3) and commerce tables (#4); analytics tables (#5) follow.
+// Drizzle schema: core tables (#3), commerce tables (#4) and the user role (#14); analytics
+// tables (#5) follow.
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -25,12 +26,14 @@ import {
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
   type PaymentMethod,
+  USER_ROLES,
 } from "~/lib/enums";
 
 export const genderType = pgEnum("gender_type", GENDERS);
 export const orderStatusType = pgEnum("order_status_type", ORDER_STATUSES);
 export const paymentStatusType = pgEnum("payment_status_type", PAYMENT_STATUSES);
 export const cartStatusType = pgEnum("cart_status_type", CART_STATUSES);
+export const userRoleType = pgEnum("user_role", USER_ROLES);
 
 export const users = pgTable("users", {
   id: serial().primaryKey(),
@@ -39,6 +42,8 @@ export const users = pgTable("users", {
   passwordHash: varchar({ length: 255 }).notNull(),
   phone: varchar({ length: 50 }),
   acquisitionChannel: text().notNull().default("direct"),
+  // Read from the database on every admin request, never cached in the session cookie.
+  role: userRoleType().notNull().default("customer"),
   lastLoginAt: timestamp({ withTimezone: true }),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });

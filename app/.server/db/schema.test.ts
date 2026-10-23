@@ -2,7 +2,7 @@ import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { Cart, CartItem, Order, OrderItem } from "~/lib/commerce";
-import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES } from "~/lib/enums";
+import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES, USER_ROLES } from "~/lib/enums";
 import {
   cartItems,
   cartStatusType,
@@ -13,6 +13,7 @@ import {
   orders,
   paymentStatusType,
   products,
+  userRoleType,
   users,
 } from "./schema";
 
@@ -56,6 +57,8 @@ describe("enums", () => {
     expect(paymentStatusType.enumValues).toEqual([...PAYMENT_STATUSES]);
     expect(cartStatusType.enumName).toBe("cart_status_type");
     expect(cartStatusType.enumValues).toEqual([...CART_STATUSES]);
+    expect(userRoleType.enumName).toBe("user_role");
+    expect(userRoleType.enumValues).toEqual([...USER_ROLES]);
   });
 });
 
@@ -68,16 +71,18 @@ describe("users", () => {
       passwordHash: ["varchar(255)", true, false],
       phone: ["varchar(50)", false, false],
       acquisitionChannel: ["text", true, true],
+      role: ["user_role", true, true],
       lastLoginAt: ["timestamp with time zone", false, false],
       createdAt: ["timestamp with time zone", true, true],
     });
   });
 
-  it("makes email unique and defaults acquisition_channel to 'direct'", () => {
+  it("makes email unique and defaults acquisition_channel to 'direct' and role to 'customer'", () => {
     const { columns } = getTableConfig(users);
 
     expect(columns.find((c) => c.name === "email")?.isUnique).toBe(true);
     expect(columns.find((c) => c.name === "acquisitionChannel")?.default).toBe("direct");
+    expect(columns.find((c) => c.name === "role")?.default).toBe("customer");
   });
 });
 

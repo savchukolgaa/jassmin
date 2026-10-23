@@ -74,6 +74,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ],
       payment_status_type: ["unpaid", "paid", "refunded"],
       cart_status_type: ["active", "converted", "abandoned"],
+      user_role: ["customer", "admin"],
     });
 
     const constraints = await testDb.db.execute<{ conname: string }>(
@@ -105,6 +106,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     // UUID v7: the version nibble (13th hex digit) is 7.
     expect(product?.publicId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-/);
     expect(user?.acquisitionChannel).toBe("direct");
+    expect(user?.role).toBe("customer");
     expect(user?.createdAt).toBeInstanceOf(Date);
     expect(user?.lastLoginAt).toBeNull();
   });
@@ -114,7 +116,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
-    // 23514 check_violation, 23505 unique_violation, 23502 not_null_violation
+    // 23514 check_violation, 23505 unique_violation, 23502 not_null_violation,
+    // 22P02 invalid_text_representation (not an enum value)
     expect(
       await pgErrorCode(db.insert(products).values({ ...sampleProduct, stockQuantity: -1 })),
     ).toBe("23514");
@@ -135,7 +138,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
         await pgErrorCode(db.execute(sql`update products set ${sql.identifier(column)} = null`)),
       ).toBe("23502");
     }
-    for (const column of ["acquisition_channel", "created_at"]) {
+    expect(await pgErrorCode(db.execute(sql`update users set role = 'owner'`))).toBe("22P02");
+    for (const column of ["acquisition_channel", "role", "created_at"]) {
       expect(
         await pgErrorCode(db.execute(sql`update users set ${sql.identifier(column)} = null`)),
       ).toBe("23502");
@@ -351,6 +355,12 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0002_user_role");
+    const roleColumn = await testDb.db.execute(
+      sql`select 1 from information_schema.columns where table_name = 'users' and column_name = 'role'`,
+    );
+    expect(roleColumn.rows).toEqual([]);
+    expect(await listEnums()).not.toHaveProperty("user_role");
     expect(await rollbackLatest(testDb.db)).toBe("0001_commerce_schema");
     expect(await listTables()).toEqual(["products", "users"]);
     expect(await rollbackLatest(testDb.db)).toBe("0000_core_schema");

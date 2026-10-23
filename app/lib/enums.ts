@@ -29,3 +29,8 @@ export type CartStatus = (typeof CART_STATUSES)[number];
 export const PAYMENT_METHODS = ["card", "cod"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** What a user may do: `admin` can open the `/admin` area (#14). */
+export const USER_ROLES = ["customer", "admin"] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];

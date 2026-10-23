@@ -87,6 +87,11 @@ The same applies the other way round to #5 and #26 if this one lands first.
   `app/components/layout/nav.ts`. Active link via `NavLink` with `aria-current`. Shows the admin's
   name and a "Log out" form posting to `/logout`, and a "Back to shop" link. The admin area isn't on
   the C+ canvas, so this is a functional, on-brand layout rather than a pixel spec.
+- **Dev DB not migrated during implementation (deviation).** Step 2's manual
+  `db:migrate` / `db:rollback` against the shared development database was skipped, because the
+  parallel #5/#26 branches also add a `0002_*` migration to that database. `migrator.test.ts` checks
+  migrate up, the column/enum, and rollback on a throwaway database instead. Run `pnpm db:migrate`
+  after the PR merges.
 - **Meta:** admin pages set `{ name: "robots", content: "noindex" }`.
 
 ## Open questions
@@ -143,13 +148,13 @@ The same applies the other way round to #5 and #26 if this one lands first.
 | modify | `README.md` | "Admin area" section: creating the first admin |
 
 ## Steps
-- [ ] **1. Role enum and column** — Add `USER_ROLES` / `UserRole` to `app/lib/enums.ts`. In
+- [x] **1. Role enum and column** — Add `USER_ROLES` / `UserRole` to `app/lib/enums.ts`. In
   `schema.ts` add `userRoleType = pgEnum("user_role", USER_ROLES)` and
   `role: userRoleType().notNull().default("customer")` on `users` (after `acquisitionChannel`; keep
   every existing column untouched). Update the header comment's issue list. Extend
   `enums.test.ts` and `schema.test.ts` (columns, default, enum values). Check: `pnpm typecheck`,
   `pnpm test`.
-- [ ] **2. Migration and rollback** — `pnpm db:generate --name user_role`; confirm the SQL is only
+- [x] **2. Migration and rollback** — `pnpm db:generate --name user_role`; confirm the SQL is only
   `CREATE TYPE "public"."user_role" AS ENUM('customer', 'admin');` and
   `ALTER TABLE "users" ADD COLUMN "role" "user_role" DEFAULT 'customer' NOT NULL;`. Write
   `db/rollbacks/0002_user_role.sql` (`ALTER TABLE "users" DROP COLUMN "role";` then

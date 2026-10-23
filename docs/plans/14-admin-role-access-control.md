@@ -92,6 +92,9 @@ The same applies the other way round to #5 and #26 if this one lands first.
   parallel #5/#26 branches also add a `0002_*` migration to that database. `migrator.test.ts` checks
   migrate up, the column/enum, and rollback on a throwaway database instead. Run `pnpm db:migrate`
   after the PR merges.
+- **Layout component name (deviation):** the shell is `AdminLayout.tsx` (top bar + nav + `<main>`)
+  rather than a nav-only `AdminNav.tsx`, so the route module stays small and the whole shell is
+  render-tested with `createRoutesStub` (the logout `<Form>` needs a data router).
 - **Meta:** admin pages set `{ name: "robots", content: "noindex" }`.
 
 ## Open questions
@@ -141,8 +144,9 @@ The same applies the other way round to #5 and #26 if this one lands first.
 | modify | `app/routes/admin.tsx` | layout: loader, sidebar, `Outlet`, `ErrorBoundary` |
 | create | `app/routes/admin._index.tsx` | redirect to `/admin/products` |
 | create | `app/routes/admin.products.tsx`, `app/routes/admin.orders.tsx` | guarded placeholders for #16/#17 |
-| create | `app/features/admin/AdminNav.tsx` | sidebar / mobile nav |
-| create | `app/features/admin/admin-nav.ts` (+ `admin-nav.test.ts`) | nav items, Strapi admin URL helper |
+| create | `app/features/admin/AdminLayout.tsx` | top bar, sidebar / mobile nav, content area |
+| create | `app/features/admin/AdminPlaceholder.tsx` | body of the placeholder sections |
+| create | `app/features/admin/admin-nav.ts` (+ `admin-nav.test.ts`) | nav items, link classes, Strapi admin URL helper; layout render tests |
 | create | `app/routes/admin.test.ts` | loader access tests for layout and children |
 | modify | `app/.server/AGENTS.md` | role + "every admin loader/action calls `requireAdmin`" |
 | modify | `README.md` | "Admin area" section: creating the first admin |
@@ -169,7 +173,7 @@ The same applies the other way round to #5 and #26 if this one lands first.
   with the DB mocked / a test DB: logged out → 302 to `/login?redirectTo=/admin/orders?x=1`;
   customer → 403; admin → user; deleted user with a cookie → redirect.
 - [x] **5. 403 error text** — Add the 403 branch to `describeRouteError` and a test.
-- [ ] **6. Admin layout route** — Update `routes.ts` as in Decisions and `routes.test.ts` (admin is a
+- [x] **6. Admin layout route** — Update `routes.ts` as in Decisions and `routes.test.ts` (admin is a
   layout with `""`/`products`/`orders` children, still outside the shop layout). Rewrite
   `routes/admin.tsx`: `loader` → `requireAdmin`, returns `{ admin: { fullName }, strapiAdminUrl }`;
   `meta` with title + `noindex`; component renders `AdminNav` + `<Outlet />`; `ErrorBoundary` renders
@@ -178,11 +182,11 @@ The same applies the other way round to #5 and #26 if this one lands first.
   renders them with `NavLink`, the external Strapi link (`target="_blank"`,
   `rel="noopener noreferrer"`, visually marked as external), the admin's name and a Log out form.
   C+ tokens and `focusRing`.
-- [ ] **7. Child routes** — `admin._index.tsx` (loader: `requireAdmin`, then
+- [x] **7. Child routes** — `admin._index.tsx` (loader: `requireAdmin`, then
   `redirect("/admin/products")`), `admin.products.tsx` and `admin.orders.tsx` (loader:
   `requireAdmin`; placeholder body pointing to #16 / #17). No actions yet; leave a comment that
   every future action must start with `await requireAdmin(request)`.
-- [ ] **8. Route access tests** — `app/routes/admin.test.ts`, mocking `~/.server/services/auth`
+- [x] **8. Route access tests** — `app/routes/admin.test.ts`, mocking `~/.server/services/auth`
   like `logout.test.ts` mocks the session: for the layout and every child loader, assert
   `requireAdmin` is called with the request and its thrown 302/403 propagates; for an admin, the
   layout loader returns the name and `http://localhost:1337/admin`.

@@ -137,6 +137,8 @@ outage shows a 503.
 | create | `app/components/ui/Pagination.tsx` | Generic pagination (moved from catalog, `hrefForPage` prop) |
 | delete | `app/features/catalog/Pagination.tsx` | Replaced by the generic one |
 | modify | `app/routes/catalog.tsx` | Use the generic `Pagination` |
+| create | `app/components/ui/Pagination.test.ts` | Pagination tests (moved from `catalog-ui.test.ts`, plus blog links) |
+| modify | `app/features/catalog/catalog-ui.test.ts` | Drop the moved Pagination tests |
 | modify | `app/components/ui/RichText.tsx` | `variant="article"` styles for h2, img, hr, code |
 | create | `app/features/blog/BlogPostCard.tsx` | Card for the list: cover, date, title, excerpt |
 | create | `app/features/blog/BlogCover.tsx` | Cover image with srcset / placeholder |
@@ -171,7 +173,7 @@ outage shows a 503.
   `ogImage → coverImage → null`. Add `blogCacheHeaders(request)` returning the `Cache-Control` /
   `Vary` headers from Decisions. Tests build DTOs from the recorded fixtures via `toBlogPost` /
   `toBlogPostSummary` (from `cms/content.ts`), covering each fallback and both cache branches.
-- [ ] **4. Generic `Pagination`** — Move `app/features/catalog/Pagination.tsx` to
+- [x] **4. Generic `Pagination`** — Move `app/features/catalog/Pagination.tsx` to
   `app/components/ui/Pagination.tsx` with props `{ page, pageCount, hrefForPage }` and update
   `app/routes/catalog.tsx`. Behaviour and classes unchanged. `pnpm typecheck && pnpm test`, and
   check `/catalog/women?page=2` still paginates.

@@ -155,9 +155,9 @@ Each step is small, ordered, and leaves the app in a working state.
   `migrateLatest`) for insert/find, the `'direct'` default, a duplicate insert giving `23505`
   (via `pgErrorCode`) and `touchLastLogin` changing the timestamp. Emails arrive already
   normalised by the zod schema (step 4), so case handling is tested at the service level (step 5).
-- [ ] **3. Add the rate limiter.** `app/.server/rate-limit.ts`:
+- [x] **3. Add the rate limiter.** `app/.server/rate-limit.ts`:
   `createRateLimiter({ limit, windowMs, now? })` returns `{ isBlocked(key), hit(key), reset(key) }`
-  over a `Map`, pruning expired entries when it's called. Export a `loginLimiter` singleton (kept
+  over a `Map`, pruning expired entries when it's called. Export a `loginLimiters` singleton (`byEmail`: 5, `byIp`: 20 per 15 min) (kept
   on `globalThis` across HMR, like `db/index.ts`) and `getClientIp(request)`. Unit-test the limit,
   the window expiry (with an injected `now`), `reset` and IP parsing.
 - [ ] **4. Add the shared auth schemas and helpers.** In `app/lib/auth.ts`:
@@ -211,7 +211,7 @@ Each step is small, ordered, and leaves the app in a working state.
 - [ ] **8. Build `/login`.**
   - `loader`: redirect a logged-in user to `safeRedirect(redirectTo)`; return `redirectTo` for the
     hidden field.
-  - `action`: parse with `loginSchema`. If `loginLimiter` blocks the email or IP, return
+  - `action`: parse with `loginSchema`. If `loginLimiters` block the email or IP, return
     `data({ formError: "Too many attempts…" }, { status: 429 })`. Then `verifyLogin`: on failure,
     `hit` both keys and return the generic error (400) with the email echoed back; on success,
     `reset` the email key, call `onUserAuthenticated(…, "login")` and

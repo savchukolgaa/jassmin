@@ -5,7 +5,7 @@ import { z } from "zod";
 const PHONE = /^\+?[0-9 ()-]{7,20}$/;
 
 /** Trimmed and lowercased, so `A@x.com` and `a@x.com` are the same account. */
-const email = z
+export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
@@ -20,7 +20,7 @@ const optionalText = z
 
 export const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Enter your name").max(255, "Name is too long"),
-  email,
+  email: emailSchema,
   password: z.string().min(8, "Use at least 8 characters").max(128, "Use at most 128 characters"),
   phone: optionalText.refine((value) => value === undefined || PHONE.test(value), {
     message: "Enter a valid phone number",
@@ -33,7 +33,7 @@ export const registerSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
-  email,
+  email: emailSchema,
   password: z.string().min(1, "Enter your password"),
   redirectTo: optionalText,
 });

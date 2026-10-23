@@ -135,7 +135,9 @@ The same applies the other way round to #5 and #26 if this one lands first.
 | modify | `app/.server/db/migrator.test.ts` | `role` exists with default `customer`; rollback removes it |
 | modify | `app/.server/db/queries/users.ts` | `role` in `PublicUser` / `findUserById`; `setUserRole` |
 | modify | `app/.server/db/queries/users.test.ts` | role default, `setUserRole` |
-| create | `app/.server/db/scripts/make-admin.ts` | promote/revoke CLI |
+| create | `app/.server/db/scripts/make-admin.ts` | promote/revoke CLI (thin wrapper) |
+| create | `app/.server/db/make-admin.ts` (+ `make-admin.test.ts`) | argument parsing and `makeAdmin`, testable like `seed.ts` |
+| modify | `app/lib/auth.ts` | export the shared `emailSchema` for the script |
 | modify | `package.json` | `db:make-admin` script |
 | modify | `app/.server/services/auth.ts` | `requireAdmin` |
 | modify | `app/.server/services/auth.test.ts` | `requireAdmin` cases |
@@ -190,7 +192,7 @@ The same applies the other way round to #5 and #26 if this one lands first.
   like `logout.test.ts` mocks the session: for the layout and every child loader, assert
   `requireAdmin` is called with the request and its thrown 302/403 propagates; for an admin, the
   layout loader returns the name and `http://localhost:1337/admin`.
-- [ ] **9. Promotion script** — `db/scripts/make-admin.ts` + `"db:make-admin": "tsx app/.server/db/scripts/make-admin.ts"`.
+- [x] **9. Promotion script** — `db/scripts/make-admin.ts` + `"db:make-admin": "tsx app/.server/db/scripts/make-admin.ts"`.
   Usage: `pnpm db:make-admin you@example.com` (`--revoke` to demote). Parse/normalise the email with
   the same zod `email` rule as `~/lib/auth` (export it if needed); print usage and exit 1 on bad
   input or unknown user.

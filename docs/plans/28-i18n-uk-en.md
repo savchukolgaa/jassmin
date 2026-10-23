@@ -310,7 +310,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   - Update `catalog.test.ts`, `products.test.ts`, `cart.test.ts`, `catalog-ui.test.ts`,
     `product-ui.test.ts` and `Pagination.test.ts`.
 
-- [ ] **11. Home page.** Translate the eyebrows ("About us", "Location", "Kontakt" → `nav.contacts`,
+- [x] **11. Home page.** Translate the eyebrows ("About us", "Location", "Kontakt" → `nav.contacts`,
   "Address", "Opening hours", the "Customer service hours" sr-only text and the "Social media"
   label) in `AboutSection`, `LocationSection` and `ContactsSection`. In `ContactForm`, translate
   the title, labels, honeypot label, "Sending…"/"Send message", and the success,

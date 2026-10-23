@@ -6,30 +6,25 @@ import {
   type ContactValues,
   HONEYPOT_FIELD,
 } from "~/lib/contact";
+import { isTextKey, msg } from "~/lib/i18n";
 
 export const contactFormSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "Please enter your name.")
-    .max(CONTACT_LIMITS.nameMax, `Your name can be at most ${CONTACT_LIMITS.nameMax} characters.`),
+    .min(1, msg("contact.errors.nameRequired"))
+    .max(CONTACT_LIMITS.nameMax, msg("contact.errors.nameTooLong")),
   email: z
     .string()
     .trim()
-    .min(1, "Please enter your email address.")
-    .max(CONTACT_LIMITS.emailMax, "This email address is too long.")
-    .pipe(z.email("Please enter a valid email address.")),
+    .min(1, msg("contact.errors.emailRequired"))
+    .max(CONTACT_LIMITS.emailMax, msg("contact.errors.emailTooLong"))
+    .pipe(z.email(msg("contact.errors.emailInvalid"))),
   message: z
     .string()
     .trim()
-    .min(
-      CONTACT_LIMITS.messageMin,
-      `Your message needs at least ${CONTACT_LIMITS.messageMin} characters.`,
-    )
-    .max(
-      CONTACT_LIMITS.messageMax,
-      `Your message can be at most ${CONTACT_LIMITS.messageMax} characters.`,
-    ),
+    .min(CONTACT_LIMITS.messageMin, msg("contact.errors.messageTooShort"))
+    .max(CONTACT_LIMITS.messageMax, msg("contact.errors.messageTooLong")),
 });
 
 export type ContactMessage = z.infer<typeof contactFormSchema>;
@@ -59,7 +54,7 @@ export function parseContactForm(formData: FormData): ParsedContactForm {
     for (const field of FIELDS) {
       const [first] = fieldErrors[field] ?? [];
       if (first) {
-        errors[field] = first;
+        errors[field] = isTextKey(first) ? first : "errors.invalid";
       }
     }
     return { ok: false, fieldErrors: errors, values };

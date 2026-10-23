@@ -1,5 +1,5 @@
 import type { HomePage, SiteSettings } from "~/lib/cms";
-import { DEFAULT_HOME_DESCRIPTION, type HomePageView } from "~/lib/home";
+import type { HomePageView } from "~/lib/home";
 import { directionsUrl, safeMapEmbedUrl } from "~/lib/links";
 import { renderMarkdown, toPlainText } from "../markdown";
 
@@ -18,7 +18,7 @@ export function buildHomePageView(homePage: HomePage, siteSettings: SiteSettings
     contacts: siteSettings,
     seo: {
       title: `Jassmin — ${hero.headline}`,
-      description: toPlainText(about.body) || DEFAULT_HOME_DESCRIPTION,
+      description: toPlainText(about.body),
       image: hero.image?.url ?? null,
     },
   };

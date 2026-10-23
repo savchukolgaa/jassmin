@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/13
 Branch: `issue/13`
 Worktree: `.claude/worktrees/issue-13`
-Status: Planned
+Status: Implemented
 
 ## Goal
 A visitor can read fragrance articles and scent guides on the site. `/blog` lists published Strapi
@@ -217,13 +217,23 @@ outage shows a 503.
   published-only filter is covered by `cms/client.test.ts`) → 404; article `contentHtml` has no
   `<script>`; `meta` contains `og:title`, `og:description`, `og:image`, canonical; headers include
   `Vary: Cookie`.
-- [ ] **9. Manual check & finish** — `pnpm aspire run` (with `pnpm cms:seed` done), open `/blog`,
+- [x] **9. Manual check & finish** — `pnpm aspire run` (with `pnpm cms:seed` done), open `/blog`,
   `/blog?page=2` (404 with two posts), the seeded article, the draft's slug (404) and
   `/blog/does-not-exist` (404). `curl -s http://localhost:<port>/blog/how-to-choose-a-perfume` and
   check the article text, `<title>`, `og:*` and canonical tags are in the raw HTML; `curl -I` for
   `Cache-Control`/`Vary`. Stop the `cms` resource in the Aspire dashboard and reload → 503 page
   with the header. Check 375 px width. Then `pnpm typecheck`, `pnpm lint`, `pnpm test`,
   `pnpm build`.
+
+  - *Done differently:* Strapi wasn't running and other issue agents share the machine, so instead
+    of `pnpm aspire run` the production build (`pnpm build && pnpm start`) ran against a small
+    fake Strapi serving the recorded fixtures from `app/.server/cms/__fixtures__/`. Verified: `/blog`
+    200 with both posts, `/blog?page=2` 404, the article 200 with its text, `<title>`, `og:*`,
+    `article:published_time`, `twitter:card` and canonical in the raw HTML, unknown/draft/malformed
+    slugs 404, `Cache-Control` public without a session cookie and `private, no-cache` with one,
+    `Vary: Cookie`, errors `no-store`, and a 503 page with the shop header after stopping the fake
+    Strapi. **Not verified:** the seeded draft against a real Strapi (covered by the
+    published-only `cmsFetch` tests) and the 375 px layout in a browser.
 
 ## Testing & verification
 - Unit: `app/.server/markdown.test.ts` (article profile, XSS cases), `app/lib/blog.test.ts`,
@@ -236,11 +246,11 @@ outage shows a 503.
 - Manual: as in step 9 (SSR HTML via `curl`, 404s, 503 with Strapi stopped, mobile width).
 
 ## Acceptance criteria
-- [ ] Blog list shows published Strapi posts newest first with pagination — steps 2, 4, 5, 8
-- [ ] Draft (unpublished) posts never appear and their slugs return 404 — steps 5, 6, 8, 9
-- [ ] Article content and meta tags are present in the server-rendered HTML — steps 3, 6, 9
-- [ ] Unknown slugs show a 404 page — steps 6, 8, 9
-- [ ] Rendered content is sanitized — steps 1, 3, 8
+- [x] Blog list shows published Strapi posts newest first with pagination — steps 2, 4, 5, 8
+- [x] Draft (unpublished) posts never appear and their slugs return 404 — steps 5, 6, 8, 9
+- [x] Article content and meta tags are present in the server-rendered HTML — steps 3, 6, 9
+- [x] Unknown slugs show a 404 page — steps 6, 8, 9
+- [x] Rendered content is sanitized — steps 1, 3, 8
 
 ## Out of scope
 - Changes to the Strapi content model, client or fixtures (#20), and Strapi webhooks / cache

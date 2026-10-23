@@ -1,4 +1,4 @@
-// App-level types for carts and orders (tables in app/.server/db/schema.ts). Plain data only,
+// App-level types for product variants, carts and orders (tables in app/.server/db/schema.ts). Plain data only,
 // so loaders can return them and both server and client code can import them.
 //
 // Money is an exact decimal string (e.g. `"2450.00"`), never a float.
@@ -15,10 +15,22 @@ export interface Cart {
   updatedAt: Date;
 }
 
+export interface ProductVariant {
+  id: number;
+  publicId: string;
+  productId: number;
+  volumeMl: number;
+  price: string;
+  stockQuantity: number;
+  createdAt: Date;
+}
+
 export interface CartItem {
   id: number;
   cartId: number;
   productId: number;
+  /** The chosen size (`product_variants.id`). */
+  variantId: number;
   quantity: number;
   addedAt: Date;
 }
@@ -52,6 +64,10 @@ export interface OrderItem {
   orderId: number;
   /** `null` once the product has been deleted; the order line is kept. */
   productId: number | null;
+  /** `null` once the variant has been deleted, or for lines placed before variants existed. */
+  variantId: number | null;
+  /** Bought volume in ml, kept when the variant is deleted. */
+  volumeMl: number | null;
   quantity: number;
   /** Unit price when the order was placed. */
   priceAtPurchase: string;

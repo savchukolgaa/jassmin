@@ -1,4 +1,4 @@
-// `pnpm db:seed`: adds the sample products from seed-data.ts that don't exist yet.
+// `pnpm db:seed`: adds the sample products and sizes from seed-data.ts that don't exist yet.
 import { existsSync } from "node:fs";
 import { getDatabaseUrl } from "../../env";
 import { createDb } from "../client";
@@ -17,9 +17,10 @@ if (!url) {
 
 const db = createDb(url, 1);
 try {
-  const { inserted } = await seedProducts(db);
+  const { inserted, variantsInserted } = await seedProducts(db);
+  const variantCount = SAMPLE_PRODUCTS.reduce((sum, p) => sum + p.variants.length, 0);
   console.log(
-    `Seeded ${inserted} of ${SAMPLE_PRODUCTS.length} sample products (the rest already existed).`,
+    `Seeded ${inserted} of ${SAMPLE_PRODUCTS.length} sample products and ${variantsInserted} of ${variantCount} sizes (the rest already existed).`,
   );
 } finally {
   await db.$client.end();

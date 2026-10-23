@@ -1,0 +1,70 @@
+import { createElement, type ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createMemoryRouter, RouterProvider } from "react-router";
+import { describe, expect, it } from "vitest";
+import type { BlogPostCardView, BlogPostView } from "~/lib/blog";
+import { BlogArticle } from "./BlogArticle";
+import { BlogPostCard } from "./BlogPostCard";
+
+const render = (element: ReactElement) => {
+  const router = createMemoryRouter([{ path: "*", element }]);
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+};
+
+const card: BlogPostCardView = {
+  slug: "how-to-choose-a-perfume",
+  title: "How to choose a perfume",
+  excerpt: "Top, heart and base notes.",
+  coverImage: {
+    url: "http://cms.test/uploads/cover.jpg",
+    alt: "",
+    width: 1200,
+    height: 800,
+    srcSet: "http://cms.test/uploads/small_cover.jpg 500w, http://cms.test/uploads/cover.jpg 1200w",
+  },
+  publishedAt: "2026-10-22T19:06:58.498Z",
+  publishedLabel: "22 October 2026",
+};
+
+const post: BlogPostView = {
+  ...card,
+  authorName: "Jassmin team",
+  contentHtml: "<h2>Start with the notes</h2>\n<p>A perfume changes.</p>\n",
+  seo: {
+    title: card.title,
+    description: "Top, heart and base notes.",
+    image: null,
+    canonicalUrl: "https://jassmin.ua/blog/how-to-choose-a-perfume",
+  },
+};
+
+describe("BlogPostCard", () => {
+  it("links the title to the article and shows the date and excerpt", () => {
+    const html = render(createElement(BlogPostCard, { post: card }));
+
+    expect(html).toMatch(/<a[^>]*href="\/blog\/how-to-choose-a-perfume"[^>]*>How to choose/);
+    expect(html).toContain('<time dateTime="2026-10-22T19:06:58.498Z">22 October 2026</time>');
+    expect(html).toContain("Top, heart and base notes.");
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('srcSet="http://cms.test/uploads/small_cover.jpg 500w');
+  });
+
+  it("shows a placeholder without a cover image", () => {
+    const html = render(createElement(BlogPostCard, { post: { ...card, coverImage: null } }));
+
+    expect(html).not.toContain("<img");
+  });
+});
+
+describe("BlogArticle", () => {
+  it("renders the title, author, eager cover and article HTML", () => {
+    const html = render(createElement(BlogArticle, { post }));
+
+    expect(html).toContain("<h1");
+    expect(html).toContain("How to choose a perfume</h1>");
+    expect(html).toContain("Jassmin team");
+    expect(html).toContain('loading="eager"');
+    expect(html).toContain("<h2>Start with the notes</h2>");
+    expect(html).toMatch(/href="\/blog"[^>]*>← Back to the blog/);
+  });
+});

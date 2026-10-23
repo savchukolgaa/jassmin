@@ -22,7 +22,17 @@ const sampleOrder = {
   totalAmount: "100.00",
 } as const;
 
-const ALL_TABLES = ["cart_items", "carts", "order_items", "orders", "products", "users"];
+const ALL_TABLES = [
+  "cart_items",
+  "carts",
+  "order_items",
+  "orders",
+  "product_variants",
+  "products",
+  "sessions",
+  "user_events",
+  "users",
+];
 
 // Integration test: runs only when a database is configured, on its own throwaway database.
 describe.skipIf(!hasDatabase)("migrations", () => {
@@ -53,6 +63,17 @@ describe.skipIf(!hasDatabase)("migrations", () => {
           where n.nspname = 'public' group by t.typname`,
     );
     return Object.fromEntries(result.rows.map((r) => [r.name, r.labels]));
+  }
+
+  /** Inserts the sample product with one 50 ml variant. */
+  async function insertProductWithVariant() {
+    const { productVariants, products } = await import("./schema");
+    const [product] = await testDb.db.insert(products).values(sampleProduct).returning();
+    const [variant] = await testDb.db
+      .insert(productVariants)
+      .values({ productId: product?.id ?? 0, volumeMl: 50, price: "100.00", stockQuantity: 3 })
+      .returning();
+    return { productId: product?.id ?? 0, variantId: variant?.id ?? 0 };
   }
 
   it("migrates an empty database up", async () => {
@@ -147,14 +168,14 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   });
 
   it("applies the commerce defaults", async () => {
-    const { cartItems, carts, orders, products } = await import("./schema");
+    const { cartItems, carts, orders } = await import("./schema");
     const { db } = testDb;
 
-    const [product] = await db.insert(products).values(sampleProduct).returning();
+    const { productId, variantId } = await insertProductWithVariant();
     const [cart] = await db.insert(carts).values({}).returning();
     const [item] = await db
       .insert(cartItems)
-      .values({ cartId: cart?.id ?? 0, productId: product?.id ?? 0 })
+      .values({ cartId: cart?.id ?? 0, productId, variantId })
       .returning();
     const [order] = await db.insert(orders).values(sampleOrder).returning();
 
@@ -178,17 +199,18 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   });
 
   it("enforces the commerce constraints", async () => {
-    const { cartItems, carts, orderItems, orders, products } = await import("./schema");
+    const { cartItems, carts, orderItems, orders, productVariants } = await import("./schema");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
-    const [product] = await db.insert(products).values(sampleProduct).returning();
+    const { productId, variantId } = await insertProductWithVariant();
     const [cart] = await db.insert(carts).values({}).returning();
     const [order] = await db.insert(orders).values(sampleOrder).returning();
-    const cartItem = { cartId: cart?.id ?? 0, productId: product?.id ?? 0 };
+    const cartItem = { cartId: cart?.id ?? 0, productId, variantId };
     const orderItem = {
       orderId: order?.id ?? 0,
-      productId: product?.id,
+      productId,
+      variantId,
       priceAtPurchase: "100.00",
     };
 
@@ -198,6 +220,33 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     await db.insert(cartItems).values(cartItem);
     expect(await pgErrorCode(db.insert(cartItems).values(cartItem))).toBe("23505");
+
+    // Another size of the same product is its own line.
+    const [tenMl] = await db
+      .insert(productVariants)
+      .values({ productId, volumeMl: 10, price: "30.00" })
+      .returning();
+    await db.insert(cartItems).values({ ...cartItem, variantId: tenMl?.id ?? 0 });
+
+    const variant = { productId, price: "10.00" };
+    expect(await pgErrorCode(db.insert(productVariants).values({ ...variant, volumeMl: 50 }))).toBe(
+      "23505",
+    );
+    for (const volumeMl of [0, 5, 20, 75, 150]) {
+      expect(await pgErrorCode(db.insert(productVariants).values({ ...variant, volumeMl }))).toBe(
+        "23514",
+      );
+    }
+    expect(
+      await pgErrorCode(
+        db.insert(productVariants).values({ ...variant, volumeMl: 7, stockQuantity: -1 }),
+      ),
+    ).toBe("23514");
+    expect(
+      await pgErrorCode(
+        db.insert(productVariants).values({ ...variant, volumeMl: 7, price: "-1" }),
+      ),
+    ).toBe("23514");
 
     expect(await pgErrorCode(db.insert(orderItems).values({ ...orderItem, quantity: 0 }))).toBe(
       "23514",
@@ -246,17 +295,25 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   });
 
   it("keeps order items with product_id = NULL when their product is deleted", async () => {
-    const { cartItems, carts, orderItems, orders, products } = await import("./schema");
+    const { cartItems, carts, orderItems, orders, productVariants, products } = await import(
+      "./schema"
+    );
     const { db } = testDb;
 
-    const [product] = await db.insert(products).values(sampleProduct).returning();
-    const productId = product?.id ?? 0;
+    const { productId, variantId } = await insertProductWithVariant();
     const [cart] = await db.insert(carts).values({}).returning();
     const [order] = await db.insert(orders).values(sampleOrder).returning();
-    await db.insert(cartItems).values({ cartId: cart?.id ?? 0, productId });
+    await db.insert(cartItems).values({ cartId: cart?.id ?? 0, productId, variantId });
     const [orderItem] = await db
       .insert(orderItems)
-      .values({ orderId: order?.id ?? 0, productId, quantity: 2, priceAtPurchase: "100.00" })
+      .values({
+        orderId: order?.id ?? 0,
+        productId,
+        variantId,
+        volumeMl: 50,
+        quantity: 2,
+        priceAtPurchase: "100.00",
+      })
       .returning();
 
     await db.delete(products).where(eq(products.id, productId));
@@ -265,23 +322,32 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       .select()
       .from(orderItems)
       .where(eq(orderItems.id, orderItem?.id ?? 0));
-    expect(kept).toMatchObject({ productId: null, quantity: 2, priceAtPurchase: "100.00" });
+    expect(kept).toMatchObject({
+      productId: null,
+      variantId: null,
+      volumeMl: 50,
+      quantity: 2,
+      priceAtPurchase: "100.00",
+    });
     expect(await db.select().from(cartItems).where(eq(cartItems.productId, productId))).toEqual([]);
+    expect(
+      await db.select().from(productVariants).where(eq(productVariants.productId, productId)),
+    ).toEqual([]);
   });
 
   it("cascades deleting a cart or an order to its items", async () => {
-    const { cartItems, carts, orderItems, orders, products } = await import("./schema");
+    const { cartItems, carts, orderItems, orders } = await import("./schema");
     const { db } = testDb;
 
-    const [product] = await db.insert(products).values(sampleProduct).returning();
+    const { productId, variantId } = await insertProductWithVariant();
     const [cart] = await db.insert(carts).values({}).returning();
     const [order] = await db.insert(orders).values(sampleOrder).returning();
     const cartId = cart?.id ?? 0;
     const orderId = order?.id ?? 0;
-    await db.insert(cartItems).values({ cartId, productId: product?.id ?? 0 });
+    await db.insert(cartItems).values({ cartId, productId, variantId });
     await db
       .insert(orderItems)
-      .values({ orderId, productId: product?.id, quantity: 1, priceAtPurchase: "100.00" });
+      .values({ orderId, productId, variantId, quantity: 1, priceAtPurchase: "100.00" });
 
     await db.delete(carts).where(eq(carts.id, cartId));
     await db.delete(orders).where(eq(orders.id, orderId));
@@ -352,15 +418,275 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(updatedOrder?.updatedAt.getTime()).toBeGreaterThan(past.getTime());
   });
 
+  it("applies the analytics defaults", async () => {
+    const { sessions, userEvents } = await import("./schema");
+    const { db } = testDb;
+
+    const [session] = await db.insert(sessions).values({ anonymousId: "anon-1" }).returning();
+    const [event] = await db
+      .insert(userEvents)
+      .values({
+        anonymousId: "anon-1",
+        sessionId: session?.sessionId ?? "",
+        eventType: "search",
+        eventProperties: { query: "rose", filters: { gender: "women" } },
+      })
+      .returning();
+
+    const uuidV7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-/;
+    expect(session?.sessionId).toMatch(uuidV7);
+    expect(session?.startedAt).toBeInstanceOf(Date);
+    expect(session).toMatchObject({
+      userId: null,
+      endedAt: null,
+      landingPage: null,
+      trafficSource: null,
+      deviceType: null,
+    });
+    expect(event?.eventId).toMatch(uuidV7);
+    expect(event?.createdAt).toBeInstanceOf(Date);
+    expect(event).toMatchObject({
+      userId: null,
+      productId: null,
+      eventProperties: { query: "rose", filters: { gender: "women" } },
+      source: null,
+      medium: null,
+      campaign: null,
+      deviceType: null,
+      referrer: null,
+    });
+  });
+
+  it("enforces the analytics constraints", async () => {
+    const { sessions, userEvents } = await import("./schema");
+    const { pgErrorCode } = await import("./test-utils");
+    const { db } = testDb;
+
+    const [session] = await db.insert(sessions).values({ anonymousId: "anon-2" }).returning();
+    const event = {
+      anonymousId: "anon-2",
+      sessionId: session?.sessionId ?? "",
+      eventType: "page_view",
+    } as const;
+    await db.insert(userEvents).values(event);
+
+    // 23514 check_violation, 23503 foreign_key_violation, 23502 not_null_violation
+    expect(
+      await pgErrorCode(db.execute(sql`update user_events set event_type = 'page_click'`)),
+    ).toBe("23514");
+    expect(
+      await pgErrorCode(
+        db
+          .insert(userEvents)
+          .values({ ...event, sessionId: "00000000-0000-7000-8000-000000000000" }),
+      ),
+    ).toBe("23503");
+    expect(
+      await pgErrorCode(
+        db.execute(sql`update carts set session_id = '00000000-0000-7000-8000-000000000000'`),
+      ),
+    ).toBe("23503");
+    for (const column of ["anonymous_id", "session_id", "event_type", "created_at"]) {
+      expect(
+        await pgErrorCode(db.execute(sql`update user_events set ${sql.identifier(column)} = null`)),
+      ).toBe("23502");
+    }
+    for (const column of ["anonymous_id", "started_at"]) {
+      expect(
+        await pgErrorCode(db.execute(sql`update sessions set ${sql.identifier(column)} = null`)),
+      ).toBe("23502");
+    }
+  });
+
+  it("stores analytics timestamps with time zone and indexes the analytics queries", async () => {
+    const columns = await testDb.db.execute<{ column: string; data_type: string }>(
+      sql`select table_name || '.' || column_name as column, data_type
+          from information_schema.columns
+          where table_name in ('sessions', 'user_events') and data_type like 'timestamp%'
+          order by 1`,
+    );
+    expect(columns.rows).toEqual([
+      { column: "sessions.ended_at", data_type: "timestamp with time zone" },
+      { column: "sessions.started_at", data_type: "timestamp with time zone" },
+      { column: "user_events.created_at", data_type: "timestamp with time zone" },
+    ]);
+
+    const indexes = await testDb.db.execute<{ indexname: string; indexdef: string }>(
+      sql`select indexname, indexdef from pg_indexes
+          where tablename in ('sessions', 'user_events') and indexname like '%_idx'
+          order by indexname`,
+    );
+    expect(
+      Object.fromEntries(
+        indexes.rows.map((r) => [r.indexname, r.indexdef.replace(/^.*USING btree /, "")]),
+      ),
+    ).toEqual({
+      sessions_anonymous_id_idx: "(anonymous_id)",
+      sessions_user_id_idx: "(user_id)",
+      user_events_anonymous_id_idx: "(anonymous_id)",
+      user_events_event_type_created_at_idx: "(event_type, created_at)",
+      user_events_session_id_idx: "(session_id)",
+      user_events_user_id_created_at_idx: "(user_id, created_at)",
+    });
+  });
+
+  it("cascades or unlinks analytics rows on delete", async () => {
+    const { carts, products, sessions, userEvents, users } = await import("./schema");
+    const { db } = testDb;
+
+    const [user] = await db
+      .insert(users)
+      .values({ ...sampleUser, email: "visitor@example.com" })
+      .returning();
+    const [product] = await db.insert(products).values(sampleProduct).returning();
+    const userId = user?.id ?? 0;
+    const productId = product?.id ?? 0;
+    const [kept] = await db.insert(sessions).values({ anonymousId: "anon-3", userId }).returning();
+    const [dropped] = await db.insert(sessions).values({ anonymousId: "anon-3" }).returning();
+    const keptId = kept?.sessionId ?? "";
+    const droppedId = dropped?.sessionId ?? "";
+    const [keptEvent] = await db
+      .insert(userEvents)
+      .values({
+        anonymousId: "anon-3",
+        userId,
+        sessionId: keptId,
+        eventType: "product_view",
+        productId,
+      })
+      .returning();
+    await db
+      .insert(userEvents)
+      .values({ anonymousId: "anon-3", sessionId: droppedId, eventType: "page_view" });
+    const [cart] = await db.insert(carts).values({ sessionId: droppedId }).returning();
+
+    await db.delete(sessions).where(eq(sessions.sessionId, droppedId));
+    expect(await db.select().from(userEvents).where(eq(userEvents.sessionId, droppedId))).toEqual(
+      [],
+    );
+    const [cartAfter] = await db
+      .select()
+      .from(carts)
+      .where(eq(carts.id, cart?.id ?? 0));
+    expect(cartAfter?.sessionId).toBeNull();
+
+    await db.delete(products).where(eq(products.id, productId));
+    await db.delete(users).where(eq(users.id, userId));
+    const [sessionAfter] = await db.select().from(sessions).where(eq(sessions.sessionId, keptId));
+    const [eventAfter] = await db
+      .select()
+      .from(userEvents)
+      .where(eq(userEvents.eventId, keptEvent?.eventId ?? ""));
+    expect(sessionAfter).toMatchObject({ userId: null, anonymousId: "anon-3" });
+    expect(eventAfter).toMatchObject({ userId: null, productId: null, eventType: "product_view" });
+  });
+
+  it("backfills one variant per existing product and links its cart and order lines", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { db } = testDb;
+
+    // 0004_user_role sits on top of 0003; migrateLatest below reapplies both.
+    expect(await rollbackLatest(db)).toBe("0004_user_role");
+    expect(await rollbackLatest(db)).toBe("0003_product_variants");
+    expect(await listTables()).not.toContain("product_variants");
+
+    // Rows as they looked before #26, written with raw SQL because the TS schema has moved on.
+    const legacy = await db.execute<{ id: number }>(
+      sql`insert into products (title, brand, gender, price, volume_ml, stock_quantity)
+          values ('Legacy 30', 'Old', 'women', '1450.00', 30, 4),
+                 ('Legacy 75', 'Old', 'men', '2000.00', 75, 1)
+          returning id`,
+    );
+    const [allowed, odd] = legacy.rows.map((r) => r.id);
+    const cart = await db.execute<{ id: number }>(
+      sql`insert into carts default values returning id`,
+    );
+    const order = await db.execute<{ id: number }>(
+      sql`insert into orders (guest_full_name, guest_email, guest_phone, shipping_address,
+            payment_method, subtotal, total_amount)
+          values ('B', 'b@example.com', '+380', 'Kyiv', 'cod', '1450.00', '1450.00') returning id`,
+    );
+    const cartId = cart.rows[0]?.id;
+    const orderId = order.rows[0]?.id;
+    await db.execute(
+      sql`insert into cart_items (cart_id, product_id) values (${cartId}, ${allowed}), (${cartId}, ${odd})`,
+    );
+    await db.execute(
+      sql`insert into order_items (order_id, product_id, quantity, price_at_purchase)
+          values (${orderId}, ${allowed}, 1, '1450.00'), (${orderId}, ${odd}, 1, '2000.00')`,
+    );
+
+    await migrateLatest(db);
+
+    const variants = await db.execute<{
+      id: number;
+      product_id: number;
+      volume_ml: number;
+      price: string;
+      stock_quantity: number;
+    }>(
+      sql`select id, product_id, volume_ml, price, stock_quantity from product_variants
+          where product_id in (${allowed}, ${odd})`,
+    );
+    expect(variants.rows).toEqual([
+      expect.objectContaining({
+        product_id: allowed,
+        volume_ml: 30,
+        price: "1450.00",
+        stock_quantity: 4,
+      }),
+    ]);
+    const variantId = variants.rows[0]?.id;
+
+    // Legacy columns are kept for every product, including the one without a variant.
+    const products = await db.execute<{ volume_ml: number }>(
+      sql`select volume_ml from products where id in (${allowed}, ${odd})
+          order by id`,
+    );
+    expect(products.rows.map((r) => r.volume_ml)).toEqual([30, 75]);
+
+    const cartLines = await db.execute<{ product_id: number; variant_id: number }>(
+      sql`select product_id, variant_id from cart_items where cart_id = ${cartId}`,
+    );
+    expect(cartLines.rows).toEqual([{ product_id: allowed, variant_id: variantId }]);
+    const orderLines = await db.execute<{
+      product_id: number;
+      variant_id: number | null;
+      volume_ml: number | null;
+    }>(
+      sql`select product_id, variant_id, volume_ml from order_items where order_id = ${orderId}
+          order by id`,
+    );
+    expect(orderLines.rows).toEqual([
+      { product_id: allowed, variant_id: variantId, volume_ml: 30 },
+      { product_id: odd, variant_id: null, volume_ml: null },
+    ]);
+  });
+
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
-    expect(await rollbackLatest(testDb.db)).toBe("0002_user_role");
+    expect(await rollbackLatest(testDb.db)).toBe("0004_user_role");
     const roleColumn = await testDb.db.execute(
       sql`select 1 from information_schema.columns where table_name = 'users' and column_name = 'role'`,
     );
     expect(roleColumn.rows).toEqual([]);
     expect(await listEnums()).not.toHaveProperty("user_role");
+    expect(await rollbackLatest(testDb.db)).toBe("0003_product_variants");
+    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "product_variants"));
+    expect(await rollbackLatest(testDb.db)).toBe("0002_analytics_schema");
+    expect(await listTables()).toEqual([
+      "cart_items",
+      "carts",
+      "order_items",
+      "orders",
+      "products",
+      "users",
+    ]);
+    const cartFks = await testDb.db.execute<{ conname: string }>(
+      sql`select conname from pg_constraint where conrelid = 'carts'::regclass and contype = 'f'`,
+    );
+    expect(cartFks.rows.map((r) => r.conname)).toEqual(["carts_user_id_users_id_fk"]);
     expect(await rollbackLatest(testDb.db)).toBe("0001_commerce_schema");
     expect(await listTables()).toEqual(["products", "users"]);
     expect(await rollbackLatest(testDb.db)).toBe("0000_core_schema");

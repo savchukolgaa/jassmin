@@ -2,10 +2,10 @@ import { data, Link, useLocation, useNavigation } from "react-router";
 import { getCatalogPage } from "~/.server/services/products";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
+import { Pagination } from "~/components/ui/Pagination";
 import { CatalogFilters } from "~/features/catalog/CatalogFilters";
-import { Pagination } from "~/features/catalog/Pagination";
 import { ProductCard } from "~/features/catalog/ProductCard";
-import { CATALOG_TITLES, isCatalogGender, parseCatalogSearch } from "~/lib/catalog";
+import { CATALOG_TITLES, catalogHref, isCatalogGender, parseCatalogSearch } from "~/lib/catalog";
 import { cn } from "~/lib/cn";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/catalog";
@@ -70,7 +70,11 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
       </section>
 
       <div className="mt-10">
-        <Pagination pathname={pathname} search={search} page={page} pageCount={pageCount} />
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          hrefForPage={(target) => catalogHref(pathname, search, target)}
+        />
       </div>
     </main>
   );

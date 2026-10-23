@@ -1,5 +1,5 @@
-// Drizzle schema: core tables (#3), commerce tables (#4) and the user role (#14); analytics
-// tables (#5) follow.
+// Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
+// product volume variants (#26) and the user role (#14).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -9,6 +9,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -19,13 +20,17 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import type { EventProperties } from "~/lib/analytics";
 import {
   CART_STATUSES,
+  EVENT_TYPES,
+  type EventType,
   GENDERS,
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
   type PaymentMethod,
+  PERFUME_VOLUMES_ML,
   USER_ROLES,
 } from "~/lib/enums";
 
@@ -59,12 +64,13 @@ export const products = pgTable(
     gender: genderType().notNull(),
     fragranceFamily: text(),
     description: text(),
-    /** Exact decimal, returned as a string (e.g. `"2450.00"`). */
+    /** @deprecated Price, volume and stock live in `product_variants` (#26); not read by the app. */
     price: numeric({ precision: 10, scale: 2 }).notNull(),
-    /** Volume of one unit; the total is `packSize * volumeMl`. */
+    /** @deprecated Use `product_variants.volume_ml` (#26). */
     volumeMl: integer().notNull(),
-    /** Units in the product, e.g. 3 for a set of three testers. */
+    /** Units in the product, e.g. 3 for a set of three testers; applies to every variant. */
     packSize: integer().notNull().default(1),
+    /** @deprecated Use `product_variants.stock_quantity` (#26). */
     stockQuantity: integer().notNull().default(0),
     imageUrl: text(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -73,6 +79,97 @@ export const products = pgTable(
     check("products_stock_quantity_check", sql`${t.stockQuantity} >= 0`),
     check("products_pack_size_check", sql`${t.packSize} > 0`),
     index("products_gender_idx").on(t.gender),
+  ],
+);
+
+/** One sellable size of a product, with its own price and stock. */
+export const productVariants = pgTable(
+  "product_variants",
+  {
+    id: serial().primaryKey(),
+    /** Stable external key, used in forms (`variantId`) instead of the serial id. */
+    publicId: uuid().notNull().unique("product_variants_public_id_unique").default(sql`uuidv7()`),
+    productId: integer()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    /** Volume of one unit, one of `PERFUME_VOLUMES_ML`; the total is `packSize * volumeMl`. */
+    volumeMl: integer().notNull(),
+    /** Exact decimal, returned as a string (e.g. `"2450.00"`). */
+    price: numeric({ precision: 10, scale: 2 }).notNull(),
+    stockQuantity: integer().notNull().default(0),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("product_variants_product_id_volume_ml_unique").on(t.productId, t.volumeMl),
+    check(
+      "product_variants_volume_ml_check",
+      sql`${t.volumeMl} in (${sql.join(
+        PERFUME_VOLUMES_ML.map((v) => sql.raw(String(v))),
+        sql`, `,
+      )})`,
+    ),
+    check("product_variants_price_check", sql`${t.price} >= 0`),
+    check("product_variants_stock_quantity_check", sql`${t.stockQuantity} >= 0`),
+    index("product_variants_product_id_idx").on(t.productId),
+  ],
+);
+
+// Analytics visitor sessions (#5), written by #18. Not the auth cookie session (session.ts).
+export const sessions = pgTable(
+  "sessions",
+  {
+    sessionId: uuid().primaryKey().default(sql`uuidv7()`),
+    /** Filled in after login or registration (#18); set to `null` when the user is deleted. */
+    userId: integer().references(() => users.id, { onDelete: "set null" }),
+    /** Visitor id from the `anonymous_id` cookie, so pre-signup behaviour can be linked. */
+    anonymousId: text().notNull(),
+    startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp({ withTimezone: true }),
+    landingPage: text(),
+    trafficSource: text(),
+    deviceType: text(),
+  },
+  (t) => [
+    index("sessions_anonymous_id_idx").on(t.anonymousId),
+    index("sessions_user_id_idx").on(t.userId),
+  ],
+);
+
+// Behavioural event stream for conversion, LTV and churn features (#5), written by #18.
+export const userEvents = pgTable(
+  "user_events",
+  {
+    eventId: uuid().primaryKey().default(sql`uuidv7()`),
+    /** Filled in after login or registration (#18); set to `null` when the user is deleted. */
+    userId: integer().references(() => users.id, { onDelete: "set null" }),
+    anonymousId: text().notNull(),
+    sessionId: uuid()
+      .notNull()
+      .references(() => sessions.sessionId, { onDelete: "cascade" }),
+    eventType: text().$type<EventType>().notNull(),
+    /** Set to `null` when the product is deleted, so the event history is kept. */
+    productId: integer().references(() => products.id, { onDelete: "set null" }),
+    eventProperties: jsonb().$type<EventProperties>(),
+    // UTM parameters.
+    source: text(),
+    medium: text(),
+    campaign: text(),
+    deviceType: text(),
+    referrer: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "user_events_event_type_check",
+      sql`${t.eventType} in (${sql.join(
+        EVENT_TYPES.map((e) => sql.raw(`'${e}'`)),
+        sql`, `,
+      )})`,
+    ),
+    index("user_events_user_id_created_at_idx").on(t.userId, t.createdAt),
+    index("user_events_anonymous_id_idx").on(t.anonymousId),
+    index("user_events_event_type_created_at_idx").on(t.eventType, t.createdAt),
+    index("user_events_session_id_idx").on(t.sessionId),
   ],
 );
 
@@ -90,8 +187,8 @@ export const carts = pgTable(
     id: serial().primaryKey(),
     /** Restrict: a user with carts can't be deleted, so the cart history stays linked. */
     userId: integer().references(() => users.id, { onDelete: "restrict" }),
-    /** Analytics visitor session; the FK to `sessions.session_id` is added in #5. */
-    sessionId: uuid(),
+    /** Analytics visitor session; set to `null` when the session is deleted. */
+    sessionId: uuid().references(() => sessions.sessionId, { onDelete: "set null" }),
     status: cartStatusType().notNull().default("active"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: updatedAt(),
@@ -114,11 +211,16 @@ export const cartItems = pgTable(
     productId: integer()
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
+    /** The chosen size; must belong to `productId`. */
+    variantId: integer()
+      .notNull()
+      .references(() => productVariants.id, { onDelete: "cascade" }),
     quantity: integer().notNull().default(1),
     addedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    unique("cart_items_cart_id_product_id_unique").on(t.cartId, t.productId),
+    // One line per size, so 10 ml and 50 ml of the same perfume are separate lines.
+    unique("cart_items_cart_id_variant_id_unique").on(t.cartId, t.variantId),
     check("cart_items_quantity_check", sql`${t.quantity} > 0`),
   ],
 );
@@ -177,6 +279,10 @@ export const orderItems = pgTable(
       .references(() => orders.id, { onDelete: "cascade" }),
     /** Set to `null` when the product is deleted, so historical revenue is kept. */
     productId: integer().references(() => products.id, { onDelete: "set null" }),
+    /** The bought size; `null` once the variant is deleted (or for lines before #26). */
+    variantId: integer().references(() => productVariants.id, { onDelete: "set null" }),
+    /** Snapshot of the bought size, kept when the variant is deleted. */
+    volumeMl: integer(),
     quantity: integer().notNull(),
     /** Unit price when the order was placed; later price changes don't affect it. */
     priceAtPurchase: numeric({ precision: 10, scale: 2 }).notNull(),

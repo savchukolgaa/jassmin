@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/8
 Branch: `issue/8`
 Worktree: `../jassmin-worktrees/issue-8`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Shoppers can browse perfumes on separate, server-rendered catalog pages for men (`/catalog/men`)
@@ -85,6 +85,18 @@ stock status and an "Add to cart" button. All data is loaded in route `loader`s.
     description). When `loaderData` is missing (error), fall back to `"Jassmin"`.
 - **UI language:** labels are in English, matching the existing header ("Men Perfumes", "Add to
   cart", "In stock", "Out of stock"). Product content stays as seeded (Ukrainian).
+- **Deviations made during implementation:**
+  - The helpers are named `catalogHref(pathname, search, page)` and `hasActiveFilters`, not
+    `catalogPageHref`. `CATALOG_TITLES` is the gender source, not `CATALOG_GENDERS`.
+  - The add-to-cart zod schema, its result type and its messages live in `app/lib/cart.ts`
+    (`parseAddToCart`, `CartActionResult`). The cart action and `AddToCartForm` share them, and
+    they're tested in `app/lib/cart.test.ts` instead of a route test, so no fake `ActionArgs` are
+    needed. The stub's message is "The cart is coming soon."
+  - Query functions take `db` as an explicit first argument. The service functions take an
+    optional `db` that defaults to the shared client, so integration tests can pass a throwaway DB.
+  - `ErrorContent` gained an optional `children` prop for the product 404's catalog links.
+  - The UI tests render with `createMemoryRouter` + `RouterProvider`, because fetchers need a data
+    router. Biome forbids the components that `createRoutesStub` would need inside the helper.
 
 ## Resolved questions
 - **Q1: Do unisex products appear in both the men's and the women's catalog?** Yes:
@@ -144,6 +156,8 @@ stock status and an "Add to cart" button. All data is loaded in route `loader`s.
 | modify | `app/routes/catalog.tsx` | Real `loader`, `meta`, page UI, pending state, `ErrorBoundary` |
 | modify | `app/routes/product.tsx` | `loader` (404 on unknown/invalid id), `meta`, detail UI, `ErrorBoundary` |
 | modify | `app/routes/cart.tsx` | Stub `action` for `intent=add` (Q2) |
+| create | `app/lib/cart.ts` / `app/lib/cart.test.ts` | Add-to-cart zod schema, result type, messages, and their tests |
+| modify | `app/components/layout/ErrorContent.tsx` | Optional `children` below the details |
 
 ## Steps
 Each step is small, ordered and leaves the app working.
@@ -261,7 +275,7 @@ Each step is small, ordered and leaves the app working.
   - A breadcrumb or back link to the matching catalog: `/catalog/<gender>`, or `/catalog/women`
     for unisex.
 
-- [ ] **10. Verify and polish.**
+- [x] **10. Verify and polish.**
   - Run `pnpm format`, `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build`.
   - Do the manual checks below and fix any issues.
   - Set the plan's Status to "Implemented".
@@ -279,8 +293,8 @@ Each step is small, ordered and leaves the app working.
     normalising whitespace), and `"990.50"`.
   - `app/lib/products.test.ts`: `formatVolume` for single units and packs.
   - `app/features/catalog/catalog-ui.test.ts`: static-markup checks (see step 7).
-  - The `cart` action stub: invalid input → 400, valid input → `cart-unavailable` (in
-    `app/routes/cart.test.ts`, calling `action` with a `Request` carrying `FormData`).
+  - The add-to-cart validation: `app/lib/cart.test.ts` (`parseAddToCart` accepts `intent=add`
+    with a UUID, and rejects other intents and invalid ids).
 - **Integration tests:** `app/.server/services/products.test.ts` on a throwaway seeded DB (see
   step 3).
 - **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
@@ -303,13 +317,13 @@ Each step is small, ordered and leaves the app working.
   - Tab order and labels on the filters are accessible.
 
 ## Acceptance criteria
-- [ ] `/catalog/men` shows only men's (and unisex) products; same for
+- [x] `/catalog/men` shows only men's (and unisex) products; same for
   `/catalog/women`. Steps 2, 3, 4, 8.
-- [ ] Product data is present in the server-rendered HTML. Steps 4, 5, 8, 9 (manual `curl` check).
-- [ ] Filtering and sorting are reflected in the URL and work without JS. Steps 1, 7, 8.
-- [ ] The product detail page shows full info and stock status, and unknown ids show a 404.
+- [x] Product data is present in the server-rendered HTML. Steps 4, 5, 8, 9 (manual `curl` check).
+- [x] Filtering and sorting are reflected in the URL and work without JS. Steps 1, 7, 8.
+- [x] The product detail page shows full info and stock status, and unknown ids show a 404.
   Steps 5, 9.
-- [ ] Loader data is typed via generated route types. Steps 4, 5 (`Route.LoaderArgs` /
+- [x] Loader data is typed via generated route types. Steps 4, 5 (`Route.LoaderArgs` /
   `Route.ComponentProps`, `pnpm typecheck`).
 
 ## Out of scope

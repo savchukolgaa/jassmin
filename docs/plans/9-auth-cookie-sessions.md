@@ -143,7 +143,7 @@ Each step is small, ordered, and leaves the app in a working state.
   malformed hash. Also export `getDummyPasswordHash()`, which hashes a random password once
   (memoised) for timing-equalised checks, so it always matches the current hash parameters. Tests: a hash doesn't contain the plain password and starts with
   `$argon2id$`; a correct password verifies; a wrong one and garbage input don't.
-- [ ] **2. Add the user queries.** `app/.server/db/queries/users.ts`, where each function takes
+- [x] **2. Add the user queries.** `app/.server/db/queries/users.ts`, where each function takes
   `db: Db` first:
   - `findUserByEmail(db, email)`: returns `{ id, passwordHash }` or `undefined`.
   - `findUserById(db, id)`: returns `{ id, fullName, email }` (a `PublicUser` type, never the
@@ -152,8 +152,9 @@ Each step is small, ordered, and leaves the app in a working state.
   - `touchLastLogin(db, id)`: sets `lastLoginAt = sql\`now()\``.
 
   Add an integration test (`describe.skipIf(!hasDatabase)`, `createTestDatabase("jassmin_users_test")`,
-  `migrateLatest`) for insert/find, the case-normalised email, a duplicate insert giving `23505`
-  (via `pgErrorCode`) and `touchLastLogin` changing the timestamp.
+  `migrateLatest`) for insert/find, the `'direct'` default, a duplicate insert giving `23505`
+  (via `pgErrorCode`) and `touchLastLogin` changing the timestamp. Emails arrive already
+  normalised by the zod schema (step 4), so case handling is tested at the service level (step 5).
 - [ ] **3. Add the rate limiter.** `app/.server/rate-limit.ts`:
   `createRateLimiter({ limit, windowMs, now? })` returns `{ isBlocked(key), hit(key), reset(key) }`
   over a `Map`, pruning expired entries when it's called. Export a `loginLimiter` singleton (kept

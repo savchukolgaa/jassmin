@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/26
 Branch: `issue/26`
 Worktree: `.claude/worktrees/issue-26`
-Status: Planned
+Status: Planned (questions answered)
 
 ## Goal
 
@@ -56,7 +56,7 @@ chosen variant.
 - **Legacy `products.price`, `products.volume_ml`, `products.stock_quantity`**: kept as they are
   (NOT NULL, unchanged), marked `@deprecated` in `schema.ts` and the `.server` AGENTS.md. App
   code stops reading them. The seed still fills them (with the product's "main" size), and dropping
-  them is a follow-up after #16 **(unconfirmed, Q2)**. ML feature columns (`fragrance_family`,
+  them is a follow-up after #16 (confirmed, Q2). ML feature columns (`fragrance_family`,
   `users.*`) are untouched.
 - **Backfill**: one variant per existing product from its `volume_ml`, `price`, `stock_quantity`
   where `volume_ml` is allowed. A product with another volume gets no variant. Its legacy values
@@ -71,7 +71,7 @@ chosen variant.
 - **`order_items`**: add `variantId` integer nullable FK on delete **set null** (like
   `product_id`, so revenue history survives deletes) and a `volumeMl` integer snapshot, nullable
   for rows before this migration, so the bought size stays known after a variant is deleted
-  **(unconfirmed, Q3)**. `price_at_purchase` = variant price (#11).
+  (confirmed, Q3). `price_at_purchase` = variant price (#11).
 - **Catalog**: summaries come from an inner join with a per-product aggregate over
   `product_variants` (`min(price)`, `max(stock_quantity) > 0`, `array_agg(volume_ml order by
   volume_ml)`, `count(*)`), so products without variants aren't listed. `price_asc`/`price_desc`
@@ -79,9 +79,14 @@ chosen variant.
 - **Card price label**: `from 1 450 ₴` when the product has more than one variant price, else
   just the price. Formatting uses `formatPrice` (`uk-UA`, so `1 450 ₴`, not `₴1 450`) to match the
   rest of the site. The volume line lists the sizes, e.g. `10 · 30 · 50 ml`.
-- **Card add-to-cart**: a card can't know which size the shopper wants. For a single-variant
-  product the card keeps "Add to cart" (posting that variant's id). For several variants it shows
-  a "Choose volume" `ButtonLink` to the product page **(unconfirmed, Q4)**.
+- **Card add-to-cart** (confirmed, Q4): every card posts its default variant (the same
+  `defaultVariant` rule as the product page: smallest in-stock size). Because a card can't show a
+  size picker, the button names the size it adds, e.g. "Add 10 ml", so a shopper never gets a
+  sample by surprise. Multi-variant cards also show a "Choose volume" `ButtonLink` to the product
+  page next to it (two buttons side by side, same size, wrapping on narrow cards).
+  Single-variant cards show only the add button. This stays in #26 and doesn't need its own
+  issue, because #26 changes the add-to-cart contract from `productId` to `variantId`, so the
+  card has to change here anyway.
 - **Default selection**: the smallest in-stock variant. If none is in stock, the smallest variant,
   and the button shows "Out of stock" (disabled). A product with no variants renders with a
   disabled "Currently unavailable" state and no select. Pure helper `defaultVariant()` in
@@ -99,29 +104,19 @@ chosen variant.
   members get messages in `CART_ERROR_MESSAGES`. On success the stub still returns
   `cart-unavailable` until #10.
 
-## Open questions
-
-- [ ] **Q1: Does #26 implement storing the cart line and showing it on `/cart`, or leave that to
-  #10?** Why it matters: the AC "Adding to cart stores the selected variant; the cart shows the
-  volume and the variant's price" needs the cart service, sessions and cart page from #10.
-  Building them here would duplicate #10. Recommended default: #26 delivers the schema
-  (`cart_items.variant_id`), the `variantId` form contract and validation, and adds a comment on
-  #10 that its insert must use `variantId` and its page must show `formatVolume` + variant price.
-  The AC is met when #10 lands. Affects steps: 4, 8, 9.
-- [ ] **Q2: Keep the deprecated `products.price/volume_ml/stock_quantity` as NOT NULL, or make
-  them nullable now?** Why it matters: NOT NULL means every new product insert (seed, tests,
-  later #16) still has to fill columns nobody reads. Nullable makes that easier but is another
-  schema change. Recommended default: keep them NOT NULL and unchanged, and drop them in a
-  follow-up after #16. Affects steps: 2, 3, 5.
-- [ ] **Q3: Snapshot `volume_ml` on `order_items`?** Why it matters: with `variant_id` on delete
-  set null, deleting a variant would lose which size was bought (useful for LTV analytics).
-  Recommended default: yes, nullable `order_items.volume_ml`, written by #11. Affects steps: 2, 3.
-- [ ] **Q4: What should "Add to cart" on a multi-size catalog card do?** Why it matters: posting
-  the default (often a 7 ml sample) would surprise shoppers. Recommended default: a "Choose
-  volume" link to the product page for multi-variant products, and a direct add for
-  single-variant ones. Affects steps: 7.
-
 ## Resolved questions
+
+- **Q1: Does #26 store the cart line and show it on `/cart`?** No. #26 delivers the schema
+  (`cart_items.variant_id`), the `variantId` form contract and validation, and comments on #10
+  that its insert must use `variantId` and its page must show the volume and variant price. The
+  "stores the selected variant" AC is met when #10 lands (source: user answer).
+- **Q2: Legacy `products.price/volume_ml/stock_quantity`?** Keep them NOT NULL and unchanged,
+  mark them deprecated, and drop them in a follow-up after #16 (source: user answer).
+- **Q3: Snapshot `volume_ml` on `order_items`?** Yes, nullable, written by #11 (source: user
+  answer).
+- **Q4: Catalog card buttons?** Two buttons side by side: "Choose volume" (link to the product
+  page) and an add button that adds the default variant and names its size. Kept in #26, not a
+  new issue (source: user answer, see Decisions).
 
 - **Where does the volume list live?** As a shared `as const` array in `app/lib/enums.ts`, with
   the DB check built from it (source: `app/lib/enums.ts` header comment,
@@ -209,8 +204,8 @@ chosen variant.
   and regenerate as described under Dependencies before continuing.**
 - [ ] **4. Lib DTOs and helpers**: in `app/lib/products.ts` add `ProductVariant { id; volumeMl;
   price; stockQuantity; inStock }`. Change `ProductSummary` to `{ id, title, brand, gender,
-  minPrice, hasPriceRange, volumes: number[], packSize, imageUrl, inStock, singleVariantId:
-  string | null }`, and `ProductDetail` to the product fields plus `variants: ProductVariant[]`
+  minPrice, hasPriceRange, volumes: number[], packSize, imageUrl, inStock, variantCount,
+  defaultVariant: { id: string; volumeMl: number } | null }`, and `ProductDetail` to the product fields plus `variants: ProductVariant[]`
   (sorted ascending, no top-level price/stock). Add `defaultVariant(variants)`,
   `formatVolumes({ volumes, packSize })` (`10 · 30 · 50 ml` / `3 × 10 ml`) and
   `formatVariantOption(variant, packSize)` (`30 ml — 1 450 ₴`, plus ` (out of stock)`).
@@ -227,8 +222,10 @@ chosen variant.
   product, legacy size included, idempotent re-run.
 - [ ] **6. Queries and service**: in `queries/products.ts` build a `variantStats` subquery
   (`groupBy(productVariants.productId)`: `minPrice: min(price)`, `maxPrice`, `maxStock`,
-  `volumes: sql<number[]>\`array_agg(volume_ml order by volume_ml)\``, `variantCount`, and
-  `singleVariantPublicId` when count = 1). `innerJoin` it in `listProducts` and `countProducts`
+  `volumes: sql<number[]>\`array_agg(volume_ml order by volume_ml)\``, `variantCount`, and the
+  default variant's `public_id` + `volume_ml`: the first by `(stock_quantity = 0), volume_ml`, so
+  the smallest in-stock size, else the smallest. Use `(array_agg(… order by …))[1]` and keep it
+  consistent with `defaultVariant()`). `innerJoin` it in `listProducts` and `countProducts`
   (replace `$count` with a `count()` select over the join), and change `ORDER_BY.price_*` to use
   `variantStats.minPrice`. Add `listVariantsByProductId(db, productId)` (ordered by `volume_ml`)
   and `findVariantForProduct(db, productPublicId, variantPublicId)` (join to `products`, so a
@@ -239,10 +236,14 @@ chosen variant.
   products without variants hidden, totals match, detail variants ascending, and
   `checkVariantForCart` ok / unknown / other product's variant / out of stock.
 - [ ] **7. Catalog card**: in `ProductCard` show `formatVolumes(product)` and
-  `from {formatPrice(minPrice)}` when `hasPriceRange`. When `singleVariantId` is set, render
-  `AddToCartForm` with `variantId={singleVariantId}`. Otherwise render a `ButtonLink` "Choose
-  volume" to `productHref(id)`, same size (Q4). Update `catalog-ui.test.ts` for the new
-  rendering and the posted `variantId`.
+  `from {formatPrice(minPrice)}` when `hasPriceRange`. Render `AddToCartForm` with
+  `variantId={defaultVariant.id}` and the label `Add {volumeMl} ml` ("Out of stock" when
+  `!inStock`). When `variantCount > 1`, put a secondary `ButtonLink` "Choose volume" to
+  `productHref(id)` beside it (`flex flex-wrap gap-2`, both `size="sm"`, primary/secondary per
+  `docs/design.md`) (Q4). This needs an optional `label` prop on `AddToCartForm`. Update
+  `catalog-ui.test.ts`: the posted `variantId` is the default variant, the button names its size,
+  "Choose volume" appears only for multi-variant products, and an out-of-stock product disables
+  the add button but keeps "Choose volume".
 - [ ] **8. Product page**: extend `AddToCartForm` with an optional `variantId` (hidden input) and
   `children` rendered inside the form before the button. Its fetcher key stays per product.
   Create `app/features/product/VolumeSelect.tsx`: `<label htmlFor="volume">Volume</label>` +

@@ -171,7 +171,13 @@ describe("carts", () => {
     expect(describeConstraints(carts)).toEqual({
       checks: [],
       uniques: [],
-      indexes: ["carts_session_id_idx", "carts_status_updated_at_idx", "carts_user_id_idx"],
+      indexes: [
+        "carts_active_guest_session_id_unique",
+        "carts_active_user_id_unique",
+        "carts_session_id_idx",
+        "carts_status_updated_at_idx",
+        "carts_user_id_idx",
+      ],
     });
   });
 

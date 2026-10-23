@@ -1,5 +1,6 @@
 import { data, redirect } from "react-router";
 import { loginRedirectPath } from "~/lib/auth";
+import { readVisitor } from "../analytics";
 import { type Db, db } from "../db";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import {
@@ -11,6 +12,7 @@ import {
 } from "../db/queries/users";
 import { getDummyPasswordHash, hashPassword, verifyPassword } from "../password";
 import { getUserId } from "../session";
+import { mergeGuestCart } from "./cart";
 
 export type { PublicUser } from "../db/queries/users";
 
@@ -112,13 +114,22 @@ export async function verifyLogin(
 }
 
 /**
- * Runs after every successful login or registration, before the session cookie is set. Side
- * effects that belong here are still to come: linking the visitor's analytics sessions and
- * events and recording the `login` event (#18), and merging the guest cart (#10). Whatever is
- * added must never make logging in fail.
+ * Runs after every successful login or registration, before the session cookie is set: merges
+ * the guest cart into the user's (#10). Still to come: linking the visitor's analytics sessions
+ * and events and recording the `login` event (#18). Whatever is added must never make logging
+ * in fail.
  */
 export async function onUserAuthenticated(
-  _request: Request,
-  _userId: number,
+  request: Request,
+  userId: number,
   _kind: "login" | "register",
-): Promise<void> {}
+): Promise<void> {
+  try {
+    const { anonymousId } = await readVisitor(request);
+    if (anonymousId) {
+      await mergeGuestCart(userId, anonymousId);
+    }
+  } catch (error: unknown) {
+    console.error("Merging the guest cart failed", error);
+  }
+}

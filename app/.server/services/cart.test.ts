@@ -1,0 +1,294 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { hasDatabase, type TestDatabase } from "../db/test-utils";
+
+// Coco Mademoiselle (seed data): 7 ml in stock 10, 30 ml in stock 3, 10 ml sold out.
+const COCO = "01a1652b-6e25-7c03-ae47-25b57131fb06";
+
+beforeAll(() => {
+  // `services/cart` imports the auth session, which validates the env on import.
+  vi.stubEnv("SESSION_SECRET", "s".repeat(32));
+});
+
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
+
+// Integration test: runs only when a database is configured, on its own throwaway database.
+describe.skipIf(!hasDatabase)("cart service", () => {
+  let testDb: TestDatabase;
+  let emailCounter = 0;
+
+  beforeAll(async () => {
+    const { createTestDatabase } = await import("../db/test-utils");
+    const { migrateLatest } = await import("../db/migrator");
+    const { seedProducts } = await import("../db/seed");
+    testDb = await createTestDatabase("jassmin_cart_test");
+    await migrateLatest(testDb.db);
+    await seedProducts(testDb.db);
+  });
+
+  afterAll(async () => {
+    await testDb?.drop();
+  });
+
+  beforeEach(async () => {
+    const { carts } = await import("../db/schema");
+    await testDb.db.delete(carts);
+  });
+
+  /** A seeded size of Coco Mademoiselle, as `checkVariantForCart` returns it. */
+  async function variant(volumeMl: number) {
+    const { and, eq } = await import("drizzle-orm");
+    const { products, productVariants } = await import("../db/schema");
+    const [row] = await testDb.db
+      .select({
+        id: productVariants.id,
+        publicId: productVariants.publicId,
+        productId: productVariants.productId,
+        stockQuantity: productVariants.stockQuantity,
+        price: productVariants.price,
+      })
+      .from(productVariants)
+      .innerJoin(products, eq(products.id, productVariants.productId))
+      .where(and(eq(products.publicId, COCO), eq(productVariants.volumeMl, volumeMl)));
+    if (!row) throw new Error(`No ${volumeMl} ml variant`);
+    return row;
+  }
+
+  /** A guest with an analytics session, as `getVisitor` returns them. */
+  async function guest(anonymousId = crypto.randomUUID()) {
+    const { sessions } = await import("../db/schema");
+    const [session] = await testDb.db.insert(sessions).values({ anonymousId }).returning();
+    return { userId: null, anonymousId, sessionId: session?.sessionId ?? "" };
+  }
+
+  async function user() {
+    const { users } = await import("../db/schema");
+    emailCounter += 1;
+    const [row] = await testDb.db
+      .insert(users)
+      .values({ fullName: "Buyer", email: `buyer${emailCounter}@example.com`, passwordHash: "x" })
+      .returning();
+    return row?.id ?? 0;
+  }
+
+  async function cartRows() {
+    const { carts } = await import("../db/schema");
+    return testDb.db.select().from(carts);
+  }
+
+  it("creates one guest cart tied to the session and adds up repeated adds", async () => {
+    const cart = await import("./cart");
+    const visitor = await guest();
+    const small = await variant(7);
+
+    expect(await cart.addItem(visitor, small, 1, testDb.db)).toEqual({ ok: true });
+    expect(await cart.addItem(visitor, small, 2, testDb.db)).toEqual({ ok: true });
+
+    const rows = await cartRows();
+    expect(rows).toEqual([
+      expect.objectContaining({ userId: null, sessionId: visitor.sessionId, status: "active" }),
+    ]);
+    const view = await cart.getCartView(visitor, testDb.db);
+    expect(view.lines).toEqual([
+      expect.objectContaining({
+        variantId: small.publicId,
+        productId: COCO,
+        volumeMl: 7,
+        unitPrice: "990.00",
+        quantity: 3,
+        lineTotal: "2970.00",
+      }),
+    ]);
+    expect(view).toMatchObject({ itemCount: 3, subtotal: "2970.00" });
+    expect(await cart.getCartCount(visitor, testDb.db)).toBe(3);
+  });
+
+  it("keeps a guest's cart when they come back in a new session", async () => {
+    const cart = await import("./cart");
+    const first = await guest();
+    await cart.addItem(first, await variant(7), 1, testDb.db);
+
+    const later = await guest(first.anonymousId);
+
+    expect(await cart.getCartCount(later, testDb.db)).toBe(1);
+    expect(await cart.getCartCount({ userId: null }, testDb.db)).toBe(0);
+    expect(await cart.getCartCount(await guest(), testDb.db)).toBe(0);
+  });
+
+  it("never lets a line exceed the variant's stock", async () => {
+    const cart = await import("./cart");
+    const visitor = await guest();
+    const thirty = await variant(30);
+
+    expect(await cart.addItem(visitor, thirty, 4, testDb.db)).toEqual({
+      ok: false,
+      error: "exceeds-stock",
+      available: 3,
+    });
+    await cart.addItem(visitor, thirty, 2, testDb.db);
+    expect(await cart.addItem(visitor, thirty, 2, testDb.db)).toMatchObject({
+      error: "exceeds-stock",
+    });
+    expect(await cart.updateQuantity(visitor, thirty.publicId, 4, testDb.db)).toMatchObject({
+      error: "exceeds-stock",
+      available: 3,
+    });
+    expect(await cart.updateQuantity(visitor, thirty.publicId, 3, testDb.db)).toEqual({
+      ok: true,
+    });
+    expect(await cart.getCartCount(visitor, testDb.db)).toBe(3);
+  });
+
+  it("updates and removes lines and bumps updated_at on every change", async () => {
+    const cart = await import("./cart");
+    const visitor = await guest();
+    const small = await variant(7);
+    const big = await variant(100);
+    await cart.addItem(visitor, small, 1, testDb.db);
+    const { carts } = await import("../db/schema");
+    const anHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    // Backdates the cart, then reports whether the change moved `updated_at` forward again.
+    const bumps = async (change: () => Promise<unknown>) => {
+      await testDb.db.update(carts).set({ updatedAt: anHourAgo });
+      await change();
+      return ((await cartRows())[0]?.updatedAt.getTime() ?? 0) > anHourAgo.getTime();
+    };
+
+    expect(await bumps(() => cart.addItem(visitor, big, 1, testDb.db))).toBe(true);
+    expect(await bumps(() => cart.updateQuantity(visitor, small.publicId, 5, testDb.db))).toBe(
+      true,
+    );
+    expect(await bumps(() => cart.removeItem(visitor, big.publicId, testDb.db))).toBe(true);
+
+    const view = await cart.getCartView(visitor, testDb.db);
+    expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([[7, 5]]);
+    expect(await cart.removeItem(visitor, big.publicId, testDb.db)).toEqual({
+      ok: false,
+      error: "not-in-cart",
+    });
+  });
+
+  it("only changes lines in the owner's own cart", async () => {
+    const cart = await import("./cart");
+    const owner = await guest();
+    const stranger = await guest();
+    const small = await variant(7);
+    await cart.addItem(owner, small, 1, testDb.db);
+    await cart.addItem(stranger, await variant(30), 1, testDb.db);
+
+    expect(await cart.updateQuantity(stranger, small.publicId, 2, testDb.db)).toEqual({
+      ok: false,
+      error: "not-in-cart",
+    });
+    expect(await cart.removeItem(await guest(), small.publicId, testDb.db)).toEqual({
+      ok: false,
+      error: "not-in-cart",
+    });
+    expect(await cart.getCartCount(owner, testDb.db)).toBe(1);
+  });
+
+  it("creates a single cart for concurrent first adds", async () => {
+    const cart = await import("./cart");
+    const visitor = await guest();
+
+    const ids = await Promise.all([
+      cart.getOrCreateActiveCart(visitor, testDb.db),
+      cart.getOrCreateActiveCart(visitor, testDb.db),
+      cart.getOrCreateActiveCart(visitor, testDb.db),
+    ]);
+
+    expect(new Set(ids).size).toBe(1);
+    expect(await cartRows()).toHaveLength(1);
+  });
+
+  it("keeps a logged-in user's cart by user id", async () => {
+    const cart = await import("./cart");
+    const visitor = await guest();
+    const userId = await user();
+    await cart.addItem({ ...visitor, userId }, await variant(7), 2, testDb.db);
+
+    expect(await cartRows()).toEqual([
+      expect.objectContaining({ userId, sessionId: visitor.sessionId }),
+    ]);
+    expect(await cart.getCartCount({ userId }, testDb.db)).toBe(2);
+    // The same browser logged out is a guest with an empty cart.
+    expect(await cart.getCartCount({ ...visitor, userId: null }, testDb.db)).toBe(0);
+  });
+
+  describe("mergeGuestCart", () => {
+    it("adopts the guest cart when the user has none", async () => {
+      const cart = await import("./cart");
+      const visitor = await guest();
+      const userId = await user();
+      await cart.addItem(visitor, await variant(7), 2, testDb.db);
+
+      await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
+
+      expect(await cartRows()).toEqual([expect.objectContaining({ userId, status: "active" })]);
+      expect(await cart.getCartCount({ userId }, testDb.db)).toBe(2);
+      expect(await cart.getCartCount(visitor, testDb.db)).toBe(0);
+    });
+
+    it("adds the guest lines to the user's cart, capped at stock, and deletes the guest cart", async () => {
+      const cart = await import("./cart");
+      const visitor = await guest();
+      const userId = await user();
+      const userWriter = { ...(await guest()), userId };
+      const small = await variant(7);
+      const thirty = await variant(30);
+      const fifty = await variant(50);
+      await cart.addItem(userWriter, thirty, 2, testDb.db);
+      await cart.addItem(userWriter, small, 1, testDb.db);
+      await cart.addItem(visitor, thirty, 2, testDb.db);
+      await cart.addItem(visitor, fifty, 1, testDb.db);
+
+      await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
+
+      expect(await cartRows()).toEqual([expect.objectContaining({ userId })]);
+      const view = await cart.getCartView({ userId }, testDb.db);
+      expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([
+        [30, 3],
+        [7, 1],
+        [50, 1],
+      ]);
+    });
+
+    it("drops guest lines whose size has sold out since", async () => {
+      const { eq } = await import("drizzle-orm");
+      const { productVariants } = await import("../db/schema");
+      const cart = await import("./cart");
+      const visitor = await guest();
+      const userId = await user();
+      const big = await variant(100);
+      await cart.addItem({ ...(await guest()), userId }, await variant(7), 1, testDb.db);
+      await cart.addItem(visitor, big, 1, testDb.db);
+      await testDb.db
+        .update(productVariants)
+        .set({ stockQuantity: 0 })
+        .where(eq(productVariants.id, big.id));
+
+      try {
+        await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
+
+        const view = await cart.getCartView({ userId }, testDb.db);
+        expect(view.lines.map((l) => l.volumeMl)).toEqual([7]);
+      } finally {
+        await testDb.db
+          .update(productVariants)
+          .set({ stockQuantity: big.stockQuantity })
+          .where(eq(productVariants.id, big.id));
+      }
+    });
+
+    it("does nothing without a guest cart", async () => {
+      const cart = await import("./cart");
+      const userId = await user();
+      await cart.addItem({ ...(await guest()), userId }, await variant(7), 1, testDb.db);
+
+      await cart.mergeGuestCart(userId, crypto.randomUUID(), testDb.db);
+
+      expect(await cart.getCartCount({ userId }, testDb.db)).toBe(1);
+    });
+  });
+});

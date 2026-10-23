@@ -62,7 +62,7 @@ pnpm dev                    # http://localhost:5173
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | yes* | PostgreSQL connection string. *Under Aspire, the injected `JASSMINDB_URI` takes precedence, so a `DATABASE_URL` in `.env` is ignored there. |
-| `SESSION_SECRET` | yes | Secret for signing the session cookie, at least 32 characters. |
+| `SESSION_SECRET` | yes | Secret for signing the session and analytics visitor cookies, at least 32 characters. |
 | `PORT` | no | Port for `pnpm start` (default `3000`). |
 | `STRAPI_URL` | no | Strapi base URL (default `http://localhost:1337`). Under Aspire it's set to the `cms` endpoint. |
 | `STRAPI_API_TOKEN` | no* | Read-only Strapi API token. *Without it the app still starts, but CMS-backed pages answer with a 503. |
@@ -122,6 +122,7 @@ app/
   .server/             server-only code, never bundled for the browser
     env.ts             zod-validated environment
     session.ts         cookie session storage
+    analytics.ts       analytics visitor cookies and sessions (getVisitor)
     db/                Drizzle client, schema, migrations + rollbacks, seed, queries
     services/          business logic (orders, auth, cart, …)
     cms/               Strapi client: content queries, zod schemas, CmsError

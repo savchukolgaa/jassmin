@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "carts_active_user_id_unique" ON "carts" USING btree ("user_id") WHERE "carts"."status" = 'active' and "carts"."user_id" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX "carts_active_guest_session_id_unique" ON "carts" USING btree ("session_id") WHERE "carts"."status" = 'active' and "carts"."user_id" is null;

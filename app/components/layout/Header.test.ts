@@ -1,17 +1,19 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MemoryRouter } from "react-router";
+import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
+import { I18nProvider, type Locale } from "~/lib/i18n";
 import { Header, type HeaderProps } from "./Header";
 
-const renderHeader = (props: Partial<HeaderProps> = {}, path = "/") =>
-  renderToStaticMarkup(
-    createElement(
-      MemoryRouter,
-      { initialEntries: [path] },
-      createElement(Header, { user: null, cartCount: 0, ...props }),
-    ),
+// English by default, so the assertions read like the UI copy they check. The language switcher's
+// `<Form>` needs a data router.
+const renderHeader = (props: Partial<HeaderProps> = {}, path = "/", locale: Locale = "en") => {
+  const element = createElement(Header, { user: null, cartCount: 0, ...props });
+  const router = createMemoryRouter([{ path: "*", element }], { initialEntries: [path] });
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })),
   );
+};
 
 describe("Header", () => {
   it("links the jassmin. wordmark to the home page", () => {
@@ -29,7 +31,7 @@ describe("Header", () => {
     const positions = [
       ">About us<",
       ">Catalog<",
-      ">Kontakt<",
+      ">Contacts<",
       'aria-label="Log in"',
       'aria-label="Cart, 0 items"',
     ].map((marker) => html.indexOf(marker));
@@ -117,5 +119,40 @@ describe("Header", () => {
 
   it("includes the hamburger menu for small screens", () => {
     expect(renderHeader()).toMatch(/<summary[^>]*aria-label="Menu"/);
+  });
+
+  it("renders in Ukrainian with Ukrainian plurals", () => {
+    const html = renderHeader({ cartCount: 3 }, "/", "uk");
+
+    for (const text of [">Про нас<", ">Каталог<", ">Контакти<", ">Жіночі парфуми<"]) {
+      expect(html).toContain(text);
+    }
+    expect(html).toContain('aria-label="Кошик, 3 товари"');
+    expect(renderHeader({ cartCount: 5 }, "/", "uk")).toContain('aria-label="Кошик, 5 товарів"');
+    expect(html).toContain('aria-label="Увійти"');
+    expect(html).not.toContain("Kontakt");
+  });
+
+  it("has a no-JS language switcher with flags that returns to the current page", () => {
+    const html = renderHeader({}, "/catalog/men?sort=price_asc");
+    const switchers = html.match(/<form[^>]*action="\/locale"/g) ?? [];
+
+    // In the bar (from `md`) and in the mobile menu.
+    expect(switchers).toHaveLength(2);
+    expect(html).toMatch(/<form(?=[^>]*method="post")[^>]*action="\/locale"/);
+    expect(html).toContain(
+      '<input type="hidden" name="redirectTo" value="/catalog/men?sort=price_asc"/>',
+    );
+    expect(html).toMatch(
+      /<button type="submit" value="en" lang="en" aria-pressed="true"[^>]*name="locale"><svg[^>]*aria-hidden="true"[^>]*>.*?<\/svg>EN<\/button>/,
+    );
+    expect(html).toMatch(
+      /<button type="submit" value="uk" lang="uk" aria-pressed="false"[^>]*name="locale"><svg[^>]*aria-hidden="true"[^>]*>.*?<\/svg>УКР<\/button>/,
+    );
+    expect(html).toContain('<legend class="sr-only">Language</legend>');
+  });
+
+  it("marks Ukrainian as the active language when it is", () => {
+    expect(renderHeader({}, "/", "uk")).toMatch(/value="uk" lang="uk" aria-pressed="true"/);
   });
 });

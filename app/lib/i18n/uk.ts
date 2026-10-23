@@ -13,7 +13,7 @@ export const uk = {
   },
   nav: {
     main: "Головне меню",
-    footer: "Меню в підвалі сайту",
+    footer: "Нижнє меню",
     home: "Jassmin, головна",
     about: "Про нас",
     catalog: "Каталог",

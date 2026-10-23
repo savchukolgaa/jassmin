@@ -1,6 +1,8 @@
 import { Link, NavLink } from "react-router";
 import { cn } from "~/lib/cn";
+import { useT } from "~/lib/i18n";
 import { CloseIcon, MenuIcon } from "./icons";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import {
   ABOUT_LINK,
   CATALOG_LINKS,
@@ -11,15 +13,16 @@ import {
 } from "./nav";
 import { useDisclosure } from "./useDisclosure";
 
-/** Hamburger menu below `md` with the same links as the inline nav. */
+/** Hamburger menu below `md` with the same links and language switcher as the inline nav. */
 export function MobileMenu() {
+  const { t } = useT();
   const { detailsProps, summaryProps } = useDisclosure();
 
   return (
     <details {...detailsProps} className="group md:hidden">
       <summary
         {...summaryProps}
-        aria-label="Menu"
+        aria-label={t("nav.menu")}
         className={cn(iconButtonClasses(), summaryReset)}
       >
         <MenuIcon className="size-6 group-open:hidden" />
@@ -30,12 +33,12 @@ export function MobileMenu() {
         <ul className="container mx-auto flex flex-col gap-1 p-4">
           <li>
             <Link to={ABOUT_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
-              {ABOUT_LINK.label}
+              {t(ABOUT_LINK.labelKey)}
             </Link>
           </li>
           <li>
             <span className="block px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">
-              Catalog
+              {t("nav.catalog")}
             </span>
             <ul className="flex flex-col gap-1 pl-3">
               {CATALOG_LINKS.map((link) => (
@@ -44,7 +47,7 @@ export function MobileMenu() {
                     to={link.to}
                     className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </NavLink>
                 </li>
               ))}
@@ -52,8 +55,11 @@ export function MobileMenu() {
           </li>
           <li>
             <Link to={CONTACTS_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
-              {CONTACTS_LINK.label}
+              {t(CONTACTS_LINK.labelKey)}
             </Link>
+          </li>
+          <li className="mt-2 border-line border-t pt-3">
+            <LocaleSwitcher tone="onLight" />
           </li>
         </ul>
       </div>

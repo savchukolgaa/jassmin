@@ -246,7 +246,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   (Max-Age, Path=/, SameSite=Lax); that `redirectTo=//evil.com` → `/`; that `locale=de` → 400 with
   no Set-Cookie; and that GET → 302 `/`.
 
-- [ ] **6. Language switcher with flags.** Add `FlagUaIcon` (two horizontal bands, `#0057B7` over
+- [x] **6. Language switcher with flags.** Add `FlagUaIcon` (two horizontal bands, `#0057B7` over
   `#FFD700`) and `FlagGbIcon` (Union Jack, simplified 60×30 viewBox) to
   `app/components/layout/icons.tsx`, sized `h-4 w-6` with a 1px rounded `ring-1 ring-black/10`
   so the white parts don't disappear on white panels (D15). `LocaleSwitcher.tsx` takes
@@ -261,7 +261,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   buttons are rendered with their flag SVG and code, the active one is `aria-pressed="true"`, and
   `redirectTo` matches the current path.
 
-- [ ] **7. Header, nav and footer copy.** In `nav.ts`, replace `label`/`shortLabel` with
+- [x] **7. Header, nav and footer copy.** In `nav.ts`, replace `label`/`shortLabel` with
   `labelKey`/`shortLabelKey: MessageKey`, and change `CONTACTS_LINK` to `nav.contacts` (uk
   "Контакти", en "Contacts"), which fixes "Kontakt". Translate every string in `Header.tsx`
   (wordmark `aria-label`, nav `aria-label`, account/login label, cart label as the plural

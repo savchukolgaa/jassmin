@@ -6,7 +6,7 @@ import { createTranslator, type Translator } from "./translator";
 const I18nContext = createContext<Translator>(createTranslator());
 
 /** Gives every component below it the active locale's translator; set up in the root `Layout`. */
-export function I18nProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
+export function I18nProvider({ locale, children }: { locale: Locale; children?: ReactNode }) {
   return <I18nContext value={createTranslator(locale)}>{children}</I18nContext>;
 }
 

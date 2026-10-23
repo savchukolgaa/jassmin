@@ -5,7 +5,7 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
-import { CATALOG_TITLES, type CatalogGender } from "~/lib/catalog";
+import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
 import { useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
@@ -43,6 +43,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 }
 
 export default function Product({ loaderData }: Route.ComponentProps) {
+  const { t } = useT();
   const { product } = loaderData;
   const catalog = catalogOf(product.gender);
 
@@ -53,7 +54,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           to={`/catalog/${catalog}`}
           className={`rounded-pill font-bold text-primary-dark hover:underline ${focusRing("onLight")}`}
         >
-          ← {CATALOG_TITLES[catalog]}
+          ← {t(CATALOG_TITLE_KEYS[catalog])}
         </Link>
       </nav>
 
@@ -85,7 +86,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
                 id="description-heading"
                 className="text-xl font-extrabold tracking-[-0.03em] text-ink"
               >
-                Description
+                {t("product.description")}
               </h2>
               <p className="mt-2 leading-relaxed text-body">{product.description}</p>
             </section>
@@ -106,13 +107,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
             to="/catalog/women"
             className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
           >
-            {CATALOG_TITLES.women}
+            {t(CATALOG_TITLE_KEYS.women)}
           </Link>
           <Link
             to="/catalog/men"
             className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
           >
-            {CATALOG_TITLES.men}
+            {t(CATALOG_TITLE_KEYS.men)}
           </Link>
         </p>
       </ErrorContent>

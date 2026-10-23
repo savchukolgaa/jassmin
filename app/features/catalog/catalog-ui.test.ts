@@ -3,16 +3,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { CatalogSearch } from "~/lib/catalog";
+import { I18nProvider } from "~/lib/i18n";
 import type { ProductSummary } from "~/lib/products";
 import { CatalogFilters } from "./CatalogFilters";
 import { ProductCard } from "./ProductCard";
 
-// Fetchers and `<Form>` need a data router.
+// Fetchers and `<Form>` need a data router. Rendered in English, like the assertions.
 const render = (element: ReactElement) => {
   const router = createMemoryRouter([{ path: "/catalog/:gender", element }], {
     initialEntries: ["/catalog/women"],
   });
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+  );
 };
 
 const normalize = (html: string) => html.replace(/\s/gu, " ");
@@ -59,14 +62,14 @@ describe("ProductCard", () => {
     expect(html).toContain("Chanel");
     expect(html).toContain("Coco Mademoiselle Eau de Parfum");
     expect(html).toContain("7 · 30 · 50 ml");
-    expect(html).toContain("from 990 ₴");
+    expect(html).toContain("from ₴990");
     expect(html).toContain(`href="/products/${PRODUCT.id}"`);
   });
 
   it("shows a single size's price without 'from'", () => {
     const html = normalize(render(createElement(ProductCard, { product: SINGLE })));
 
-    expect(html).toContain("6 850 ₴");
+    expect(html).toContain("₴6,850");
     expect(html).not.toContain("from ");
   });
 

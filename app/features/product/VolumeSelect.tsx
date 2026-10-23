@@ -1,4 +1,5 @@
 import { selectClasses } from "~/features/catalog/CatalogFilters";
+import { useT } from "~/lib/i18n";
 import { formatVariantOption, type ProductVariant } from "~/lib/products";
 
 export interface VolumeSelectProps {
@@ -14,9 +15,11 @@ export interface VolumeSelectProps {
  * form sends the chosen size without JS too. Sold-out sizes are listed but can't be chosen.
  */
 export function VolumeSelect({ variants, packSize, value, onChange }: VolumeSelectProps) {
+  const translator = useT();
+
   return (
     <label className="grid gap-1 text-sm font-bold text-ink">
-      Volume
+      {translator.t("product.volume")}
       <select
         name="variantId"
         value={value}
@@ -25,7 +28,7 @@ export function VolumeSelect({ variants, packSize, value, onChange }: VolumeSele
       >
         {variants.map((variant) => (
           <option key={variant.id} value={variant.id} disabled={!variant.inStock}>
-            {formatVariantOption(variant, packSize)}
+            {formatVariantOption(variant, packSize, translator)}
           </option>
         ))}
       </select>

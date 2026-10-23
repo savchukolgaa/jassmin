@@ -1,5 +1,6 @@
 // Cart form contract shared by the cart route's `action` and the forms that post to it.
 import { z } from "zod";
+import type { TextKey } from "./i18n";
 
 export const addToCartSchema = z.object({
   intent: z.literal("add"),
@@ -14,11 +15,11 @@ export type CartActionError = "invalid" | "invalid-variant" | "out-of-stock" | "
 
 export type CartActionResult = { ok: true } | { ok: false; error: CartActionError };
 
-export const CART_ERROR_MESSAGES: Record<CartActionError, string> = {
-  invalid: "This perfume could not be added to the cart.",
-  "invalid-variant": "Please choose one of the available volumes.",
-  "out-of-stock": "This volume is out of stock.",
-  "cart-unavailable": "The cart is coming soon.",
+export const CART_ERROR_KEYS: Record<CartActionError, TextKey> = {
+  invalid: "cart.errors.invalid",
+  "invalid-variant": "cart.errors.invalidVariant",
+  "out-of-stock": "cart.errors.outOfStock",
+  "cart-unavailable": "cart.errors.unavailable",
 };
 
 /** Validates an add-to-cart submission. */

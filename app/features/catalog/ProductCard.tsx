@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
-import { formatPrice } from "~/lib/money";
+import { useT } from "~/lib/i18n";
 import { formatVolume, formatVolumes, type ProductSummary } from "~/lib/products";
 import { ProductImage } from "./ProductImage";
 
@@ -11,13 +11,15 @@ export function productHref(id: string): string {
 }
 
 export function ProductCard({ product }: { product: ProductSummary }) {
+  const translator = useT();
+  const { t } = translator;
   const href = productHref(product.id);
-  const price = formatPrice(product.minPrice);
+  const price = translator.formatPrice(product.minPrice);
   // The card can't show a size picker, so its button says which size it adds.
-  const defaultSize = formatVolume({
-    volumeMl: product.defaultVariant.volumeMl,
-    packSize: product.packSize,
-  });
+  const defaultSize = formatVolume(
+    { volumeMl: product.defaultVariant.volumeMl, packSize: product.packSize },
+    translator,
+  );
 
   return (
     <article className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line">
@@ -33,9 +35,9 @@ export function ProductCard({ product }: { product: ProductSummary }) {
             {product.title}
           </Link>
         </h2>
-        <p className="text-sm text-muted">{formatVolumes(product)}</p>
+        <p className="text-sm text-muted">{formatVolumes(product, translator)}</p>
         <p className="mt-auto pt-3 text-xl font-extrabold text-ink">
-          {product.hasPriceRange ? `from ${price}` : price}
+          {product.hasPriceRange ? t("product.fromPrice", { price }) : price}
         </p>
       </div>
       <div className="flex flex-wrap items-start gap-2 px-2 pt-3">
@@ -43,13 +45,13 @@ export function ProductCard({ product }: { product: ProductSummary }) {
           productId={product.id}
           variantId={product.defaultVariant.id}
           inStock={product.inStock}
-          label={`Add ${defaultSize}`}
+          label={t("product.addSize", { size: defaultSize })}
           size="sm"
           className="min-w-32 flex-1"
         />
         {product.volumes.length > 1 && (
           <ButtonLink to={href} variant="ghost" size="sm" className="min-w-32 flex-1">
-            Choose volume
+            {t("product.chooseVolume")}
           </ButtonLink>
         )}
       </div>

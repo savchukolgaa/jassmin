@@ -2,15 +2,18 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
+import { I18nProvider } from "~/lib/i18n";
 import type { ProductDetail, ProductVariant } from "~/lib/products";
 import { ProductPurchase } from "./ProductPurchase";
 
-// Fetchers need a data router.
+// Fetchers need a data router. Rendered in English, like the assertions.
 const render = (element: ReactElement) => {
   const router = createMemoryRouter([{ path: "/products/:id", element }], {
     initialEntries: ["/products/01a1652b-6e25-7c03-ae47-25b57131fb06"],
   });
-  return renderToStaticMarkup(createElement(RouterProvider, { router })).replace(/\s/gu, " ");
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+  ).replace(/\s/gu, " ");
 };
 
 const variant = (volumeMl: number, price: string, stockQuantity: number): ProductVariant => ({
@@ -51,10 +54,10 @@ const options = (html: string) =>
 describe("ProductPurchase", () => {
   it("lists every size in ascending order with its price", () => {
     expect(options(purchase()).map((o) => o.label)).toEqual([
-      "7 ml — 990 ₴ (out of stock)",
-      "10 ml — 1 350 ₴",
-      "50 ml — 6 850 ₴",
-      "100 ml — 9 900 ₴ (out of stock)",
+      "7 ml — ₴990 (out of stock)",
+      "10 ml — ₴1,350",
+      "50 ml — ₴6,850",
+      "100 ml — ₴9,900 (out of stock)",
     ]);
   });
 
@@ -70,7 +73,7 @@ describe("ProductPurchase", () => {
   it("shows the selected size's price and stock", () => {
     const html = purchase();
 
-    expect(html).toMatch(/<span[^>]*animate-spin-in[^>]*>1 350 ₴<\/span>/);
+    expect(html).toMatch(/<span[^>]*animate-spin-in[^>]*>₴1,350<\/span>/);
     expect(html).toContain("Only 2 left");
   });
 

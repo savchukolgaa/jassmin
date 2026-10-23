@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { buttonClasses } from "~/components/ui/button-styles";
+import { useT } from "~/lib/i18n";
 
 export interface PaginationProps {
   page: number;
@@ -10,20 +11,24 @@ export interface PaginationProps {
 
 /** Previous / page numbers / Next links for a paginated list (catalog, blog). */
 export function Pagination({ page, pageCount, hrefForPage }: PaginationProps) {
+  const { t } = useT();
   if (pageCount <= 1) {
     return null;
   }
   const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
 
   return (
-    <nav aria-label="Pagination" className="flex flex-wrap items-center justify-center gap-2">
+    <nav
+      aria-label={t("pagination.label")}
+      className="flex flex-wrap items-center justify-center gap-2"
+    >
       {page > 1 && (
         <Link
           to={hrefForPage(page - 1)}
           rel="prev"
           className={buttonClasses({ variant: "ghost", size: "sm" })}
         >
-          Previous
+          {t("pagination.previous")}
         </Link>
       )}
       {pages.map((target) => (
@@ -46,7 +51,7 @@ export function Pagination({ page, pageCount, hrefForPage }: PaginationProps) {
           rel="next"
           className={buttonClasses({ variant: "ghost", size: "sm" })}
         >
-          Next
+          {t("pagination.next")}
         </Link>
       )}
     </nav>

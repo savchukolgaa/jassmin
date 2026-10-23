@@ -291,7 +291,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   `t("common.optional")`. Update `auth.test.ts`, `login.test.ts` and `register.test.ts` to expect
   keys.
 
-- [ ] **10. Catalog, product, cart and pagination.**
+- [x] **10. Catalog, product, cart and pagination.**
   - `app/lib/catalog.ts`: replace `CATALOG_TITLES` with `CATALOG_GENDERS = ["men", "women"] as
     const` and `CATALOG_TITLE_KEYS: Record<CatalogGender, MessageKey>`. `isCatalogGender` uses the
     array. `CATALOG_SORT_LABELS` becomes `CATALOG_SORT_LABEL_KEYS`.

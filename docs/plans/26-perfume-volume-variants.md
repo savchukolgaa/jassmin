@@ -258,7 +258,7 @@ chosen variant.
   the fragrance-family pill. Add `product-ui.test.ts` (render with `react-dom/server` like
   `catalog-ui.test.ts`): options ascending with prices, out-of-stock ones disabled, the default
   is the smallest in-stock one, and the select is inside the form posting to `/cart`.
-- [ ] **9. Cart action**: in `routes/cart.tsx`, after `parseAddToCart`, call
+- [x] **9. Cart action**: in `routes/cart.tsx`, after `parseAddToCart`, call
   `checkVariantForCart(productId, variantId)`. Return `data<CartActionResult>({ ok: false, error },
   { status: 400 | 409 })` on failure, otherwise keep returning `cart-unavailable` with a comment
   pointing #10 at the validated `variant`. Add a route test (`app/routes/cart.test.ts`, mocking

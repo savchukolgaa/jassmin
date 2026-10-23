@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/28
 Branch: `issue/28`
 Worktree: `.claude/worktrees/issue-28`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -366,7 +366,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   Mention in the PR that #10 adds its strings under the existing `cart` namespace and #16 under
   `admin.products`.
 
-- [ ] **15. Merge main and verify.** `git fetch origin && git merge origin/main` (a merge, not a
+- [x] **15. Merge main and verify.** `git fetch origin && git merge origin/main` (a merge, not a
   rebase, per the user's merge instructions; never force-push), resolve conflicts with #38/#10/#16
   keeping both sides' intent, then run `pnpm install`, `pnpm typecheck`, `pnpm lint`, `pnpm test`
   and `pnpm build`. Remove this plan file before the PR is merged.
@@ -411,15 +411,21 @@ Manual (`pnpm aspire run`):
 
 ## Acceptance criteria
 
-- [ ] Every page renders in Ukrainian by default and in English after switching, including on the
+- [x] Every page renders in Ukrainian by default and in English after switching, including on the
   first SSR response: steps 3, 4, 7–13.
-- [ ] `<html lang>` matches the active locale: step 4.
-- [ ] The language switcher works without client JS and the choice persists across visits
+- [x] `<html lang>` matches the active locale: step 4.
+- [x] The language switcher works without client JS and the choice persists across visits
   (cookie): steps 3, 5, 6.
-- [ ] No hard-coded user-facing strings remain in existing components; "Kontakt" is fixed: steps
+- [x] No hard-coded user-facing strings remain in existing components; "Kontakt" is fixed: steps
   7–13a (sweep in 13a), including the admin area.
-- [ ] Missing translation keys fail `pnpm typecheck`: steps 1 (D3, `@ts-expect-error` test).
-- [ ] Prices and dates are formatted for the active locale: steps 2, 10, 12.
+- [x] Missing translation keys fail `pnpm typecheck`: steps 1 (D3, `@ts-expect-error` test).
+- [x] Prices and dates are formatted for the active locale: steps 2, 10, 12.
+
+Verified with Vitest and on the built server (`react-router-serve`) with curl: `/login` renders
+`<html lang="uk">` and Ukrainian by default, English with `Accept-Language: en`, and English with
+the `locale` cookie even when `Accept-Language` is `uk`. A no-JS `POST /locale` answers 302 back to
+`redirectTo` with a one-year cookie, and a tampered locale gets a 400. Not checked in a real
+browser: the switch with client JS, the look of the flags, and pages that need the DB or Strapi.
 
 ## Out of scope
 

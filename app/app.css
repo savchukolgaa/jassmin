@@ -35,7 +35,10 @@
   --animate-toast: toast 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+/* Light-only: C+ has no dark theme, so pages and native controls stay light (docs/design.md). */
 html {
+  color-scheme: light;
+
   @media (prefers-reduced-motion: no-preference) {
     scroll-behavior: smooth;
   }
@@ -43,11 +46,7 @@ html {
 
 html,
 body {
-  @apply bg-white text-ink dark:bg-gray-950;
-
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+  @apply bg-white text-ink;
 }
 
 /*

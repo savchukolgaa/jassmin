@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/4
 Branch: `issue/4`
 Worktree: `../jassmin-worktrees/issue-4`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a store owner, I want carts and orders stored with full financial and lifecycle detail, so I can fulfil orders reliably and later analyse revenue, profit and customer lifetime value. This issue adds a Drizzle migration for `carts`, `cart_items`, `orders` and `order_items`, with the financial breakdown and lifecycle timestamps, plus shared TS types for all four entities.
@@ -30,6 +30,7 @@ As a store owner, I want carts and orders stored with full financial and lifecyc
   - for #19's job: `carts_status_updated_at_idx` on `(status, updated_at)`
   - Constraint and index names are explicit snake_case, per `app/.server/AGENTS.md`.
 - **Shared types:** a new isomorphic `app/lib/commerce.ts` exports `Cart`, `CartItem`, `Order` and `OrderItem` interfaces: plain data, money as `string`, timestamps as `Date`, and enum fields typed with the unions from `~/lib/enums`. They're written by hand rather than derived from the schema, because `app/lib/` must not import `app/.server/`. A type-level test keeps them in sync with `$inferSelect`.
+- **Implementation notes:** PostgreSQL reports `on delete restrict` as `23001` (restrict_violation), not `23503`, so the integration test expects `23001`. `paymentMethod` is typed with `.$type<PaymentMethod>()` so `$inferSelect` matches the shared `Order` type exactly. `app/.server/db/queries/health.test.ts` times out after 5s locally on `main` as well; that failure predates this issue and is unrelated to it.
 
 ## Resolved questions
 - **Should `updated_at` use a DB trigger or `$onUpdate`?** `$onUpdate` in the schema; raw SQL sets `updated_at` explicitly (source: answered by the store owner).
@@ -84,7 +85,7 @@ Each step is small, ordered, and leaves the app in a working state.
 
   Check: `pnpm test` with a database configured.
 - [x] **7. Docs.** In `app/.server/AGENTS.md` → Database, note that `updated_at` uses `$onUpdate` (raw SQL must set it), that order amounts are `numeric(10, 2)` strings computed server-side, and that `carts.session_id` gets its FK in #5.
-- [ ] **8. Final checks.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
+- [x] **8. Final checks.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
 
 ## Testing & verification
 - Unit (always run): `app/.server/db/schema.test.ts` for columns, constraints, indexes, FK actions and type sync; `app/lib/enums.test.ts`.
@@ -93,10 +94,10 @@ Each step is small, ordered, and leaves the app in a working state.
 - Manual: `pnpm aspire run` (or `pnpm db:migrate` against `DATABASE_URL`), then inspect the tables in psql with `\d orders` etc. and run `pnpm db:rollback` once to see `0001` revert cleanly.
 
 ## Acceptance criteria
-- [ ] Migrations create all four tables with correct FKs and delete behaviour — steps 2, 3, 5, 6
-- [ ] `guest_email` and `guest_phone` are indexed — steps 2, 6
-- [ ] Deleting a product keeps its `order_items` rows with `product_id = NULL` — steps 2, 6
-- [ ] Shared TS types exist for Cart, CartItem, Order, OrderItem — steps 4, 5
+- [x] Migrations create all four tables with correct FKs and delete behaviour — steps 2, 3, 5, 6
+- [x] `guest_email` and `guest_phone` are indexed — steps 2, 6
+- [x] Deleting a product keeps its `order_items` rows with `product_id = NULL` — steps 2, 6
+- [x] Shared TS types exist for Cart, CartItem, Order, OrderItem — steps 4, 5
 
 ## Out of scope
 - FK `carts.session_id → sessions.session_id` and the `sessions` table (#5).

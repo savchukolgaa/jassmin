@@ -19,6 +19,8 @@ export interface CmsImage {
   alt: string;
   width: number | null;
   height: number | null;
+  /** `srcset` built from Strapi's resized formats plus the original; `null` when there are none. */
+  srcSet: string | null;
 }
 
 export interface Seo {
@@ -45,6 +47,16 @@ export interface HomePage {
     mapEmbedUrl: string;
   };
 }
+
+/** Display names for social platforms, e.g. on the home page Contacts section. */
+export const SOCIAL_LABELS: Record<SocialPlatform, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+  telegram: "Telegram",
+  viber: "Viber",
+  youtube: "YouTube",
+};
 
 export interface SocialLink {
   platform: SocialPlatform;

@@ -5,11 +5,19 @@ import { SOCIAL_PLATFORMS } from "~/lib/cms";
 // Unknown keys are stripped, so Strapi adding fields doesn't break the app; missing or
 // mistyped fields do, and surface as a `CmsError` of kind `invalid_response`.
 
+/** One of the resized variants Strapi generates for an uploaded image (`small`, `medium`, …). */
+export const strapiMediaFormat = z.object({
+  url: z.string().min(1),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+});
+
 export const strapiMedia = z.object({
   url: z.string().min(1),
   alternativeText: z.string().nullish(),
   width: z.number().int().nullish(),
   height: z.number().int().nullish(),
+  formats: z.record(z.string(), strapiMediaFormat).nullish(),
 });
 
 export const seoComponent = z.object({

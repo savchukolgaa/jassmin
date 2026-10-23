@@ -8,8 +8,8 @@
     "hero": {
       "id": 1,
       "headline": "Order 3 Testers only for 499₴",
-      "ctaLabel": "Choose your testers",
-      "ctaHref": "/catalog",
+      "ctaLabel": "Order Now",
+      "ctaHref": "/popular",
       "image": {
         "id": 1,
         "documentId": "j13hypxu9xfkw5x1ksbxrogr",

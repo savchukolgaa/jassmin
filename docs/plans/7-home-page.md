@@ -197,7 +197,7 @@ JS and emails the store over SMTP (smtp4dev locally).
   true })` → `sanitizeHtml` with the allowlist, `transformTags` adding `rel`/`target` on absolute
   links) and `toPlainText(md, maxLength)`. Tests: paragraphs/lists survive; `<script>`, `onerror=`,
   `javascript:` links and `<iframe>` are stripped; truncation at a word boundary.
-- [ ] **2. Responsive image data + CTA in seed/fixture** — `formats` in `strapiMedia`
+- [x] **2. Responsive image data + CTA in seed/fixture** — `formats` in `strapiMedia`
   (`z.record(z.string(), z.object({ url, width, height }))`, nullish); `srcSet` on `CmsImage`,
   built in `toImage` (sorted by width, absolute URLs, `null` without widths); `SOCIAL_LABELS`.
   Update `content.test.ts` / `schemas.test.ts`. Set `ctaLabel: "Order Now"`, `ctaHref: "/popular"`

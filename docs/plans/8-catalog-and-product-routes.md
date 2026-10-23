@@ -224,7 +224,7 @@ Each step is small, ordered and leaves the app working.
   - Import the action's type only (`import type { action as cartAction }`), so no server code
     reaches the client.
 
-- [ ] **7. Catalog UI components.** Create `ProductImage`, `StockStatus`, `ProductCard`,
+- [x] **7. Catalog UI components.** Create `ProductImage`, `StockStatus`, `ProductCard`,
   `CatalogFilters` and `Pagination` under `app/features/catalog/`:
   - `ProductCard`: an `<article>` with the image and title linking to `/products/:id`, then brand,
     `formatVolume`, `formatPrice` and `AddToCartForm`. It follows the C+ Catalog card layout (large

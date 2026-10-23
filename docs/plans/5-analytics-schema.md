@@ -119,7 +119,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   `userId`, `anonymousId`, `sessionId`, `eventType: EventType`, `productId: number | null`,
   `eventProperties: EventProperties | null`, `source`, `medium`, `campaign`, `deviceType`,
   `referrer: string | null`, `createdAt: Date`). Check: `pnpm typecheck`, `pnpm test enums`.
-- [ ] **2. Drizzle tables** — In `schema.ts` import `jsonb`, `EVENT_TYPES`, `EventType` and
+- [x] **2. Drizzle tables** — In `schema.ts` import `jsonb`, `EVENT_TYPES`, `EventType` and
   `EventProperties` (type-only). Define `sessions` **before** `carts` (so the carts FK can
   reference it without a forward reference) with the columns, `sessionId: uuid().primaryKey()
   .default(sql\`uuidv7()\`)`, `userId: integer().references(() => users.id, { onDelete:
@@ -132,7 +132,7 @@ tables, the FK `carts.session_id → sessions.session_id`, and the shared `EVENT
   Doc-comment the nullable `userId` (filled in after login, #18) and that these are visitor
   sessions, not the auth cookie session. Update the file header (drop "analytics tables (#5)
   follow") and the `carts.sessionId` comment.
-- [ ] **3. carts FK** — Change `carts.sessionId` to
+- [x] **3. carts FK** — Change `carts.sessionId` to
   `uuid().references(() => sessions.sessionId, { onDelete: "set null" })`. Check:
   `pnpm typecheck` (the `Cart` mirror in `schema.test.ts` must still match).
 - [ ] **4. Generate the migration and rollback** — With the dev DB up (Aspire or

@@ -1,4 +1,4 @@
-// Drizzle schema: core tables (#3) and commerce tables (#4); analytics tables (#5) follow.
+// Drizzle schema: core tables (#3), commerce tables (#4) and analytics tables (#5).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -8,6 +8,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -18,8 +19,11 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import type { EventProperties } from "~/lib/analytics";
 import {
   CART_STATUSES,
+  EVENT_TYPES,
+  type EventType,
   GENDERS,
   ORDER_STATUSES,
   PAYMENT_METHODS,
@@ -71,6 +75,65 @@ export const products = pgTable(
   ],
 );
 
+// Analytics visitor sessions (#5), written by #18. Not the auth cookie session (session.ts).
+export const sessions = pgTable(
+  "sessions",
+  {
+    sessionId: uuid().primaryKey().default(sql`uuidv7()`),
+    /** Filled in after login or registration (#18); set to `null` when the user is deleted. */
+    userId: integer().references(() => users.id, { onDelete: "set null" }),
+    /** Visitor id from the `anonymous_id` cookie, so pre-signup behaviour can be linked. */
+    anonymousId: text().notNull(),
+    startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp({ withTimezone: true }),
+    landingPage: text(),
+    trafficSource: text(),
+    deviceType: text(),
+  },
+  (t) => [
+    index("sessions_anonymous_id_idx").on(t.anonymousId),
+    index("sessions_user_id_idx").on(t.userId),
+  ],
+);
+
+// Behavioural event stream for conversion, LTV and churn features (#5), written by #18.
+export const userEvents = pgTable(
+  "user_events",
+  {
+    eventId: uuid().primaryKey().default(sql`uuidv7()`),
+    /** Filled in after login or registration (#18); set to `null` when the user is deleted. */
+    userId: integer().references(() => users.id, { onDelete: "set null" }),
+    anonymousId: text().notNull(),
+    sessionId: uuid()
+      .notNull()
+      .references(() => sessions.sessionId, { onDelete: "cascade" }),
+    eventType: text().$type<EventType>().notNull(),
+    /** Set to `null` when the product is deleted, so the event history is kept. */
+    productId: integer().references(() => products.id, { onDelete: "set null" }),
+    eventProperties: jsonb().$type<EventProperties>(),
+    // UTM parameters.
+    source: text(),
+    medium: text(),
+    campaign: text(),
+    deviceType: text(),
+    referrer: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "user_events_event_type_check",
+      sql`${t.eventType} in (${sql.join(
+        EVENT_TYPES.map((e) => sql.raw(`'${e}'`)),
+        sql`, `,
+      )})`,
+    ),
+    index("user_events_user_id_created_at_idx").on(t.userId, t.createdAt),
+    index("user_events_anonymous_id_idx").on(t.anonymousId),
+    index("user_events_event_type_created_at_idx").on(t.eventType, t.createdAt),
+    index("user_events_session_id_idx").on(t.sessionId),
+  ],
+);
+
 // Shared by the carts and orders tables: refreshed by every query-builder update. Raw SQL
 // updates must set `updated_at` themselves.
 const updatedAt = () =>
@@ -85,8 +148,8 @@ export const carts = pgTable(
     id: serial().primaryKey(),
     /** Restrict: a user with carts can't be deleted, so the cart history stays linked. */
     userId: integer().references(() => users.id, { onDelete: "restrict" }),
-    /** Analytics visitor session; the FK to `sessions.session_id` is added in #5. */
-    sessionId: uuid(),
+    /** Analytics visitor session; set to `null` when the session is deleted. */
+    sessionId: uuid().references(() => sessions.sessionId, { onDelete: "set null" }),
     status: cartStatusType().notNull().default("active"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: updatedAt(),

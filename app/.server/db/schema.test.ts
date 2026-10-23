@@ -124,8 +124,11 @@ describe("carts", () => {
     });
   });
 
-  it("restricts deleting a user and has the lookup indexes", () => {
-    expect(describeForeignKeys(carts)).toEqual({ userId: ["users", "restrict"] });
+  it("links the analytics session, restricts deleting a user and has the lookup indexes", () => {
+    expect(describeForeignKeys(carts)).toEqual({
+      sessionId: ["sessions", "set null"],
+      userId: ["users", "restrict"],
+    });
     expect(describeConstraints(carts)).toEqual({
       checks: [],
       uniques: [],

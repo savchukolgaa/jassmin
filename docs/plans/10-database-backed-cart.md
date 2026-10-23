@@ -118,6 +118,12 @@ on login or registration.
   only (no Unisex). Volume label via `formatVolume({ volumeMl, packSize })`, price via
   `formatPrice` of the **variant** price.
 
+- **Implementation notes (deviations):** the `CartLine` / `CartView` DTOs, `EMPTY_CART`,
+  `MAX_LINE_QUANTITY` and the new error codes moved into step 4, because the service returns
+  them; step 6 adds the form schema. Writes take a `CartWriter` (`getVisitor`'s ids, required),
+  reads a `CartOwner` (cookie ids, optional). Changes to one cart are serialised with
+  `select … for update` on the cart row (`lockCart`).
+
 ## Resolved questions
 - **What happens to the guest cart after merging into an existing user cart?** — Delete the
   emptied guest cart; its lines now live in the user cart, and marking it `abandoned` would
@@ -195,7 +201,7 @@ Each step is small, ordered, and leaves the app in a working state.
 - [x] **3. Blog cache stays private for guests with a cart** — `hasSessionCookie` also matches
   `ANONYMOUS_ID_COOKIE`; update its doc comment and add a case to the blog cache-header tests
   (`services/blog.test.ts`).
-- [ ] **4. Cart queries and service** — `db/queries/cart.ts`: `findActiveUserCart(db, userId)`,
+- [x] **4. Cart queries and service** — `db/queries/cart.ts`: `findActiveUserCart(db, userId)`,
   `findActiveGuestCart(db, anonymousId)` (join `sessions`), `insertActiveCart(db, …)` with
   `onConflictDoNothing`, `listCartLines(db, cartId)` (join `cart_items` → `product_variants` →
   `products`, ordered by `added_at`, selecting public ids, title, brand, image, pack size,

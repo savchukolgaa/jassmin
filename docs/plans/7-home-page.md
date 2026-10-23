@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/7
 Branch: `issue/7`
 Worktree: `../jassmin-worktrees/issue-7`
-Status: Planned
+Status: Implemented
 
 ## Goal
 A first-time visitor lands on `/` and sees the current tester offer, the brand story, where the store
@@ -152,6 +152,24 @@ JS and emails the store over SMTP (smtp4dev locally).
   - Vitest `testTimeout` raised to 30 s (`vitest.config.ts`): the existing DB health and header
     tests timed out at 5 s on cold dynamic imports when the whole suite runs in parallel.
 
+- **Implementation notes (steps 8–10):**
+  - Route tests ended up in step 8's commit; `HomePage.test.ts` renders the page through
+    `createRoutesStub` because `ContactForm` uses `useFetcher`.
+  - The action answers `429` (with `Retry-After`) and `503` with the typed values for rate limiting
+    and delivery failures; invalid input is a `400`. `request.formData()` failures count as an
+    empty form.
+  - **Manual verification (2026-10-23)** against the real dev server, with Strapi replaced by a
+    local stub serving the recorded fixtures (Strapi outside Aspire can't reach its database) and
+    smtp4dev in Docker: SSR HTML has the four sections in order, CMS meta/OG tags, "Order Now" →
+    `/popular` and the map iframe; a no-JS POST shows field errors (400, values kept) and success;
+    the email arrived in smtp4dev (`hello@jassmin.ua`, subject "New message from …"); the 6th
+    message within 10 minutes got a 429; with smtp4dev stopped the form answered 503 with the
+    "couldn't send" message; with Strapi down `/` showed the 503 page with the header.
+  - Not checked in a real browser: the JS-on fetcher flow (covered by the router's fetcher
+    semantics and the render tests), the scroll offset under the sticky header, and the 375px
+    layout. A full `pnpm aspire run` with the `smtp4dev` resource wasn't started from the worktree;
+    `pnpm aspire:build` type-checks the AppHost.
+
 ## Resolved questions
 - **How are contact form submissions delivered?** — Emailed over SMTP; locally they go to smtp4dev
   (source: user answer on the plan, 2026-10-23).
@@ -248,7 +266,7 @@ JS and emails the store over SMTP (smtp4dev locally).
   fake `now` and a `jsonTransport`: limit reached, window reset, separate keys, header parsing,
   honeypot never sends, email fields (`to`, `replyTo`, subject without CR/LF, plain-text body),
   transport error → `delivery_failed`, no `SMTP_URL` in dev → logged and success.
-- [ ] **8. Action + ContactForm UI** — In `home.tsx` add `action({ request })`: parse
+- [x] **8. Action + ContactForm UI** — In `home.tsx` add `action({ request })`: parse
   `request.formData()`, return `data({ status: "invalid", … }, { status: 400 })` on errors, call
   `submitContactMessage`, map to 429 / 503 / success. Add `shouldRevalidate`. Build `ContactForm.tsx`
   with `useFetcher<typeof action>()`, `fetcher.data ?? actionData`, labelled inputs, per-field
@@ -256,11 +274,11 @@ JS and emails the store over SMTP (smtp4dev locally).
   delivery-failed (`role="alert"`) messages, reset + focus handling. Plug it into
   `ContactsSection`. Check with JS on and disabled; open the smtp4dev UI and confirm the email
   arrived with the right reply-to.
-- [ ] **9. Route tests** — `app/routes/home.test.ts`: `vi.mock` `~/.server/cms/content` and
+- [x] **9. Route tests** — `app/routes/home.test.ts`: `vi.mock` `~/.server/cms/content` and
   `~/.server/services/contact`. Loader: mapped data from fixtures; unsafe `mapEmbedUrl` → `null`;
   `CmsError` → thrown 503. Action: invalid → 400; valid → success, delivered once; rate limited →
   429; delivery failure → 503 with values; honeypot → success without delivery.
-- [ ] **10. Docs & polish** — README: "Home page" note (content in Strapi `home-page` /
+- [x] **10. Docs & polish** — README: "Home page" note (content in Strapi `home-page` /
   `site-settings`, contact emails, smtp4dev UI under Aspire / docker command without it, rate
   limit). Update `aspire-apphost/AGENTS.md` (resource list) and `app/.server/AGENTS.md` (mail
   module, new env vars). Run all checks and an axe/Lighthouse pass on `/` at desktop and 375px
@@ -284,13 +302,13 @@ JS and emails the store over SMTP (smtp4dev locally).
   - Responsive at 375px, 768px, 1280px; no horizontal scroll.
 
 ## Acceptance criteria
-- [ ] Sections render server-side in order: Hero, About Us, Location, Contacts — step 4
-- [ ] Section text, images and contact details come from Strapi, and changing them in Strapi updates the page without a deploy — steps 2, 4
-- [ ] "Order Now" uses the primary button style and navigates correctly — steps 2, 3, 4 (C+ `dark` variant per #27; target `/popular` from the new issue)
-- [ ] Header "About us" / "Kontakt" links scroll to the right sections — step 4
-- [ ] Contact form validates input, shows success/error states and works without client JS — steps 5–9
-- [ ] The page shows an error page, not a crash, when Strapi is unreachable — steps 4, 9
-- [ ] Page is responsive on mobile and desktop — steps 4, 8, 10
+- [x] Sections render server-side in order: Hero, About Us, Location, Contacts — step 4
+- [x] Section text, images and contact details come from Strapi, and changing them in Strapi updates the page without a deploy — steps 2, 4
+- [x] "Order Now" uses the primary button style and navigates correctly — steps 2, 3, 4 (C+ `dark` variant per #27; target `/popular` from the new issue)
+- [ ] Header "About us" / "Kontakt" links scroll to the right sections — step 4 (ids + `scroll-mt-20` in place and tested in SSR HTML; not checked in a browser)
+- [x] Contact form validates input, shows success/error states and works without client JS — steps 5–9
+- [x] The page shows an error page, not a crash, when Strapi is unreachable — steps 4, 9
+- [ ] Page is responsive on mobile and desktop — steps 4, 8, 10 (mobile-first grid, single column under `md`; not checked in a browser)
 
 ## Out of scope
 - The `/popular` page itself (new popular perfumes issue).

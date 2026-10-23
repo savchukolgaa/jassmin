@@ -190,6 +190,19 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 
 The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/site-setting`. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
 
+## Home page and contact form
+
+The home page (`/`) shows four sections: Hero, About us (`/#about`), Location and Contacts (`/#contacts`). All their text, images, the address, opening hours, map and contact details come from Strapi (`home-page` and `site-settings`), so editors change them in the Strapi admin without a deploy. The "About us" body is Markdown, rendered and sanitized on the server. If Strapi is unreachable, the page shows a 503 error page.
+
+The contact form posts to the home route's `action` and works without JavaScript. Valid messages are emailed as plain text to `CONTACT_INBOX`, with the visitor's address as reply-to; they aren't stored. Each client can send 5 messages per 10 minutes (in memory, per server process), and a hidden honeypot field silently drops bots.
+
+Locally, emails go to **smtp4dev**, which catches every message instead of delivering it:
+
+- **With Aspire:** `pnpm aspire run` starts the `smtp4dev` container and passes its SMTP endpoint to `web` as `SMTP_URL`. Open its web UI from the dashboard to read the messages.
+- **Without Aspire:** run `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev:v3`, set `SMTP_URL=smtp://localhost:2525` in `.env`, and open http://localhost:5000.
+
+Without `SMTP_URL`, development logs the message to the server console instead, and production shows a "couldn't send" error.
+
 ## Conventions
 
 - Read data in `loader`s and write data in `action`s. Validate every `action` input with zod.

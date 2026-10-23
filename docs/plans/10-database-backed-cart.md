@@ -269,7 +269,7 @@ Each step is small, ordered, and leaves the app in a working state.
   cart" toast (`role="status"`, `animate-toast`, `bg-success-bg text-success`, link "View cart"
   to `/cart`); errors use `cartErrorMessage`. Check catalog cards and the product page still
   submit `variantId` correctly.
-- [ ] **10. Docs** — `app/.server/AGENTS.md`: a "Visitor" section (`getVisitor` / `readVisitor`,
+- [x] **10. Docs** — `app/.server/AGENTS.md`: a "Visitor" section (`getVisitor` / `readVisitor`,
   signed cookies, only actions create sessions rows, #18 extends it) and cart rules (one active
   cart per owner via partial unique indexes, guest lookup by `anonymous_id`, merge in
   `onUserAuthenticated`, stock checks). Mention the cart's `Set-Cookie` in the README only if it

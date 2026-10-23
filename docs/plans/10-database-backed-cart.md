@@ -172,11 +172,11 @@ on login or registration.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **0. Sync with main** — `git -C "$WT" fetch origin && git -C "$WT" rebase origin/main`.
+- [x] **0. Sync with main** — `git -C "$WT" fetch origin && git -C "$WT" rebase origin/main`.
   Check whether #38, #28 and #16 have merged: if `app/lib/i18n/` exists, use `useT()` / `t()`
   for every string in steps 6–8 and add keys to both dictionaries (with Ukrainian plurals for
   "N items"); if `app/.server/db/migrations/0005_*` exists, our migration becomes `0006`.
-- [ ] **1. Visitor cookies and `getVisitor`** — Create `app/.server/visitor-cookie.ts`
+- [x] **1. Visitor cookies and `getVisitor`** — Create `app/.server/visitor-cookie.ts`
   (`ANONYMOUS_ID_COOKIE = "anonymous_id"`, `ANALYTICS_SESSION_COOKIE = "analytics_session"`).
   Create `app/.server/analytics.ts` with the two signed `createCookie`s, `readVisitor(request)` and
   `getVisitor(request, db = defaultDb)` as in Decisions; validate cookie values with

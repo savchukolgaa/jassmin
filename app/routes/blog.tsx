@@ -1,32 +1,31 @@
 import { data, useNavigation } from "react-router";
 import { listBlogPosts } from "~/.server/cms/content";
 import { cmsUnavailable } from "~/.server/cms/errors";
+import { getLocale } from "~/.server/locale";
 import { blogCacheHeaders, buildBlogListView } from "~/.server/services/blog";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { Pagination } from "~/components/ui/Pagination";
 import { BlogPostCard } from "~/features/blog/BlogPostCard";
-import {
-  BLOG_PAGE_SIZE,
-  blogHref,
-  blogResponseHeaders,
-  DEFAULT_BLOG_DESCRIPTION,
-  parseBlogSearch,
-} from "~/lib/blog";
+import { BLOG_PAGE_SIZE, blogHref, blogResponseHeaders, parseBlogSearch } from "~/lib/blog";
 import { cn } from "~/lib/cn";
-import { useT } from "~/lib/i18n";
+import { metaTranslator, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/blog";
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ loaderData, matches }: Route.MetaArgs) {
+  const { t } = metaTranslator(matches);
   const page = loaderData?.page ?? 1;
-  const title = page > 1 ? `Blog — Page ${page} — Jassmin` : "Blog — Jassmin";
+  const title = t("meta.title", {
+    page: page > 1 ? t("blog.pageTitle", { page }) : t("blog.title"),
+  });
+  const description = t("blog.defaultDescription");
   return [
     { title },
-    { name: "description", content: DEFAULT_BLOG_DESCRIPTION },
+    { name: "description", content: description },
     { property: "og:type", content: "website" },
     { property: "og:title", content: title },
-    { property: "og:description", content: DEFAULT_BLOG_DESCRIPTION },
+    { property: "og:description", content: description },
     ...(loaderData
       ? [
           { property: "og:url", content: loaderData.canonicalUrl },
@@ -44,13 +43,16 @@ export function headers({ loaderHeaders }: Route.HeadersArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const { page } = parseBlogSearch(url.searchParams);
-  const posts = await listBlogPosts({ page, pageSize: BLOG_PAGE_SIZE }).catch(cmsUnavailable);
+  const [posts, locale] = await Promise.all([
+    listBlogPosts({ page, pageSize: BLOG_PAGE_SIZE }).catch(cmsUnavailable),
+    getLocale(request),
+  ]);
   if (page > posts.pageCount && posts.total > 0) {
     throw data(null, { status: 404 });
   }
   return data(
     {
-      ...buildBlogListView(posts),
+      ...buildBlogListView(posts, locale),
       canonicalUrl: new URL(blogHref(page), url.origin).toString(),
     },
     { headers: blogCacheHeaders(request) },
@@ -58,6 +60,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function Blog({ loaderData }: Route.ComponentProps) {
+  const { t } = useT();
   const { posts, page, pageCount } = loaderData;
   const navigation = useNavigation();
   // Dim the list while another page of it loads.
@@ -66,14 +69,12 @@ export default function Blog({ loaderData }: Route.ComponentProps) {
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
       <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
-        Blog
+        {t("blog.title")}
       </h1>
-      <p className="mt-3 max-w-2xl text-lg text-body">
-        Scent guides and fragrance stories to help you find a perfume that suits you.
-      </p>
+      <p className="mt-3 max-w-2xl text-lg text-body">{t("blog.intro")}</p>
 
       <section
-        aria-label="Articles"
+        aria-label={t("blog.articles")}
         aria-busy={busy || undefined}
         className={cn("mt-8 transition-opacity duration-200", busy && "opacity-60")}
       >
@@ -87,14 +88,14 @@ export default function Blog({ loaderData }: Route.ComponentProps) {
           </ul>
         ) : (
           <div className="rounded-card-lg bg-blush p-8 text-center">
-            <p className="text-lg font-bold text-ink">No articles yet.</p>
-            <p className="mt-1 text-body">In the meantime, have a look at our perfumes.</p>
+            <p className="text-lg font-bold text-ink">{t("blog.empty")}</p>
+            <p className="mt-1 text-body">{t("blog.emptyHint")}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-3">
               <ButtonLink to="/catalog/women" size="sm">
-                Shop women
+                {t("blog.shopWomen")}
               </ButtonLink>
               <ButtonLink to="/catalog/men" size="sm" variant="dark">
-                Shop men
+                {t("blog.shopMen")}
               </ButtonLink>
             </div>
           </div>

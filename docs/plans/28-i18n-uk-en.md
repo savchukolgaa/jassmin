@@ -321,7 +321,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
   and `buildHomePageView` keeps the CMS text (Strapi content isn't translated). Update
   `contact-form.test.ts` and `HomePage.test.ts`.
 
-- [ ] **12. Blog.** `blog.tsx`: translate the heading, intro, empty state, "Shop women/men",
+- [x] **12. Blog.** `blog.tsx`: translate the heading, intro, empty state, "Shop women/men",
   "Articles" label, and in `meta` the title (`blog.pageTitle` with `{page}`) and default
   description. `BlogArticle.tsx`: "← Back to the blog". `blog-post.tsx`: the "Article not found"
   `meta`. Server: `formatPublishedDate(iso, locale)` reuses the translator's `formatDate`, and

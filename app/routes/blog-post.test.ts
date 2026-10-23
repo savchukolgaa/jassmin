@@ -10,6 +10,9 @@ const { loader, meta } = await import("./blog-post");
 type LoaderArgs = Parameters<typeof loader>[0];
 type MetaArgs = Parameters<typeof meta>[0];
 
+// `meta` reads the locale from the root match; the assertions are in English.
+const EN = [{ id: "root", loaderData: { locale: "en" } }];
+
 const CMS = "http://cms.test:1337";
 
 const post: BlogPost = {
@@ -90,7 +93,7 @@ describe("blog post loader", () => {
 
     const result = await load(post.slug);
 
-    expect(new Headers(result.init?.headers).get("Vary")).toBe("Cookie");
+    expect(new Headers(result.init?.headers).get("Vary")).toBe("Cookie, Accept-Language");
   });
 });
 
@@ -99,7 +102,7 @@ describe("blog post meta", () => {
     content.getBlogPostBySlug.mockResolvedValue(post);
     const { data } = await load(post.slug);
 
-    const tags = meta({ loaderData: data } as unknown as MetaArgs);
+    const tags = meta({ loaderData: data, matches: EN } as unknown as MetaArgs);
 
     expect(tags).toEqual(
       expect.arrayContaining([
@@ -120,7 +123,7 @@ describe("blog post meta", () => {
   });
 
   it("has a title for the 404 page", () => {
-    expect(meta({ loaderData: undefined } as unknown as MetaArgs)).toEqual([
+    expect(meta({ loaderData: undefined, matches: EN } as unknown as MetaArgs)).toEqual([
       { title: "Article not found — Jassmin" },
     ]);
   });

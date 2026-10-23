@@ -4,10 +4,10 @@ import { blogHref, blogPostHref, blogResponseHeaders, isBlogSlug, parseBlogSearc
 describe("blogResponseHeaders", () => {
   it("forwards the loader's cache headers", () => {
     const headers = blogResponseHeaders(
-      new Headers({ "Cache-Control": "public, max-age=60", Vary: "Cookie" }),
+      new Headers({ "Cache-Control": "public, max-age=60", Vary: "Cookie, Accept-Language" }),
     );
     expect(headers.get("Cache-Control")).toBe("public, max-age=60");
-    expect(headers.get("Vary")).toBe("Cookie");
+    expect(headers.get("Vary")).toBe("Cookie, Accept-Language");
   });
 
   it("stores nothing when the loader threw", () => {

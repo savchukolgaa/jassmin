@@ -20,9 +20,9 @@ export function useT(): Translator {
  * root loader's data in `matches`.
  */
 export function metaTranslator(
-  matches: ReadonlyArray<{ id: string; loaderData?: unknown } | undefined>,
+  matches: ReadonlyArray<{ id: string; loaderData?: unknown } | undefined> | undefined,
 ): Translator {
-  const root = matches.find((match) => match?.id === "root")?.loaderData;
+  const root = matches?.find((match) => match?.id === "root")?.loaderData;
   const locale =
     typeof root === "object" && root !== null && "locale" in root ? root.locale : undefined;
   return createTranslator(isLocale(locale) ? locale : undefined);

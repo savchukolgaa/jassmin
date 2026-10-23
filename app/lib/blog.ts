@@ -5,10 +5,6 @@ import type { CmsImage } from "./cms";
 
 export const BLOG_PAGE_SIZE = 12;
 
-/** Meta description for the blog list, and for articles without an excerpt or text. */
-export const DEFAULT_BLOG_DESCRIPTION =
-  "Fragrance articles and scent guides from Jassmin: how to choose, wear and care for perfume.";
-
 const blogSearchSchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
 });
@@ -39,6 +35,12 @@ export function isBlogSlug(value: string | undefined): value is string {
 }
 
 /**
+ * What blog HTML depends on besides the URL: the session (header) and the locale, which comes from
+ * the `locale` cookie or, without one, `Accept-Language`.
+ */
+export const BLOG_VARY = "Cookie, Accept-Language";
+
+/**
  * The blog routes' `headers` export: forwards the loader's cache headers, and stores nothing when
  * the loader threw (404, CMS 503), since those responses have no `Cache-Control` of their own.
  */
@@ -49,7 +51,7 @@ export function blogResponseHeaders(loaderHeaders: Headers): Headers {
   }
   return new Headers({
     "Cache-Control": cacheControl,
-    Vary: loaderHeaders.get("Vary") ?? "Cookie",
+    Vary: loaderHeaders.get("Vary") ?? BLOG_VARY,
   });
 }
 
@@ -60,7 +62,8 @@ export interface BlogPostCardView {
   coverImage: CmsImage | null;
   /** ISO 8601 timestamp, for `<time dateTime>`. */
   publishedAt: string;
-  /** Formatted on the server, e.g. "22 October 2026", so SSR and hydration match. */
+  /** Formatted on the server in the visitor's locale, e.g. "22 жовтня 2026 р.", so SSR and
+   * hydration match. */
   publishedLabel: string;
 }
 

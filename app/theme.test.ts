@@ -81,3 +81,30 @@ describe("contrast (WCAG AA)", () => {
     expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe("motion", () => {
+  it.each(["fade-up", "pop", "spin-in", "marquee", "toast"])(
+    "defines the %s keyframes and animate utility",
+    (name) => {
+      expect(css).toContain(`@keyframes ${name} {`);
+      expect(css).toMatch(new RegExp(`--animate-${name}: ${name} `));
+    },
+  );
+
+  it("adds delay steps and the card lift utility", () => {
+    expect(css).toContain("@utility anim-delay-* {");
+    expect(css).toContain("@utility lift {");
+  });
+
+  it("only enables scroll reveal where animation-timeline is supported", () => {
+    expect(css).toMatch(/@supports \(animation-timeline: view\(\)\) \{\s*\.reveal \{/);
+    expect(css.match(/\.reveal/g)).toHaveLength(1);
+  });
+
+  it("turns off all animation and transitions under reduced motion", () => {
+    const blocks = css.split("@media (prefers-reduced-motion: reduce)");
+    expect(blocks).toHaveLength(2);
+    expect(blocks[1]).toContain("animation: none !important;");
+    expect(blocks[1]).toContain("transition: none !important;");
+  });
+});

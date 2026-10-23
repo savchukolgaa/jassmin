@@ -184,7 +184,7 @@ also writes `docs/design.md`, which the page issues (#7, #8, #9, #12, #26) follo
   set to `flex-1`, so the footer stays at the bottom on short pages. Add `Footer.test.ts` with
   `renderToStaticMarkup` + `MemoryRouter`: every `FOOTER_LINKS` href, "© … Jassmin", the
   wordmark has `aria-hidden="true"`, and the footer has `overflow-hidden`.
-- [ ] **8. Motion utilities.** In `app/app.css`:
+- [x] **8. Motion utilities.** In `app/app.css`:
   - In `@theme`, add `--animate-fade-up: fade-up 0.6s cubic-bezier(.2,.7,.2,1) both`,
     `--animate-pop`, `--animate-spin-in`, `--animate-marquee: marquee 30s linear infinite` and
     `--animate-toast`, with their `@keyframes` (`fade-up`: from `opacity:0; translateY(16px)`;

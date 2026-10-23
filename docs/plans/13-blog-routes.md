@@ -97,8 +97,8 @@ outage shows a 503.
   and `alt` (empty alt falls back to `""` = decorative, since the title is right next to it). The
   article cover loads eagerly, list covers lazily. No cover → a blush placeholder block.
 
-- *Implementation order:* step 7 (UI components) was done before steps 5–6, so each route
-  commit is complete on its own.
+- *Implementation order:* step 7 (UI components) was done before steps 5–6, and each route's
+  tests (step 8) were committed with the route, so each route commit is complete on its own.
 
 ## Resolved questions
 - **Q1: Cache policy** — Use the cookie-aware policy: `public, max-age=60, stale-while-revalidate=300`
@@ -193,7 +193,7 @@ outage shows a 503.
     `useNavigation` pattern as the catalog).
   - `ErrorBoundary` → `ErrorContent` + `describeRouteError` (the `_shop` boundary would also work,
     but a route boundary matches `catalog.tsx`).
-- [ ] **6. `/blog/:slug` article route** — `app/routes/blog-post.tsx`:
+- [x] **6. `/blog/:slug` article route** — `app/routes/blog-post.tsx`:
   - `loader({ params, request })`: `isBlogSlug(params.slug)` else 404; `getBlogPostBySlug(slug)
     .catch(cmsUnavailable)`; `null` → `throw data(null, { status: 404 })`; return
     `data(buildBlogPostView(post, { origin: new URL(request.url).origin, mediaBaseUrl:
@@ -209,7 +209,7 @@ outage shows a 503.
   with a visible focus ring from `focusRing("onLight")`, `lift` hover with
   `motion-reduce:transform-none`), `BlogArticle`. Add the `article` variant to `RichText`.
   Check contrast follows `docs/design.md` (text `ink`/`body`/`muted`, links `primary-dark`).
-- [ ] **8. Route tests** — `app/routes/blog.test.ts` and `app/routes/blog-post.test.ts`, mocking
+- [x] **8. Route tests** — `app/routes/blog.test.ts` and `app/routes/blog-post.test.ts`, mocking
   `~/.server/cms/content` with `vi.hoisted` like `app/routes/home.test.ts`:
   list returns posts in the order given and passes `page`/`pageSize`; `?page=abc` → page 1; page
   past the end → 404; empty list on page 1 is not a 404; `CmsError` → 503; slug lookup `null` → 404;

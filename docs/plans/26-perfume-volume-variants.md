@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/26
 Branch: `issue/26`
 Worktree: `.claude/worktrees/issue-26`
-Status: Planned (questions answered)
+Status: Implemented
 
 ## Goal
 
@@ -267,7 +267,7 @@ chosen variant.
   `public_id`, the deprecated product columns, that stock checks/decrements and
   `price_at_purchase` use the variant (#11), and that `cart_items` lines are per variant. Leave a
   comment on #10/#11 summarising the contract (Q1).
-- [ ] **11. Verify**: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`. Then
+- [x] **11. Verify**: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`. Then
   `pnpm aspire run`, `pnpm db:migrate`, `pnpm db:seed` and the manual checks below.
 
 ## Testing & verification
@@ -286,15 +286,15 @@ chosen variant.
 
 ## Acceptance criteria
 
-- [ ] `product_variants` table exists with a unique `(product_id, volume_ml)` constraint and only allows 7, 10, 30, 50 or 100 ml — steps 1, 2, 3
-- [ ] Existing products are migrated to at least one variant without data loss; ML feature columns are untouched — steps 3, 5 (legacy columns kept)
-- [ ] The product page shows a dropdown with the product's available volumes in ascending order, each with its price — steps 6, 8
-- [ ] Changing the selected volume updates the displayed price and stock status — step 8
-- [ ] Out-of-stock volumes are disabled in the dropdown, and the default is the smallest in-stock volume — steps 4, 8
-- [ ] Adding to cart stores the selected variant; the cart shows the volume and the variant's price — steps 2, 8, 9 (schema + contract); storing and the cart page land with #10 (Q1)
-- [ ] Submitting an invalid or out-of-stock `variantId` returns a typed validation error, not a crash — steps 4, 6, 9
-- [ ] Catalog cards show the lowest variant price ("from ₴…") — steps 6, 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
+- [x] `product_variants` table exists with a unique `(product_id, volume_ml)` constraint and only allows 7, 10, 30, 50 or 100 ml — steps 1, 2, 3
+- [x] Existing products are migrated to at least one variant without data loss; ML feature columns are untouched — steps 3, 5 (legacy columns kept)
+- [x] The product page shows a dropdown with the product's available volumes in ascending order, each with its price — steps 6, 8
+- [ ] Changing the selected volume updates the displayed price and stock status — step 8 (implemented with React state; the SSR output for the default is tested, but the change in a real browser wasn't clicked through)
+- [x] Out-of-stock volumes are disabled in the dropdown, and the default is the smallest in-stock volume — steps 4, 8
+- [ ] Adding to cart stores the selected variant; the cart shows the volume and the variant's price — steps 2, 8, 9 (schema + contract); storing and the cart page land with #10 (Q1; contract posted on #10)
+- [x] Submitting an invalid or out-of-stock `variantId` returns a typed validation error, not a crash — steps 4, 6, 9
+- [x] Catalog cards show the lowest variant price ("from ₴…") — steps 6, 7
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
 
 ## Out of scope
 

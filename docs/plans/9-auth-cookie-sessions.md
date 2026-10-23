@@ -140,8 +140,8 @@ feature.
 | modify | `app/.server/services/header.ts` (+ `.test.ts`) | Use `getUser` instead of the session stub |
 | create | `app/lib/auth.ts` (+ `.test.ts`) | zod schemas, `AuthFormErrors`, `safeRedirect`, `resolveAcquisitionChannel` |
 | create | `app/features/auth/AuthLayout.tsx`, `TextField.tsx` | Shared C+ two-column layout (with tabs, `FormAlert`) and field with error |
-| modify | `app/routes/register.tsx` | loader + action + form |
-| modify | `app/routes/login.tsx` | loader + action + form |
+| modify | `app/routes/register.tsx` (+ new `register.test.ts`) | loader + action + form; action tests with mocked services |
+| modify | `app/routes/login.tsx` (+ new `login.test.ts`) | loader + action + form; action tests incl. rate limiting |
 | create | `app/routes/logout.ts` | POST-only logout |
 | modify | `app/routes/account.tsx` | `requireUser`, logout button |
 | modify | `app/routes.ts`, `app/routes.test.ts` | Register `/logout` outside the shop layout |
@@ -226,7 +226,7 @@ Each step is small, ordered, and leaves the app in a working state.
     (label, input, `aria-invalid`, `aria-describedby` error text), following the C+ Sign up page.
     Fields: full name, email, password (`autoComplete="new-password"`), optional phone, plus
     hidden `acquisitionChannel` and `redirectTo`. Add a link to `/login` that keeps `redirectTo`.
-- [ ] **8. Build `/login`.**
+- [x] **8. Build `/login`.**
   - `loader`: redirect a logged-in user to `safeRedirect(redirectTo)`; return `redirectTo` for the
     hidden field.
   - `action`: parse with `loginSchema`. If `loginLimiters` block the email or IP, return
@@ -248,6 +248,10 @@ Each step is small, ordered, and leaves the app in a working state.
   side effects. Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
 
 ## Testing & verification
+- **Route tests** (added beyond the original plan): `routes/login.test.ts` and
+  `routes/register.test.ts` call the loaders and actions with mocked services. They cover
+  validation errors, the generic credentials error, the 429 after 5/20 failures, safe
+  `redirectTo`, passwords never echoed back, and the acquisition channel.
 - **Unit tests:** `password.test.ts`, `rate-limit.test.ts`, `lib/auth.test.ts`, `session.test.ts`,
   `services/header.test.ts` and `routes.test.ts`.
 - **DB integration tests** (skipped without a DB, using a throwaway DB): `queries/users.test.ts`

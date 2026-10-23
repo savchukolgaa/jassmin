@@ -15,3 +15,10 @@ describe("formatPrice", () => {
     expect(normalize(formatPrice("1450.05"))).toBe("1 450,05 ₴");
   });
 });
+
+describe("formatPrice in English", () => {
+  it("puts the hryvnia sign first and groups with commas", () => {
+    expect(formatPrice("6850.00", "en")).toBe("₴6,850");
+    expect(formatPrice("1450.05", "en")).toBe("₴1,450.05");
+  });
+});

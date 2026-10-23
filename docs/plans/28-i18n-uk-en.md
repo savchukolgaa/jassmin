@@ -181,7 +181,7 @@ copy, in the storefront and the admin area, moves into the dictionaries. Prices 
 
 Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
 
-- [ ] **1. i18n core in `app/lib/i18n/`.**
+- [x] **1. i18n core in `app/lib/i18n/`.**
   - `locales.ts`: `LOCALES = ["uk", "en"] as const`, `type Locale`, `DEFAULT_LOCALE: Locale =
     "uk"`, `isLocale(value: unknown): value is Locale`,
     `INTL_LOCALES: Record<Locale, string> = { uk: "uk-UA", en: "en-GB" }`,
@@ -213,7 +213,7 @@ Each step ends with `pnpm typecheck && pnpm lint && pnpm test` green.
     `// @ts-expect-error` line that assigns an object without one key to `Dictionary`, so the
     compile-time check is itself checked by `pnpm typecheck`.
 
-- [ ] **2. Locale-aware money.** `app/lib/money.ts`: change it to
+- [x] **2. Locale-aware money.** `app/lib/money.ts`: change it to
   `formatPrice(price: string, locale: Locale = DEFAULT_LOCALE)` and delegate to the cached
   formatter used by `createTranslator` (one implementation, D8). The translator's `formatPrice`
   calls it. Update `money.test.ts` for `uk` (`6 850 ₴`, normalising ` `/` `) and `en`

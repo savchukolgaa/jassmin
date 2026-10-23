@@ -160,15 +160,17 @@ Each step is small, ordered, and leaves the app in a working state.
   over a `Map`, pruning expired entries when it's called. Export a `loginLimiters` singleton (`byEmail`: 5, `byIp`: 20 per 15 min) (kept
   on `globalThis` across HMR, like `db/index.ts`) and `getClientIp(request)`. Unit-test the limit,
   the window expiry (with an injected `now`), `reset` and IP parsing.
-- [ ] **4. Add the shared auth schemas and helpers.** In `app/lib/auth.ts`:
+- [x] **4. Add the shared auth schemas and helpers.** In `app/lib/auth.ts`:
   - `registerSchema`: `fullName` trimmed, 1–255; `email` trimmed, lowercased, `z.email()`, max
     255; `password` 8–128; `phone` optional, empty string → `undefined`, `/^\+?[0-9 ()-]{7,20}$/`,
     max 50; `acquisitionChannel` optional, lowercased, max 100.
   - `loginSchema`: `email`, `password` (min 1), `redirectTo` optional.
   - `type AuthFormErrors = { fieldErrors?: Partial<Record<…, string>>; formError?: string }`.
   - `safeRedirect(to, fallback = "/account")`.
-  - `resolveAcquisitionChannel(url, referer, ownHost)`: `utm_source`, otherwise the external
-    referrer host, otherwise `'direct'`.
+  - `resolveAcquisitionChannel(url, referer)`: `utm_source`, otherwise the external referrer
+    host (compared with `url.host`), otherwise `'direct'`.
+  - `toFieldErrors(error, fields)` (first message per field) and `loginRedirectPath(url)`.
+  - An invalid `acquisitionChannel` is dropped (`.catch(undefined)`) instead of failing the form.
 
   Unit-test every rule, including the open-redirect cases (`//evil.com`, `/\evil.com`,
   `https://evil.com`, `undefined`).

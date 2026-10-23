@@ -58,7 +58,7 @@ As a store owner, I want carts and orders stored with full financial and lifecyc
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Shared payment-method values.** In `app/lib/enums.ts`, add `export const PAYMENT_METHODS = ["card", "cod"] as const;` and `export type PaymentMethod = …`, and extend `enums.test.ts`. Check: `pnpm test app/lib`.
+- [x] **1. Shared payment-method values.** In `app/lib/enums.ts`, add `export const PAYMENT_METHODS = ["card", "cod"] as const;` and `export type PaymentMethod = …`, and extend `enums.test.ts`. Check: `pnpm test app/lib`.
 - [ ] **2. Commerce tables in `schema.ts`.** Update the header comment, then add:
   - `carts`: `id` serial PK; `userId` integer → `users.id` (`onDelete: "restrict"`); `sessionId` uuid (nullable, with a comment saying the FK comes in #5); `status` `cartStatusType().notNull().default("active")`; `createdAt`; `updatedAt` with `.defaultNow().notNull().$onUpdate(() => new Date())`. Indexes: `carts_user_id_idx`, `carts_session_id_idx`, `carts_status_updated_at_idx`.
   - `cartItems`: `id` serial PK; `cartId` → `carts.id` cascade, not null; `productId` → `products.id` cascade, not null; `quantity` integer not null, default 1; `addedAt` not null, default now. `unique("cart_items_cart_id_product_id_unique").on(t.cartId, t.productId)` and `check("cart_items_quantity_check", sql\`${t.quantity} > 0\`)`.

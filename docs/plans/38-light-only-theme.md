@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/38
 Branch: `issue/38`
 Worktree: `.claude/worktrees/issue-38`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -126,7 +126,7 @@ dark theme is designed.
   `app/root.tsx` so pages and native controls stay light under OS dark mode; don't add `dark:`
   variants (guarded by `app/theme.test.ts`); a dark theme would be a separate design issue; the
   header and footer are always deep pink.
-- [ ] **7. Verify and commit** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual
+- [x] **7. Verify and commit** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual
   check (below); commit with explicit paths on `issue/38`.
 
 ## Testing & verification
@@ -148,13 +148,17 @@ dark theme is designed.
   white/blush backgrounds with `ink`/`body` text — steps 2, 4, 7
 - [ ] Native form controls (inputs, selects, checkboxes) and scrollbars stay light in dark mode —
   steps 2, 3, 7
-- [ ] `<html>` has `color-scheme: light` and the document has a `color-scheme` meta tag set to
+- [x] `<html>` has `color-scheme: light` and the document has a `color-scheme` meta tag set to
   `light` — steps 2, 3, 5
-- [ ] No `dark:` utilities remain in `app/` (apart from the unrelated `dark` button variant and
+- [x] No `dark:` utilities remain in `app/` (apart from the unrelated `dark` button variant and
   `primary-dark` token) — steps 4, 5
-- [ ] `docs/design.md` documents the storefront as light-only — step 6
-- [ ] A test fails if a dark-mode rule is reintroduced in `app/app.css` — step 5
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 7
+- [x] `docs/design.md` documents the storefront as light-only — step 6
+- [x] A test fails if a dark-mode rule is reintroduced in `app/app.css` — step 5
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 7
+
+Criteria 1 and 2 are left unticked: the built CSS gives `html` `color-scheme:light` and no
+`dark:` rule applies to any element, but nobody has checked them visually in a browser with
+`prefers-color-scheme: dark` yet.
 
 ## Out of scope
 

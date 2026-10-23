@@ -169,7 +169,7 @@ chosen variant.
 
 - [x] **1. Volume enum**: add `PERFUME_VOLUMES_ML` and `PerfumeVolumeMl` to `app/lib/enums.ts`,
   plus a test in `enums.test.ts` (exact values, ascending). Check: `pnpm test app/lib/enums`.
-- [ ] **2. Schema**: in `schema.ts` add `productVariants` as described in Decisions, with the
+- [x] **2. Schema**: in `schema.ts` add `productVariants` as described in Decisions, with the
   volume check `sql\`${t.volumeMl} in (${sql.join(PERFUME_VOLUMES_ML.map((v) => sql.raw(String(v))), sql\`, \`)})\``.
   Add `variantId` (NOT NULL, cascade) to `cartItems` and swap the unique to
   `cart_items_cart_id_variant_id_unique`. Add `variantId` (nullable, set null) and `volumeMl`
@@ -177,7 +177,7 @@ chosen variant.
   `products.price/volumeMl/stockQuantity`, and update the header comment. Mirror the types in
   `app/lib/commerce.ts` and extend `schema.test.ts` (columns, FKs, constraints, and the
   commerce type drift checks). Check: `pnpm typecheck && pnpm test app/.server/db/schema`.
-- [ ] **3. Migration + rollback**: `pnpm db:generate --name product_variants`. Read the generated
+- [x] **3. Migration + rollback**: `pnpm db:generate --name product_variants`. Read the generated
   SQL. drizzle-kit can't add a NOT NULL column to a table with rows, so edit the **unapplied**
   file to:
   1. create `product_variants` (generated);

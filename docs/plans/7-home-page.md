@@ -9,7 +9,8 @@ Status: Planned
 A first-time visitor lands on `/` and sees the current tester offer, the brand story, where the store
 is and how to reach it. The home route renders four sections in order (Hero, About Us, Location,
 Contacts). All copy, images and contact details come from Strapi (`home-page` and `site-settings`),
-and the Contacts section has a contact form handled by the home route's `action` that works without JS.
+and the Contacts section has a contact form handled by the home route's `action` that works without
+JS and emails the store over SMTP (smtp4dev locally).
 
 ## Dependencies & prerequisites
 - **#2 (closed)**: `Button`, `ButtonLink`, `buttonClasses` in `app/components/ui/`.
@@ -21,162 +22,166 @@ and the Contacts section has a contact form handled by the home route's `action`
   `app/.server/cms/__fixtures__/`, seed in `cms/scripts/seed.ts`.
 - **#27 (open, not on `main`)**: C+ design foundation: theme tokens (`--color-primary: #c22f4b`,
   `ink`, `blush`, …), Manrope, pill `Button` variants incl. `dark` and `outline-light`, footer,
-  motion utilities (`fade-up`, `spin-in`, `marquee`, `reveal`) and `docs/design.md`. The page layout
-  follows the C+ canvas page **"Option C+ — Bold blush, upgraded (chosen)"** (`HomeBoldPlus`).
+  motion utilities and `docs/design.md`. The page follows the C+ canvas page
+  **"Option C+ — Bold blush, upgraded (chosen)"** (`HomeBoldPlus`).
   **Implement #7 after #27 is merged** (rebase `issue/7` onto `origin/main`). If #27 is still open
-  when #7 starts, build with today's tokens/variants and leave the C+-specific classes for a
-  follow-up commit once #27 lands.
-- New packages: `marked` (Markdown → HTML) and `sanitize-html` + `@types/sanitize-html` (server-side
-  sanitizing). Both are server-only. #13 will reuse the same helper for blog posts.
-- No new env vars, no DB migrations.
+  when #7 starts, build with today's tokens/variants and apply the C+ classes in a follow-up commit
+  once #27 lands.
+- **Popular perfumes page (new issue, not built yet)**: `/popular`, the target of "Order Now".
+  Until it's merged, the CTA leads to a 404; that's accepted and noted in the PR.
+- **Remaining C+ home sections (new issue)**: marquee, How it works, Build your trio, category
+  tiles, Bestsellers. Not part of #7.
+- New packages (server-only): `marked`, `sanitize-html`, `nodemailer`; dev: `@types/sanitize-html`,
+  `@types/nodemailer`.
+- New env vars: `SMTP_URL`, `CONTACT_INBOX`, `CONTACT_FROM` (see step 6).
+- New Aspire resource: `smtp4dev` container (`rnwood/smtp4dev`).
+- No DB migrations.
 - Local data: `pnpm cms:seed` (home page + site settings) and `STRAPI_API_TOKEN` in `.env`.
 
 ## Decisions & assumptions
-- **Route & data flow.** `app/routes/home.tsx` keeps its index route. `loader` calls
+- **Route & data flow.** `app/routes/home.tsx` stays the index route. `loader` calls
   `getHomePage()` and `getSiteSettings()` with `Promise.all`, each wrapped in
   `.catch(cmsUnavailable)`, so a Strapi outage becomes a 503 rendered by the existing `_shop`
   `ErrorBoundary` (header kept). The placeholder `getDatabaseInfo()` call is removed from the home
-  route; `app/.server/db/queries/health.ts` and its test stay (they're still a useful health check).
+  route; `app/.server/db/queries/health.ts` and its test stay.
 - **Markdown.** `about.body` is Strapi `richtext` (Markdown). The loader renders it to sanitized
   HTML on the server (`renderMarkdown` in `app/.server/markdown.ts`: `marked` → `sanitize-html` with
   a strict allowlist: `p, br, strong, em, ul, ol, li, a, h3, h4, blockquote`; `a[href]` only
   `http`, `https`, `mailto`, `tel`; external links get `rel="noopener noreferrer"`). The component
-  injects the returned string with `dangerouslySetInnerHTML`. The loader returns
-  `about: { title, bodyHtml }` instead of the raw Markdown.
+  injects it with `dangerouslySetInnerHTML`. The loader returns `about: { title, bodyHtml }`.
 - **Plain-text multiline fields** (`openingHours`, `customerServiceHours`) are rendered as text with
   `whitespace-pre-line`, never as HTML.
-- **Hero layout & CTA (C+).** Deep-pink hero band (`bg-primary`, white text), two columns on `md+`,
-  stacked on mobile (text first, image second). Left: small eyebrow, the Strapi `headline` as
-  `<h1>`, and the CTA as `ButtonLink` with `ctaLabel` / `ctaHref`. Right: Strapi hero image in an
-  arch frame (top radius = half the width) with the "only 499₴ for 3" `spin-in` badge from the
-  canvas. The canvas's second CTA ("See all perfumes") and the scrolling offer marquee are included
-  as static decoration only if #27's utilities exist (marquee is `aria-hidden`).
-- **CTA button style.** The issue asks for `#FF5C77` "primary". #27 supersedes this: `#FF5C77`
-  with white text fails WCAG AA, `primary` becomes `#C22F4B`, and "Order Now" uses the new `dark`
-  variant (`bg-ink`), which is also the only variant visible on the pink hero. Before #27 lands:
-  `variant="primary"`.
-- **CTA href.** `ctaHref` is editor-controlled. A small pure helper `resolveCtaHref(href)` in
-  `app/lib/links.ts` returns `{ kind: "internal", to }` for paths starting with a single `/`,
-  `{ kind: "external", href }` for `https:` URLs, and falls back to `/catalog/women` for anything
-  else (e.g. `javascript:`). Internal → `ButtonLink`; external → `<a>` with `buttonClasses()`.
-  **(unconfirmed, see Q2)** The seed and fixture currently use `/catalog`, which 404s because only
-  `/catalog/:gender` exists; the seed/fixture default changes to `/catalog/women`.
+- **Hero layout (C+).** Deep-pink hero band (`bg-primary`, white text), two columns on `md+`,
+  stacked on mobile (text first, image second). Left: eyebrow, the Strapi `headline` as `<h1>`, the
+  CTA. Right: Strapi hero image in an arch frame (top radius = half the width) with the
+  "only 499₴ for 3" `spin-in` badge. The canvas's marquee and second CTA belong to the new
+  home-sections issue.
+- **CTA: "Order Now" → `/popular`.** Label and href still come from Strapi; the seed and fixture
+  change to `ctaLabel: "Order Now"`, `ctaHref: "/popular"`. The `/popular` page itself is the new
+  popular perfumes issue. Style: #27's `dark` variant (`bg-ink`), since `#FF5C77` + white fails WCAG
+  AA and a `primary` (deep pink) button would vanish on the pink hero. Before #27 lands:
+  `variant="primary"`. A pure helper `resolveCtaHref(href)` in `app/lib/links.ts` returns
+  `{ kind: "internal", to }` for paths starting with a single `/`, `{ kind: "external", href }` for
+  `https:` URLs, and falls back to `/popular` for anything else (e.g. `javascript:`).
+  Internal → `ButtonLink`; external → `<a>` with `buttonClasses()`. Existing local Strapi data
+  needs a manual edit in the admin (the seed skips existing single types).
 - **Hero image optimisation.** Extend the media schema with Strapi's `formats`
   (`thumbnail/small/medium/large`, each `{ url, width, height }`), and `CmsImage` with
   `srcSet: string | null` built from the formats plus the original (absolute URLs, `"<url> <w>w"`).
   The hero `<img>` uses `srcSet`, `sizes="(min-width: 768px) 50vw, 100vw"`, explicit
   `width`/`height`, `fetchPriority="high"`, `decoding="async"` and `alt` from Strapi. A missing hero
-  image renders a blush placeholder block (`aria-hidden`), not a broken image.
+  image renders a blush placeholder block (`aria-hidden`).
 - **About Us** (`<section id="about">`, blush background): "About us" eyebrow, `about.title` as
   `<h2>`, sanitized body. The canvas's store photo isn't in the Strapi model, so it's omitted.
 - **Location**: eyebrow, heading, address and opening hours with inline-SVG icons, a
-  "Get directions" link (`https://www.google.com/maps/search/?api=1&query=<encoded address>`,
-  `outline`/secondary style), and the map `<iframe>` (`title="Map: <address>"`,
-  `loading="lazy"`, `referrerPolicy="no-referrer-when-downgrade"`, rounded card). The map is only
-  rendered when `mapEmbedUrl` passes `safeMapEmbedUrl()`: `https:` and host `www.google.com` /
-  `maps.google.com` with a `/maps` path. Otherwise the section shows address/hours only.
-- **Contacts** (`<section id="contacts">`, dark `ink` background): phone (`tel:` link, digits and
-  `+` only), email (`mailto:`), customer service hours, social links as `outline-light` pill
-  buttons (label from a `SOCIAL_LABELS: Record<SocialPlatform, string>` map in `app/lib/cms.ts`,
-  `target="_blank" rel="noopener noreferrer"`), and the contact form in a white card.
+  "Get directions" link (`https://www.google.com/maps/search/?api=1&query=<encoded address>`), and
+  the map `<iframe>` (`title="Map: <address>"`, `loading="lazy"`,
+  `referrerPolicy="no-referrer-when-downgrade"`). The map is only rendered when `mapEmbedUrl` passes
+  `safeMapEmbedUrl()`: `https:`, host `www.google.com` / `maps.google.com`, `/maps` path.
+- **Contacts** (`<section id="contacts">`, `ink` background): phone (`tel:` link), email
+  (`mailto:`), customer service hours, social links as `outline-light` pill buttons (labels from
+  `SOCIAL_LABELS: Record<SocialPlatform, string>` in `app/lib/cms.ts`, `target="_blank"
+  rel="noopener noreferrer"`), and the contact form in a white card.
 - **Contact form.**
-  - `fetcher.Form method="post"` posting to the home route `action` (no separate resource route:
-    without JS a resource route would show raw JSON). An `intent` field is unnecessary because the
-    home route has a single action.
+  - `fetcher.Form method="post"` posting to the home route `action` (a resource route would show
+    raw JSON without JS).
   - Fields: `name` (1–100), `email` (valid, ≤254), `message` (10–2000), plus the honeypot `website`
-    (visually hidden, `tabIndex={-1}`, `autoComplete="off"`, `aria-hidden`). Validation is a zod
-    schema `contactFormSchema` in `app/features/home/contact-form.ts` (isomorphic, also gives the
-    client the same max lengths for `maxLength` attributes).
+    (visually hidden, `tabIndex={-1}`, `autoComplete="off"`, `aria-hidden`). Validation:
+    `contactFormSchema` in `app/features/home/contact-form.ts` (isomorphic; also feeds `maxLength`).
   - Action result (typed union in `app/lib/contact.ts`):
-    `{ status: "success" } | { status: "invalid", fieldErrors, values } | { status: "rate_limited" }`.
-    Returned with `data(result, { status: 400 | 429 })`; user mistakes never throw.
+    `{ status: "success" } | { status: "invalid", fieldErrors, values } | { status: "rate_limited" }
+    | { status: "delivery_failed", values }`. Returned with `data(result, { status: 400 | 429 | 503 })`;
+    user mistakes never throw. `delivery_failed` keeps the typed values and suggests phoning or
+    emailing the store directly.
   - **Works without JS:** the browser POSTs to `/?index`, the page re-renders with `actionData`.
     The component reads `fetcher.data ?? actionData`. The form's `action` is `"/?index#contacts"`
-    so a no-JS submit lands back on the contacts section (verify that React Router keeps the hash;
-    if it doesn't, add `id="contacts"` scroll via the hash on the success re-render).
-  - With JS: `Button` shows `loading` while `fetcher.state !== "idle"`, a `role="status"` success
-    message appears and the form is reset (`useEffect` on `fetcher.data?.status === "success"`).
-    Errors render under each field with `aria-invalid` / `aria-describedby`, and the first invalid
-    field gets focus.
-  - Honeypot filled → return `{ status: "success" }` without delivering (don't tip off bots).
-  - `shouldRevalidate` on the home route skips re-running the CMS loader after the contact
-    submission (`formAction` targets the home route and method is POST); the `_shop` loader still
-    revalidates normally.
-- **Rate limiting.** In-memory fixed-window limiter `createRateLimiter({ limit, windowMs })` in
-  `app/.server/rate-limit.ts` (a `Map<key, { count, resetAt }>`, pruned on access, `now` injectable
-  for tests). Contact uses 5 submissions / 10 minutes per client key. The key is the first
-  `X-Forwarded-For` entry, else `X-Real-IP`, else `"anonymous"`. **(unconfirmed)** Good enough for a
-  single Node instance; a shared store (Redis/Postgres) is a follow-up if the app is scaled out.
-- **Delivery of messages.** **(unconfirmed, see Q1)** No email provider and no table exist.
-  `app/.server/services/contact.ts` exposes `deliverContactMessage(message)` which, for now, logs a
-  structured line (`console.info("[contact]", { name, email, length, receivedAt })` and the message
-  body) so nothing is silently dropped in dev. The function is the single seam where email sending
-  plugs in later; the action only depends on it.
+    so a no-JS submit lands back on the contacts section (verify React Router keeps the hash).
+  - With JS: `Button loading` while `fetcher.state !== "idle"`, `role="status"` success message,
+    form reset on success, errors under each field with `aria-invalid` / `aria-describedby`, focus
+    on the first invalid field.
+  - Honeypot filled → `{ status: "success" }` without sending.
+  - `shouldRevalidate` skips re-running the CMS loader after the contact POST.
+- **Rate limiting.** In-memory fixed-window limiter `createRateLimiter({ limit, windowMs, now? })`
+  in `app/.server/rate-limit.ts`. Contact: 5 submissions / 10 minutes per client key (first
+  `X-Forwarded-For` entry, else `X-Real-IP`, else `"anonymous"`). **(unconfirmed)** Fine for one
+  Node instance; a shared store is a follow-up if the app is scaled out.
+- **Email delivery via SMTP, smtp4dev locally.**
+  - `app/.server/mail.ts`: `getMailTransport()` lazily creates one `nodemailer` transport from
+    `SMTP_URL` (`connectionTimeout`/`greetingTimeout`/`socketTimeout` ≈ 5–10 s). Tests inject a
+    transport instead (`nodemailer` `jsonTransport`).
+  - `app/.server/services/contact.ts`: `deliverContactMessage(message, transport)` sends a
+    **plain-text** email: `from: CONTACT_FROM`, `to: CONTACT_INBOX`, `replyTo: visitor email`,
+    subject `"New message from <name> — jassmin.ua"` (name with CR/LF stripped), body with name,
+    email, received-at time and the message. SMTP errors are caught, logged with `console.error`,
+    and returned as `delivery_failed`.
+  - When `SMTP_URL` is not set: in `development`/`test` the message is logged with
+    `console.info("[contact]", …)` and treated as delivered (so the app runs without smtp4dev); in
+    `production` it's `delivery_failed` plus an error log.
+  - **Aspire:** add a `smtp4dev` container (`builder.addContainer("smtp4dev", "rnwood/smtp4dev")`,
+    pinned image tag via `withImageTag`) with an HTTP endpoint for the web UI
+    (`withHttpEndpoint({ targetPort: 80, name: "http" })`) and an SMTP endpoint
+    (`withEndpoint({ targetPort: 25, name: "smtp", scheme: "smtp" })`), plus `withDataVolume`/
+    `withVolume` so messages survive restarts (optional). `web` gets
+    `.withEnvironment("SMTP_URL", smtp4dev.getEndpoint("smtp"))` and doesn't wait for it (like
+    `cms`: a mail outage only affects the contact form). Check the exact method names against
+    `aspire-apphost/.aspire/modules/aspire.mts`.
+  - **Without Aspire:** `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev` and
+    `SMTP_URL=smtp://localhost:2525`; UI at http://localhost:5000.
+  - `CONTACT_INBOX` defaults to `hello@jassmin.ua` (the seeded store email); `CONTACT_FROM`
+    defaults to `"Jassmin website <no-reply@jassmin.ua>"`. In smtp4dev every address is caught, so
+    nothing leaves the machine.
 - **SEO `meta`.** Title `"Jassmin — <hero.headline>"`; description = first ~160 chars of the about
-  body as plain text (`toPlainText()` from the markdown helper, computed in the loader as
-  `metaDescription`); `og:title`, `og:description`, `og:image` (hero image URL), `og:type=website`.
-  When `loaderData` is missing (error), fall back to `"Jassmin"` / `"Jassmin perfume store"`.
-- **Out-of-scope canvas sections.** The C+ canvas also shows "How it works", "Build your trio",
-  category tiles and "Bestsellers". They aren't in the issue and need products (#8) and the trio
-  picker; they're not built here **(unconfirmed, see Q3)**.
-- **Structure.** Section components live in `app/features/home/` (`HeroSection.tsx`,
-  `AboutSection.tsx`, `LocationSection.tsx`, `ContactsSection.tsx`, `ContactForm.tsx`) and take
-  plain DTO props; `home.tsx` only composes them.
-
-## Open questions
-- [ ] **Q1: How should contact form submissions be delivered?** — Why it matters: the issue says
-  "emailed to the store (or logged)" and asks to confirm; emailing needs a provider (SMTP / Resend /
-  …), credentials and env vars; logging means messages only live in server logs. Recommended
-  default: log via `deliverContactMessage()` now, add email delivery in a follow-up issue. Affects
-  steps: 6.
-- [ ] **Q2: Where should the hero CTA ("Order Now") point, and what should its label be?** — Why it
-  matters: the seeded `ctaHref` is `/catalog`, which 404s (only `/catalog/:gender` exists, #8), the
-  seeded label is "Choose your testers" while the issue says "Order Now", and the C+ canvas links it
-  to the on-page trio picker. Recommended default: keep label/href from Strapi; change the seed and
-  fixture to `ctaLabel: "Order Now"`, `ctaHref: "/catalog/women"`; editors can change it in Strapi
-  once a tester-set page exists. Existing local Strapi data needs a manual edit (the seed skips
-  existing single types). Affects steps: 2, 4.
-- [ ] **Q3: Should the extra C+ home sections (How it works, Build your trio, category tiles,
-  Bestsellers) be part of #7?** — Why it matters: they're on the chosen design but not in the
-  issue, and Bestsellers/trio depend on products (#8) and cart (#10). Recommended default: no;
-  build only the four issue sections (plus the decorative marquee if #27 provides it) and file a
-  follow-up issue for the rest. Affects steps: 4.
+  body as plain text (`toPlainText()`, computed in the loader as `metaDescription`); `og:title`,
+  `og:description`, `og:image`, `og:type=website`. Fallback `"Jassmin"` when `loaderData` is missing.
+- **Structure.** Section components in `app/features/home/` (`HeroSection.tsx`, `AboutSection.tsx`,
+  `LocationSection.tsx`, `ContactsSection.tsx`, `ContactForm.tsx`, `icons.tsx`); `home.tsx` only
+  composes them.
 
 ## Resolved questions
-- **Which button style/colour does "Order Now" use — `#FF5C77`?** — No: #27 replaces it with
-  `#C22F4B` primary and a `dark` variant for "Order Now" because `#FF5C77` + white fails WCAG AA
-  (source: #27, memory "Storefront design: Option C+").
-- **Is the map optional?** — In Strapi `location.mapEmbedUrl` is required (source:
-  `cms/src/components/home/location.json`, `app/.server/cms/schemas.ts`), but the app still treats
-  it as optional at render time because it's validated against an allowlist before use.
-- **How is a Strapi outage shown?** — Already handled: `.catch(cmsUnavailable)` throws a 503 that
-  the `_shop` `ErrorBoundary` renders with the header (source: `app/.server/cms/errors.ts`,
+- **How are contact form submissions delivered?** — Emailed over SMTP; locally they go to smtp4dev
+  (source: user answer on the plan, 2026-10-23).
+- **Where does "Order Now" point?** — To a new page that shows only popular perfumes, `/popular`,
+  built in its own new issue (source: user answer on the plan, 2026-10-23).
+- **Are the extra C+ home sections part of #7?** — No, they go in a new issue (source: user answer
+  on the plan, 2026-10-23).
+- **Which button colour does "Order Now" use — `#FF5C77`?** — No: #27 replaces it with `#C22F4B`
+  primary and a `dark` variant for "Order Now" because `#FF5C77` + white fails WCAG AA (source:
+  #27).
+- **Is the map optional?** — Strapi requires `location.mapEmbedUrl` (source:
+  `cms/src/components/home/location.json`), but the app only renders it after validating it.
+- **How is a Strapi outage shown?** — `.catch(cmsUnavailable)` throws a 503 that the `_shop`
+  `ErrorBoundary` renders with the header (source: `app/.server/cms/errors.ts`,
   `app/routes/_shop.tsx`, `app/lib/route-error.ts`).
 - **Does the header already link to the sections?** — Yes, `/#about` and `/#contacts` (source:
-  `app/components/layout/nav.ts`). The sections only need matching `id`s plus `scroll-mt-*` so the
-  sticky 64px header doesn't cover the heading.
-- **Is rich text Markdown or Strapi blocks?** — Markdown (`richtext`) (source:
-  `cms/src/components/home/about.json`, comment in `app/lib/cms.ts`).
-- **Is there a DB table for contact messages?** — No, and the issue says submissions are not stored
-  in Strapi (source: #7, `app/.server/db/schema.ts`).
-- **Component tests?** — Vitest runs only `app/**/*.test.ts` in a `node` environment, so tests cover
-  pure functions, the action and the loader, not rendered components (source: `vitest.config.ts`).
+  `app/components/layout/nav.ts`). Sections need matching `id`s plus `scroll-mt-*` for the sticky
+  64px header.
+- **Is rich text Markdown or Strapi blocks?** — Markdown (source:
+  `cms/src/components/home/about.json`, `app/lib/cms.ts`).
+- **Is there a DB table for contact messages?** — No, and messages aren't stored in Strapi
+  (source: #7, `app/.server/db/schema.ts`).
+- **Component tests?** — Vitest runs only `app/**/*.test.ts` in `node`, so tests cover pure
+  functions, the action and the loader (source: `vitest.config.ts`).
 
 ## Files
 | Action | Path | Purpose |
 |--------|------|---------|
-| modify | `package.json`, `pnpm-lock.yaml` | add `marked`, `sanitize-html`, `@types/sanitize-html` |
+| modify | `package.json`, `pnpm-lock.yaml` | add `marked`, `sanitize-html`, `nodemailer` (+ types) |
 | create | `app/.server/markdown.ts` (+ `.test.ts`) | `renderMarkdown()` (sanitized HTML), `toPlainText()` |
 | modify | `app/.server/cms/schemas.ts` | media `formats` |
 | modify | `app/lib/cms.ts` | `CmsImage.srcSet`, `SOCIAL_LABELS` |
 | modify | `app/.server/cms/content.ts` (+ `content.test.ts`, `schemas.test.ts`) | build `srcSet` in `toImage` |
-| modify | `app/.server/cms/__fixtures__/home-page.json` | `ctaLabel`/`ctaHref` per Q2 |
-| modify | `cms/scripts/seed.ts` | seed `ctaLabel: "Order Now"`, `ctaHref: "/catalog/women"` |
+| modify | `app/.server/cms/__fixtures__/home-page.json` | `ctaLabel: "Order Now"`, `ctaHref: "/popular"` |
+| modify | `cms/scripts/seed.ts` | same CTA in the seed |
 | create | `app/lib/links.ts` (+ `.test.ts`) | `resolveCtaHref`, `safeMapEmbedUrl`, `telHref`, `directionsUrl` |
 | create | `app/lib/contact.ts` | `ContactActionResult` type, field limits |
 | create | `app/features/home/contact-form.ts` (+ `.test.ts`) | `contactFormSchema`, `parseContactForm(formData)` |
 | create | `app/.server/rate-limit.ts` (+ `.test.ts`) | in-memory limiter, `clientKey(request)` |
-| create | `app/.server/services/contact.ts` (+ `.test.ts`) | `submitContactMessage()`: honeypot, rate limit, deliver |
+| modify | `app/.server/env.ts` (+ `env.test.ts`) | `SMTP_URL`, `CONTACT_INBOX`, `CONTACT_FROM` |
+| modify | `.env.example`, `README.md` | document the new env vars and smtp4dev |
+| create | `app/.server/mail.ts` | lazy `nodemailer` transport from `SMTP_URL` |
+| create | `app/.server/services/contact.ts` (+ `.test.ts`) | honeypot, rate limit, `deliverContactMessage` |
+| modify | `aspire-apphost/apphost.mts` | `smtp4dev` container, `SMTP_URL` for `web` |
+| modify | `aspire-apphost/AGENTS.md`, `app/.server/AGENTS.md` | document `smtp4dev` and the mail module |
 | create | `app/features/home/HeroSection.tsx` | hero |
 | create | `app/features/home/AboutSection.tsx` | about |
 | create | `app/features/home/LocationSection.tsx` | location + map |
@@ -185,96 +190,98 @@ and the Contacts section has a contact form handled by the home route's `action`
 | create | `app/features/home/icons.tsx` | pin, clock, phone, mail SVG icons (`aria-hidden`) |
 | modify | `app/routes/home.tsx` | loader, action, meta, shouldRevalidate, page |
 | create | `app/routes/home.test.ts` | loader/action tests with mocked CMS + services |
-| modify | `README.md` | note on contact form delivery and rate limit |
 
 ## Steps
 - [ ] **1. Markdown helper** — `pnpm add marked sanitize-html` and `pnpm add -D @types/sanitize-html`.
-  Create `app/.server/markdown.ts`: `renderMarkdown(md: string): string` (`marked.parse(md, {
-  async: false, gfm: true })` then `sanitizeHtml` with the allowlist from Decisions, `transformTags`
-  adding `rel`/`target` on absolute links) and `toPlainText(md, maxLength)` (sanitize with no
-  allowed tags, collapse whitespace, cut at a word boundary with "…"). Tests: paragraphs/lists
-  survive; `<script>`, `onerror=`, `javascript:` links and `<iframe>` are stripped; plain text
-  truncation. Check: `pnpm test`.
-- [ ] **2. Responsive image data + seed/fixture CTA** — In `schemas.ts` add
-  `formats: z.record(z.string(), z.object({ url, width: int, height: int })).nullish()` to
-  `strapiMedia`. In `app/lib/cms.ts` add `srcSet: string | null` to `CmsImage` and
-  `SOCIAL_LABELS`. In `content.ts` `toImage`, build `srcSet` from formats + original sorted by
-  width (absolute URLs; `null` when there are no widths). Update `content.test.ts` /
-  `schemas.test.ts` expectations (hero `srcSet` from the fixture). Change `ctaLabel`/`ctaHref` in
-  `cms/scripts/seed.ts` and `__fixtures__/home-page.json` (Q2). Check: `pnpm typecheck && pnpm test`.
-- [ ] **3. Link helpers** — `app/lib/links.ts`: `resolveCtaHref`, `safeMapEmbedUrl(url): string |
-  null`, `telHref(phone)` (`tel:` + `+`/digits), `directionsUrl(address)`. Unit tests for each,
-  including `javascript:`, protocol-relative `//evil.com`, non-Google map hosts and empty strings.
-- [ ] **4. Loader, meta and static sections** — Rewrite `app/routes/home.tsx`:
-  `loader` → `Promise.all([getHomePage().catch(cmsUnavailable), getSiteSettings().catch(cmsUnavailable)])`
-  and returns `{ hero, about: { title, bodyHtml }, location: { …, mapEmbedUrl: safe | null },
-  contacts: siteSettings, metaDescription }`. Add `meta` per Decisions. Build `HeroSection`,
-  `AboutSection` (`id="about"`), `LocationSection`, `ContactsSection` (`id="contacts"`, form slot
-  left empty for now) in `app/features/home/`, in that order inside `<main>`. Sections get
-  `scroll-mt-20`; add `scroll-behavior: smooth` on `html` in `app/app.css` inside a
-  `prefers-reduced-motion: no-preference` query (unless #27 already does). Styling follows the C+
-  canvas (hero `bg-primary` + arch image + badge, about `bg-blush`, contacts `bg-ink`), responsive:
-  single column under `md`, no horizontal scroll at 375px. Check in the running app: `/` renders
-  all four sections server-side (view source), header links scroll to About/Kontakt.
+  Create `app/.server/markdown.ts`: `renderMarkdown(md)` (`marked.parse(md, { async: false, gfm:
+  true })` → `sanitizeHtml` with the allowlist, `transformTags` adding `rel`/`target` on absolute
+  links) and `toPlainText(md, maxLength)`. Tests: paragraphs/lists survive; `<script>`, `onerror=`,
+  `javascript:` links and `<iframe>` are stripped; truncation at a word boundary.
+- [ ] **2. Responsive image data + CTA in seed/fixture** — `formats` in `strapiMedia`
+  (`z.record(z.string(), z.object({ url, width, height }))`, nullish); `srcSet` on `CmsImage`,
+  built in `toImage` (sorted by width, absolute URLs, `null` without widths); `SOCIAL_LABELS`.
+  Update `content.test.ts` / `schemas.test.ts`. Set `ctaLabel: "Order Now"`, `ctaHref: "/popular"`
+  in `cms/scripts/seed.ts` and `__fixtures__/home-page.json`. Check: `pnpm typecheck && pnpm test`.
+- [ ] **3. Link helpers** — `app/lib/links.ts`: `resolveCtaHref`, `safeMapEmbedUrl`, `telHref`,
+  `directionsUrl`. Tests incl. `javascript:`, protocol-relative `//evil.com`, non-Google map hosts,
+  empty strings.
+- [ ] **4. Loader, meta and static sections** — Rewrite `app/routes/home.tsx`: parallel CMS loader
+  returning `{ hero, about: { title, bodyHtml }, location: { …, mapEmbedUrl: safe | null },
+  contacts, metaDescription }`, `meta`, and `HeroSection`, `AboutSection` (`id="about"`),
+  `LocationSection`, `ContactsSection` (`id="contacts"`, form slot empty for now) inside `<main>`
+  in that order. Sections get `scroll-mt-20`; add `scroll-behavior: smooth` on `html` in
+  `app/app.css` under `prefers-reduced-motion: no-preference` (unless #27 already does). C+ styling,
+  single column under `md`, no horizontal scroll at 375px. Check: view source of `/`; header links
+  scroll to About/Kontakt.
 - [ ] **5. Contact form validation** — `app/lib/contact.ts` (limits + `ContactActionResult`),
-  `app/features/home/contact-form.ts`: `contactFormSchema` (trimmed strings; messages in English
-  matching the UI) and `parseContactForm(formData)` returning `{ ok: true, data, honeypot } |
-  { ok: false, fieldErrors, values }` using `z.flattenError`. Tests: valid input, each field's
-  errors, whitespace-only, over-long values, non-string `FormData` entries (`File`).
-- [ ] **6. Rate limiter and contact service** — `app/.server/rate-limit.ts`:
-  `createRateLimiter({ limit, windowMs, now? })` with `check(key): { allowed, retryAfterMs }`, and
-  `clientKey(request)`. `app/.server/services/contact.ts`: `submitContactMessage(input, { key })`
-  → honeypot short-circuit → limiter → `deliverContactMessage()` (log, per Q1) → result. Tests with
-  fake `now`: limit reached, window reset, separate keys, header parsing, honeypot never delivers.
-- [ ] **7. Action + ContactForm UI** — In `home.tsx` add `action({ request })`: read
-  `request.formData()`, `parseContactForm`, return `data({ status: "invalid", … }, { status: 400 })`
-  on errors; call `submitContactMessage`; return `data({ status: "rate_limited" }, { status: 429 })`
-  or `{ status: "success" }`. Add `shouldRevalidate` (skip after the home POST). Build
-  `ContactForm.tsx` with `useFetcher<typeof action>()`, `fetcher.data ?? actionData` (passed down
-  from the route), labelled inputs, per-field errors with `aria-invalid`/`aria-describedby`,
-  `maxLength` from `app/lib/contact.ts`, honeypot, `Button loading`, `role="status"` success /
-  `role="alert"` rate-limit messages, reset + focus handling. Plug it into `ContactsSection`.
-  Check manually with JS on and with JS disabled (DevTools → disable JavaScript): errors, success,
-  values preserved on error, lands on `#contacts`.
-- [ ] **8. Route tests** — `app/routes/home.test.ts`: `vi.mock` `~/.server/cms/content` and
-  `~/.server/services/contact`. Loader: returns mapped data from fixtures; unsafe `mapEmbedUrl`
-  → `null`; `CmsError` → thrown 503 `data` response. Action: invalid → 400 with field errors;
-  valid → success and delivery called once; rate limited → 429; honeypot → success without
-  delivery.
-- [ ] **9. Docs & polish** — README: short "Home page" note (content edited in Strapi `home-page` /
-  `site-settings`, contact submissions are logged until email is set up, rate limit). Run the full
-  checks and a Lighthouse/axe pass on `/` at desktop and 375px (contrast, labels, heading order:
-  one `h1`, section `h2`s).
+  `app/features/home/contact-form.ts`: `contactFormSchema` (trimmed strings) and
+  `parseContactForm(formData)` → `{ ok: true, data, honeypot } | { ok: false, fieldErrors, values }`
+  via `z.flattenError`. Tests: valid input, each field's errors, whitespace-only, over-long values,
+  `File` entries.
+- [ ] **6. Env vars + mail transport + smtp4dev** — `pnpm add nodemailer`,
+  `pnpm add -D @types/nodemailer`. In `env.ts` add `SMTP_URL` (optional URL with `smtp:`/`smtps:`
+  scheme), `CONTACT_INBOX` (`z.email()`, default `hello@jassmin.ua`), `CONTACT_FROM` (string,
+  default `Jassmin website <no-reply@jassmin.ua>`); cases in `env.test.ts`; `.env.example` and the
+  README env table. Create `app/.server/mail.ts` (`getMailTransport(): Transporter | null`). In
+  `aspire-apphost/apphost.mts` add the `smtp4dev` container (HTTP UI + SMTP endpoints, external
+  HTTP endpoint so the UI opens from the dashboard) and pass `SMTP_URL` to `web` without
+  `waitFor`. Check: `pnpm aspire:build`, then `pnpm aspire run` shows `smtp4dev` with a UI link.
+- [ ] **7. Rate limiter and contact service** — `app/.server/rate-limit.ts`:
+  `createRateLimiter({ limit, windowMs, now? })` → `check(key): { allowed, retryAfterMs }`, and
+  `clientKey(request)`. `app/.server/services/contact.ts`: `submitContactMessage(input, { key,
+  transport })` → honeypot short-circuit → limiter → `deliverContactMessage()` → result. Tests with
+  fake `now` and a `jsonTransport`: limit reached, window reset, separate keys, header parsing,
+  honeypot never sends, email fields (`to`, `replyTo`, subject without CR/LF, plain-text body),
+  transport error → `delivery_failed`, no `SMTP_URL` in dev → logged and success.
+- [ ] **8. Action + ContactForm UI** — In `home.tsx` add `action({ request })`: parse
+  `request.formData()`, return `data({ status: "invalid", … }, { status: 400 })` on errors, call
+  `submitContactMessage`, map to 429 / 503 / success. Add `shouldRevalidate`. Build `ContactForm.tsx`
+  with `useFetcher<typeof action>()`, `fetcher.data ?? actionData`, labelled inputs, per-field
+  errors, `maxLength`, honeypot, `Button loading`, success (`role="status"`) and rate-limit /
+  delivery-failed (`role="alert"`) messages, reset + focus handling. Plug it into
+  `ContactsSection`. Check with JS on and disabled; open the smtp4dev UI and confirm the email
+  arrived with the right reply-to.
+- [ ] **9. Route tests** — `app/routes/home.test.ts`: `vi.mock` `~/.server/cms/content` and
+  `~/.server/services/contact`. Loader: mapped data from fixtures; unsafe `mapEmbedUrl` → `null`;
+  `CmsError` → thrown 503. Action: invalid → 400; valid → success, delivered once; rate limited →
+  429; delivery failure → 503 with values; honeypot → success without delivery.
+- [ ] **10. Docs & polish** — README: "Home page" note (content in Strapi `home-page` /
+  `site-settings`, contact emails, smtp4dev UI under Aspire / docker command without it, rate
+  limit). Update `aspire-apphost/AGENTS.md` (resource list) and `app/.server/AGENTS.md` (mail
+  module, new env vars). Run all checks and an axe/Lighthouse pass on `/` at desktop and 375px
+  (contrast, labels, one `h1`, section `h2`s).
 
 ## Testing & verification
 - Unit: `markdown.test.ts`, `links.test.ts`, `contact-form.test.ts`, `rate-limit.test.ts`,
-  `services/contact.test.ts`, updated `cms/content.test.ts` + `cms/schemas.test.ts`,
+  `services/contact.test.ts`, `env.test.ts`, updated `cms/content.test.ts` + `cms/schemas.test.ts`,
   `routes/home.test.ts`.
-- Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm aspire:build`, `pnpm build`.
 - Manual (`pnpm aspire run`, seeded Strapi):
   - View source of `/`: hero headline, about text, address and contact details are in the HTML.
   - Edit the headline / hours in the Strapi admin, reload `/`: the change shows without a rebuild.
-  - Click "Order Now": navigates to the configured href.
-  - Header "About us" / "Kontakt" from `/` and from another page (e.g. `/blog`) scroll to the section
-    and the heading isn't hidden under the sticky header.
-  - Contact form: empty submit, bad email, short message, success; repeat 6× → rate-limit message;
-    repeat with JS disabled.
-  - Stop the `cms` resource (or unset `STRAPI_API_TOKEN`): `/` shows the 503 page with the header.
+  - Click "Order Now": navigates to `/popular` (404 until the popular perfumes issue is merged).
+  - Header "About us" / "Kontakt" from `/` and from another page scroll to the right section and
+    the heading isn't hidden under the sticky header.
+  - Contact form: empty submit, bad email, short message, success → email visible in the smtp4dev
+    UI; 6 quick submissions → rate-limit message; stop `smtp4dev` → delivery-failed message; repeat
+    with JS disabled.
+  - Stop `cms` (or unset `STRAPI_API_TOKEN`): `/` shows the 503 page with the header.
   - Responsive at 375px, 768px, 1280px; no horizontal scroll.
 
 ## Acceptance criteria
 - [ ] Sections render server-side in order: Hero, About Us, Location, Contacts — step 4
 - [ ] Section text, images and contact details come from Strapi, and changing them in Strapi updates the page without a deploy — steps 2, 4
-- [ ] "Order Now" uses the primary button style and navigates correctly — steps 2, 3, 4 (C+ `dark` variant per #27, Q2)
+- [ ] "Order Now" uses the primary button style and navigates correctly — steps 2, 3, 4 (C+ `dark` variant per #27; target `/popular` from the new issue)
 - [ ] Header "About us" / "Kontakt" links scroll to the right sections — step 4
-- [ ] Contact form validates input, shows success/error states and works without client JS — steps 5, 6, 7, 8
-- [ ] The page shows an error page, not a crash, when Strapi is unreachable — steps 4, 8
-- [ ] Page is responsive on mobile and desktop — steps 4, 7, 9
+- [ ] Contact form validates input, shows success/error states and works without client JS — steps 5–9
+- [ ] The page shows an error page, not a crash, when Strapi is unreachable — steps 4, 9
+- [ ] Page is responsive on mobile and desktop — steps 4, 8, 10
 
 ## Out of scope
-- Email delivery of contact messages and storing them in the DB (Q1 follow-up).
-- The C+ canvas's "How it works", "Build your trio" picker, category tiles and Bestsellers (Q3).
+- The `/popular` page itself (new popular perfumes issue).
+- The C+ marquee, "How it works", "Build your trio", category tiles and Bestsellers (new
+  home-sections issue).
+- Storing contact messages in the database, and choosing a production SMTP provider.
 - Theme tokens, Manrope, button variants, footer and motion utilities (#27).
-- A tester-set / `/catalog` landing page (#8).
 - A shared/distributed rate-limit store, CAPTCHA, CSP headers, and `Cache-Control` tuning.
 - Changing the Strapi content model (e.g. a store photo or hero subtitle field).

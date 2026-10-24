@@ -1,11 +1,13 @@
 // Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
-// product volume variants (#26), the user role (#14) and one active cart per owner (#10).
+// product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
+// checkout fields on orders (#11).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
 // features for LTV and churn models: never drop or rename them.
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -193,6 +195,11 @@ export const carts = pgTable(
     status: cartStatusType().notNull().default("active"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: updatedAt(),
+    /**
+     * When the abandoned-cart job (#19) marked the cart `abandoned`; `null` otherwise. The job
+     * leaves `updated_at` alone, so it stays the shopper's last activity.
+     */
+    abandonedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     index("carts_user_id_idx").on(t.userId),
@@ -245,6 +252,13 @@ export const orders = pgTable(
     guestPhone: varchar({ length: 50 }).notNull(),
     /** Nova Poshta delivery details. */
     shippingAddress: text().notNull(),
+    /**
+     * The cart this order was placed from (#11); one order per cart, so a double submit can't
+     * create two. Set to `null` when the cart is deleted.
+     */
+    cartId: integer().references(() => carts.id, { onDelete: "set null" }),
+    /** The store pays Nova Poshta (subtotal at or above the free-shipping threshold, #11). */
+    freeShipping: boolean().notNull().default(false),
     status: orderStatusType().notNull().default("pending"),
     paymentStatus: paymentStatusType().notNull().default("unpaid"),
     paymentMethod: text().$type<PaymentMethod>().notNull(),
@@ -275,6 +289,8 @@ export const orders = pgTable(
     index("orders_guest_email_idx").on(t.guestEmail),
     index("orders_guest_phone_idx").on(t.guestPhone),
     index("orders_user_id_idx").on(t.userId),
+    // NULLs don't collide, so orders without a cart are fine.
+    uniqueIndex("orders_cart_id_unique").on(t.cartId),
   ],
 );
 

@@ -7,6 +7,7 @@ Aspire TypeScript AppHost, used for **local development only**. Production runs 
   - `jassmindb`: the app database on that server.
   - `db-migrate`: child of `jassmindb` that runs `pnpm db:migrate` on every run. `web` waits for it to complete (`waitForCompletion`). It owns the root `pnpm install` (`withPnpm()`), so every other JavaScript resource uses `withPnpm({ install: false })`.
   - `db-seed` / `db-rollback`: explicit-start children of `jassmindb` that run `pnpm db:seed` / `pnpm db:rollback` against the Aspire database, whose password only Aspire knows.
+  - `db-mark-abandoned-carts`: explicit-start child of `jassmindb` that runs `pnpm db:mark-abandoned-carts` (#19) once, after `db-migrate`. In production the job runs hourly from cron instead.
   - `strapidb`: the Strapi CMS database on the same server.
   - `cms`: Strapi (`addJavaScriptApp("cms", "../cms", { runScriptName: "develop" })`) on port 1337. It gets `DATABASE_URL` from `strapidb.uriExpression()`, waits for `strapidb` and is health-checked on `/_health`. `withPnpm({ install: false })` is used because the root install run for `db-migrate` already installs the `cms` workspace package. Strapi's secrets come from `cms/.env`.
   - `cms-seed`: explicit-start child of `cms` that runs `pnpm seed --token` against `strapidb` (whose password only Aspire knows) and prints the app's API token in its logs.

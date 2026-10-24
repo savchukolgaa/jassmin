@@ -22,5 +22,5 @@ If no issue number is provided in the prompt, determine it from the current work
    - Verify plan is marked `Status: Implemented`.
    - Remove the plan file (`git -C "$WT" rm docs/plans/<number>-<slug>.md`), commit removal, note the hash of `HEAD~1`, and push (`git -C "$WT" push -u origin "issue/$N"`). See [docs/skills/open-pr.md](../../docs/skills/open-pr.md).
 3. **Write PR body**: Use the template in [docs/skills/open-pr.md](../../docs/skills/open-pr.md) linking to the removed plan at `HEAD~1`. Write to a temporary file outside the repository.
-4. **Create PR**: Run `gh pr create --base main --head "issue/$N" --title "<title>" --body-file <tmp-file>`. Add labels matching the issue.
+4. **Create PR**: Run `gh pr create --base main --head "issue/$N" --title "#$N: <title>" --body-file <tmp-file>`, where the title starts with the issue number (see [docs/skills/open-pr.md](../../docs/skills/open-pr.md)). Add labels matching the issue.
 5. **Report**: Report the PR URL and worktree path to the user, reminding them of the post-merge cleanup commands in [docs/skills/worktree.md](../../docs/skills/worktree.md).

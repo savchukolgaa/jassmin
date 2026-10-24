@@ -12,7 +12,10 @@ export interface Cart {
   sessionId: string | null;
   status: CartStatus;
   createdAt: Date;
+  /** The shopper's last activity (every change to the cart's lines bumps it). */
   updatedAt: Date;
+  /** When the abandoned-cart job marked the cart `abandoned`; `null` otherwise. */
+  abandonedAt: Date | null;
 }
 
 export interface ProductVariant {
@@ -44,6 +47,10 @@ export interface Order {
   guestPhone: string;
   /** Nova Poshta delivery details. */
   shippingAddress: string;
+  /** The cart the order was placed from; `null` once that cart is deleted. */
+  cartId: number | null;
+  /** The store pays Nova Poshta; otherwise the recipient pays on delivery. */
+  freeShipping: boolean;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, isNull, lt, sql } from "drizzle-orm";
 import type { Db } from "../client";
 import { cartItems, carts, products, productVariants, sessions } from "../schema";
 
@@ -54,14 +54,47 @@ export async function insertActiveCart(
   return row?.id;
 }
 
-/** Locks the cart row until the transaction ends, so changes to one cart run one at a time. */
-export async function lockCart(db: Executor, cartId: number): Promise<void> {
-  await db.select({ id: carts.id }).from(carts).where(eq(carts.id, cartId)).for("update");
+/**
+ * Locks the cart row until the transaction ends, so changes to one cart run one at a time.
+ * Returns whether the cart is still active: the abandoned-cart job (#19) may have marked it
+ * between the caller's lookup and the lock.
+ */
+export async function lockCart(db: Executor, cartId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ status: carts.status })
+    .from(carts)
+    .where(eq(carts.id, cartId))
+    .for("update");
+  return row?.status === "active";
 }
 
 /** Bumps `updated_at`; every change to a cart's lines must call it (abandoned carts, #19). */
 export async function touchCart(db: Executor, cartId: number): Promise<void> {
   await db.update(carts).set({ updatedAt: new Date() }).where(eq(carts.id, cartId));
+}
+
+/**
+ * Marks active carts with lines and no activity for more than `hours` as `abandoned` (#19), and
+ * returns how many it changed. Empty and finished carts are left alone, so it's safe to rerun.
+ */
+export async function markAbandonedCarts(db: Executor, hours: number): Promise<number> {
+  const rows = await db
+    .update(carts)
+    .set({
+      status: "abandoned",
+      abandonedAt: sql`now()`,
+      // Overrides `$onUpdate`: `updated_at` stays the shopper's last activity.
+      updatedAt: sql`${carts.updatedAt}`,
+    })
+    .where(
+      and(
+        isActive,
+        lt(carts.updatedAt, sql`now() - make_interval(hours => ${hours})`),
+        exists(db.select({ one: sql`1` }).from(cartItems).where(eq(cartItems.cartId, carts.id))),
+      ),
+    )
+    .returning({ id: carts.id });
+  return rows.length;
 }
 
 /** The cart's lines with their product and size, oldest first. */

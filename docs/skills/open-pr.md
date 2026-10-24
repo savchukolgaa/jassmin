@@ -69,10 +69,10 @@ https://github.com/<owner>/<repo>/blob/<commit-before-removal>/docs/plans/<file>
 
 ## Creating the Pull Request
 
-1. **Title**: The issue title (without `#<number>`), or a concise imperative summary.
+1. **Title**: `#<number>: <issue title>` (e.g. `#11: Build checkout with guest support and transactional order creation`), or `#<number>: <concise imperative summary>`. The squash merge then appends the PR number, e.g. `#11: Build checkout … (#48)`.
 2. **Execute command**:
    ```bash
-   gh pr create --base main --head "issue/$N" --title "<title>" --body-file <tmp-file>
+   gh pr create --base main --head "issue/$N" --title "#$N: <title>" --body-file <tmp-file>
    ```
    Add labels matching the issue (`--label "<label1>,<label2>"`). Use `--draft` if the user requested a draft PR.
 3. **Report to user**:

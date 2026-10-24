@@ -1,4 +1,5 @@
 import { eq, sql } from "drizzle-orm";
+import type { CheckoutPrefill } from "~/lib/checkout";
 import type { UserRole } from "~/lib/enums";
 import type { Db } from "../client";
 import { users } from "../schema";
@@ -40,6 +41,16 @@ export async function findUserByEmail(db: Db, email: string): Promise<UserCreden
 export async function findUserById(db: Db, id: number): Promise<PublicUser | undefined> {
   const [user] = await db
     .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return user;
+}
+
+/** The user's contact details, to prefill the checkout form. */
+export async function findUserContact(db: Db, id: number): Promise<CheckoutPrefill | undefined> {
+  const [user] = await db
+    .select({ fullName: users.fullName, email: users.email, phone: users.phone })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);

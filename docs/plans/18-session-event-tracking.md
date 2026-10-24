@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/18
 Branch: `issue/18`
 Worktree: `.claude/worktrees/issue-18`
-Status: Planned (questions answered 2026-10-24)
+Status: Implemented
 
 ## Goal
 
@@ -378,7 +378,7 @@ shape.
   `first_touch_*`, `/api/events` (`CLIENT_EVENT_TYPES`), the #11 call shape. Remove the "#18 extends
   it" note in `analytics.ts`. Mention the consent banner in `docs/design.md` if it adds a reusable
   pattern.
-- [ ] **15. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual run below.
+- [x] **15. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual run below.
 
 ## Testing & verification
 
@@ -403,16 +403,38 @@ shape.
 
 ## Acceptance criteria
 
-- [ ] Each visit creates a session row with source, device and landing page — steps 2, 3, 5, 6
+- [x] Each visit creates a session row with source, device and landing page — steps 2, 3, 5, 6
   (for visitors who accepted analytics cookies)
 - [ ] `page_view`, `product_view`, `search`, `add_to_cart`, `remove_from_cart`, `checkout_start`,
   `purchase` and `login` events are recorded — steps 6, 7, 8, 9, 10, 12, 13; **`checkout_start`
-  and `purchase` are delivered by #11** using `trackEvent` from step 5 (see "Hand-off to #11")
-- [ ] Anonymous events are linked to the user after login — steps 3, 5, 9
-- [ ] Tracking failures never break the shopping experience — steps 5, 6, 7, 9, 12 (never-rejecting
+  and `purchase` are delivered by #11** using `trackEvent` from step 5 (see "Hand-off to #11").
+  Left unchecked: verified for the six events this issue records; `checkout_start` and `purchase`
+  land with #11
+- [x] Anonymous events are linked to the user after login — steps 3, 5, 9
+- [x] Tracking failures never break the shopping experience — steps 5, 6, 7, 9, 12 (never-rejecting
   `trackEvent`, `try/catch` in middleware and login, 204 fallback in `/api/events`)
-- [ ] (added) Cookie consent is respected — steps 4, 5, 10, 12, 13
-- [ ] (added) A privacy and cookie policy page exists in Ukrainian and English — step 11
+- [x] (added) Cookie consent is respected — steps 4, 5, 10, 12, 13
+- [x] (added) A privacy and cookie policy page exists in Ukrainian and English — step 11
+
+## Verification results (2026-10-24)
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (72 files, 635 tests, DB integration tests on throwaway
+  databases) and `pnpm build` pass.
+- `pnpm build` caught the `/api/events` route keeping its rate limiter at module level with
+  server-only imports; the limiter and body reader moved to `app/.server/client-events.ts`.
+- Manual run of the production build against a throwaway, migrated and seeded database (Strapi
+  answered 401 there, so the CMS-backed home page was skipped): the banner shows before consent;
+  "Accept" sets `cookie_consent`, `anonymous_id` and `analytics_session` and starts a session with
+  landing page `/catalog/women?utm_source=instagram&utm_medium=cpc`, source `instagram` / `cpc`,
+  device `mobile` and the page's `google.com` referrer on its `page_view`; `search`,
+  `product_view`, client `page_view` (via `/api/events`), `add_to_cart`, stepper
+  `remove_from_cart`, `remove_from_cart` and `login` (`method: register`) were recorded with the
+  session's source; registration linked the earlier anonymous rows and filled
+  `users.first_touch_*`; a forged `purchase` beacon got 400; a guest who declined has no banner, a
+  working cart, a session row without source/device/landing page and no events; `/privacy`
+  renders with the CMS down.
+- The migration was not applied to the shared development database (other worktrees use it);
+  run `pnpm db:migrate` after merging.
 
 ## Out of scope
 

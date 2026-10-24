@@ -167,12 +167,12 @@ column, and logs how many it changed.
   - `mergeGuestCart`: guest cart inactive → return. User cart inactive → adopt the guest cart
     (same branch as "no user cart").
   Update the file header comment that mentions #19. Check: existing `cart.test.ts` passes.
-- [ ] **5. CLI script.** Create `app/.server/db/scripts/mark-abandoned-carts.ts`, mirroring
+- [x] **5. CLI script.** Create `app/.server/db/scripts/mark-abandoned-carts.ts`, mirroring
   `scripts/make-admin.ts`: load `.env` if present, parse the hours (exit 1 on error), require
   `getDatabaseUrl`, `createDb(url, 1)`, run, `console.log(message)`, close the pool in `finally`.
   Add `db:mark-abandoned-carts` to `package.json` next to the other `db:*` scripts. Check: run
   `pnpm db:mark-abandoned-carts` twice against the dev DB; the second run logs 0.
-- [ ] **6. Aspire resource.** In `aspire-apphost/apphost.mts` add
+- [x] **6. Aspire resource.** In `aspire-apphost/apphost.mts` add
   `addJavaScriptApp("db-mark-abandoned-carts", "..", { runScriptName: "db:mark-abandoned-carts" })`
   with `withPnpm({ install: false })`, `withReference(db)`, `waitForCompletion(dbMigrate)`,
   `withParentRelationship(db)` and `withExplicitStart()`, next to `db-seed`. Check:

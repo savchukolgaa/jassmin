@@ -40,16 +40,15 @@ export function headers({ loaderHeaders }: Route.HeadersArgs) {
   return blogResponseHeaders(loaderHeaders);
 }
 
-// A published Strapi post. Drafts and unknown slugs are 404s (the CMS client only ever asks for
+// A published Strapi post, in the visitor's language or else in Ukrainian (the slug is the same in
+// both). Drafts and unknown slugs are 404s (the CMS client only ever asks for
 // published content); an outage becomes a 503.
 export async function loader({ params, request }: Route.LoaderArgs) {
   if (!isBlogSlug(params.slug)) {
     throw data(null, { status: 404 });
   }
-  const [post, locale] = await Promise.all([
-    getBlogPostBySlug(params.slug).catch(cmsUnavailable),
-    getLocale(request),
-  ]);
+  const locale = await getLocale(request);
+  const post = await getBlogPostBySlug(params.slug, locale).catch(cmsUnavailable);
   if (!post) {
     throw data(null, { status: 404 });
   }

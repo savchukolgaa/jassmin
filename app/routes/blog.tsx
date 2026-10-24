@@ -39,14 +39,14 @@ export function headers({ loaderHeaders }: Route.HeadersArgs) {
   return blogResponseHeaders(loaderHeaders);
 }
 
-// Published Strapi posts, newest first. A page past the end is a 404; an outage becomes a 503.
+// Published Strapi posts, newest first, in the visitor's language where translated. A page past the end is a 404; an outage becomes a 503.
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const { page } = parseBlogSearch(url.searchParams);
-  const [posts, locale] = await Promise.all([
-    listBlogPosts({ page, pageSize: BLOG_PAGE_SIZE }).catch(cmsUnavailable),
-    getLocale(request),
-  ]);
+  const locale = await getLocale(request);
+  const posts = await listBlogPosts({ page, pageSize: BLOG_PAGE_SIZE, locale }).catch(
+    cmsUnavailable,
+  );
   if (page > posts.pageCount && posts.total > 0) {
     throw data(null, { status: 404 });
   }

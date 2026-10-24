@@ -1,6 +1,7 @@
 import { data, type ShouldRevalidateFunctionArgs } from "react-router";
 import { getHomePage, getSiteSettings } from "~/.server/cms/content";
 import { cmsUnavailable } from "~/.server/cms/errors";
+import { getLocale } from "~/.server/locale";
 import { getClientIp } from "~/.server/rate-limit";
 import { submitContactMessage } from "~/.server/services/contact";
 import { buildHomePageView } from "~/.server/services/home";
@@ -27,11 +28,13 @@ export function meta({ loaderData, matches }: Route.MetaArgs) {
   ];
 }
 
-// Content is edited in Strapi (`home-page`, `site-settings`); an outage becomes a 503 page.
-export async function loader() {
+// Content is edited in Strapi (`home-page`, `site-settings`), in the visitor's language with a
+// Ukrainian fallback; an outage becomes a 503 page.
+export async function loader({ request }: Route.LoaderArgs) {
+  const locale = await getLocale(request);
   const [homePage, siteSettings] = await Promise.all([
-    getHomePage().catch(cmsUnavailable),
-    getSiteSettings().catch(cmsUnavailable),
+    getHomePage(locale).catch(cmsUnavailable),
+    getSiteSettings(locale).catch(cmsUnavailable),
   ]);
   return buildHomePageView(homePage, siteSettings);
 }

@@ -242,7 +242,7 @@ Each step is small, ordered, and leaves the app in a working state.
   customer-service hours (Q3). Component tests: under `<I18nProvider locale="en">` a `uk` post has
   `lang="uk"`; with matching locales no `lang` attribute.
 
-- [ ] **9. Loaders pass the request's locale.** `home.tsx`: resolve `getLocale(request)` first,
+- [x] **9. Loaders pass the request's locale.** `home.tsx`: resolve `getLocale(request)` first,
   then `Promise.all([getHomePage(locale), getSiteSettings(locale)])` (signature gains
   `{ request }: Route.LoaderArgs`). `blog.tsx` / `blog-post.tsx`: await `getLocale(request)` before
   the content call (it's cookie parsing only, so no parallelism lost) and pass it on. Route tests:

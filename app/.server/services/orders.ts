@@ -6,7 +6,8 @@
 // `orders.cart_id` is unique, so a cart becomes at most one order: a second submit of the same
 // cart waits for the first one's lock and then gets the order it created.
 //
-// #18 records the `purchase` event in the caller once the order exists.
+// The caller records the `purchase` event (#18) for an order this call `placed`, after the
+// transaction committed.
 import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
 import { formatShippingAddress } from "~/lib/checkout";
 import { db as defaultDb } from "../db";
@@ -48,7 +49,9 @@ export interface ShortLine {
 }
 
 export type CreateOrderResult =
-  | { ok: true; orderId: number }
+  // `placed: false` for a double submit that got the order an earlier request placed.
+  | { ok: true; orderId: number; placed: true; subtotal: string }
+  | { ok: true; orderId: number; placed: false }
   | { ok: false; error: "cart-empty" }
   | { ok: false; error: "insufficient-stock"; lines: ShortLine[] };
 
@@ -63,7 +66,7 @@ export async function createOrder(
     if (status === "converted") {
       // A double submit: the first request already placed the order.
       const orderId = await findOrderIdByCartId(tx, cartId);
-      if (orderId !== undefined) return { ok: true, orderId };
+      if (orderId !== undefined) return { ok: true, orderId, placed: false };
     }
     if (status !== "active") {
       return { ok: false, error: "cart-empty" };
@@ -97,7 +100,7 @@ export async function createOrder(
       await decrementVariantStock(tx, line.variantId, line.quantity);
     }
     await markCartConverted(tx, cartId);
-    return { ok: true, orderId };
+    return { ok: true, orderId, placed: true, subtotal };
   });
 }
 

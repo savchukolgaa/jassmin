@@ -1,4 +1,5 @@
 import { data, Link, redirect } from "react-router";
+import { trackEvent } from "~/.server/analytics";
 import { getActiveCartId, getCartOwner, getCartView } from "~/.server/services/cart";
 import { createOrder, getCheckoutPrefill } from "~/.server/services/orders";
 import { rememberOrder } from "~/.server/session";
@@ -23,19 +24,23 @@ export function meta({ matches }: Route.MetaArgs) {
   return [{ title: t("meta.title", { page: t("checkout.title") }) }];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
   const owner = await getCartOwner(request);
   const cart = await getCartView(owner);
   // The cart page explains sold-out and low-stock lines; checkout only starts without them.
   if (cart.lines.length === 0 || cart.lines.some((line) => line.quantity > line.stockQuantity)) {
     throw redirect("/cart");
   }
-  // #18: trackEvent(request, "checkout_start", { properties: { subtotal: cart.subtotal } }).
+  // Not awaited: the page doesn't wait for tracking (#18). A failed submit (4xx) doesn't revalidate
+  // this loader, so it records once per visit to the page.
+  void trackEvent({ request, context }, "checkout_start", {
+    properties: { subtotal: cart.subtotal, itemCount: cart.itemCount },
+  });
   const prefill = owner.userId === null ? null : await getCheckoutPrefill(owner.userId);
   return { cart, prefill, shipping: freeShippingInfo(cart.subtotal) };
 }
 
-export async function action({ request }: Route.ActionArgs) {
+export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const values = checkoutValues(formData);
   const parsed = parseCheckout(formData);
@@ -62,7 +67,16 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  // #18: trackEvent(request, "purchase", { properties: { orderId: result.orderId } }).
+  // After the order's transaction committed, and only once: a double submit gets `placed: false`.
+  if (result.placed) {
+    void trackEvent({ request, context }, "purchase", {
+      properties: {
+        orderId: result.orderId,
+        subtotal: result.subtotal,
+        paymentMethod: parsed.data.paymentMethod,
+      },
+    });
+  }
   return redirect(`/checkout/success/${result.orderId}`, {
     headers: { "Set-Cookie": await rememberOrder(request, result.orderId) },
   });

@@ -308,9 +308,17 @@ describe.skipIf(!hasDatabase)("order service", () => {
     ]);
     const again = await createOrder(input, testDb.db);
 
-    expect(a).toEqual({ ok: true, orderId: expect.any(Number) });
-    expect(b).toEqual(a);
-    expect(again).toEqual(a);
+    // Only the request that won the lock placed the order; the others get its id.
+    const placed = [a, b].find((result) => result.ok && result.placed);
+    expect(placed).toEqual({
+      ok: true,
+      orderId: expect.any(Number),
+      placed: true,
+      subtotal: expect.any(String),
+    });
+    const orderId = placed?.ok ? placed.orderId : undefined;
+    expect([a, b]).toContainEqual({ ok: true, orderId, placed: false });
+    expect(again).toEqual({ ok: true, orderId, placed: false });
     expect(await allOrders()).toHaveLength(1);
     expect(await stockOf(seven.id)).toBe(7);
   });

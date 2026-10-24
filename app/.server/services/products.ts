@@ -95,8 +95,22 @@ export async function getProduct(
   publicId: string,
   db: Db = defaultDb,
 ): Promise<ProductDetail | null> {
+  return (await getProductWithId(publicId, db))?.product ?? null;
+}
+
+/**
+ * Like `getProduct`, plus the serial `products.id` for server-side use (the `product_view` event,
+ * #18). Never send `id` to the client.
+ */
+export async function getProductWithId(
+  publicId: string,
+  db: Db = defaultDb,
+): Promise<{ id: number; product: ProductDetail } | null> {
   const row = await findProductByPublicId(db, publicId);
-  return row ? toDetail(row, await listVariantsByProductId(db, row.id)) : null;
+  if (!row) {
+    return null;
+  }
+  return { id: row.id, product: toDetail(row, await listVariantsByProductId(db, row.id)) };
 }
 
 export type VariantCheck =

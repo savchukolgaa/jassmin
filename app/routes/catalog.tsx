@@ -1,13 +1,16 @@
 import { data, Link, useLocation, useNavigation } from "react-router";
+import { trackEvent } from "~/.server/analytics";
 import { getCatalogPage } from "~/.server/services/products";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { Pagination } from "~/components/ui/Pagination";
 import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { ProductCard } from "~/features/catalog/ProductCard";
+import { shouldRevalidateView } from "~/lib/analytics";
 import {
   CATALOG_TITLE_KEYS,
   catalogHref,
+  hasActiveFilters,
   isCatalogGender,
   parseCatalogSearch,
 } from "~/lib/catalog";
@@ -27,14 +30,22 @@ export function meta({ loaderData, matches }: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ params, request }: Route.LoaderArgs) {
+export async function loader({ params, request, context }: Route.LoaderArgs) {
   if (!isCatalogGender(params.gender)) {
     throw data(null, { status: 404 });
   }
   const search = parseCatalogSearch(new URL(request.url).searchParams);
-  // #18: trackEvent(request, "search", { properties: search }) when hasActiveFilters(search).
-  return { gender: params.gender, search, ...(await getCatalogPage(params.gender, search)) };
+  const page = await getCatalogPage(params.gender, search);
+  if (hasActiveFilters(search)) {
+    void trackEvent({ request, context }, "search", {
+      properties: { gender: params.gender, ...search, total: page.total },
+    });
+  }
+  return { gender: params.gender, search, ...page };
 }
+
+// Adding to the cart doesn't change the catalog, and reloading would record a second search.
+export const shouldRevalidate = shouldRevalidateView;
 
 export default function Catalog({ loaderData }: Route.ComponentProps) {
   const { t } = useT();

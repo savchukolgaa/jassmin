@@ -85,7 +85,10 @@ page load, the cart or login.
   which would re-record `product_view` / `search`. `product.tsx` and `catalog.tsx` export
   `shouldRevalidate` returning `false` for POSTs to `/cart` (the pattern from `home.tsx`); the cart
   doesn't reserve stock, so those pages don't need fresh data. The `_shop` loader still revalidates
-  (cart badge).
+  (cart badge). **Implemented wider:** the shared `shouldRevalidateView` (`app/lib/analytics.ts`)
+  skips reloading after any non-GET submission, because the language switcher and the cookie banner
+  also post and would re-record the view; neither changes product or catalog data. The serial
+  product id comes from a new `getProductWithId` service, so it never reaches the client.
 - **D8. Cart events** (Q4: default). `add` → `add_to_cart`; `remove` → `remove_from_cart`; stepper
   `update` → `add_to_cart` or `remove_from_cart` by the sign of the quantity delta, with
   `properties.source = "stepper"` (nothing when the delta is 0). Properties: `{ variantId,
@@ -321,7 +324,7 @@ shape.
   trackEvent` (`add_to_cart` / `remove_from_cart`). Tests: add → `add_to_cart` with product id and
   quantity; stepper −1 → `remove_from_cart` with `source: "stepper"`; remove → `remove_from_cart`;
   failed change → nothing; no consent → cart works, no events, session row without attribution.
-- [ ] **8. `product_view` and `search`.** `product.tsx` loader: `void trackEvent({ request, context
+- [x] **8. `product_view` and `search`.** `product.tsx` loader: `void trackEvent({ request, context
   }, "product_view", { productId: <internal id>, properties: { publicId } })` (keep the internal id
   server-side if the DTO doesn't already expose it). `catalog.tsx` loader: when
   `hasActiveFilters(search)`, `void trackEvent(…, "search", { properties: { gender, ...search,

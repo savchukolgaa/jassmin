@@ -221,8 +221,25 @@ describe.skipIf(!hasDatabase)("products service", () => {
   });
 
   it("returns null for an unknown public id", async () => {
-    const { getProduct } = await import("./products");
+    const { getProduct, getProductWithId } = await import("./products");
 
     expect(await getProduct("01a1652b-6e25-7c00-8000-000000000000", testDb.db)).toBeNull();
+    expect(await getProductWithId("01a1652b-6e25-7c00-8000-000000000000", testDb.db)).toBeNull();
+  });
+
+  it("gives the server the serial id next to the product", async () => {
+    const { eq } = await import("drizzle-orm");
+    const { products } = await import("../db/schema");
+    const { getProduct, getProductWithId } = await import("./products");
+    const sauvage = sampleNamed("Sauvage");
+    const [row] = await testDb.db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.publicId, sauvage.publicId));
+
+    expect(await getProductWithId(sauvage.publicId, testDb.db)).toEqual({
+      id: row?.id,
+      product: await getProduct(sauvage.publicId, testDb.db),
+    });
   });
 });

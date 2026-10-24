@@ -3,6 +3,7 @@
 //
 // These are visitor sessions for traffic and conversion analysis, not the auth cookie session
 // (app/.server/session.ts).
+import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { z } from "zod";
 import { resolveAcquisitionChannel } from "./auth";
 import type { EventType } from "./enums";
@@ -125,3 +126,18 @@ export const clientEventBatchSchema = z.object({
 export type ClientEventBatch = z.infer<typeof clientEventBatchSchema>;
 
 export type ClientEvent = ClientEventBatch["events"][number];
+
+/**
+ * `shouldRevalidate` for routes whose loader records a view (`product_view`, `search`): a form
+ * post (cart, language switch, cookie banner) doesn't change their data, and reloading them would
+ * record the same view twice. Navigations still load as usual.
+ */
+export function shouldRevalidateView({
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs): boolean {
+  if (formMethod && formMethod.toUpperCase() !== "GET") {
+    return false;
+  }
+  return defaultShouldRevalidate;
+}

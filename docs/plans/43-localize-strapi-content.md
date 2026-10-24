@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/43
 Branch: `issue/43`
 Worktree: `.claude/worktrees/issue-43`
-Status: Planned
+Status: Planned (open questions answered 2026-10-24)
 
 ## Goal
 A visitor who picks English should see the home page hero, about and location copy, the
@@ -38,14 +38,14 @@ the Ukrainian version whenever an English localization is missing.
   `plugin_i18n_default_locale`) to `uk`; then the plugin's own enable step tags existing rows
   `uk`. The migration also re-tags rows of the three tables that are `null` or `en` with no `uk`
   sibling (same `document_id`) to `uk`, as a safety net. It's a no-op on a fresh database.
-  Step 1 verifies this behaviour on a copy of the local DB before it's written. **(unconfirmed — Q1)**
+  Step 1 verifies this behaviour on a copy of the local DB before it's written. (Q1, confirmed)
 - **Localized vs shared fields** follow the issue exactly. In Strapi v5, a component field's
   localization is set on the component attribute in the content type schema, and non-localized
   attributes are copied to every locale on save:
   - `blog-post`: `title`, `excerpt`, `content`, `authorName`, `seo` localized; `slug`, `coverImage` not.
   - `home-page`: `hero`, `about`, `location` localized (the whole component is per locale).
     `hero.image`, `hero.ctaHref` and `location.mapEmbedUrl` live inside those components, so Strapi
-    can't share them across locales; the seed and the editor docs copy them into `en`. **(unconfirmed — Q2)**
+    can't share them across locales; the seed and the editor docs copy them into `en`. (Q2, confirmed)
   - `site-setting`: `customerServiceHours` localized; `phone`, `email`, `socialLinks` not.
 - **One fallback helper** in `content.ts`:
   `withLocaleFallback(locale, (l) => fetchOne(l))` calls the fetcher with `locale`, and only when
@@ -71,7 +71,7 @@ the Ukrainian version whenever an English localization is missing.
   `BlogPostCardView` / `BlogPostView` carry it on, and `BlogArticle` and `BlogPostCard` set
   `lang={post.locale}` on their `<article>` only when it differs from the UI locale (`useT().locale`),
   so the Ukrainian UI renders the same markup as before. The home page sections (hero, about,
-  location) get the same `lang` treatment via `HomePageView.contentLocale`. **(unconfirmed — Q3)**
+  location) get the same `lang` treatment via `HomePageView.contentLocale`. (Q3, confirmed)
 - **Home route cache headers:** `app/routes/home.tsx` sets no cache headers today, so nothing to vary.
 - **Seed text:** the current seed stores English copy in what becomes the `uk` localization. The
   seed is rewritten to create real Ukrainian copy as `uk` and the current English copy as `en`.
@@ -80,27 +80,18 @@ the Ukrainian version whenever an English localization is missing.
 - **Token permissions stay as they are.** `locale` is a query parameter of `find`/`findOne`; the
   app never lists locales, so `TOKEN_PERMISSIONS` needs no `plugin::i18n.*` action.
 
-## Open questions
-- [ ] **Q1: Does Strapi 5.59 really tag existing rows with the default locale at the time i18n is
-  enabled, and does a user migration run early enough to switch that default to `uk`?** — Why it
-  matters: it decides whether existing Ukrainian content survives as `uk` (acceptance criterion 3)
-  and what the migration must do. Recommended default: write the migration described above (set
-  default to `uk`, then re-tag `null`/`en`-only rows to `uk`) and verify it in step 1 on a dump of
-  the local `strapidb`. Affects steps: 1, 2.
-- [ ] **Q2: Is it OK that `hero.image`, `hero.ctaHref` and `location.mapEmbedUrl` are stored per
-  locale?** — Why it matters: the issue wants them shared, but they sit inside components that are
-  localized as a whole, and Strapi v5 can't localize individual fields inside a component. Sharing
-  them would mean moving them out of the components to top-level non-localized `home-page`
-  attributes, a content-model change with a data migration and changes to the schemas, DTO and
-  fixtures. Recommended default: keep the components as they are and localize them whole; the
-  seed copies the three values into `en`, and the editor docs say to copy them when adding a
-  translation. Affects steps: 3, 4, 10.
-- [ ] **Q3: Set `lang` on the home page sections too, or only on blog content?** — Why it
-  matters: small extra change in `features/home`; without it, screen readers read fallen-back
-  Ukrainian home copy with English pronunciation. Recommended default: yes, set it on the hero,
-  about and location sections when the content locale differs from the UI locale. Affects steps: 8.
-
 ## Resolved questions
+- **Q1: How do existing rows end up as `uk` when i18n is enabled?** — Use the migration described
+  in Decisions: set the default locale to `uk` before schema sync, then re-tag `null` / `en`-only
+  rows of the three tables to `uk`. Step 1 still checks Strapi 5.59's actual behaviour on a dump
+  of the local `strapidb`, and step 2 is adjusted if it differs (source: user, 2026-10-24).
+- **Q2: May `hero.image`, `hero.ctaHref` and `location.mapEmbedUrl` be stored per locale?** —
+  Yes. Keep the `hero` / `location` components as they are and localize them whole (Strapi v5
+  can't localize single fields inside a component); the seed copies the three values into `en`,
+  and the editor docs say to copy them when adding a translation (source: user, 2026-10-24).
+- **Q3: Set `lang` on the home page sections too?** — Yes: on the hero, about, location sections
+  and the customer-service hours, when the content locale differs from the UI locale, like the
+  blog article and cards (source: user, 2026-10-24).
 - **Which locale codes?** — `uk` and `en`, identical to the app's `LOCALES` (source: `app/lib/i18n/locales.ts`).
 - **Where does the request locale come from?** — `getLocale(request)`: cookie → `Accept-Language`
   → `uk` (source: `app/.server/locale.ts`). The blog loaders already call it.
@@ -284,7 +275,7 @@ Each step is small, ordered, and leaves the app in a working state.
 
 ## Acceptance criteria
 - [ ] Strapi has `uk` (default) and `en` locales after a fresh `pnpm cms:seed` — steps 2, 4
-- [ ] `home-page`, `site-setting` and `blog-post` are localized, with only text fields localized and slugs, media, links and contact details shared across locales — step 3 (see Q2 for the component fields)
+- [ ] `home-page`, `site-setting` and `blog-post` are localized, with only text fields localized and slugs, media, links and contact details shared across locales — step 3 (component fields `hero.image`, `ctaHref`, `mapEmbedUrl` are per locale and copied, per Q2)
 - [ ] Existing Ukrainian content is kept as the `uk` localization after enabling i18n (no content lost) — steps 1, 2, 3
 - [ ] With the English UI, the home page hero, about, location and customer-service hours come from the `en` localization — steps 4, 7, 9
 - [ ] With the English UI, blog list and article pages show `en` content, and `/blog/:slug` is the same URL in both languages — steps 3, 7, 9
@@ -298,5 +289,5 @@ Each step is small, ordered, and leaves the app in a working state.
 - Locale-prefixed URLs (`/en/blog/...`) and `hreflang` alternate links.
 - Translating media alt text (Strapi media library entries aren't localizable).
 - Machine translation of existing content; editors add English translations in the Strapi admin.
-- Moving `hero.image`, `ctaHref`, `mapEmbedUrl` out of their components (only if Q2 is answered "share them").
+- Moving `hero.image`, `ctaHref`, `mapEmbedUrl` out of their components (Q2: they stay per locale).
 - Listing posts that exist only in `en` (Ukrainian is the source of truth).

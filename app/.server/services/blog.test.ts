@@ -60,7 +60,7 @@ describe("buildBlogPostView", () => {
       SITE,
     );
 
-    expect(view.contentHtml).toContain("<h2>Start with the notes</h2>");
+    expect(view.contentHtml).toContain("<h2>Почніть із нот</h2>");
     expect(view.contentHtml).not.toContain("<script");
   });
 
@@ -105,7 +105,7 @@ describe("buildBlogPostView", () => {
     const post = { ...fixturePost(), seo: null, excerpt: null, coverImage: null };
 
     const fromText = buildBlogPostView(post, SITE);
-    expect(fromText.seo.description).toMatch(/^Start with the notes A perfume changes/);
+    expect(fromText.seo.description).toMatch(/^Почніть із нот Парфум змінюється/);
     expect(fromText.seo.image).toBeNull();
 
     const empty = buildBlogPostView({ ...post, content: "" }, SITE);

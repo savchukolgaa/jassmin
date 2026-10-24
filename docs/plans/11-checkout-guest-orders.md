@@ -276,7 +276,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - `checkout.test.ts` (mock the services, as the existing route tests do): empty cart redirects;
     an invalid phone returns 400 with the key; ok redirects with `Set-Cookie`; insufficient stock
     returns 409.
-- [ ] **9. Success route.** Add `route("checkout/success/:orderId", "routes/checkout-success.tsx")`
+- [x] **9. Success route.** Add `route("checkout/success/:orderId", "routes/checkout-success.tsx")`
   under `_shop` in `routes.ts`, and update `routes.test.ts`. In the `loader`, parse `orderId` as a
   positive int (otherwise 404), then `getOrderConfirmation`. If the order doesn't exist or
   `!canViewOrder`, `throw data(null, { status: 404 })`. The page shows the order number, email

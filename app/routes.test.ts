@@ -20,6 +20,7 @@ describe("route config", () => {
       "/register",
       "/cart",
       "/checkout",
+      "/checkout/success/:orderId",
       "/account",
     ]);
   });

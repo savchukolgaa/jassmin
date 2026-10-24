@@ -133,7 +133,32 @@ page load, the cart or login.
     "Decline" (`sm` size, design rules in `docs/design.md`). It hides optimistically while the
     fetcher submits. Footer gets a "Cookie settings" button (a form posting `consent=reset`).
   - Copy goes in `uk.ts` / `en.ts` under a new `consent` namespace (`title`, `message`, `accept`,
-    `decline`, `settings`); no privacy-policy link, since the site has no such page (Q8).
+    `decline`, `settings`, `learnMore`). The banner text links to `/privacy` (D14).
+- **D14. Privacy and cookie policy page `/privacy`** (Q8: build it here).
+  - A static route under `_shop` (`app/routes/privacy.tsx`), **not CMS-backed**: Strapi content
+    isn't localized (`app/.server/cms/content.ts` has no locale), and the policy must exist in
+    Ukrainian and English. Its copy lives in a `privacy` namespace in `uk.ts` / `en.ts` (headings
+    and paragraphs per section), with `PRIVACY_POLICY_UPDATED_AT` in `app/lib/consent.ts`, formatted
+    with `formatDate`.
+  - Sections: who we are and how to contact us (email/phone from `getSiteSettings()`; on a CMS
+    failure the page still renders, just without the contact block, because a legal page shouldn't
+    503); what we collect (account: name, email, phone; orders and delivery details; the cart;
+    with consent only: visits, pages, viewed products, searches, cart actions, device type and
+    traffic source; no IP addresses are stored); why and on what basis (contract for orders and the
+    cart, consent for analytics); cookies (a table generated from `COOKIE_INVENTORY`); how long data
+    is kept (Q10); who data is shared with (nobody for marketing; hosting and email providers only);
+    the visitor's rights under the Law of Ukraine "On Personal Data Protection" (access,
+    correction, deletion, withdrawing consent) with a "Cookie settings" button that reopens the
+    banner.
+  - `COOKIE_INVENTORY` in `app/lib/consent.ts`: `{ name, purposeKey, lifetimeKey, category:
+    "necessary" | "analytics" }` for `__jassmin_session`, `locale`, `cookie_consent`,
+    `anonymous_id`, `analytics_session`. A unit test checks it lists every cookie name exported by
+    `session-cookie.ts`, `visitor-cookie.ts`, `locale.ts` and `consent.ts`, so the page can't drift
+    from the code.
+  - Linked from the banner and the footer (`PRIVACY_LINK` in `FOOTER_LINKS`, `nav.ts`), and from
+    the register form ("By registering you agree to the privacy policy"), since registration
+    collects personal data. Layout follows `docs/design.md` (a readable text column like
+    `BlogArticle`).
 
 ### Hand-off to #11
 
@@ -152,17 +177,20 @@ shape.
 
 ## Open questions
 
-- [ ] **Q8: Should the banner link to a privacy/cookie policy page?** — Why it matters: consent is
-  usually expected to be informed, but no such page exists (and its text is legal content). Recommended
-  default: no link now; the banner text says what is collected (visits, viewed products, cart
-  actions, for improving the store). A policy page can be a separate issue (likely CMS-backed).
-  Affects step: 10.
-- [ ] **Q9: OK to treat `anonymous_id` + `analytics_session` as strictly necessary for guest carts
-  (set without consent, but with no tracking data)?** — Why it matters: the alternative is that
-  guests can't use the cart until they accept cookies. Recommended default: yes, as in D13. Affects
-  steps: 3, 7.
+- [ ] **Q10: Retention periods and the data controller's legal details for the privacy page.** —
+  Why it matters: the policy should name who controls the data (legal name / ФОП) and how long data
+  is kept, and only the store owner knows these. Recommended default: the page names "Jassmin" with
+  the contact email and phone from the CMS site settings; account and order data are kept while the
+  account exists and as long as accounting law requires; analytics events for 26 months. The texts
+  live in `uk.ts` / `en.ts`, so the owner can correct them later without code changes elsewhere.
+  **The policy text is a draft and should be reviewed by the owner (or a lawyer) before launch.**
+  Affects step: 11.
 
 ## Resolved questions
+
+- **Q8 privacy policy page** → yes, build it in this issue (user, 2026-10-24) — D14.
+- **Q9 guest-cart cookies without consent** → yes, strictly necessary, no tracking data (user) —
+  D13.
 
 - **Q1 cookie consent** → add a banner now (user, 2026-10-24) — D13.
 - **Q2 client navigations as `page_view`** → yes (user) — D2.
@@ -218,9 +246,11 @@ shape.
 | create | `app/routes/consent.ts` (+ test) | Consent action |
 | modify | `app/routes.ts` (+ `routes.test.ts`) | `api/events` and `consent` outside the layout |
 | create | `app/features/consent/CookieBanner.tsx` (+ test) | The banner |
-| modify | `app/components/layout/Footer.tsx` (+ test) | "Cookie settings" button |
+| create | `app/routes/privacy.tsx` (+ test) | Privacy and cookie policy page (D14) |
+| modify | `app/components/layout/Footer.tsx`, `nav.ts` (+ tests) | "Cookie settings" button, `PRIVACY_LINK` |
+| modify | `app/routes/register.tsx` | Privacy policy consent sentence + link |
 | create | `app/features/analytics/useClientPageViews.ts`, `client-events.ts` (+ test) | Client tracker |
-| modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `consent` namespace |
+| modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `consent` and `privacy` namespaces |
 | modify | `app/.server/AGENTS.md` | "Visitor" section: middleware, consent, `trackEvent`, attribution, #11 hand-off |
 
 ## Steps
@@ -303,30 +333,39 @@ shape.
   keys in `uk.ts` and `en.ts`. Register `consent` in `routes.ts` outside the layout. Tests: route
   (each value, invalid → 400, unsafe `redirectTo` → `/`), banner renders in Ukrainian and English
   (`<I18nProvider locale="en">`), hidden when consent is set.
-- [ ] **11. `/api/events`.** `app/routes/api.events.ts` (D10): 405 non-POST; 413 when
+- [ ] **11. Privacy policy page.** `app/lib/consent.ts`: `COOKIE_INVENTORY`,
+  `PRIVACY_POLICY_UPDATED_AT` + a test that the inventory covers every cookie name in the code.
+  `app/routes/privacy.tsx` under `_shop` in `routes.ts`: loader returns `{ contacts:
+  await getSiteSettings().catch(() => null) }`, `meta` title via `metaTranslator`; the component
+  renders the D14 sections from the `privacy` namespace in `uk.ts` / `en.ts` (Q10 defaults) and the
+  cookie table from `COOKIE_INVENTORY`. Add `PRIVACY_LINK` to `FOOTER_LINKS` (`nav.ts`), the link
+  in `CookieBanner`, and the consent sentence + link on `register.tsx`. Tests: page renders in uk
+  and en (`<I18nProvider locale="en">`), every inventory cookie appears in the table, renders
+  without contacts when the CMS fails; footer/nav tests updated.
+- [ ] **12. `/api/events`.** `app/routes/api.events.ts` (D10): 405 non-POST; 413 when
   `Content-Length` or the read text exceeds 16 KB; parse the text as JSON (sendBeacon sends
   `text/plain`) with `clientEventBatchSchema` → 400; 429 via a module-level `createRateLimiter`
   (`clientKey(request)`, 60 batches/min); not allowed → 204; else `getVisitor`, `await
   trackEvents(…)`, 204 with the visitor's headers; `try/catch` → 204. Register in `routes.ts`
   outside the layout. Tests: valid batch → rows; `purchase` → 400; 21 events → 400; oversized →
   413; no consent → 204, no rows.
-- [ ] **12. Client tracker.** `app/features/analytics/client-events.ts` (plain queue/flush module:
+- [ ] **13. Client tracker.** `app/features/analytics/client-events.ts` (plain queue/flush module:
   `navigator.sendBeacon("/api/events", JSON.stringify({ events }))`, fallback `fetch(…, { method:
   "POST", keepalive: true })`, errors swallowed) and `useClientPageViews(enabled)` used in
   `ShopLayout` with `enabled = consent === "granted"`: skips the first render (the server counted
   the document load; after accepting, `/consent` counted it), then queues `{ type: "page_view",
   path, referrer: previousPath }` on each pathname/search change and flushes immediately and on
   `pagehide`. Unit tests for the queue (batching to 20, no-op when disabled).
-- [ ] **13. Docs.** `app/.server/AGENTS.md` "Visitor": middleware + consent gate, `trackEvent({
+- [ ] **14. Docs.** `app/.server/AGENTS.md` "Visitor": middleware + consent gate, `trackEvent({
   request, context }, …)`, `ensureVisitor`, attribution rules, `ended_at` = last activity,
   `first_touch_*`, `/api/events` (`CLIENT_EVENT_TYPES`), the #11 call shape. Remove the "#18 extends
   it" note in `analytics.ts`. Mention the consent banner in `docs/design.md` if it adds a reusable
   pattern.
-- [ ] **14. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual run below.
+- [ ] **15. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual run below.
 
 ## Testing & verification
 
-- Unit: `app/lib/analytics.test.ts`, `app/lib/consent.test.ts`, `shouldRevalidate` tests,
+- Unit: `app/lib/analytics.test.ts`, `app/lib/consent.test.ts` (incl. the cookie inventory), `privacy` page render tests, `shouldRevalidate` tests,
   `client-events.test.ts`, `CookieBanner` / `Footer` render tests (uk + en).
 - DB integration (`describe.skipIf(!hasDatabase)`, `createTestDatabase`): `analytics.test.ts`,
   `analytics-middleware.test.ts`, `api.events.test.ts`, `consent.test.ts` (route),
@@ -337,7 +376,7 @@ shape.
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 - Manual (`pnpm aspire run`, private window, then query the DB): open
   `/?utm_source=instagram&utm_medium=cpc` → banner shows, nothing recorded; Decline → no rows, cart
-  still works; Cookie settings → banner again; Accept → one `sessions` row (`instagram` / `cpc`,
+  still works; Cookie settings → banner again; the banner link opens `/privacy` with all five cookies listed; Accept → one `sessions` row (`instagram` / `cpc`,
   device, landing page) and a `page_view`; click to a product → `page_view` (via `/api/events`)
   and `product_view`; filter the catalog → `search`; add/remove/stepper in the cart → cart events,
   no extra `product_view`; every event has `source = instagram`; register → earlier rows get
@@ -350,16 +389,17 @@ shape.
 - [ ] Each visit creates a session row with source, device and landing page — steps 2, 3, 5, 6
   (for visitors who accepted analytics cookies)
 - [ ] `page_view`, `product_view`, `search`, `add_to_cart`, `remove_from_cart`, `checkout_start`,
-  `purchase` and `login` events are recorded — steps 6, 7, 8, 9, 10, 11, 12; **`checkout_start`
+  `purchase` and `login` events are recorded — steps 6, 7, 8, 9, 10, 12, 13; **`checkout_start`
   and `purchase` are delivered by #11** using `trackEvent` from step 5 (see "Hand-off to #11")
 - [ ] Anonymous events are linked to the user after login — steps 3, 5, 9
-- [ ] Tracking failures never break the shopping experience — steps 5, 6, 7, 9, 11 (never-rejecting
+- [ ] Tracking failures never break the shopping experience — steps 5, 6, 7, 9, 12 (never-rejecting
   `trackEvent`, `try/catch` in middleware and login, 204 fallback in `/api/events`)
-- [ ] (added) Cookie consent is respected — steps 4, 5, 10, 12
+- [ ] (added) Cookie consent is respected — steps 4, 5, 10, 12, 13
+- [ ] (added) A privacy and cookie policy page exists in Ukrainian and English — step 11
 
 ## Out of scope
 
 - `checkout_start` / `purchase` hooks — added by #11.
-- A privacy/cookie policy page (Q8) and `review_submit` (no review feature yet).
+- Legal review of the policy text (Q10) and `review_submit` (no review feature yet).
 - Tracking `/admin` pages and bots.
 - Backfilling `first_touch_*` for users who don't log in again; analytics dashboards or exports.

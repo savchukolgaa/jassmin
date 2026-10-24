@@ -11,6 +11,7 @@
     "format": "biome check --write .",
     "aspire": "node scripts/aspire.mjs",
     "aspire:build": "pnpm --dir aspire-apphost run build",
+    "herdr:plans": "node scripts/herdr-plans.mjs",
     "cms:dev": "pnpm --filter jassmin-cms develop",
     "cms:build": "pnpm --filter jassmin-cms build",
     "cms:seed": "pnpm --filter jassmin-cms seed",

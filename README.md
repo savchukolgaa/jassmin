@@ -86,6 +86,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm test:watch` | Vitest, watch mode |
 | `pnpm aspire <cmd>` | Aspire CLI via the pnpm-compatible wrapper (`pnpm aspire run`) |
 | `pnpm aspire:build` | Type-check the Aspire AppHost |
+| `pnpm herdr:plans <n> [<n> ...]` | Inside a Herdr pane: prepare each issue's worktree and run `/create-plan <n>` in its own tab (`--kind <agent>`, default `claude`) |
 | `pnpm cms:dev` | Strapi in development mode (admin at http://localhost:1337/admin) |
 | `pnpm cms:build` | Build the Strapi admin panel |
 | `pnpm cms:seed` | Seed Strapi with demo content (`-- --token` also creates the app's API token) |

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/43
 Branch: `issue/43`
 Worktree: `.claude/worktrees/issue-43`
-Status: Planned (open questions answered 2026-10-24)
+Status: Implemented
 
 ## Goal
 A visitor who picks English should see the home page hero, about and location copy, the
@@ -271,7 +271,16 @@ Each step is small, ordered, and leaves the app in a working state.
   the migration and the bootstrap locale check. `app/.server/AGENTS.md` CMS section: content
   queries take a `Locale`, use `withLocaleFallback`, DTOs carry `locale`, record `uk` and `en` fixtures.
 
-- [ ] **13. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual checks below.
+- [x] **13. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual checks below.
+  **Result (2026-10-24):** typecheck, lint, 577 tests and build pass. The built app was served
+  against a scratch Strapi (fresh DB + `pnpm cms:seed -- --token`, so the real read-only token).
+  With `Accept-Language: en`: home hero/about/location/service hours in English; `/blog` shows the
+  translated post in English and the Ukrainian-only one in Ukrainian with `lang="uk"`; both
+  articles answer 200 at the same URLs, the untranslated one in Ukrainian. After deleting the `en`
+  home page and site settings rows, the English home page rendered the Ukrainian copy (200,
+  `lang="uk"`). With `uk`, no content `lang` attributes are added. Not checked: the Strapi admin
+  UI (locale picker, "Fill in from another locale") and a real existing `strapidb`; the upgrade
+  was simulated on throwaway databases (see the step 1 spike result).
 
 ## Testing & verification
 - Automated (Vitest): `client.test.ts` (locale param, 404 kind/status), `content.test.ts`
@@ -294,15 +303,15 @@ Each step is small, ordered, and leaves the app in a working state.
   - API token in Settings → API Tokens still lists only the four `find`/`findOne` actions.
 
 ## Acceptance criteria
-- [ ] Strapi has `uk` (default) and `en` locales after a fresh `pnpm cms:seed` — steps 2, 4
-- [ ] `home-page`, `site-setting` and `blog-post` are localized, with only text fields localized and slugs, media, links and contact details shared across locales — step 3 (component fields `hero.image`, `ctaHref`, `mapEmbedUrl` are per locale and copied, per Q2)
-- [ ] Existing Ukrainian content is kept as the `uk` localization after enabling i18n (no content lost) — steps 1, 2, 3
-- [ ] With the English UI, the home page hero, about, location and customer-service hours come from the `en` localization — steps 4, 7, 9
-- [ ] With the English UI, blog list and article pages show `en` content, and `/blog/:slug` is the same URL in both languages — steps 3, 7, 9
-- [ ] When an `en` localization is missing, the page renders the `uk` content instead of a 404 or error — steps 7, 11
-- [ ] The Ukrainian UI renders exactly as before — steps 8, 9, 13
-- [ ] The app's API token still only has read access — step 4 (`TOKEN_PERMISSIONS` unchanged), step 13
-- [ ] Vitest covers the locale param and the fallback; `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — steps 5, 11, 13
+- [x] Strapi has `uk` (default) and `en` locales after a fresh `pnpm cms:seed` — steps 2, 4
+- [x] `home-page`, `site-setting` and `blog-post` are localized, with only text fields localized and slugs, media, links and contact details shared across locales — step 3 (component fields `hero.image`, `ctaHref`, `mapEmbedUrl` are per locale and copied, per Q2)
+- [x] Existing Ukrainian content is kept as the `uk` localization after enabling i18n (no content lost) — steps 1, 2, 3
+- [x] With the English UI, the home page hero, about, location and customer-service hours come from the `en` localization — steps 4, 7, 9
+- [x] With the English UI, blog list and article pages show `en` content, and `/blog/:slug` is the same URL in both languages — steps 3, 7, 9
+- [x] When an `en` localization is missing, the page renders the `uk` content instead of a 404 or error — steps 7, 11
+- [x] The Ukrainian UI renders exactly as before — steps 8, 9, 13
+- [x] The app's API token still only has read access — step 4 (`TOKEN_PERMISSIONS` unchanged), step 13
+- [x] Vitest covers the locale param and the fallback; `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — steps 5, 11, 13
 
 ## Out of scope
 - Localizing product data (PostgreSQL today; #40's `product` content type gets its own follow-up).

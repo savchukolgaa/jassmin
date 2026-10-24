@@ -37,6 +37,10 @@ describe("route config", () => {
     expect(routes.find((entry) => entry.path === "consent")?.file).toBe("routes/consent.ts");
   });
 
+  it("keeps the client events endpoint outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "api/events")?.file).toBe("routes/api.events.ts");
+  });
+
   it("nests the admin pages under their own layout, outside the shop layout", () => {
     const admin = routes.find((entry) => entry.path === "admin");
 

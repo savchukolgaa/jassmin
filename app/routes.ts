@@ -20,6 +20,8 @@ export default [
   route("locale", "routes/locale.ts"),
   // Action-only (POST) answer to the cookie banner (#18); outside the layout for the same reason.
   route("consent", "routes/consent.ts"),
+  // Action-only (POST) endpoint for the client tracker's beacons (#18).
+  route("api/events", "routes/api.events.ts"),
   // Outside the shop layout: the admin area has its own. Every admin loader and action calls
   // `requireAdmin`; product (#16) and order (#17) management replace the placeholders.
   route("admin", "routes/admin.tsx", [

@@ -359,7 +359,7 @@ shape.
   in `CookieBanner`, and the consent sentence + link on `register.tsx`. Tests: page renders in uk
   and en (`<I18nProvider locale="en">`), every inventory cookie appears in the table, renders
   without contacts when the CMS fails; footer/nav tests updated.
-- [ ] **12. `/api/events`.** `app/routes/api.events.ts` (D10): 405 non-POST; 413 when
+- [x] **12. `/api/events`.** `app/routes/api.events.ts` (D10): 405 non-POST; 413 when
   `Content-Length` or the read text exceeds 16 KB; parse the text as JSON (sendBeacon sends
   `text/plain`) with `clientEventBatchSchema` → 400; 429 via a module-level `createRateLimiter`
   (`clientKey(request)`, 60 batches/min); not allowed → 204; else `getVisitor`, `await

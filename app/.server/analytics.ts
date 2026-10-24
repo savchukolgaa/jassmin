@@ -231,6 +231,8 @@ export interface TrackEventOptions {
 /** One event to record with `trackEvents`. */
 export interface EventInput extends Omit<TrackEventOptions, "userId"> {
   type: EventType;
+  /** The previous page, when the request's `Referer` isn't it (beacons from the client tracker). */
+  referrer?: string;
 }
 
 /**
@@ -261,6 +263,7 @@ export async function trackEvents(
         eventType: event.type,
         productId: event.productId ?? null,
         eventProperties: event.properties ?? null,
+        ...(event.referrer && { referrer: event.referrer.slice(0, MAX_URL_LENGTH) }),
       }),
     );
     await insertEvents(db, rows);

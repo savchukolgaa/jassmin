@@ -380,6 +380,22 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
       expect(await eventsOf(visitor.anonymousId)).toEqual([]);
     });
 
+    it("stores a client-sent previous page as the referrer", async () => {
+      const { getVisitor, trackEvents } = await import("./analytics");
+      const visitor = await getVisitor(request(), testDb.db);
+      const beacon = request(undefined, { headers: { Referer: "http://localhost/products/abc" } });
+
+      await trackEvents(
+        visitor,
+        beacon,
+        [{ type: "page_view", referrer: "http://localhost/" }, { type: "page_view" }],
+        { db: testDb.db },
+      );
+
+      const referrers = (await eventsOf(visitor.anonymousId)).map((event) => event.referrer);
+      expect(referrers.sort()).toEqual(["http://localhost/", "http://localhost/products/abc"]);
+    });
+
     it("never rejects when the insert fails", async () => {
       const { trackEvent, visitorContext } = await import("./analytics");
       const context = new RouterContextProvider();

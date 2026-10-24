@@ -25,9 +25,11 @@ on a success page that only they can open.
   doesn't exist yet, so this issue **does not** record `checkout_start` / `purchase` events. It
   leaves `// #18:` TODO comments in the same style as `routes/catalog.tsx:35` and
   `routes/product.tsx:41`.
-- **Migration**: one new migration, `0006_order_cart_id`, plus its rollback (step 1).
-  **(unconfirmed, Q1)**
+- **Migration**: one new migration, `0006_order_checkout_fields`, plus its rollback (step 1). It
+  adds `orders.cart_id` (unique, confirmed by the user) and `orders.free_shipping`.
 - No new env vars or packages.
+- Follow-ups filed during planning: #44 (online card payment provider) and #45 (order-confirmation
+  email).
 
 ## Decisions & assumptions
 - **Stock is per variant.** Lock, check and decrement `product_variants.stock_quantity`, never the
@@ -44,7 +46,7 @@ on a success page that only they can open.
 - **Stock is checked before any write.** If a line's quantity is greater than its locked stock,
   the transaction callback returns `{ ok: false, error: "insufficient-stock", lines }` before
   anything is written, so nothing changes. Any thrown error rolls back the whole transaction.
-- **Idempotency / double submit** **(unconfirmed, Q1)**:
+- **Idempotency / double submit**:
   1. The client disables the submit button while `navigation.state === "submitting"`
      (`Button loading`, as in `register.tsx`).
   2. On the server, the cart row lock serialises two submits of the same cart. After the lock,
@@ -53,15 +55,28 @@ on a success page that only they can open.
      same success page. A **unique** index on `orders.cart_id` guarantees one order per cart at
      the database level.
 - **Totals in SQL, as exact decimals.** The subtotal is `sum(variant.price * quantity)::numeric(10, 2)`
-  over the locked rows, as `cartTotals` already does. `discount_amount = 0`. `shipping_amount = 0`,
-  because Nova Poshta delivery is paid by the recipient at the carrier's rates **(unconfirmed, Q2)**.
+  over the locked rows, as `cartTotals` already does. `discount_amount = 0`.
   `total_amount = subtotal - discount + shipping` is computed in the `INSERT … SELECT` / SQL, never
-  with JS floats. `currency = 'UAH'` (the column default). `SHIPPING_AMOUNT = "0.00"` and
-  `DISCOUNT_AMOUNT = "0.00"` are constants in `app/lib/checkout.ts`, so a later change is a single
-  edit.
-- **Payment.** Store `payment_method` (`card` | `cod`) as submitted. `payment_status` stays
-  `unpaid` (the default) and `status` stays `pending`. For `card`, the success page says the store
-  will send payment details **(unconfirmed, Q3)**.
+  with JS floats. `currency = 'UAH'` (the column default). `DISCOUNT_AMOUNT = "0.00"` is a constant
+  in `app/lib/checkout.ts`.
+- **Shipping (user decision).** When the subtotal (after discount) is **at least 1000 ₴**,
+  delivery is free: the store pays Nova Poshta. Below that, the recipient pays Nova Poshta's own
+  rate when collecting the parcel. In both cases the store charges nothing for delivery, so
+  `shipping_amount = 0.00` and the total doesn't include delivery.
+  - Who pays is stored in a new column, `orders.free_shipping boolean not null default false`.
+    The store (and #17 / #40 order management) needs to know whether to send the parcel prepaid,
+    and it's an analytics feature (does free delivery lift conversion and order value?). Deriving
+    it later from the threshold would break if the threshold changes.
+  - The column is computed in SQL in the insert, `subtotal >= FREE_SHIPPING_THRESHOLD`.
+  - Constants in `app/lib/checkout.ts`: `FREE_SHIPPING_THRESHOLD = "1000.00"` and
+    `SHIPPING_AMOUNT = "0.00"`.
+  - For the UI, `freeShippingInfo(subtotal)` works on exact integer kopiyky (it parses the decimal
+    string, never `Number()` arithmetic). It returns `{ free: true }` or
+    `{ free: false, remaining: "<decimal string>" }`, so the summary can say "Free delivery" or
+    "Delivery at Nova Poshta rates; add 250 ₴ more for free delivery".
+- **Payment (user decision).** Store `payment_method` (`card` | `cod`) as submitted.
+  `payment_status` stays `unpaid` (the default) and `status` stays `pending`. For `card`, the
+  success page says the store will contact the shopper with payment details. Online payment is #44.
 - **Ukrainian phone format.** Strip spaces, `-`, `(` and `)`, then accept `^(\+?38)?0\d{9}$`
   (`+380 67 123 45 67`, `380671234567`, `067 123 4567`). Normalise to `+380XXXXXXXXX` before
   storing it in `orders.guest_phone`, so phone-based identity resolution in LTV models matches the
@@ -96,27 +111,14 @@ on a success page that only they can open.
   tokens and components: `blush` summary card like `CartSummary`, Manrope 800 headings, pill
   `Button`, `TextField`, and focus rings as in `docs/design.md`.
 
-## Open questions
-- [ ] **Q1: May we add a migration `0006_order_cart_id` (`orders.cart_id integer null references
-  carts(id) on delete set null`, unique)?** — Why it matters: it's what makes a double submit
-  return the *same* order to the second request. The second request's cookie doesn't hold the first
-  order's id yet, so without it the second request would land on an empty `/cart` instead of the
-  success page. It also links each cart to the order it became, which is useful for conversion
-  analytics. Recommended default: **add it** (a nullable column; existing rows stay `null`; the
-  rollback drops it). Affects steps: 1, 4, 5.
-- [ ] **Q2: Shipping cost: is it always `0` (recipient pays Nova Poshta on delivery), or is there a
-  flat fee or a free-shipping threshold?** — Why it matters: it changes `shipping_amount` /
-  `total_amount` and the summary copy. Recommended default: `0.00`, with the note "Delivery is paid
-  on receipt at Nova Poshta rates". Affects steps: 3, 4, 7.
-- [ ] **Q3: What does a `card` order mean before a payment provider exists?** — Why it matters:
-  it's the success-page copy and the shopper's expectations. Recommended default: the order is
-  created `unpaid`, and the success page says "We'll contact you with payment details". Online
-  payment is a follow-up issue. Affects steps: 7, 8.
-- [ ] **Q4: Should guests get an order-confirmation email?** — Why it matters: guests have no
-  account page, so the success page is their only record. `mail.ts` already exists. Recommended
-  default: **out of scope** here; file a follow-up issue. Affects: none.
-
 ## Resolved questions
+- **Add `orders.cart_id` (unique) for double-submit idempotency?** — Yes (source: user,
+  2026-10-24).
+- **Shipping cost?** — Free from 1000 ₴. Below that, the recipient pays Nova Poshta's rate on
+  delivery, so the store never charges shipping (source: user, 2026-10-24).
+- **Card orders without a payment provider?** — Created `unpaid`. The provider is #44 (source:
+  user, 2026-10-24).
+- **Order-confirmation email?** — Follow-up #45 (source: user, 2026-10-24).
 - **Which stock to decrement?** `product_variants.stock_quantity`. Copy the variant price, and set
   `variant_id` / `volume_ml` (source: #11 comment; `app/.server/AGENTS.md` "At checkout (#11) …").
 - **Record `checkout_start` / `purchase`?** Not in this issue. Leave `// #18:` TODOs, because #18
@@ -138,11 +140,11 @@ on a success page that only they can open.
 ## Files
 | Action | Path | Purpose |
 |--------|------|---------|
-| modify | `app/.server/db/schema.ts` | `orders.cartId` + unique index (Q1) |
-| create | `app/.server/db/migrations/0006_order_cart_id.sql` (+ `meta/` snapshot, journal) | Generated by `pnpm db:generate --name order_cart_id` |
-| create | `app/.server/db/rollbacks/0006_order_cart_id.sql` | Drop index and column |
-| modify | `app/lib/commerce.ts` | `Order.cartId: number \| null` (kept in sync by `schema.test.ts`) |
-| create | `app/lib/checkout.ts` | zod `checkoutSchema`, `normalizeUkrainianPhone`, `formatShippingAddress`, field/error types, DTOs, amount constants |
+| modify | `app/.server/db/schema.ts` | `orders.cartId` + unique index, `orders.freeShipping` |
+| create | `app/.server/db/migrations/0006_order_checkout_fields.sql` (+ `meta/` snapshot, journal) | Generated by `pnpm db:generate --name order_checkout_fields` |
+| create | `app/.server/db/rollbacks/0006_order_checkout_fields.sql` | Drop the index and both columns |
+| modify | `app/lib/commerce.ts` | `Order.cartId: number \| null`, `Order.freeShipping: boolean` (kept in sync by `schema.test.ts`) |
+| create | `app/lib/checkout.ts` | zod `checkoutSchema`, `normalizeUkrainianPhone`, `formatShippingAddress`, `freeShippingInfo`, field/error types, DTOs, amount constants |
 | create | `app/lib/checkout.test.ts` | Schema and phone tests |
 | create | `app/.server/db/queries/orders.ts` | `lockVariantsForCart`, `insertOrder`, `insertOrderItems`, `decrementVariantStock`, `markCartConverted`, `findOrderIdByCartId`, `findOrderConfirmation` |
 | modify | `app/.server/db/queries/users.ts` | `findUserContact` (name, email, phone) |
@@ -164,12 +166,16 @@ on a success page that only they can open.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. `orders.cart_id` migration (Q1).** In `schema.ts`, add
-  `cartId: integer().references(() => carts.id, { onDelete: "set null" })` to `orders`, plus
-  `uniqueIndex("orders_cart_id_unique").on(t.cartId)` (NULLs don't collide). Run
-  `pnpm db:generate --name order_cart_id`, then write `rollbacks/0006_order_cart_id.sql`
-  (`drop index …; alter table orders drop column cart_id;`). Add `cartId: number | null` to
-  `Order` in `lib/commerce.ts`. Check: `pnpm test` (`schema.test.ts`, `migrator.test.ts`), and
+- [ ] **1. Order checkout fields migration.** In `schema.ts`, add to `orders`:
+  - `cartId: integer().references(() => carts.id, { onDelete: "set null" })`, plus
+    `uniqueIndex("orders_cart_id_unique").on(t.cartId)` (NULLs don't collide)
+  - `freeShipping: boolean().notNull().default(false)`, with a comment saying the store paid Nova
+    Poshta
+
+  Run `pnpm db:generate --name order_checkout_fields`, then write
+  `rollbacks/0006_order_checkout_fields.sql` (`drop index …; alter table orders drop column
+  cart_id, drop column free_shipping;`). Add `cartId: number | null` and `freeShipping: boolean`
+  to `Order` in `lib/commerce.ts`. Check: `pnpm test` (`schema.test.ts`, `migrator.test.ts`), and
   `pnpm db:migrate` then `pnpm db:rollback` locally.
 - [ ] **2. Shared checkout contract (`app/lib/checkout.ts`).**
   - `normalizeUkrainianPhone(raw): string | undefined` → `+380XXXXXXXXX`.
@@ -180,17 +186,23 @@ Each step is small, ordered, and leaves the app in a working state.
   - `CHECKOUT_FIELDS`, `type CheckoutField`, and
     `CheckoutFormErrors = AuthFormErrors<CheckoutField>`-style `{ fieldErrors?, formError?, values? }`.
     Reuse `toFieldErrors` from `lib/auth.ts`.
-  - `formatShippingAddress({ city, branch })`, and `SHIPPING_AMOUNT` / `DISCOUNT_AMOUNT = "0.00"`.
+  - `formatShippingAddress({ city, branch })`, `SHIPPING_AMOUNT` / `DISCOUNT_AMOUNT = "0.00"` and
+    `FREE_SHIPPING_THRESHOLD = "1000.00"`.
+  - `freeShippingInfo(subtotal)`, using exact integer kopiyky (see Decisions).
   - DTOs `CheckoutPrefill`, `OrderConfirmation` (`id`, `createdAt`, contact, `shippingAddress`,
-    `paymentMethod`, amounts, `lines: { title, brand, volumeMl, packSize, quantity, priceAtPurchase, lineTotal }[]`).
+    `paymentMethod`, `freeShipping`, amounts,
+    `lines: { title, brand, volumeMl, packSize, quantity, priceAtPurchase, lineTotal }[]`).
   - Tests in `checkout.test.ts`: valid input; each phone variant normalises; invalid phones
     (`+7…`, too short, letters) fail with the key; blank required fields give their keys;
-    unknown `paymentMethod` fails.
+    unknown `paymentMethod` fails. For `freeShippingInfo`: `"999.99"` → 0.01 remaining,
+    `"1000.00"` → free, `"1500.50"` → free.
 - [ ] **3. i18n keys.** Add the `checkout` namespace to `uk.ts` (source of truth) and `en.ts`:
   `heading`, `form` (aria label), `sections.{contact,delivery,payment}`,
   `fields.{fullName,email,phone,phoneHint,city,branch,branchHint}`, `payment.{card,cod,cardNote,codNote}`,
-  `summary`, `subtotal`, `shipping`, `shippingFree` ("за тарифами Нової Пошти" / "at Nova Poshta
-  rates", per Q2), `total`, `submit`, `backToCart`,
+  `summary`, `subtotal`, `shipping`, `shippingFree` ("Безкоштовно" / "Free"), `shippingCarrierRate`
+  ("За тарифами Нової Пошти при отриманні" / "Nova Poshta rates, paid on delivery"),
+  `freeShippingHint` ("Додайте ще {amount}, щоб доставка була безкоштовною" / "Add {amount} more for
+  free delivery"), `total`, `submit`, `backToCart`,
   `errors.{fullNameRequired,phoneInvalid,cityRequired,branchRequired,paymentRequired,stockChanged}`,
   `success.{title,heading,orderNumber,emailNote,cardNote,codNote,continue}`. Check: `pnpm typecheck`.
 - [ ] **4. Order queries (`app/.server/db/queries/orders.ts`).** Use the same
@@ -199,9 +211,11 @@ Each step is small, ordered, and leaves the app in a working state.
     `productId`, `volumeMl`, `price`, `stockQuantity` and `quantity`, ordered by
     `product_variants.id`, with `.for("update", { of: productVariants })`.
   - `cartStatus(tx, cartId)`.
-  - `insertOrder(tx, values)`: `.returning({ id })`. `subtotal` and `totalAmount` come from SQL:
-    sum the cart lines as `numeric(10, 2)` in a `select` first, then compute
-    `total = subtotal - discount + shipping` in SQL (e.g. `sql\`${subtotal}::numeric - … \``).
+  - `insertOrder(tx, values)`: `.returning({ id })`. `subtotal`, `totalAmount` and
+    `freeShipping` come from SQL: sum the cart lines as `numeric(10, 2)` in a `select` first, then
+    compute `total = subtotal - discount + shipping` and
+    `free_shipping = (subtotal - discount) >= FREE_SHIPPING_THRESHOLD` in SQL
+    (e.g. `sql\`${subtotal}::numeric - … \``).
   - `insertOrderItems(tx, orderId, lines)`: one multi-row insert with `priceAtPurchase = price`.
   - `decrementVariantStock(tx, variantId, qty)`: `stock_quantity = stock_quantity - qty`.
   - `markCartConverted(tx, cartId)`: query-builder update, so `$onUpdate` bumps `updated_at`.
@@ -237,7 +251,10 @@ Each step is small, ordered, and leaves the app in a working state.
     `address-level2`). The submit `Button` has `loading={submitting}` and `disabled` while
     submitting.
   - `PaymentMethodField`: accessible radio group (`card`, `cod`) with a short note per option.
-  - `OrderSummary`: lines, subtotal, shipping, total (`formatPrice`). It's used by both pages.
+  - `OrderSummary`: lines, subtotal, a shipping row, and the total (`formatPrice`). The shipping
+    row says "Free" at or above 1000 ₴. Below that, it says "Nova Poshta rates, paid on delivery"
+    plus the `freeShippingHint` with the remaining amount. It's used by both pages: on the
+    success page from the stored `freeShipping`, at checkout from `freeShippingInfo`.
   - Tests in `checkout-ui.test.ts`: renders the sections and fields; shows field errors with
     `aria-invalid`; the submit button is disabled while submitting; English copy under
     `<I18nProvider locale="en">`.
@@ -273,6 +290,8 @@ Each step is small, ordered, and leaves the app in a working state.
   - A user order: `user_id` set.
   - Totals equal the SQL sum of `variant.price * qty`, with `shipping`/`discount` `0.00`;
     `price_at_purchase`, `variant_id` and `volume_ml` are copied.
+  - `free_shipping` is `true` for a subtotal of at least 1000 ₴ and `false` below it (seed sizes
+    on both sides of the threshold).
   - Stock is decremented, and the cart is `converted` with `updated_at` bumped.
   - Insufficient stock: the result is an error, and stock, cart status and order count are
     unchanged.
@@ -296,12 +315,15 @@ Each step is small, ordered, and leaves the app in a working state.
 - Manual (`pnpm aspire run`):
   1. As a guest, add two sizes and check out with `cod`. You land on `/checkout/success/<id>`,
      the header badge shows 0, and stock in the DB dropped.
-  2. Open the success URL in a private window: 404.
-  3. Log in. The form is prefilled. Check out with `card`, and the order has `user_id` set.
-  4. Submit invalid fields: inline errors, values kept, uk and en copy.
-  5. Lower a variant's stock in the DB below the cart quantity, then submit: a "stock changed"
+  2. Check out a cart under 1000 ₴ (it shows Nova Poshta rates and the "add X more" hint;
+     `free_shipping = false`) and one at or above 1000 ₴ (it shows "Free"; `free_shipping = true`).
+  3. Open the success URL in a private window: 404.
+  4. Log in. The form is prefilled. Check out with `card`, and the order has `user_id` set and
+     `payment_status = 'unpaid'`.
+  5. Submit invalid fields: inline errors, values kept, uk and en copy.
+  6. Lower a variant's stock in the DB below the cart quantity, then submit: a "stock changed"
      error with a link to the cart, and no order.
-  6. Without JS, double-click submit: one order.
+  7. Without JS, double-click submit: one order.
 
 ## Acceptance criteria
 - [ ] Guests and registered users can place an order — steps 2, 5, 7, 8, 9, 10
@@ -312,8 +334,8 @@ Each step is small, ordered, and leaves the app in a working state.
 
 ## Out of scope
 - Recording `checkout_start` / `purchase` events (#18 adds them where the TODOs are).
-- Online card payment (a payment provider); `payment_status` stays `unpaid`.
+- Online card payment through a payment provider: #44. Until then `payment_status` stays `unpaid`.
+- Order-confirmation emails: #45.
 - Nova Poshta API (city/branch autocomplete, delivery cost calculation).
-- Order-confirmation emails (Q4), the order history on `/account` (#12), and admin order
-  management (#17).
+- The order history on `/account` (#12) and admin order management (#17 / #40).
 - Discounts or promo codes (`discount_amount` stays `0`).

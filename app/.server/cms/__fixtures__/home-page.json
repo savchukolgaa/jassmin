@@ -1,18 +1,19 @@
 {
   "data": {
     "id": 1,
-    "documentId": "klh9l9cdem5ycbjkpnr54qgy",
-    "createdAt": "2026-10-22T19:06:58.429Z",
-    "updatedAt": "2026-10-22T19:06:58.429Z",
-    "publishedAt": "2026-10-22T19:06:58.407Z",
+    "documentId": "bm9bxgfeln9bwai1nfdipc7q",
+    "createdAt": "2026-10-24T11:46:35.042Z",
+    "updatedAt": "2026-10-24T11:46:35.042Z",
+    "publishedAt": "2026-10-24T11:46:35.001Z",
+    "locale": "uk",
     "hero": {
       "id": 1,
-      "headline": "Order 3 Testers only for 499₴",
-      "ctaLabel": "Order Now",
+      "headline": "Замовте 3 тестери всього за 499₴",
+      "ctaLabel": "Замовити",
       "ctaHref": "/popular",
       "image": {
         "id": 1,
-        "documentId": "j13hypxu9xfkw5x1ksbxrogr",
+        "documentId": "w68qti386szczvgc7uv16dtb",
         "name": "hero.jpg",
         "alternativeText": "Jassmin perfume testers",
         "caption": null,
@@ -22,8 +23,8 @@
         "formats": {
           "large": {
             "ext": ".jpg",
-            "url": "/uploads/large_hero_ed6cf55422.jpg",
-            "hash": "large_hero_ed6cf55422",
+            "url": "/uploads/large_hero_86b09bc538.jpg",
+            "hash": "large_hero_86b09bc538",
             "mime": "image/jpeg",
             "name": "large_hero.jpg",
             "path": null,
@@ -34,8 +35,8 @@
           },
           "small": {
             "ext": ".jpg",
-            "url": "/uploads/small_hero_ed6cf55422.jpg",
-            "hash": "small_hero_ed6cf55422",
+            "url": "/uploads/small_hero_86b09bc538.jpg",
+            "hash": "small_hero_86b09bc538",
             "mime": "image/jpeg",
             "name": "small_hero.jpg",
             "path": null,
@@ -46,8 +47,8 @@
           },
           "medium": {
             "ext": ".jpg",
-            "url": "/uploads/medium_hero_ed6cf55422.jpg",
-            "hash": "medium_hero_ed6cf55422",
+            "url": "/uploads/medium_hero_86b09bc538.jpg",
+            "hash": "medium_hero_86b09bc538",
             "mime": "image/jpeg",
             "name": "medium_hero.jpg",
             "path": null,
@@ -58,8 +59,8 @@
           },
           "thumbnail": {
             "ext": ".jpg",
-            "url": "/uploads/thumbnail_hero_ed6cf55422.jpg",
-            "hash": "thumbnail_hero_ed6cf55422",
+            "url": "/uploads/thumbnail_hero_86b09bc538.jpg",
+            "hash": "thumbnail_hero_86b09bc538",
             "mime": "image/jpeg",
             "name": "thumbnail_hero.jpg",
             "path": null,
@@ -69,28 +70,28 @@
             "sizeInBytes": 1565
           }
         },
-        "hash": "hero_ed6cf55422",
+        "hash": "hero_86b09bc538",
         "ext": ".jpg",
         "mime": "image/jpeg",
         "size": 10.47,
-        "url": "/uploads/hero_ed6cf55422.jpg",
+        "url": "/uploads/hero_86b09bc538.jpg",
         "previewUrl": null,
         "provider": "local",
         "provider_metadata": null,
-        "createdAt": "2026-10-22T19:06:58.205Z",
-        "updatedAt": "2026-10-22T19:06:58.205Z",
-        "publishedAt": "2026-10-22T19:06:58.206Z"
+        "createdAt": "2026-10-24T11:46:34.148Z",
+        "updatedAt": "2026-10-24T11:46:34.148Z",
+        "publishedAt": "2026-10-24T11:46:34.148Z"
       }
     },
     "about": {
       "id": 1,
-      "title": "About Jassmin",
-      "body": "Jassmin is a small perfume store in Ukraine. We help you find a scent you love by trying it first: every fragrance is available as a tester before you commit to a full bottle."
+      "title": "Про Jassmin",
+      "body": "Jassmin — невеликий парфумерний магазин в Україні. Ми допомагаємо знайти аромат до душі: кожен парфум можна спершу спробувати як тестер, перш ніж обрати повний флакон."
     },
     "location": {
       "id": 1,
       "address": "вул. Хрещатик, 1, Київ, 01001",
-      "openingHours": "Mon–Fri 10:00–20:00\nSat–Sun 11:00–18:00",
+      "openingHours": "Пн–Пт 10:00–20:00\nСб–Нд 11:00–18:00",
       "mapEmbedUrl": "https://www.google.com/maps?q=Khreshchatyk+1+Kyiv&output=embed"
     }
   },

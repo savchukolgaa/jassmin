@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import blogPostBySlugEn from "./__fixtures__/blog-post-by-slug.en.json";
 import blogPostBySlug from "./__fixtures__/blog-post-by-slug.json";
+import blogPostsEn from "./__fixtures__/blog-posts.en.json";
 import blogPosts from "./__fixtures__/blog-posts.json";
 import blogPostsEmpty from "./__fixtures__/blog-posts-empty.json";
+import homePageEn from "./__fixtures__/home-page.en.json";
 import homePage from "./__fixtures__/home-page.json";
+import siteSettingEn from "./__fixtures__/site-setting.en.json";
 import siteSetting from "./__fixtures__/site-setting.json";
 import {
   getBlogPostBySlug,
@@ -10,10 +14,18 @@ import {
   getSiteSettings,
   listBlogPosts,
   toBlogPost,
+  toHomePage,
   toImage,
   toSiteSettings,
 } from "./content";
-import { blogPostEntry, collectionResponse, singleResponse, siteSettingEntry } from "./schemas";
+import { CmsError } from "./errors";
+import {
+  blogPostEntry,
+  collectionResponse,
+  homePageEntry,
+  singleResponse,
+  siteSettingEntry,
+} from "./schemas";
 
 const BASE_URL = "http://cms.test";
 
@@ -25,6 +37,29 @@ function respondWith(body: unknown) {
   const fetchMock = vi.fn<typeof fetch>(async () => Response.json(body));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
+}
+
+const NOT_FOUND = {
+  data: null,
+  error: { status: 404, name: "NotFoundError", message: "Not Found" },
+};
+
+/**
+ * Answers by the request's `locale` param: `bodies[locale]`, or Strapi's 404 for a locale
+ * without one (`404`), so tests can leave a translation out.
+ */
+function respondByLocale(bodies: Partial<Record<string, unknown>>) {
+  const fetchMock = vi.fn<typeof fetch>(async (input) => {
+    const locale = new URL(String(input)).searchParams.get("locale") ?? "";
+    const body = bodies[locale];
+    return body === undefined ? Response.json(NOT_FOUND, { status: 404 }) : Response.json(body);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+function localesRequested(fetchMock: ReturnType<typeof respondByLocale>) {
+  return fetchMock.mock.calls.map(([input]) => new URL(String(input)).searchParams.get("locale"));
 }
 
 afterEach(() => {
@@ -82,6 +117,14 @@ describe("toImage", () => {
 });
 
 describe("mappers", () => {
+  it("take the locale Strapi served, else the requested one", () => {
+    const { data } = singleResponse(siteSettingEntry).parse(siteSettingEn);
+
+    expect(toSiteSettings(data, "uk").locale).toBe("en");
+    expect(toSiteSettings({ ...data, locale: undefined }, "en").locale).toBe("en");
+    expect(toSiteSettings({ ...data, locale: "de" }).locale).toBe("uk");
+  });
+
   it("map site settings and default missing social links to an empty list", () => {
     const { data } = singleResponse(siteSettingEntry).parse(siteSetting);
 
@@ -111,9 +154,10 @@ describe("getHomePage", () => {
 
     const page = await getHomePage();
 
+    expect(page.locale).toBe("uk");
     expect(page.hero).toEqual({
-      headline: "Order 3 Testers only for 499₴",
-      ctaLabel: "Order Now",
+      headline: "Замовте 3 тестери всього за 499₴",
+      ctaLabel: "Замовити",
       ctaHref: "/popular",
       image: {
         url: `http://cms.test${homePage.data.hero.image.url}`,
@@ -121,15 +165,15 @@ describe("getHomePage", () => {
         width: 1200,
         height: 800,
         srcSet: [
-          "http://cms.test/uploads/thumbnail_hero_ed6cf55422.jpg 234w",
-          "http://cms.test/uploads/small_hero_ed6cf55422.jpg 500w",
-          "http://cms.test/uploads/medium_hero_ed6cf55422.jpg 750w",
-          "http://cms.test/uploads/large_hero_ed6cf55422.jpg 1000w",
-          "http://cms.test/uploads/hero_ed6cf55422.jpg 1200w",
+          "http://cms.test/uploads/thumbnail_hero_86b09bc538.jpg 234w",
+          "http://cms.test/uploads/small_hero_86b09bc538.jpg 500w",
+          "http://cms.test/uploads/medium_hero_86b09bc538.jpg 750w",
+          "http://cms.test/uploads/large_hero_86b09bc538.jpg 1000w",
+          "http://cms.test/uploads/hero_86b09bc538.jpg 1200w",
         ].join(", "),
       },
     });
-    expect(page.about.title).toBe("About Jassmin");
+    expect(page.about.title).toBe("Про Jassmin");
     expect(page.location.address).toContain("Хрещатик");
     expect(page).not.toHaveProperty("documentId");
   });
@@ -204,10 +248,11 @@ describe("getBlogPostBySlug", () => {
 
     expect(post).toMatchObject({
       slug: "how-to-choose-a-perfume",
-      authorName: "Jassmin team",
+      locale: "uk",
+      authorName: "Команда Jassmin",
       seo: { metaTitle: expect.any(String), metaDescription: expect.any(String) },
     });
-    expect(post?.content).toContain("## Start with the notes");
+    expect(post?.content).toContain("## Почніть із нот");
     expect(post?.publishedAt).toBe(new Date(post?.publishedAt ?? "").toISOString());
   });
 
@@ -233,5 +278,156 @@ describe("getBlogPostBySlug", () => {
 
     await expect(getBlogPostBySlug("  ")).resolves.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("locales and fallback to Ukrainian", () => {
+  it("asks Strapi for Ukrainian by default", async () => {
+    const fetchMock = respondByLocale({ uk: homePage });
+
+    await getHomePage();
+
+    expect(localesRequested(fetchMock)).toEqual(["uk"]);
+  });
+
+  it("returns the English home page and site settings when they exist, in one request each", async () => {
+    const homeMock = respondByLocale({ uk: homePage, en: homePageEn });
+    const page = await getHomePage("en");
+
+    expect(localesRequested(homeMock)).toEqual(["en"]);
+    expect(page).toMatchObject({
+      locale: "en",
+      hero: { headline: "Order 3 Testers only for 499₴", ctaLabel: "Order Now" },
+      about: { title: "About Jassmin" },
+    });
+
+    const settingsMock = respondByLocale({ uk: siteSetting, en: siteSettingEn });
+    await expect(getSiteSettings("en")).resolves.toMatchObject({
+      locale: "en",
+      customerServiceHours: "Mon–Fri 9:00–18:00",
+    });
+    expect(localesRequested(settingsMock)).toEqual(["en"]);
+  });
+
+  it("falls back to the Ukrainian single types when the English ones are missing (404)", async () => {
+    const homeMock = respondByLocale({ uk: homePage });
+    await expect(getHomePage("en")).resolves.toMatchObject({
+      locale: "uk",
+      hero: { headline: "Замовте 3 тестери всього за 499₴" },
+    });
+    expect(localesRequested(homeMock)).toEqual(["en", "uk"]);
+
+    const settingsMock = respondByLocale({ uk: siteSetting });
+    await expect(getSiteSettings("en")).resolves.toMatchObject({
+      locale: "uk",
+      customerServiceHours: "Пн–Пт 9:00–18:00",
+    });
+    expect(localesRequested(settingsMock)).toEqual(["en", "uk"]);
+  });
+
+  it("never retries a Ukrainian request, and a missing Ukrainian single type is a CmsError", async () => {
+    const fetchMock = respondByLocale({});
+
+    const error: unknown = await getHomePage("uk").catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(CmsError);
+    expect(error).toMatchObject({ kind: "http", status: 404 });
+    expect(localesRequested(fetchMock)).toEqual(["uk"]);
+  });
+
+  it("rethrows the 404 when neither the English nor the Ukrainian version exists", async () => {
+    respondByLocale({});
+
+    await expect(getSiteSettings("en")).rejects.toMatchObject({ kind: "http", status: 404 });
+  });
+
+  it("doesn't fall back when Strapi fails for another reason", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({ error: { status: 500 } }, { status: 500 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getHomePage("en")).rejects.toMatchObject({ kind: "http", status: 500 });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("returns the English post by slug when it exists", async () => {
+    const fetchMock = respondByLocale({ uk: blogPostBySlug, en: blogPostBySlugEn });
+
+    const post = await getBlogPostBySlug("how-to-choose-a-perfume", "en");
+
+    expect(post).toMatchObject({ locale: "en", slug: "how-to-choose-a-perfume" });
+    expect(post?.content).toContain("## Start with the notes");
+    expect(localesRequested(fetchMock)).toEqual(["en"]);
+  });
+
+  it("falls back to the Ukrainian post with the same slug when it has no English version", async () => {
+    const fetchMock = respondByLocale({ uk: blogPostBySlug, en: blogPostsEmpty });
+
+    const post = await getBlogPostBySlug("how-to-choose-a-perfume", "en");
+
+    expect(post).toMatchObject({ locale: "uk", slug: "how-to-choose-a-perfume" });
+    expect(localesRequested(fetchMock)).toEqual(["en", "uk"]);
+  });
+
+  it("returns null for a slug that exists in no locale", async () => {
+    const fetchMock = respondByLocale({ uk: blogPostsEmpty, en: blogPostsEmpty });
+
+    await expect(getBlogPostBySlug("nope", "en")).resolves.toBeNull();
+    expect(localesRequested(fetchMock)).toEqual(["en", "uk"]);
+  });
+
+  it("lists the Ukrainian posts with one request for the Ukrainian UI", async () => {
+    const fetchMock = respondByLocale({ uk: blogPosts });
+
+    const result = await listBlogPosts({ locale: "uk" });
+
+    expect(localesRequested(fetchMock)).toEqual(["uk"]);
+    expect(result.items.map((post) => post.locale)).toEqual(["uk", "uk"]);
+  });
+
+  it("swaps in English translations by documentId and keeps Ukrainian-only posts", async () => {
+    const fetchMock = respondByLocale({ uk: blogPosts, en: blogPostsEn });
+
+    const result = await listBlogPosts({ page: 1, pageSize: 12, locale: "en" });
+
+    expect(localesRequested(fetchMock)).toEqual(["uk", "en"]);
+    expect(result.items.map(({ slug, locale, title }) => ({ slug, locale, title }))).toEqual([
+      {
+        slug: "fragrance-families-explained",
+        locale: "uk",
+        title: "Родини ароматів: коротко й зрозуміло",
+      },
+      {
+        slug: "how-to-choose-a-perfume",
+        locale: "en",
+        title: "How to choose a perfume you won't get tired of",
+      },
+    ]);
+    // Pages come from the Ukrainian posts, so the English page has the same pagination.
+    expect(result).toMatchObject({ page: 1, pageSize: 12, pageCount: 1, total: 2 });
+
+    const translations = new URL(String(fetchMock.mock.calls[1]?.[0])).searchParams;
+    expect(translations.getAll("filters[documentId][$in][0]")).toEqual([
+      blogPosts.data[0]?.documentId,
+    ]);
+    expect(translations.get("filters[documentId][$in][1]")).toBe(blogPosts.data[1]?.documentId);
+    expect(translations.get("pagination[pageSize]")).toBe("2");
+    expect(translations.get("status")).toBe("published");
+  });
+
+  it("skips the translation request for an empty page", async () => {
+    const fetchMock = respondByLocale({ uk: blogPostsEmpty });
+
+    await expect(listBlogPosts({ locale: "en" })).resolves.toMatchObject({ items: [] });
+    expect(localesRequested(fetchMock)).toEqual(["uk"]);
+  });
+});
+
+describe("toHomePage", () => {
+  it("keeps the served locale on the DTO", () => {
+    const { data } = singleResponse(homePageEntry).parse(homePageEn);
+
+    expect(toHomePage(data, BASE_URL).locale).toBe("en");
   });
 });

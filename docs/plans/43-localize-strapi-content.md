@@ -198,13 +198,13 @@ Each step is small, ordered, and leaves the app in a working state.
   - Check: `pnpm cms:seed` twice on a fresh DB → second run creates nothing; `curl` with
     `?locale=en` returns English for the home page, site settings and the first post.
 
-- [ ] **5. `cmsFetch` locale option.** `app/.server/cms/client.ts`: add
+- [x] **5. `cmsFetch` locale option.** `app/.server/cms/client.ts`: add
   `options: { locale?: Locale } = {}` as 4th parameter; build the search with
   `{ ...query, ...(options.locale ? { locale: options.locale } : {}), status: "published" }`.
   Update the JSDoc. Tests in `client.test.ts`: `locale=en` is sent when given, absent when not,
   and a 404 still rejects with `{ kind: "http", status: 404 }`.
 
-- [ ] **6. Schemas, DTOs and mappers carry the served locale.** `schemas.ts`: `locale:
+- [x] **6. Schemas, DTOs and mappers carry the served locale.** `schemas.ts`: `locale:
   z.string().nullish()` on `homePageEntry`, `siteSettingEntry`, `blogPostSummaryEntry`.
   `app/lib/cms.ts`: `locale: Locale` (import type from `./i18n/locales` to stay isomorphic) on
   `HomePage`, `SiteSettings`, `BlogPostSummary`. Mappers `toHomePage(entry, baseUrl, requested)`,
@@ -212,7 +212,7 @@ Each step is small, ordered, and leaves the app in a working state.
   with `isLocale(entry.locale) ? entry.locale : requested`. Update existing mapper tests and test
   data that build these DTOs (route, service and component tests) so `pnpm typecheck` passes.
 
-- [ ] **7. Locale-aware content queries with one fallback helper.** In `content.ts`:
+- [x] **7. Locale-aware content queries with one fallback helper.** In `content.ts`:
   - `notFoundAsNull(error)`: returns `null` for `CmsError` `http`/404, rethrows anything else.
   - `withLocaleFallback<T>(locale, fetch: (l: Locale) => Promise<T | null>): Promise<T | null>`.
   - `getHomePage(locale = DEFAULT_LOCALE)` / `getSiteSettings(locale = DEFAULT_LOCALE)`: fetch with
@@ -241,12 +241,12 @@ Each step is small, ordered, and leaves the app in a working state.
   the content call (it's cookie parsing only, so no parallelism lost) and pass it on. Route tests:
   with a `Cookie: locale=en` request, `toHaveBeenCalledExactlyOnceWith(..., "en")`; without one, `"uk"`.
 
-- [ ] **10. Fixtures.** Re-record `app/.server/cms/__fixtures__/*.json` from the seeded Strapi
+- [x] **10. Fixtures.** Re-record `app/.server/cms/__fixtures__/*.json` from the seeded Strapi
   (`?locale=uk`) and record `*.en.json` (`home-page`, `site-setting`, `blog-post-by-slug`, and
   `blog-posts.en.json` for the documentId overlay). Keep the existing fixture shapes (same query
   strings as `content.ts`).
 
-- [ ] **11. Content tests.** In `content.test.ts`, with a `fetch` mock that routes by URL:
+- [x] **11. Content tests.** In `content.test.ts`, with a `fetch` mock that routes by URL:
   - each query sends `locale=uk` / `locale=en`;
   - `getHomePage("en")` and `getSiteSettings("en")` with an `en` 404 return the `uk` content
     (`locale: "uk"`), two calls; with `en` present, one call and `locale: "en"`;

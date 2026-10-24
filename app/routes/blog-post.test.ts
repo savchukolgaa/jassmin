@@ -16,6 +16,7 @@ const EN = [{ id: "root", loaderData: { locale: "en" } }];
 const CMS = "http://cms.test:1337";
 
 const post: BlogPost = {
+  locale: "uk",
   slug: "how-to-choose-a-perfume",
   title: "How to choose a perfume",
   excerpt: "Top, heart and base notes.",

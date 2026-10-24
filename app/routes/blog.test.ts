@@ -16,6 +16,7 @@ type HeadersArgs = Parameters<typeof headers>[0];
 
 function summary(slug: string, publishedAt: string): BlogPostSummary {
   return {
+    locale: "uk",
     slug,
     title: slug,
     excerpt: null,

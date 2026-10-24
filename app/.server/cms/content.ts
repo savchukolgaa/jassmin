@@ -8,8 +8,10 @@ import type {
   Seo,
   SiteSettings,
 } from "~/lib/cms";
+import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "~/lib/i18n";
 import { getEnv } from "../env";
 import { cmsFetch } from "./client";
+import { isCmsError } from "./errors";
 import {
   type BlogPostEntry,
   type BlogPostSummaryEntry,
@@ -27,6 +29,9 @@ import {
 
 // Content queries for route loaders. They return app DTOs from `~/lib/cms`, never raw Strapi
 // shapes, and throw `CmsError` when Strapi is unavailable (wrap calls with `cmsUnavailable`).
+// Each takes the visitor's locale (#43). Ukrainian is the source of truth: when the English
+// translation of an entry is missing, the Ukrainian version is returned, and the DTO's `locale`
+// says which one it is.
 
 export const DEFAULT_PAGE_SIZE = 12;
 export const MAX_PAGE_SIZE = 50;
@@ -34,6 +39,7 @@ export const MAX_PAGE_SIZE = 50;
 const listBlogPostsInput = z.object({
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
+  locale: z.enum(LOCALES).default(DEFAULT_LOCALE),
 });
 
 export type ListBlogPostsInput = z.input<typeof listBlogPostsInput>;
@@ -73,9 +79,19 @@ export function toImage(media: StrapiMedia | null | undefined, baseUrl: string):
   };
 }
 
-export function toHomePage(entry: HomePageEntry, baseUrl: string): HomePage {
+/** The locale Strapi says it served the entry in, else the one that was asked for. */
+function servedLocale(entry: { locale?: string | null }, requested: Locale): Locale {
+  return isLocale(entry.locale) ? entry.locale : requested;
+}
+
+export function toHomePage(
+  entry: HomePageEntry,
+  baseUrl: string,
+  requested: Locale = DEFAULT_LOCALE,
+): HomePage {
   const { hero, about, location } = entry;
   return {
+    locale: servedLocale(entry, requested),
     hero: {
       headline: hero.headline,
       ctaLabel: hero.ctaLabel,
@@ -91,8 +107,12 @@ export function toHomePage(entry: HomePageEntry, baseUrl: string): HomePage {
   };
 }
 
-export function toSiteSettings(entry: SiteSettingEntry): SiteSettings {
+export function toSiteSettings(
+  entry: SiteSettingEntry,
+  requested: Locale = DEFAULT_LOCALE,
+): SiteSettings {
   return {
+    locale: servedLocale(entry, requested),
     phone: entry.phone,
     email: entry.email,
     customerServiceHours: entry.customerServiceHours ?? null,
@@ -100,8 +120,13 @@ export function toSiteSettings(entry: SiteSettingEntry): SiteSettings {
   };
 }
 
-export function toBlogPostSummary(entry: BlogPostSummaryEntry, baseUrl: string): BlogPostSummary {
+export function toBlogPostSummary(
+  entry: BlogPostSummaryEntry,
+  baseUrl: string,
+  requested: Locale = DEFAULT_LOCALE,
+): BlogPostSummary {
   return {
+    locale: servedLocale(entry, requested),
     slug: entry.slug,
     title: entry.title,
     excerpt: entry.excerpt ?? null,
@@ -111,7 +136,11 @@ export function toBlogPostSummary(entry: BlogPostSummaryEntry, baseUrl: string):
   };
 }
 
-export function toBlogPost(entry: BlogPostEntry, baseUrl: string): BlogPost {
+export function toBlogPost(
+  entry: BlogPostEntry,
+  baseUrl: string,
+  requested: Locale = DEFAULT_LOCALE,
+): BlogPost {
   const seo: Seo | null = entry.seo
     ? {
         metaTitle: entry.seo.metaTitle ?? null,
@@ -119,32 +148,82 @@ export function toBlogPost(entry: BlogPostEntry, baseUrl: string): BlogPost {
         ogImage: toImage(entry.seo.ogImage, baseUrl),
       }
     : null;
-  return { ...toBlogPostSummary(entry, baseUrl), content: entry.content, seo };
+  return { ...toBlogPostSummary(entry, baseUrl, requested), content: entry.content, seo };
 }
 
 export function toPaginated<T>(items: T[], { page, pageSize, pageCount, total }: PaginationMeta) {
   return { items, page, pageSize, pageCount, total } satisfies Paginated<T>;
 }
 
-export async function getHomePage(): Promise<HomePage> {
-  const { data } = await cmsFetch(
-    "home-page",
-    { populate: { hero: { populate: ["image"] }, about: true, location: true } },
-    singleResponse(homePageEntry),
-  );
-  return toHomePage(data, getEnv().STRAPI_URL);
+/**
+ * Reads an entry in `locale`, then in `DEFAULT_LOCALE` when `read` finds none (`null`) and
+ * `locale` is another one. Errors aren't retried: an outage stays an outage.
+ */
+export async function withLocaleFallback<T>(
+  locale: Locale,
+  read: (locale: Locale) => Promise<T | null>,
+): Promise<T | null> {
+  const entry = await read(locale);
+  if (entry !== null || locale === DEFAULT_LOCALE) {
+    return entry;
+  }
+  return read(DEFAULT_LOCALE);
 }
 
-export async function getSiteSettings(): Promise<SiteSettings> {
-  const { data } = await cmsFetch(
-    "site-setting",
-    { populate: { socialLinks: true } },
-    singleResponse(siteSettingEntry),
-  );
-  return toSiteSettings(data);
+/** Strapi answers 404 for a single type that has no localization in the requested locale. */
+function isNotFound(error: unknown): boolean {
+  return isCmsError(error) && error.kind === "http" && error.status === 404;
 }
 
-/** Published posts, newest first. */
+/**
+ * A single type in `locale`, falling back to `DEFAULT_LOCALE`. When there's no Ukrainian version
+ * either, Strapi's 404 is rethrown as a `CmsError`, like any other CMS failure.
+ */
+async function getSingleType<T>(locale: Locale, read: (locale: Locale) => Promise<T>): Promise<T> {
+  let notFound: unknown;
+  const entry = await withLocaleFallback(locale, (l) =>
+    read(l).catch((error: unknown) => {
+      if (!isNotFound(error)) {
+        throw error;
+      }
+      notFound = error;
+      return null;
+    }),
+  );
+  if (entry === null) {
+    throw notFound;
+  }
+  return entry;
+}
+
+export async function getHomePage(locale: Locale = DEFAULT_LOCALE): Promise<HomePage> {
+  const { data } = await getSingleType(locale, (l) =>
+    cmsFetch(
+      "home-page",
+      { populate: { hero: { populate: ["image"] }, about: true, location: true } },
+      singleResponse(homePageEntry),
+      { locale: l },
+    ),
+  );
+  return toHomePage(data, getEnv().STRAPI_URL, locale);
+}
+
+export async function getSiteSettings(locale: Locale = DEFAULT_LOCALE): Promise<SiteSettings> {
+  const { data } = await getSingleType(locale, (l) =>
+    cmsFetch(
+      "site-setting",
+      { populate: { socialLinks: true } },
+      singleResponse(siteSettingEntry),
+      { locale: l },
+    ),
+  );
+  return toSiteSettings(data, locale);
+}
+
+/**
+ * Published posts, newest first. Pages are made of the Ukrainian posts, which always exist; in
+ * another locale, each post on the page is swapped for its translation when it has one.
+ */
 export async function listBlogPosts(
   input: ListBlogPostsInput = {},
 ): Promise<Paginated<BlogPostSummary>> {
@@ -152,7 +231,7 @@ export async function listBlogPosts(
   if (!parsed.success) {
     throw new RangeError(`Invalid blog pagination: ${z.prettifyError(parsed.error)}`);
   }
-  const { page, pageSize } = parsed.data;
+  const { page, pageSize, locale } = parsed.data;
 
   const { data, meta } = await cmsFetch(
     "blog-posts",
@@ -162,29 +241,57 @@ export async function listBlogPosts(
       populate: ["coverImage"],
     },
     collectionResponse(blogPostSummaryEntry),
+    { locale: DEFAULT_LOCALE },
   );
+
+  let entries = data;
+  if (locale !== DEFAULT_LOCALE && data.length > 0) {
+    const translations = await cmsFetch(
+      "blog-posts",
+      {
+        filters: { documentId: { $in: data.map((entry) => entry.documentId) } },
+        pagination: { page: 1, pageSize: data.length },
+        populate: ["coverImage"],
+      },
+      collectionResponse(blogPostSummaryEntry),
+      { locale },
+    );
+    const byDocumentId = new Map(translations.data.map((entry) => [entry.documentId, entry]));
+    entries = data.map((entry) => byDocumentId.get(entry.documentId) ?? entry);
+  }
+
   const baseUrl = getEnv().STRAPI_URL;
   return toPaginated(
-    data.map((entry) => toBlogPostSummary(entry, baseUrl)),
+    entries.map((entry) => toBlogPostSummary(entry, baseUrl)),
     meta.pagination,
   );
 }
 
-/** The published post with this slug, or `null` when there is none (a 404 for the route). */
-export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+/**
+ * The published post with this slug, in `locale` or else in Ukrainian, or `null` when there is
+ * none (a 404 for the route). Slugs are shared by all locales, so the URL is the same in each.
+ */
+export async function getBlogPostBySlug(
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<BlogPost | null> {
   if (slug.trim() === "") {
     return null;
   }
 
-  const { data } = await cmsFetch(
-    "blog-posts",
-    {
-      filters: { slug: { $eq: slug } },
-      pagination: { page: 1, pageSize: 1 },
-      populate: { coverImage: true, seo: { populate: ["ogImage"] } },
-    },
-    collectionResponse(blogPostEntry),
-  );
-  const [entry] = data;
-  return entry ? toBlogPost(entry, getEnv().STRAPI_URL) : null;
+  const found = await withLocaleFallback(locale, async (l) => {
+    const { data } = await cmsFetch(
+      "blog-posts",
+      {
+        filters: { slug: { $eq: slug } },
+        pagination: { page: 1, pageSize: 1 },
+        populate: { coverImage: true, seo: { populate: ["ogImage"] } },
+      },
+      collectionResponse(blogPostEntry),
+      { locale: l },
+    );
+    const [entry] = data;
+    return entry ? { entry, locale: l } : null;
+  });
+  return found ? toBlogPost(found.entry, getEnv().STRAPI_URL, found.locale) : null;
 }

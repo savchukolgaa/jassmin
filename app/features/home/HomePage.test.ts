@@ -28,6 +28,7 @@ const view: HomePageView = {
     directionsUrl: "https://www.google.com/maps/search/?api=1&query=x",
   },
   contacts: {
+    locale: "uk",
     phone: "+380 44 123 45 67",
     email: "hello@jassmin.ua",
     customerServiceHours: "Mon–Fri 9:00–18:00",

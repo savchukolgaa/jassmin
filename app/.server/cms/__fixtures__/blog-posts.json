@@ -1,19 +1,20 @@
 {
   "data": [
     {
-      "id": 4,
-      "documentId": "egzyigtlxywqu9mu77zny5gs",
-      "title": "Fragrance families explained",
+      "id": 8,
+      "documentId": "zdbv62ny4ew75w0h5eicp8oj",
+      "title": "Родини ароматів: коротко й зрозуміло",
       "slug": "fragrance-families-explained",
-      "excerpt": "Floral, woody, oriental and fresh: a quick map of the fragrance wheel.",
-      "content": "Most perfumes belong to one of four families:\n\n- **Floral**: rose, jasmine, peony\n- **Woody**: sandalwood, cedar, vetiver\n- **Oriental**: vanilla, amber, spices\n- **Fresh**: citrus, green and aquatic notes",
-      "authorName": "Jassmin team",
-      "createdAt": "2026-10-22T19:06:58.533Z",
-      "updatedAt": "2026-10-22T19:06:58.533Z",
-      "publishedAt": "2026-10-22T19:06:58.547Z",
+      "excerpt": "Квіткові, деревні, орієнтальні та свіжі: коротка мапа колеса ароматів.",
+      "content": "Більшість парфумів належить до однієї з чотирьох родин:\n\n- **Квіткові**: троянда, жасмин, півонія\n- **Деревні**: сандал, кедр, ветивер\n- **Орієнтальні**: ваніль, амбра, спеції\n- **Свіжі**: цитрусові, зелені та водні ноти",
+      "authorName": "Команда Jassmin",
+      "createdAt": "2026-10-24T11:48:29.662Z",
+      "updatedAt": "2026-10-24T11:48:29.662Z",
+      "publishedAt": "2026-10-24T11:48:29.697Z",
+      "locale": "uk",
       "coverImage": {
         "id": 2,
-        "documentId": "xcyin46uf3ulhh2zpylctrfi",
+        "documentId": "pzlh70nvymnvpu6rrwxnsoh7",
         "name": "blog-cover.jpg",
         "alternativeText": "Perfume bottles",
         "caption": null,
@@ -23,8 +24,8 @@
         "formats": {
           "large": {
             "ext": ".jpg",
-            "url": "/uploads/large_blog_cover_a985b9f708.jpg",
-            "hash": "large_blog_cover_a985b9f708",
+            "url": "/uploads/large_blog_cover_e21ca96818.jpg",
+            "hash": "large_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "large_blog-cover.jpg",
             "path": null,
@@ -35,8 +36,8 @@
           },
           "small": {
             "ext": ".jpg",
-            "url": "/uploads/small_blog_cover_a985b9f708.jpg",
-            "hash": "small_blog_cover_a985b9f708",
+            "url": "/uploads/small_blog_cover_e21ca96818.jpg",
+            "hash": "small_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "small_blog-cover.jpg",
             "path": null,
@@ -47,8 +48,8 @@
           },
           "medium": {
             "ext": ".jpg",
-            "url": "/uploads/medium_blog_cover_a985b9f708.jpg",
-            "hash": "medium_blog_cover_a985b9f708",
+            "url": "/uploads/medium_blog_cover_e21ca96818.jpg",
+            "hash": "medium_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "medium_blog-cover.jpg",
             "path": null,
@@ -59,8 +60,8 @@
           },
           "thumbnail": {
             "ext": ".jpg",
-            "url": "/uploads/thumbnail_blog_cover_a985b9f708.jpg",
-            "hash": "thumbnail_blog_cover_a985b9f708",
+            "url": "/uploads/thumbnail_blog_cover_e21ca96818.jpg",
+            "hash": "thumbnail_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "thumbnail_blog-cover.jpg",
             "path": null,
@@ -70,33 +71,34 @@
             "sizeInBytes": 1767
           }
         },
-        "hash": "blog_cover_a985b9f708",
+        "hash": "blog_cover_e21ca96818",
         "ext": ".jpg",
         "mime": "image/jpeg",
         "size": 11.99,
-        "url": "/uploads/blog_cover_a985b9f708.jpg",
+        "url": "/uploads/blog_cover_e21ca96818.jpg",
         "previewUrl": null,
         "provider": "local",
         "provider_metadata": null,
-        "createdAt": "2026-10-22T19:06:58.389Z",
-        "updatedAt": "2026-10-22T19:06:58.389Z",
-        "publishedAt": "2026-10-22T19:06:58.389Z"
+        "createdAt": "2026-10-24T11:46:34.962Z",
+        "updatedAt": "2026-10-24T11:46:34.962Z",
+        "publishedAt": "2026-10-24T11:46:34.963Z"
       }
     },
     {
       "id": 2,
-      "documentId": "av6ja2imdyz7l4peqp3xdtav",
-      "title": "How to choose a perfume you won't get tired of",
+      "documentId": "af15yazylial7u0ia4wabnqb",
+      "title": "Як обрати парфум, який не набридне",
       "slug": "how-to-choose-a-perfume",
-      "excerpt": "Top, heart and base notes, and why you should wait an hour before you decide.",
-      "content": "## Start with the notes\n\nA perfume changes as it dries. The **top notes** fade within minutes, the **heart** lasts a few hours and the **base** stays all day.\n\n## Test on skin\n\nPaper strips only show the top notes. Spray a tester on your wrist and wait at least an hour.",
-      "authorName": "Jassmin team",
-      "createdAt": "2026-10-22T19:06:58.480Z",
-      "updatedAt": "2026-10-22T19:06:58.480Z",
-      "publishedAt": "2026-10-22T19:06:58.498Z",
+      "excerpt": "Верхні, серцеві та базові ноти, і чому варто зачекати годину, перш ніж вирішувати.",
+      "content": "## Почніть із нот\n\nПарфум змінюється, поки висихає. **Верхні ноти** зникають за кілька хвилин, **серце** тримається кілька годин, а **база** — увесь день.\n\n## Тестуйте на шкірі\n\nПаперові блотери показують лише верхні ноти. Нанесіть тестер на зап’ястя й зачекайте щонайменше годину.",
+      "authorName": "Команда Jassmin",
+      "createdAt": "2026-10-24T11:46:35.374Z",
+      "updatedAt": "2026-10-24T11:46:35.374Z",
+      "publishedAt": "2026-10-24T11:46:35.422Z",
+      "locale": "uk",
       "coverImage": {
         "id": 2,
-        "documentId": "xcyin46uf3ulhh2zpylctrfi",
+        "documentId": "pzlh70nvymnvpu6rrwxnsoh7",
         "name": "blog-cover.jpg",
         "alternativeText": "Perfume bottles",
         "caption": null,
@@ -106,8 +108,8 @@
         "formats": {
           "large": {
             "ext": ".jpg",
-            "url": "/uploads/large_blog_cover_a985b9f708.jpg",
-            "hash": "large_blog_cover_a985b9f708",
+            "url": "/uploads/large_blog_cover_e21ca96818.jpg",
+            "hash": "large_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "large_blog-cover.jpg",
             "path": null,
@@ -118,8 +120,8 @@
           },
           "small": {
             "ext": ".jpg",
-            "url": "/uploads/small_blog_cover_a985b9f708.jpg",
-            "hash": "small_blog_cover_a985b9f708",
+            "url": "/uploads/small_blog_cover_e21ca96818.jpg",
+            "hash": "small_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "small_blog-cover.jpg",
             "path": null,
@@ -130,8 +132,8 @@
           },
           "medium": {
             "ext": ".jpg",
-            "url": "/uploads/medium_blog_cover_a985b9f708.jpg",
-            "hash": "medium_blog_cover_a985b9f708",
+            "url": "/uploads/medium_blog_cover_e21ca96818.jpg",
+            "hash": "medium_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "medium_blog-cover.jpg",
             "path": null,
@@ -142,8 +144,8 @@
           },
           "thumbnail": {
             "ext": ".jpg",
-            "url": "/uploads/thumbnail_blog_cover_a985b9f708.jpg",
-            "hash": "thumbnail_blog_cover_a985b9f708",
+            "url": "/uploads/thumbnail_blog_cover_e21ca96818.jpg",
+            "hash": "thumbnail_blog_cover_e21ca96818",
             "mime": "image/jpeg",
             "name": "thumbnail_blog-cover.jpg",
             "path": null,
@@ -153,17 +155,17 @@
             "sizeInBytes": 1767
           }
         },
-        "hash": "blog_cover_a985b9f708",
+        "hash": "blog_cover_e21ca96818",
         "ext": ".jpg",
         "mime": "image/jpeg",
         "size": 11.99,
-        "url": "/uploads/blog_cover_a985b9f708.jpg",
+        "url": "/uploads/blog_cover_e21ca96818.jpg",
         "previewUrl": null,
         "provider": "local",
         "provider_metadata": null,
-        "createdAt": "2026-10-22T19:06:58.389Z",
-        "updatedAt": "2026-10-22T19:06:58.389Z",
-        "publishedAt": "2026-10-22T19:06:58.389Z"
+        "createdAt": "2026-10-24T11:46:34.962Z",
+        "updatedAt": "2026-10-24T11:46:34.962Z",
+        "publishedAt": "2026-10-24T11:46:34.963Z"
       }
     }
   ],

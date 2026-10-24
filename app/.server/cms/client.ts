@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { Locale } from "~/lib/i18n";
 import { getEnv } from "../env";
 import { CmsError } from "./errors";
 
@@ -37,14 +38,21 @@ export function toStrapiQuery(query: StrapiQuery): URLSearchParams {
   return params;
 }
 
+export interface CmsFetchOptions {
+  /** The Strapi locale to read; Strapi's default locale (`uk`) when omitted. */
+  locale?: Locale;
+}
+
 /**
  * GETs `/api/<path>` from Strapi with the app's read-only token, only ever asking for published
- * content, and validates the JSON body with `schema`. Every failure becomes a `CmsError`.
+ * content, and validates the JSON body with `schema`. Every failure becomes a `CmsError`; a
+ * missing localization of a single type is an `http` error with `status: 404`.
  */
 export async function cmsFetch<T>(
   path: string,
   query: StrapiQuery,
   schema: z.ZodType<T>,
+  { locale }: CmsFetchOptions = {},
 ): Promise<T> {
   const { STRAPI_URL, STRAPI_API_TOKEN } = getEnv();
   if (!STRAPI_API_TOKEN) {
@@ -53,7 +61,11 @@ export async function cmsFetch<T>(
 
   // Relative to the base so a STRAPI_URL with a path prefix (https://host/cms) keeps it.
   const url = new URL(`api/${path}`, STRAPI_URL.endsWith("/") ? STRAPI_URL : `${STRAPI_URL}/`);
-  url.search = toStrapiQuery({ ...query, status: "published" }).toString();
+  url.search = toStrapiQuery({
+    ...query,
+    ...(locale ? { locale } : {}),
+    status: "published",
+  }).toString();
 
   let response: Response;
   let body: unknown;

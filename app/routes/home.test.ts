@@ -10,6 +10,7 @@ vi.mock("~/.server/services/contact", () => contact);
 const { action, loader, shouldRevalidate } = await import("./home");
 
 const homePage: HomePage = {
+  locale: "uk",
   hero: {
     headline: "Order 3 Testers only for 499₴",
     ctaLabel: "Order Now",
@@ -24,6 +25,7 @@ const homePage: HomePage = {
   },
 };
 const siteSettings: SiteSettings = {
+  locale: "uk",
   phone: "+380 44 123 45 67",
   email: "hello@jassmin.ua",
   customerServiceHours: null,

@@ -241,7 +241,7 @@ Each step is small, ordered, and leaves the app in a working state.
   A thrown error anywhere rolls everything back. Also add `getOrderConfirmation(orderId)` and
   `canViewOrder(order, { userId, sessionOrderIds })`. Write a top-of-file comment explaining the
   lock order, and a `// #18: trackEvent(request, "purchase", …)` note for the caller.
-- [ ] **6. Session: remember a guest's orders.** Add `orderIds?: number[]` to `SessionData` and a
+- [x] **6. Session: remember a guest's orders.** Add `orderIds?: number[]` to `SessionData` and a
   `rememberOrder(session, orderId)` helper (prepend, dedupe, keep the last 10) in `session.ts`.
   Check: a unit test in `session.test.ts`.
 - [ ] **7. Checkout UI components (`app/features/checkout/`).** First move `TextField` to

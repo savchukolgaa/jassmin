@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, isNull, lt, sql } from "drizzle-orm";
 import type { Db } from "../client";
 import { cartItems, carts, products, productVariants, sessions } from "../schema";
 
@@ -62,6 +62,30 @@ export async function lockCart(db: Executor, cartId: number): Promise<void> {
 /** Bumps `updated_at`; every change to a cart's lines must call it (abandoned carts, #19). */
 export async function touchCart(db: Executor, cartId: number): Promise<void> {
   await db.update(carts).set({ updatedAt: new Date() }).where(eq(carts.id, cartId));
+}
+
+/**
+ * Marks active carts with lines and no activity for more than `hours` as `abandoned` (#19), and
+ * returns how many it changed. Empty and finished carts are left alone, so it's safe to rerun.
+ */
+export async function markAbandonedCarts(db: Executor, hours: number): Promise<number> {
+  const rows = await db
+    .update(carts)
+    .set({
+      status: "abandoned",
+      abandonedAt: sql`now()`,
+      // Overrides `$onUpdate`: `updated_at` stays the shopper's last activity.
+      updatedAt: sql`${carts.updatedAt}`,
+    })
+    .where(
+      and(
+        isActive,
+        lt(carts.updatedAt, sql`now() - make_interval(hours => ${hours})`),
+        exists(db.select({ one: sql`1` }).from(cartItems).where(eq(cartItems.cartId, carts.id))),
+      ),
+    )
+    .returning({ id: carts.id });
+  return rows.length;
 }
 
 /** The cart's lines with their product and size, oldest first. */

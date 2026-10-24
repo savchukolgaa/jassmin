@@ -145,14 +145,14 @@ column, and logs how many it changed.
   `0005`'s. Add `abandonedAt: Date | null` to `Cart` in `app/lib/commerce.ts`, and update
   `schema.test.ts` plus the `0005` → `0006` latest-tag assertions in `migrator.test.ts`. Check:
   `pnpm typecheck`, and `pnpm test` with a database (migrate, then roll back).
-- [ ] **2. Query `markAbandonedCarts`.** In `db/queries/cart.ts` add
+- [x] **2. Query `markAbandonedCarts`.** In `db/queries/cart.ts` add
   `markAbandonedCarts(db: Executor, hours: number): Promise<number>`: a query-builder `update`
   setting `status: "abandoned"`, `abandonedAt: sql\`now()\`` and
   `updatedAt: sql\`${carts.updatedAt}\`` (keeps the last activity; comment why), where
   `and(isActive, lt(carts.updatedAt, sql\`now() - make_interval(hours => ${hours})\`),
   exists(db.select({ one: sql\`1\` }).from(cartItems).where(eq(cartItems.cartId, carts.id))))`,
   `.returning({ id: carts.id })`, and return the row count. Check: `pnpm typecheck`.
-- [ ] **3. Job module.** Create `app/.server/db/abandoned-carts.ts` with:
+- [x] **3. Job module.** Create `app/.server/db/abandoned-carts.ts` with:
   - `DEFAULT_ABANDONED_CART_HOURS = 24`
   - `parseAbandonedCartHours(source: NodeJS.ProcessEnv)` → `{ ok: true; hours } | { ok: false; error }`
     (zod, `""` → default, error text names the variable and says it must be a positive whole number)

@@ -177,7 +177,7 @@ column, and logs how many it changed.
   with `withPnpm({ install: false })`, `withReference(db)`, `waitForCompletion(dbMigrate)`,
   `withParentRelationship(db)` and `withExplicitStart()`, next to `db-seed`. Check:
   `pnpm aspire:build`.
-- [ ] **7. Docs.** `.env.example`: commented `# ABANDONED_CART_HOURS=24` with a one-line
+- [x] **7. Docs.** `.env.example`: commented `# ABANDONED_CART_HOURS=24` with a one-line
   explanation. README: add a row to the env table, and in the database section explain
   `pnpm db:mark-abandoned-carts`, the hourly cron example, the `tsx` requirement, and the Aspire
   dashboard resource. `app/.server/AGENTS.md`: under Database, describe `abandoned_at` (set only by

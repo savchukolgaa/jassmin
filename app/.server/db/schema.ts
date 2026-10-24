@@ -195,6 +195,11 @@ export const carts = pgTable(
     status: cartStatusType().notNull().default("active"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: updatedAt(),
+    /**
+     * When the abandoned-cart job (#19) marked the cart `abandoned`; `null` otherwise. The job
+     * leaves `updated_at` alone, so it stays the shopper's last activity.
+     */
+    abandonedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     index("carts_user_id_idx").on(t.userId),

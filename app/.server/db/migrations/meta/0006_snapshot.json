@@ -1,5 +1,5 @@
 {
-  "id": "848c0458-0b73-4f5b-978d-8afd87d15ca2",
+  "id": "575302f7-2f9e-43da-84bc-d3c4a5564800",
   "prevId": "d844f7fe-8ca4-4330-be3c-d253875a42ac",
   "version": "7",
   "dialect": "postgresql",
@@ -152,6 +152,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "abandoned_at": {
+          "name": "abandoned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -433,19 +439,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "cart_id": {
-          "name": "cart_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "free_shipping": {
-          "name": "free_shipping",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "status": {
           "name": "status",
           "type": "order_status_type",
@@ -579,21 +572,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "orders_cart_id_unique": {
-          "name": "orders_cart_id_unique",
-          "columns": [
-            {
-              "expression": "cart_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -608,19 +586,6 @@
             "id"
           ],
           "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "orders_cart_id_carts_id_fk": {
-          "name": "orders_cart_id_carts_id_fk",
-          "tableFrom": "orders",
-          "tableTo": "carts",
-          "columnsFrom": [
-            "cart_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

@@ -625,12 +625,40 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(eventAfter).toMatchObject({ userId: null, productId: null, eventType: "product_view" });
   });
 
+  it("backfills abandoned_at from updated_at for carts abandoned before 0006", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { db } = testDb;
+
+    // 0007 sits on top of 0006; migrateLatest below reapplies it.
+    expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
+    expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
+    const legacy = await db.execute<{ id: number }>(
+      sql`insert into carts (status, updated_at)
+          values ('abandoned', '2026-01-02T03:04:05Z'), ('active', '2026-01-02T03:04:05Z')
+          returning id`,
+    );
+    const [abandonedId, activeId] = legacy.rows.map((r) => r.id);
+
+    await migrateLatest(db);
+
+    const rows = await db.execute<{ id: number; abandoned_at: string | null }>(
+      sql`select id, abandoned_at from carts where id in (${abandonedId}, ${activeId}) order by id`,
+    );
+    expect(
+      rows.rows.map((r) => [r.id, r.abandoned_at === null ? null : new Date(r.abandoned_at)]),
+    ).toEqual([
+      [abandonedId, new Date("2026-01-02T03:04:05Z")],
+      [activeId, null],
+    ]);
+  });
+
   it("backfills one variant per existing product and links its cart and order lines", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0006 sit on top of 0003; migrateLatest below reapplies them.
-    expect(await rollbackLatest(db)).toBe("0006_order_checkout_fields");
+    // 0004 to 0007 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
+    expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
     expect(await rollbackLatest(db)).toBe("0005_cart_active_unique");
     expect(await rollbackLatest(db)).toBe("0004_user_role");
     expect(await rollbackLatest(db)).toBe("0003_product_variants");
@@ -712,12 +740,17 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
-    expect(await rollbackLatest(testDb.db)).toBe("0006_order_checkout_fields");
+    expect(await rollbackLatest(testDb.db)).toBe("0007_order_checkout_fields");
     const orderCheckoutColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns
           where table_name = 'orders' and column_name in ('cart_id', 'free_shipping')`,
     );
     expect(orderCheckoutColumns.rows).toEqual([]);
+    expect(await rollbackLatest(testDb.db)).toBe("0006_cart_abandoned_at");
+    const abandonedAtColumn = await testDb.db.execute(
+      sql`select 1 from information_schema.columns where table_name = 'carts' and column_name = 'abandoned_at'`,
+    );
+    expect(abandonedAtColumn.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0005_cart_active_unique");
     const activeCartIndexes = await testDb.db.execute(
       sql`select 1 from pg_indexes where indexname like 'carts_active_%'`,

@@ -160,6 +160,7 @@ describe("carts", () => {
       status: ["cart_status_type", true, true],
       createdAt: ["timestamp with time zone", true, true],
       updatedAt: ["timestamp with time zone", true, true],
+      abandonedAt: ["timestamp with time zone", false, false],
     });
   });
 

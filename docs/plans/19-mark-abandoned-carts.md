@@ -112,7 +112,7 @@ external scheduler, flips `active` carts that have items and no activity for
 | Action | Path | Purpose |
 |--------|------|---------|
 | modify | `app/.server/db/queries/cart.ts` | `markAbandonedCarts(db, hours)`; `lockCart` returns whether the cart is still active |
-| create | `app/.server/db/abandoned-carts.ts` | `parseAbandonedCartHours(env)`, `runMarkAbandonedCarts(db, hours)` → count + message |
+| create | `app/.server/db/abandoned-carts.ts` | `parseAbandonedCartHours(env)`, `markAbandonedCartsJob(db, hours)` → count + message |
 | create | `app/.server/db/abandoned-carts.test.ts` | Unit tests for env parsing; DB integration tests for the job |
 | create | `app/.server/db/scripts/mark-abandoned-carts.ts` | CLI wrapper: loads `.env`, connects, runs, logs, closes the pool |
 | modify | `app/.server/services/cart.ts` | Handle a cart abandoned between lookup and lock |

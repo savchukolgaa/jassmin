@@ -205,7 +205,7 @@ Each step is small, ordered, and leaves the app in a working state.
   free delivery"), `total`, `submit`, `backToCart`,
   `errors.{fullNameRequired,phoneInvalid,cityRequired,branchRequired,paymentRequired,stockChanged}`,
   `success.{title,heading,orderNumber,emailNote,cardNote,codNote,continue}`. Check: `pnpm typecheck`.
-- [ ] **4. Order queries (`app/.server/db/queries/orders.ts`).** Use the same
+- [x] **4. Order queries (`app/.server/db/queries/orders.ts`).** Use the same
   `Executor = Pick<Db, …>` pattern as `queries/cart.ts`.
   - `lockVariantsForCart(tx, cartId)`: join `cart_items` → `product_variants`, return `variantId`,
     `productId`, `volumeMl`, `price`, `stockQuantity` and `quantity`, ordered by
@@ -222,7 +222,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - `findOrderIdByCartId`, `findOrderConfirmation(db, orderId)` (order + lines joined to
     `products` for title, brand and pack size; line total `(price_at_purchase * quantity)::numeric(10, 2)`).
   - Add `findUserContact(db, userId)` to `queries/users.ts`.
-- [ ] **5. `createOrder` service (`app/.server/services/orders.ts`).**
+- [x] **5. `createOrder` service (`app/.server/services/orders.ts`).**
   ```ts
   createOrder({ cartId, userId, customer }: CreateOrderInput, db = defaultDb):
     Promise<{ ok: true; orderId: number }
@@ -283,7 +283,7 @@ Each step is small, ordered, and leaves the app in a working state.
   note, payment note (card/cod), address and `OrderSummary`, plus a "continue shopping" link.
   `meta` has `noindex`. Tests: the owner (user) sees it; a guest whose session has the id sees it;
   another visitor gets 404.
-- [ ] **10. Integration tests (`app/.server/services/orders.test.ts`).** Use the
+- [x] **10. Integration tests (`app/.server/services/orders.test.ts`).** Use the
   `describe.skipIf(!hasDatabase)` + `createTestDatabase("jassmin_orders_test")` + seeded products
   pattern from `services/cart.test.ts`:
   - A guest order: `user_id` null, guest fields stored, normalised phone.

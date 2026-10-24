@@ -10,7 +10,8 @@ const analytics = vi.hoisted(() => ({
 
 vi.mock("~/.server/analytics", () => analytics);
 
-const { action, MAX_BODY_BYTES } = await import("./api.events");
+const { action } = await import("./api.events");
+const { MAX_EVENTS_BODY_BYTES } = await import("~/.server/client-events");
 
 type ActionArgs = Parameters<typeof action>[0];
 
@@ -79,7 +80,7 @@ describe("client events endpoint", () => {
     expect((await beacon("not json")).status).toBe(400);
     expect((await beacon(JSON.stringify({ events: [] }))).status).toBe(400);
     expect((await beacon(JSON.stringify({ events: tooMany }))).status).toBe(400);
-    const huge = JSON.stringify({ events: [pageView], padding: "x".repeat(MAX_BODY_BYTES) });
+    const huge = JSON.stringify({ events: [pageView], padding: "x".repeat(MAX_EVENTS_BODY_BYTES) });
     expect((await beacon(huge)).status).toBe(413);
     expect(analytics.trackEvents).not.toHaveBeenCalled();
   });

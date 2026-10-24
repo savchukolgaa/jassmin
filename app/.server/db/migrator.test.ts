@@ -629,6 +629,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
+    // 0007 sits on top of 0006; migrateLatest below reapplies it.
+    expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
     expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
     const legacy = await db.execute<{ id: number }>(
       sql`insert into carts (status, updated_at)
@@ -654,7 +656,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0006 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0007 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
     expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
     expect(await rollbackLatest(db)).toBe("0005_cart_active_unique");
     expect(await rollbackLatest(db)).toBe("0004_user_role");
@@ -737,6 +740,12 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0007_order_checkout_fields");
+    const orderCheckoutColumns = await testDb.db.execute(
+      sql`select 1 from information_schema.columns
+          where table_name = 'orders' and column_name in ('cart_id', 'free_shipping')`,
+    );
+    expect(orderCheckoutColumns.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0006_cart_abandoned_at");
     const abandonedAtColumn = await testDb.db.execute(
       sql`select 1 from information_schema.columns where table_name = 'carts' and column_name = 'abandoned_at'`,

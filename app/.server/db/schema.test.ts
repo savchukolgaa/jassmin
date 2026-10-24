@@ -225,6 +225,8 @@ describe("orders", () => {
       guestEmail: ["varchar(255)", true, false],
       guestPhone: ["varchar(50)", true, false],
       shippingAddress: ["text", true, false],
+      cartId: ["integer", false, false],
+      freeShipping: ["boolean", true, true],
       status: ["order_status_type", true, true],
       paymentStatus: ["payment_status_type", true, true],
       paymentMethod: ["text", true, false],
@@ -241,12 +243,20 @@ describe("orders", () => {
     });
   });
 
-  it("restricts deleting a user and indexes the guest contact fields", () => {
-    expect(describeForeignKeys(orders)).toEqual({ userId: ["users", "restrict"] });
+  it("restricts deleting a user, links the cart and indexes the guest contact fields", () => {
+    expect(describeForeignKeys(orders)).toEqual({
+      userId: ["users", "restrict"],
+      cartId: ["carts", "set null"],
+    });
     expect(describeConstraints(orders)).toEqual({
       checks: ["orders_amounts_check", "orders_payment_method_check"],
       uniques: [],
-      indexes: ["orders_guest_email_idx", "orders_guest_phone_idx", "orders_user_id_idx"],
+      indexes: [
+        "orders_cart_id_unique",
+        "orders_guest_email_idx",
+        "orders_guest_phone_idx",
+        "orders_user_id_idx",
+      ],
     });
   });
 

@@ -3,8 +3,8 @@ import { db } from "~/.server/db";
 import { getUser, onUserAuthenticated, registerUser } from "~/.server/services/auth";
 import { createUserSession } from "~/.server/session";
 import { Button } from "~/components/ui/Button";
+import { TextField } from "~/components/ui/TextField";
 import { AuthLayout, FormAlert } from "~/features/auth/AuthLayout";
-import { TextField } from "~/features/auth/TextField";
 import {
   type AuthFormErrors,
   type RegisterField,

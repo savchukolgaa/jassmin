@@ -64,9 +64,19 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 - `mergeGuestCart` runs from `onUserAuthenticated`: without a user cart the guest cart is adopted; otherwise its lines are added to the user's (capped at stock, sold-out sizes dropped) and the guest cart is deleted.
 - Line totals and the subtotal are computed in SQL as `numeric`, never in JS.
 
+## Orders: `services/orders.ts`
+
+- `createOrder` (#11) turns the active cart into an order in one transaction: `lockCart`, then the cart's variant rows `FOR UPDATE` in id order (`lockCartLinesForOrder`, so concurrent checkouts can't deadlock or oversell), a stock check before any write, then the order, its lines (`price_at_purchase`, `variant_id`, `volume_ml`), the stock decrement and `carts.status = 'converted'`. User mistakes come back as results (`cart-empty`, `insufficient-stock`); anything thrown rolls everything back.
+- `orders.cart_id` is unique: a cart becomes at most one order, and a second submit of the same cart returns the order the first one created.
+- Amounts are computed in SQL as `numeric`. Delivery is free from `FREE_SHIPPING_THRESHOLD` (`~/lib/checkout`, 1000 UAH) and otherwise paid by the recipient to Nova Poshta, so `shipping_amount` is always `0` and `orders.free_shipping` records whether the store pays. Discounts aren't implemented (`0`).
+- Payment: `card` and `cod` orders are both created `unpaid` / `pending`; online payment is #44, the confirmation email #45.
+- The success page `/checkout/success/:orderId` shows an order only to its user or to the browser it was placed in (`SessionData.orderIds`, set by `rememberOrder`); everyone else gets a 404.
+- #18 adds the `checkout_start` and `purchase` events where `routes/checkout.tsx` has `// #18:` comments.
+
 ## Session: `session.ts`
 
 - Cookie session storage (`__jassmin_session`, httpOnly, sameSite lax, secure in production). Use `getSession`, `commitSession` and `destroySession`, and type new fields in `SessionData`.
+- `rememberOrder(request, orderId)` / `getSessionOrderIds(request)` keep the last 10 orders placed in this browser (#11), so guests can open their success page. Logging out clears them.
 - `createUserSession({ request, userId, redirectTo })` logs a user in (sets `userId`, returns the redirect with `Set-Cookie`), and `logout(request)` destroys the session. `getUserId` only reads the cookie; use `getUser` when you need to know that the user exists.
 
 ## Auth: `services/auth.ts`, `password.ts`, `rate-limit.ts`

@@ -79,5 +79,20 @@ https://github.com/<owner>/<repo>/blob/<commit-before-removal>/docs/plans/<file>
    Provide the PR URL and worktree path. Remind the user of the post-merge cleanup commands (see [worktree.md](./worktree.md)):
    ```bash
    git worktree remove .claude/worktrees/issue-<n>
-   git branch -d issue/<n>
+   git branch -D issue/<n>
+   git push origin --delete issue/<n>
    ```
+
+## Squash Merging the Pull Request
+
+Only merge when the user asks for it. PRs are squash merged so each issue lands on `main` as one commit.
+
+1. **Bring the branch up to date**: `git -C "$WT" fetch origin && git -C "$WT" merge origin/main` (merge, not rebase, so no force-push is needed). Resolve conflicts, re-run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then commit and push.
+2. **Merge with an explicit subject**: always pass `--subject`. Without it the squash commit's subject doesn't always match the PR title, and the `#<number>:` prefix can be lost (it was for #52):
+   ```bash
+   TITLE=$(gh pr view <pr-number> --json title -q .title)   # already starts with "#$N: "
+   gh pr merge <pr-number> --squash --subject "$TITLE (#<pr-number>)"
+   ```
+   Don't pass `--delete-branch`: inside a worktree, `gh` tries to switch branches and fails. Delete the remote branch during cleanup instead.
+3. **If the merge is refused** because `main` moved or the PR conflicts, repeat step 1 and try again.
+4. **Clean up** the worktree and branches as in [worktree.md](./worktree.md#worktree-cleanup-post-merge-only).

@@ -64,9 +64,12 @@ From this point on, all file edits and command executions must target `$WT`:
 
 **Do not remove a worktree before its pull request is merged into `main`.**
 
-Once the PR is merged, the worktree and local branch should be deleted from the main checkout:
+Once the PR is merged, delete the worktree, the local branch and the remote branch from the main checkout. Squash merges don't count as merged for git, so the local branch needs `-D`:
 
 ```bash
 git worktree remove .claude/worktrees/issue-<n>
-git branch -d issue/<n>
+git branch -D issue/<n>
+git push origin --delete issue/<n>
 ```
+
+Stop any dev or preview server still running from the worktree first; on Windows it keeps the folder locked.

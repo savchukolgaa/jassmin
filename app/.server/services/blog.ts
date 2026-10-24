@@ -22,6 +22,7 @@ export function formatPublishedDate(iso: string, locale: Locale = DEFAULT_LOCALE
 
 function toCardView(post: BlogPostSummary, locale: Locale): BlogPostCardView {
   return {
+    locale: post.locale,
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt,

@@ -16,6 +16,7 @@ type HeadersArgs = Parameters<typeof headers>[0];
 
 function summary(slug: string, publishedAt: string): BlogPostSummary {
   return {
+    locale: "uk",
     slug,
     title: slug,
     excerpt: null,
@@ -42,6 +43,18 @@ afterEach(() => {
 });
 
 describe("blog loader", () => {
+  it("asks for the posts in the visitor's locale", async () => {
+    content.listBlogPosts.mockResolvedValue(page([]));
+
+    await load("http://localhost/blog", { headers: { "Accept-Language": "en-US,en;q=0.9" } });
+
+    expect(content.listBlogPosts).toHaveBeenCalledExactlyOnceWith({
+      page: 1,
+      pageSize: 12,
+      locale: "en",
+    });
+  });
+
   it("returns the posts in the order the CMS gives them (newest first)", async () => {
     content.listBlogPosts.mockResolvedValue(
       page([
@@ -52,7 +65,11 @@ describe("blog loader", () => {
 
     const result = await load("http://localhost/blog");
 
-    expect(content.listBlogPosts).toHaveBeenCalledExactlyOnceWith({ page: 1, pageSize: 12 });
+    expect(content.listBlogPosts).toHaveBeenCalledExactlyOnceWith({
+      page: 1,
+      pageSize: 12,
+      locale: "uk",
+    });
     expect(result.data.posts.map((post) => post.slug)).toEqual(["newer", "older"]);
     expect(result.data.posts[0]?.publishedLabel.replace(/\s/gu, " ")).toBe("22 жовтня 2026 р.");
     expect(result.data.canonicalUrl).toBe("http://localhost/blog");
@@ -64,12 +81,12 @@ describe("blog loader", () => {
     );
 
     const result = await load("http://localhost/blog?page=2");
-    expect(content.listBlogPosts).toHaveBeenLastCalledWith({ page: 2, pageSize: 12 });
+    expect(content.listBlogPosts).toHaveBeenLastCalledWith({ page: 2, pageSize: 12, locale: "uk" });
     expect(result.data.canonicalUrl).toBe("http://localhost/blog?page=2");
 
     content.listBlogPosts.mockResolvedValue(page([]));
     await load("http://localhost/blog?page=abc");
-    expect(content.listBlogPosts).toHaveBeenLastCalledWith({ page: 1, pageSize: 12 });
+    expect(content.listBlogPosts).toHaveBeenLastCalledWith({ page: 1, pageSize: 12, locale: "uk" });
   });
 
   it("answers 404 for a page past the end", async () => {

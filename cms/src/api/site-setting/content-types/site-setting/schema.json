@@ -10,11 +10,36 @@
   "options": {
     "draftAndPublish": false
   },
+  "pluginOptions": {
+    "i18n": { "localized": true }
+  },
   "attributes": {
-    "phone": { "type": "string", "required": true, "maxLength": 50 },
-    "email": { "type": "email", "required": true },
-    "customerServiceHours": { "type": "string", "maxLength": 200 },
-    "legalName": { "type": "string", "maxLength": 255 },
-    "socialLinks": { "type": "component", "repeatable": true, "component": "shared.social-link" }
+    "phone": {
+      "type": "string",
+      "required": true,
+      "maxLength": 50,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "customerServiceHours": {
+      "type": "string",
+      "maxLength": 200,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "legalName": {
+      "type": "string",
+      "maxLength": 255,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "socialLinks": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.social-link",
+      "pluginOptions": { "i18n": { "localized": false } }
+    }
   }
 }

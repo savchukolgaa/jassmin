@@ -1,6 +1,8 @@
 // App-level DTOs for editorial content managed in Strapi (see app/.server/cms/content.ts).
 // Plain data only, so loaders can return them and both server and client code can import them.
 
+import type { Locale } from "./i18n/locales";
+
 export const SOCIAL_PLATFORMS = [
   "instagram",
   "facebook",
@@ -30,6 +32,8 @@ export interface Seo {
 }
 
 export interface HomePage {
+  /** The locale the content was served in: `uk` when an English translation was missing. */
+  locale: Locale;
   hero: {
     headline: string;
     ctaLabel: string;
@@ -64,6 +68,8 @@ export interface SocialLink {
 }
 
 export interface SiteSettings {
+  /** The locale the content was served in: `uk` when an English translation was missing. */
+  locale: Locale;
   phone: string;
   email: string;
   customerServiceHours: string | null;
@@ -73,6 +79,8 @@ export interface SiteSettings {
 }
 
 export interface BlogPostSummary {
+  /** The locale the content was served in: `uk` when an English translation was missing. */
+  locale: Locale;
   slug: string;
   title: string;
   excerpt: string | null;

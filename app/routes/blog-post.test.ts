@@ -16,6 +16,7 @@ const EN = [{ id: "root", loaderData: { locale: "en" } }];
 const CMS = "http://cms.test:1337";
 
 const post: BlogPost = {
+  locale: "uk",
   slug: "how-to-choose-a-perfume",
   title: "How to choose a perfume",
   excerpt: "Top, heart and base notes.",
@@ -33,9 +34,9 @@ const post: BlogPost = {
   seo: null,
 };
 
-function load(slug: string | undefined) {
+function load(slug: string | undefined, headers?: HeadersInit) {
   return loader({
-    request: new Request(`https://jassmin.ua/blog/${slug ?? ""}`),
+    request: new Request(`https://jassmin.ua/blog/${slug ?? ""}`, { headers }),
     params: { slug },
   } as unknown as LoaderArgs);
 }
@@ -56,12 +57,22 @@ afterEach(() => {
 });
 
 describe("blog post loader", () => {
+  it("asks for the post in the visitor's locale, at the same URL", async () => {
+    content.getBlogPostBySlug.mockResolvedValue({ ...post, locale: "en" });
+
+    const { data } = await load(post.slug, { "Accept-Language": "en" });
+
+    expect(content.getBlogPostBySlug).toHaveBeenCalledExactlyOnceWith(post.slug, "en");
+    expect(data.locale).toBe("en");
+    expect(data.seo.canonicalUrl).toBe("https://jassmin.ua/blog/how-to-choose-a-perfume");
+  });
+
   it("renders the published post with sanitized HTML and absolute image URLs", async () => {
     content.getBlogPostBySlug.mockResolvedValue(post);
 
     const { data } = await load(post.slug);
 
-    expect(content.getBlogPostBySlug).toHaveBeenCalledExactlyOnceWith(post.slug);
+    expect(content.getBlogPostBySlug).toHaveBeenCalledExactlyOnceWith(post.slug, "uk");
     expect(data.contentHtml).toContain("<h2>Start with the notes</h2>");
     expect(data.contentHtml).toContain(`src="${CMS}/uploads/notes.jpg"`);
     expect(data.contentHtml).not.toMatch(/<script|onerror|src="x"/);

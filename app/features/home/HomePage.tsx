@@ -16,9 +16,9 @@ type HomePageProps = {
 export function HomePage({ view, actionData }: HomePageProps) {
   return (
     <main>
-      <HeroSection hero={view.hero} />
-      <AboutSection about={view.about} />
-      <LocationSection location={view.location} />
+      <HeroSection hero={view.hero} contentLocale={view.contentLocale} />
+      <AboutSection about={view.about} contentLocale={view.contentLocale} />
+      <LocationSection location={view.location} contentLocale={view.contentLocale} />
       <ContactsSection contacts={view.contacts}>
         <ContactForm actionData={actionData} />
       </ContactsSection>

@@ -1,14 +1,15 @@
 import { ClockIcon, MapPinIcon } from "~/components/layout/icons";
 import { buttonClasses } from "~/components/ui/button-styles";
 import type { HomePageView } from "~/lib/home";
-import { useT } from "~/lib/i18n";
+import { type Locale, useContentLang, useT } from "~/lib/i18n";
 import { Eyebrow } from "./Eyebrow";
 
-type LocationSectionProps = { location: HomePageView["location"] };
+type LocationSectionProps = { location: HomePageView["location"]; contentLocale: Locale };
 
 /** Store / pickup address, opening hours and the embedded map from Strapi. */
-export function LocationSection({ location }: LocationSectionProps) {
+export function LocationSection({ location, contentLocale }: LocationSectionProps) {
   const { t } = useT();
+  const lang = useContentLang(contentLocale);
 
   return (
     <section aria-labelledby="location-title" className="bg-white py-16 md:py-24">
@@ -26,7 +27,9 @@ export function LocationSection({ location }: LocationSectionProps) {
               <MapPinIcon className="size-6 shrink-0 text-primary-dark" />
               <div>
                 <dt className="font-bold text-ink">{t("home.location.address")}</dt>
-                <dd className="mt-1">{location.address}</dd>
+                <dd className="mt-1" lang={lang}>
+                  {location.address}
+                </dd>
               </div>
             </div>
             {location.openingHours && (
@@ -34,7 +37,9 @@ export function LocationSection({ location }: LocationSectionProps) {
                 <ClockIcon className="size-6 shrink-0 text-primary-dark" />
                 <div>
                   <dt className="font-bold text-ink">{t("home.location.hours")}</dt>
-                  <dd className="mt-1 whitespace-pre-line">{location.openingHours}</dd>
+                  <dd className="mt-1 whitespace-pre-line" lang={lang}>
+                    {location.openingHours}
+                  </dd>
                 </div>
               </div>
             )}

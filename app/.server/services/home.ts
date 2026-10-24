@@ -7,6 +7,7 @@ import { renderMarkdown, toPlainText } from "../markdown";
 export function buildHomePageView(homePage: HomePage, siteSettings: SiteSettings): HomePageView {
   const { hero, about, location } = homePage;
   return {
+    contentLocale: homePage.locale,
     hero,
     about: { title: about.title, bodyHtml: renderMarkdown(about.body) },
     location: {

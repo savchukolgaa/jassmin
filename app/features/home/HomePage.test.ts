@@ -8,6 +8,7 @@ import { I18nProvider } from "~/lib/i18n";
 import { HomePage } from "./HomePage";
 
 const view: HomePageView = {
+  contentLocale: "en",
   hero: {
     headline: "Order 3 Testers only for 499₴",
     ctaLabel: "Order Now",
@@ -28,6 +29,7 @@ const view: HomePageView = {
     directionsUrl: "https://www.google.com/maps/search/?api=1&query=x",
   },
   contacts: {
+    locale: "en",
     phone: "+380 44 123 45 67",
     email: "hello@jassmin.ua",
     customerServiceHours: "Mon–Fri 9:00–18:00",
@@ -55,6 +57,22 @@ function render(overrides: Partial<HomePageView> = {}, actionData?: ContactActio
 }
 
 describe("HomePage", () => {
+  it("adds no lang attributes when the content is in the UI's language", () => {
+    expect(render()).not.toContain(" lang=");
+  });
+
+  it("marks Ukrainian fallback content with lang=uk under the English UI", () => {
+    const html = render({ contentLocale: "uk", contacts: { ...view.contacts, locale: "uk" } });
+
+    expect(html).toMatch(/<div lang="uk"><h1[^>]*id="hero-title"/);
+    expect(html).toMatch(/<h2[^>]*id="about-title"[^>]*lang="uk"/);
+    expect(html).toMatch(/<div lang="uk"[^>]*><p>Our <strong>story/);
+    expect(html).toContain('<dd class="mt-1" lang="uk">вул. Хрещатик');
+    expect(html).toContain('<span lang="uk">Mon–Fri 9:00–18:00</span>');
+    // UI copy around it stays in the page's language.
+    expect(html).not.toMatch(/lang="uk"[^>]*>About us/);
+  });
+
   it("renders Hero, About Us, Location and Contacts in that order", () => {
     const html = render();
     const positions = ['id="hero-title"', 'id="about"', 'id="location-title"', 'id="contacts"'].map(

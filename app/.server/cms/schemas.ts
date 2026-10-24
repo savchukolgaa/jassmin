@@ -51,6 +51,8 @@ export const socialLinkComponent = z.object({
 
 export const homePageEntry = z.object({
   documentId: z.string(),
+  /** The locale Strapi served the entry in (`uk`, `en`). */
+  locale: z.string().nullish(),
   hero: heroComponent,
   about: aboutComponent,
   location: locationComponent,
@@ -58,6 +60,8 @@ export const homePageEntry = z.object({
 
 export const siteSettingEntry = z.object({
   documentId: z.string(),
+  /** The locale Strapi served the entry in (`uk`, `en`). */
+  locale: z.string().nullish(),
   phone: z.string(),
   email: z.string(),
   customerServiceHours: z.string().nullish(),
@@ -67,6 +71,8 @@ export const siteSettingEntry = z.object({
 
 export const blogPostSummaryEntry = z.object({
   documentId: z.string(),
+  /** The locale Strapi served the entry in (`uk`, `en`). */
+  locale: z.string().nullish(),
   title: z.string(),
   slug: z.string(),
   excerpt: z.string().nullish(),

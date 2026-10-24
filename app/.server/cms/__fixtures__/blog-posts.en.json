@@ -1,0 +1,96 @@
+{
+  "data": [
+    {
+      "id": 6,
+      "documentId": "af15yazylial7u0ia4wabnqb",
+      "title": "How to choose a perfume you won't get tired of",
+      "slug": "how-to-choose-a-perfume",
+      "excerpt": "Top, heart and base notes, and why you should wait an hour before you decide.",
+      "content": "## Start with the notes\n\nA perfume changes as it dries. The **top notes** fade within minutes, the **heart** lasts a few hours and the **base** stays all day.\n\n## Test on skin\n\nPaper strips only show the top notes. Spray a tester on your wrist and wait at least an hour.",
+      "authorName": "Jassmin team",
+      "createdAt": "2026-10-24T11:48:29.509Z",
+      "updatedAt": "2026-10-24T11:48:29.509Z",
+      "publishedAt": "2026-10-24T11:48:29.549Z",
+      "locale": "en",
+      "coverImage": {
+        "id": 2,
+        "documentId": "pzlh70nvymnvpu6rrwxnsoh7",
+        "name": "blog-cover.jpg",
+        "alternativeText": "Perfume bottles",
+        "caption": null,
+        "focalPoint": null,
+        "width": 1200,
+        "height": 800,
+        "formats": {
+          "large": {
+            "ext": ".jpg",
+            "url": "/uploads/large_blog_cover_e21ca96818.jpg",
+            "hash": "large_blog_cover_e21ca96818",
+            "mime": "image/jpeg",
+            "name": "large_blog-cover.jpg",
+            "path": null,
+            "size": 13.01,
+            "width": 1000,
+            "height": 667,
+            "sizeInBytes": 13014
+          },
+          "small": {
+            "ext": ".jpg",
+            "url": "/uploads/small_blog_cover_e21ca96818.jpg",
+            "hash": "small_blog_cover_e21ca96818",
+            "mime": "image/jpeg",
+            "name": "small_blog-cover.jpg",
+            "path": null,
+            "size": 4.96,
+            "width": 500,
+            "height": 333,
+            "sizeInBytes": 4960
+          },
+          "medium": {
+            "ext": ".jpg",
+            "url": "/uploads/medium_blog_cover_e21ca96818.jpg",
+            "hash": "medium_blog_cover_e21ca96818",
+            "mime": "image/jpeg",
+            "name": "medium_blog-cover.jpg",
+            "path": null,
+            "size": 8.74,
+            "width": 750,
+            "height": 500,
+            "sizeInBytes": 8735
+          },
+          "thumbnail": {
+            "ext": ".jpg",
+            "url": "/uploads/thumbnail_blog_cover_e21ca96818.jpg",
+            "hash": "thumbnail_blog_cover_e21ca96818",
+            "mime": "image/jpeg",
+            "name": "thumbnail_blog-cover.jpg",
+            "path": null,
+            "size": 1.77,
+            "width": 234,
+            "height": 156,
+            "sizeInBytes": 1767
+          }
+        },
+        "hash": "blog_cover_e21ca96818",
+        "ext": ".jpg",
+        "mime": "image/jpeg",
+        "size": 11.99,
+        "url": "/uploads/blog_cover_e21ca96818.jpg",
+        "previewUrl": null,
+        "provider": "local",
+        "provider_metadata": null,
+        "createdAt": "2026-10-24T11:46:34.962Z",
+        "updatedAt": "2026-10-24T11:46:34.962Z",
+        "publishedAt": "2026-10-24T11:46:34.963Z"
+      }
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "page": 1,
+      "pageSize": 2,
+      "pageCount": 1,
+      "total": 1
+    }
+  }
+}

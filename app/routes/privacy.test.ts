@@ -12,6 +12,16 @@ vi.mock("~/.server/cms/content", () => content);
 
 const { loader } = await import("./privacy");
 
+type LoaderArgs = Parameters<typeof loader>[0];
+
+/** The loader for a visitor whose language is `locale` (from the `Accept-Language` header). */
+function load(locale = "uk") {
+  const request = new Request("http://localhost/privacy", {
+    headers: { "Accept-Language": locale },
+  });
+  return loader({ request, params: {}, context: {} } as unknown as LoaderArgs);
+}
+
 const contacts: PrivacyContacts = {
   legalName: "Іваненко Марія",
   email: "hello@jassmin.ua",
@@ -31,21 +41,23 @@ afterEach(() => {
 });
 
 describe("privacy loader", () => {
-  it("passes on the data controller and contacts from the CMS", async () => {
+  it("passes on the data controller and contacts from the CMS, in the visitor's language", async () => {
     content.getSiteSettings.mockResolvedValueOnce({
       ...contacts,
+      locale: "en",
       customerServiceHours: null,
       socialLinks: [],
     });
 
-    expect(await loader()).toEqual({ contacts });
+    expect(await load("en")).toEqual({ contacts });
+    expect(content.getSiteSettings).toHaveBeenCalledWith("en");
   });
 
   it("still renders the page when the CMS is down", async () => {
     content.getSiteSettings.mockRejectedValueOnce(new Error("Strapi down"));
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(await loader()).toEqual({ contacts: null });
+    expect(await load()).toEqual({ contacts: null });
     consoleError.mockRestore();
   });
 });

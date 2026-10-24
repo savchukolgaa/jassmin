@@ -36,10 +36,46 @@ async function warnAboutPublicAccess(strapi: Core.Strapi): Promise<void> {
   }
 }
 
+/** Content locales, matching the app's `LOCALES` (`app/lib/i18n/locales.ts`). The first is the default. */
+const LOCALES = [
+  { code: "uk", name: "Ukrainian (uk)" },
+  { code: "en", name: "English (en)" },
+] as const;
+
+interface LocalesService {
+  findByCode(code: string): Promise<unknown>;
+  create(locale: { code: string; name: string }): Promise<unknown>;
+  getDefaultLocale(): Promise<string | null | undefined>;
+  setDefaultLocale(locale: { code: string }): Promise<unknown>;
+}
+
+/**
+ * Creates the `uk` and `en` locales when they're missing and makes `uk` the default, so a fresh
+ * setup has them without clicking in the admin. Existing databases get `uk` from the migration in
+ * `database/migrations/`, which must run before i18n tags existing content.
+ */
+async function ensureLocales(strapi: Core.Strapi): Promise<void> {
+  const locales = strapi.plugin("i18n").service("locales") as LocalesService;
+
+  for (const locale of LOCALES) {
+    if (!(await locales.findByCode(locale.code))) {
+      await locales.create(locale);
+      strapi.log.info(`Created the ${locale.name} locale`);
+    }
+  }
+
+  const [defaultLocale] = LOCALES;
+  if ((await locales.getDefaultLocale()) !== defaultLocale.code) {
+    await locales.setDefaultLocale({ code: defaultLocale.code });
+    strapi.log.info(`Made ${defaultLocale.name} the default locale`);
+  }
+}
+
 export default {
   register() {},
 
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
+    await ensureLocales(strapi);
     await warnAboutPublicAccess(strapi);
   },
 };

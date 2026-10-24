@@ -8,10 +8,12 @@ const cart = vi.hoisted(() => ({
 }));
 const orders = vi.hoisted(() => ({ createOrder: vi.fn(), getCheckoutPrefill: vi.fn() }));
 const session = vi.hoisted(() => ({ rememberOrder: vi.fn() }));
+const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 
 vi.mock("~/.server/services/cart", () => cart);
 vi.mock("~/.server/services/orders", () => orders);
 vi.mock("~/.server/session", () => session);
+vi.mock("~/.server/analytics", () => analytics);
 
 type ActionArgs = Parameters<typeof import("./checkout").action>[0];
 type LoaderArgs = Parameters<typeof import("./checkout").loader>[0];
@@ -86,6 +88,22 @@ describe("checkout loader", () => {
       subtotal: "1800.00",
     });
     expect(await redirectOf(loader(get()))).toBe("/cart");
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("records checkout_start with the cart's subtotal and item count", async () => {
+    const { loader } = await import("./checkout");
+    cart.getCartView.mockResolvedValueOnce({ lines: [line], itemCount: 2, subtotal: "900.00" });
+    const args = get();
+
+    await loader(args);
+
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith(
+      { request: args.request, context: args.context },
+      "checkout_start",
+      { properties: { subtotal: "900.00", itemCount: 2 } },
+    );
   });
 
   it("returns the cart, how much is missing for free delivery and no prefill for guests", async () => {
@@ -129,11 +147,17 @@ describe("checkout action", () => {
       },
     });
     expect(orders.createOrder).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
   it("places the order with the normalised details and redirects to its success page", async () => {
     const { action } = await import("./checkout");
-    orders.createOrder.mockResolvedValueOnce({ ok: true, orderId: 42 });
+    orders.createOrder.mockResolvedValueOnce({
+      ok: true,
+      orderId: 42,
+      placed: true,
+      subtotal: "900.00",
+    });
 
     const response = await action(post(valid));
 
@@ -149,10 +173,45 @@ describe("checkout action", () => {
     expect(session.rememberOrder).toHaveBeenCalledWith(expect.any(Request), 42);
   });
 
+  it("records purchase for the placed order", async () => {
+    const { action } = await import("./checkout");
+    orders.createOrder.mockResolvedValueOnce({
+      ok: true,
+      orderId: 42,
+      placed: true,
+      subtotal: "900.00",
+    });
+    const args = post(valid);
+
+    await action(args);
+
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledWith(
+      { request: args.request, context: args.context },
+      "purchase",
+      { properties: { orderId: 42, subtotal: "900.00", paymentMethod: "cod" } },
+    );
+  });
+
+  it("doesn't record purchase again for a double submit", async () => {
+    const { action } = await import("./checkout");
+    orders.createOrder.mockResolvedValueOnce({ ok: true, orderId: 42, placed: false });
+
+    const response = await action(post(valid));
+
+    expect((response as Response).headers.get("Location")).toBe("/checkout/success/42");
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
+  });
+
   it("links a registered user's order to them", async () => {
     const { action } = await import("./checkout");
     cart.getCartOwner.mockResolvedValueOnce({ userId: 7 });
-    orders.createOrder.mockResolvedValueOnce({ ok: true, orderId: 43 });
+    orders.createOrder.mockResolvedValueOnce({
+      ok: true,
+      orderId: 43,
+      placed: true,
+      subtotal: "900.00",
+    });
 
     await action(post(valid));
 
@@ -172,6 +231,7 @@ describe("checkout action", () => {
       body: { formError: "checkout.errors.stockChanged", values: valid },
     });
     expect(session.rememberOrder).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
   it("sends the visitor to the cart without an active or non-empty cart", async () => {

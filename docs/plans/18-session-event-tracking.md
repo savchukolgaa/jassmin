@@ -373,7 +373,7 @@ shape.
   the document load; after accepting, `/consent` counted it), then queues `{ type: "page_view",
   path, referrer: previousPath }` on each pathname/search change and flushes immediately and on
   `pagehide`. Unit tests for the queue (batching to 20, no-op when disabled).
-- [ ] **14. Docs.** `app/.server/AGENTS.md` "Visitor": middleware + consent gate, `trackEvent({
+- [x] **14. Docs.** `app/.server/AGENTS.md` "Visitor": middleware + consent gate, `trackEvent({
   request, context }, …)`, `ensureVisitor`, attribution rules, `ended_at` = last activity,
   `first_touch_*`, `/api/events` (`CLIENT_EVENT_TYPES`), the #11 call shape. Remove the "#18 extends
   it" note in `analytics.ts`. Mention the consent banner in `docs/design.md` if it adds a reusable

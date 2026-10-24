@@ -24,6 +24,12 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 Cart and checkout aren't designed yet. Build them from the tokens and components below. There is
 no Unisex catalog page: catalogs are `/catalog/women` and `/catalog/men` only.
 
+The cookie banner and the privacy policy page (#18) aren't on the canvas either. The banner
+(`features/consent/CookieBanner.tsx`) is a white `rounded-card` panel with a `line` border fixed to
+the bottom of every public page, with equally prominent `primary` "Accept" and `dark` "Decline"
+buttons (size `sm`): don't make declining harder to find than accepting. `/privacy` is a text page in
+the blog article's column (`max-w-3xl`).
+
 ## Colour tokens
 
 Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, `text-<name>`,

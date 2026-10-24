@@ -307,7 +307,7 @@ shape.
   fails and is a no-op without a visitor; `linkVisitorToUser` fills `user_id` only on that
   visitor's userless rows and sets `first_touch_*` from the earliest session once (a second call
   doesn't overwrite).
-- [ ] **6. Middleware.** `app/.server/analytics-middleware.ts`: if `await
+- [x] **6. Middleware.** `app/.server/analytics-middleware.ts`: if `await
   isTrackingAllowed(request)`, `try { context.set(visitorContext, await getVisitor(request)) } catch
   { log; null }`; on a document GET, `void trackEvent(…, "page_view", { properties: { path } })`;
   `const response = await next()`; append the context visitor's `Set-Cookie` headers (it may have

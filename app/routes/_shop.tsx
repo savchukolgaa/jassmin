@@ -1,4 +1,5 @@
 import { Outlet, useRouteLoaderData } from "react-router";
+import { visitorMiddleware } from "~/.server/analytics-middleware";
 import { getHeaderState } from "~/.server/services/header";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { Footer } from "~/components/layout/Footer";
@@ -7,6 +8,9 @@ import { LOGGED_OUT_HEADER } from "~/lib/header";
 import { useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/_shop";
+
+// Finds the analytics visitor (once they accepted cookies) and records full page loads (#18).
+export const middleware: Route.MiddlewareFunction[] = [visitorMiddleware];
 
 // Runs on every navigation and after every action, so the header (e.g. the cart badge) stays fresh.
 export async function loader({ request }: Route.LoaderArgs) {

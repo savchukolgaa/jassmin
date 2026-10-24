@@ -7,7 +7,7 @@
 // cart waits for the first one's lock and then gets the order it created.
 //
 // #18 records the `purchase` event in the caller once the order exists.
-import type { CheckoutInput, OrderConfirmation } from "~/lib/checkout";
+import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
 import { formatShippingAddress } from "~/lib/checkout";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
@@ -23,6 +23,15 @@ import {
   lockCartLinesForOrder,
   markCartConverted,
 } from "../db/queries/orders";
+import { findUserContact } from "../db/queries/users";
+
+/** A logged-in user's contact details for the checkout form, or `null`. */
+export async function getCheckoutPrefill(
+  userId: number,
+  db: Db = defaultDb,
+): Promise<CheckoutPrefill | null> {
+  return (await findUserContact(db, userId)) ?? null;
+}
 
 export interface CreateOrderInput {
   /** The owner's active cart (`getActiveCartId`). */

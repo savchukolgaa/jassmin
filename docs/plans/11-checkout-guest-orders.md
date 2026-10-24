@@ -258,7 +258,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - Tests in `checkout-ui.test.ts`: renders the sections and fields; shows field errors with
     `aria-invalid`; the submit button is disabled while submitting; English copy under
     `<I18nProvider locale="en">`.
-- [ ] **8. `/checkout` route (`app/routes/checkout.tsx`).**
+- [x] **8. `/checkout` route (`app/routes/checkout.tsx`).**
   - `loader`: `getCartOwner` → `getCartView`. If there are no lines, or any
     `line.quantity > line.stockQuantity`, `throw redirect("/cart")`. Return `{ cart, prefill }`,
     where `prefill` comes from `findUserContact` when logged in. Leave

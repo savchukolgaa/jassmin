@@ -136,7 +136,7 @@ column, and logs how many it changed.
 | modify | `app/.server/AGENTS.md`, `aspire-apphost/AGENTS.md` | Document the column, the job, the returning-shopper behaviour and the new resource |
 
 ## Steps
-- [ ] **1. Column and migration.** In `schema.ts` add
+- [x] **1. Column and migration.** In `schema.ts` add
   `abandonedAt: timestamp({ withTimezone: true })` to `carts` (nullable, with a comment: set by the
   abandoned-cart job; `updated_at` stays the last activity). Run
   `pnpm db:generate --name cart_abandoned_at`, then append the backfill

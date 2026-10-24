@@ -12,7 +12,10 @@ export interface Cart {
   sessionId: string | null;
   status: CartStatus;
   createdAt: Date;
+  /** The shopper's last activity (every change to the cart's lines bumps it). */
   updatedAt: Date;
+  /** When the abandoned-cart job marked the cart `abandoned`; `null` otherwise. */
+  abandonedAt: Date | null;
 }
 
 export interface ProductVariant {

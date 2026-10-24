@@ -78,6 +78,9 @@ describe("users", () => {
       role: ["user_role", true, true],
       lastLoginAt: ["timestamp with time zone", false, false],
       createdAt: ["timestamp with time zone", true, true],
+      firstTouchSource: ["text", false, false],
+      firstTouchMedium: ["text", false, false],
+      firstTouchCampaign: ["text", false, false],
     });
   });
 
@@ -303,6 +306,8 @@ describe("sessions", () => {
       endedAt: ["timestamp with time zone", false, false],
       landingPage: ["text", false, false],
       trafficSource: ["text", false, false],
+      trafficMedium: ["text", false, false],
+      trafficCampaign: ["text", false, false],
       deviceType: ["text", false, false],
     });
   });

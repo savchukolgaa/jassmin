@@ -17,9 +17,12 @@ export interface AnalyticsSession {
   /** Visitor id from the `anonymous_id` cookie, set before signup. */
   anonymousId: string;
   startedAt: Date;
+  /** Time of the last request in the session. */
   endedAt: Date | null;
   landingPage: string | null;
   trafficSource: string | null;
+  trafficMedium: string | null;
+  trafficCampaign: string | null;
   deviceType: string | null;
 }
 

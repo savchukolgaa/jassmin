@@ -271,7 +271,7 @@ shape.
   starting with "/", referrer?: string ≤ 2048 }`). `app/lib/consent.ts`: `CONSENT_COOKIE =
   "cookie_consent"`, `CONSENT_VALUES = ["granted", "denied"] as const`, `consentFormSchema`. Unit
   tests for both. Check: `pnpm test app/lib`.
-- [ ] **2. Migration.** In `schema.ts` add `sessions.trafficMedium`, `sessions.trafficCampaign`,
+- [x] **2. Migration.** In `schema.ts` add `sessions.trafficMedium`, `sessions.trafficCampaign`,
   `users.firstTouchSource`, `users.firstTouchMedium`, `users.firstTouchCampaign` (all `text()`,
   nullable, with doc comments), and document `ended_at` as last activity. `pnpm db:generate --name
   traffic_attribution`; hand-write `rollbacks/0006_traffic_attribution.sql` (`ALTER TABLE … DROP

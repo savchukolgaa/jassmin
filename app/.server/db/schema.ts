@@ -52,6 +52,11 @@ export const users = pgTable("users", {
   role: userRoleType().notNull().default("customer"),
   lastLoginAt: timestamp({ withTimezone: true }),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  // First-touch attribution (#18): how the person first came to the site, copied once from their
+  // earliest analytics session when they log in or register. `null` until then.
+  firstTouchSource: text(),
+  firstTouchMedium: text(),
+  firstTouchCampaign: text(),
 });
 
 export const products = pgTable(
@@ -125,9 +130,14 @@ export const sessions = pgTable(
     /** Visitor id from the `anonymous_id` cookie, so pre-signup behaviour can be linked. */
     anonymousId: text().notNull(),
     startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** Time of the last request in the session; it ends after 30 minutes without one (#18). */
     endedAt: timestamp({ withTimezone: true }),
     landingPage: text(),
+    // Where this visit came from (#18): `utm_source` / external referrer host / `direct`, the
+    // `utm_medium` (or `referral` / `none`) and `utm_campaign`. Copied onto the session's events.
     trafficSource: text(),
+    trafficMedium: text(),
+    trafficCampaign: text(),
     deviceType: text(),
   },
   (t) => [

@@ -139,14 +139,14 @@ page load, the cart or login.
     isn't localized (`app/.server/cms/content.ts` has no locale), and the policy must exist in
     Ukrainian and English. Its copy lives in a `privacy` namespace in `uk.ts` / `en.ts` (headings
     and paragraphs per section), with `PRIVACY_POLICY_UPDATED_AT` in `app/lib/consent.ts`, formatted
-    with `formatDate`.
+    with `formatDate`. The data controller is the ФОП, named from the CMS `legalName` field (Q10a).
   - Sections: who we are and how to contact us (email/phone from `getSiteSettings()`; on a CMS
     failure the page still renders, just without the contact block, because a legal page shouldn't
     503); what we collect (account: name, email, phone; orders and delivery details; the cart;
     with consent only: visits, pages, viewed products, searches, cart actions, device type and
     traffic source; no IP addresses are stored); why and on what basis (contract for orders and the
     cart, consent for analytics); cookies (a table generated from `COOKIE_INVENTORY`); how long data
-    is kept (Q10); who data is shared with (nobody for marketing; hosting and email providers only);
+    is kept (Q10b); who data is shared with (nobody for marketing; hosting and email providers only);
     the visitor's rights under the Law of Ukraine "On Personal Data Protection" (access,
     correction, deletion, withdrawing consent) with a "Cookie settings" button that reopens the
     banner.
@@ -177,16 +177,24 @@ shape.
 
 ## Open questions
 
-- [ ] **Q10: Retention periods and the data controller's legal details for the privacy page.** —
-  Why it matters: the policy should name who controls the data (legal name / ФОП) and how long data
-  is kept, and only the store owner knows these. Recommended default: the page names "Jassmin" with
-  the contact email and phone from the CMS site settings; account and order data are kept while the
-  account exists and as long as accounting law requires; analytics events for 26 months. The texts
-  live in `uk.ts` / `en.ts`, so the owner can correct them later without code changes elsewhere.
-  **The policy text is a draft and should be reviewed by the owner (or a lawyer) before launch.**
-  Affects step: 11.
+- [ ] **Q10b: Retention periods for the privacy page.** — Why it matters: the policy should say
+  how long data is kept, and only the store owner knows this. Recommended default: account and order
+  data are kept while the account exists and as long as accounting law requires; analytics events
+  for 26 months. The texts live in `uk.ts` / `en.ts`, so they're easy to correct later. **The
+  policy text is a draft and should be reviewed by the owner (or a lawyer) before launch.** Affects
+  step: 11.
 
 ## Resolved questions
+
+- **Q10a data controller** → a ФОП (sole proprietor) is responsible for the data (user,
+  2026-10-24). The ФОП's full name isn't in the repo, so it becomes an optional `legalName` field
+  (string, max 255) on the Strapi `site-setting` single type that the owner fills in. The privacy
+  page shows "ФОП {legalName}" / "Sole proprietor (ФОП) {legalName}" as the data controller, and
+  without a value falls back to "the sole proprietor (ФОП) who runs the Jassmin store". Changes:
+  `cms/src/api/site-setting/content-types/site-setting/schema.json`, `siteSettingEntry` in
+  `app/.server/cms/schemas.ts`, `SiteSettings` in `app/lib/cms.ts`, the mapper in
+  `app/.server/cms/content.ts`, `cms/__fixtures__/site-setting.json` and the CMS seed if it sets
+  site settings. Step 11.
 
 - **Q8 privacy policy page** → yes, build it in this issue (user, 2026-10-24) — D14.
 - **Q9 guest-cart cookies without consent** → yes, strictly necessary, no tracking data (user) —
@@ -337,8 +345,10 @@ shape.
   `PRIVACY_POLICY_UPDATED_AT` + a test that the inventory covers every cookie name in the code.
   `app/routes/privacy.tsx` under `_shop` in `routes.ts`: loader returns `{ contacts:
   await getSiteSettings().catch(() => null) }`, `meta` title via `metaTranslator`; the component
-  renders the D14 sections from the `privacy` namespace in `uk.ts` / `en.ts` (Q10 defaults) and the
-  cookie table from `COOKIE_INVENTORY`. Add `PRIVACY_LINK` to `FOOTER_LINKS` (`nav.ts`), the link
+  renders the D14 sections from the `privacy` namespace in `uk.ts` / `en.ts` (Q10b defaults) and the
+  cookie table from `COOKIE_INVENTORY`. The data controller is the ФОП: add the optional
+  `legalName` field to the Strapi `site-setting` type, its zod schema, DTO, mapper and fixture
+  (Q10a), and render it with a fallback sentence when empty. Add `PRIVACY_LINK` to `FOOTER_LINKS` (`nav.ts`), the link
   in `CookieBanner`, and the consent sentence + link on `register.tsx`. Tests: page renders in uk
   and en (`<I18nProvider locale="en">`), every inventory cookie appears in the table, renders
   without contacts when the CMS fails; footer/nav tests updated.
@@ -400,6 +410,6 @@ shape.
 ## Out of scope
 
 - `checkout_start` / `purchase` hooks — added by #11.
-- Legal review of the policy text (Q10) and `review_submit` (no review feature yet).
+- Legal review of the policy text (Q10b) and `review_submit` (no review feature yet).
 - Tracking `/admin` pages and bots.
 - Backfilling `first_touch_*` for users who don't log in again; analytics dashboards or exports.

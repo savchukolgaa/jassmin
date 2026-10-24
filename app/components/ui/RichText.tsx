@@ -9,6 +9,8 @@ type RichTextProps = {
   /** `article` adds styles for blog content: `h2`, images, rules and code. */
   variant?: "basic" | "article";
   className?: string;
+  /** Language of the content when it differs from the page's (see `useContentLang`). */
+  lang?: string;
 };
 
 // Blog articles (#13): larger body text, `h2` section headings, images, rules and code.
@@ -24,9 +26,10 @@ const ARTICLE_CLASSES = cn(
 );
 
 /** Renders CMS rich text with basic typography for paragraphs, lists, headings and links. */
-export function RichText({ html, variant = "basic", className }: RichTextProps) {
+export function RichText({ html, variant = "basic", className, lang }: RichTextProps) {
   return (
     <div
+      lang={lang}
       className={cn(
         "space-y-4 leading-relaxed",
         "[&_a]:font-semibold [&_a]:underline [&_a]:underline-offset-2",

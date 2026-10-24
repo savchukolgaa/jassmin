@@ -1,11 +1,13 @@
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { type BlogPostCardView, blogPostHref } from "~/lib/blog";
+import { useContentLang } from "~/lib/i18n";
 import { BlogCover } from "./BlogCover";
 
 /** One article in the `/blog` list: cover, date, title and excerpt. */
 export function BlogPostCard({ post }: { post: BlogPostCardView }) {
   const href = blogPostHref(post.slug);
+  const lang = useContentLang(post.locale);
 
   return (
     <article className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line">
@@ -20,12 +22,19 @@ export function BlogPostCard({ post }: { post: BlogPostCardView }) {
         <p className="text-sm font-bold text-muted">
           <time dateTime={post.publishedAt}>{post.publishedLabel}</time>
         </p>
-        <h2 className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink">
+        <h2
+          className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink"
+          lang={lang}
+        >
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
             {post.title}
           </Link>
         </h2>
-        {post.excerpt && <p className="text-body">{post.excerpt}</p>}
+        {post.excerpt && (
+          <p className="text-body" lang={lang}>
+            {post.excerpt}
+          </p>
+        )}
       </div>
     </article>
   );

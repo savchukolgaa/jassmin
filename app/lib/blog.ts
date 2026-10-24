@@ -2,6 +2,7 @@
 // `app/.server/services/blog.ts` from the Strapi DTOs in `./cms`.
 import { z } from "zod";
 import type { CmsImage } from "./cms";
+import type { Locale } from "./i18n";
 
 export const BLOG_PAGE_SIZE = 12;
 
@@ -56,6 +57,8 @@ export function blogResponseHeaders(loaderHeaders: Headers): Headers {
 }
 
 export interface BlogPostCardView {
+  /** The locale of the post's text; `uk` when its English translation was missing. */
+  locale: Locale;
   slug: string;
   title: string;
   excerpt: string | null;

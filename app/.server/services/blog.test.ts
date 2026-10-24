@@ -49,6 +49,8 @@ describe("buildBlogListView", () => {
     expect(view.posts.map((post) => post.slug)).toEqual(data.map((entry) => entry.slug));
     expect(view).toMatchObject({ page: 1, pageCount: 1, total: 2 });
     expect(view.posts[0]?.publishedLabel).toMatch(/^\d{1,2} [A-Z][a-z]+ \d{4}$/);
+    // The content locale (Ukrainian fixtures) is independent of the UI locale (dates).
+    expect(view.posts.map((post) => post.locale)).toEqual(["uk", "uk"]);
   });
 });
 

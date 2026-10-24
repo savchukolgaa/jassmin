@@ -80,6 +80,13 @@ the Ukrainian version whenever an English localization is missing.
   `lang={post.locale}` on their `<article>` only when it differs from the UI locale (`useT().locale`),
   so the Ukrainian UI renders the same markup as before. The home page sections (hero, about,
   location) get the same `lang` treatment via `HomePageView.contentLocale`. (Q3, confirmed)
+  **Changed during step 8:** `lang` goes on the CMS-text elements, not on the whole `<article>` /
+  `<section>`, because those also hold UI copy in the page's language (eyebrows, the back link,
+  the date label), which `lang="uk"` would mislabel. A `useContentLang(locale)` hook in
+  `app/lib/i18n/react.tsx` returns the value only when it differs from the UI locale, and
+  `RichText` takes a `lang` prop. Marked: the hero text block, about title and body, address and
+  opening hours, customer-service hours (wrapped in a `<span>`), and a post's title, excerpt and
+  body (card and article).
 - **Home route cache headers:** `app/routes/home.tsx` sets no cache headers today, so nothing to vary.
 - **Seed text:** the current seed stores English copy in what becomes the `uk` localization. The
   seed is rewritten to create real Ukrainian copy as `uk` and the current English copy as `en`.
@@ -227,7 +234,7 @@ Each step is small, ordered, and leaves the app in a working state.
     replace entries by `documentId`. Pagination meta always comes from the `uk` query.
   - Update the top-of-file comment and JSDoc (fallback rules).
 
-- [ ] **8. Views and `lang` attributes.** `BlogPostCardView` / `BlogPostView` gain `locale`
+- [x] **8. Views and `lang` attributes.** `BlogPostCardView` / `BlogPostView` gain `locale`
   (`toCardView` copies it). `HomePageView` gains `contentLocale` (from `homePage.locale`) and
   `contacts` keeps `SiteSettings` (with its `locale`). `BlogArticle`'s `<article>` and
   `BlogPostCard`'s `<article>` get `lang={post.locale !== locale ? post.locale : undefined}` with

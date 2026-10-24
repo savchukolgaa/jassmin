@@ -4,7 +4,7 @@ import { buttonClasses } from "~/components/ui/button-styles";
 import { SOCIAL_LABELS } from "~/lib/cms";
 import { cn } from "~/lib/cn";
 import type { HomePageView } from "~/lib/home";
-import { useT } from "~/lib/i18n";
+import { useContentLang, useT } from "~/lib/i18n";
 import { telHref } from "~/lib/links";
 import { Eyebrow } from "./Eyebrow";
 
@@ -27,6 +27,7 @@ const contactLink = cn(
 /** Customer service details from Strapi site settings; the header's "Contacts" scrolls here. */
 export function ContactsSection({ contacts, children }: ContactsSectionProps) {
   const { t } = useT();
+  const lang = useContentLang(contacts.locale);
 
   return (
     <section
@@ -61,7 +62,7 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
                 <ClockIcon className="size-6 shrink-0 text-primary-light" />
                 <span className="whitespace-pre-line">
                   <span className="sr-only">{t("home.contacts.serviceHours")}</span>
-                  {contacts.customerServiceHours}
+                  <span lang={lang}>{contacts.customerServiceHours}</span>
                 </span>
               </li>
             )}

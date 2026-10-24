@@ -45,6 +45,11 @@ describe("buildHomePageView", () => {
     });
   });
 
+  it("passes on the locale the home page copy was served in", () => {
+    expect(buildHomePageView({ ...homePage, locale: "en" }, siteSettings).contentLocale).toBe("en");
+    expect(buildHomePageView(homePage, siteSettings).contentLocale).toBe("uk");
+  });
+
   it("keeps a Google Maps embed and adds a directions link", () => {
     const { location } = buildHomePageView(homePage, siteSettings);
 

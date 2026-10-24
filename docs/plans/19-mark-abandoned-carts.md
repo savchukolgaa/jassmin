@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/19
 Branch: `issue/19`
 Worktree: `.claude/worktrees/issue-19`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a data analyst, I want inactive carts to be marked `abandoned` automatically, so that I can
@@ -185,7 +185,7 @@ column, and logs how many it changed.
   and the job; under Cart, say that abandoned carts are terminal, a returning shopper gets a new
   cart, and `lockCart` re-checks the status. `AGENTS.md`: add `carts.abandoned_at` to the ML
   feature columns. `aspire-apphost/AGENTS.md`: list the new resource.
-- [ ] **8. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm aspire:build`.
+- [x] **8. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm aspire:build`.
 
 ## Testing & verification
 - **Unit** (`abandoned-carts.test.ts`): `parseAbandonedCartHours` returns the default 24 when the
@@ -218,10 +218,10 @@ column, and logs how many it changed.
   start `db-mark-abandoned-carts` from the dashboard and read its log.
 
 ## Acceptance criteria
-- [ ] Carts inactive beyond the threshold become `abandoned`: steps 1, 2, 3, 5
-- [ ] Empty and converted carts are not affected: step 2 (`exists` + `status = 'active'`), tests
-- [ ] The threshold is configurable: steps 3, 5, 7 (`ABANDONED_CART_HOURS`)
-- [ ] The job is idempotent and safe to run repeatedly: step 2 (single atomic `UPDATE` filtered on
+- [x] Carts inactive beyond the threshold become `abandoned`: steps 1, 2, 3, 5
+- [x] Empty and converted carts are not affected: step 2 (`exists` + `status = 'active'`), tests
+- [x] The threshold is configurable: steps 3, 5, 7 (`ABANDONED_CART_HOURS`)
+- [x] The job is idempotent and safe to run repeatedly: step 2 (single atomic `UPDATE` filtered on
   `active`), step 4 (no writes into an abandoned cart), tests
 
 ## Out of scope

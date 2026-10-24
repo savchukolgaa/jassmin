@@ -166,7 +166,7 @@ on a success page that only they can open.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Order checkout fields migration.** In `schema.ts`, add to `orders`:
+- [x] **1. Order checkout fields migration.** In `schema.ts`, add to `orders`:
   - `cartId: integer().references(() => carts.id, { onDelete: "set null" })`, plus
     `uniqueIndex("orders_cart_id_unique").on(t.cartId)` (NULLs don't collide)
   - `freeShipping: boolean().notNull().default(false)`, with a comment saying the store paid Nova

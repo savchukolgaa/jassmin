@@ -629,7 +629,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 and 0005 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0006 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0006_order_checkout_fields");
     expect(await rollbackLatest(db)).toBe("0005_cart_active_unique");
     expect(await rollbackLatest(db)).toBe("0004_user_role");
     expect(await rollbackLatest(db)).toBe("0003_product_variants");
@@ -711,6 +712,12 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0006_order_checkout_fields");
+    const orderCheckoutColumns = await testDb.db.execute(
+      sql`select 1 from information_schema.columns
+          where table_name = 'orders' and column_name in ('cart_id', 'free_shipping')`,
+    );
+    expect(orderCheckoutColumns.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0005_cart_active_unique");
     const activeCartIndexes = await testDb.db.execute(
       sql`select 1 from pg_indexes where indexname like 'carts_active_%'`,

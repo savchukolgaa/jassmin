@@ -264,7 +264,7 @@ Each step is small, ordered, and leaves the app in a working state.
     empty page;
   - non-404 errors (timeout, 500) on the `en` call don't fall back (they reject).
 
-- [ ] **12. Docs.** `README.md` "Content (Strapi CMS)": locales (`uk` default, `en`), which fields
+- [x] **12. Docs.** `README.md` "Content (Strapi CMS)": locales (`uk` default, `en`), which fields
   are per language, how editors add an English translation (open the entry → locale dropdown →
   English → "Fill in from another locale" → translate → Save/Publish; copy the hero image, CTA
   link and map URL — Q2), the fallback rule, and that the seed now creates both locales. Mention

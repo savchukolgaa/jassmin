@@ -160,7 +160,7 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
    ```bash
    pnpm cms:seed -- --token
    ```
-   The seed creates the home page, site settings, two published blog posts and one draft, and prints `STRAPI_API_TOKEN=…` once (Strapi stores only a hash). Copy that line into the root `.env` and restart `web`. Running the seed again leaves existing content and the token alone. It uses the same database variables as `pnpm cms:dev`.
+   The seed creates the home page and site settings in Ukrainian and English, two published blog posts (one translated, one Ukrainian only) and one draft, and prints `STRAPI_API_TOKEN=…` once (Strapi stores only a hash). Copy that line into the root `.env` and restart `web`. Running the seed again leaves existing content and the token alone. It uses the same database variables as `pnpm cms:dev`.
 3. **Or create the token by hand:** go to Settings → API Tokens → Create new API Token, choose type **Custom** and duration **Unlimited**, and enable only:
    - Blog-post: `find`, `findOne`
    - Home-page: `find`
@@ -191,6 +191,31 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 | `shared.social-link` | `platform` (`instagram`, `facebook`, `tiktok`, `telegram`, `viber`, `youtube`), `url` |
 
 The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/site-setting`. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
+
+### Translations (Ukrainian and English)
+
+All three content types use Strapi's built-in Internationalization (#43). The locales are **Ukrainian (`uk`, default)** and **English (`en`)**. Strapi creates them at startup (`ensureLocales` in `cms/src/index.ts`), so a fresh setup needs no clicking in Settings → Internationalization. Existing content was kept as Ukrainian by the migration in `cms/database/migrations/`, which makes `uk` the default before Strapi tags existing entries with a locale.
+
+Which fields are per language:
+
+| Type | Per language | Shared by both languages |
+|------|--------------|--------------------------|
+| `blog-post` | `title`, `excerpt`, `content`, `authorName`, `seo` | `slug`, `coverImage` |
+| `home-page` | `hero`, `about`, `location` (whole components, including the hero image, CTA link and map URL) | — |
+| `site-setting` | `customerServiceHours` | `phone`, `email`, `socialLinks` |
+
+Strapi can't share single fields inside a localized component, so the hero `image` and `ctaHref` and the location `mapEmbedUrl` are stored once per language. Keep them the same in both.
+
+**Adding an English translation (editors):**
+
+1. Open the entry in the Content Manager. Ukrainian is shown first.
+2. Pick **English (en)** in the locale dropdown at the top right.
+3. Click **Fill in from another locale** and pick Ukrainian. This copies every field, including the hero image, CTA link and map URL on the home page.
+4. Translate the text fields and save. For a blog post, also click **Publish**: an English draft isn't shown.
+
+Shared fields (a post's slug and cover, the phone, email and social links) are edited in either language and change in both.
+
+**What visitors see:** the app asks Strapi for the visitor's language (the `locale` cookie, then `Accept-Language`). When an entry has no English version yet, the Ukrainian one is shown, never an error. Ukrainian content must therefore always exist. The English blog list contains every published Ukrainian post, each in English when it has a published translation. A post published only in English isn't listed. `/blog/<slug>` is the same URL in both languages.
 
 ## Home page and contact form
 

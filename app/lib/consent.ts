@@ -18,6 +18,12 @@ export function isConsentValue(value: unknown): value is ConsentValue {
 export const consentFormSchema = z.object({
   consent: z.enum([...CONSENT_VALUES, "reset"]),
   redirectTo: z.string().optional(),
+  // The page's `document.referrer`, so a visit that starts with "Accept" keeps its source.
+  // Analytics only: an unusable value is dropped.
+  referrer: z.string().max(2048).optional().catch(undefined),
 });
 
 export type ConsentFormInput = z.infer<typeof consentFormSchema>;
+
+/** The privacy and cookie policy page, linked from the banner, the footer and registration. */
+export const PRIVACY_POLICY_PATH = "/privacy";

@@ -32,6 +32,10 @@ describe("route config", () => {
     expect(routes.find((entry) => entry.path === "locale")?.file).toBe("routes/locale.ts");
   });
 
+  it("keeps the POST-only consent route outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "consent")?.file).toBe("routes/consent.ts");
+  });
+
   it("nests the admin pages under their own layout, outside the shop layout", () => {
     const admin = routes.find((entry) => entry.path === "admin");
 

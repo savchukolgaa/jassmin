@@ -17,6 +17,8 @@ export default [
   route("logout", "routes/logout.ts"),
   // Action-only (POST) language switcher; outside the layout for the same reason.
   route("locale", "routes/locale.ts"),
+  // Action-only (POST) answer to the cookie banner (#18); outside the layout for the same reason.
+  route("consent", "routes/consent.ts"),
   // Outside the shop layout: the admin area has its own. Every admin loader and action calls
   // `requireAdmin`; product (#16) and order (#17) management replace the placeholders.
   route("admin", "routes/admin.tsx", [

@@ -129,6 +129,10 @@ page load, the cart or login.
     a `page_view` for `redirectTo` (the page where the visitor accepted, otherwise lost); `denied` →
     sets the cookie and clears `analytics_session`; `reset` → deletes the cookie so the banner shows
     again. Redirects back with `safeRedirect`.
+  - **Implemented as:** a plain `<Form>` (like `LocaleSwitcher`) instead of a `fetcher.Form`,
+    hidden while the post is in flight; it also posts the page's `document.referrer`, and
+    `/consent` starts the visit from a GET of the page with that referrer, so a visit that starts
+    with "Accept" keeps its real source and landing page.
   - UI: `app/features/consent/CookieBanner.tsx`, rendered by `ShopLayout` when the `_shop` loader
     returns `consent: null`. A `fetcher.Form` posting to `/consent` (works without JS), fixed to the
     bottom, white panel with `ink` text and a `line` border, `role="region"` with an `aria-label`,
@@ -336,7 +340,7 @@ shape.
   properties: { method: kind } })` (the auth cookie isn't on this request yet, hence `userId`).
   Tests: earlier anonymous rows get the user id; `first_touch_*` filled; a `login` row exists; a
   failing link doesn't throw.
-- [ ] **10. Consent route, banner and footer.** `app/routes/consent.ts` (D13): action only, loader
+- [x] **10. Consent route, banner and footer.** `app/routes/consent.ts` (D13): action only, loader
   redirects to `/` like `locale.ts`; `granted` → `Set-Cookie` consent + `getVisitor` cookies and
   `trackEvents(visitor, request, [{ type: "page_view", path: redirectTo }])`; `denied` → consent
   cookie + expire `analytics_session`; `reset` → expire the consent cookie. `_shop` loader returns

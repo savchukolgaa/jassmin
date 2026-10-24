@@ -11,6 +11,16 @@ export const en = {
   locale: {
     label: "Language",
   },
+  consent: {
+    label: "Cookies",
+    title: "We use cookies",
+    message:
+      "Necessary cookies keep your cart, login and language choice working. With your permission we also collect statistics: which pages and products you view, what you search for and add to your cart, your device type and where you came from. This helps us improve the store.",
+    learnMore: "Privacy policy",
+    accept: "Accept",
+    decline: "Decline",
+    settings: "Cookie settings",
+  },
   nav: {
     main: "Main",
     footer: "Footer",

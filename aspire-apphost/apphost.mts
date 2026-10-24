@@ -23,7 +23,8 @@ const dbMigrate = builder
   .withParentRelationship(db);
 
 // One-off scripts against `jassmindb`, whose password only Aspire knows: seed the sample
-// products (`pnpm db:seed`) or roll back the latest migration (`pnpm db:rollback`).
+// products (`pnpm db:seed`), roll back the latest migration (`pnpm db:rollback`) or mark
+// inactive carts as abandoned (`pnpm db:mark-abandoned-carts`, hourly cron in production).
 // Start them from the dashboard.
 await builder
   .addJavaScriptApp("db-seed", "..", { runScriptName: "db:seed" })
@@ -38,6 +39,14 @@ await builder
   .withPnpm({ install: false })
   .withReference(db)
   .waitFor(db)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
+await builder
+  .addJavaScriptApp("db-mark-abandoned-carts", "..", { runScriptName: "db:mark-abandoned-carts" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitForCompletion(dbMigrate)
   .withParentRelationship(db)
   .withExplicitStart();
 

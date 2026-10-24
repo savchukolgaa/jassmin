@@ -69,6 +69,7 @@ pnpm dev                    # http://localhost:5173
 | `SMTP_URL` | no* | SMTP server for contact form emails (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container. *Without it, development logs contact messages instead of sending them, and production shows a "couldn't send" error. |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
+| `ABANDONED_CART_HOURS` | no | Hours without activity after which `pnpm db:mark-abandoned-carts` marks a cart with items `abandoned` (whole number, default `24`). Only the job reads it. |
 
 The variables are validated with zod in `app/.server/env.ts`, and the server fails at startup with a readable error if any are missing or invalid. A `.env` file is loaded automatically, but variables already set in the environment take precedence.
 
@@ -95,10 +96,25 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:rollback` | Roll back the latest applied migration |
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin area](#admin-area) |
+| `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
 
-The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed` and `db-rollback` start by hand) instead of from a terminal.
+The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-rollback` and `db-mark-abandoned-carts` start by hand) instead of from a terminal.
 
 The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration and seed tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
+
+## Abandoned carts
+
+`pnpm db:mark-abandoned-carts` marks every `active` cart that has items and no activity for more than `ABANDONED_CART_HOURS` (default 24) as `abandoned`, sets `carts.abandoned_at`, and logs how many carts it changed. It leaves `updated_at` alone, so that stays the shopper's last activity. Empty and converted carts are never touched, and a second run changes nothing, so it's safe to run as often as you like.
+
+The app server only handles requests, so run the job hourly from an external scheduler. With system cron, for example:
+
+```cron
+0 * * * * cd /srv/jassmin && pnpm db:mark-abandoned-carts >> /var/log/jassmin/abandoned-carts.log 2>&1
+```
+
+Like the other `db:*` scripts it runs TypeScript with `tsx`, a dev dependency, so install dev dependencies (plain `pnpm install`) where it runs. Under Aspire, start the `db-mark-abandoned-carts` resource from the dashboard.
+
+A shopper whose cart was abandoned sees an empty cart when they come back, and their next add starts a new cart. The abandoned cart stays as it was, for analytics.
 
 ## Database migrations
 

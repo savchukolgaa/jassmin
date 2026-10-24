@@ -177,7 +177,7 @@ Each step is small, ordered, and leaves the app in a working state.
   cart_id, drop column free_shipping;`). Add `cartId: number | null` and `freeShipping: boolean`
   to `Order` in `lib/commerce.ts`. Check: `pnpm test` (`schema.test.ts`, `migrator.test.ts`), and
   `pnpm db:migrate` then `pnpm db:rollback` locally.
-- [ ] **2. Shared checkout contract (`app/lib/checkout.ts`).**
+- [x] **2. Shared checkout contract (`app/lib/checkout.ts`).**
   - `normalizeUkrainianPhone(raw): string | undefined` → `+380XXXXXXXXX`.
   - `checkoutSchema` (z.object): `fullName` (trim, 1–255), `email` (`emailSchema`), `phone`
     (trim → normalise → refine, `msg("checkout.errors.phoneInvalid")`), `city` (trim, 1–100),
@@ -196,7 +196,7 @@ Each step is small, ordered, and leaves the app in a working state.
     (`+7…`, too short, letters) fail with the key; blank required fields give their keys;
     unknown `paymentMethod` fails. For `freeShippingInfo`: `"999.99"` → 0.01 remaining,
     `"1000.00"` → free, `"1500.50"` → free.
-- [ ] **3. i18n keys.** Add the `checkout` namespace to `uk.ts` (source of truth) and `en.ts`:
+- [x] **3. i18n keys.** Add the `checkout` namespace to `uk.ts` (source of truth) and `en.ts`:
   `heading`, `form` (aria label), `sections.{contact,delivery,payment}`,
   `fields.{fullName,email,phone,phoneHint,city,branch,branchHint}`, `payment.{card,cod,cardNote,codNote}`,
   `summary`, `subtotal`, `shipping`, `shippingFree` ("Безкоштовно" / "Free"), `shippingCarrierRate`

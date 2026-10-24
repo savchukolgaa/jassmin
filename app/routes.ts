@@ -11,6 +11,7 @@ export default [
     route("register", "routes/register.tsx"),
     route("cart", "routes/cart.tsx"),
     route("checkout", "routes/checkout.tsx"),
+    route("checkout/success/:orderId", "routes/checkout-success.tsx"),
     route("account", "routes/account.tsx"),
     route("privacy", "routes/privacy.tsx"),
   ]),

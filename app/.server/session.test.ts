@@ -59,4 +59,17 @@ describe("session helpers", () => {
     expect(response.headers.get("Location")).toBe("/");
     expect(response.headers.get("Set-Cookie")).toMatch(/Expires=Thu, 01 Jan 1970/);
   });
+
+  it("remembers the last ten orders placed in this browser, newest first", async () => {
+    const { getSessionOrderIds, rememberOrder } = await import("./session");
+    let cookie = "";
+    const request = () => new Request("http://localhost/checkout", { headers: { Cookie: cookie } });
+
+    expect(await getSessionOrderIds(request())).toEqual([]);
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 5]) {
+      cookie = (await rememberOrder(request(), id)).split(";")[0] ?? "";
+    }
+
+    expect(await getSessionOrderIds(request())).toEqual([5, 11, 10, 9, 8, 7, 6, 4, 3, 2]);
+  });
 });

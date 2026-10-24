@@ -6,7 +6,7 @@ Guidance for AI coding agents working in this repository. Read `README.md` for s
 
 Jassmin is an e-commerce site for a small perfume store in Ukraine. It's a single full-stack SSR app built on React Router v8 (framework mode), TypeScript 7, Tailwind v4, PostgreSQL with Drizzle ORM, zod, Biome and Vitest. Local development is orchestrated by Aspire, and pnpm is the package manager.
 
-The database schema is designed for later LTV and churn analytics. Columns such as `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are ML features: never drop or rename them.
+The database schema is designed for later LTV and churn analytics. Columns such as `users.last_login_at`, `users.acquisition_channel`, `products.fragrance_family` and `carts.abandoned_at` are ML features: never drop or rename them.
 
 ## Commands
 

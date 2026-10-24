@@ -1,5 +1,5 @@
 {
-  "id": "28085023-46a6-4477-9b63-add669ed03ac",
+  "id": "575302f7-2f9e-43da-84bc-d3c4a5564800",
   "prevId": "d844f7fe-8ca4-4330-be3c-d253875a42ac",
   "version": "7",
   "dialect": "postgresql",
@@ -152,6 +152,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "abandoned_at": {
+          "name": "abandoned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -892,18 +898,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "traffic_medium": {
-          "name": "traffic_medium",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "traffic_campaign": {
-          "name": "traffic_campaign",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "device_type": {
           "name": "device_type",
           "type": "text",
@@ -1236,24 +1230,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "first_touch_source": {
-          "name": "first_touch_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "first_touch_medium": {
-          "name": "first_touch_medium",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "first_touch_campaign": {
-          "name": "first_touch_campaign",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},

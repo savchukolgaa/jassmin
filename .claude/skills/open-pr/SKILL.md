@@ -20,5 +20,5 @@ Open a pull request against `main` for the work on issue `#$ARGUMENTS`, followin
    - Read the plan `$WT/docs/plans/$N-*.md` and verify `Status: Implemented`.
    - Remove the plan file (`git -C "$WT" rm docs/plans/<number>-<slug>.md`), commit removal, record the hash of `HEAD~1`, and push (`git -C "$WT" push -u origin "issue/$N"`).
 3. **Write the PR**: Use the PR body template in [docs/skills/open-pr.md](../../docs/skills/open-pr.md), linking to the removed plan at `HEAD~1`. Write to a temporary file outside the repository.
-4. **Create the PR**: Run `gh pr create --base main --head "issue/$N" --title "<title>" --body-file <tmp-file>`. Add labels matching the issue.
+4. **Create the PR**: Run `gh pr create --base main --head "issue/$N" --title "#$N: <title>" --body-file <tmp-file>`, where the title starts with the issue number (see [docs/skills/open-pr.md](../../docs/skills/open-pr.md)). Add labels matching the issue.
 5. **Report**: Report the PR URL and worktree path to the user. Remind them of the post-merge cleanup commands from [docs/skills/worktree.md](../../docs/skills/worktree.md).

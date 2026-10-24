@@ -313,4 +313,144 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       expect(await cart.getCartCount({ userId }, testDb.db)).toBe(1);
     });
   });
+
+  describe("abandoned carts (#19)", () => {
+    /** Marks the cart abandoned the way the job does. */
+    async function abandon(cartId: number) {
+      const { sql } = await import("drizzle-orm");
+      await testDb.db.execute(
+        sql`update carts set status = 'abandoned', abandoned_at = now() where id = ${cartId}`,
+      );
+    }
+
+    /**
+     * Holds the cart's row lock until `write` waits for it, then abandons the cart and lets the
+     * write go on: the job running between a write's lookup and its lock.
+     */
+    async function abandonDuring<T>(cartId: number, write: () => Promise<T>): Promise<T> {
+      const { Client } = await import("pg");
+      const client = new Client({ connectionString: testDb.db.$client.options.connectionString });
+      await client.connect();
+      try {
+        await client.query("begin");
+        await client.query("select 1 from carts where id = $1 for update", [cartId]);
+        const pending = write();
+        let blocked = false;
+        for (let i = 0; i < 400 && !blocked; i++) {
+          const { rows } = await client.query<{ n: number }>(
+            `select count(*)::int as n from pg_stat_activity
+             where datname = current_database() and wait_event_type = 'Lock'`,
+          );
+          blocked = (rows[0]?.n ?? 0) > 0;
+          if (!blocked) await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+        expect(blocked).toBe(true);
+        await client.query(
+          "update carts set status = 'abandoned', abandoned_at = now() where id = $1",
+          [cartId],
+        );
+        await client.query("commit");
+        return await pending;
+      } finally {
+        await client.end();
+      }
+    }
+
+    async function onlyCartId() {
+      const [row] = await cartRows();
+      if (!row) throw new Error("No cart");
+      return row.id;
+    }
+
+    it("reports whether the locked cart is still active", async () => {
+      const cart = await import("./cart");
+      const { lockCart } = await import("../db/queries/cart");
+      await cart.addItem(await guest(), await variant(7), 1, testDb.db);
+      const cartId = await onlyCartId();
+
+      expect(await testDb.db.transaction((tx) => lockCart(tx, cartId))).toBe(true);
+      await abandon(cartId);
+      expect(await testDb.db.transaction((tx) => lockCart(tx, cartId))).toBe(false);
+    });
+
+    it("gives a returning shopper a new, empty cart", async () => {
+      const cart = await import("./cart");
+      const userId = await user();
+      const shopper = { ...(await guest()), userId };
+      await cart.addItem(shopper, await variant(7), 2, testDb.db);
+      const oldId = await onlyCartId();
+      await abandon(oldId);
+
+      expect(await cart.getCartView(shopper, testDb.db)).toMatchObject({ lines: [], itemCount: 0 });
+      expect(await cart.addItem(shopper, await variant(30), 1, testDb.db)).toMatchObject({
+        ok: true,
+        change: { volumeMl: 30, quantityDelta: 1 },
+      });
+
+      const rows = await cartRows();
+      expect(rows.map((r) => [r.id === oldId, r.status]).sort()).toEqual([
+        [false, "active"],
+        [true, "abandoned"],
+      ]);
+      const view = await cart.getCartView(shopper, testDb.db);
+      expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([[30, 1]]);
+    });
+
+    it("adds to a new cart when the job abandons the cart during an add", async () => {
+      const cart = await import("./cart");
+      const visitor = await guest();
+      const small = await variant(7);
+      await cart.addItem(visitor, small, 1, testDb.db);
+      const oldId = await onlyCartId();
+
+      const result = await abandonDuring(oldId, () => cart.addItem(visitor, small, 2, testDb.db));
+
+      expect(result).toEqual({
+        ok: true,
+        change: { productId: small.productId, volumeMl: 7, quantityDelta: 2 },
+      });
+      const rows = await cartRows();
+      expect(rows.find((r) => r.id === oldId)?.status).toBe("abandoned");
+      expect(rows.filter((r) => r.status === "active")).toHaveLength(1);
+      // The abandoned cart keeps its line as it was; the new cart has only the new add.
+      expect((await cart.getCartView(visitor, testDb.db)).itemCount).toBe(2);
+    });
+
+    it("doesn't change lines of a cart the job abandons during the change", async () => {
+      const cart = await import("./cart");
+      const visitor = await guest();
+      const small = await variant(7);
+      await cart.addItem(visitor, small, 1, testDb.db);
+      const cartId = await onlyCartId();
+
+      const updated = await abandonDuring(cartId, () =>
+        cart.updateQuantity(visitor, small.publicId, 2, testDb.db),
+      );
+
+      expect(updated).toEqual({ ok: false, error: "not-in-cart" });
+      const { eq } = await import("drizzle-orm");
+      const { cartItems } = await import("../db/schema");
+      const lines = await testDb.db.select().from(cartItems).where(eq(cartItems.cartId, cartId));
+      expect(lines.map((l) => l.quantity)).toEqual([1]);
+    });
+
+    it("doesn't remove lines of a cart the job abandons during the removal", async () => {
+      const cart = await import("./cart");
+      const visitor = await guest();
+      const small = await variant(7);
+      await cart.addItem(visitor, small, 1, testDb.db);
+      const cartId = await onlyCartId();
+
+      const removed = await abandonDuring(cartId, () =>
+        cart.removeItem(visitor, small.publicId, testDb.db),
+      );
+
+      expect(removed).toEqual({ ok: false, error: "not-in-cart" });
+      const { eq } = await import("drizzle-orm");
+      const { cartItems } = await import("../db/schema");
+      expect(
+        await testDb.db.select().from(cartItems).where(eq(cartItems.cartId, cartId)),
+      ).toHaveLength(1);
+    });
+  });
 });

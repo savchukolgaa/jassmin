@@ -286,7 +286,7 @@ shape.
   `fillFirstTouch(tx, anonymousId, userId)` (`UPDATE users SET first_touch_* = s.traffic_* FROM
   (earliest session of anonymousId with a traffic_source) s WHERE users.id = userId AND
   first_touch_source IS NULL`).
-- [ ] **4. Consent server helpers.** `app/.server/consent.ts`: `consentCookie` (`createCookie`,
+- [x] **4. Consent server helpers.** `app/.server/consent.ts`: `consentCookie` (`createCookie`,
   1 year, httpOnly, lax, secure in production), `getConsent(request): Promise<ConsentValue | null>`
   (zod-validated). Add `CONSENT_COOKIE` to `PERSONAL_COOKIES` in `session-cookie.ts`. Tests.
 - [ ] **5. Extend `app/.server/analytics.ts`.** Keep `readVisitor`/`getVisitor` signatures; add

@@ -136,6 +136,13 @@ describe("blogCacheHeaders", () => {
     expect(blogCacheHeaders(request).get("Cache-Control")).toBe("private, no-cache");
   });
 
+  it("keeps pages private once the visitor has answered the cookie banner", () => {
+    const request = new Request("http://localhost/blog", {
+      headers: { Cookie: "cookie_consent=denied" },
+    });
+    expect(blogCacheHeaders(request).get("Cache-Control")).toBe("private, no-cache");
+  });
+
   it("ignores other cookies", () => {
     const request = new Request("http://localhost/blog", {
       headers: { Cookie: "x__jassmin_session=abc; xanonymous_id=1; other=1" },

@@ -3,6 +3,7 @@ import type { HomePage, SiteSettings } from "~/lib/cms";
 import { buildHomePageView } from "./home";
 
 const homePage: HomePage = {
+  locale: "uk",
   hero: {
     headline: "Order 3 Testers only for 499₴",
     ctaLabel: "Order Now",
@@ -27,6 +28,7 @@ const homePage: HomePage = {
 };
 
 const siteSettings: SiteSettings = {
+  locale: "uk",
   phone: "+380 44 123 45 67",
   email: "hello@jassmin.ua",
   customerServiceHours: null,
@@ -41,6 +43,11 @@ describe("buildHomePageView", () => {
       title: "About Jassmin",
       bodyHtml: "<p>We are <strong>Jassmin</strong>.</p>\n",
     });
+  });
+
+  it("passes on the locale the home page copy was served in", () => {
+    expect(buildHomePageView({ ...homePage, locale: "en" }, siteSettings).contentLocale).toBe("en");
+    expect(buildHomePageView(homePage, siteSettings).contentLocale).toBe("uk");
   });
 
   it("keeps a Google Maps embed and adds a directions link", () => {

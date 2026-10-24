@@ -16,6 +16,7 @@ const render = (element: ReactElement) => {
 };
 
 const card: BlogPostCardView = {
+  locale: "en",
   slug: "how-to-choose-a-perfume",
   title: "How to choose a perfume",
   excerpt: "Top, heart and base notes.",
@@ -53,6 +54,16 @@ describe("BlogPostCard", () => {
     expect(html).toContain('srcSet="http://cms.test/uploads/small_cover.jpg 500w');
   });
 
+  it("marks a Ukrainian fallback post with lang=uk, and nothing for a translated one", () => {
+    expect(render(createElement(BlogPostCard, { post: card }))).not.toContain(" lang=");
+
+    const html = render(createElement(BlogPostCard, { post: { ...card, locale: "uk" } }));
+
+    expect(html).toMatch(/<h2[^>]*lang="uk"/);
+    expect(html).toMatch(/<p class="text-body" lang="uk">Top, heart/);
+    expect(html).not.toMatch(/<time[^>]*lang=/);
+  });
+
   it("shows a placeholder without a cover image", () => {
     const html = render(createElement(BlogPostCard, { post: { ...card, coverImage: null } }));
 
@@ -70,5 +81,16 @@ describe("BlogArticle", () => {
     expect(html).toContain('loading="eager"');
     expect(html).toContain("<h2>Start with the notes</h2>");
     expect(html).toMatch(/href="\/blog"[^>]*>← Back to the blog/);
+    expect(html).not.toContain(" lang=");
+  });
+
+  it("marks the text of a Ukrainian fallback article with lang=uk", () => {
+    const html = render(createElement(BlogArticle, { post: { ...post, locale: "uk" } }));
+
+    expect(html).toMatch(/<h1[^>]*lang="uk"/);
+    expect(html).toMatch(/<div lang="uk"[^>]*><h2>Start with the notes/);
+    expect(html).toMatch(/lang="uk">Top, heart and base notes/);
+    // The back link is UI copy in the page's language.
+    expect(html).not.toMatch(/lang="uk"[^>]*>← Back/);
   });
 });

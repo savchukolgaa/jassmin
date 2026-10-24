@@ -75,6 +75,24 @@ describe("cmsFetch", () => {
     );
   });
 
+  it("asks for the given locale", async () => {
+    const fetchMock = stubFetch(async () => Response.json({ data: { title: "Hi" } }));
+
+    await cmsFetch("home-page", { locale: "uk" }, schema, { locale: "en" });
+
+    const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(url.searchParams.getAll("locale")).toEqual(["en"]);
+    expect(url.searchParams.get("status")).toBe("published");
+  });
+
+  it("sends no locale when none is given, so Strapi uses its default", async () => {
+    const fetchMock = stubFetch(async () => Response.json({ data: { title: "Hi" } }));
+
+    await cmsFetch("home-page", {}, schema);
+
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.has("locale")).toBe(false);
+  });
+
   it("fails with not_configured when the API token is missing, without calling Strapi", async () => {
     env.STRAPI_API_TOKEN = undefined;
     const fetchMock = stubFetch(async () => Response.json({}));

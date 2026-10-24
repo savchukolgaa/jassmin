@@ -1,13 +1,14 @@
 {
   "data": {
     "id": 1,
-    "documentId": "m9luxh9i7ygqjndpcbi2w2sg",
+    "documentId": "vh51qtduwel46efh96nyonu2",
     "phone": "+380 44 123 45 67",
     "email": "hello@jassmin.ua",
-    "customerServiceHours": "Mon–Fri 9:00–18:00",
-    "createdAt": "2026-10-22T19:06:58.457Z",
-    "updatedAt": "2026-10-22T19:06:58.457Z",
-    "publishedAt": "2026-10-22T19:06:58.448Z",
+    "customerServiceHours": "Пн–Пт 9:00–18:00",
+    "createdAt": "2026-10-24T11:46:35.181Z",
+    "updatedAt": "2026-10-24T11:46:35.181Z",
+    "publishedAt": "2026-10-24T11:46:35.160Z",
+    "locale": "uk",
     "socialLinks": [
       {
         "id": 1,

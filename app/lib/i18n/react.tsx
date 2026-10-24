@@ -16,6 +16,16 @@ export function useT(): Translator {
 }
 
 /**
+ * The `lang` attribute for CMS content served in `contentLocale`: set only when it differs from
+ * the UI locale (Ukrainian content shown as a fallback under the English UI), so screen readers
+ * switch voices, and absent otherwise so the markup stays the same.
+ */
+export function useContentLang(contentLocale: Locale): Locale | undefined {
+  const { locale } = useT();
+  return contentLocale === locale ? undefined : contentLocale;
+}
+
+/**
  * The translator for a route's `meta` function, which can't use hooks: the locale comes from the
  * root loader's data in `matches`.
  */

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CmsError } from "~/.server/cms/errors";
+import { localeCookie } from "~/.server/locale";
 import type { HomePage, SiteSettings } from "~/lib/cms";
 
 const content = vi.hoisted(() => ({ getHomePage: vi.fn(), getSiteSettings: vi.fn() }));
@@ -10,6 +11,7 @@ vi.mock("~/.server/services/contact", () => contact);
 const { action, loader, shouldRevalidate } = await import("./home");
 
 const homePage: HomePage = {
+  locale: "uk",
   hero: {
     headline: "Order 3 Testers only for 499₴",
     ctaLabel: "Order Now",
@@ -24,6 +26,7 @@ const homePage: HomePage = {
   },
 };
 const siteSettings: SiteSettings = {
+  locale: "uk",
   phone: "+380 44 123 45 67",
   email: "hello@jassmin.ua",
   customerServiceHours: null,
@@ -49,12 +52,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+type LoaderArgs = Parameters<typeof loader>[0];
+
+function load(headers?: HeadersInit) {
+  return loader({ request: new Request("http://localhost/", { headers }) } as LoaderArgs);
+}
+
 describe("home loader", () => {
   it("loads both CMS documents and prepares them for rendering", async () => {
     content.getHomePage.mockResolvedValue(homePage);
     content.getSiteSettings.mockResolvedValue(siteSettings);
 
-    const view = await loader();
+    const view = await load();
 
     expect(view.about.bodyHtml).toBe("<p>Our <strong>story</strong>.</p>\n");
     expect(view.location.mapEmbedUrl).toBeNull();
@@ -67,7 +76,28 @@ describe("home loader", () => {
     content.getHomePage.mockResolvedValue(homePage);
     content.getSiteSettings.mockRejectedValue(new CmsError("unreachable", "fetch failed"));
 
-    await expect(loader()).rejects.toMatchObject({ init: { status: 503 } });
+    await expect(load()).rejects.toMatchObject({ init: { status: 503 } });
+  });
+
+  it("asks for the CMS content in Ukrainian by default", async () => {
+    content.getHomePage.mockResolvedValue(homePage);
+    content.getSiteSettings.mockResolvedValue(siteSettings);
+
+    await load();
+
+    expect(content.getHomePage).toHaveBeenCalledExactlyOnceWith("uk");
+    expect(content.getSiteSettings).toHaveBeenCalledExactlyOnceWith("uk");
+  });
+
+  it("asks for the CMS content in the visitor's locale", async () => {
+    content.getHomePage.mockResolvedValue({ ...homePage, locale: "en" });
+    content.getSiteSettings.mockResolvedValue({ ...siteSettings, locale: "en" });
+
+    const view = await load({ Cookie: await localeCookie.serialize("en") });
+
+    expect(content.getHomePage).toHaveBeenCalledExactlyOnceWith("en");
+    expect(content.getSiteSettings).toHaveBeenCalledExactlyOnceWith("en");
+    expect(view.contentLocale).toBe("en");
   });
 });
 

@@ -49,6 +49,8 @@ describe("buildBlogListView", () => {
     expect(view.posts.map((post) => post.slug)).toEqual(data.map((entry) => entry.slug));
     expect(view).toMatchObject({ page: 1, pageCount: 1, total: 2 });
     expect(view.posts[0]?.publishedLabel).toMatch(/^\d{1,2} [A-Z][a-z]+ \d{4}$/);
+    // The content locale (Ukrainian fixtures) is independent of the UI locale (dates).
+    expect(view.posts.map((post) => post.locale)).toEqual(["uk", "uk"]);
   });
 });
 
@@ -60,7 +62,7 @@ describe("buildBlogPostView", () => {
       SITE,
     );
 
-    expect(view.contentHtml).toContain("<h2>Start with the notes</h2>");
+    expect(view.contentHtml).toContain("<h2>Почніть із нот</h2>");
     expect(view.contentHtml).not.toContain("<script");
   });
 
@@ -105,7 +107,7 @@ describe("buildBlogPostView", () => {
     const post = { ...fixturePost(), seo: null, excerpt: null, coverImage: null };
 
     const fromText = buildBlogPostView(post, SITE);
-    expect(fromText.seo.description).toMatch(/^Start with the notes A perfume changes/);
+    expect(fromText.seo.description).toMatch(/^Почніть із нот Парфум змінюється/);
     expect(fromText.seo.image).toBeNull();
 
     const empty = buildBlogPostView({ ...post, content: "" }, SITE);

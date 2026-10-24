@@ -205,6 +205,7 @@ export const en = {
     },
     summary: "Your order",
     deletedProduct: "This perfume is no longer sold",
+    lineQuantity: "Qty {quantity}",
     subtotal: "Subtotal",
     shipping: "Delivery",
     shippingFree: "Free",

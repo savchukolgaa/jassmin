@@ -213,6 +213,7 @@ export const uk = {
     },
     summary: "Ваше замовлення",
     deletedProduct: "Цей парфум більше не продається",
+    lineQuantity: "{quantity} шт.",
     subtotal: "Сума",
     shipping: "Доставка",
     shippingFree: "Безкоштовно",

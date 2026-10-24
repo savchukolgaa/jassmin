@@ -12,7 +12,7 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "id" | "name"> & {
   optional?: boolean;
 };
 
-/** A labelled input with its validation error, for the auth forms. */
+/** A labelled input with its validation error, for the auth and checkout forms. */
 export function TextField({
   name,
   label,

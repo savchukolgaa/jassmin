@@ -244,7 +244,7 @@ Each step is small, ordered, and leaves the app in a working state.
 - [x] **6. Session: remember a guest's orders.** Add `orderIds?: number[]` to `SessionData` and a
   `rememberOrder(session, orderId)` helper (prepend, dedupe, keep the last 10) in `session.ts`.
   Check: a unit test in `session.test.ts`.
-- [ ] **7. Checkout UI components (`app/features/checkout/`).** First move `TextField` to
+- [x] **7. Checkout UI components (`app/features/checkout/`).** First move `TextField` to
   `app/components/ui/` and update `login.tsx` and `register.tsx`.
   - `CheckoutForm`: `<Form method="post" noValidate>` with three `<fieldset>`s (contact, delivery,
     payment). The fields use `TextField` with `autoComplete` (`name`, `email`, `tel`,

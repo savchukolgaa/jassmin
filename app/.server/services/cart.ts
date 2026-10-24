@@ -97,8 +97,17 @@ export async function getCartCount(owner: CartOwner, db: Db = defaultDb): Promis
   return cartId === undefined ? 0 : (await cartTotals(db, cartId)).itemCount;
 }
 
+/** What a successful change did, for the `add_to_cart` / `remove_from_cart` events (#18). */
+export interface CartChange {
+  /** `products.id`. */
+  productId: number;
+  volumeMl: number;
+  /** Units added (positive) or removed (negative). */
+  quantityDelta: number;
+}
+
 export type CartChangeResult =
-  | { ok: true }
+  | { ok: true; change: CartChange }
   | { ok: false; error: Extract<CartActionError, "exceeds-stock">; available: number }
   | { ok: false; error: Extract<CartActionError, "not-in-cart"> };
 
@@ -106,6 +115,7 @@ export type CartChangeResult =
 export interface CartVariant {
   id: number;
   productId: number;
+  volumeMl: number;
   stockQuantity: number;
 }
 
@@ -159,8 +169,19 @@ function addToCart(
         .values({ cartId, productId: variant.productId, variantId: variant.id, quantity });
     }
     await touchCart(tx, cartId);
-    return { ok: true };
+    return {
+      ok: true,
+      change: { productId: variant.productId, volumeMl: variant.volumeMl, quantityDelta: quantity },
+    };
   });
+}
+
+/** The change to an existing line. */
+function changeOf(
+  line: { productId: number; volumeMl: number },
+  quantityDelta: number,
+): CartChange {
+  return { productId: line.productId, volumeMl: line.volumeMl, quantityDelta };
 }
 
 /** Sets the quantity of the owner's line for this variant (`public_id`), up to its stock. */
@@ -186,7 +207,7 @@ export async function updateQuantity(
     }
     await tx.update(cartItems).set({ quantity }).where(eq(cartItems.id, line.id));
     await touchCart(tx, cartId);
-    return { ok: true };
+    return { ok: true, change: changeOf(line, quantity - line.quantity) };
   });
 }
 
@@ -209,7 +230,7 @@ export async function removeItem(
     }
     await tx.delete(cartItems).where(eq(cartItems.id, line.id));
     await touchCart(tx, cartId);
-    return { ok: true };
+    return { ok: true, change: changeOf(line, -line.quantity) };
   });
 }
 

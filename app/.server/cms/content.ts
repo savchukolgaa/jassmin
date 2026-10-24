@@ -116,6 +116,7 @@ export function toSiteSettings(
     phone: entry.phone,
     email: entry.email,
     customerServiceHours: entry.customerServiceHours ?? null,
+    legalName: entry.legalName?.trim() || null,
     socialLinks: (entry.socialLinks ?? []).map(({ platform, url }) => ({ platform, url })),
   };
 }

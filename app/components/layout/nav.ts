@@ -1,4 +1,5 @@
 import { cn } from "~/lib/cn";
+import { PRIVACY_POLICY_PATH } from "~/lib/consent";
 import type { TextKey } from "~/lib/i18n";
 
 /** A nav link; the label is a message key, translated where it's rendered. */
@@ -13,6 +14,10 @@ export const CONTACTS_LINK = {
   labelKey: "nav.contacts",
 } as const satisfies NavLinkItem;
 export const BLOG_LINK = { to: "/blog", labelKey: "nav.blog" } as const satisfies NavLinkItem;
+export const PRIVACY_LINK = {
+  to: PRIVACY_POLICY_PATH,
+  labelKey: "consent.learnMore",
+} as const satisfies NavLinkItem;
 export const CATALOG_LINKS = [
   { to: "/catalog/men", labelKey: "catalog.title.men", shortLabelKey: "catalog.short.men" },
   { to: "/catalog/women", labelKey: "catalog.title.women", shortLabelKey: "catalog.short.women" },
@@ -27,6 +32,7 @@ export const FOOTER_LINKS = [
   BLOG_LINK,
   ABOUT_LINK,
   CONTACTS_LINK,
+  PRIVACY_LINK,
 ] as const;
 
 // On deep pink, hover and active states darken to `primary-dark`: a translucent white overlay

@@ -22,6 +22,7 @@ describe("route config", () => {
       "/checkout",
       "/checkout/success/:orderId",
       "/account",
+      "/privacy",
     ]);
   });
 
@@ -31,6 +32,14 @@ describe("route config", () => {
 
   it("keeps the POST-only locale route outside the shop layout", () => {
     expect(routes.find((entry) => entry.path === "locale")?.file).toBe("routes/locale.ts");
+  });
+
+  it("keeps the POST-only consent route outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "consent")?.file).toBe("routes/consent.ts");
+  });
+
+  it("keeps the client events endpoint outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "api/events")?.file).toBe("routes/api.events.ts");
   });
 
   it("nests the admin pages under their own layout, outside the shop layout", () => {

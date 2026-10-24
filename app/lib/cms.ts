@@ -73,6 +73,8 @@ export interface SiteSettings {
   phone: string;
   email: string;
   customerServiceHours: string | null;
+  /** The sole proprietor (ФОП) responsible for personal data, named on the privacy page (#18). */
+  legalName: string | null;
   socialLinks: SocialLink[];
 }
 

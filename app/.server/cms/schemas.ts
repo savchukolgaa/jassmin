@@ -65,6 +65,7 @@ export const siteSettingEntry = z.object({
   phone: z.string(),
   email: z.string(),
   customerServiceHours: z.string().nullish(),
+  legalName: z.string().nullish(),
   socialLinks: z.array(socialLinkComponent).nullish(),
 });
 

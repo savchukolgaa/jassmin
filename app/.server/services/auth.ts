@@ -1,6 +1,12 @@
 import { data, redirect } from "react-router";
 import { loginRedirectPath } from "~/lib/auth";
-import { readVisitor } from "../analytics";
+import {
+  linkVisitorToUser,
+  type RequestArgs,
+  readVisitor,
+  trackEvent,
+  visitorContext,
+} from "../analytics";
 import { type Db, db } from "../db";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import {
@@ -115,21 +121,37 @@ export async function verifyLogin(
 
 /**
  * Runs after every successful login or registration, before the session cookie is set: merges
- * the guest cart into the user's (#10). Still to come: linking the visitor's analytics sessions
- * and events and recording the `login` event (#18). Whatever is added must never make logging
- * in fail.
+ * the guest cart into the user's (#10), gives the visitor's anonymous analytics sessions and
+ * events to the user (with their first-touch source) and records the `login` event (#18). Each
+ * part catches its own errors: none of them may make logging in fail.
  */
 export async function onUserAuthenticated(
-  request: Request,
+  args: RequestArgs,
   userId: number,
-  _kind: "login" | "register",
+  kind: "login" | "register",
 ): Promise<void> {
+  const { request, context } = args;
+  let anonymousId: string | undefined;
   try {
-    const { anonymousId } = await readVisitor(request);
-    if (anonymousId) {
-      await mergeGuestCart(userId, anonymousId);
-    }
+    anonymousId =
+      context.get(visitorContext)?.anonymousId ?? (await readVisitor(request)).anonymousId;
+  } catch (error: unknown) {
+    console.error("Reading the visitor failed", error);
+  }
+  if (!anonymousId) {
+    return;
+  }
+
+  try {
+    await mergeGuestCart(userId, anonymousId);
   } catch (error: unknown) {
     console.error("Merging the guest cart failed", error);
   }
+  try {
+    await linkVisitorToUser(anonymousId, userId);
+  } catch (error: unknown) {
+    console.error("Linking the analytics visitor failed", error);
+  }
+  // The auth cookie isn't on this request yet, hence `userId`. Only with analytics consent.
+  await trackEvent(args, "login", { userId, properties: { method: kind } });
 }

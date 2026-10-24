@@ -1,10 +1,11 @@
-import { Link } from "react-router";
+import { Form, Link, useLocation } from "react-router";
 import { useT } from "~/lib/i18n";
 import { FOOTER_LINKS, navItemClasses } from "./nav";
 
 /** Site footer shown on every public page, below the page content. */
 export function Footer() {
   const { t } = useT();
+  const { pathname, search } = useLocation();
 
   return (
     <footer className="relative overflow-hidden bg-primary text-white">
@@ -18,6 +19,15 @@ export function Footer() {
                 </Link>
               </li>
             ))}
+            <li>
+              {/* Forgets the cookie banner's answer (`/consent`), so the banner shows again. */}
+              <Form method="post" action="/consent">
+                <input type="hidden" name="redirectTo" value={pathname + search} />
+                <button type="submit" name="consent" value="reset" className={navItemClasses()}>
+                  {t("consent.settings")}
+                </button>
+              </Form>
+            </li>
           </ul>
         </nav>
         <p className="text-sm">

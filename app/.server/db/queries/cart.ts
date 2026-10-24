@@ -141,6 +141,8 @@ export async function findCartLine(db: Executor, cartId: number, variantPublicId
   const [row] = await db
     .select({
       id: cartItems.id,
+      productId: cartItems.productId,
+      volumeMl: productVariants.volumeMl,
       quantity: cartItems.quantity,
       stockQuantity: productVariants.stockQuantity,
     })

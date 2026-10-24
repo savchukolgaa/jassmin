@@ -57,6 +57,13 @@
       "when": 1792842084160,
       "tag": "0007_order_checkout_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792844222830,
+      "tag": "0008_traffic_attribution",
+      "breakpoints": true
     }
   ]
 }

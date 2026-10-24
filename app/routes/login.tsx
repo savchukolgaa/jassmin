@@ -31,7 +31,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { redirectTo };
 }
 
-export async function action({ request }: Route.ActionArgs) {
+export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   // Refill the form after an error; the password is never sent back.
   const values = { email: String(formData.get("email") ?? "") };
@@ -65,7 +65,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   loginLimiters.byEmail.reset(email);
-  await onUserAuthenticated(request, result.userId, "login");
+  await onUserAuthenticated({ request, context }, result.userId, "login");
   return createUserSession({
     request,
     userId: result.userId,

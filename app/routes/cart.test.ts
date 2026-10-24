@@ -8,7 +8,7 @@ const cart = vi.hoisted(() => ({
   removeItem: vi.fn(),
   updateQuantity: vi.fn(),
 }));
-const analytics = vi.hoisted(() => ({ getVisitor: vi.fn() }));
+const analytics = vi.hoisted(() => ({ ensureVisitor: vi.fn(), trackEvent: vi.fn() }));
 
 vi.mock("~/.server/services/products", () => products);
 vi.mock("~/.server/services/cart", () => cart);
@@ -23,23 +23,34 @@ const ANONYMOUS_ID = "0b6f1b8e-3f7e-4a52-9a43-3c1f7f1f2c11";
 const SESSION_ID = "01a1652b-6e25-7e00-8000-000000000001";
 
 const owner = { userId: null, anonymousId: ANONYMOUS_ID, sessionId: SESSION_ID };
-const variant = { id: 1, productId: 2, stockQuantity: 5 };
+const variant = { id: 1, productId: 2, volumeMl: 50, stockQuantity: 5 };
+const context = {};
 
 function post(fields: Record<string, string>): ActionArgs {
   const request = new Request("http://localhost/cart", {
     method: "POST",
     body: new URLSearchParams(fields),
   });
-  return { request, params: {}, context: {} } as unknown as ActionArgs;
+  return { request, params: {}, context } as unknown as ActionArgs;
 }
 
-/** A `data()` result's payload, status and headers. */
-function unwrap(result: unknown): { status: number; body: unknown; headers: Headers } {
-  const { data, init } = result as {
-    data: unknown;
-    init?: { status?: number; headers?: HeadersInit };
-  };
-  return { status: init?.status ?? 200, body: data, headers: new Headers(init?.headers) };
+/** A `data()` result's payload and status. */
+function unwrap(result: unknown): { status: number; body: unknown } {
+  const { data, init } = result as { data: unknown; init?: { status?: number } };
+  return { status: init?.status ?? 200, body: data };
+}
+
+/** A successful change of `quantityDelta` units of the 50 ml variant. */
+function changed(quantityDelta: number) {
+  return { ok: true, change: { productId: 2, volumeMl: 50, quantityDelta } };
+}
+
+/** The event the action recorded, as `[type, options]`. */
+function trackedEvents() {
+  return analytics.trackEvent.mock.calls.map(([args, type, options]) => {
+    expect(args).toMatchObject({ context });
+    return [type, options];
+  });
 }
 
 const add = { intent: "add", productId: PRODUCT_ID, variantId: VARIANT_ID };
@@ -79,10 +90,11 @@ describe("cart action", () => {
       });
     }
     expect(products.checkVariantForCart).not.toHaveBeenCalled();
-    expect(analytics.getVisitor).not.toHaveBeenCalled();
+    expect(analytics.ensureVisitor).not.toHaveBeenCalled();
     expect(cart.addItem).not.toHaveBeenCalled();
     expect(cart.updateQuantity).not.toHaveBeenCalled();
     expect(cart.removeItem).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
   describe("add", () => {
@@ -95,7 +107,7 @@ describe("cart action", () => {
         body: { ok: false, error: "invalid-variant" },
       });
       expect(products.checkVariantForCart).toHaveBeenCalledWith(PRODUCT_ID, VARIANT_ID);
-      expect(analytics.getVisitor).not.toHaveBeenCalled();
+      expect(analytics.ensureVisitor).not.toHaveBeenCalled();
     });
 
     it("rejects a sold-out variant", async () => {
@@ -109,32 +121,37 @@ describe("cart action", () => {
       expect(cart.addItem).not.toHaveBeenCalled();
     });
 
-    it("adds the variant to the visitor's cart and sets the visitor cookies", async () => {
+    it("adds the variant to the visitor's cart and records add_to_cart", async () => {
       products.checkVariantForCart.mockResolvedValueOnce({ ok: true, variant });
-      const headers = new Headers([["Set-Cookie", "anonymous_id=abc; Path=/; HttpOnly"]]);
-      analytics.getVisitor.mockResolvedValueOnce({
+      analytics.ensureVisitor.mockResolvedValueOnce({
         anonymousId: ANONYMOUS_ID,
         sessionId: SESSION_ID,
-        headers,
+        headers: new Headers(),
       });
-      cart.addItem.mockResolvedValueOnce({ ok: true });
+      cart.addItem.mockResolvedValueOnce(changed(2));
       cart.getCartOwner.mockResolvedValueOnce({ userId: 7 });
       const { action } = await import("./cart");
 
       const result = unwrap(await action(post({ ...add, quantity: "2" })));
 
       expect(result).toMatchObject({ status: 200, body: { ok: true, intent: "add" } });
-      expect(result.headers.get("Set-Cookie")).toMatch(/^anonymous_id=abc/);
+      expect(analytics.ensureVisitor).toHaveBeenCalledWith(expect.objectContaining({ context }));
       expect(cart.addItem).toHaveBeenCalledWith(
         { userId: 7, anonymousId: ANONYMOUS_ID, sessionId: SESSION_ID },
         variant,
         2,
       );
+      expect(trackedEvents()).toEqual([
+        [
+          "add_to_cart",
+          { productId: 2, properties: { variantId: VARIANT_ID, volumeMl: 50, quantity: 2 } },
+        ],
+      ]);
     });
 
-    it("returns the stock left when the line would exceed it", async () => {
+    it("returns the stock left when the line would exceed it, without an event", async () => {
       products.checkVariantForCart.mockResolvedValueOnce({ ok: true, variant });
-      analytics.getVisitor.mockResolvedValueOnce({ ...owner, headers: new Headers() });
+      analytics.ensureVisitor.mockResolvedValueOnce({ ...owner, headers: new Headers() });
       cart.addItem.mockResolvedValueOnce({ ok: false, error: "exceeds-stock", available: 5 });
       const { action } = await import("./cart");
 
@@ -142,6 +159,7 @@ describe("cart action", () => {
         status: 409,
         body: { ok: false, error: "exceeds-stock", available: 5 },
       });
+      expect(analytics.trackEvent).not.toHaveBeenCalled();
     });
   });
 
@@ -149,7 +167,7 @@ describe("cart action", () => {
     const update = { intent: "update", variantId: VARIANT_ID, quantity: "3" };
 
     it("sets the line's quantity without creating a visitor session", async () => {
-      cart.updateQuantity.mockResolvedValueOnce({ ok: true });
+      cart.updateQuantity.mockResolvedValueOnce(changed(1));
       const { action } = await import("./cart");
 
       expect(unwrap(await action(post(update)))).toMatchObject({
@@ -157,7 +175,25 @@ describe("cart action", () => {
         body: { ok: true, intent: "update" },
       });
       expect(cart.updateQuantity).toHaveBeenCalledWith(owner, VARIANT_ID, 3);
-      expect(analytics.getVisitor).not.toHaveBeenCalled();
+      expect(analytics.ensureVisitor).not.toHaveBeenCalled();
+    });
+
+    it("records the stepper's change as add_to_cart or remove_from_cart", async () => {
+      cart.updateQuantity
+        .mockResolvedValueOnce(changed(1))
+        .mockResolvedValueOnce(changed(-2))
+        .mockResolvedValueOnce(changed(0));
+      const { action } = await import("./cart");
+
+      await action(post(update));
+      await action(post(update));
+      await action(post(update));
+
+      const properties = { variantId: VARIANT_ID, volumeMl: 50, source: "stepper" };
+      expect(trackedEvents()).toEqual([
+        ["add_to_cart", { productId: 2, properties: { ...properties, quantity: 1 } }],
+        ["remove_from_cart", { productId: 2, properties: { ...properties, quantity: 2 } }],
+      ]);
     });
 
     it("rejects quantities above stock and lines that aren't in the cart", async () => {
@@ -174,14 +210,15 @@ describe("cart action", () => {
         status: 404,
         body: { ok: false, error: "not-in-cart" },
       });
+      expect(analytics.trackEvent).not.toHaveBeenCalled();
     });
   });
 
   describe("remove", () => {
     const remove = { intent: "remove", variantId: VARIANT_ID };
 
-    it("removes the line", async () => {
-      cart.removeItem.mockResolvedValueOnce({ ok: true });
+    it("removes the line and records remove_from_cart", async () => {
+      cart.removeItem.mockResolvedValueOnce(changed(-3));
       const { action } = await import("./cart");
 
       expect(unwrap(await action(post(remove)))).toMatchObject({
@@ -189,6 +226,12 @@ describe("cart action", () => {
         body: { ok: true, intent: "remove" },
       });
       expect(cart.removeItem).toHaveBeenCalledWith(owner, VARIANT_ID);
+      expect(trackedEvents()).toEqual([
+        [
+          "remove_from_cart",
+          { productId: 2, properties: { variantId: VARIANT_ID, volumeMl: 50, quantity: 3 } },
+        ],
+      ]);
     });
 
     it("returns not-in-cart for a line that's already gone", async () => {
@@ -199,6 +242,7 @@ describe("cart action", () => {
         status: 404,
         body: { ok: false, error: "not-in-cart" },
       });
+      expect(analytics.trackEvent).not.toHaveBeenCalled();
     });
   });
 });

@@ -585,7 +585,7 @@ export interface ApiHomePageHomePage extends Struct.SingleTypeSchema {
 export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
   collectionName: 'site_settings';
   info: {
-    description: 'Store contact details and social links';
+    description: "Store contact details, social links and the data controller's legal name";
     displayName: 'Site settings';
     pluralName: 'site-settings';
     singularName: 'site-setting';
@@ -617,6 +617,15 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
         i18n: {
           localized: false;
         };
+      }>;
+    legalName: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }> &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
       }>;
     locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<

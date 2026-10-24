@@ -629,7 +629,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 sits on top of 0006; migrateLatest below reapplies it.
+    // 0007 and 0008 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
     expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
     expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
     const legacy = await db.execute<{ id: number }>(
@@ -656,7 +657,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0007 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0008 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
     expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
     expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
     expect(await rollbackLatest(db)).toBe("0005_cart_active_unique");
@@ -740,6 +742,13 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0008_traffic_attribution");
+    const attributionColumns = await testDb.db.execute(
+      sql`select 1 from information_schema.columns
+          where column_name in ('traffic_medium', 'traffic_campaign', 'first_touch_source',
+            'first_touch_medium', 'first_touch_campaign')`,
+    );
+    expect(attributionColumns.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0007_order_checkout_fields");
     const orderCheckoutColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns

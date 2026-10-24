@@ -278,7 +278,7 @@ shape.
   COLUMN …`). Update `AnalyticsSession` in `app/lib/analytics.ts` and `schema.test.ts`. Check:
   `pnpm db:migrate` then `pnpm db:rollback` and migrate again on a dev DB; `pnpm test
   app/.server/db`.
-- [ ] **3. Queries.** In `db/queries/analytics.ts`: replace `hasVisitorSession` with
+- [x] **3. Queries.** In `db/queries/analytics.ts`: replace `hasVisitorSession` with
   `touchActiveSession(db, sessionId, anonymousId)` (D3, returns the attribution or `undefined`);
   extend `insertSession` with `trafficSource`, `trafficMedium`, `trafficCampaign`, `deviceType`,
   `userId` (all optional, for the no-consent cart case); add `insertEvents(db, rows)`;
@@ -289,7 +289,7 @@ shape.
 - [x] **4. Consent server helpers.** `app/.server/consent.ts`: `consentCookie` (`createCookie`,
   1 year, httpOnly, lax, secure in production), `getConsent(request): Promise<ConsentValue | null>`
   (zod-validated). Add `CONSENT_COOKIE` to `PERSONAL_COOKIES` in `session-cookie.ts`. Tests.
-- [ ] **5. Extend `app/.server/analytics.ts`.** Keep `readVisitor`/`getVisitor` signatures; add
+- [x] **5. Extend `app/.server/analytics.ts`.** Keep `readVisitor`/`getVisitor` signatures; add
   `attribution` to `Visitor`. `getVisitor(request, db, { track = true })`: uses
   `touchActiveSession`; starts a new session on timeout, missing row, or a different `utm_source`;
   new sessions get the D4 attributes only when `track` is true. Add `visitorContext =

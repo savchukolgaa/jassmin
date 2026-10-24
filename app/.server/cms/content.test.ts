@@ -92,6 +92,17 @@ describe("mappers", () => {
     expect(toSiteSettings({ ...data, socialLinks: null }).socialLinks).toEqual([]);
   });
 
+  it("map the data controller's legal name, treating a blank one as missing", () => {
+    const { data } = singleResponse(siteSettingEntry).parse(siteSetting);
+
+    expect(toSiteSettings(data).legalName).toBeNull();
+    expect(toSiteSettings({ ...data, legalName: " Іваненко Марія " }).legalName).toBe(
+      "Іваненко Марія",
+    );
+    expect(toSiteSettings({ ...data, legalName: "  " }).legalName).toBeNull();
+    expect(toSiteSettings({ ...data, legalName: undefined }).legalName).toBeNull();
+  });
+
   it("map a post without cover image, author or SEO to nulls", () => {
     const [entry] = collectionResponse(blogPostEntry).parse(blogPostBySlug).data;
     if (!entry) throw new Error("fixture has no post");

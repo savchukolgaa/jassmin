@@ -30,6 +30,7 @@ const siteSettings: SiteSettings = {
   phone: "+380 44 123 45 67",
   email: "hello@jassmin.ua",
   customerServiceHours: null,
+  legalName: null,
   socialLinks: [],
 };
 

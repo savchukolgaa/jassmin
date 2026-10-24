@@ -5,7 +5,7 @@
     "singularName": "site-setting",
     "pluralName": "site-settings",
     "displayName": "Site settings",
-    "description": "Store contact details and social links"
+    "description": "Store contact details, social links and the data controller's legal name"
   },
   "options": {
     "draftAndPublish": false
@@ -14,6 +14,7 @@
     "phone": { "type": "string", "required": true, "maxLength": 50 },
     "email": { "type": "email", "required": true },
     "customerServiceHours": { "type": "string", "maxLength": 200 },
+    "legalName": { "type": "string", "maxLength": 255 },
     "socialLinks": { "type": "component", "repeatable": true, "component": "shared.social-link" }
   }
 }

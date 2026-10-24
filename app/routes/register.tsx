@@ -1,7 +1,8 @@
-import { data, Form, redirect, useNavigation } from "react-router";
+import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { db } from "~/.server/db";
 import { getUser, onUserAuthenticated, registerUser } from "~/.server/services/auth";
 import { createUserSession } from "~/.server/session";
+import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { AuthLayout, FormAlert } from "~/features/auth/AuthLayout";
 import { TextField } from "~/features/auth/TextField";
@@ -13,6 +14,7 @@ import {
   safeRedirect,
   toFieldErrors,
 } from "~/lib/auth";
+import { PRIVACY_POLICY_PATH } from "~/lib/consent";
 import { metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/register";
 
@@ -122,6 +124,16 @@ export default function Register({ loaderData, actionData }: Route.ComponentProp
         {loaderData.redirectTo && (
           <input type="hidden" name="redirectTo" value={loaderData.redirectTo} />
         )}
+        <p className="text-sm text-muted">
+          {t("auth.register.privacyNotice")}{" "}
+          <Link
+            to={PRIVACY_POLICY_PATH}
+            className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
+          >
+            {t("auth.register.privacyLink")}
+          </Link>
+          .
+        </p>
         <Button type="submit" size="lg" className="rounded-full" loading={submitting}>
           {t("auth.register.submit")}
         </Button>

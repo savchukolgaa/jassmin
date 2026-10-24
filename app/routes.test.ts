@@ -21,6 +21,7 @@ describe("route config", () => {
       "/cart",
       "/checkout",
       "/account",
+      "/privacy",
     ]);
   });
 

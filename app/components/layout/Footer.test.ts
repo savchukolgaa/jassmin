@@ -22,7 +22,7 @@ describe("Footer", () => {
     );
   });
 
-  it("links to both catalogs, the blog, about us and contacts in order", () => {
+  it("links to both catalogs, the blog, about us, contacts and the privacy policy in order", () => {
     const html = renderFooter();
     const positions = FOOTER_LINKS.map((link) => html.indexOf(`href="${link.to}"`));
 
@@ -33,7 +33,9 @@ describe("Footer", () => {
       "Blog",
       "About us",
       "Contacts",
+      "Privacy policy",
     ]);
+    expect(FOOTER_LINKS.at(-1)?.to).toBe("/privacy");
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
     expect(html).toContain('<nav aria-label="Footer">');

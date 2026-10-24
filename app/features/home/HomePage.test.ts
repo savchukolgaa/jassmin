@@ -31,6 +31,7 @@ const view: HomePageView = {
     phone: "+380 44 123 45 67",
     email: "hello@jassmin.ua",
     customerServiceHours: "Mon–Fri 9:00–18:00",
+    legalName: null,
     socialLinks: [{ platform: "instagram", url: "https://www.instagram.com/jassmin" }],
   },
   seo: { title: "Jassmin", description: "Story", image: null },

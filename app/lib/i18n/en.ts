@@ -21,6 +21,70 @@ export const en = {
     decline: "Decline",
     settings: "Cookie settings",
   },
+  privacy: {
+    title: "Privacy and cookie policy",
+    updated: "Updated {date}",
+    intro:
+      "This page explains what data the Jassmin online store collects, why it needs it and how you can control it.",
+    controller: {
+      heading: "Who is responsible for your data",
+      named:
+        "Your personal data is controlled by sole proprietor (ФОП) {name} (the Jassmin online store).",
+      unnamed:
+        "Your personal data is controlled by the sole proprietor (ФОП) who runs the Jassmin online store.",
+      contact: "For questions about your data, email {email} or call {phone}.",
+      contactFallback: "For questions about your data, use the contacts on the home page.",
+    },
+    collect: {
+      heading: "What data we collect",
+      account: "Your account: name, email, phone (optional) and an encrypted password.",
+      orders: "Your orders: products, amounts, delivery details and payment method.",
+      cart: "Your cart: the products you added, even without logging in.",
+      analytics:
+        "Only with your consent, statistics: the pages you visit, products you view, searches and filters, cart actions, your device type (phone, tablet or computer), where you came from (UTM tags or the referring site) and the first page of your visit. Once you log in or register, these statistics are linked to your account.",
+      noIp: "We don't store IP addresses or use third-party advertising trackers.",
+    },
+    purpose: {
+      heading: "Why, and on what basis",
+      contract:
+        "Your account, cart and order data are needed to fulfil your orders and give you access to your account.",
+      consent:
+        "We only collect statistics with your consent, to learn how to improve our range and the site. You can withdraw your consent at any time.",
+    },
+    cookies: {
+      heading: "Cookies",
+      intro:
+        "Necessary cookies are always on: without them, login, the cart and the language choice wouldn't work. We only collect statistics after you click “Accept” in the banner.",
+      caption: "Cookies used by the site",
+      name: "Name",
+      purpose: "Purpose",
+      lifetime: "Lifetime",
+      session: "Keeps you logged in.",
+      locale: "Remembers the language you chose.",
+      consent: "Remembers your answer to the cookie banner.",
+      anonymousId:
+        "A random browser id: keeps a guest's cart and, with your consent, links your visit statistics.",
+      analyticsSession:
+        "The id of your current visit, which ends after 30 minutes without activity. Also needed for a guest's cart.",
+      days30: "30 days",
+      year: "1 year",
+      browserSession: "Until you close the browser",
+    },
+    retention: {
+      heading: "How long we keep data",
+      account:
+        "Account and order data while your account exists; order data also for as long as accounting law requires.",
+      analytics: "Visit statistics for 26 months.",
+    },
+    sharing: {
+      heading: "Who we share data with",
+      text: "We don't sell your data or share it for advertising. Only the services the store can't run without can access it: hosting, our email service and, for your orders, the delivery service.",
+    },
+    rights: {
+      heading: "Your rights",
+      text: "Under the Law of Ukraine “On Personal Data Protection” you can find out what data we keep, have it corrected or deleted, and withdraw your consent to statistics. Write to us, or change your choice in the cookie settings.",
+    },
+  },
   nav: {
     main: "Main",
     footer: "Footer",
@@ -64,6 +128,8 @@ export const en = {
       sub: "Create an account in a minute. Your cart comes with you.",
       form: "Create account",
       submit: "Create account",
+      privacyNotice: "By creating an account you agree to the",
+      privacyLink: "privacy policy",
     },
     tabs: {
       label: "Account",

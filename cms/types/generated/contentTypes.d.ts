@@ -525,7 +525,7 @@ export interface ApiHomePageHomePage extends Struct.SingleTypeSchema {
 export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
   collectionName: 'site_settings';
   info: {
-    description: 'Store contact details and social links';
+    description: "Store contact details, social links and the data controller's legal name";
     displayName: 'Site settings';
     pluralName: 'site-settings';
     singularName: 'site-setting';
@@ -542,6 +542,10 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
         maxLength: 200;
       }>;
     email: Schema.Attribute.Email & Schema.Attribute.Required;
+    legalName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',

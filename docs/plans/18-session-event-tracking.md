@@ -348,7 +348,7 @@ shape.
   keys in `uk.ts` and `en.ts`. Register `consent` in `routes.ts` outside the layout. Tests: route
   (each value, invalid → 400, unsafe `redirectTo` → `/`), banner renders in Ukrainian and English
   (`<I18nProvider locale="en">`), hidden when consent is set.
-- [ ] **11. Privacy policy page.** `app/lib/consent.ts`: `COOKIE_INVENTORY`,
+- [x] **11. Privacy policy page.** `app/lib/consent.ts`: `COOKIE_INVENTORY`,
   `PRIVACY_POLICY_UPDATED_AT` + a test that the inventory covers every cookie name in the code.
   `app/routes/privacy.tsx` under `_shop` in `routes.ts`: loader returns `{ contacts:
   await getSiteSettings().catch(() => null) }`, `meta` title via `metaTranslator`; the component

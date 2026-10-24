@@ -12,6 +12,7 @@ export default [
     route("cart", "routes/cart.tsx"),
     route("checkout", "routes/checkout.tsx"),
     route("account", "routes/account.tsx"),
+    route("privacy", "routes/privacy.tsx"),
   ]),
   // Action-only (POST); outside the layout so its loader doesn't run for it.
   route("logout", "routes/logout.ts"),

@@ -39,6 +39,14 @@ the Ukrainian version whenever an English localization is missing.
   `uk`. The migration also re-tags rows of the three tables that are `null` or `en` with no `uk`
   sibling (same `document_id`) to `uk`, as a safety net. It's a no-op on a fresh database.
   Step 1 verifies this behaviour on a copy of the local DB before it's written. (Q1, confirmed)
+  **Spike result (step 1, Strapi 5.59):** there was no existing `strapidb` on this machine (the
+  Aspire database container wasn't running), so the upgrade was simulated in throwaway databases
+  on the `jassmin-pg` container: seed on the old schema → rows have `locale = NULL`, default
+  `"en"`; enabling i18n without the migration tags every row `en`. With the migration, user
+  migrations do run before the i18n plugin's own `5.0.0-03-created-locale` step, and every row
+  (both versions of each post, drafts too) ends up `uk`. On a database already booted with i18n
+  (all rows `en`), the migration's safety net re-tags them `uk`. On a fresh database the migration
+  is a no-op and the bootstrap creates `uk` (default) and `en`; a second boot changes nothing.
 - **Localized vs shared fields** follow the issue exactly. In Strapi v5, a component field's
   localization is set on the component attribute in the content type schema, and non-localized
   attributes are copied to every locale on save:
@@ -137,7 +145,7 @@ the Ukrainian version whenever an English localization is missing.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Spike: confirm Strapi's i18n enable behaviour (Q1).** Dump the local `strapidb`
+- [x] **1. Spike: confirm Strapi's i18n enable behaviour (Q1).** Dump the local `strapidb`
   (`pg_dump`) into a scratch database, point a throwaway `cms/.env` copy at it, enable
   `pluginOptions.i18n.localized` on `site-setting` only and start `pnpm cms:dev`. Check
   `select document_id, locale from site_settings` and `i18n_locale` / `strapi_core_store_settings`
@@ -145,7 +153,7 @@ Each step is small, ordered, and leaves the app in a working state.
   result in this plan (Decisions) and adjust step 2 if Strapi behaves differently. Don't commit
   the scratch config.
 
-- [ ] **2. Strapi locales: migration + bootstrap.**
+- [x] **2. Strapi locales: migration + bootstrap.**
   - Migration `cms/database/migrations/2026.10.24T00.00.00.default-locale-uk.js`
     (`module.exports = { async up(knex) { … } }`; Strapi v5 runs `.js` user migrations from this
     folder before schema sync). If `i18n_locale` doesn't exist, return (fresh DB). Otherwise insert
@@ -159,7 +167,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - Check: start Strapi on an empty DB → Settings → Internationalization shows Ukrainian (default)
     and English; restart → no duplicates.
 
-- [ ] **3. Localize the content types.** Add `"pluginOptions": { "i18n": { "localized": true } }`
+- [x] **3. Localize the content types.** Add `"pluginOptions": { "i18n": { "localized": true } }`
   at the top level of the three `schema.json` files and on each attribute:
   `{ "i18n": { "localized": true|false } }` as listed in Decisions. Start `pnpm cms:dev` once so
   `cms/types/generated/*.d.ts` regenerate; commit them. Check on the existing local DB: existing

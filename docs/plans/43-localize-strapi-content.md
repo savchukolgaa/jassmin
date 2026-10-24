@@ -85,6 +85,11 @@ the Ukrainian version whenever an English localization is missing.
   seed is rewritten to create real Ukrainian copy as `uk` and the current English copy as `en`.
   Existing local databases keep their content (the seed skips existing `uk` entries), but get the
   missing `en` localizations added.
+- **Seeding a new localization (step 4 finding):** `documents.update({ documentId, locale: "en",
+  data })` creates the `en` version, but doesn't fill non-localized fields by itself (it failed
+  with `slug must be a string`), so the seed passes `slug` and `coverImage` in every locale's data.
+  Checked against Strapi 5.59 REST with the read-only token: `?locale=en` returns `locale: "en"`,
+  a missing single-type localization answers 404, and a missing post gives an empty `data` list.
 - **Token permissions stay as they are.** `locale` is a query parameter of `find`/`findOne`; the
   app never lists locales, so `TOKEN_PERMISSIONS` needs no `plugin::i18n.*` action.
 
@@ -175,7 +180,7 @@ Each step is small, ordered, and leaves the app in a working state.
   offers English, and `curl -H "Authorization: Bearer $STRAPI_API_TOKEN" "$STRAPI_URL/api/home-page?locale=en"`
   answers 404 while `?locale=uk` returns the old content.
 
-- [ ] **4. Seed both locales.** In `cms/scripts/seed.ts`:
+- [x] **4. Seed both locales.** In `cms/scripts/seed.ts`:
   - Split each seed record into shared fields and per-locale copy (`{ uk: {...}, en: {...} }`).
     Write real Ukrainian copy for `uk` (hero headline/CTA label, about title/body, address,
     opening hours, customer-service hours, post title/excerpt/content/SEO); the current English

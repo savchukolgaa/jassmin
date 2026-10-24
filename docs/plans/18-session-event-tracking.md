@@ -366,7 +366,7 @@ shape.
   trackEvents(…)`, 204 with the visitor's headers; `try/catch` → 204. Register in `routes.ts`
   outside the layout. Tests: valid batch → rows; `purchase` → 400; 21 events → 400; oversized →
   413; no consent → 204, no rows.
-- [ ] **13. Client tracker.** `app/features/analytics/client-events.ts` (plain queue/flush module:
+- [x] **13. Client tracker.** `app/features/analytics/client-events.ts` (plain queue/flush module:
   `navigator.sendBeacon("/api/events", JSON.stringify({ events }))`, fallback `fetch(…, { method:
   "POST", keepalive: true })`, errors swallowed) and `useClientPageViews(enabled)` used in
   `ShopLayout` with `enabled = consent === "granted"`: skips the first render (the server counted

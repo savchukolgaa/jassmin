@@ -5,6 +5,7 @@ import { getHeaderState } from "~/.server/services/header";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { Footer } from "~/components/layout/Footer";
 import { Header } from "~/components/layout/Header";
+import { useClientPageViews } from "~/features/analytics/useClientPageViews";
 import { CookieBanner } from "~/features/consent/CookieBanner";
 import { LOGGED_OUT_HEADER } from "~/lib/header";
 import { useT } from "~/lib/i18n";
@@ -24,6 +25,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 /** Layout for every public page; admin pages (#14) use their own layout. */
 export default function ShopLayout({ loaderData }: Route.ComponentProps) {
   const { header, consent } = loaderData;
+  useClientPageViews(consent === "granted");
   return (
     <div className="flex min-h-dvh flex-col">
       <Header {...header} />

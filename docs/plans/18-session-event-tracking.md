@@ -329,7 +329,7 @@ shape.
   server-side if the DTO doesn't already expose it). `catalog.tsx` loader: when
   `hasActiveFilters(search)`, `void trackEvent(…, "search", { properties: { gender, ...search,
   total } })`. Both export `shouldRevalidate` (D7) with unit tests like `home.test.ts`.
-- [ ] **9. Login linking and `login` event.** `onUserAuthenticated({ request, context }, userId,
+- [x] **9. Login linking and `login` event.** `onUserAuthenticated({ request, context }, userId,
   kind)` (update `login.tsx` / `register.tsx`); visitor = `context.get(visitorContext)` falling back
   to `readVisitor(request)` for the anonymous id. After the cart merge, in a separate `try/catch`:
   `await linkVisitorToUser(anonymousId, userId)`, then `await trackEvent(…, "login", { userId,

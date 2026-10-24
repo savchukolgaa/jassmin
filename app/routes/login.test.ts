@@ -55,7 +55,11 @@ describe("login action", () => {
     );
 
     expect(auth.verifyLogin).toHaveBeenCalledWith({}, "olena@example.com", "secret");
-    expect(auth.onUserAuthenticated).toHaveBeenCalledWith(expect.any(Request), 5, "login");
+    expect(auth.onUserAuthenticated).toHaveBeenCalledWith(
+      { request: expect.any(Request), context: {} },
+      5,
+      "login",
+    );
     expect(result).toBeInstanceOf(Response);
     expect((result as Response).headers.get("Location")).toBe("/products/1");
   });

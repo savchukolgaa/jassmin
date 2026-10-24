@@ -69,7 +69,11 @@ describe("register action", () => {
         acquisitionChannel: "instagram",
       },
     );
-    expect(auth.onUserAuthenticated).toHaveBeenCalledWith(expect.any(Request), 9, "register");
+    expect(auth.onUserAuthenticated).toHaveBeenCalledWith(
+      { request: expect.any(Request), context: {} },
+      9,
+      "register",
+    );
     expect((result as Response).headers.get("Location")).toBe("/account");
   });
 

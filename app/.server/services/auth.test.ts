@@ -1,11 +1,19 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { RouterContextProvider } from "react-router";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
 const cart = vi.hoisted(() => ({ mergeGuestCart: vi.fn() }));
-const analytics = vi.hoisted(() => ({ readVisitor: vi.fn() }));
+const analytics = vi.hoisted(() => ({
+  readVisitor: vi.fn(),
+  linkVisitorToUser: vi.fn(),
+  trackEvent: vi.fn(),
+}));
 
 vi.mock("./cart", () => cart);
-vi.mock("../analytics", () => analytics);
+vi.mock("../analytics", async () => ({
+  ...analytics,
+  visitorContext: (await import("react-router")).createContext(null),
+}));
 
 beforeAll(() => {
   vi.stubEnv("DATABASE_URL", process.env.DATABASE_URL || "postgres://u:p@localhost:5432/jassmin");
@@ -26,35 +34,70 @@ async function cookieFor(userId: number): Promise<string> {
 describe("onUserAuthenticated", () => {
   const request = new Request("http://localhost/login", { method: "POST" });
   const ANONYMOUS_ID = "0b6f1b8e-3f7e-4a52-9a43-3c1f7f1f2c11";
+  const args = () => ({ request, context: new RouterContextProvider() });
 
-  it("merges the visitor's guest cart into the user's", async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("merges the guest cart, links the visitor's analytics rows and records login", async () => {
     analytics.readVisitor.mockResolvedValueOnce({ anonymousId: ANONYMOUS_ID });
     const { onUserAuthenticated } = await import("./auth");
+    const loginArgs = args();
 
-    await onUserAuthenticated(request, 5, "login");
+    await onUserAuthenticated(loginArgs, 5, "login");
 
     expect(analytics.readVisitor).toHaveBeenCalledWith(request);
     expect(cart.mergeGuestCart).toHaveBeenCalledWith(5, ANONYMOUS_ID);
+    expect(analytics.linkVisitorToUser).toHaveBeenCalledWith(ANONYMOUS_ID, 5);
+    expect(analytics.trackEvent).toHaveBeenCalledWith(loginArgs, "login", {
+      userId: 5,
+      properties: { method: "login" },
+    });
   });
 
-  it("skips the merge for a visitor without a visitor cookie", async () => {
-    cart.mergeGuestCart.mockClear();
+  it("uses the visitor from the middleware and marks a registration", async () => {
+    const { visitorContext } = await import("../analytics");
+    const { onUserAuthenticated } = await import("./auth");
+    const registerArgs = args();
+    registerArgs.context.set(visitorContext, {
+      anonymousId: ANONYMOUS_ID,
+      sessionId: "s",
+      attribution: { trafficSource: null, trafficMedium: null, trafficCampaign: null },
+      headers: new Headers(),
+    });
+
+    await onUserAuthenticated(registerArgs, 9, "register");
+
+    expect(analytics.readVisitor).not.toHaveBeenCalled();
+    expect(analytics.linkVisitorToUser).toHaveBeenCalledWith(ANONYMOUS_ID, 9);
+    expect(analytics.trackEvent).toHaveBeenCalledWith(registerArgs, "login", {
+      userId: 9,
+      properties: { method: "register" },
+    });
+  });
+
+  it("skips everything for a visitor without a visitor cookie", async () => {
     analytics.readVisitor.mockResolvedValueOnce({});
     const { onUserAuthenticated } = await import("./auth");
 
-    await onUserAuthenticated(request, 5, "register");
+    await onUserAuthenticated(args(), 5, "register");
 
     expect(cart.mergeGuestCart).not.toHaveBeenCalled();
+    expect(analytics.linkVisitorToUser).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
-  it("never makes logging in fail", async () => {
+  it("never makes logging in fail, and one failure doesn't stop the rest", async () => {
     analytics.readVisitor.mockResolvedValueOnce({ anonymousId: ANONYMOUS_ID });
     cart.mergeGuestCart.mockRejectedValueOnce(new Error("db down"));
+    analytics.linkVisitorToUser.mockRejectedValueOnce(new Error("db down"));
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const { onUserAuthenticated } = await import("./auth");
 
-    await expect(onUserAuthenticated(request, 5, "login")).resolves.toBeUndefined();
-    expect(consoleError).toHaveBeenCalled();
+    await expect(onUserAuthenticated(args(), 5, "login")).resolves.toBeUndefined();
+    expect(consoleError).toHaveBeenCalledTimes(2);
+    expect(analytics.trackEvent).toHaveBeenCalled();
     consoleError.mockRestore();
   });
 });

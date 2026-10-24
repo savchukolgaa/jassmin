@@ -263,7 +263,7 @@ shape.
 
 ## Steps
 
-- [ ] **1. Pure helpers.** In `app/lib/analytics.ts`: `SESSION_TIMEOUT_MINUTES = 30`,
+- [x] **1. Pure helpers.** In `app/lib/analytics.ts`: `SESSION_TIMEOUT_MINUTES = 30`,
   `DEVICE_TYPES` + `resolveDeviceType(ua)` (tablet: `iPad|Tablet|Android(?!.*Mobile)`; mobile:
   `Mobi|iPhone|Android`; else desktop), `resolveTrafficAttribution(url, referer)` (D4),
   `CLIENT_EVENT_TYPES = ["page_view"] as const satisfies readonly EventType[]`,

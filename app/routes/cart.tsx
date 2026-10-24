@@ -1,5 +1,5 @@
 import { data } from "react-router";
-import { getVisitor } from "~/.server/analytics";
+import { ensureVisitor, type RequestArgs, trackEvent } from "~/.server/analytics";
 import {
   addItem,
   type CartChangeResult,
@@ -30,25 +30,46 @@ export async function loader({ request }: Route.LoaderArgs) {
   return getCartView(await getCartOwner(request));
 }
 
-function respond(result: CartChangeResult, intent: CartIntent, headers?: Headers) {
+function respond(result: CartChangeResult, intent: CartIntent) {
   if (result.ok) {
-    return data<CartActionResult>({ ok: true, intent }, { headers });
+    return data<CartActionResult>({ ok: true, intent });
   }
-  return data<CartActionResult>(result, {
-    status: result.error === "exceeds-stock" ? 409 : 404,
-    headers,
+  return data<CartActionResult>(result, { status: result.error === "exceeds-stock" ? 409 : 404 });
+}
+
+// Records `add_to_cart` / `remove_from_cart` (#18) for a change that moved the quantity; the
+// stepper's +/− count too, marked `source: "stepper"`. Not awaited: the cart doesn't wait.
+function trackChange(
+  args: RequestArgs,
+  result: CartChangeResult,
+  variantId: string,
+  source?: "stepper",
+) {
+  if (!result.ok || result.change.quantityDelta === 0) {
+    return;
+  }
+  const { productId, volumeMl, quantityDelta } = result.change;
+  void trackEvent(args, quantityDelta > 0 ? "add_to_cart" : "remove_from_cart", {
+    productId,
+    properties: {
+      variantId,
+      volumeMl,
+      quantity: Math.abs(quantityDelta),
+      ...(source && { source }),
+    },
   });
 }
 
 // Posted by `fetcher.Form`s (add-to-cart buttons, the cart page's stepper and remove buttons), or
 // as a plain form without JS. The `_shop` loader revalidates afterwards, so the header badge
 // updates.
-export async function action({ request }: Route.ActionArgs) {
+export async function action({ request, context }: Route.ActionArgs) {
   const input = parseCartAction(await request.formData());
   if (!input.success) {
     return data<CartActionResult>({ ok: false, error: "invalid" }, { status: 400 });
   }
   const owner = await getCartOwner(request);
+  const args = { request, context };
 
   switch (input.data.intent) {
     case "add": {
@@ -60,22 +81,30 @@ export async function action({ request }: Route.ActionArgs) {
           { status: check.error === "out-of-stock" ? 409 : 400 },
         );
       }
-      // Only adding can create a cart, so only it needs the visitor's analytics session.
-      const visitor = await getVisitor(request);
+      // Only adding can create a cart, so only it needs the visitor's analytics session (even
+      // without analytics consent: the guest cart hangs off it). The `_shop` middleware sends the
+      // visitor cookies.
+      const visitor = await ensureVisitor(args);
       const writer = {
         userId: owner.userId,
         anonymousId: visitor.anonymousId,
         sessionId: visitor.sessionId,
       };
-      return respond(await addItem(writer, check.variant, quantity), "add", visitor.headers);
+      const result = await addItem(writer, check.variant, quantity);
+      trackChange(args, result, variantId);
+      return respond(result, "add");
     }
-    case "update":
-      return respond(
-        await updateQuantity(owner, input.data.variantId, input.data.quantity),
-        "update",
-      );
-    case "remove":
-      return respond(await removeItem(owner, input.data.variantId), "remove");
+    case "update": {
+      const { variantId, quantity } = input.data;
+      const result = await updateQuantity(owner, variantId, quantity);
+      trackChange(args, result, variantId, "stepper");
+      return respond(result, "update");
+    }
+    case "remove": {
+      const result = await removeItem(owner, input.data.variantId);
+      trackChange(args, result, input.data.variantId);
+      return respond(result, "remove");
+    }
   }
 }
 

@@ -45,6 +45,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
         id: productVariants.id,
         publicId: productVariants.publicId,
         productId: productVariants.productId,
+        volumeMl: productVariants.volumeMl,
         stockQuantity: productVariants.stockQuantity,
         price: productVariants.price,
       })
@@ -82,8 +83,12 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     const visitor = await guest();
     const small = await variant(7);
 
-    expect(await cart.addItem(visitor, small, 1, testDb.db)).toEqual({ ok: true });
-    expect(await cart.addItem(visitor, small, 2, testDb.db)).toEqual({ ok: true });
+    const added = (quantityDelta: number) => ({
+      ok: true,
+      change: { productId: small.productId, volumeMl: 7, quantityDelta },
+    });
+    expect(await cart.addItem(visitor, small, 1, testDb.db)).toEqual(added(1));
+    expect(await cart.addItem(visitor, small, 2, testDb.db)).toEqual(added(2));
 
     const rows = await cartRows();
     expect(rows).toEqual([
@@ -136,6 +141,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     });
     expect(await cart.updateQuantity(visitor, thirty.publicId, 3, testDb.db)).toEqual({
       ok: true,
+      change: { productId: thirty.productId, volumeMl: 30, quantityDelta: 1 },
     });
     expect(await cart.getCartCount(visitor, testDb.db)).toBe(3);
   });
@@ -167,6 +173,22 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       ok: false,
       error: "not-in-cart",
     });
+  });
+
+  it("reports the units each change added or removed", async () => {
+    const cart = await import("./cart");
+    const visitor = await guest();
+    const small = await variant(7);
+    const change = (quantityDelta: number) => ({
+      ok: true,
+      change: { productId: small.productId, volumeMl: 7, quantityDelta },
+    });
+    await cart.addItem(visitor, small, 2, testDb.db);
+
+    expect(await cart.updateQuantity(visitor, small.publicId, 5, testDb.db)).toEqual(change(3));
+    expect(await cart.updateQuantity(visitor, small.publicId, 1, testDb.db)).toEqual(change(-4));
+    expect(await cart.updateQuantity(visitor, small.publicId, 1, testDb.db)).toEqual(change(0));
+    expect(await cart.removeItem(visitor, small.publicId, testDb.db)).toEqual(change(-1));
   });
 
   it("only changes lines in the owner's own cart", async () => {

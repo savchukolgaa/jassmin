@@ -315,7 +315,7 @@ shape.
   no-store`. `_shop.tsx`: `export const middleware = [visitorMiddleware]`. Tests: consented document
   request → cookies + session + `page_view`; no consent → no cookies, no rows; `.data`-style request
   → no `page_view`; bot → nothing; `getVisitor` throwing → response still returned.
-- [ ] **7. Cart events.** `services/cart.ts` returns `{ ok: true, change }` (D8); update
+- [x] **7. Cart events.** `services/cart.ts` returns `{ ok: true, change }` (D8); update
   `CartChangeResult` and `cart.test.ts`. `routes/cart.tsx`: `ensureVisitor` for `add` (drop
   `visitor.headers` from `respond`, the middleware sends them); after a successful change, `void
   trackEvent` (`add_to_cart` / `remove_from_cart`). Tests: add → `add_to_cart` with product id and

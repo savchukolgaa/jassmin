@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/11
 Branch: `issue/11`
 Worktree: `.claude/worktrees/issue-11`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Guests and registered shoppers can check out from `/checkout` with their contact details, a Nova
@@ -110,6 +110,25 @@ on a success page that only they can open.
 - **Design.** Checkout isn't on the C+ canvas (`docs/design.md:24`), so build it from the C+
   tokens and components: `blush` summary card like `CartSummary`, Manrope 800 headings, pill
   `Button`, `TextField`, and focus rings as in `docs/design.md`.
+
+## Deviations during implementation
+- The migration also drops the `orders_cart_id_carts_id_fk` constraint explicitly in its rollback.
+- The step 10 integration tests were written and committed together with step 5, so the service
+  was verified before the routes were built on it. Steps 2 and 3 were committed together, because
+  the zod messages are typed message keys that must exist first.
+- `queries/orders.ts` reuses `cartTotals` from `queries/cart.ts` for the subtotal (computed after
+  the variant rows are locked) instead of a separate sum query. It splits the confirmation read
+  into `findOrder` + `listOrderLines`.
+- `getOrderConfirmation(orderId, viewer)` checks access itself (`canViewOrder`), and
+  `getCheckoutPrefill` wraps `findUserContact`, so routes only import services.
+- `OrderSummaryLine` / `cartSummaryLine` give the checkout and success pages one line shape.
+  Order lines left-join `products`, so a deleted product shows "no longer sold"
+  (`checkout.deletedProduct`) instead of dropping out of the summary.
+- `PaymentMethodField` preselects cash on delivery.
+- The success page has no email note: no email is sent until #45. It says the store will call
+  the shopper on the order's phone number instead (`checkout.success.contactNote`).
+- Order ids in the success URL above PostgreSQL's `integer` range are a 404, not a database
+  error.
 
 ## Resolved questions
 - **Add `orders.cart_id` (unique) for double-submit idempotency?** — Yes (source: user,
@@ -300,7 +319,7 @@ Each step is small, ordered, and leaves the app in a working state.
     `createOrder` calls. Exactly one succeeds and stock ends at 0.
   - Double submit: `Promise.all` runs two `createOrder` calls on the same cart. Both return the
     **same** `orderId`, and there's exactly one order.
-- [ ] **11. Docs.** Add an "Orders: `services/orders.ts`" section to `app/.server/AGENTS.md`
+- [x] **11. Docs.** Add an "Orders: `services/orders.ts`" section to `app/.server/AGENTS.md`
   (lock order, idempotency through `orders.cart_id`, amounts in SQL, session `orderIds` for guest
   access, #18 TODOs). Then run `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test` and
   `pnpm build`.
@@ -326,11 +345,11 @@ Each step is small, ordered, and leaves the app in a working state.
   7. Without JS, double-click submit: one order.
 
 ## Acceptance criteria
-- [ ] Guests and registered users can place an order — steps 2, 5, 7, 8, 9, 10
-- [ ] Order totals are calculated on the server — steps 4, 5, 10
-- [ ] Stock decreases and the cart becomes `converted` only if the order is created — steps 5, 10
-- [ ] Concurrent checkouts cannot oversell stock — steps 4 (`FOR UPDATE` in id order), 5, 10
-- [ ] Double-submitting the form does not create duplicate orders — steps 1, 5, 7, 8, 10
+- [x] Guests and registered users can place an order — steps 2, 5, 7, 8, 9, 10
+- [x] Order totals are calculated on the server — steps 4, 5, 10
+- [x] Stock decreases and the cart becomes `converted` only if the order is created — steps 5, 10
+- [x] Concurrent checkouts cannot oversell stock — steps 4 (`FOR UPDATE` in id order), 5, 10
+- [x] Double-submitting the form does not create duplicate orders — steps 1, 5, 7, 8, 10
 
 ## Out of scope
 - Recording `checkout_start` / `purchase` events (#18 adds them where the TODOs are).

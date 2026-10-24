@@ -1,6 +1,7 @@
 // The visitor's active cart (#10): a guest's hangs off their analytics session, a user's off
 // their `user_id`. Price and stock come from the chosen variant. Every change bumps
-// `carts.updated_at`, which the abandoned-cart job (#19) relies on.
+// `carts.updated_at`, which the abandoned-cart job (#19) relies on. The job may abandon a cart
+// between a lookup and `lockCart`, so writes check the status the lock returns.
 import { and, eq, sql } from "drizzle-orm";
 import { type CartActionError, type CartView, EMPTY_CART } from "~/lib/cart";
 import type { VisitorCookies } from "../analytics";
@@ -118,9 +119,28 @@ export async function addItem(
   quantity: number,
   db: Db = defaultDb,
 ): Promise<CartChangeResult> {
-  const cartId = await getOrCreateActiveCart(writer, db);
+  // If the abandoned-cart job marks the cart before we lock it, the second try gets a new cart.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const cartId = await getOrCreateActiveCart(writer, db);
+    const result = await addToCart(cartId, variant, quantity, db);
+    if (result !== undefined) {
+      return result;
+    }
+  }
+  throw new Error("The cart was abandoned while adding to it");
+}
+
+/** `addItem` for a known cart; `undefined` when the cart is no longer active. */
+function addToCart(
+  cartId: number,
+  variant: CartVariant,
+  quantity: number,
+  db: Db,
+): Promise<CartChangeResult | undefined> {
   return db.transaction(async (tx) => {
-    await lockCart(tx, cartId);
+    if (!(await lockCart(tx, cartId))) {
+      return undefined;
+    }
     const [line] = await tx
       .select({ id: cartItems.id, quantity: cartItems.quantity })
       .from(cartItems)
@@ -155,8 +175,9 @@ export async function updateQuantity(
     return { ok: false, error: "not-in-cart" };
   }
   return db.transaction(async (tx) => {
-    await lockCart(tx, cartId);
-    const line = await findCartLine(tx, cartId, variantPublicId);
+    const line = (await lockCart(tx, cartId))
+      ? await findCartLine(tx, cartId, variantPublicId)
+      : undefined;
     if (!line) {
       return { ok: false, error: "not-in-cart" };
     }
@@ -180,8 +201,9 @@ export async function removeItem(
     return { ok: false, error: "not-in-cart" };
   }
   return db.transaction(async (tx) => {
-    await lockCart(tx, cartId);
-    const line = await findCartLine(tx, cartId, variantPublicId);
+    const line = (await lockCart(tx, cartId))
+      ? await findCartLine(tx, cartId, variantPublicId)
+      : undefined;
     if (!line) {
       return { ok: false, error: "not-in-cart" };
     }
@@ -207,13 +229,16 @@ export async function mergeGuestCart(
       return;
     }
     const userCartId = await findActiveUserCartId(tx, userId);
-    if (userCartId === undefined) {
-      await tx.update(carts).set({ userId }).where(eq(carts.id, guestCartId));
+    // A user cart abandoned since the lookup counts as none.
+    if (userCartId === undefined || !(await lockCart(tx, userCartId))) {
+      if (await lockCart(tx, guestCartId)) {
+        await tx.update(carts).set({ userId }).where(eq(carts.id, guestCartId));
+      }
       return;
     }
-
-    await lockCart(tx, userCartId);
-    await lockCart(tx, guestCartId);
+    if (!(await lockCart(tx, guestCartId))) {
+      return;
+    }
     for (const line of await listCartItemsWithStock(tx, guestCartId)) {
       if (line.stockQuantity <= 0) continue;
       await tx

@@ -159,7 +159,7 @@ column, and logs how many it changed.
   - `markAbandonedCartsJob(db: Db, hours: number)` → `{ updated: number; message: string }`
     (message e.g. `Marked 3 carts inactive for more than 24 h as abandoned.`; English, CLI-only
     like `make-admin`'s messages, so no i18n keys).
-- [ ] **4. Race handling in the cart service.** Change `lockCart` to select `status` `for update`
+- [x] **4. Race handling in the cart service.** Change `lockCart` to select `status` `for update`
   and return `boolean` (true = still active). In `services/cart.ts`:
   - `addItem`: run the transaction body in a helper. If the lock reports inactive, resolve the cart
     again with `getOrCreateActiveCart` and retry once; if that fails too, throw.

@@ -54,9 +54,18 @@ export async function insertActiveCart(
   return row?.id;
 }
 
-/** Locks the cart row until the transaction ends, so changes to one cart run one at a time. */
-export async function lockCart(db: Executor, cartId: number): Promise<void> {
-  await db.select({ id: carts.id }).from(carts).where(eq(carts.id, cartId)).for("update");
+/**
+ * Locks the cart row until the transaction ends, so changes to one cart run one at a time.
+ * Returns whether the cart is still active: the abandoned-cart job (#19) may have marked it
+ * between the caller's lookup and the lock.
+ */
+export async function lockCart(db: Executor, cartId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ status: carts.status })
+    .from(carts)
+    .where(eq(carts.id, cartId))
+    .for("update");
+  return row?.status === "active";
 }
 
 /** Bumps `updated_at`; every change to a cart's lines must call it (abandoned carts, #19). */

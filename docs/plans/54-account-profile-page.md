@@ -245,7 +245,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - The success status appears only in the matching panel
   - Password inputs never get a value
   - Every form is `method="post"` with a hidden `intent`
-- [ ] **7. Route.** Write `routes/account.profile.tsx`:
+- [x] **7. Route.** Write `routes/account.profile.tsx`:
   - `meta` (title `account.profile.title` plus `noindex`) and `headers` (`private, no-store`).
   - The loader calls `requireUser` and returns `getProfile`.
   - The action calls `requireUser`, reads `formData`, and returns 400 `invalidIntent` when

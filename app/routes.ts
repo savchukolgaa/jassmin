@@ -16,6 +16,7 @@ export default [
     route("account", "routes/account.tsx", [
       index("routes/account._index.tsx"),
       route("orders/:id", "routes/account.orders.$id.tsx"),
+      route("profile", "routes/account.profile.tsx"),
     ]),
     route("privacy", "routes/privacy.tsx"),
   ]),

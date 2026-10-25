@@ -1,7 +1,7 @@
 import { inArray } from "drizzle-orm";
 import type { Db } from "./client";
-import { products, productVariants } from "./schema";
-import { SAMPLE_PRODUCTS } from "./seed-data";
+import { discounts, products, productVariants } from "./schema";
+import { SAMPLE_DISCOUNTS, SAMPLE_PRODUCTS } from "./seed-data";
 
 /**
  * Inserts the sample products and variants that don't exist yet (matched by `publicId`, and by
@@ -41,4 +41,17 @@ export async function seedProducts(
 
     return { inserted: inserted.length, variantsInserted: variantsInserted.length };
   });
+}
+
+/**
+ * Inserts the sample discount rules (#59) that don't exist yet, matched by `slug`. Existing rules
+ * (and their redemption counts) are never changed. Returns how many were added.
+ */
+export async function seedDiscounts(db: Db): Promise<number> {
+  const inserted = await db
+    .insert(discounts)
+    .values(SAMPLE_DISCOUNTS)
+    .onConflictDoNothing({ target: discounts.slug })
+    .returning({ id: discounts.id });
+  return inserted.length;
 }

@@ -314,7 +314,7 @@ and in the confirmation email.
 - [x] **10. Order email and analytics** — `buildOrderConfirmationEmail` adds the discount line
   (`order-email.test.ts`, both locales). Add the discount properties to `checkout_start` and
   `purchase` in `checkout.tsx` (assert in `checkout.test.ts`).
-- [ ] **11. Seeds** — `SAMPLE_DISCOUNTS` in `db/seed-data.ts`, inserted by `db/seed.ts`
+- [x] **11. Seeds** — `SAMPLE_DISCOUNTS` in `db/seed-data.ts`, inserted by `db/seed.ts`
   (`onConflictDoNothing` on `slug`), `seed.test.ts` updated. `cms/scripts/seed.ts`: the trio
   offer moves to 10 ml (wording, body, product ids); no bundle offer.
 - [ ] **12. Docs and final checks** — Update `app/.server/AGENTS.md` (new "Discounts" section;

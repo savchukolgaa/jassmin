@@ -157,13 +157,13 @@ Each step is small, ordered, and leaves the app in a working state.
   comment. Also verify which delete commands unlink junctions without following them (create a
   scratch junction to a scratch dir, delete it with each tool, check the target survives). If the
   global virtual store can't work, stop, document why, and switch to the fallback in Decisions.
-- [ ] **3. Add `scripts/link-env.mjs`** — Export `linkEnvFiles(main, wt, { log, fs })` that, for
+- [x] **3. Add `scripts/link-env.mjs`** — Export `linkEnvFiles(main, wt, { log, fs })` that, for
   `[".env", "cms/.env"]`, skips when the source is missing or the target already exists (`lstat`,
   so an existing link counts), then tries `symlinkSync(source, target, "file")`, on failure
   `linkSync`, on failure `copyFileSync`, logging a notice for each fallback (with the error code).
   Return `[{ file, result: "symlink" | "hardlink" | "copy" | "exists" | "no-source" }]`. JSDoc
   types, Biome-clean.
-- [ ] **4. Test it** — `scripts/link-env.test.mjs` with Vitest and temp dirs (`mkdtempSync` in
+- [x] **4. Test it** — `scripts/link-env.test.mjs` with Vitest and temp dirs (`mkdtempSync` in
   `os.tmpdir()`): skips without a source; leaves an existing target alone; falls back to a hard link
   when `symlinkSync` throws `EPERM` (inject an `fs` whose `symlinkSync` throws); falls back to a
   copy when both link calls throw, and logs notices; creates a real symlink when the platform

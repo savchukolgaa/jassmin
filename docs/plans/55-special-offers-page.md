@@ -257,7 +257,7 @@ Each step is small, ordered, and leaves the app in a working state.
   mocks `~/.server/cms/content` and `~/.server/services/products`: locale passed through, CMS down
   → 503, products resolved in one call and missing ones dropped, empty list → empty view, cache
   headers, meta in English.
-- [ ] **10. Page UI** — In `app/features/offers/`: `OffersHero` (deep-pink `bg-primary` band,
+- [x] **10. Page UI** — In `app/features/offers/`: `OffersHero` (deep-pink `bg-primary` band,
   white text, image in the C+ arch, `priceNote`, primary `ButtonLink`), `PerksStrip` (blush row of
   short perks), `OfferGroup` (`h2` per kind from `offers.kinds.*`), `OfferCard` (image, `h3`
   title, summary, `RichText` body, optional "valid until {date}", optional price note,

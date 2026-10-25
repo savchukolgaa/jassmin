@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/54
 Branch: `issue/54`
 Worktree: `.claude/worktrees/issue-54`
-Status: Planned
+Status: Implemented
 
 ## Goal
 A logged-in customer can open "Profile details" in the account area and change their name and
@@ -271,7 +271,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - `password`: success and wrong password; no response contains a password.
   - An unknown intent → 400.
   - `meta` and `headers`.
-- [ ] **9. Docs and verification.** Update `app/.server/AGENTS.md`: the password-hash rule now
+- [x] **9. Docs and verification.** Update `app/.server/AGENTS.md`: the password-hash rule now
   includes `findUserCredentialsById`, plus a short "Profile (#54)" note on the service, the
   limiter, the email-taken handling and the email-change notice (best effort, no outbox). Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and
   `pnpm build`, and do the manual checks below.
@@ -293,19 +293,35 @@ Each step is small, ordered, and leaves the app in a working state.
   - Repeat with JavaScript disabled, at phone width and in English.
 
 ## Acceptance criteria
-- [ ] A C+ design mockup of the profile page is on the design canvas and listed in
+- [x] A C+ design mockup of the profile page is on the design canvas and listed in
   `docs/design.md` — step 1
-- [ ] `/account/profile` is reachable from the account side menu and redirects logged-out users
+- [x] `/account/profile` is reachable from the account side menu and redirects logged-out users
   to `/login` — steps 7, 8
-- [ ] Users can update their full name and phone; the checkout prefill shows the new values —
+- [x] Users can update their full name and phone; the checkout prefill shows the new values —
   steps 3, 4, 7
-- [ ] Changing the email requires the current password, and a taken email gives a field error —
+- [x] Changing the email requires the current password, and a taken email gives a field error —
   steps 4, 7, 8
-- [ ] Changing the password requires the current password; the new password is stored only as an
+- [x] Changing the password requires the current password; the new password is stored only as an
   argon2id hash — steps 4, 7, 8
-- [ ] All inputs are validated with zod and errors show next to the fields, in Ukrainian and
+- [x] All inputs are validated with zod and errors show next to the fields, in Ukrainian and
   English — steps 2, 5, 6
-- [ ] Forms work without client JavaScript — steps 6, 7 (manual check with JS off)
+- [x] Forms work without client JavaScript — steps 6, 7 (manual check with JS off)
+
+## Verification notes
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (823 passed, 1 skipped that was already skipped
+  before) and `pnpm build` pass. The DB integration tests ran against the local server.
+- Manual check without JavaScript: `curl` against the production build, on a throwaway migrated
+  database (the dev database is missing the `users.first_touch_*` migration):
+  - Logged out → `/login?redirectTo=%2Faccount%2Fprofile`.
+  - "Profile details" is the active menu item, and the page has three forms.
+  - The contact save shows its confirmation and the new values.
+  - A mismatched confirmation and a wrong current password show their errors.
+  - The email and password changes succeed. Logging in with the new email and password works,
+    and the old password fails.
+  - The English page and field errors render.
+- Not checked by hand: the checkout prefill in the browser (covered by the `getCheckoutPrefill`
+  integration test), the phone-width layout in a browser and the notice in smtp4dev (covered by
+  unit tests).
 
 ## Out of scope
 - Deleting the account, email verification and password reset by email.

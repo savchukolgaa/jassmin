@@ -5,10 +5,19 @@
 import type Mail from "nodemailer/lib/mailer";
 import type { OrderConfirmation } from "~/lib/checkout";
 import { PAYMENT_KEYS } from "~/lib/checkout";
-import type { Translator } from "~/lib/i18n";
+import type { OrderEmailType } from "~/lib/enums";
+import { createTranslator, type Translator } from "~/lib/i18n";
 import { formatVolume } from "~/lib/products";
-import type { MailEnv } from "../env";
-import { stripLineBreaks } from "../mail";
+import type { Db } from "../db/client";
+import {
+  type ClaimedOrderEmail,
+  claimOrderEmails,
+  markOrderEmailFailed,
+  markOrderEmailSent,
+} from "../db/queries/order-emails";
+import { findOrderConfirmation } from "../db/queries/orders";
+import { getEnv, type MailEnv } from "../env";
+import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
 
 /**
  * Minutes to wait before retrying after the 1st, 2nd, … failed attempt: about two days in all.
@@ -89,4 +98,143 @@ export function buildOrderConfirmationEmail(
     subject: t("orderEmail.subject", { id: String(order.id) }),
     text,
   };
+}
+
+const BUILDERS: Record<
+  OrderEmailType,
+  (order: OrderConfirmation, translator: Translator, env: OrderEmailEnv) => Mail.Options
+> = {
+  confirmation: buildOrderConfirmationEmail,
+};
+
+/** Rows the retry job claims at a time. */
+export const ORDER_EMAIL_BATCH_SIZE = 50;
+
+/** `last_error` keeps at most this many characters. */
+const MAX_ERROR_LENGTH = 500;
+
+/** What delivery needs; the queue functions are injectable so unit tests run without a database. */
+export interface OrderEmailDeps {
+  /** `null` when `SMTP_URL` is not configured. */
+  mailer: MailSender | null;
+  env: OrderEmailEnv;
+  claim(options: { orderId?: number; limit: number }): Promise<ClaimedOrderEmail[]>;
+  loadOrder(orderId: number): Promise<OrderConfirmation | undefined>;
+  markSent(id: number): Promise<void>;
+  markFailed(id: number, failure: { error: string; final: boolean }): Promise<void>;
+}
+
+/** The real queue on `db`; also used by `pnpm db:send-order-emails` with its own pool. */
+export function orderEmailDeps(
+  db: Db,
+  mailer: MailSender | null,
+  env: OrderEmailEnv,
+): OrderEmailDeps {
+  return {
+    mailer,
+    env,
+    claim: (options) =>
+      claimOrderEmails(db, { ...options, retryDelaysMinutes: ORDER_EMAIL_RETRY_DELAYS_MINUTES }),
+    loadOrder: (orderId) => findOrderConfirmation(db, orderId),
+    markSent: (id) => markOrderEmailSent(db, id),
+    markFailed: (id, failure) => markOrderEmailFailed(db, id, failure),
+  };
+}
+
+// The app's pool is imported lazily: importing it validates the web app's whole env, which the
+// retry job (with its own pool) doesn't have.
+async function defaultDeps(): Promise<OrderEmailDeps> {
+  const { db } = await import("../db");
+  return orderEmailDeps(db, getMailTransport(), getEnv());
+}
+
+export interface OrderEmailReport {
+  sent: number;
+  /** Failed this time; due again after the backoff. */
+  retrying: number;
+  /** Failed for the last time (or the order is gone), now `failed`. */
+  gaveUp: number;
+  /** Nothing was tried because `SMTP_URL` is not set; the emails stay queued. */
+  skipped: boolean;
+}
+
+function errorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.slice(0, MAX_ERROR_LENGTH);
+}
+
+async function deliverOne(
+  email: ClaimedOrderEmail,
+  mailer: MailSender,
+  deps: OrderEmailDeps,
+  report: OrderEmailReport,
+): Promise<void> {
+  const label = `order ${email.orderId}'s ${email.type} email`;
+  try {
+    const order = await deps.loadOrder(email.orderId);
+    if (!order) {
+      // Deleted orders cascade to their emails, so this only happens in a race; don't retry.
+      console.error(`[order-email] Not sending ${label}: the order doesn't exist`);
+      await deps.markFailed(email.id, { error: "Order not found", final: true });
+      report.gaveUp += 1;
+      return;
+    }
+    const build = BUILDERS[email.type];
+    await mailer.sendMail(build(order, createTranslator(email.locale), deps.env));
+  } catch (error) {
+    const final = email.attempts >= MAX_ORDER_EMAIL_ATTEMPTS;
+    const message = errorMessage(error);
+    console.error(
+      `[order-email] Sending ${label} failed (attempt ${email.attempts} of ${MAX_ORDER_EMAIL_ATTEMPTS}${final ? ", giving up" : ""}): ${message}`,
+    );
+    await deps
+      .markFailed(email.id, { error: message, final })
+      .catch((markError: unknown) =>
+        console.error(`[order-email] Recording the failure of ${label} failed:`, markError),
+      );
+    report[final ? "gaveUp" : "retrying"] += 1;
+    return;
+  }
+  // Sent. If recording that fails, the row comes due again and the email is sent twice, which
+  // beats losing it.
+  report.sent += 1;
+  await deps
+    .markSent(email.id)
+    .catch((markError: unknown) =>
+      console.error(`[order-email] Recording ${label} as sent failed:`, markError),
+    );
+}
+
+/**
+ * Sends due queued emails: only `orderId`'s right after its checkout, otherwise every due one in
+ * batches (the retry job). Never rejects: every failure is logged and left to the retries.
+ */
+export async function deliverOrderEmails(
+  { orderId, limit = ORDER_EMAIL_BATCH_SIZE }: { orderId?: number; limit?: number } = {},
+  deps?: OrderEmailDeps,
+): Promise<OrderEmailReport> {
+  const report: OrderEmailReport = { sent: 0, retrying: 0, gaveUp: 0, skipped: false };
+  try {
+    const resolved = deps ?? (await defaultDeps());
+    const { mailer } = resolved;
+    if (!mailer) {
+      console.info(
+        orderId === undefined
+          ? "[order-email] SMTP_URL is not set; queued order emails stay queued"
+          : `[order-email] SMTP_URL is not set; order ${orderId}'s confirmation stays queued`,
+      );
+      return { ...report, skipped: true };
+    }
+    // Claimed rows aren't due again until their retry time, so this loop ends.
+    for (;;) {
+      const batch = await resolved.claim({ orderId, limit });
+      for (const email of batch) {
+        await deliverOne(email, mailer, resolved, report);
+      }
+      if (orderId !== undefined || batch.length < limit) break;
+    }
+  } catch (error) {
+    console.error("[order-email] Delivering order emails failed:", error);
+  }
+  return report;
 }

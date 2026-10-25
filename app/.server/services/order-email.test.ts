@@ -1,7 +1,14 @@
-import { describe, expect, it } from "vitest";
+import type Mail from "nodemailer/lib/mailer";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrderConfirmation } from "~/lib/checkout";
 import { createTranslator } from "~/lib/i18n";
-import { buildOrderConfirmationEmail, type OrderEmailEnv } from "./order-email";
+import type { ClaimedOrderEmail } from "../db/queries/order-emails";
+import {
+  buildOrderConfirmationEmail,
+  deliverOrderEmails,
+  type OrderEmailDeps,
+  type OrderEmailEnv,
+} from "./order-email";
 
 /** `Intl` puts (narrow) no-break spaces in prices; compare them as plain spaces. */
 const normalize = (text: string) => text.replace(/[  ]/gu, " ");
@@ -170,5 +177,135 @@ describe("buildOrderConfirmationEmail", () => {
     expect(email.from).toBe("Jassmin <orders@example.com>");
     expect(email.to).toEqual({ name: "Olena Bcc: spam@example.com", address: "olena@example.com" });
     expect(email.subject).toBe("Order №1042 received — Jassmin");
+  });
+});
+
+/** An in-memory queue: due rows are claimed once per call, like the real lease. */
+function fakeDeps(
+  emails: ClaimedOrderEmail[],
+  overrides: Partial<OrderEmailDeps> = {},
+): OrderEmailDeps & { sendMail: ReturnType<typeof vi.fn> } {
+  const due = [...emails];
+  const sendMail = vi.fn(async (_options: Mail.Options) => ({}));
+  return {
+    sendMail,
+    mailer: { sendMail },
+    env,
+    claim: vi.fn(async ({ orderId, limit }) => {
+      const matching = due.filter((e) => orderId === undefined || e.orderId === orderId);
+      const batch = matching.slice(0, limit);
+      for (const email of batch) due.splice(due.indexOf(email), 1);
+      return batch;
+    }),
+    loadOrder: vi.fn(async (orderId: number) =>
+      orderId === codOrder.id ? codOrder : orderId === cardOrder.id ? cardOrder : undefined,
+    ),
+    markSent: vi.fn(async () => {}),
+    markFailed: vi.fn(async () => {}),
+    ...overrides,
+  };
+}
+
+const queued = (id: number, orderId: number, attempts = 1): ClaimedOrderEmail => ({
+  id,
+  orderId,
+  type: "confirmation",
+  locale: "uk",
+  attempts,
+});
+
+describe("deliverOrderEmails", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "info").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("sends the order's email right after checkout and marks it sent", async () => {
+    const deps = fakeDeps([queued(1, codOrder.id), { ...queued(2, cardOrder.id), locale: "en" }]);
+
+    const report = await deliverOrderEmails({ orderId: cardOrder.id }, deps);
+
+    expect(report).toEqual({ sent: 1, retrying: 0, gaveUp: 0, skipped: false });
+    expect(deps.claim).toHaveBeenCalledWith({ orderId: cardOrder.id, limit: 50 });
+    expect(deps.sendMail).toHaveBeenCalledOnce();
+    expect(deps.sendMail.mock.calls[0]?.[0]).toMatchObject({
+      to: { address: "olena@example.com" },
+      subject: "Order №1043 received — Jassmin",
+    });
+    expect(deps.markSent).toHaveBeenCalledWith(2);
+  });
+
+  it("works through every due email in batches", async () => {
+    const deps = fakeDeps([
+      queued(1, codOrder.id),
+      queued(2, cardOrder.id),
+      queued(3, codOrder.id),
+    ]);
+
+    const report = await deliverOrderEmails({ limit: 2 }, deps);
+
+    expect(report.sent).toBe(3);
+    expect(deps.claim).toHaveBeenCalledTimes(2);
+    expect(deps.markSent).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps a failed email for a retry until its last attempt", async () => {
+    const sendMail = vi.fn(async () => {
+      throw new Error("Connection refused");
+    });
+    const deps = fakeDeps([queued(1, codOrder.id, 1), queued(2, cardOrder.id, 8)], {
+      mailer: { sendMail },
+    });
+
+    const report = await deliverOrderEmails({}, deps);
+
+    expect(report).toEqual({ sent: 0, retrying: 1, gaveUp: 1, skipped: false });
+    expect(deps.markFailed).toHaveBeenCalledWith(1, { error: "Connection refused", final: false });
+    expect(deps.markFailed).toHaveBeenCalledWith(2, { error: "Connection refused", final: true });
+    expect(deps.markSent).not.toHaveBeenCalled();
+  });
+
+  it("gives up on an email whose order is gone", async () => {
+    const deps = fakeDeps([queued(1, 999)]);
+
+    expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
+    expect(deps.markFailed).toHaveBeenCalledWith(1, { error: "Order not found", final: true });
+    expect(deps.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("leaves everything queued without SMTP_URL", async () => {
+    const deps = fakeDeps([queued(1, codOrder.id)], { mailer: null });
+
+    expect(await deliverOrderEmails({ orderId: codOrder.id }, deps)).toEqual({
+      sent: 0,
+      retrying: 0,
+      gaveUp: 0,
+      skipped: true,
+    });
+    expect(deps.claim).not.toHaveBeenCalled();
+    expect(console.info).toHaveBeenCalledWith(
+      "[order-email] SMTP_URL is not set; order 1042's confirmation stays queued",
+    );
+  });
+
+  it("never rejects, even when the queue itself fails", async () => {
+    const deps = fakeDeps([], {
+      claim: vi.fn(async () => {
+        throw new Error("database is down");
+      }),
+    });
+    await expect(deliverOrderEmails({ orderId: 1 }, deps)).resolves.toMatchObject({ sent: 0 });
+
+    const failingMarks = fakeDeps([queued(1, codOrder.id)], {
+      markSent: vi.fn(async () => {
+        throw new Error("lost connection");
+      }),
+    });
+    await expect(deliverOrderEmails({}, failingMarks)).resolves.toMatchObject({ sent: 1 });
+    expect(console.error).toHaveBeenCalled();
   });
 });

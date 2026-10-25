@@ -138,24 +138,6 @@ export async function getOrderConfirmation(
   if (!order || !canViewOrder(order, viewer)) {
     return undefined;
   }
-  return withLines(order, db);
-}
-
-/**
- * The order as its confirmation shows it, without checking who asks: for the confirmation email,
- * which goes to the order's own address. `undefined` when it doesn't exist.
- */
-export async function loadOrderConfirmation(
-  orderId: number,
-  db: Db = defaultDb,
-): Promise<OrderConfirmation | undefined> {
-  const order = await findOrder(db, orderId);
-  return order && withLines(order, db);
-}
-
-async function withLines(
-  { userId: _userId, ...order }: NonNullable<Awaited<ReturnType<typeof findOrder>>>,
-  db: Db,
-): Promise<OrderConfirmation> {
-  return { ...order, lines: await listOrderLines(db, order.id) };
+  const { userId: _userId, ...confirmation } = order;
+  return { ...confirmation, lines: await listOrderLines(db, orderId) };
 }

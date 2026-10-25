@@ -200,7 +200,7 @@ and never affects the order or the redirect.
   `buildOrderConfirmationEmail(order: OrderConfirmation, translator: Translator, env: Pick<Env, "ORDER_FROM" | "CONTACT_FROM" | "CONTACT_INBOX">): Mail.Options`
   with the content listed under the decisions, plus `retryDelayMinutes(attempts)`. Check: exact
   `toEqual` text tests for uk and en.
-- [ ] **6. Delivery.** Add
+- [x] **6. Delivery.** Add
   `deliverOrderEmails({ orderId?, limit = 50 }, deps = defaultDeps()): Promise<{ sent; failed; gaveUp; skipped }>`:
   1. Without a mailer, log the skip and return without claiming.
   2. Otherwise, claim due rows. For each row, `loadOrderConfirmation`, then build and `sendMail`.

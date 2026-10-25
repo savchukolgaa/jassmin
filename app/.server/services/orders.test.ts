@@ -402,9 +402,9 @@ describe.skipIf(!hasDatabase)("order service", () => {
     });
     expect(confirmation).not.toHaveProperty("userId");
     // The email's view of the order skips the viewer check but is otherwise the same.
-    const { loadOrderConfirmation } = await import("./orders");
-    expect(await loadOrderConfirmation(result.orderId, testDb.db)).toEqual(confirmation);
-    expect(await loadOrderConfirmation(999_999, testDb.db)).toBeUndefined();
+    const { findOrderConfirmation } = await import("../db/queries/orders");
+    expect(await findOrderConfirmation(testDb.db, result.orderId)).toEqual(confirmation);
+    expect(await findOrderConfirmation(testDb.db, 999_999)).toBeUndefined();
     expect(
       await getOrderConfirmation(result.orderId, { userId: null, orderIds: [] }, testDb.db),
     ).toBeUndefined();

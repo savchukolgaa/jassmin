@@ -2,6 +2,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import {
   DISCOUNT_AMOUNT,
   FREE_SHIPPING_THRESHOLD,
+  type OrderConfirmation,
   type OrderSummaryLine,
   SHIPPING_AMOUNT,
 } from "~/lib/checkout";
@@ -189,4 +190,20 @@ export async function listOrderLines(db: Executor, orderId: number): Promise<Ord
     .where(eq(orderItems.orderId, orderId))
     .orderBy(asc(orderItems.id));
   return rows.map(({ id, ...line }) => ({ key: String(id), ...line }));
+}
+
+/**
+ * The order as its confirmation shows it, without checking who asks: for the confirmation email
+ * (#45), which goes to the order's own address. `undefined` when it doesn't exist.
+ */
+export async function findOrderConfirmation(
+  db: Executor,
+  orderId: number,
+): Promise<OrderConfirmation | undefined> {
+  const order = await findOrder(db, orderId);
+  if (!order) {
+    return undefined;
+  }
+  const { userId: _userId, ...confirmation } = order;
+  return { ...confirmation, lines: await listOrderLines(db, orderId) };
 }

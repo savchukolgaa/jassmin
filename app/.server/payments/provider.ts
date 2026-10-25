@@ -5,7 +5,7 @@
 import type { PaymentProvider as PaymentProviderName } from "~/lib/enums";
 import type { Locale } from "~/lib/i18n";
 import type { Env } from "../env";
-import { createSimulator } from "./simulator";
+import { createSimulator, type Simulator } from "./simulator";
 
 /** What a provider needs to show its hosted payment page for one attempt. */
 export interface CheckoutRequest {
@@ -59,4 +59,11 @@ export function getPaymentProvider(
     case undefined:
       return null;
   }
+}
+
+/** The simulator when it's the configured provider, for its hosted page; `null` otherwise. */
+export function getSimulator(
+  env: Pick<Env, "PAYMENT_PROVIDER" | "SESSION_SECRET">,
+): Simulator | null {
+  return env.PAYMENT_PROVIDER === "simulator" ? createSimulator(env.SESSION_SECRET) : null;
 }

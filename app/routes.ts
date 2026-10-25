@@ -29,6 +29,9 @@ export default [
   route("api/events", "routes/api.events.ts"),
   // Action-only (POST) callback from the card payment provider (#44); no layout, session or consent.
   route("payments/callback", "routes/payments.callback.ts"),
+  // Dev only: the local payment simulator's hosted page (#44), a 404 unless
+  // `PAYMENT_PROVIDER=simulator`. Outside the shop layout, like a provider's own page.
+  route("payments/simulator", "routes/payments.simulator.tsx"),
   // Outside the shop layout: the admin area has its own. Every admin loader and action calls
   // `requireAdmin`; product (#16) and order (#17) management replace the placeholders.
   route("admin", "routes/admin.tsx", [

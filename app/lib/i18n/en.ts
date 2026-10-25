@@ -326,6 +326,18 @@ export const en = {
   },
   payments: {
     description: "Jassmin order #{id}",
+    simulator: {
+      title: "Payment simulator",
+      banner: "Test mode: no real money is charged.",
+      heading: "Card payment",
+      reference: "Payment {reference}",
+      amount: "Amount due",
+      pay: "Pay",
+      payTwice: "Pay and send the confirmation twice",
+      decline: "Decline the payment",
+      leave: "Return without paying",
+      hint: "These buttons play the bank: the shop gets a signed confirmation, just as from a real payment provider.",
+    },
   },
   account: {
     title: "My account",

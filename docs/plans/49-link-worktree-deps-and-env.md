@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/49
 Branch: `issue/49`
 Worktree: `.claude/worktrees/issue-49`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a developer, I want new issue worktrees to share dependencies and local config with the main
@@ -224,19 +224,23 @@ Each step is small, ordered, and leaves the app in a working state.
   the PR.
 
 ## Acceptance criteria
-- [ ] A new worktree's `node_modules` links into one shared store instead of holding a full copy of
+- [x] A new worktree's `node_modules` links into one shared store instead of holding a full copy of
   the dependency tree — steps 2, 9
-- [ ] `pnpm install` in a fresh worktree is measurably faster than before (numbers in the PR) —
+- [x] `pnpm install` in a fresh worktree is measurably faster than before (numbers in the PR) —
   steps 1, 9
-- [ ] Removing a merged worktree works with `git worktree remove` and is measurably faster than
-  before — steps 1, 6, 9
-- [ ] Running `pnpm install` in a worktree after changing dependencies doesn't change the main
+- [x] Removing a merged worktree works with `git worktree remove` and is measurably faster than
+  before — steps 1, 6, 9 (through `pnpm worktree:remove`, which deletes `node_modules` safely before
+  `git worktree remove`: 2.0 s vs. a failed remove plus 84 s by hand)
+- [x] Running `pnpm install` in a worktree after changing dependencies doesn't change the main
   checkout's dependencies — step 9
-- [ ] A worktree's `.env` is a symlink to the main checkout's `.env`, with a working copy fallback
+- [x] A worktree's `.env` is a symlink to the main checkout's `.env`, with a working copy fallback
   when symlinks aren't permitted — steps 3, 4, 5, 7
 - [ ] `pnpm dev`, `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm cms:build` and
   `pnpm aspire run` work in both the main checkout and a worktree — steps 2, 7, 9
-- [ ] `docs/skills/worktree.md`, `AGENTS.md`, `README.md` and `scripts/herdr-plans.mjs` describe
+  Verified in worktrees only (all pass, `pnpm aspire run` all healthy). The main checkout wasn't
+  touched (no writes there per the worktree rule); after merge it needs one `pnpm install` to switch
+  to the shared store, and its config is then identical to the worktrees'.
+- [x] `docs/skills/worktree.md`, `AGENTS.md`, `README.md` and `scripts/herdr-plans.mjs` describe
   and use the new setup — steps 5, 6, 8
 
 ## Out of scope

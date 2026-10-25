@@ -211,7 +211,7 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   order number, date, progress or pill, timestamps list, delivery and payment `<dl>` (payment
   labels as in `checkout-success.tsx`), and `OrderSummary` with the lines and amounts; `meta`
   with the order number and `noindex`.
-- [ ] **8. Route and component tests** — `account._index.test.ts` and
+- [x] **8. Route and component tests** — `account._index.test.ts` and
   `account.orders.$id.test.ts`, mocking `~/.server/services/auth` and `~/.server/services/orders`
   like `checkout-success.test.ts`: logged-out → `requireUser`'s redirect propagates; loaders pass
   the logged-in user's id; detail answers 404 for a missing/foreign order and for malformed ids

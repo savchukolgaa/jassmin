@@ -61,6 +61,13 @@ describe("CheckoutForm", () => {
     expect(tag(html, 'value="card"')).not.toContain('checked=""');
   });
 
+  it("posts the total it was shown with (#59)", () => {
+    expect(renderForm({ prefill: null, expectedTotal: "499.00" })).toContain(
+      '<input type="hidden" name="expectedTotal" value="499.00"/>',
+    );
+    expect(renderForm({ prefill: null })).not.toContain("expectedTotal");
+  });
+
   it("prefills a logged-in user's details, and submitted values win", () => {
     const prefill = { fullName: "Olena Koval", email: "olena@example.com", phone: "+380671234567" };
 
@@ -153,6 +160,44 @@ describe("OrderSummary", () => {
 
     expect(html).toContain("Nova Poshta rates, paid on delivery");
     expect(html).toMatch(/Add ₴100 more for free delivery\./);
+  });
+
+  it("shows the discount between the subtotal and delivery, in English and Ukrainian (#59)", () => {
+    const props = {
+      lines: [line],
+      subtotal: "4450.00",
+      discount: { amount: "445.00", code: "JASSMIN10", kind: "percent" as const },
+      total: "4005.00",
+      freeShipping: true,
+    };
+    const english = renderSummary(props);
+    expect(english).toMatch(
+      /Subtotal<\/dt><dd>₴4,450<\/dd>.*Discount \(promo code JASSMIN10\)<\/dt><dd[^>]*>−₴445<\/dd>.*Delivery/,
+    );
+    expect(english).toContain("₴4,005");
+
+    const ukrainian = render(
+      routerFor(
+        createElement(OrderSummary, {
+          ...props,
+          discount: { amount: "1871.00", code: null, kind: "fixed_price_set" as const },
+        }),
+      ),
+      "uk",
+    ).replace(/\s/gu, " ");
+    expect(ukrainian).toContain("Тестерне тріо 3 × 10 мл");
+    expect(ukrainian).toContain("−1 871 ₴");
+  });
+
+  it("has no discount row without a discount", () => {
+    const html = renderSummary({
+      lines: [line],
+      subtotal: "900.00",
+      discount: null,
+      total: "900.00",
+      freeShipping: false,
+    });
+    expect(html).not.toContain("Discount");
   });
 
   it("names a line whose product has been deleted", () => {

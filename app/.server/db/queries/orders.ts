@@ -6,6 +6,7 @@ import {
   type OrderSummaryLine,
   SHIPPING_AMOUNT,
 } from "~/lib/checkout";
+import type { DiscountLine } from "~/lib/discounts";
 import type { CartStatus, PaymentMethod } from "~/lib/enums";
 import type { Db } from "../client";
 import {
@@ -165,6 +166,31 @@ export async function findOrderIdByCartId(
   return row?.id;
 }
 
+/** The order's discount columns, joined from `discounts` (#59). */
+const discountColumns = {
+  discountAmount: orders.discountAmount,
+  discountId: orders.discountId,
+  discountCode: discounts.code,
+  discountKind: discounts.kind,
+};
+
+/** The applied discount as summaries show it, from `discountColumns`. */
+function toDiscount({
+  discountAmount,
+  discountId,
+  discountCode,
+  discountKind,
+}: {
+  discountAmount: string;
+  discountId: number | null;
+  discountCode: string | null;
+  discountKind: DiscountLine["kind"] | null;
+}): DiscountLine | null {
+  return discountId === null || discountKind === null
+    ? null
+    : { amount: discountAmount, code: discountCode, kind: discountKind };
+}
+
 /** The order with its owner, for the confirmation page. */
 export async function findOrder(db: Executor, orderId: number) {
   const [row] = await db
@@ -179,14 +205,25 @@ export async function findOrder(db: Executor, orderId: number) {
       paymentMethod: orders.paymentMethod,
       freeShipping: orders.freeShipping,
       subtotal: orders.subtotal,
-      discountAmount: orders.discountAmount,
+      ...discountColumns,
       shippingAmount: orders.shippingAmount,
       totalAmount: orders.totalAmount,
     })
     .from(orders)
+    .leftJoin(discounts, eq(discounts.id, orders.discountId))
     .where(eq(orders.id, orderId))
     .limit(1);
-  return row;
+  if (!row) return undefined;
+  const { discountId, discountCode, discountKind, ...order } = row;
+  return {
+    ...order,
+    discount: toDiscount({
+      discountAmount: row.discountAmount,
+      discountId,
+      discountCode,
+      discountKind,
+    }),
+  };
 }
 
 /** The order's lines in the order they were bought; the product may have been deleted since. */
@@ -260,6 +297,7 @@ export async function findUserOrder(db: Executor, userId: number, orderId: numbe
       refundedAt: orders.refundedAt,
       totalAmount: orders.totalAmount,
       subtotal: orders.subtotal,
+      ...discountColumns,
       freeShipping: orders.freeShipping,
       fullName: orders.guestFullName,
       phone: orders.guestPhone,
@@ -267,9 +305,15 @@ export async function findUserOrder(db: Executor, userId: number, orderId: numbe
       paymentMethod: orders.paymentMethod,
     })
     .from(orders)
+    .leftJoin(discounts, eq(discounts.id, orders.discountId))
     .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
     .limit(1);
-  return row;
+  if (!row) return undefined;
+  const { discountAmount, discountId, discountCode, discountKind, ...order } = row;
+  return {
+    ...order,
+    discount: toDiscount({ discountAmount, discountId, discountCode, discountKind }),
+  };
 }
 
 /**

@@ -32,6 +32,7 @@ const codOrder: OrderConfirmation = {
   freeShipping: false,
   subtotal: "900.00",
   discountAmount: "0.00",
+  discount: null,
   shippingAmount: "0.00",
   totalAmount: "900.00",
   lines: [
@@ -149,6 +150,36 @@ describe("buildOrderConfirmationEmail", () => {
         "Any questions? Reply to this email or write to shop@example.com.",
         "",
         "The Jassmin team",
+      ].join("\n"),
+    );
+  });
+
+  it("shows the discount line in both languages (#59)", () => {
+    const trio: OrderConfirmation = {
+      ...codOrder,
+      subtotal: "2370.00",
+      discountAmount: "1871.00",
+      discount: { amount: "1871.00", code: null, kind: "fixed_price_set" },
+      totalAmount: "499.00",
+    };
+    const withCode: OrderConfirmation = {
+      ...cardOrder,
+      discountAmount: "643.00",
+      discount: { amount: "643.00", code: "JASSMIN10", kind: "percent" },
+      totalAmount: "5787.00",
+    };
+
+    expect(
+      normalize(String(buildOrderConfirmationEmail(trio, createTranslator("uk"), env).text)),
+    ).toContain(["Сума: 2 370 ₴", "Тестерне тріо 3 × 10 мл: −1 871 ₴", "Доставка:"].join("\n"));
+    expect(
+      normalize(String(buildOrderConfirmationEmail(withCode, createTranslator("en"), env).text)),
+    ).toContain(
+      [
+        "Subtotal: ₴6,430",
+        "Discount (promo code JASSMIN10): −₴643",
+        "Delivery: Free",
+        "Total: ₴5,787",
       ].join("\n"),
     );
   });

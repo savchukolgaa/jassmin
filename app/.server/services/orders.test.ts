@@ -370,6 +370,40 @@ describe.skipIf(!hasDatabase)("order service", () => {
       expect(await redemptions(code)).toBe(1);
     });
 
+    it("shows the discount on the confirmation and the account order page", async () => {
+      const { createOrder, getAccountOrder, getOrderConfirmation } = await import("./orders");
+      const code = await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
+      const userId = await user();
+      const cart = await cartWith([{ variant: await variant(30, 3), quantity: 1 }], userId);
+      await withCode(cart.id, code);
+
+      const result = await createOrder(
+        { cartId: cart.id, userId, customer, locale: "uk" },
+        testDb.db,
+      );
+      // One active cart per user: the next one once the first became an order.
+      const plain = await cartWith([{ variant: await variant(7, 10), quantity: 1 }], userId);
+      const plainResult = await createOrder(
+        { cartId: plain.id, userId, customer, locale: "uk" },
+        testDb.db,
+      );
+      if (!result.ok || !plainResult.ok) throw new Error("not placed");
+
+      const discount = { amount: "445.00", code: "JASSMIN10", kind: "percent" };
+      const viewer = { userId, orderIds: [] };
+      expect(await getOrderConfirmation(result.orderId, viewer, testDb.db)).toMatchObject({
+        discountAmount: "445.00",
+        discount,
+        totalAmount: "4005.00",
+      });
+      expect(await getAccountOrder(userId, result.orderId, testDb.db)).toMatchObject({
+        subtotal: "4450.00",
+        discount,
+        totalAmount: "4005.00",
+      });
+      expect((await getAccountOrder(userId, plainResult.orderId, testDb.db))?.discount).toBeNull();
+    });
+
     it("applies the tester trio by itself, up to three sets, and nothing else", async () => {
       const trio = await insertDiscount({
         slug: "tester-trio",

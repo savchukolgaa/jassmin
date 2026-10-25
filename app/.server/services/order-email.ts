@@ -5,6 +5,7 @@
 import type Mail from "nodemailer/lib/mailer";
 import type { OrderConfirmation } from "~/lib/checkout";
 import { PAYMENT_KEYS } from "~/lib/checkout";
+import { discountLabel } from "~/lib/discounts";
 import type { OrderEmailType } from "~/lib/enums";
 import { createTranslator, type Translator } from "~/lib/i18n";
 import { formatVolume } from "~/lib/products";
@@ -70,6 +71,14 @@ export function buildOrderConfirmationEmail(
     ...lines,
     "",
     amount(t("checkout.subtotal"), formatPrice(order.subtotal)),
+    ...(order.discount
+      ? [
+          amount(
+            discountLabel(order.discount, translator),
+            `−${formatPrice(order.discount.amount)}`,
+          ),
+        ]
+      : []),
     amount(
       t("checkout.shipping"),
       order.freeShipping ? t("checkout.shippingFree") : t("checkout.shippingCarrierRate"),

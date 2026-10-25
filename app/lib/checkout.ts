@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { type AuthFormErrors, emailSchema } from "./auth";
 import type { CartLine } from "./cart";
+import type { DiscountLine } from "./discounts";
 import { PAYMENT_METHODS, type PaymentMethod } from "./enums";
 import { msg, type TextKey } from "./i18n";
 import { fromKopiyky, toKopiyky } from "./money";
@@ -172,6 +173,8 @@ export interface OrderConfirmation {
   freeShipping: boolean;
   subtotal: string;
   discountAmount: string;
+  /** The applied discount (#59), or `null`. */
+  discount: DiscountLine | null;
   shippingAmount: string;
   totalAmount: string;
   lines: OrderSummaryLine[];

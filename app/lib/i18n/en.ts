@@ -322,8 +322,8 @@ export const en = {
       cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       stockChanged:
         "Some perfumes ran low while you were checking out. Check your cart and try again.",
-      discountChanged:
-        "Your promo code stopped working while you were checking out. Check the total and try again.",
+      totalChanged:
+        "The total changed while you were checking out: a promo code or offer may have stopped working. Check your order and try again.",
     },
     success: {
       title: "Order placed",

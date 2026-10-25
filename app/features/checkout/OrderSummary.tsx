@@ -1,10 +1,13 @@
 import type { OrderSummaryLine } from "~/lib/checkout";
+import { type DiscountLine, discountLabel } from "~/lib/discounts";
 import { useT } from "~/lib/i18n";
 import { formatVolume } from "~/lib/products";
 
 export interface OrderSummaryProps {
   lines: OrderSummaryLine[];
   subtotal: string;
+  /** The applied discount (#59); no row without one. */
+  discount?: DiscountLine | null;
   total: string;
   freeShipping: boolean;
   /** How much is missing for free delivery, shown as a hint at checkout. */
@@ -15,6 +18,7 @@ export interface OrderSummaryProps {
 export function OrderSummary({
   lines,
   subtotal,
+  discount,
   total,
   freeShipping,
   remainingForFreeShipping,
@@ -63,6 +67,12 @@ export function OrderSummary({
           <dt>{t("checkout.subtotal")}</dt>
           <dd>{formatPrice(subtotal)}</dd>
         </div>
+        {discount && (
+          <div className="flex justify-between gap-4 font-bold text-success">
+            <dt>{discountLabel(discount, translator)}</dt>
+            <dd className="shrink-0">−{formatPrice(discount.amount)}</dd>
+          </div>
+        )}
         <div className="flex justify-between gap-4 text-muted">
           <dt>{t("checkout.shipping")}</dt>
           <dd className="text-right">

@@ -306,12 +306,12 @@ and in the confirmation email.
   concurrent checkouts → exactly one discounted order, the other `discount-changed`, count = 1;
   expired code at checkout → `discount-changed`, nothing written; rollback still undoes the
   redemption.
-- [ ] **9. Checkout route, success and account pages** — `checkout.tsx` loader passes
+- [x] **9. Checkout route, success and account pages** — `checkout.tsx` loader passes
   `cart.total`, `cart.discount` and the discounted shipping info to `OrderSummary`; the action maps
   `discount-changed` to a 409 `formError`. `OrderSummary` renders the discount row. `findOrder` /
   `findUserOrder` return `discountAmount` / `discountCode`; `checkout-success.tsx` and
   `account.orders.$id.tsx` pass them. Update the route and UI tests (uk + en).
-- [ ] **10. Order email and analytics** — `buildOrderConfirmationEmail` adds the discount line
+- [x] **10. Order email and analytics** — `buildOrderConfirmationEmail` adds the discount line
   (`order-email.test.ts`, both locales). Add the discount properties to `checkout_start` and
   `purchase` in `checkout.tsx` (assert in `checkout.test.ts`).
 - [ ] **11. Seeds** — `SAMPLE_DISCOUNTS` in `db/seed-data.ts`, inserted by `db/seed.ts`

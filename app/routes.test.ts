@@ -53,6 +53,12 @@ describe("route config", () => {
     );
   });
 
+  it("keeps the Strapi sync endpoints outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "cms/products")?.file).toBe(
+      "routes/cms.products.ts",
+    );
+  });
+
   it("has no in-app admin area: products and orders are managed in Strapi (#40)", () => {
     expect(routes.find((entry) => entry.path === "admin")).toBeUndefined();
   });

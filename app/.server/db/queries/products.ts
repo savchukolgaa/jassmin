@@ -209,3 +209,130 @@ export async function findVariantForProduct(
     .limit(1);
   return row;
 }
+
+// Writes from the Strapi admin (#40), applied by `services/cms-sync.ts` in one transaction.
+
+/** A `Db` or a transaction, so the sync service can pass `tx` down. */
+type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
+
+/** The catalog fields Strapi edits, plus the deprecated columns filled from the main size. */
+export interface ProductWrite {
+  title: string;
+  slug: string;
+  brand: string;
+  description: string | null;
+  gender: Gender;
+  fragranceFamily: string | null;
+  imageUrl: string | null;
+  packSize: number;
+  active: boolean;
+  /** @deprecated columns (#26), still NOT NULL: copied from the smallest size. */
+  price: string;
+  volumeMl: number;
+  stockQuantity: number;
+}
+
+export async function insertProduct(
+  db: Executor,
+  product: ProductWrite,
+): Promise<{ id: number; publicId: string }> {
+  const [row] = await db
+    .insert(products)
+    .values(product)
+    .returning({ id: products.id, publicId: products.publicId });
+  if (!row) {
+    throw new Error("Could not insert the product");
+  }
+  return row;
+}
+
+/** The product's id, locking its row until the transaction ends. */
+export async function lockProductByPublicId(
+  db: Executor,
+  publicId: string,
+): Promise<number | undefined> {
+  const [row] = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.publicId, publicId))
+    .for("update");
+  return row?.id;
+}
+
+export async function updateProduct(
+  db: Executor,
+  productId: number,
+  product: Partial<ProductWrite>,
+): Promise<void> {
+  await db.update(products).set(product).where(eq(products.id, productId));
+}
+
+/** The product's sizes, locking their rows until the transaction ends. */
+export function lockVariantsByProductId(db: Executor, productId: number) {
+  return db
+    .select({
+      id: productVariants.id,
+      volumeMl: productVariants.volumeMl,
+      stockQuantity: productVariants.stockQuantity,
+    })
+    .from(productVariants)
+    .where(eq(productVariants.productId, productId))
+    .orderBy(asc(productVariants.id))
+    .for("update");
+}
+
+export async function insertVariants(
+  db: Executor,
+  productId: number,
+  variants: readonly { volumeMl: number; price: string; stockQuantity: number }[],
+): Promise<void> {
+  if (variants.length === 0) return;
+  await db.insert(productVariants).values(variants.map((v) => ({ productId, ...v })));
+}
+
+export async function updateVariant(
+  db: Executor,
+  variantId: number,
+  variant: { price: string; stockQuantity: number },
+): Promise<void> {
+  await db.update(productVariants).set(variant).where(eq(productVariants.id, variantId));
+}
+
+/** Deletes sizes: their cart lines cascade, order lines keep their `volume_ml` snapshot. */
+export async function deleteVariants(db: Executor, variantIds: readonly number[]): Promise<void> {
+  if (variantIds.length === 0) return;
+  await db.delete(productVariants).where(inArray(productVariants.id, [...variantIds]));
+}
+
+/** The product as Strapi should show it, with its sizes smallest first. */
+export async function findProductSyncState(db: Executor, productId: number) {
+  const [product] = await db
+    .select({
+      id: products.id,
+      publicId: products.publicId,
+      title: products.title,
+      slug: products.slug,
+      brand: products.brand,
+      description: products.description,
+      gender: products.gender,
+      fragranceFamily: products.fragranceFamily,
+      imageUrl: products.imageUrl,
+      packSize: products.packSize,
+      active: products.active,
+    })
+    .from(products)
+    .where(eq(products.id, productId));
+  if (!product) return undefined;
+  const variants = await db
+    .select({
+      volumeMl: productVariants.volumeMl,
+      price: productVariants.price,
+      stock: productVariants.stockQuantity,
+    })
+    .from(productVariants)
+    .where(eq(productVariants.productId, productId))
+    .orderBy(asc(productVariants.volumeMl));
+  return { ...product, variants };
+}
+
+export type ProductSyncRow = NonNullable<Awaited<ReturnType<typeof findProductSyncState>>>;

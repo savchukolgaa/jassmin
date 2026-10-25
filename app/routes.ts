@@ -37,4 +37,8 @@ export default [
   // Dev only: the local payment simulator's hosted page (#44), a 404 unless
   // `PAYMENT_PROVIDER=simulator`. Outside the shop layout, like a provider's own page.
   route("payments/simulator", "routes/payments.simulator.tsx"),
+  // Action-only (POST) sync endpoints for Strapi's document middleware (#40): staff edit products
+  // and orders in the Strapi admin, and the app applies each edit before Strapi saves it.
+  // Authenticated by `CMS_SYNC_SECRET`; no layout, session or consent.
+  route("cms/products", "routes/cms.products.ts"),
 ] satisfies RouteConfig;

@@ -251,7 +251,7 @@ Each step leaves the app building and the tests green.
   `cmsWrite(method, path, body, schema)` with `STRAPI_SYNC_TOKEN` and `CMS_TIMEOUT_MS`, throwing
   `CmsError` (`not_configured` without the token). Add both env vars to `env.ts`, `.env.example`,
   the README table and `env.test.ts`. Integration-test the queue on `createTestDatabase()`.
-- [ ] **5. Product sync on the app side.**
+- [x] **5. Product sync on the app side.**
   - `~/lib/cms-sync.ts`: `cmsProductChangeSchema` (`action: "create" | "update" | "delete"`,
     `publicId?`, `name`, `slug`, `brand`, `description?`, `gender` ∈ `GENDERS`,
     `fragranceFamily?`, `imageUrl?`, `packSize ≥ 1`, `active`, and `variants[]` with `volumeMl` ∈

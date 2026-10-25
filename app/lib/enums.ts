@@ -70,3 +70,19 @@ export type OrderEmailType = (typeof ORDER_EMAIL_TYPES)[number];
 export const ORDER_EMAIL_STATUSES = ["pending", "sent", "failed"] as const;
 
 export type OrderEmailStatus = (typeof ORDER_EMAIL_STATUSES)[number];
+
+/**
+ * Where card payments go (#44). Only the local `simulator` for now (never in production); a real
+ * provider joins this list with a migration that rewrites the `payments_provider_check`.
+ */
+export const PAYMENT_PROVIDERS = ["simulator"] as const;
+
+export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
+
+/**
+ * State of one payment attempt in `payments.status` (#44): `pending` until the provider's
+ * callback says it `succeeded` or `failed`. A CHECK constraint limits it to these values.
+ */
+export const PAYMENT_ATTEMPT_STATUSES = ["pending", "succeeded", "failed"] as const;
+
+export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];

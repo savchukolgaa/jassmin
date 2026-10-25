@@ -105,7 +105,7 @@ For now the only provider is a **local payment simulator**: a fake hosted page s
 | modify | `app/.server/AGENTS.md` | Document payments (Orders section and new Payments section) |
 
 ## Steps
-- [ ] **1. Schema: `payments` table.** Add `PAYMENT_ATTEMPT_STATUSES` and `PAYMENT_PROVIDERS` to `~/lib/enums`. Add the `payments` table to `db/schema.ts`:
+- [x] **1. Schema: `payments` table.** Add `PAYMENT_ATTEMPT_STATUSES` and `PAYMENT_PROVIDERS` to `~/lib/enums`. Add the `payments` table to `db/schema.ts`:
   - CHECKs via `oneOf` for `status` and `provider`, plus `amount >= 0`
   - `unique("payments_reference_unique")`
   - `index("payments_order_id_idx")`

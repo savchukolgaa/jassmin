@@ -2,7 +2,7 @@ import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { AnalyticsSession, UserEvent } from "~/lib/analytics";
-import type { Cart, CartItem, Order, OrderItem, ProductVariant } from "~/lib/commerce";
+import type { Cart, CartItem, Order, OrderItem, Payment, ProductVariant } from "~/lib/commerce";
 import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES, USER_ROLES } from "~/lib/enums";
 import {
   cartItems,
@@ -14,6 +14,7 @@ import {
   orderStatusType,
   orders,
   paymentStatusType,
+  payments,
   products,
   productVariants,
   sessions,
@@ -330,6 +331,34 @@ describe("order_emails", () => {
   });
 });
 
+describe("payments", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(payments)).toEqual({
+      id: ["serial", true, true],
+      orderId: ["integer", true, false],
+      provider: ["text", true, false],
+      reference: ["text", true, false],
+      status: ["text", true, true],
+      amount: ["numeric(10, 2)", true, false],
+      currency: ["text", true, true],
+      providerPaymentId: ["text", false, false],
+      lastCallback: ["jsonb", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
+      completedAt: ["timestamp with time zone", false, false],
+    });
+  });
+
+  it("cascades order deletes and keeps references unique", () => {
+    expect(describeForeignKeys(payments)).toEqual({ orderId: ["orders", "cascade"] });
+    expect(describeConstraints(payments)).toEqual({
+      checks: ["payments_amount_check", "payments_provider_check", "payments_status_check"],
+      uniques: ["payments_reference_unique"],
+      indexes: ["payments_order_id_idx"],
+    });
+  });
+});
+
 describe("shared commerce types", () => {
   it("match the rows the tables return", () => {
     expectTypeOf<typeof productVariants.$inferSelect>().toEqualTypeOf<ProductVariant>();
@@ -337,6 +366,7 @@ describe("shared commerce types", () => {
     expectTypeOf<typeof cartItems.$inferSelect>().toEqualTypeOf<CartItem>();
     expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();
     expectTypeOf<typeof orderItems.$inferSelect>().toEqualTypeOf<OrderItem>();
+    expectTypeOf<typeof payments.$inferSelect>().toEqualTypeOf<Payment>();
   });
 });
 

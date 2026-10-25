@@ -25,9 +25,11 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   `app/lib/checkout.ts`, and `features/checkout/OrderSummary.tsx` already exist and are reused.
 - `orders_user_id_idx` already exists, so listing a user's orders needs no migration.
 - No new packages, env vars or migrations.
-- Note: #17 (admin order management) is closed but not implemented on `main`
-  (`routes/admin.orders.tsx` is still a placeholder), so in practice every order is `pending`
-  today. Tests must create orders in other statuses directly in the DB.
+- Note: #17 (admin order management) was closed as superseded by **#40 (open)**, which moves
+  order management to Strapi and syncs status changes back to the app DB for this dashboard.
+  Until #40 lands, every order is `pending` in practice, so tests create orders in other
+  statuses directly in the DB. #12 doesn't depend on #40: it reads `orders.status` whatever sets it.
+- Follow-ups filed from this plan: #54 (account profile page) and #55 (special offers page).
 
 ## Decisions & assumptions
 
@@ -63,7 +65,8 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   Continue shopping); current orders as `blush` `rounded-card-lg` cards with a status pill
   (`primary`), the 4-step progress bar, product thumbnails (`products.image_url`) and a `dark`
   "Order details →" `ButtonLink`; previous orders as a bordered list of `<details>` rows; empty
-  state as a `blush` panel. Only existing tokens are used (`primary`, `ink`, `muted`, `body`,
+  state as a `blush` panel. Status pills: `completed` = `success-bg` / `success`, `cancelled` /
+  `returned` / `unclaimed` = `card` / `body`, current statuses = `primary` / white. Only existing tokens are used (`primary`, `ink`, `muted`, `body`,
   `blush`, `card`, `line`, `success` / `success-bg`) and the existing `Button` / `ButtonLink`;
   animations are disabled under `prefers-reduced-motion`.
 - **First name** for the greeting = the first word of `users.full_name`.
@@ -83,25 +86,28 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
 
 - [ ] **Q1: Should we add `shipped_at` / `completed_at` columns?** — Why it matters: the issue asks
   for "status timestamps", but only `paid_at`, `cancelled_at` and `refunded_at` exist, so the
-  shipped and completed steps can't show a date. Adding them means a migration + rollback and
-  setting them in #17's admin transitions. Recommended default: no new columns in #12; show dates
-  for placed (`created_at`) and paid (`paid_at`), plus `cancelled_at` / `refunded_at` on previous
-  orders; leave the columns to #17. Affects steps: 2, 3, 6, 7.
-- [ ] **Q2: How should `unclaimed` and `returned` look, and which progress step does a
-  `cancelled` order show?** — Why it matters: the canvas uses an amber pill for `returned`
-  (`#fdf0d9` / `#7a4300`), which isn't a theme token, and `docs/design.md` says page issues don't
-  add colours. Recommended default: `completed` = `success-bg` / `success`; `cancelled`,
-  `returned`, `unclaimed` = `card` / `body` neutral pill; previous orders show only the pill, no
-  progress bar. Affects steps: 6, 7.
-- [ ] **Q3: Keep the canvas's "Profile details" nav link?** — Why it matters: there is no profile
-  page or issue for it; a dead link would hurt. Recommended default: omit it; the side nav has
-  "Orders" and "Continue shopping" (`/`). Affects step: 5.
-- [ ] **Q4: Empty-state call to action?** — Why it matters: the canvas links to a tester-trio
-  offer ("Build my trio · 499₴") that doesn't exist in the store. Recommended default: "No orders
-  yet" panel with two `ButtonLink`s to `/catalog/women` and `/catalog/men` (no Unisex, per the
-  catalog rule). Affects step: 6.
+  shipped and completed steps can't show a date. #17 was closed as superseded by #40 (order
+  management in Strapi), so the question is asked on #40
+  (https://github.com/savchukolgaa/jassmin/issues/40#issuecomment-6397082580), together with the
+  status-name mismatch (#40 lists `delivered`, the app has `completed` / `returned` /
+  `unclaimed`). Default for #12 (applies until #40 answers): no new columns; show dates for placed
+  (`created_at`) and paid (`paid_at`), plus `cancelled_at` / `refunded_at` on previous orders.
+  `OrderProgress` takes an optional date per step, so dates for later steps are a small change.
+  Affects steps: 2, 3, 6, 7.
 
 ## Resolved questions
+
+- **How do `returned` / `unclaimed` / `cancelled` look?** — The default was accepted:
+  `completed` = `success-bg` / `success`; `cancelled`, `returned`, `unclaimed` = `card` / `body`
+  neutral pill (no new colour for the canvas's amber `returned` pill); previous orders show only
+  the pill, no progress bar (source: user decision, 2026-10-25).
+- **Keep the canvas's "Profile details" nav link?** — Not in #12. The profile page is its own
+  issue, #54, which adds `/account/profile` and the side-menu link. #12's side menu has "Orders"
+  and "Continue shopping" (`/`), built as a list so #54 can add an item (source: user decision;
+  #54).
+- **Empty-state call to action?** — The canvas's tester-trio offer becomes the special-offers
+  page, #55. Until #55 lands, the "No orders yet" panel links to `/catalog/women` and
+  `/catalog/men` (no Unisex); #55 repoints it to `/offers` (source: user decision; #55).
 
 - **Which statuses are current vs previous?** — Current: `pending`, `paid`, `shipped`; previous:
   `completed`, `cancelled`, `returned`, `unclaimed` (source: #12 Context; `ORDER_STATUSES` in
@@ -193,7 +199,8 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   `OrderStatusPill`, `OrderProgress`, up to 3 thumbnails, "Order details →" to
   `/account/orders/:id`), then `PreviousOrdersList` (`<details>` rows: number, date, total, pill;
   body lists lines with title/brand/volume/qty and `unitPrice` from `price_at_purchase`, plus a
-  link to the detail page), or the empty state when both lists are empty (Q4). Hide a section
+  link to the detail page), or the empty state when both lists are empty (links to `/catalog/women` and `/catalog/men`
+  until #55 adds `/offers`). Hide a section
   that is empty while the other has orders. `OrderProgress` is an `<ol>` with
   `aria-current="step"` on the current step and visually hidden "done" text, so status isn't
   shown by colour alone.
@@ -243,8 +250,9 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
 ## Out of scope
 
 - Linking earlier guest orders placed with the same email to the account (#12 Context).
-- Profile editing, password change, addresses (Q3).
+- Profile editing, password change, addresses (#54).
+- The special offers page and its link from the empty state (#55).
 - Cancelling, returning or re-ordering from the account.
-- New lifecycle columns (`shipped_at`, `completed_at`) and status changes (#17, Q1).
+- New lifecycle columns (`shipped_at`, `completed_at`) and status changes (#40, Q1).
 - Nova Poshta tracking numbers / live delivery tracking.
 - Pagination of the order history (a small store's customers have few orders; revisit if needed).

@@ -275,7 +275,7 @@ export const en = {
     },
     payment: {
       card: "By card",
-      cardNote: "We'll send you the payment details once we've confirmed your order.",
+      cardNote: "Pay online by card right after placing your order.",
       cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       cod: "Cash on delivery",
       codNote: "Pay when you collect the parcel at Nova Poshta.",
@@ -310,6 +310,14 @@ export const en = {
       contactNote: "We'll call you on {phone} to confirm your order.",
       delivery: "Delivery",
       payment: "Payment",
+      paymentPaid: "Paid. Thank you!",
+      paymentPending:
+        "We're waiting for the payment to be confirmed. If you've already paid, refresh the page.",
+      paymentFailed:
+        "The payment didn't go through, and you haven't been charged. Please try again.",
+      pay: "Pay now",
+      retry: "Try again",
+      refresh: "Refresh the page",
       continue: "Continue shopping",
     },
   },

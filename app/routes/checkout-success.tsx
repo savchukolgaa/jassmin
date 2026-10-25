@@ -1,9 +1,11 @@
 import { data } from "react-router";
 import { getUser } from "~/.server/services/auth";
 import { getOrderConfirmation } from "~/.server/services/orders";
+import { getPaymentView } from "~/.server/services/payments";
 import { getSessionOrderIds } from "~/.server/session";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { OrderSummary } from "~/features/checkout/OrderSummary";
+import { PaymentStatus } from "~/features/checkout/PaymentStatus";
 import { PAYMENT_KEYS, parseOrderId } from "~/lib/checkout";
 import { metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/checkout-success";
@@ -28,7 +30,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   if (!order) {
     throw data(null, { status: 404 });
   }
-  return order;
+  // Card orders show where their online payment stands (#44); cash on delivery has nothing to show.
+  const payment = order.paymentMethod === "card" ? await getPaymentView(order.id) : null;
+  return { ...order, payment };
 }
 
 export default function CheckoutSuccess({ loaderData: order }: Route.ComponentProps) {
@@ -67,6 +71,7 @@ export default function CheckoutSuccess({ loaderData: order }: Route.ComponentPr
               </dd>
             </div>
           </dl>
+          {order.payment && <PaymentStatus orderId={order.id} payment={order.payment} />}
           <ButtonLink to="/" size="lg" className="self-start">
             {t("checkout.success.continue")}
           </ButtonLink>

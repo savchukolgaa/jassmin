@@ -260,7 +260,7 @@ Each step is small, ordered, and leaves the app in a working state.
 
   Register the route in `app/routes.ts` and add the `NavLink` in `account.tsx` (with the Orders
   active-state fix). Run `pnpm typecheck`.
-- [ ] **8. Route tests.** In `account.profile.test.ts` (mocking `~/.server/services/auth` and
+- [x] **8. Route tests.** In `account.profile.test.ts` (mocking `~/.server/services/auth` and
   `~/.server/services/profile`, like `account._index.test.ts`), cover:
   - The loader returns the profile, and a logged-out loader or action → 302 to `/login`.
   - `contact` success and a validation error with `values` refilled.

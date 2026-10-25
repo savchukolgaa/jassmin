@@ -77,3 +77,11 @@ export interface AccountOrders {
   /** Newest first. */
   previous: AccountOrder[];
 }
+
+/** The profile page's details (#54). Never includes the password hash. */
+export interface AccountProfile {
+  fullName: string;
+  email: string;
+  phone: string | null;
+  createdAt: Date;
+}

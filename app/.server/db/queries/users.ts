@@ -1,4 +1,5 @@
 import { eq, sql } from "drizzle-orm";
+import type { AccountProfile } from "~/lib/account";
 import type { CheckoutPrefill } from "~/lib/checkout";
 import type { UserRole } from "~/lib/enums";
 import type { Db } from "../client";
@@ -47,6 +48,37 @@ export async function findUserById(db: Db, id: number): Promise<PublicUser | und
   return user;
 }
 
+/**
+ * The password hash of the user with this id, for checking the current password before a
+ * profile change (#54). Like `findUserByEmail`, only the auth and profile services may call it.
+ */
+export async function findUserCredentialsById(
+  db: Db,
+  id: number,
+): Promise<UserCredentials | undefined> {
+  const [user] = await db
+    .select({ id: users.id, passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return user;
+}
+
+/** The details the account profile page shows (#54). */
+export async function findUserProfile(db: Db, id: number): Promise<AccountProfile | undefined> {
+  const [user] = await db
+    .select({
+      fullName: users.fullName,
+      email: users.email,
+      phone: users.phone,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return user;
+}
+
 /** The user's contact details, to prefill the checkout form. */
 export async function findUserContact(db: Db, id: number): Promise<CheckoutPrefill | undefined> {
   const [user] = await db
@@ -80,6 +112,47 @@ export async function setUserRole(db: Db, email: string, role: UserRole): Promis
     .update(users)
     .set({ role })
     .where(eq(users.email, email))
+    .returning({ id: users.id });
+  return updated.length > 0;
+}
+
+/** Sets the name and phone (`null` clears it). `false` when no user has this id. */
+export async function updateUserContact(
+  db: Db,
+  id: number,
+  values: { fullName: string; phone: string | null },
+): Promise<boolean> {
+  const updated = await db
+    .update(users)
+    .set(values)
+    .where(eq(users.id, id))
+    .returning({ id: users.id });
+  return updated.length > 0;
+}
+
+/**
+ * Sets an (already normalised) email. Rejects with PostgreSQL error `23505` when another user has
+ * it. `false` when no user has this id.
+ */
+export async function updateUserEmail(db: Db, id: number, email: string): Promise<boolean> {
+  const updated = await db
+    .update(users)
+    .set({ email })
+    .where(eq(users.id, id))
+    .returning({ id: users.id });
+  return updated.length > 0;
+}
+
+/** Stores a new password hash. `false` when no user has this id. */
+export async function updateUserPasswordHash(
+  db: Db,
+  id: number,
+  passwordHash: string,
+): Promise<boolean> {
+  const updated = await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, id))
     .returning({ id: users.id });
   return updated.length > 0;
 }

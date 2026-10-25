@@ -109,4 +109,73 @@ describe.skipIf(!hasDatabase)("user queries", () => {
 
     expect(await setUserRole(testDb.db, "nobody@example.com", "admin")).toBe(false);
   });
+
+  it("reads the profile and credentials by id", async () => {
+    const { findUserCredentialsById, findUserProfile, insertUser } = await import("./users");
+    const { id } = await insertUser(testDb.db, {
+      fullName: "Profile",
+      email: "profile@example.com",
+      passwordHash: "$argon2id$profile",
+      phone: "+380 67 123 45 67",
+    });
+
+    const profile = await findUserProfile(testDb.db, id);
+    expect(profile).toEqual({
+      fullName: "Profile",
+      email: "profile@example.com",
+      phone: "+380 67 123 45 67",
+      createdAt: expect.any(Date),
+    });
+    expect(profile).not.toHaveProperty("passwordHash");
+    expect(await findUserCredentialsById(testDb.db, id)).toEqual({
+      id,
+      passwordHash: "$argon2id$profile",
+    });
+    expect(await findUserProfile(testDb.db, 999_999)).toBeUndefined();
+    expect(await findUserCredentialsById(testDb.db, 999_999)).toBeUndefined();
+  });
+
+  it("updates the contact details, email and password hash", async () => {
+    const {
+      findUserByEmail,
+      findUserContact,
+      insertUser,
+      updateUserContact,
+      updateUserEmail,
+      updateUserPasswordHash,
+    } = await import("./users");
+    const { id } = await insertUser(testDb.db, {
+      fullName: "Before",
+      email: "before@example.com",
+      passwordHash: "old",
+      phone: "+380 67 000 00 00",
+    });
+
+    expect(await updateUserContact(testDb.db, id, { fullName: "After", phone: null })).toBe(true);
+    expect(await updateUserEmail(testDb.db, id, "after@example.com")).toBe(true);
+    expect(await updateUserPasswordHash(testDb.db, id, "new")).toBe(true);
+
+    expect(await findUserContact(testDb.db, id)).toEqual({
+      fullName: "After",
+      email: "after@example.com",
+      phone: null,
+    });
+    expect(await findUserByEmail(testDb.db, "after@example.com")).toEqual({
+      id,
+      passwordHash: "new",
+    });
+    expect(await updateUserContact(testDb.db, 999_999, { fullName: "X", phone: null })).toBe(false);
+  });
+
+  it("rejects changing to a taken email with 23505", async () => {
+    const { insertUser, updateUserEmail } = await import("./users");
+    await insertUser(testDb.db, { fullName: "A", email: "taken@example.com", passwordHash: "x" });
+    const { id } = await insertUser(testDb.db, {
+      fullName: "B",
+      email: "free@example.com",
+      passwordHash: "x",
+    });
+
+    expect(await pgErrorCode(updateUserEmail(testDb.db, id, "taken@example.com"))).toBe("23505");
+  });
 });

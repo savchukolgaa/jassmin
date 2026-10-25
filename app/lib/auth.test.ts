@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  changeEmailSchema,
+  changePasswordSchema,
+  contactSchema,
   loginRedirectPath,
   loginSchema,
+  profileIntentSchema,
   registerSchema,
   resolveAcquisitionChannel,
   safeRedirect,
@@ -133,5 +137,70 @@ describe("resolveAcquisitionChannel", () => {
   it("defaults to direct", () => {
     expect(resolveAcquisitionChannel(url(), null)).toBe("direct");
     expect(resolveAcquisitionChannel(url(), "not a url")).toBe("direct");
+  });
+});
+
+describe("profile schemas", () => {
+  it("trims the contact details and turns a blank phone into undefined", () => {
+    expect(contactSchema.parse({ fullName: "  Olena Petrenko ", phone: "  " })).toEqual({
+      fullName: "Olena Petrenko",
+      phone: undefined,
+    });
+  });
+
+  it("rejects a bad phone and a blank name with the register rules", () => {
+    const result = contactSchema.safeParse({ fullName: " ", phone: "call me" });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(toFieldErrors(result.error, ["fullName", "phone"])).toEqual({
+      fullName: "auth.errors.nameRequired",
+      phone: "auth.errors.phoneInvalid",
+    });
+  });
+
+  it("normalises the new email and needs the current password", () => {
+    expect(
+      changeEmailSchema.parse({ email: " New@Example.COM ", currentPassword: "secret" }),
+    ).toEqual({ email: "new@example.com", currentPassword: "secret" });
+
+    const result = changeEmailSchema.safeParse({ email: "a@example.com", currentPassword: "" });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(toFieldErrors(result.error, ["email", "currentPassword"])).toEqual({
+      currentPassword: "account.profile.errors.currentPasswordRequired",
+    });
+  });
+
+  it("checks the new password's length and its confirmation", () => {
+    const valid = {
+      currentPassword: "old secret",
+      newPassword: "correct horse",
+      confirmNewPassword: "correct horse",
+    };
+    expect(changePasswordSchema.parse(valid)).toEqual(valid);
+
+    const short = changePasswordSchema.safeParse({
+      ...valid,
+      newPassword: "short",
+      confirmNewPassword: "short",
+    });
+    expect(short.success).toBe(false);
+    if (short.success) return;
+    expect(toFieldErrors(short.error, ["newPassword"])).toEqual({
+      newPassword: "auth.errors.passwordTooShort",
+    });
+
+    const mismatch = changePasswordSchema.safeParse({ ...valid, confirmNewPassword: "other" });
+    expect(mismatch.success).toBe(false);
+    if (mismatch.success) return;
+    expect(toFieldErrors(mismatch.error, ["newPassword", "confirmNewPassword"])).toEqual({
+      confirmNewPassword: "account.profile.errors.passwordMismatch",
+    });
+  });
+
+  it("only accepts the three intents", () => {
+    expect(profileIntentSchema.safeParse("password").success).toBe(true);
+    expect(profileIntentSchema.safeParse("delete").success).toBe(false);
   });
 });

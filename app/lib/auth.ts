@@ -19,20 +19,29 @@ const optionalText = z
   .optional()
   .transform((value) => value || undefined);
 
+export const fullNameSchema = z
+  .string()
+  .trim()
+  .min(1, msg("auth.errors.nameRequired"))
+  .max(255, msg("auth.errors.nameTooLong"));
+
+/** Optional: blank or missing becomes `undefined`. */
+export const phoneSchema = optionalText.refine(
+  (value) => value === undefined || PHONE.test(value),
+  { message: msg("auth.errors.phoneInvalid") },
+);
+
+/** A password being set, at registration or in the profile. Not trimmed. */
+export const newPasswordSchema = z
+  .string()
+  .min(8, msg("auth.errors.passwordTooShort"))
+  .max(128, msg("auth.errors.passwordTooLong"));
+
 export const registerSchema = z.object({
-  fullName: z
-    .string()
-    .trim()
-    .min(1, msg("auth.errors.nameRequired"))
-    .max(255, msg("auth.errors.nameTooLong")),
+  fullName: fullNameSchema,
   email: emailSchema,
-  password: z
-    .string()
-    .min(8, msg("auth.errors.passwordTooShort"))
-    .max(128, msg("auth.errors.passwordTooLong")),
-  phone: optionalText.refine((value) => value === undefined || PHONE.test(value), {
-    message: msg("auth.errors.phoneInvalid"),
-  }),
+  password: newPasswordSchema,
+  phone: phoneSchema,
   // Analytics only: an unusable value falls back to the column default instead of failing.
   acquisitionChannel: z.string().trim().toLowerCase().min(1).max(100).optional().catch(undefined),
   redirectTo: optionalText,
@@ -48,8 +57,61 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+// The three forms of the account profile page (#54), told apart by a hidden `intent` field.
+export const PROFILE_INTENTS = ["contact", "email", "password"] as const;
+export type ProfileIntent = (typeof PROFILE_INTENTS)[number];
+export const profileIntentSchema = z.enum(PROFILE_INTENTS);
+
+const currentPasswordSchema = z
+  .string()
+  .min(1, msg("account.profile.errors.currentPasswordRequired"));
+
+export const contactSchema = z.object({ fullName: fullNameSchema, phone: phoneSchema });
+
+export type ContactInput = z.infer<typeof contactSchema>;
+
+export const changeEmailSchema = z.object({
+  email: emailSchema,
+  currentPassword: currentPasswordSchema,
+});
+
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: currentPasswordSchema,
+    newPassword: newPasswordSchema,
+    confirmNewPassword: z.string(),
+  })
+  .refine((value) => value.newPassword === value.confirmNewPassword, {
+    message: msg("account.profile.errors.passwordMismatch"),
+    path: ["confirmNewPassword"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 export type RegisterField = "fullName" | "email" | "password" | "phone";
 export type LoginField = "email" | "password";
+export type ContactField = "fullName" | "phone";
+export type ChangeEmailField = "email" | "currentPassword";
+export type ChangePasswordField = "currentPassword" | "newPassword" | "confirmNewPassword";
+
+export interface ProfileFields {
+  contact: ContactField;
+  email: ChangeEmailField;
+  password: ChangePasswordField;
+}
+
+/** What the profile page's `action` returns, for the form named by `intent`. */
+export type ProfileActionData =
+  | { ok: true; intent: ProfileIntent }
+  | {
+      [Intent in ProfileIntent]: { ok: false; intent: Intent } & AuthFormErrors<
+        ProfileFields[Intent]
+      >;
+    }[ProfileIntent]
+  /** The posted `intent` wasn't one of ours. */
+  | { ok: false; intent: null; formError: TextKey };
 
 /** What a login/register `action` returns when the form can't be accepted. Errors are keys. */
 export interface AuthFormErrors<Field extends string> {

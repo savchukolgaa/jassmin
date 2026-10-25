@@ -94,6 +94,21 @@ globalForProfileLimiter.__jassminProfilePasswordLimiter ??= createRateLimiter({
 export const profilePasswordLimiter: RateLimiter =
   globalForProfileLimiter.__jassminProfilePasswordLimiter;
 
+const globalForPromoLimiter = globalThis as typeof globalThis & {
+  __jassminPromoCodeLimiter?: RateLimiter;
+};
+
+globalForPromoLimiter.__jassminPromoCodeLimiter ??= createRateLimiter({
+  limit: 10,
+  windowMs: LOGIN_WINDOW_MS,
+});
+
+/**
+ * Promo codes the cart refused (#59), per client IP (or visitor id), so codes can't be guessed by
+ * trying them one after another.
+ */
+export const promoCodeLimiter: RateLimiter = globalForPromoLimiter.__jassminPromoCodeLimiter;
+
 /** The client IP from the first `X-Forwarded-For` entry, or `undefined` when there is none. */
 export function getClientIp(request: Request): string | undefined {
   const forwarded = request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim();

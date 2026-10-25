@@ -14,6 +14,7 @@ import {
   stockNotice,
 } from "./cart-line-state";
 import { EmptyCart } from "./EmptyCart";
+import { PromoCodeForm } from "./PromoCodeForm";
 
 // Fetchers and `<Form>` need a data router.
 const render = (element: ReactElement) => {
@@ -146,6 +147,84 @@ describe("CartSummary", () => {
     expect(html).toContain("2 items");
     expect(html).toContain("₴13,700");
     expect(html).toMatch(/<a[^>]*href="\/checkout"[^>]*>Proceed to checkout<\/a>/);
+  });
+});
+
+describe("CartSummary with a discount (#59)", () => {
+  const trio = {
+    ...EMPTY_CART,
+    lines: [{ ...line, volumeMl: 10, unitPrice: "790.00", quantity: 3, lineTotal: "2370.00" }],
+    itemCount: 3,
+    subtotal: "2370.00",
+    discount: { amount: "1871.00", code: null, kind: "fixed_price_set" as const },
+    total: "499.00",
+  };
+
+  it("shows the subtotal, the trio's saving and the total", () => {
+    const html = render(createElement(CartSummary, { cart: trio }));
+
+    expect(html).toContain("Subtotal");
+    expect(html).toContain("₴2,370");
+    expect(html).toContain("Tester trio 3 × 10 ml");
+    expect(html).toContain("−₴1,871");
+    expect(html).toMatch(/Total<\/dt><dd>₴499<\/dd>/);
+  });
+
+  it("names the promo code and reads in Ukrainian by default", () => {
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/cart",
+          element: createElement(CartSummary, {
+            cart: {
+              ...trio,
+              discount: { amount: "79.00", code: "JASSMIN10", kind: "percent" as const },
+              total: "2291.00",
+              promo: { code: "JASSMIN10", status: "applied" as const },
+            },
+          }),
+        },
+      ],
+      { initialEntries: ["/cart"] },
+    );
+    const html = renderToStaticMarkup(
+      createElement(I18nProvider, { locale: "uk" }, createElement(RouterProvider, { router })),
+    ).replace(/\s/gu, " ");
+
+    expect(html).toContain("Знижка (промокод JASSMIN10)");
+    expect(html).toContain("−79 ₴");
+    expect(html).toContain("До сплати");
+    expect(html).toContain("Промокод JASSMIN10 застосовано.");
+  });
+});
+
+describe("PromoCodeForm", () => {
+  it("offers a labelled code field that posts apply-promo to the cart", () => {
+    const html = render(createElement(PromoCodeForm, { promo: null }));
+
+    expect(html).toMatch(/<form[^>]*action="\/cart" method="post"/);
+    expect(html).toContain('name="intent" value="apply-promo"');
+    expect(html).toMatch(/<label for="cart-promo-code"[^>]*>Promo code<\/label>/);
+    expect(html).toMatch(/<input[^>]*maxLength="40"[^>]*name="code"/);
+    expect(html).toContain(">Apply</button>");
+  });
+
+  it("says what the stored code does and offers to remove it", () => {
+    const cases = [
+      ["applied", "Promo code SAVE applied."],
+      ["not-best", "Promo code SAVE isn&#x27;t used: a better offer already applies to your cart."],
+      ["not-applicable", "Promo code SAVE doesn&#x27;t apply to the items in your cart."],
+      ["expired", "Promo code SAVE has expired."],
+      ["used-up", "Promo code SAVE is no longer valid."],
+      ["invalid", "Promo code SAVE is no longer valid."],
+    ] as const;
+    for (const [status, text] of cases) {
+      const html = render(createElement(PromoCodeForm, { promo: { code: "SAVE", status } }));
+      expect(html).toContain(text);
+      expect(html).toContain('name="intent" value="remove-promo"');
+      expect(html).toContain("Remove promo code SAVE");
+      expect(html).not.toContain('name="code"');
+    }
   });
 });
 

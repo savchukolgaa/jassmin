@@ -2,7 +2,7 @@
 // Isomorphic: no server imports. Error messages are message keys, translated when rendered.
 import { z } from "zod";
 import type { DiscountKind } from "./enums";
-import { msg } from "./i18n";
+import { createTranslator, msg, type TextKey, type Translator } from "./i18n";
 
 /** Longest code `discounts.code` holds. */
 export const MAX_PROMO_CODE_LENGTH = 40;
@@ -49,3 +49,29 @@ export interface CartPromo {
   code: string;
   status: PromoStatus;
 }
+
+/**
+ * The discount line's label: the promo code when there is one; else the tester trio, the only
+ * automatic rule (a fixed-price set); else a plain "Discount".
+ */
+export function discountLabel(
+  discount: Pick<DiscountLine, "code" | "kind">,
+  { t }: Translator = createTranslator(),
+): string {
+  if (discount.code !== null) {
+    return t("checkout.discountWithCode", { code: discount.code });
+  }
+  return t(
+    discount.kind === "fixed_price_set" ? "checkout.discountTesterSet" : "checkout.discount",
+  );
+}
+
+/** What the cart says about its stored promo code, by status. */
+export const PROMO_STATUS_KEYS: Record<PromoStatus, TextKey> = {
+  applied: "cart.promo.applied",
+  "not-best": "cart.promo.notBest",
+  "not-applicable": "cart.promo.notApplicable",
+  expired: "cart.promo.expired",
+  invalid: "cart.promo.unavailable",
+  "used-up": "cart.promo.unavailable",
+};

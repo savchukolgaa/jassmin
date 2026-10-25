@@ -147,6 +147,17 @@ and in the confirmation email.
   `AccountOrderDetail` gain `discountAmount` / `discountCode`. `buildOrderConfirmationEmail` adds
   the discount line when > 0.
 
+**Changes made while implementing**
+
+- The cart summary doesn't get a free-delivery note: it never had one, and the checkout hint
+  (`freeShippingInfo(cart.total)`) already uses the discounted amount. `CartView` gains
+  `discount`, `total` and `promo`, but no shipping info.
+- No `cart.promo.placeholder` key: the field has a visible label, and a placeholder code would
+  look like a real one. `cart.promo.expired` and `cart.promo.unavailable` were added for a stored
+  code that stopped working.
+- The promo limiter (`promoCodeLimiter` in `rate-limit.ts`) counts only refused codes, keyed by
+  client IP, then the visitor id.
+
 **Analytics** — `checkout_start` properties gain `discountCode` (or `null`) and `discountAmount`;
 `purchase` gains `discountId`, `discountCode`, `discountAmount` and `totalAmount`.
 
@@ -265,7 +276,7 @@ and in the confirmation email.
   apply, remove, applied, notBest, notApplicable}`, `cart.errors.{promoInvalid, promoExpired,
   promoUsedUp, promoNotApplicable, promoRateLimited}`, `cart.total`, `checkout.discount`,
   `checkout.discountWithCode`, `checkout.discountTesterSet`, `checkout.errors.discountChanged`. `pnpm typecheck` enforces parity.
-- [ ] **7. Cart route and UI** — `routes/cart.tsx` handles `apply-promo` (rate limit first, then
+- [x] **7. Cart route and UI** — `routes/cart.tsx` handles `apply-promo` (rate limit first, then
   `applyPromoCode`; 400 for invalid input, 409 for expired / used-up / not-applicable, 429 for
   rate-limited) and `remove-promo`. `PromoCodeForm` (Option C+ input and button styles from
   `docs/design.md`, visible label, error in `role="alert"` linked with `aria-describedby`).

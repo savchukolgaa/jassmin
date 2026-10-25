@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/59
 Branch: `issue/59`
 Worktree: `.claude/worktrees/issue-59`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -317,7 +317,7 @@ and in the confirmation email.
 - [x] **11. Seeds** — `SAMPLE_DISCOUNTS` in `db/seed-data.ts`, inserted by `db/seed.ts`
   (`onConflictDoNothing` on `slug`), `seed.test.ts` updated. `cms/scripts/seed.ts`: the trio
   offer moves to 10 ml (wording, body, product ids); no bundle offer.
-- [ ] **12. Docs and final checks** — Update `app/.server/AGENTS.md` (new "Discounts" section;
+- [x] **12. Docs and final checks** — Update `app/.server/AGENTS.md` (new "Discounts" section;
   orders/offers notes; kopiyky in JS for pricing). Run `pnpm typecheck`, `pnpm lint`, `pnpm test`,
   `pnpm build`; manual check under `pnpm aspire run`.
 
@@ -340,19 +340,28 @@ and in the confirmation email.
 
 ## Acceptance criteria
 
-- [ ] A valid promo code entered in the cart reduces the total, and an invalid, expired or used-up
+Verified on 2026-10-25: `pnpm typecheck`, `pnpm lint`, `pnpm test` (1007 passed, DB integration tests
+included) and `pnpm build` pass. A manual run of `pnpm dev` against a throwaway, migrated and
+seeded database covered: the trio in the cart (2 530 ₴ → 499 ₴); `NOPE`, `EXPIRED5` and `USEDUP`
+refused with Ukrainian errors (400/409/409) and no change to the total; `JASSMIN10` shown as
+not-best next to the trio, and applied (−445 ₴) on a 30 ml order in English; both orders placed
+with `discount_amount`, `discount_id` and `redemption_count`; the discount line on the success
+pages; `checkout_start` / `purchase` with the discount properties. The email (no SMTP locally) and
+the account order page were checked by tests, not by hand.
+
+- [x] A valid promo code entered in the cart reduces the total, and an invalid, expired or used-up
   code shows a translated error without changing the total — steps 3, 5, 6, 7
-- [ ] ~~A bundle rule (for example two 30 ml perfumes, −10%) and~~ the tester trio fixed price
+- [x] ~~A bundle rule (for example two 30 ml perfumes, −10%) and~~ the tester trio fixed price
   (3 × 7 ml for 499 ₴) are applied automatically when the cart qualifies — steps 3, 5, 11.
   Changed by the owner: the trio is **3 × 10 ml for 499 ₴, up to 3 sets per order**, and there
   is no bundle rule (Q1, Q2).
-- [ ] `orders.discount_amount` and `orders.discount_id` are written in the checkout transaction,
+- [x] `orders.discount_amount` and `orders.discount_id` are written in the checkout transaction,
   and a code's redemption limit can't be exceeded by concurrent orders — steps 1, 4, 8
-- [ ] Cart, checkout, the order-confirmation email and the account order page show the discount
+- [x] Cart, checkout, the order-confirmation email and the account order page show the discount
   line in Ukrainian and English — steps 6, 7, 9, 10
-- [ ] Free shipping still uses the discounted subtotal against `FREE_SHIPPING_THRESHOLD` — steps
+- [x] Free shipping still uses the discounted subtotal against `FREE_SHIPPING_THRESHOLD` — steps
   3, 5, 8
-- [ ] Unit tests cover the pricing rules, and integration tests cover checkout with a discount —
+- [x] Unit tests cover the pricing rules, and integration tests cover checkout with a discount —
   steps 3, 8
 
 ## Out of scope

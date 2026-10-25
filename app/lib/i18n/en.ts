@@ -332,6 +332,7 @@ export const en = {
     nav: {
       label: "Account",
       orders: "Orders",
+      profile: "Profile details",
       continueShopping: "Continue shopping",
     },
     orders: {
@@ -377,6 +378,47 @@ export const en = {
       refundedAt: "Refunded",
       delivery: "Delivery",
       payment: "Payment",
+    },
+    profile: {
+      title: "Profile details",
+      memberSince: "Member since {date}",
+      submitting: "Saving…",
+      contact: {
+        heading: "Contact details",
+        submit: "Save details",
+        saved: "Contact details saved.",
+      },
+      email: {
+        heading: "Email",
+        current: "Current: {email}. If you change it, we'll let the old address know.",
+        newEmail: "New email",
+        submit: "Change email",
+        saved: "Email changed.",
+      },
+      password: {
+        heading: "Password",
+        current: "Current password",
+        new: "New password",
+        confirm: "Confirm new password",
+        hint: "At least 8 characters",
+        submit: "Change password",
+        saved: "Password changed.",
+      },
+      errors: {
+        currentPasswordRequired: "Enter your current password",
+        currentPasswordWrong: "Wrong password. Try again.",
+        passwordMismatch: "Passwords don't match",
+        tooManyAttempts: "Too many attempts. Wait 15 minutes and try again.",
+        invalidIntent: "Your changes couldn't be saved. Reload the page and try again.",
+      },
+      emailChangedMail: {
+        subject: "Your account email was changed — Jassmin",
+        greeting: "Hi {name},",
+        body: "On {date}, the email of your Jassmin account was changed to {newEmail}. From now on, log in with the new address.",
+        notYou:
+          "If this wasn't you, email us right away at {email} and we'll help you get your account back.",
+        signature: "The Jassmin team",
+      },
     },
   },
   pagination: {

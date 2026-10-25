@@ -78,6 +78,22 @@ globalForLimiters.__jassminLoginLimiters ??= {
 
 export const loginLimiters: LoginLimiters = globalForLimiters.__jassminLoginLimiters;
 
+const globalForProfileLimiter = globalThis as typeof globalThis & {
+  __jassminProfilePasswordLimiter?: RateLimiter;
+};
+
+globalForProfileLimiter.__jassminProfilePasswordLimiter ??= createRateLimiter({
+  limit: 5,
+  windowMs: LOGIN_WINDOW_MS,
+});
+
+/**
+ * Wrong current passwords on the profile page (#54), per user id: the email and password forms
+ * share it, so a stolen session can't guess the password through either.
+ */
+export const profilePasswordLimiter: RateLimiter =
+  globalForProfileLimiter.__jassminProfilePasswordLimiter;
+
 /** The client IP from the first `X-Forwarded-For` entry, or `undefined` when there is none. */
 export function getClientIp(request: Request): string | undefined {
   const forwarded = request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim();

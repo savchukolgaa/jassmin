@@ -339,6 +339,7 @@ export const uk = {
     nav: {
       label: "Кабінет",
       orders: "Замовлення",
+      profile: "Дані профілю",
       continueShopping: "Продовжити покупки",
     },
     orders: {
@@ -386,6 +387,47 @@ export const uk = {
       refundedAt: "Кошти повернено",
       delivery: "Доставка",
       payment: "Оплата",
+    },
+    profile: {
+      title: "Дані профілю",
+      memberSince: "З нами з {date}",
+      submitting: "Зберігаємо…",
+      contact: {
+        heading: "Контактні дані",
+        submit: "Зберегти дані",
+        saved: "Контактні дані збережено.",
+      },
+      email: {
+        heading: "Email",
+        current: "Зараз: {email}. Якщо його змінити, ми повідомимо про це на стару адресу.",
+        newEmail: "Новий email",
+        submit: "Змінити email",
+        saved: "Email змінено.",
+      },
+      password: {
+        heading: "Пароль",
+        current: "Поточний пароль",
+        new: "Новий пароль",
+        confirm: "Повторіть новий пароль",
+        hint: "Щонайменше 8 символів",
+        submit: "Змінити пароль",
+        saved: "Пароль змінено.",
+      },
+      errors: {
+        currentPasswordRequired: "Введіть поточний пароль",
+        currentPasswordWrong: "Неправильний пароль. Спробуйте ще раз.",
+        passwordMismatch: "Паролі не збігаються",
+        tooManyAttempts: "Забагато спроб. Зачекайте 15 хвилин і спробуйте ще раз.",
+        invalidIntent: "Не вдалося зберегти зміни. Оновіть сторінку й спробуйте ще раз.",
+      },
+      emailChangedMail: {
+        subject: "Email вашого облікового запису змінено — Jassmin",
+        greeting: "Вітаємо, {name}!",
+        body: "{date} email вашого облікового запису Jassmin змінили на {newEmail}. Тепер входьте з новою адресою.",
+        notYou:
+          "Якщо це були не ви, негайно напишіть нам на {email}: ми допоможемо повернути доступ.",
+        signature: "Команда Jassmin",
+      },
     },
   },
   pagination: {

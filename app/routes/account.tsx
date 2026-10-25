@@ -1,4 +1,4 @@
-import { Form, NavLink, Outlet } from "react-router";
+import { Form, NavLink, Outlet, useLocation } from "react-router";
 import { requireUser } from "~/.server/services/auth";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
@@ -27,13 +27,27 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { firstName: firstName(user.fullName), email: user.email };
 }
 
-const NAV: { to: string; labelKey: TextKey; end?: boolean }[] = [
-  { to: "/account", labelKey: "account.nav.orders" },
+const NAV: {
+  to: string;
+  labelKey: TextKey;
+  end?: boolean;
+  /** Also highlighted on these paths (`aria-current` stays `NavLink`'s exact match). */
+  highlight?: (pathname: string) => boolean;
+}[] = [
+  // `end`, so Orders isn't active on the profile; it's still highlighted on an order's page.
+  {
+    to: "/account",
+    labelKey: "account.nav.orders",
+    end: true,
+    highlight: (pathname) => pathname.startsWith("/account/orders/"),
+  },
+  { to: "/account/profile", labelKey: "account.nav.profile" },
   { to: "/", labelKey: "account.nav.continueShopping", end: true },
 ];
 
 export default function AccountLayout({ loaderData }: Route.ComponentProps) {
   const { t } = useT();
+  const { pathname } = useLocation();
 
   return (
     <main>
@@ -68,7 +82,9 @@ export default function AccountLayout({ loaderData }: Route.ComponentProps) {
                     cn(
                       "flex min-h-13 items-center rounded-pill px-5 font-extrabold transition-colors",
                       focusRing("onLight"),
-                      isActive ? "bg-ink text-white" : "text-ink hover:bg-blush",
+                      isActive || item.highlight?.(pathname)
+                        ? "bg-ink text-white"
+                        : "text-ink hover:bg-blush",
                     )
                   }
                 >

@@ -66,6 +66,18 @@ export interface HomeLocation extends Struct.ComponentSchema {
   };
 }
 
+export interface OffersProductRef extends Struct.ComponentSchema {
+  collectionName: 'components_offers_product_refs';
+  info: {
+    description: 'A product from the Jassmin shop, by its public id (UUID)';
+    displayName: 'Product reference';
+    icon: 'shoppingCart';
+  };
+  attributes: {
+    publicId: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 export interface SharedSeo extends Struct.ComponentSchema {
   collectionName: 'components_shared_seos';
   info: {
@@ -112,6 +124,7 @@ declare module '@strapi/strapi' {
       'home.about': HomeAbout;
       'home.hero': HomeHero;
       'home.location': HomeLocation;
+      'offers.product-ref': OffersProductRef;
       'shared.seo': SharedSeo;
       'shared.social-link': SharedSocialLink;
     }

@@ -165,7 +165,7 @@ editorial only: they never change prices at checkout.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Strapi content type** — Create `cms/src/api/offer/` (schema, controller, router,
+- [x] **1. Strapi content type** — Create `cms/src/api/offer/` (schema, controller, router,
   service via `factories.createCore*("api::offer.offer")`) and `cms/src/components/offers/
   product-ref.json` per the decisions above. Add `api::offer.offer` to `PROTECTED_UIDS` in
   `cms/src/index.ts`. Run `pnpm cms:dev` once so Strapi regenerates `cms/types/generated/`, and

@@ -170,7 +170,7 @@ Each step is small, ordered, and leaves the app in a working state.
   product-ref.json` per the decisions above. Add `api::offer.offer` to `PROTECTED_UIDS` in
   `cms/src/index.ts`. Run `pnpm cms:dev` once so Strapi regenerates `cms/types/generated/`, and
   check the type and both locales in the admin.
-- [ ] **2. Seed offers** — In `cms/scripts/seed.ts`, add `OFFERS: SeedOffer[]` with `uk` and `en`
+- [x] **2. Seed offers** — In `cms/scripts/seed.ts`, add `OFFERS: SeedOffer[]` with `uk` and `en`
   copy and `seedOffers(strapi, imageId)` following `seedBlogPosts` (idempotent by `slug` + locale,
   `en` added via `update` on the `uk` document): a tester trio (`discovery-set`, priceNote "3 × 7
   мл — 499 ₴", CTA `/catalog/women`), gift ideas by budget (`gift`, up to 500 / 1000 / 2000 ₴), the
@@ -181,7 +181,7 @@ Each step is small, ordered, and leaves the app in a working state.
   offsets (e.g. `2026-12-06T00:00:00+02:00`). `products` uses the fixed
   `publicId`s from the app's DB seed (`app/.server/db/seed-data.ts`), plus one made-up UUID in the
   gift offer to show that missing products are skipped. Update the header comment.
-- [ ] **3. Token permissions** — Add `api::offer.offer.find` to `TOKEN_PERMISSIONS`. When the
+- [x] **3. Token permissions** — Add `api::offer.offer.find` to `TOKEN_PERMISSIONS`. When the
   `jassmin-web` token already exists, add missing permissions to it (the api-token service's
   `update`, without regenerating the key) and log it, so existing setups don't 403. Update
   README's manual token list ("Offer: `find`"), the seed description and the content model table.

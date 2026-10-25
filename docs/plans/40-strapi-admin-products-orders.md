@@ -37,7 +37,7 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
   - `products.slug` (`varchar(255)`, unique `products_slug_unique`, nullable for existing rows
     until the import fills it)
   - `products.active` (`boolean not null default true`)
-  - `orders.shipped_at` and `orders.completed_at` **(unconfirmed, Q1)**
+  - `orders.shipped_at` and `orders.completed_at`
   - the `cms_outbox` table (step 4)
 - **Strapi**: two new content types and three components. No Strapi DB migration is needed;
   Strapi creates the tables itself.
@@ -50,7 +50,7 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
    analytics all point at `products.id` / `public_id`. Moving products into Strapi would break
    every one of those transactions and foreign keys. The issue allows this: step 5 says products
    may be "kept as a read cache", and the acceptance criterion reads "sourced from Strapi (or
-   synced from it)". **(unconfirmed, Q2)**
+   synced from it)".
 2. **Synchronous write-through from Strapi to the app.** A Strapi *document service middleware*
    (`strapi.documents.use`, registered in `cms/src/index.ts` `register()`) sees every admin
    create, update or delete of a `product` or `order`. Before Strapi saves, it POSTs the change
@@ -84,7 +84,7 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
    value and the value Strapi had before (`expectedStock`, read from the stored document). The
    app applies `stock_quantity = stock_quantity + (new - expected)`, clamped at 0, under a row
    lock, and returns the real number. A sale between opening and saving the form is then never
-   overwritten. Stock pushes (decision 3) keep the numbers in Strapi fresh. **(unconfirmed, Q3)**
+   overwritten. Stock pushes (decision 3) keep the numbers in Strapi fresh.
 7. **Deleting and archiving never delete app rows.** Deleting a product in Strapi, or turning off
    `active`, sets `products.active = false`. Catalog, filter, offer and product queries only list
    active products, and the product page answers 404 for inactive ones. Order history keeps
@@ -106,21 +106,27 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
 
    | from | allowed `status` targets |
    |---|---|
-   | `pending` | `paid` (card, sets `payment_status = paid`), `shipped`, `cancelled` |
+   | `pending` | `paid` (card, sets `payment_status = paid`), `shipped` (**`cod` only**), `cancelled` |
    | `paid` | `shipped`, `cancelled` |
    | `shipped` | `completed`, `returned`, `unclaimed` |
    | `completed` | `returned` |
    | `cancelled`, `returned`, `unclaimed` | none (final) |
 
+   **Shipped with payment still pending (Q4):** no new status is added. The order `status` and
+   `payment_status` are separate fields, so a cash-on-delivery order goes `pending → shipped` and
+   keeps `payment_status = unpaid`. It is shipped and awaiting payment at the same time, and the
+   Strapi list view shows both columns. A `card` order must be `paid` before it can ship.
+   Completing a `cod` order sets `payment_status = paid` and `paid_at` (cash collected on
+   delivery). An `unclaimed` `cod` order stays `unpaid`.
+
    `payment_status`: `unpaid → paid` and `paid → refunded` only. Lifecycle timestamps are set by
    the app, never taken from Strapi: `paid_at` when payment becomes `paid`, `cancelled_at` on
-   `cancelled`, `refunded_at` on `refunded`, and `shipped_at` / `completed_at` on those statuses
-   **(Q1)**. Each one is set only if it is still null. A `cod` order may be marked `paid` together
-   with `completed` (cash collected on delivery). **(rules unconfirmed, Q4)**
+   `cancelled`, `refunded_at` on `refunded`, and `shipped_at` / `completed_at` on those statuses.
+   Each one is set only if it is still null.
 10. **Stock is restored when an order moves to `cancelled` or `unclaimed`** (the parcel comes back
     unopened), not on `returned` (an opened perfume may not be resellable). The restore adds each
     line's quantity back to its `variant_id` (lines whose variant was deleted are skipped), in the
-    same transaction as the status change, and queues stock pushes. **(unconfirmed, Q5)**
+    same transaction as the status change, and queues stock pushes.
 11. **The app's sync endpoints are resource routes**, like `payments/callback`: action-only POST,
     outside the `_shop` layout, authenticated by `Authorization: Bearer <CMS_SYNC_SECRET>`
     (constant-time compare). They answer 401 on a bad secret, 400 on bad input, 422 with
@@ -138,34 +144,27 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
     `pnpm cms:seed --token` also creates the write token (`jassmin-sync`) next to the read-only
     one and prints it once.
 
-## Open questions
-
-- [ ] **Q1: Add `orders.shipped_at` and `orders.completed_at`?** (asked in the issue comment)
-  Why it matters: without them the #12 progress indicator can't date the shipped and completed
-  steps, and delivery time is a useful LTV/churn feature. Recommended default: **yes**. They go
-  in migration 0011 with a rollback, the app sets them on those transitions, they're mirrored on
-  the Strapi `order`, and `AccountOrder` plus `OrderProgress` show the dates. Affects steps: 2, 3,
-  6, 12.
-- [ ] **Q2: OK that the app DB stays the source of truth, with Strapi as a write-through admin
-  UI, rather than the storefront reading products live from the Strapi API?** Why it matters:
-  reading live from Strapi would mean rewriting cart, checkout locking, offers and analytics, and
-  would lose transactional stock. Recommended default: write-through plus a synced copy
-  (decisions 1–3). Affects steps: all.
-- [ ] **Q3: How should a stock number edited in Strapi be applied?** Why it matters: an absolute
-  overwrite loses sales made while the admin had the form open. Recommended default: as a delta
-  against the value the admin saw (decision 6). Affects steps: 5, 8.
-- [ ] **Q4: Are the transition rules in decision 9 right?** For example: may `pending` go straight
-  to `shipped` for cash on delivery? Can a `completed` order become `returned`? Must an order be
-  `refunded` before or after `cancelled`? Recommended default: the table in decision 9. Affects
-  steps: 3, 6.
-- [ ] **Q5: Which statuses put stock back?** Recommended default: `cancelled` and `unclaimed`,
-  not `returned` (decision 10). Affects steps: 6.
-- [ ] **Q6: Should the account dashboard update be instant, or is "within a few minutes" enough?**
-  Why it matters: with write-through it's instant and no webhook or polling is needed. If the
-  team prefers Strapi-first saves with an async webhook, the rejection and atomicity guarantees
-  get weaker. Recommended default: synchronous write-through. Affects steps: 6, 8.
-
 ## Resolved questions
+
+Answered by the issue owner after planning:
+
+- **Q1: Add `orders.shipped_at` and `orders.completed_at`?** Yes. They go in migration 0011 with
+  a rollback, the app sets them on those transitions, they're mirrored on the Strapi `order`, and
+  the account dashboard shows them (step 12).
+- **Q2: Is the app DB the source of truth, with Strapi as a write-through admin UI?** Yes
+  (decisions 1–3).
+- **Q3: How is a stock number edited in Strapi applied?** As a delta against the value the admin
+  saw (decision 6).
+- **Q4: How is a cash-on-delivery order shipped before it's paid?** It is shipped and
+  awaiting payment at the same time: `status = shipped` with `payment_status = unpaid`. This uses
+  the existing two fields, so no new status is added (decision 9). `completed → returned` stays
+  allowed.
+- **Q5: Which statuses put stock back?** `cancelled` and `unclaimed`, not `returned`
+  (decision 10).
+- **Q6: Must a Strapi status change reach the dashboard instantly?** Yes, through synchronous
+  write-through, with no webhook or polling.
+
+Answered from the code and the issue:
 
 - **Which status names does the Strapi `order` use?** The app's `ORDER_STATUSES` (`pending`,
   `paid`, `shipped`, `completed`, `cancelled`, `returned`, `unclaimed`), with no mapping. #12
@@ -196,7 +195,7 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
 | delete | `app/routes/admin.tsx`, `admin._index.tsx`, `admin.products.tsx`, `admin.orders.tsx`, `admin.test.ts` | In-app admin routes |
 | delete | `app/features/admin/` (`AdminLayout.tsx`, `AdminPlaceholder.tsx`, `admin-nav.ts`, `admin-nav.test.ts`) | Admin UI |
 | modify | `app/routes.ts`, `app/routes.test.ts` | Drop the `admin` block; add `cms/products` and `cms/orders/:id` sync routes |
-| modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | Remove the `admin` namespace; add `account` labels for the shipped/completed dates (Q1) |
+| modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | Remove the `admin` namespace; add `account` labels for the shipped/completed dates |
 | modify | `app/root.tsx`, `app/routes/_shop.tsx`, `app/lib/enums.ts`, `app/.server/services/auth.ts`, `app/lib/route-error.ts` | Reword comments that mention the admin area |
 | modify | `app/.server/db/schema.ts`, `app/lib/commerce.ts`, `app/.server/db/schema.test.ts` | `products.slug`/`active`, `orders.shipped_at`/`completed_at`, `cms_outbox` |
 | create | `app/.server/db/migrations/0011_cms_catalog_and_orders.sql` (+ meta), `db/rollbacks/0011_cms_catalog_and_orders.sql` | Migration and rollback |
@@ -211,7 +210,7 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
 | create | `app/routes/cms.products.ts`, `app/routes/cms.orders.$id.ts` (+ tests) | Sync endpoints for Strapi's middleware |
 | create | `app/.server/db/scripts/sync-cms.ts`; modify `package.json` | `pnpm db:sync-cms [--all]` |
 | modify | `app/.server/env.ts`, `env.test.ts`, `.env.example`, `README.md` | `CMS_SYNC_SECRET`, `STRAPI_SYNC_TOKEN`; replace the `/admin` README section with "Managing products and orders in Strapi" |
-| modify | `app/lib/account.ts`, `services/orders.ts`, `features/account/OrderProgress.tsx`, `account-ui.test.ts` | Shipped/completed dates (Q1) |
+| modify | `app/lib/account.ts`, `services/orders.ts`, `features/account/OrderProgress.tsx`, `account-ui.test.ts` | Shipped/completed dates |
 | create | `cms/src/api/product/**` (schema, controller, route, service) | `product` content type |
 | create | `cms/src/api/order/**` | `order` content type |
 | create | `cms/src/components/catalog/variant.json`, `cms/src/components/orders/item.json` | Repeatable components |
@@ -232,7 +231,7 @@ Each step leaves the app building and the tests green.
   Check: `grep -rn "features/admin\|routes/admin\|admin\.nav" app` is empty, and typecheck, lint
   and test pass.
 - [ ] **2. Schema and migration 0011.** In `schema.ts` add `products.slug` (unique, nullable),
-  `products.active`, `orders.shippedAt` / `completedAt` (Q1), and `cmsOutbox` (`id`,
+  `products.active`, `orders.shippedAt` / `completedAt`, and `cmsOutbox` (`id`,
   `entity` ∈ `CMS_SYNC_ENTITIES = ["order", "product"]` with a CHECK, `entityId` int,
   `attempts`, `nextAttemptAt`, `lastError`, `syncedAt`, `createdAt`/`updatedAt`, unique
   `(entity, entity_id)`, index `(synced_at, next_attempt_at)`). Run `pnpm db:generate --name
@@ -353,9 +352,9 @@ Each step leaves the app building and the tests green.
   `AGENTS.md`, plus `app/.server/AGENTS.md` (CMS: "products and orders are edited in Strapi and
   written through to PostgreSQL"; the `users.role` and `requireAdmin` bullets; the analytics
   "`/admin` isn't tracked" line; new "CMS sync" bullets) and the `cms/package.json` description.
-- [ ] **12. Account dates (Q1).** Add `shippedAt` and `completedAt` to `AccountOrder` (via
+- [ ] **12. Account dates.** Add `shippedAt` and `completedAt` to `AccountOrder` (via
   `listUserOrders` / `findUserOrder`), show them in `OrderProgress`, add the i18n keys to both
-  dictionaries, and update `account-ui.test.ts`. Skip this step if Q1 is answered "no".
+  dictionaries, and update `account-ui.test.ts`.
 - [ ] **13. Final check.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`,
   `pnpm cms:build` and `pnpm aspire:build`; grep for dead imports (`features/admin`,
   `routes/admin`, `strapiAdminUrl`, `ADMIN_NAV_ITEMS`); then run the manual end-to-end pass from

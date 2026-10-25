@@ -251,7 +251,7 @@ and in the confirmation email.
   never counting; most-expensive-first selection; percent rounding
   down; never below 0; best-of and ties; free shipping crossing the threshold only after the
   discount.
-- [ ] **4. Discount queries** — `db/queries/discounts.ts`: `findDiscountByCode(db, code)`
+- [x] **4. Discount queries** — `db/queries/discounts.ts`: `findDiscountByCode(db, code)`
   (`lower(code) = lower($1)`), `listCandidateDiscounts(db, cartDiscountId)` (active, no code, or
   `id = cartDiscountId`), `lockCandidateDiscounts(tx, …)` (same, `FOR UPDATE`, order by id),
   `redeemDiscount(tx, id)` (conditional increment, returns boolean), `setCartDiscount(tx, cartId,

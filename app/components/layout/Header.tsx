@@ -6,7 +6,14 @@ import { CatalogMenu } from "./CatalogMenu";
 import { CartIcon, UserIcon } from "./icons";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { MobileMenu } from "./MobileMenu";
-import { ABOUT_LINK, CONTACTS_LINK, focusRing, iconButtonClasses, navItemClasses } from "./nav";
+import {
+  ABOUT_LINK,
+  CONTACTS_LINK,
+  focusRing,
+  iconButtonClasses,
+  navItemClasses,
+  OFFERS_LINK,
+} from "./nav";
 
 export type HeaderProps = HeaderState;
 
@@ -41,6 +48,11 @@ export function Header({ user, cartCount }: HeaderProps) {
             </li>
             <li>
               <CatalogMenu />
+            </li>
+            <li>
+              <NavLink to={OFFERS_LINK.to} className={({ isActive }) => navItemClasses(isActive)}>
+                {t(OFFERS_LINK.labelKey)}
+              </NavLink>
             </li>
             <li>
               <Link to={CONTACTS_LINK.to} className={navItemClasses()}>

@@ -266,7 +266,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `ProductCard`. Follow `docs/design.md` (tokens, focus rings, motion) and make it work at phone
   width. Component tests in `offers-ui.test.ts`: uk by default, English inside
   `<I18nProvider locale="en">`, valid-until label, CTA hidden when `null`, empty state.
-- [ ] **11. Navigation, i18n and account link** — Add `nav.offers` ("Акції" / "Offers") and the
+- [x] **11. Navigation, i18n and account link** — Add `nav.offers` ("Акції" / "Offers") and the
   `offers` namespace (title, intro, perks label, `kinds.*`, `validUntil`, empty state copy, meta)
   to `uk.ts` and `en.ts`. Add `OFFERS_LINK` to `nav.ts`, render it in `Header.tsx` and
   `MobileMenu.tsx`, and put it in `FOOTER_LINKS` after the catalogs; update `Header.test.ts` and

@@ -2,7 +2,7 @@
   "name": "jassmin-cms",
   "version": "0.1.0",
   "private": true,
-  "description": "Strapi CMS for Jassmin editorial content (blog, home page, site settings)",
+  "description": "Strapi CMS for Jassmin: editorial content (blog, home page, site settings, offers) and the admin for products and orders",
   "scripts": {
     "build": "strapi build",
     "console": "strapi console",

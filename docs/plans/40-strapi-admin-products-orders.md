@@ -363,7 +363,7 @@ Each step leaves the app building and the tests green.
   `http` endpoint (create `web` first or use an endpoint reference, with no `waitFor` cycle); add
   the `db-sync-cms` explicit-start resource (like `db-send-order-emails`, with `STRAPI_URL` and
   `STRAPI_SYNC_TOKEN`). Update `aspire-apphost/AGENTS.md`. Check: `pnpm aspire:build`.
-- [ ] **11. Docs.** README: replace the `/admin` section with "Managing products and orders in
+- [x] **11. Docs.** README: replace the `/admin` section with "Managing products and orders in
   Strapi" (setup: `pnpm cms:seed -- --token` for both tokens, `pnpm db:seed`, then `pnpm
   db:sync-cms --all`; cron for `db:sync-cms`; what is editable where; failure behaviour). Update
   `AGENTS.md`, plus `app/.server/AGENTS.md` (CMS: "products and orders are edited in Strapi and

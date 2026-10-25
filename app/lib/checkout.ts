@@ -182,3 +182,10 @@ export interface OrderConfirmation {
   totalAmount: string;
   lines: OrderSummaryLine[];
 }
+
+/**
+ * Where a card order's online payment stands, for its success page (#44): `paid`, `failed` (the
+ * latest attempt was declined) or `pending` (no attempt yet, or no answer from the provider yet).
+ * Both of the last two can start a new attempt.
+ */
+export type PaymentView = "paid" | "pending" | "failed";

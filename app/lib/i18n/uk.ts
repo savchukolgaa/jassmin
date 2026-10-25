@@ -331,6 +331,9 @@ export const uk = {
     contact: "Маєте запитання? Відповідайте на цей лист або пишіть на {email}.",
     signature: "Команда Jassmin",
   },
+  payments: {
+    description: "Замовлення №{id} в Jassmin",
+  },
   account: {
     title: "Мій кабінет",
     greeting: "Вітаємо, {name}",

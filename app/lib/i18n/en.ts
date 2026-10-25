@@ -324,6 +324,9 @@ export const en = {
     contact: "Any questions? Reply to this email or write to {email}.",
     signature: "The Jassmin team",
   },
+  payments: {
+    description: "Jassmin order #{id}",
+  },
   account: {
     title: "My account",
     greeting: "Hi, {name}",

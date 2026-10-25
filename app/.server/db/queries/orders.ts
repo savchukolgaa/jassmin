@@ -1,15 +1,23 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { AccountOrderLine } from "~/lib/account";
 import {
-  DISCOUNT_AMOUNT,
   FREE_SHIPPING_THRESHOLD,
   type OrderConfirmation,
   type OrderSummaryLine,
   SHIPPING_AMOUNT,
 } from "~/lib/checkout";
+import type { DiscountLine } from "~/lib/discounts";
 import type { CartStatus, PaymentMethod } from "~/lib/enums";
 import type { Db } from "../client";
-import { cartItems, carts, orderItems, orders, products, productVariants } from "../schema";
+import {
+  cartItems,
+  carts,
+  discounts,
+  orderItems,
+  orders,
+  products,
+  productVariants,
+} from "../schema";
 
 /** A `Db` or a transaction, so the order service can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
@@ -38,6 +46,9 @@ export function lockCartLinesForOrder(db: Executor, cartId: number) {
       variantId: productVariants.id,
       variantPublicId: productVariants.publicId,
       productId: productVariants.productId,
+      // For product- and pack-scoped discount rules (#59).
+      productPublicId: products.publicId,
+      packSize: products.packSize,
       volumeMl: productVariants.volumeMl,
       price: productVariants.price,
       stockQuantity: productVariants.stockQuantity,
@@ -45,6 +56,7 @@ export function lockCartLinesForOrder(db: Executor, cartId: number) {
     })
     .from(cartItems)
     .innerJoin(productVariants, eq(productVariants.id, cartItems.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
     .where(eq(cartItems.cartId, cartId))
     .orderBy(asc(productVariants.id))
     .for("update", { of: productVariants });
@@ -60,15 +72,19 @@ export interface NewOrder {
   paymentMethod: PaymentMethod;
   /** The lines' sum as an exact decimal string, from `cartTotals`. */
   subtotal: string;
+  /** What the applied discount takes off (#59), `"0.00"` without one. */
+  discountAmount: string;
+  /** The applied rule, or `null`. */
+  discountId: number | null;
 }
 
 /**
  * Inserts the order. The total and `free_shipping` are computed by PostgreSQL as `numeric`, from
- * the subtotal and the discount, shipping and free-shipping constants.
+ * the subtotal, the discount and the shipping and free-shipping constants.
  */
 export async function insertOrder(db: Executor, order: NewOrder): Promise<number> {
   const subtotal = sql`${order.subtotal}::numeric`;
-  const discount = sql`${DISCOUNT_AMOUNT}::numeric`;
+  const discount = sql`${order.discountAmount}::numeric`;
   const [row] = await db
     .insert(orders)
     .values({
@@ -80,7 +96,8 @@ export async function insertOrder(db: Executor, order: NewOrder): Promise<number
       shippingAddress: order.shippingAddress,
       paymentMethod: order.paymentMethod,
       subtotal: order.subtotal,
-      discountAmount: DISCOUNT_AMOUNT,
+      discountAmount: order.discountAmount,
+      discountId: order.discountId,
       shippingAmount: SHIPPING_AMOUNT,
       totalAmount: sql`(${subtotal} - ${discount} + ${SHIPPING_AMOUNT}::numeric)::numeric(10, 2)`,
       freeShipping: sql`(${subtotal} - ${discount}) >= ${FREE_SHIPPING_THRESHOLD}::numeric`,
@@ -149,6 +166,31 @@ export async function findOrderIdByCartId(
   return row?.id;
 }
 
+/** The order's discount columns, joined from `discounts` (#59). */
+const discountColumns = {
+  discountAmount: orders.discountAmount,
+  discountId: orders.discountId,
+  discountCode: discounts.code,
+  discountKind: discounts.kind,
+};
+
+/** The applied discount as summaries show it, from `discountColumns`. */
+function toDiscount({
+  discountAmount,
+  discountId,
+  discountCode,
+  discountKind,
+}: {
+  discountAmount: string;
+  discountId: number | null;
+  discountCode: string | null;
+  discountKind: DiscountLine["kind"] | null;
+}): DiscountLine | null {
+  return discountId === null || discountKind === null
+    ? null
+    : { amount: discountAmount, code: discountCode, kind: discountKind };
+}
+
 /** The order with its owner, for the confirmation page. */
 export async function findOrder(db: Executor, orderId: number) {
   const [row] = await db
@@ -163,14 +205,25 @@ export async function findOrder(db: Executor, orderId: number) {
       paymentMethod: orders.paymentMethod,
       freeShipping: orders.freeShipping,
       subtotal: orders.subtotal,
-      discountAmount: orders.discountAmount,
+      ...discountColumns,
       shippingAmount: orders.shippingAmount,
       totalAmount: orders.totalAmount,
     })
     .from(orders)
+    .leftJoin(discounts, eq(discounts.id, orders.discountId))
     .where(eq(orders.id, orderId))
     .limit(1);
-  return row;
+  if (!row) return undefined;
+  const { discountId, discountCode, discountKind, ...order } = row;
+  return {
+    ...order,
+    discount: toDiscount({
+      discountAmount: row.discountAmount,
+      discountId,
+      discountCode,
+      discountKind,
+    }),
+  };
 }
 
 /** The order's lines in the order they were bought; the product may have been deleted since. */
@@ -244,6 +297,7 @@ export async function findUserOrder(db: Executor, userId: number, orderId: numbe
       refundedAt: orders.refundedAt,
       totalAmount: orders.totalAmount,
       subtotal: orders.subtotal,
+      ...discountColumns,
       freeShipping: orders.freeShipping,
       fullName: orders.guestFullName,
       phone: orders.guestPhone,
@@ -251,9 +305,15 @@ export async function findUserOrder(db: Executor, userId: number, orderId: numbe
       paymentMethod: orders.paymentMethod,
     })
     .from(orders)
+    .leftJoin(discounts, eq(discounts.id, orders.discountId))
     .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
     .limit(1);
-  return row;
+  if (!row) return undefined;
+  const { discountAmount, discountId, discountCode, discountKind, ...order } = row;
+  return {
+    ...order,
+    discount: toDiscount({ discountAmount, discountId, discountCode, discountKind }),
+  };
 }
 
 /**

@@ -1,5 +1,5 @@
 import type { PerfumeVolumeMl } from "~/lib/enums";
-import type { products } from "./schema";
+import type { discounts, products } from "./schema";
 
 export interface SampleVariant {
   volumeMl: PerfumeVolumeMl;
@@ -166,5 +166,43 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     packSize: 3,
     stockQuantity: 20,
     variants: [{ volumeMl: 10, price: "990.00", stockQuantity: 20 }],
+  },
+];
+
+export type SampleDiscount = typeof discounts.$inferInsert;
+
+/**
+ * Discount rules for local development (#59), matched by `slug`, so re-running the seed skips the
+ * ones that exist. The tester trio is the shop's one automatic offer; the codes exercise every
+ * case on the cart page.
+ */
+export const SAMPLE_DISCOUNTS: SampleDiscount[] = [
+  {
+    // Any three single 10 ml sizes for 499 ₴, up to three sets per order. `pack_size 1` keeps
+    // the 3 × 10 ml tester set product out of it.
+    slug: "tester-trio",
+    kind: "fixed_price_set",
+    value: "499.00",
+    scopeVolumesMl: [10],
+    scopePackSize: 1,
+    minQuantity: 3,
+    maxSets: 3,
+  },
+  { slug: "welcome-10", code: "JASSMIN10", kind: "percent", value: "10.00" },
+  {
+    slug: "expired-5",
+    code: "EXPIRED5",
+    kind: "percent",
+    value: "5.00",
+    startsAt: new Date("2025-01-01T00:00:00+02:00"),
+    endsAt: new Date("2025-02-01T00:00:00+02:00"),
+  },
+  {
+    slug: "used-up",
+    code: "USEDUP",
+    kind: "fixed_amount",
+    value: "100.00",
+    maxRedemptions: 1,
+    redemptionCount: 1,
   },
 ];

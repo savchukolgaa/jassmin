@@ -7,6 +7,8 @@ const cart = vi.hoisted(() => ({
   getCartView: vi.fn(),
   removeItem: vi.fn(),
   updateQuantity: vi.fn(),
+  applyPromoCode: vi.fn(),
+  removePromoCode: vi.fn(),
 }));
 const analytics = vi.hoisted(() => ({ ensureVisitor: vi.fn(), trackEvent: vi.fn() }));
 
@@ -26,10 +28,11 @@ const owner = { userId: null, anonymousId: ANONYMOUS_ID, sessionId: SESSION_ID }
 const variant = { id: 1, productId: 2, volumeMl: 50, stockQuantity: 5 };
 const context = {};
 
-function post(fields: Record<string, string>): ActionArgs {
+function post(fields: Record<string, string>, ip?: string): ActionArgs {
   const request = new Request("http://localhost/cart", {
     method: "POST",
     body: new URLSearchParams(fields),
+    headers: ip ? { "X-Forwarded-For": ip } : {},
   });
   return { request, params: {}, context } as unknown as ActionArgs;
 }
@@ -243,6 +246,78 @@ describe("cart action", () => {
         body: { ok: false, error: "not-in-cart" },
       });
       expect(analytics.trackEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("promo codes (#59)", () => {
+    // The limiter is shared by the whole process, so each test posts from its own address.
+    let ipCounter = 0;
+    const nextIp = () => `203.0.113.${++ipCounter}`;
+
+    it("applies a normalised code", async () => {
+      cart.applyPromoCode.mockResolvedValueOnce({ ok: true, status: "applied" });
+      const { action } = await import("./cart");
+
+      expect(
+        unwrap(await action(post({ intent: "apply-promo", code: " jassmin10 " }, nextIp()))),
+      ).toEqual({ status: 200, body: { ok: true, intent: "apply-promo" } });
+      expect(cart.applyPromoCode).toHaveBeenCalledWith(owner, "JASSMIN10");
+    });
+
+    it("answers a malformed code as an unknown one, without a lookup", async () => {
+      const { action } = await import("./cart");
+
+      for (const code of ["", "no spaces", "x".repeat(41)]) {
+        expect(unwrap(await action(post({ intent: "apply-promo", code }, nextIp())))).toEqual({
+          status: 400,
+          body: { ok: false, error: "promo-invalid" },
+        });
+      }
+      expect(cart.applyPromoCode).not.toHaveBeenCalled();
+    });
+
+    it("returns the refusal with its status", async () => {
+      const { action } = await import("./cart");
+      for (const [error, status] of [
+        ["promo-invalid", 400],
+        ["promo-expired", 409],
+        ["promo-used-up", 409],
+        ["promo-not-applicable", 409],
+      ] as const) {
+        cart.applyPromoCode.mockResolvedValueOnce({ ok: false, error });
+        expect(unwrap(await action(post({ intent: "apply-promo", code: "X1" }, nextIp())))).toEqual(
+          { status, body: { ok: false, error } },
+        );
+      }
+    });
+
+    it("stops checking codes after 10 refusals from one client", async () => {
+      cart.applyPromoCode.mockResolvedValue({ ok: false, error: "promo-invalid" });
+      const { action } = await import("./cart");
+      const ip = nextIp();
+
+      for (let i = 0; i < 10; i++) {
+        await action(post({ intent: "apply-promo", code: `GUESS${i}` }, ip));
+      }
+      expect(unwrap(await action(post({ intent: "apply-promo", code: "GUESS10" }, ip)))).toEqual({
+        status: 429,
+        body: { ok: false, error: "promo-rate-limited" },
+      });
+      expect(cart.applyPromoCode).toHaveBeenCalledTimes(10);
+      // Another client isn't affected.
+      await action(post({ intent: "apply-promo", code: "MINE" }, nextIp()));
+      expect(cart.applyPromoCode).toHaveBeenCalledTimes(11);
+      cart.applyPromoCode.mockReset();
+    });
+
+    it("removes the code", async () => {
+      const { action } = await import("./cart");
+
+      expect(unwrap(await action(post({ intent: "remove-promo" })))).toEqual({
+        status: 200,
+        body: { ok: true, intent: "remove-promo" },
+      });
+      expect(cart.removePromoCode).toHaveBeenCalledWith(owner);
     });
   });
 });

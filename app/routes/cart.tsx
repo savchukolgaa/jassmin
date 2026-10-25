@@ -1,11 +1,14 @@
 import { data } from "react-router";
 import { ensureVisitor, type RequestArgs, trackEvent } from "~/.server/analytics";
+import { getClientIp, promoCodeLimiter } from "~/.server/rate-limit";
 import {
   addItem,
+  applyPromoCode,
   type CartChangeResult,
   getCartOwner,
   getCartView,
   removeItem,
+  removePromoCode,
   updateQuantity,
 } from "~/.server/services/cart";
 import { checkVariantForCart } from "~/.server/services/products";
@@ -64,9 +67,12 @@ function trackChange(
 // as a plain form without JS. The `_shop` loader revalidates afterwards, so the header badge
 // updates.
 export async function action({ request, context }: Route.ActionArgs) {
-  const input = parseCartAction(await request.formData());
+  const formData = await request.formData();
+  const input = parseCartAction(formData);
   if (!input.success) {
-    return data<CartActionResult>({ ok: false, error: "invalid" }, { status: 400 });
+    // A malformed code reads as an unknown one.
+    const error = formData.get("intent") === "apply-promo" ? "promo-invalid" : "invalid";
+    return data<CartActionResult>({ ok: false, error }, { status: 400 });
   }
   const owner = await getCartOwner(request);
   const args = { request, context };
@@ -104,6 +110,25 @@ export async function action({ request, context }: Route.ActionArgs) {
       const result = await removeItem(owner, input.data.variantId);
       trackChange(args, result, input.data.variantId);
       return respond(result, "remove");
+    }
+    case "apply-promo": {
+      // Refused codes count against the client, so codes can't be guessed one after another.
+      const key = getClientIp(request) ?? owner.anonymousId ?? "anonymous";
+      if (promoCodeLimiter.isBlocked(key)) {
+        return data<CartActionResult>({ ok: false, error: "promo-rate-limited" }, { status: 429 });
+      }
+      const result = await applyPromoCode(owner, input.data.code);
+      if (!result.ok) {
+        promoCodeLimiter.hit(key);
+        return data<CartActionResult>(result, {
+          status: result.error === "promo-invalid" ? 400 : 409,
+        });
+      }
+      return data<CartActionResult>({ ok: true, intent: "apply-promo" });
+    }
+    case "remove-promo": {
+      await removePromoCode(owner);
+      return data<CartActionResult>({ ok: true, intent: "remove-promo" });
     }
   }
 }

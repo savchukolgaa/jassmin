@@ -1,6 +1,7 @@
 // Cart form contract shared by the cart route's `action` and the forms that post to it, plus the
 // cart DTOs its `loader` returns.
 import { z } from "zod";
+import { type CartPromo, type DiscountLine, promoCodeSchema } from "./discounts";
 import { createTranslator, type TextKey, type Translator } from "./i18n";
 
 /** Most of one size a single cart line may hold, whatever the stock. */
@@ -19,6 +20,9 @@ export const cartActionSchema = z.discriminatedUnion("intent", [
   /** `variantId` identifies the line; the stepper posts the new quantity. */
   z.object({ intent: z.literal("update"), variantId: z.uuid(), quantity }),
   z.object({ intent: z.literal("remove"), variantId: z.uuid() }),
+  /** Promo codes (#59): the code is trimmed and uppercased. */
+  z.object({ intent: z.literal("apply-promo"), code: promoCodeSchema }),
+  z.object({ intent: z.literal("remove-promo") }),
 ]);
 
 export type CartActionInput = z.infer<typeof cartActionSchema>;
@@ -51,16 +55,38 @@ export interface CartView {
   /** Units across all lines (the header badge). */
   itemCount: number;
   subtotal: string;
+  /** The one discount that applies (#59), or `null`. */
+  discount: DiscountLine | null;
+  /** `subtotal − discount`: what checkout charges, and what free delivery is decided on. */
+  total: string;
+  /** The promo code the shopper applied, and whether it's used. */
+  promo: CartPromo | null;
 }
 
-export const EMPTY_CART: CartView = { lines: [], itemCount: 0, subtotal: "0.00" };
+export const EMPTY_CART: CartView = {
+  lines: [],
+  itemCount: 0,
+  subtotal: "0.00",
+  discount: null,
+  total: "0.00",
+  promo: null,
+};
 
 export type CartActionError =
   | "invalid"
   | "invalid-variant"
   | "out-of-stock"
   | "exceeds-stock"
-  | "not-in-cart";
+  | "not-in-cart"
+  | PromoError;
+
+/** Why a promo code couldn't be applied (#59). */
+export type PromoError =
+  | "promo-invalid"
+  | "promo-expired"
+  | "promo-used-up"
+  | "promo-not-applicable"
+  | "promo-rate-limited";
 
 export type CartActionResult =
   | { ok: true; intent: CartIntent }
@@ -73,6 +99,11 @@ export const CART_ERROR_KEYS: Record<CartActionError, TextKey> = {
   "out-of-stock": "cart.errors.outOfStock",
   "exceeds-stock": "cart.errors.exceedsStock",
   "not-in-cart": "cart.errors.notInCart",
+  "promo-invalid": "cart.errors.promoInvalid",
+  "promo-expired": "cart.errors.promoExpired",
+  "promo-used-up": "cart.errors.promoUsedUp",
+  "promo-not-applicable": "cart.errors.promoNotApplicable",
+  "promo-rate-limited": "cart.errors.promoRateLimited",
 };
 
 /**

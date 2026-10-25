@@ -40,13 +40,19 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // Not awaited: the page doesn't wait for tracking (#18). A failed submit (4xx) doesn't revalidate
   // this loader, so it records once per visit to the page.
   void trackEvent({ request, context }, "checkout_start", {
-    properties: { subtotal: cart.subtotal, itemCount: cart.itemCount },
+    properties: {
+      subtotal: cart.subtotal,
+      itemCount: cart.itemCount,
+      discountAmount: cart.discount?.amount ?? "0.00",
+      discountCode: cart.promo?.status === "applied" ? cart.promo.code : null,
+    },
   });
   const prefill = owner.userId === null ? null : await getCheckoutPrefill(owner.userId);
   return {
     cart,
     prefill,
-    shipping: freeShippingInfo(cart.subtotal),
+    // Free delivery is decided on what's left after the discount (#59).
+    shipping: freeShippingInfo(cart.total),
     cardPaymentAvailable: isCardPaymentAvailable(),
   };
 }
@@ -75,13 +81,26 @@ export async function action({ request, context }: Route.ActionArgs) {
     return redirect("/cart");
   }
   const locale = await getLocale(request);
-  const result = await createOrder({ cartId, userId: owner.userId, customer: parsed.data, locale });
+  const { expectedTotal, ...customer } = parsed.data;
+  const result = await createOrder({
+    cartId,
+    userId: owner.userId,
+    customer,
+    locale,
+    expectedTotal,
+  });
   if (!result.ok) {
     if (result.error === "cart-empty") {
       return redirect("/cart");
     }
     return data<CheckoutFormErrors>(
-      { formError: "checkout.errors.stockChanged", values },
+      {
+        formError:
+          result.error === "total-changed"
+            ? "checkout.errors.totalChanged"
+            : "checkout.errors.stockChanged",
+        values,
+      },
       { status: 409 },
     );
   }
@@ -95,6 +114,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       properties: {
         orderId: result.orderId,
         subtotal: result.subtotal,
+        totalAmount: result.totalAmount,
+        discountAmount: result.discountAmount,
+        discountId: result.discountId,
+        discountCode: result.discountCode,
         paymentMethod: parsed.data.paymentMethod,
       },
     });
@@ -156,12 +179,14 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
           fieldErrors={actionData?.fieldErrors}
           values={actionData?.values}
           cardAvailable={cardPaymentAvailable}
+          expectedTotal={cart.total}
         />
         <OrderSummary
           lines={cart.lines.map(cartSummaryLine)}
           subtotal={cart.subtotal}
-          // Nothing is added for delivery or taken off as a discount yet.
-          total={cart.subtotal}
+          discount={cart.discount}
+          // Nothing is added for delivery.
+          total={cart.total}
           freeShipping={shipping.free}
           remainingForFreeShipping={shipping.free ? undefined : shipping.remaining}
         />

@@ -86,3 +86,12 @@ export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
 export const PAYMENT_ATTEMPT_STATUSES = ["pending", "succeeded", "failed"] as const;
 
 export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
+
+/**
+ * How a discount rule (#59) takes money off: a percentage of the qualifying lines, a fixed amount
+ * off them, or a fixed price for each set of `min_quantity` qualifying units. A CHECK constraint
+ * limits `discounts.kind` to these values.
+ */
+export const DISCOUNT_KINDS = ["percent", "fixed_amount", "fixed_price_set"] as const;
+
+export type DiscountKind = (typeof DISCOUNT_KINDS)[number];

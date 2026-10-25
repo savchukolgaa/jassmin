@@ -13,6 +13,8 @@ export interface CheckoutFormProps {
   values?: Partial<Record<CheckoutField, string>>;
   /** Whether card payment can be chosen (a payment provider is configured, #44). */
   cardAvailable?: boolean;
+  /** The total the page shows (#59); the order isn't placed if it came out higher. */
+  expectedTotal?: string;
 }
 
 function Section({ legend, children }: { legend: string; children: ReactNode }) {
@@ -33,6 +35,7 @@ export function CheckoutForm({
   fieldErrors,
   values,
   cardAvailable = true,
+  expectedTotal,
 }: CheckoutFormProps) {
   const { t } = useT();
   const submitting = useNavigation().state === "submitting";
@@ -45,6 +48,7 @@ export function CheckoutForm({
 
   return (
     <Form method="post" aria-label={t("checkout.form")} className="flex flex-col gap-10" noValidate>
+      {expectedTotal && <input type="hidden" name="expectedTotal" value={expectedTotal} />}
       <Section legend={t("checkout.sections.contact")}>
         <TextField
           name="fullName"

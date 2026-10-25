@@ -316,18 +316,17 @@ function kyivMidnight(days: number): string {
   return `${date}T00:00:00${offset}`;
 }
 
-const COCO_MADEMOISELLE = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 const LA_VIE_EST_BELLE = "01a1652b-6e25-7c39-a4ce-d1efe1e47081";
 const JADORE = "01a1652b-6e25-7c3f-9567-5f694e414a33";
 const SAUVAGE = "01a1652b-6e25-7c44-8d5b-bce46a20ad83";
 const BLEU_DE_CHANEL = "01a1652b-6e25-7c48-8efe-b797385135f1";
-const WOOD_SAGE = "01a1652b-6e25-7c51-bcf8-0d0dd7accc0a";
 const MOLECULE_01 = "01a1652b-6e25-7c55-8003-478f2d6abfb1";
 /** Not in the app's DB: shows that offers skip products that no longer exist. */
 const MISSING_PRODUCT = "01a1652b-6e25-7fff-8000-000000000000";
 
-// Offers are editorial: price notes describe what goes in the cart, and checkout applies no
-// discount (#55).
+// Offers are editorial: price notes describe what goes in the cart. The tester trio's price is
+// the app's `tester-trio` discount rule (#59), which checkout applies by itself; keep the two in
+// sync.
 const OFFERS: SeedOffer[] = [
   {
     slug: "winter-holidays",
@@ -357,22 +356,23 @@ const OFFERS: SeedOffer[] = [
     slug: "tester-trio",
     kind: "discovery-set",
     image: "hero",
-    productIds: [COCO_MADEMOISELLE, WOOD_SAGE, MOLECULE_01],
+    // Products with a 10 ml size in stock.
+    productIds: [LA_VIE_EST_BELLE, SAUVAGE, MOLECULE_01],
     ctaUrl: "/catalog/women",
     sortOrder: 10,
     copy: {
       uk: {
         title: "Тестерне тріо",
-        summary: "Три аромати по 7 мл: найпростіший спосіб знайти свій.",
-        body: "Додайте до кошика три об’єми по 7 мл і носіть кожен кілька днів, перш ніж обрати повний флакон.",
-        priceNote: "3 × 7 мл — від 499 ₴",
+        summary: "Три аромати по 10 мл за 499 ₴: найпростіший спосіб знайти свій.",
+        body: "Додайте до кошика будь-які три об’єми по 10 мл, і кошик порахує їх за 499 ₴. До трьох тріо в одному замовленні. Носіть кожен аромат кілька днів, перш ніж обрати повний флакон.",
+        priceNote: "3 × 10 мл — 499 ₴",
         ctaLabel: "Зібрати тріо",
       },
       en: {
         title: "Tester trio",
-        summary: "Three 7 ml scents: the easiest way to find yours.",
-        body: "Add three 7 ml sizes to your cart and wear each for a few days before you choose a full bottle.",
-        priceNote: "3 × 7 ml — from 499 ₴",
+        summary: "Three 10 ml scents for 499 ₴: the easiest way to find yours.",
+        body: "Add any three 10 ml sizes to your cart and it charges 499 ₴ for them, up to three trios per order. Wear each scent for a few days before you choose a full bottle.",
+        priceNote: "3 × 10 ml — 499 ₴",
         ctaLabel: "Build my trio",
       },
     },

@@ -1,6 +1,7 @@
 // Account dashboard (#12): how orders are grouped and tracked, plus the DTOs the account loaders
 // return. Isomorphic: no server imports. Amounts are exact decimal strings.
 import type { OrderSummaryLine } from "./checkout";
+import type { DiscountLine } from "./discounts";
 import type { OrderStatus, PaymentMethod } from "./enums";
 
 /** Orders still on their way to the customer. */
@@ -69,6 +70,8 @@ export interface AccountOrderDetail extends AccountOrder {
   paymentMethod: PaymentMethod;
   freeShipping: boolean;
   subtotal: string;
+  /** The applied discount (#59), or `null`. */
+  discount: DiscountLine | null;
 }
 
 export interface AccountOrders {

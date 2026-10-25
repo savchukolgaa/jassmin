@@ -358,7 +358,7 @@ Each step leaves the app building and the tests green.
   (the product page answers 404) and `checkVariantForCart`. In `lockCartLinesForOrder`, join
   `products` and report inactive lines as `stockQuantity: 0`, so checkout answers
   `insufficient-stock`. Update the catalog, product, offers and checkout tests.
-- [ ] **10. Aspire.** In `apphost.mts`: add a `cmsSyncSecret` parameter (secret, generated)
+- [x] **10. Aspire.** In `apphost.mts`: add a `cmsSyncSecret` parameter (secret, generated)
   passed to `cms` and `web` as `CMS_SYNC_SECRET`; give `cms` `JASSMIN_APP_URL` from `web`'s
   `http` endpoint (create `web` first or use an endpoint reference, with no `waitFor` cycle); add
   the `db-sync-cms` explicit-start resource (like `db-send-order-emails`, with `STRAPI_URL` and

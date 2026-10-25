@@ -204,6 +204,23 @@ describe.skipIf(!hasDatabase)("order service", () => {
     );
     expect(await stockOf(seven.id)).toBe(8);
     expect(await stockOf(thirty.id)).toBe(2);
+    // The order and its product's lower stock are queued for Strapi (#40).
+    const { and, eq: equals } = await import("drizzle-orm");
+    const { cmsOutbox } = await import("../db/schema");
+    const queued = await testDb.db
+      .select({
+        entity: cmsOutbox.entity,
+        entityId: cmsOutbox.entityId,
+        syncedAt: cmsOutbox.syncedAt,
+      })
+      .from(cmsOutbox)
+      .where(and(equals(cmsOutbox.entity, "order"), equals(cmsOutbox.entityId, result.orderId)));
+    expect(queued).toEqual([{ entity: "order", entityId: result.orderId, syncedAt: null }]);
+    const products = await testDb.db
+      .select({ entityId: cmsOutbox.entityId, syncedAt: cmsOutbox.syncedAt })
+      .from(cmsOutbox)
+      .where(and(equals(cmsOutbox.entity, "product"), equals(cmsOutbox.entityId, seven.productId)));
+    expect(products).toEqual([{ entityId: seven.productId, syncedAt: null }]);
     const after = await cartOf(cart.id);
     expect(after?.status).toBe("converted");
     expect(after?.updatedAt.getTime()).toBeGreaterThan(cart.updatedAt.getTime());
@@ -269,6 +286,30 @@ describe.skipIf(!hasDatabase)("order service", () => {
     expect(await stockOf(seven.id)).toBe(10);
     expect(await stockOf(thirty.id)).toBe(1);
     expect((await cartOf(cart.id))?.status).toBe("active");
+  });
+
+  it("treats a line of an archived product as out of stock", async () => {
+    const { createOrder } = await import("./orders");
+    const { eq } = await import("drizzle-orm");
+    const { products } = await import("../db/schema");
+    const seven = await variant(7, 10);
+    const cart = await cartWith([{ variant: seven, quantity: 1 }]);
+    await testDb.db.update(products).set({ active: false }).where(eq(products.id, seven.productId));
+    try {
+      expect(
+        await createOrder({ cartId: cart.id, userId: null, customer, locale: "uk" }, testDb.db),
+      ).toEqual({
+        ok: false,
+        error: "insufficient-stock",
+        lines: [{ variantId: expect.any(String), available: 0 }],
+      });
+      expect(await stockOf(seven.id)).toBe(10);
+    } finally {
+      await testDb.db
+        .update(products)
+        .set({ active: true })
+        .where(eq(products.id, seven.productId));
+    }
   });
 
   it("rolls everything back when a later write fails", async () => {

@@ -53,7 +53,7 @@ export const PERFUME_VOLUMES_ML = [7, 10, 30, 50, 100] as const;
 
 export type PerfumeVolumeMl = (typeof PERFUME_VOLUMES_ML)[number];
 
-/** What a user may do: `admin` can open the `/admin` area (#14). */
+/** What a user may do: `admin` passes `requireAdmin` (#14); the shop is managed in Strapi (#40). */
 export const USER_ROLES = ["customer", "admin"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
@@ -86,6 +86,11 @@ export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
 export const PAYMENT_ATTEMPT_STATUSES = ["pending", "succeeded", "failed"] as const;
 
 export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
+
+/** What the app pushes to Strapi through `cms_outbox` (#40); a CHECK constraint limits it. */
+export const CMS_SYNC_ENTITIES = ["order", "product"] as const;
+
+export type CmsSyncEntity = (typeof CMS_SYNC_ENTITIES)[number];
 
 /**
  * How a discount rule (#59) takes money off: a percentage of the qualifying lines, a fixed amount

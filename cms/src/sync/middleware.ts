@@ -1,0 +1,227 @@
+import type { Core } from "@strapi/strapi";
+import { errors } from "@strapi/utils";
+import { AppSyncError, postToApp } from "../utils/app-sync";
+
+/**
+ * Write-through for products and orders (#40). The shop's PostgreSQL database is the system of
+ * record (checkout locks and decrements stock there), and the Strapi admin is where staff edit
+ * it. Before Strapi saves a staff edit, this document middleware sends it to the app's
+ * `/cms/products` or `/cms/orders/:id` route. The app applies it in one transaction and answers
+ * with what it stored (real stock, the order's timestamps), which is what Strapi then saves.
+ * When the app refuses, the save fails with its message in the admin and nothing changes.
+ *
+ * Only staff edits made in the admin panel go through the app. Writes with an API token (the
+ * app pushing new orders and stock with `STRAPI_SYNC_TOKEN`) and scripts without a request pass
+ * straight through, so a push never loops back.
+ */
+
+export const PRODUCT_UID = "api::product.product";
+export const ORDER_UID = "api::order.order";
+
+/** The document actions that change data; reads (and this middleware's own lookups) pass. */
+const WRITE_ACTIONS = new Set(["create", "update", "delete", "clone"]);
+
+type Data = Record<string, unknown>;
+
+interface DocumentContext {
+  uid: string;
+  action: string;
+  params: { documentId?: string; data?: Data };
+}
+
+type DocumentMiddleware = Parameters<Core.Strapi["documents"]["use"]>[0];
+
+const isRecord = (value: unknown): value is Data =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const records = (value: unknown): Data[] => (Array.isArray(value) ? value.filter(isRecord) : []);
+
+/** `NaN` for a missing value, so the app's validation names the field. */
+const toNumber = (value: unknown): number =>
+  value === null || value === undefined || value === "" ? Number.NaN : Number(value);
+
+const text = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() !== "" ? value : null;
+
+/** Whether the current request is a staff member's, made in the admin panel. */
+export function isStaffEdit(strapi: Core.Strapi): boolean {
+  const state: unknown = strapi.requestContext.get()?.state;
+  if (!isRecord(state) || !isRecord(state.auth) || !isRecord(state.auth.strategy)) {
+    return false;
+  }
+  const { name } = state.auth.strategy;
+  return typeof name === "string" && name.startsWith("admin");
+}
+
+/** The image's URL (`/uploads/…`) from a media id, a media object or nothing. */
+async function imageUrl(strapi: Core.Strapi, image: unknown): Promise<string | null> {
+  if (isRecord(image) && typeof image.url === "string") {
+    return image.url;
+  }
+  const id = typeof image === "number" ? image : isRecord(image) ? image.id : undefined;
+  if (typeof id !== "number") {
+    return null;
+  }
+  const file: unknown = await strapi.db.query("plugin::upload.file").findOne({ where: { id } });
+  return isRecord(file) && typeof file.url === "string" ? file.url : null;
+}
+
+/** The product as the app's `cmsProductChangeSchema` expects it (without `action`). */
+async function productPayload(strapi: Core.Strapi, merged: Data, stored: Data | null) {
+  const storedStock = new Map(
+    records(stored?.variants).map((variant) => [
+      toNumber(variant.volumeMl),
+      toNumber(variant.stock),
+    ]),
+  );
+  return {
+    name: merged.name,
+    slug: merged.slug,
+    brand: merged.brand,
+    description: text(merged.description),
+    gender: merged.gender,
+    fragranceFamily: text(merged.fragranceFamily),
+    imageUrl: await imageUrl(strapi, merged.image),
+    packSize:
+      merged.packSize === undefined || merged.packSize === null ? 1 : toNumber(merged.packSize),
+    active: merged.active !== false,
+    variants: records(merged.variants).map((variant) => {
+      const volumeMl = toNumber(variant.volumeMl);
+      return {
+        volumeMl,
+        price: toNumber(variant.price),
+        stock: toNumber(variant.stock),
+        expectedStock: storedStock.get(volumeMl) ?? null,
+      };
+    }),
+  };
+}
+
+/** Writes the app's answer into the data Strapi is about to save, keeping the sizes' ids. */
+function applyProductAnswer(data: Data, answer: unknown): Data {
+  if (!isRecord(answer) || typeof answer.publicId !== "string") {
+    throw new AppSyncError("Магазин надіслав неочікувану відповідь. Зміни не збережено.");
+  }
+  const byVolume = new Map(records(answer.variants).map((v) => [toNumber(v.volumeMl), v]));
+  return {
+    ...data,
+    publicId: answer.publicId,
+    active: answer.active,
+    variants: records(data.variants).map((variant) => {
+      const stored = byVolume.get(toNumber(variant.volumeMl));
+      return stored ? { ...variant, price: toNumber(stored.price), stock: stored.stock } : variant;
+    }),
+  };
+}
+
+/**
+ * The app's order (`CmsOrderState`) as Strapi data: `status` is `orderStatus` (Strapi reserves
+ * `status` for draft & publish) and amounts are numbers for `decimal`.
+ */
+export function toOrderData(answer: unknown): Data {
+  if (!isRecord(answer) || typeof answer.orderId !== "number") {
+    throw new AppSyncError("Магазин надіслав неочікувану відповідь. Зміни не збережено.");
+  }
+  const { status, ...order } = answer;
+  return {
+    ...order,
+    orderStatus: status,
+    subtotal: toNumber(answer.subtotal),
+    discountAmount: toNumber(answer.discountAmount),
+    shippingAmount: toNumber(answer.shippingAmount),
+    totalAmount: toNumber(answer.totalAmount),
+    items: records(answer.items).map((item) => ({ ...item, unitPrice: toNumber(item.unitPrice) })),
+  };
+}
+
+async function findStored(strapi: Core.Strapi, uid: string, documentId: string | undefined) {
+  if (!documentId) return null;
+  const documents = strapi.documents(uid as typeof PRODUCT_UID);
+  const stored: unknown = await documents.findOne({
+    documentId,
+    populate: uid === PRODUCT_UID ? ["variants", "image"] : [],
+  });
+  return isRecord(stored) ? stored : null;
+}
+
+async function syncProduct(strapi: Core.Strapi, context: DocumentContext): Promise<void> {
+  const { action, params } = context;
+  if (action === "clone") {
+    throw new AppSyncError("Товари не можна дублювати: створіть новий товар.");
+  }
+  const stored = await findStored(strapi, PRODUCT_UID, params.documentId);
+  const publicId = typeof stored?.publicId === "string" ? stored.publicId : null;
+
+  if (action === "delete") {
+    // Archived in the shop, so its orders keep their title; nothing to do for a product the
+    // shop never had.
+    if (publicId) {
+      await postToApp("/cms/products", { action: "delete", publicId });
+    }
+    return;
+  }
+  if (action !== "create" && action !== "update") {
+    return;
+  }
+
+  const data = params.data ?? {};
+  const merged = { ...(stored ?? {}), ...data };
+  const payload = await productPayload(strapi, merged, stored);
+  const answer = await postToApp(
+    "/cms/products",
+    publicId ? { action: "update", publicId, ...payload } : { action: "create", ...payload },
+  );
+  params.data = applyProductAnswer(data, answer);
+}
+
+async function syncOrder(strapi: Core.Strapi, context: DocumentContext): Promise<void> {
+  const { action, params } = context;
+  if (action === "create" || action === "clone") {
+    throw new AppSyncError("Замовлення створюються лише в магазині під час оформлення.");
+  }
+  if (action === "delete") {
+    throw new AppSyncError(
+      "Замовлення не можна видаляти: змініть статус, наприклад на «Скасоване».",
+    );
+  }
+  if (action !== "update") {
+    return;
+  }
+  const stored = await findStored(strapi, ORDER_UID, params.documentId);
+  if (typeof stored?.orderId !== "number") {
+    throw new AppSyncError("Цього замовлення немає в базі магазину.");
+  }
+  const data = params.data ?? {};
+  const answer = await postToApp(`/cms/orders/${stored.orderId}`, {
+    status: data.orderStatus ?? undefined,
+    paymentStatus: data.paymentStatus ?? undefined,
+  });
+  // Every other field is the shop's: whatever the form sent, Strapi stores the app's values.
+  params.data = toOrderData(answer);
+}
+
+export function createSyncMiddleware(strapi: Core.Strapi): DocumentMiddleware {
+  const middleware = async (context: DocumentContext, next: () => Promise<unknown>) => {
+    if (
+      (context.uid !== PRODUCT_UID && context.uid !== ORDER_UID) ||
+      !WRITE_ACTIONS.has(context.action) ||
+      !isStaffEdit(strapi)
+    ) {
+      return next();
+    }
+    try {
+      if (context.uid === PRODUCT_UID) {
+        await syncProduct(strapi, context);
+      } else {
+        await syncOrder(strapi, context);
+      }
+    } catch (error) {
+      if (error instanceof AppSyncError) {
+        throw new errors.ApplicationError(error.message);
+      }
+      throw error;
+    }
+    return next();
+  };
+  return middleware as unknown as DocumentMiddleware;
+}

@@ -199,6 +199,20 @@ describe.skipIf(!hasDatabase)("payments service", () => {
       expect(payment).toMatchObject({ status: "succeeded", lastCallback: { status: "success" } });
       expect(payment?.providerPaymentId).toMatch(/^sim_/);
       expect(payment?.completedAt).toBeInstanceOf(Date);
+      // The paid order is queued for Strapi (#40).
+      const { and, eq, isNull } = await import("drizzle-orm");
+      const { cmsOutbox } = await import("../db/schema");
+      const queued = await testDb.db
+        .select({ id: cmsOutbox.id })
+        .from(cmsOutbox)
+        .where(
+          and(
+            eq(cmsOutbox.entity, "order"),
+            eq(cmsOutbox.entityId, orderId),
+            isNull(cmsOutbox.syncedAt),
+          ),
+        );
+      expect(queued).toHaveLength(1);
     });
 
     it("doesn't change the order again on a repeated callback", async () => {

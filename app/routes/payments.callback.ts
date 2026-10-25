@@ -1,4 +1,5 @@
 import { redirect } from "react-router";
+import { pushToCms } from "~/.server/services/cms-sync";
 import { handlePaymentCallback } from "~/.server/services/payments";
 import type { Route } from "./+types/payments.callback";
 
@@ -16,6 +17,10 @@ export async function action({ request }: Route.ActionArgs) {
     return result.error === "unavailable"
       ? new Response("Not found", { status: 404 })
       : new Response("Bad request", { status: 400 });
+  }
+  if (result.result === "paid") {
+    // The paid order was queued for Strapi (#40); not awaited and never rejects.
+    void pushToCms();
   }
   return new Response("OK", { status: 200 });
 }

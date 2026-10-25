@@ -7,8 +7,9 @@
  * alone, and missing ones are added.
  *
  *   pnpm cms:seed               # content only
- *   pnpm cms:seed -- --token    # also creates the app's read-only API token and prints it once,
- *                               # or grants an existing token the permissions it's missing
+ *   pnpm cms:seed -- --token    # also creates the app's read-only API token and its sync token
+ *                               # (products and orders, #40) and prints each once, or grants an
+ *                               # existing token the permissions it's missing
  */
 import { stat } from "node:fs/promises";
 import path from "node:path";
@@ -24,6 +25,20 @@ const TOKEN_PERMISSIONS = [
   "api::home-page.home-page.find",
   "api::offer.offer.find",
   "api::site-setting.site-setting.find",
+];
+
+/** The app's sync token (#40): it pushes orders and stock to Strapi, and may only touch these. */
+const SYNC_TOKEN_NAME = "jassmin-sync";
+
+const SYNC_TOKEN_PERMISSIONS = [
+  "api::product.product.find",
+  "api::product.product.findOne",
+  "api::product.product.create",
+  "api::product.product.update",
+  "api::order.order.find",
+  "api::order.order.findOne",
+  "api::order.order.create",
+  "api::order.order.update",
 ];
 
 const SEED_DATA_DIR = path.join(__dirname, "seed-data");
@@ -512,36 +527,58 @@ async function seedOffers(
   }
 }
 
-async function seedApiToken(strapi: Core.Strapi): Promise<void> {
-  const tokens = strapi.service("admin::api-token-content-api");
-  const existing: { id: number; permissions?: string[] } | null = await tokens.getBy({
+interface SeedToken {
+  name: string;
+  description: string;
+  permissions: string[];
+  /** The root `.env` variable the printed key goes into. */
+  envName: string;
+}
+
+const APP_TOKENS: SeedToken[] = [
+  {
     name: TOKEN_NAME,
-  });
+    description: "Read-only token for the Jassmin web app (find/findOne on site content)",
+    permissions: TOKEN_PERMISSIONS,
+    envName: "STRAPI_API_TOKEN",
+  },
+  {
+    name: SYNC_TOKEN_NAME,
+    description: "Sync token for the Jassmin web app: pushes orders and product stock (#40)",
+    permissions: SYNC_TOKEN_PERMISSIONS,
+    envName: "STRAPI_SYNC_TOKEN",
+  },
+];
+
+async function seedApiToken(strapi: Core.Strapi, seed: SeedToken): Promise<void> {
+  const tokens = strapi.service("admin::api-token-content-api");
+  // Strapi 5.59's content API token service has `getByName`; the generic `getBy` is gone.
+  const existing: { id: number; permissions?: string[] } | null = await tokens.getByName(seed.name);
   if (existing) {
     // Content types added after the token was created (offers, #55) need their permissions too.
     // The key itself stays the same.
     const granted = existing.permissions ?? [];
-    const missing = TOKEN_PERMISSIONS.filter((action) => !granted.includes(action));
+    const missing = seed.permissions.filter((action) => !granted.includes(action));
     if (missing.length > 0) {
       await tokens.update(existing.id, { permissions: [...granted, ...missing] });
-      strapi.log.info(`Granted API token "${TOKEN_NAME}": ${missing.join(", ")}`);
+      strapi.log.info(`Granted API token "${seed.name}": ${missing.join(", ")}`);
     }
     strapi.log.info(
-      `API token "${TOKEN_NAME}" already exists. To get a new key, regenerate it in Settings → API Tokens.`,
+      `API token "${seed.name}" already exists. To get a new key, regenerate it in Settings → API Tokens.`,
     );
     return;
   }
 
   const token: { accessKey: string } = await tokens.create({
-    name: TOKEN_NAME,
-    description: "Read-only token for the Jassmin web app (find/findOne on site content)",
+    name: seed.name,
+    description: seed.description,
     type: "custom",
     lifespan: null,
-    permissions: TOKEN_PERMISSIONS,
+    permissions: seed.permissions,
   });
 
-  // Printed once: Strapi only stores a hash. Copy it into STRAPI_API_TOKEN in the root .env.
-  console.log(`\nSTRAPI_API_TOKEN=${token.accessKey}\n`);
+  // Printed once: Strapi only stores a hash. Copy it into the root .env.
+  console.log(`\n${seed.envName}=${token.accessKey}\n`);
 }
 
 async function main(): Promise<void> {
@@ -559,7 +596,9 @@ async function main(): Promise<void> {
     await seedBlogPosts(strapi, coverImageId);
     await seedOffers(strapi, { hero: heroImageId, cover: coverImageId });
     if (withToken) {
-      await seedApiToken(strapi);
+      for (const token of APP_TOKENS) {
+        await seedApiToken(strapi, token);
+      }
     }
   } finally {
     await strapi.destroy();

@@ -6,6 +6,8 @@ Guidance for AI coding agents working in this repository. Read `README.md` for s
 
 Jassmin is an e-commerce site for a small perfume store in Ukraine. It's a single full-stack SSR app built on React Router v8 (framework mode), TypeScript 7, Tailwind v4, PostgreSQL with Drizzle ORM, zod, Biome and Vitest. Local development is orchestrated by Aspire, and pnpm is the package manager.
 
+There is no in-app admin area: staff manage products and orders in the Strapi admin (`cms/`), which writes every edit through to PostgreSQL, the system of record (#40; see `app/.server/AGENTS.md` → CMS sync).
+
 The database schema is designed for later LTV and churn analytics. Columns such as `users.last_login_at`, `users.acquisition_channel`, `products.fragrance_family` and `carts.abandoned_at` are ML features: never drop or rename them.
 
 ## Commands
@@ -45,12 +47,12 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 
 ## Translations (i18n)
 
-The site is in Ukrainian (default) and English, storefront and `/admin` alike. The locale comes
-from the `locale` cookie, then `Accept-Language`, then `uk` (`app/.server/locale.ts`).
+The site is in Ukrainian (default) and English. The locale comes from the `locale` cookie, then
+`Accept-Language`, then `uk` (`app/.server/locale.ts`).
 
 - **No hard-coded user-facing strings.** Copy lives in `app/lib/i18n/uk.ts` (the source of truth)
   and `app/lib/i18n/en.ts`, under one namespace per feature (`cart`, `checkout`,
-  `admin.products`, …). Add every key to both files; `pnpm typecheck` fails when they differ.
+  `account`, …). Add every key to both files; `pnpm typecheck` fails when they differ.
 - Components use `const { t } = useT()`, route `meta` uses `metaTranslator(matches)`, and server
   code uses `createTranslator(await getLocale(request))`.
 - Placeholders are `{name}`. A plural message is `{ one, few, many, other }` in `uk` (`one`/`other`

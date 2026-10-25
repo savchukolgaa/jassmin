@@ -8,6 +8,7 @@ import {
 } from "~/lib/checkout";
 import type { DiscountLine } from "~/lib/discounts";
 import type { CartStatus, PaymentMethod } from "~/lib/enums";
+import type { OrderLifecyclePatch } from "~/lib/order-status";
 import type { Db } from "../client";
 import {
   cartItems,
@@ -18,6 +19,7 @@ import {
   products,
   productVariants,
 } from "../schema";
+import { availableStock } from "./products";
 
 /** A `Db` or a transaction, so the order service can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
@@ -51,7 +53,8 @@ export function lockCartLinesForOrder(db: Executor, cartId: number) {
       packSize: products.packSize,
       volumeMl: productVariants.volumeMl,
       price: productVariants.price,
-      stockQuantity: productVariants.stockQuantity,
+      // 0 for an archived product (#40), so checkout answers `insufficient-stock` for its lines.
+      stockQuantity: availableStock,
       quantity: cartItems.quantity,
     })
     .from(cartItems)
@@ -275,6 +278,8 @@ export function listUserOrders(db: Executor, userId: number) {
       paidAt: orders.paidAt,
       cancelledAt: orders.cancelledAt,
       refundedAt: orders.refundedAt,
+      shippedAt: orders.shippedAt,
+      completedAt: orders.completedAt,
       totalAmount: orders.totalAmount,
       itemCount: sql<number>`coalesce(sum(${orderItems.quantity}), 0)::int`,
     })
@@ -295,6 +300,8 @@ export async function findUserOrder(db: Executor, userId: number, orderId: numbe
       paidAt: orders.paidAt,
       cancelledAt: orders.cancelledAt,
       refundedAt: orders.refundedAt,
+      shippedAt: orders.shippedAt,
+      completedAt: orders.completedAt,
       totalAmount: orders.totalAmount,
       subtotal: orders.subtotal,
       ...discountColumns,
@@ -344,3 +351,82 @@ export async function listOrderLinesByOrderIds(
     .orderBy(asc(orderItems.id));
   return rows.map(({ id, ...line }) => ({ key: String(id), ...line }));
 }
+
+// Status changes from the Strapi admin (#40), applied by `services/cms-sync.ts` in one
+// transaction, and the order as Strapi shows it.
+
+/** The order's lifecycle columns, locking its row until the transaction ends. */
+export async function lockOrderLifecycle(db: Executor, orderId: number) {
+  const [row] = await db
+    .select({
+      status: orders.status,
+      paymentStatus: orders.paymentStatus,
+      paymentMethod: orders.paymentMethod,
+      paidAt: orders.paidAt,
+      cancelledAt: orders.cancelledAt,
+      refundedAt: orders.refundedAt,
+      shippedAt: orders.shippedAt,
+      completedAt: orders.completedAt,
+    })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .for("update");
+  return row;
+}
+
+/** Writes the status, payment status and timestamps; `$onUpdate` bumps `updated_at`. */
+export async function updateOrderLifecycle(
+  db: Executor,
+  orderId: number,
+  patch: OrderLifecyclePatch,
+): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+  await db.update(orders).set(patch).where(eq(orders.id, orderId));
+}
+
+/**
+ * Puts the order's units back on their sizes' stock, locking those rows in id order like
+ * checkout does. Lines whose size was deleted are skipped. Returns the touched products' ids.
+ */
+export async function restockOrder(db: Executor, orderId: number): Promise<number[]> {
+  const lines = await db
+    .select({
+      variantId: productVariants.id,
+      productId: productVariants.productId,
+      quantity: orderItems.quantity,
+    })
+    .from(orderItems)
+    .innerJoin(productVariants, eq(productVariants.id, orderItems.variantId))
+    .where(eq(orderItems.orderId, orderId))
+    .orderBy(asc(productVariants.id))
+    .for("update", { of: productVariants });
+  for (const line of lines) {
+    await db
+      .update(productVariants)
+      .set({ stockQuantity: sql`${productVariants.stockQuantity} + ${line.quantity}` })
+      .where(eq(productVariants.id, line.variantId));
+  }
+  return [...new Set(lines.map((line) => line.productId))];
+}
+
+/** Everything Strapi shows about an order, with its lines in the order they were bought. */
+export async function findOrderSyncState(db: Executor, orderId: number) {
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+  if (!order) return undefined;
+  const items = await db
+    .select({
+      productPublicId: products.publicId,
+      productName: products.title,
+      brand: products.brand,
+      volumeMl: orderItems.volumeMl,
+      quantity: orderItems.quantity,
+      unitPrice: orderItems.priceAtPurchase,
+    })
+    .from(orderItems)
+    .leftJoin(products, eq(products.id, orderItems.productId))
+    .where(eq(orderItems.orderId, orderId))
+    .orderBy(asc(orderItems.id));
+  return { order, items };
+}
+
+export type OrderSyncRow = NonNullable<Awaited<ReturnType<typeof findOrderSyncState>>>;

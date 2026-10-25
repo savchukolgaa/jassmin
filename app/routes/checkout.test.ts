@@ -12,6 +12,7 @@ const orders = vi.hoisted(() => ({
   getCheckoutPrefill: vi.fn(),
 }));
 const session = vi.hoisted(() => ({ rememberOrder: vi.fn() }));
+const cmsSync = vi.hoisted(() => ({ pushToCms: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 const payments = vi.hoisted(() => ({
   isCardPaymentAvailable: vi.fn(),
@@ -21,6 +22,7 @@ const payments = vi.hoisted(() => ({
 vi.mock("~/.server/services/cart", () => cart);
 vi.mock("~/.server/services/orders", () => orders);
 vi.mock("~/.server/session", () => session);
+vi.mock("~/.server/services/cms-sync", () => cmsSync);
 vi.mock("~/.server/analytics", () => analytics);
 vi.mock("~/.server/services/payments", () => payments);
 
@@ -236,6 +238,7 @@ describe("checkout action", () => {
     });
     expect(session.rememberOrder).toHaveBeenCalledWith(expect.any(Request), 42);
     expect(orders.deliverOrderConfirmation).toHaveBeenCalledExactlyOnceWith(42);
+    expect(cmsSync.pushToCms).toHaveBeenCalledOnce();
     // Cash on delivery never starts an online payment.
     expect(payments.startPayment).not.toHaveBeenCalled();
   });

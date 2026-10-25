@@ -68,6 +68,8 @@ pnpm dev                    # http://localhost:5173
 | `PORT` | no | Port for `pnpm start` (default `3000`). |
 | `STRAPI_URL` | no | Strapi base URL (default `http://localhost:1337`). Under Aspire it's set to the `cms` endpoint. |
 | `STRAPI_API_TOKEN` | no* | Read-only Strapi API token. *Without it the app still starts, but CMS-backed pages answer with a 503. |
+| `STRAPI_SYNC_TOKEN` | no* | Strapi API token that may write products and orders (#40). *Without it, new orders and stock changes stay queued for Strapi (`pnpm db:sync-cms` pushes them later). |
+| `CMS_SYNC_SECRET` | no* | Shared secret (32+ characters) that Strapi sends to the app's `/cms/*` sync routes; the same value goes in `cms/.env`. *Without it, saving a product or an order in the Strapi admin fails. |
 | `PAYMENT_PROVIDER` | no* | Where card payments go. Only `simulator` for now, a local fake payment page that's refused when `NODE_ENV=production` (see [Card payments](#card-payments-simulator)). *Without it the app still starts, but card payment is unavailable at checkout. |
 | `SMTP_URL` | no* | SMTP server for contact form and order emails (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container. *Without it, development logs contact messages instead of sending them, production shows a "couldn't send" error, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
@@ -95,16 +97,17 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm worktree:remove <n>` | Remove issue `<n>`'s worktree after its PR is merged: deletes its `node_modules` without following links into pnpm's shared store, then runs `git worktree remove` |
 | `pnpm cms:dev` | Strapi in development mode (admin at http://localhost:1337/admin) |
 | `pnpm cms:build` | Build the Strapi admin panel |
-| `pnpm cms:seed` | Seed Strapi with demo content (`-- --token` also creates the app's API token) |
+| `pnpm cms:seed` | Seed Strapi with demo content (`-- --token` also creates the app's read-only and sync API tokens) |
 | `pnpm db:generate` | Generate a migration from `app/.server/db/schema.ts` (`--name <name>`) |
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:rollback` | Roll back the latest applied migration |
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
-| `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin area](#admin-area) |
+| `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin role](#admin-role) |
 | `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
+| `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
-The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-rollback`, `db-mark-abandoned-carts` and `db-send-order-emails` start by hand) instead of from a terminal.
+The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-rollback`, `db-mark-abandoned-carts`, `db-send-order-emails` and `db-sync-cms` start by hand) instead of from a terminal.
 
 The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration and seed tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
 
@@ -175,8 +178,9 @@ app/
     analytics.ts       analytics visitor cookies and sessions (getVisitor)
     db/                Drizzle client, schema, migrations + rollbacks, seed, queries
     services/          business logic (orders, auth, cart, …)
-    cms/               Strapi client: content queries, zod schemas, CmsError
-cms/                   Strapi v5 CMS (content types in src/api, components in src/components)
+    cms/               Strapi client: content queries, zod schemas, CmsError, sync writer
+cms/                   Strapi v5 CMS (content types in src/api, components in src/components,
+                       product and order write-through in src/sync)
 aspire-apphost/        Aspire TypeScript AppHost (local dev orchestration)
 scripts/aspire.mjs     Aspire CLI wrapper for pnpm
 docs/plans/            implementation plans while an issue is in progress
@@ -186,9 +190,9 @@ Anything under `app/.server/` is server-only. Importing it from code that reache
 
 ## Content (Strapi CMS)
 
-Editorial content is managed in [Strapi](https://docs.strapi.io) v5, in the `cms/` workspace package: blog posts, home page copy and the store's contact details. Products, stock, carts, orders, users and analytics stay in the app's PostgreSQL database. Strapi has its own `strapidb` database on the same PostgreSQL server.
+[Strapi](https://docs.strapi.io) v5, in the `cms/` workspace package, is the shop's only admin interface. Staff edit editorial content there (blog posts, home page copy, the store's contact details, special offers) and manage products and orders (#40, see [Products and orders in Strapi](#products-and-orders-in-strapi)). Products, stock, carts, orders, users and analytics still live in the app's PostgreSQL database, which stays the system of record. Strapi has its own `strapidb` database on the same PostgreSQL server.
 
-The app reads published content on the server only, through `app/.server/cms/content.ts`, using a read-only API token. Strapi admin accounts are separate from Jassmin customer and admin accounts.
+The app reads published content on the server only, through `app/.server/cms/content.ts`, using a read-only API token. Strapi admin accounts are separate from Jassmin customer accounts.
 
 ### Running Strapi
 
@@ -210,14 +214,14 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
    ```bash
    pnpm cms:seed -- --token
    ```
-   The seed creates the home page and site settings in Ukrainian and English, two published blog posts (one translated, one Ukrainian only), one draft, and special offers for `/offers` (a current and an expired campaign, a tester trio, gift ideas and three perks), and prints `STRAPI_API_TOKEN=…` once (Strapi stores only a hash). Copy that line into the root `.env` and restart `web`. Running the seed again leaves existing content alone. With `--token`, an existing token keeps its key and is granted any permissions it lacks (such as `offer.find`, added in #55). It uses the same database variables as `pnpm cms:dev`.
+   The seed creates the home page and site settings in Ukrainian and English, two published blog posts (one translated, one Ukrainian only), one draft, and special offers for `/offers` (a current and an expired campaign, a tester trio, gift ideas and three perks), and prints `STRAPI_API_TOKEN=…` and `STRAPI_SYNC_TOKEN=…` once each (Strapi stores only a hash). Copy both lines into the root `.env` and restart `web`. Running the seed again leaves existing content alone. With `--token`, an existing token keeps its key and is granted any permissions it lacks (such as `offer.find`, added in #55). It uses the same database variables as `pnpm cms:dev`.
 3. **Or create the token by hand:** go to Settings → API Tokens → Create new API Token, choose type **Custom** and duration **Unlimited**, and enable only:
    - Blog-post: `find`, `findOne`
    - Home-page: `find`
    - Offer: `find`
    - Site-setting: `find`
 
-   Save the token and copy it into `STRAPI_API_TOKEN` in `.env`.
+   Save the token and copy it into `STRAPI_API_TOKEN` in `.env`. Create a second **Custom**, **Unlimited** token for `STRAPI_SYNC_TOKEN` with only `find`, `findOne`, `create` and `update` on Product and Order.
 
 Don't give the Public or Authenticated roles (Settings → Users & Permissions → Roles) any permission on these content types. Strapi doesn't grant any by default, unauthenticated requests get a 403, and Strapi logs a warning at startup if someone enables one. The token's `find` permission can technically request drafts (`?status=draft`). The app never does, because `cmsFetch` always sends `status=published`.
 
@@ -231,11 +235,15 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 |------|------|--------|
 | `blog-post` | Collection, Draft & Publish | `title` (required), `slug` (UID from title, required, unique), `excerpt` (text, max 300), `content` (Markdown, required), `coverImage` (image), `authorName`, `seo` (`shared.seo`) |
 | `home-page` | Single type | `hero` (`home.hero`), `about` (`home.about`), `location` (`home.location`) |
+| `product` (#40) | Collection, no Draft & Publish | `name`, `slug` (UID from name), `brand`, `description`, `gender` (`women`, `men`, `unisex`), `fragranceFamily`, `image`, `packSize`, `active`, `variants` (repeatable `catalog.variant`, at least one), `publicId` (set by the app) |
+| `order` (#40) | Collection, no Draft & Publish | `orderId` (the app's order id, unique), `orderStatus`, `paymentStatus`, `paymentMethod`, customer name, email and phone, `userId`, `shippingAddress`, `freeShipping`, amounts, `placedAt`, `paidAt`, `shippedAt`, `completedAt`, `cancelledAt`, `refundedAt`, `items` (repeatable `orders.item`) |
 | `offer` | Collection, Draft & Publish | `title` (required), `slug` (UID from title), `kind` (`discovery-set`, `seasonal`, `gift`, `bundle`, `featured`, `last-units`, `perk`), `summary`, `body` (Markdown), `image`, `startsAt` / `endsAt` (date-times, optional), `priceNote`, `products` (repeatable `offers.product-ref`), `ctaLabel`, `ctaUrl` (app path), `sortOrder` |
 | `site-setting` ("Site settings") | Single type | `phone`, `email`, `customerServiceHours`, `socialLinks` (repeatable `shared.social-link`) |
 
 | Component | Fields |
 |-----------|--------|
+| `catalog.variant` | `volumeMl` (7, 10, 30, 50 or 100, checked by the app), `price` (UAH, over 0), `stock` |
+| `orders.item` | `productPublicId`, `productName`, `brand`, `volumeMl`, `quantity`, `unitPrice` (a snapshot at checkout) |
 | `home.hero` | `headline`, `ctaLabel`, `ctaHref`, `image` |
 | `home.about` | `title`, `body` (Markdown) |
 | `home.location` | `address`, `openingHours`, `mapEmbedUrl` |
@@ -243,7 +251,7 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 | `shared.seo` | `metaTitle` (max 60), `metaDescription` (max 160), `ogImage` |
 | `shared.social-link` | `platform` (`instagram`, `facebook`, `tiktok`, `telegram`, `viber`, `youtube`), `url` |
 
-The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/offers`, `/api/site-setting`. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
+The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/offers`, `/api/site-setting`, plus `/api/products` and `/api/orders` for the app's sync token. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
 
 ### Translations (Ukrainian and English)
 
@@ -296,13 +304,33 @@ Locally, emails go to **smtp4dev**, which catches every message instead of deliv
 
 Without `SMTP_URL`, development logs the message to the server console instead, and production shows a "couldn't send" error.
 
-## Admin area
+## Products and orders in Strapi
 
-`/admin` is where staff manage products (`/admin/products`, #16) and orders (`/admin/orders`, #17). Blog and site content aren't managed here: the sidebar's "Content (Strapi)" link opens the Strapi admin (`STRAPI_URL` + `/admin`), which has its own accounts.
+There is no admin area in the app any more (#40): staff manage the catalogue and orders in the Strapi admin (`STRAPI_URL` + `/admin`), next to the editorial content. The app's PostgreSQL database stays the system of record, because checkout locks and decrements stock there and carts, order lines, offers and analytics point at its rows. Strapi is the screen staff use, and every save writes through to the app:
 
-Every user has a role, `customer` (the default) or `admin`, in `users.role`. Logged-out visitors are sent to `/login` and come back afterwards; logged-in customers get a 403 page. The role is read from the database on every request, so promoting or demoting someone takes effect immediately, without logging in again.
+- **Saving a product or an order in the Strapi admin** first sends the change to the app (`POST /cms/products` or `/cms/orders/:id`, authenticated with `CMS_SYNC_SECRET`). The app checks it, applies it in one transaction and answers with what it stored, which is what Strapi saves. When the app refuses, the save fails with a message in Ukrainian and nothing changes on either side. When the app is down, saves fail with a clear message too.
+- **Products:** name, slug, brand, description, gender, fragrance family, image, pack size, `active` and the sizes (`variants`: volume, price, stock). A stock number is applied as the **difference** from the number the form showed, so units sold while the form was open stay sold, and the form then shows the real stock. Removing a size deletes it in the shop (cart lines with it go; order lines keep their size). Unticking **Active** or deleting a product archives it: it disappears from the catalogue, product page, offers and checkout, and its past orders keep their title and image.
+- **Orders:** only **Order status** (`orderStatus`, because Strapi reserves `status`) and **Payment status** can be changed; every other field is read-only and set by the shop. The shop checks each change against the lifecycle in `app/lib/order-status.ts`:
+  - `pending` → `paid`, `shipped` (cash on delivery only: shipped while the payment is still pending) or `cancelled`
+  - `paid` → `shipped` or `cancelled`
+  - `shipped` → `completed`, `returned` or `unclaimed`
+  - `completed` → `returned`
+  - payment: `unpaid` → `paid` → `refunded`
 
-### Creating the first admin
+  It sets `paid_at`, `shipped_at`, `completed_at`, `cancelled_at` and `refunded_at`. Completing a cash-on-delivery order marks it paid. `cancelled` and `unclaimed` put the units back in stock in the same transaction (`returned` doesn't: the perfume may have been opened). Orders can't be created or deleted in Strapi. Customers see each change on `/account` straight away.
+- **From the app to Strapi:** new orders, card payments and stock changes (checkout, restocks) are queued in `cms_outbox` in the same transaction and pushed with `STRAPI_SYNC_TOKEN` right after it commits. `pnpm db:sync-cms` retries whatever failed (run it every 5 minutes from cron in production; under Aspire it's the `db-sync-cms` resource).
+
+**Setup:**
+
+1. Set the same `CMS_SYNC_SECRET` (32+ characters) in the root `.env` and in `cms/.env`, and `JASSMIN_APP_URL` (the app's URL, e.g. `http://localhost:5173`) in `cms/.env`. Under `pnpm aspire run`, Aspire generates the secret and sets both.
+2. Run `pnpm cms:seed -- --token` (or the `cms-seed` resource) and copy `STRAPI_SYNC_TOKEN=…` into the root `.env`.
+3. Copy the existing catalogue and orders into Strapi once: `pnpm db:sync-cms -- --all`. Products from before #40 get a slug from their title. It only upserts, so running it again is safe.
+
+## Admin role
+
+The in-app `/admin` area was removed in #40. Every user still has a role, `customer` (the default) or `admin`, in `users.role`, and `requireAdmin` (`app/.server/services/auth.ts`) is kept for future admin-only endpoints. The role is read from the database on every request.
+
+### Making someone an admin
 
 1. Register a normal account at `/register` (or use an existing one).
 2. Give it the admin role:
@@ -314,8 +342,6 @@ Every user has a role, `customer` (the default) or `admin`, in `users.role`. Log
      ```bash
      JASSMINDB_URI='postgresql://…' pnpm db:make-admin you@example.com
      ```
-3. Open `/admin`. If you were logged in already, just reload the page.
-
 `pnpm db:make-admin you@example.com --revoke` turns an admin back into a customer. The email is matched case-insensitively, and the command fails with a message if no account has it.
 
 ## Conventions

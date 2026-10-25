@@ -5,7 +5,10 @@ const handlePaymentCallback = vi.hoisted(() =>
   vi.fn(async (_form: FormData): Promise<PaymentCallbackResult> => ({ ok: true, result: "paid" })),
 );
 
+const pushToCms = vi.hoisted(() => vi.fn());
+
 vi.mock("~/.server/services/payments", () => ({ handlePaymentCallback }));
+vi.mock("~/.server/services/cms-sync", () => ({ pushToCms }));
 
 type ActionArgs = Parameters<typeof import("./payments.callback").action>[0];
 
@@ -21,6 +24,7 @@ function callbackBody(): URLSearchParams {
 describe("payments callback route", () => {
   beforeEach(() => {
     handlePaymentCallback.mockClear();
+    pushToCms.mockClear();
   });
 
   it("passes the form to the payments service and answers 200 for a verified callback", async () => {
@@ -29,6 +33,7 @@ describe("payments callback route", () => {
     const response = await action(post(callbackBody()));
 
     expect(response.status).toBe(200);
+    expect(pushToCms).toHaveBeenCalledOnce();
     const form = handlePaymentCallback.mock.calls[0]?.[0];
     expect(form?.get("data")).toBe("ZGF0YQ==");
     expect(form?.get("signature")).toBe("c2ln");

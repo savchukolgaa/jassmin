@@ -22,7 +22,7 @@ export function describeRouteError(
     return { message: "503", details: t("errors.unavailable") };
   }
   if (isRouteErrorResponse(error) && error.status === 403) {
-    // Thrown by `requireAdmin` for logged-in users without the admin role.
+    // Thrown by `requireAdmin` (admin-only endpoints) for users without the admin role.
     return { message: "403", details: t("errors.forbidden") };
   }
   if (isRouteErrorResponse(error)) {

@@ -1,0 +1,95 @@
+{
+  "kind": "collectionType",
+  "collectionName": "orders",
+  "info": {
+    "singularName": "order",
+    "pluralName": "orders",
+    "displayName": "Order",
+    "description": "Orders placed in the shop (#40). Only Order status and Payment status can be changed here; the shop checks every change, sets the dates and restores stock on cancellation. (`orderStatus`, because Strapi reserves `status`.)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "orderId": {
+      "type": "integer",
+      "required": true,
+      "unique": true
+    },
+    "orderStatus": {
+      "type": "enumeration",
+      "enum": ["pending", "paid", "shipped", "completed", "cancelled", "returned", "unclaimed"],
+      "required": true,
+      "default": "pending"
+    },
+    "paymentStatus": {
+      "type": "enumeration",
+      "enum": ["unpaid", "paid", "refunded"],
+      "required": true,
+      "default": "unpaid"
+    },
+    "paymentMethod": {
+      "type": "enumeration",
+      "enum": ["card", "cod"],
+      "required": true
+    },
+    "customerName": {
+      "type": "string"
+    },
+    "customerEmail": {
+      "type": "email"
+    },
+    "customerPhone": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "integer"
+    },
+    "shippingAddress": {
+      "type": "text"
+    },
+    "freeShipping": {
+      "type": "boolean",
+      "default": false
+    },
+    "subtotal": {
+      "type": "decimal"
+    },
+    "discountAmount": {
+      "type": "decimal"
+    },
+    "shippingAmount": {
+      "type": "decimal"
+    },
+    "totalAmount": {
+      "type": "decimal"
+    },
+    "currency": {
+      "type": "string",
+      "default": "UAH"
+    },
+    "placedAt": {
+      "type": "datetime"
+    },
+    "paidAt": {
+      "type": "datetime"
+    },
+    "shippedAt": {
+      "type": "datetime"
+    },
+    "completedAt": {
+      "type": "datetime"
+    },
+    "cancelledAt": {
+      "type": "datetime"
+    },
+    "refundedAt": {
+      "type": "datetime"
+    },
+    "items": {
+      "type": "component",
+      "repeatable": true,
+      "component": "orders.item"
+    }
+  }
+}

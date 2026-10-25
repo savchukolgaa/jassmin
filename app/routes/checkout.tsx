@@ -2,6 +2,7 @@ import { data, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { getLocale } from "~/.server/locale";
 import { getActiveCartId, getCartOwner, getCartView } from "~/.server/services/cart";
+import { pushToCms } from "~/.server/services/cms-sync";
 import {
   createOrder,
   deliverOrderConfirmation,
@@ -110,6 +111,8 @@ export async function action({ request, context }: Route.ActionArgs) {
     // The confirmation was queued with the order (#45). Not awaited and never rejects: the
     // redirect doesn't wait for SMTP, and `pnpm db:send-order-emails` retries a failure.
     void deliverOrderConfirmation(result.orderId);
+    // The order and the lower stock were queued for Strapi (#40); never rejects either.
+    void pushToCms();
     void trackEvent({ request, context }, "purchase", {
       properties: {
         orderId: result.orderId,

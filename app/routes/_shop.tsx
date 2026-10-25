@@ -22,7 +22,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { header, consent };
 }
 
-/** Layout for every public page; admin pages (#14) use their own layout. */
+/** Layout for every page. Products and orders are managed in the Strapi admin (#40). */
 export default function ShopLayout({ loaderData }: Route.ComponentProps) {
   const { header, consent } = loaderData;
   useClientPageViews(consent === "granted");

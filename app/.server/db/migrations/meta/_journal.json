@@ -85,6 +85,13 @@
       "when": 1792959930954,
       "tag": "0011_discounts",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792964769244,
+      "tag": "0012_cms_catalog_and_orders",
+      "breakpoints": true
     }
   ]
 }

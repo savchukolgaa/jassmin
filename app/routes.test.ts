@@ -53,10 +53,16 @@ describe("route config", () => {
     );
   });
 
-  it("nests the admin pages under their own layout, outside the shop layout", () => {
-    const admin = routes.find((entry) => entry.path === "admin");
+  it("keeps the Strapi sync endpoints outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "cms/products")?.file).toBe(
+      "routes/cms.products.ts",
+    );
+    expect(routes.find((entry) => entry.path === "cms/orders/:id")?.file).toBe(
+      "routes/cms.orders.$id.ts",
+    );
+  });
 
-    expect(admin?.file).toBe("routes/admin.tsx");
-    expect(paths(admin?.children ?? [])).toEqual(["/", "/products", "/orders"]);
+  it("has no in-app admin area: products and orders are managed in Strapi (#40)", () => {
+    expect(routes.find((entry) => entry.path === "admin")).toBeUndefined();
   });
 });

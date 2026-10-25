@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDatabaseUrl, parseEnv, parseMailEnv } from "./env";
+import { getDatabaseUrl, parseCmsSyncEnv, parseEnv, parseMailEnv } from "./env";
 
 const valid = {
   DATABASE_URL: "postgres://jassmin:jassmin@localhost:5432/jassmin",
@@ -95,6 +95,24 @@ describe("parseEnv", () => {
 
   it("rejects an invalid STRAPI_URL", () => {
     expect(() => parseEnv({ ...valid, STRAPI_URL: "not a url" })).toThrow(/STRAPI_URL/);
+  });
+
+  it("leaves the CMS sync secret and token unset by default and treats empty ones as unset", () => {
+    for (const env of [
+      parseEnv(valid),
+      parseEnv({ ...valid, CMS_SYNC_SECRET: "", STRAPI_SYNC_TOKEN: "" }),
+    ]) {
+      expect(env.CMS_SYNC_SECRET).toBeUndefined();
+      expect(env.STRAPI_SYNC_TOKEN).toBeUndefined();
+    }
+  });
+
+  it("accepts a CMS sync secret and token, and rejects a short secret", () => {
+    const env = parseEnv({ ...valid, CMS_SYNC_SECRET: "s".repeat(32), STRAPI_SYNC_TOKEN: "write" });
+
+    expect(env.CMS_SYNC_SECRET).toBe("s".repeat(32));
+    expect(env.STRAPI_SYNC_TOKEN).toBe("write");
+    expect(() => parseEnv({ ...valid, CMS_SYNC_SECRET: "short" })).toThrow(/CMS_SYNC_SECRET/);
   });
 });
 
@@ -193,5 +211,21 @@ describe("parseMailEnv", () => {
 
   it("rejects invalid mail variables", () => {
     expect(() => parseMailEnv({ SMTP_URL: "http://localhost:5000" })).toThrow(/SMTP_URL/);
+  });
+});
+
+describe("parseCmsSyncEnv", () => {
+  it("reads the Strapi URL and sync token without the web app's variables", () => {
+    expect(parseCmsSyncEnv({ CMS_HTTP: "http://cms:1337", STRAPI_SYNC_TOKEN: "write" })).toEqual({
+      STRAPI_URL: "http://cms:1337",
+      STRAPI_SYNC_TOKEN: "write",
+    });
+    expect(parseCmsSyncEnv({ STRAPI_SYNC_TOKEN: "" })).toEqual({
+      STRAPI_URL: "http://localhost:1337",
+    });
+  });
+
+  it("rejects an invalid STRAPI_URL", () => {
+    expect(() => parseCmsSyncEnv({ STRAPI_URL: "nope" })).toThrow(/STRAPI_URL/);
   });
 });

@@ -1,11 +1,17 @@
 import type { Core } from "@strapi/strapi";
+import { createSyncMiddleware, ORDER_UID, PRODUCT_UID } from "./sync/middleware";
 
-/** Content types the Jassmin app reads with its read-only API token, never publicly. */
+/**
+ * Content types the Jassmin app reads with its read-only API token (or writes with its sync
+ * token, #40), never publicly.
+ */
 const PROTECTED_UIDS = [
   "api::blog-post.blog-post",
   "api::home-page.home-page",
   "api::offer.offer",
   "api::site-setting.site-setting",
+  PRODUCT_UID,
+  ORDER_UID,
 ];
 
 interface RoleWithPermissions {
@@ -72,11 +78,63 @@ async function ensureLocales(strapi: Core.Strapi): Promise<void> {
   }
 }
 
+/** The only order fields staff change; the shop owns the rest (#40). */
+const EDITABLE_ORDER_FIELDS = new Set(["orderStatus", "paymentStatus"]);
+
+interface EditMetadata {
+  edit?: { editable?: boolean };
+}
+
+interface ContentTypesService {
+  findConfiguration(contentType: unknown): Promise<{
+    settings?: unknown;
+    layouts?: unknown;
+    metadatas?: Record<string, EditMetadata>;
+  }>;
+  updateConfiguration(contentType: unknown, configuration: unknown): Promise<unknown>;
+}
+
+/**
+ * Makes every order field except the statuses read-only in the order's edit view. Only a hint
+ * for staff: the sync middleware replaces whatever the form sends with the shop's values.
+ */
+async function lockOrderFields(strapi: Core.Strapi): Promise<void> {
+  try {
+    const service = strapi
+      .plugin("content-manager")
+      .service("content-types") as ContentTypesService;
+    const contentType = strapi.contentType(ORDER_UID);
+    const configuration = await service.findConfiguration(contentType);
+    const metadatas = configuration.metadatas ?? {};
+    let changed = false;
+    for (const [field, metadata] of Object.entries(metadatas)) {
+      const editable = EDITABLE_ORDER_FIELDS.has(field);
+      if (metadata.edit && metadata.edit.editable !== editable) {
+        metadata.edit.editable = editable;
+        changed = true;
+      }
+    }
+    if (changed) {
+      await service.updateConfiguration(contentType, {
+        settings: configuration.settings,
+        layouts: configuration.layouts,
+        metadatas,
+      });
+    }
+  } catch (error) {
+    strapi.log.warn(`Could not make the order fields read-only: ${String(error)}`);
+  }
+}
+
 export default {
-  register() {},
+  register({ strapi }: { strapi: Core.Strapi }) {
+    // Product and order edits made in the admin write through to the shop's database (#40).
+    strapi.documents.use(createSyncMiddleware(strapi));
+  },
 
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     await ensureLocales(strapi);
     await warnAboutPublicAccess(strapi);
+    await lockOrderFields(strapi);
   },
 };

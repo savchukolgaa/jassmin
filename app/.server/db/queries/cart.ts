@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, exists, isNull, lt, sql } from "drizzle-orm";
 import type { Db } from "../client";
 import { cartItems, carts, products, productVariants, sessions } from "../schema";
+import { availableStock } from "./products";
 
 /** A `Db` or a transaction, so the cart service can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
@@ -110,7 +111,8 @@ export function listCartLines(db: Executor, cartId: number) {
       volumeMl: productVariants.volumeMl,
       unitPrice: productVariants.price,
       quantity: cartItems.quantity,
-      stockQuantity: productVariants.stockQuantity,
+      // 0 for an archived product (#40), so the cart shows the line as sold out.
+      stockQuantity: availableStock,
       lineTotal: sql<string>`(${productVariants.price} * ${cartItems.quantity})::numeric(10, 2)`,
     })
     .from(cartItems)
@@ -144,10 +146,11 @@ export async function findCartLine(db: Executor, cartId: number, variantPublicId
       productId: cartItems.productId,
       volumeMl: productVariants.volumeMl,
       quantity: cartItems.quantity,
-      stockQuantity: productVariants.stockQuantity,
+      stockQuantity: availableStock,
     })
     .from(cartItems)
     .innerJoin(productVariants, eq(productVariants.id, cartItems.variantId))
+    .innerJoin(products, eq(products.id, cartItems.productId))
     .where(and(eq(cartItems.cartId, cartId), eq(productVariants.publicId, variantPublicId)))
     .limit(1);
   return row;
@@ -160,9 +163,11 @@ export function listCartItemsWithStock(db: Executor, cartId: number) {
       productId: cartItems.productId,
       variantId: cartItems.variantId,
       quantity: cartItems.quantity,
-      stockQuantity: productVariants.stockQuantity,
+      // 0 for an archived product (#40), so merging drops its lines.
+      stockQuantity: availableStock,
     })
     .from(cartItems)
     .innerJoin(productVariants, eq(productVariants.id, cartItems.variantId))
+    .innerJoin(products, eq(products.id, cartItems.productId))
     .where(eq(cartItems.cartId, cartId));
 }

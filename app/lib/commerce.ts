@@ -74,6 +74,8 @@ export interface Order {
   paidAt: Date | null;
   cancelledAt: Date | null;
   refundedAt: Date | null;
+  shippedAt: Date | null;
+  completedAt: Date | null;
   /** The discount rule applied at checkout (#59). */
   discountId: number | null;
 }

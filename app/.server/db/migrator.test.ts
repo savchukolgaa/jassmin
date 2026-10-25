@@ -25,6 +25,7 @@ const sampleOrder = {
 const ALL_TABLES = [
   "cart_items",
   "carts",
+  "cms_outbox",
   "discounts",
   "order_emails",
   "order_items",
@@ -108,6 +109,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(constraints.rows.map((r) => r.conname)).toEqual([
       "products_pack_size_check",
       "products_public_id_unique",
+      "products_slug_unique",
       "products_stock_quantity_check",
       "users_email_unique",
     ]);
@@ -672,7 +674,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0011 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0012 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
     expect(await rollbackLatest(db)).toBe("0010_payments");
     expect(await rollbackLatest(db)).toBe("0009_order_emails");
@@ -703,7 +706,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0011 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0012 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
     expect(await rollbackLatest(db)).toBe("0010_payments");
     expect(await rollbackLatest(db)).toBe("0009_order_emails");
@@ -791,19 +795,28 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0012_cms_catalog_and_orders");
+    const tablesBefore0012 = ALL_TABLES.filter((t) => t !== "cms_outbox");
+    expect(await listTables()).toEqual(tablesBefore0012);
+    const syncColumns = await testDb.db.execute(
+      sql`select 1 from information_schema.columns
+          where (table_name = 'products' and column_name in ('slug', 'active'))
+             or (table_name = 'orders' and column_name in ('shipped_at', 'completed_at'))`,
+    );
+    expect(syncColumns.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0011_discounts");
-    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "discounts"));
+    expect(await listTables()).toEqual(tablesBefore0012.filter((t) => t !== "discounts"));
     const discountColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns where column_name = 'discount_id'`,
     );
     expect(discountColumns.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0010_payments");
     expect(await listTables()).toEqual(
-      ALL_TABLES.filter((t) => t !== "discounts" && t !== "payments"),
+      tablesBefore0012.filter((t) => t !== "discounts" && t !== "payments"),
     );
     expect(await rollbackLatest(testDb.db)).toBe("0009_order_emails");
     expect(await listTables()).toEqual(
-      ALL_TABLES.filter((t) => t !== "discounts" && t !== "payments" && t !== "order_emails"),
+      tablesBefore0012.filter((t) => t !== "discounts" && t !== "payments" && t !== "order_emails"),
     );
     expect(await rollbackLatest(testDb.db)).toBe("0008_traffic_attribution");
     const attributionColumns = await testDb.db.execute(
@@ -836,7 +849,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await listEnums()).not.toHaveProperty("user_role");
     expect(await rollbackLatest(testDb.db)).toBe("0003_product_variants");
     expect(await listTables()).toEqual(
-      ALL_TABLES.filter(
+      tablesBefore0012.filter(
         (t) =>
           t !== "product_variants" && t !== "order_emails" && t !== "payments" && t !== "discounts",
       ),

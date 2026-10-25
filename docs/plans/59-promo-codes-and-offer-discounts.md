@@ -233,7 +233,7 @@ and in the confirmation email.
 
 ## Steps
 
-- [ ] **1. Schema and migration** — Add `DISCOUNT_KINDS` to `~/lib/enums`; define `discounts`,
+- [x] **1. Schema and migration** — Add `DISCOUNT_KINDS` to `~/lib/enums`; define `discounts`,
   `orders.discountId`, `carts.discountId` in `schema.ts` with the constraints above (explicit
   snake_case names). `pnpm db:generate --name discounts`, check the SQL (functional `lower(code)`
   index, array columns), write `rollbacks/0011_discounts.sql`. Mirror types in `~/lib/commerce`;

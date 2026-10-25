@@ -57,8 +57,17 @@ const productFields = {
   description: optionalText,
   gender: z.enum(GENDERS),
   fragranceFamily: optionalText,
+  /** Strapi's relative `/uploads/…` URL or an absolute `http(s)` one; the route resolves it. */
   imageUrl: z
-    .url({ protocol: /^https?$/ })
+    .string()
+    .trim()
+    .max(2000)
+    .refine(
+      (value) =>
+        (value.startsWith("/") && !value.startsWith("//")) ||
+        (URL.canParse(value) && /^https?:$/.test(new URL(value).protocol)),
+      "image-url",
+    )
     .nullish()
     .transform((value) => value ?? null),
   packSize: z.number().int().min(1).default(1),

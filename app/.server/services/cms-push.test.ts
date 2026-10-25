@@ -111,13 +111,15 @@ afterEach(() => {
 });
 
 describe("toStrapiOrderData / toStrapiProductData", () => {
-  it("sends amounts as numbers for Strapi's decimal fields", () => {
+  it("sends amounts as numbers for Strapi's decimal fields and the status as orderStatus", () => {
     expect(toStrapiOrderData(order)).toMatchObject({
       orderId: 7,
+      orderStatus: "pending",
       subtotal: 6430,
       totalAmount: 6430,
       items: [{ unitPrice: 990, quantity: 2 }],
     });
+    expect(toStrapiOrderData(order)).not.toHaveProperty("status");
     expect(toStrapiProductData(product)).toMatchObject({
       publicId: product.publicId,
       variants: [{ volumeMl: 7, price: 990, stock: 8 }],

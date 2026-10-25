@@ -1,5 +1,41 @@
 import type { Schema, Struct } from '@strapi/strapi';
 
+export interface CatalogVariant extends Struct.ComponentSchema {
+  collectionName: 'components_catalog_variants';
+  info: {
+    description: 'One size of a perfume: volume (7, 10, 30, 50 or 100 ml), price in UAH and units in stock';
+    displayName: 'Size';
+    icon: 'shoppingCart';
+  };
+  attributes: {
+    price: Schema.Attribute.Decimal &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0.01;
+        },
+        number
+      >;
+    stock: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
+    volumeMl: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 1;
+        },
+        number
+      >;
+  };
+}
+
 export interface HomeAbout extends Struct.ComponentSchema {
   collectionName: 'components_home_abouts';
   info: {
@@ -78,6 +114,30 @@ export interface OffersProductRef extends Struct.ComponentSchema {
   };
 }
 
+export interface OrdersItem extends Struct.ComponentSchema {
+  collectionName: 'components_orders_items';
+  info: {
+    description: 'A bought size, as it was at checkout';
+    displayName: 'Order line';
+    icon: 'shoppingCart';
+  };
+  attributes: {
+    brand: Schema.Attribute.String;
+    productName: Schema.Attribute.String;
+    productPublicId: Schema.Attribute.String;
+    quantity: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 1;
+        },
+        number
+      >;
+    unitPrice: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    volumeMl: Schema.Attribute.Integer;
+  };
+}
+
 export interface SharedSeo extends Struct.ComponentSchema {
   collectionName: 'components_shared_seos';
   info: {
@@ -121,10 +181,12 @@ export interface SharedSocialLink extends Struct.ComponentSchema {
 declare module '@strapi/strapi' {
   export namespace Public {
     export interface ComponentSchemas {
+      'catalog.variant': CatalogVariant;
       'home.about': HomeAbout;
       'home.hero': HomeHero;
       'home.location': HomeLocation;
       'offers.product-ref': OffersProductRef;
+      'orders.item': OrdersItem;
       'shared.seo': SharedSeo;
       'shared.social-link': SharedSocialLink;
     }

@@ -1,0 +1,27 @@
+{
+  "collectionName": "components_catalog_variants",
+  "info": {
+    "displayName": "Size",
+    "icon": "shoppingCart",
+    "description": "One size of a perfume: volume (7, 10, 30, 50 or 100 ml), price in UAH and units in stock"
+  },
+  "options": {},
+  "attributes": {
+    "volumeMl": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "price": {
+      "type": "decimal",
+      "required": true,
+      "min": 0.01
+    },
+    "stock": {
+      "type": "integer",
+      "required": true,
+      "default": 0,
+      "min": 0
+    }
+  }
+}

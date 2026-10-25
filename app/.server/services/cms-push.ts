@@ -76,10 +76,11 @@ export function toCmsProductState(row: ProductSyncRow): CmsProductState {
 // Strapi stores amounts in `decimal` fields, which its REST API takes as JSON numbers. Strapi
 // only displays them; the exact values stay in PostgreSQL.
 
-/** The `data` of an order document in Strapi. */
-export function toStrapiOrderData(order: CmsOrderState) {
+/** The `data` of an order document in Strapi, where `status` is `orderStatus` (Strapi reserves it). */
+export function toStrapiOrderData({ status, ...order }: CmsOrderState) {
   return {
     ...order,
+    orderStatus: status,
     subtotal: Number(order.subtotal),
     discountAmount: Number(order.discountAmount),
     shippingAmount: Number(order.shippingAmount),

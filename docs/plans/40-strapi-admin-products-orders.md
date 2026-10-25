@@ -144,6 +144,23 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
     `pnpm cms:seed --token` also creates the write token (`jassmin-sync`) next to the read-only
     one and prints it once.
 
+15. **Found while implementing (step 8):**
+    - Strapi 5 reserves the attribute name `status` (draft & publish), so the Strapi `order`
+      stores the order status as **`orderStatus`**. The app's DTO and the `/cms/orders/:id` body
+      keep `status`; `toStrapiOrderData` (app) and `toOrderData` (CMS) map between them.
+    - The middleware only handles write actions (`create`, `update`, `delete`, `clone`): reads,
+      including its own lookup of the stored document, pass straight through.
+    - Strapi 5.59's content API token service has no `getBy`, so `pnpm cms:seed -- --token`
+      failed before this issue too; the seed now uses `getByName`.
+    - The app accepts Strapi's relative `/uploads/…` image URL and resolves it against
+      `STRAPI_URL` in the `/cms/products` route, like `cms/content.ts` does for CMS images.
+    - `cms/src/**/*.test.ts` run with the app's Vitest (`cms/src/utils/app-sync.test.ts`).
+    - Verified end to end on throwaway databases (Strapi on :1338, the app on :5174): the
+      `db:sync-cms --all` import, a product rename, a stock edit applied as a delta, a refused
+      size, archiving, checkout → Strapi, a stock push, a COD order shipped while unpaid, a
+      refused `shipped → pending`, `unclaimed` restoring stock in both systems, a refused order
+      delete, the read-only order fields and a failed push delivered by the retry job.
+
 ## Resolved questions
 
 Answered by the issue owner after planning:
@@ -299,7 +316,7 @@ Each step leaves the app building and the tests green.
     and order first: the data migration, decision 14). It must not import `db/index.ts` (same
     rule as `send-order-emails`).
   - Unit-test the mappers and the delivery against a fake `fetch`.
-- [ ] **8. Strapi content types and middleware (`cms/`).**
+- [x] **8. Strapi content types and middleware (`cms/`).**
   - `api::product.product` (collection, no draft & publish, not localized): `publicId`
     (string, UUID regex, unique, set by sync), `name` (required, ≤ 255), `slug` (uid from
     `name`, required), `brand` (required), `description` (text), `gender` (enum `women`,

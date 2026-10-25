@@ -25,7 +25,9 @@ const applyCmsProductChange = vi.hoisted(() =>
 );
 
 vi.mock("~/.server/services/cms-sync", () => ({ applyCmsProductChange }));
-vi.mock("~/.server/env", () => ({ getEnv: () => ({ CMS_SYNC_SECRET: SECRET }) }));
+vi.mock("~/.server/env", () => ({
+  getEnv: () => ({ CMS_SYNC_SECRET: SECRET, STRAPI_URL: "http://cms.test" }),
+}));
 
 type ActionArgs = Parameters<typeof import("./cms.products").action>[0];
 
@@ -70,6 +72,24 @@ describe("cms products sync route", () => {
       active: true,
       variants: [{ volumeMl: 50, price: "6850.00", stock: 5, expectedStock: 6 }],
     });
+  });
+
+  it("resolves Strapi's relative image URL against the CMS origin", async () => {
+    const { action } = await import("./cms.products");
+
+    await action(post(JSON.stringify({ ...update, imageUrl: "/uploads/coco.jpg" })));
+
+    expect(applyCmsProductChange.mock.calls[0]?.[0]).toMatchObject({
+      imageUrl: "http://cms.test/uploads/coco.jpg",
+    });
+  });
+
+  it("refuses an image URL that isn't http(s) or a path", async () => {
+    const { action } = await import("./cms.products");
+
+    const response = await action(post(JSON.stringify({ ...update, imageUrl: "javascript:x" })));
+
+    expect(response.status).toBe(422);
   });
 
   it("rejects a wrong secret before reading the body", async () => {

@@ -1,0 +1,32 @@
+{
+  "collectionName": "components_orders_items",
+  "info": {
+    "displayName": "Order line",
+    "icon": "shoppingCart",
+    "description": "A bought size, as it was at checkout"
+  },
+  "options": {},
+  "attributes": {
+    "productPublicId": {
+      "type": "string"
+    },
+    "productName": {
+      "type": "string"
+    },
+    "brand": {
+      "type": "string"
+    },
+    "volumeMl": {
+      "type": "integer"
+    },
+    "quantity": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "unitPrice": {
+      "type": "decimal",
+      "required": true
+    }
+  }
+}

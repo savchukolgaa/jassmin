@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/40
 Branch: `issue/40`
 Worktree: `.claude/worktrees/issue-40`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -372,7 +372,7 @@ Each step leaves the app building and the tests green.
 - [x] **12. Account dates.** Add `shippedAt` and `completedAt` to `AccountOrder` (via
   `listUserOrders` / `findUserOrder`), show them in `OrderProgress`, add the i18n keys to both
   dictionaries, and update `account-ui.test.ts`.
-- [ ] **13. Final check.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`,
+- [x] **13. Final check.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`,
   `pnpm cms:build` and `pnpm aspire:build`; grep for dead imports (`features/admin`,
   `routes/admin`, `strapiAdminUrl`, `ADMIN_NAV_ITEMS`); then run the manual end-to-end pass from
   "Testing & verification".
@@ -411,18 +411,23 @@ Each step leaves the app building and the tests green.
 
 ## Acceptance criteria
 
-- [ ] Strapi has a `product` content type with all fields needed to manage the perfume catalogue (name, slug, brand, description, gender, fragrance family, image, price, stock, active, volume variants) — step 8 (price and stock per variant, decision 8)
-- [ ] Strapi has an `order` content type with all fields needed to view and update order status, including lifecycle timestamps (`paid_at`, `cancelled_at`, `refunded_at`) — steps 2, 6, 8
-- [ ] Invalid order status transitions are rejected in the Strapi admin — steps 3, 6, 8
-- [ ] Cancelling an order in Strapi restores product/variant stock atomically — steps 6, 7, 8
-- [ ] The `/admin` route and all nested admin routes are removed from the app — step 1
-- [ ] All admin UI files (`app/features/admin/`, admin route modules) are deleted — step 1
-- [ ] Product data displayed on the storefront is sourced from Strapi (or synced from it) — steps 5, 8, 9
-- [ ] Orders created at checkout are visible and manageable in the Strapi admin panel — steps 4, 7, 8
-- [ ] Order status changes in Strapi are reflected in the customer's order dashboard — steps 6, 8, 12
-- [ ] Deleting/archiving a product does not break historical order data — steps 5, 9 (decision 7)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
-- [ ] No dead imports or references to deleted admin modules remain — steps 1, 13
+- [x] Strapi has a `product` content type with all fields needed to manage the perfume catalogue (name, slug, brand, description, gender, fragrance family, image, price, stock, active, volume variants) — step 8 (price and stock per variant, decision 8)
+- [x] Strapi has an `order` content type with all fields needed to view and update order status, including lifecycle timestamps (`paid_at`, `cancelled_at`, `refunded_at`) — steps 2, 6, 8
+- [x] Invalid order status transitions are rejected in the Strapi admin — steps 3, 6, 8
+- [x] Cancelling an order in Strapi restores product/variant stock atomically — steps 6, 7, 8
+- [x] The `/admin` route and all nested admin routes are removed from the app — step 1
+- [x] All admin UI files (`app/features/admin/`, admin route modules) are deleted — step 1
+- [x] Product data displayed on the storefront is sourced from Strapi (or synced from it) — steps 5, 8, 9
+- [x] Orders created at checkout are visible and manageable in the Strapi admin panel — steps 4, 7, 8
+- [x] Order status changes in Strapi are reflected in the customer's order dashboard — steps 6, 8, 12
+- [x] Deleting/archiving a product does not break historical order data — steps 5, 9 (decision 7)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
+- [x] No dead imports or references to deleted admin modules remain — steps 1, 13
+
+Verification notes: all checks pass (`pnpm typecheck`, `pnpm lint`, `pnpm test`: 1000 passed,
+1 skipped; `pnpm build`; `pnpm cms:build`; `pnpm aspire:build`), and the flows above were run end
+to end against throwaway databases (decision 15). `pnpm aspire run` itself was not started: the
+new Aspire wiring (`cms-sync-secret`, `JASSMIN_APP_URL`, `db-sync-cms`) is type-checked only.
 
 ## Out of scope
 

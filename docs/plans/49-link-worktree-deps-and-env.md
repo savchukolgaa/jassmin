@@ -169,7 +169,7 @@ Each step is small, ordered, and leaves the app in a working state.
   copy when both link calls throw, and logs notices; creates a real symlink when the platform
   allows it (skip that case when the real `symlinkSync` throws `EPERM`). Add
   `"scripts/**/*.test.mjs"` to `vitest.config.ts`. `pnpm test` passes.
-- [ ] **5. Use it in `scripts/herdr-plans.mjs`** — Replace `copyEnv` with `linkEnvFiles(main, wt)`
+- [x] **5. Use it in `scripts/herdr-plans.mjs`** — Replace `copyEnv` with `linkEnvFiles(main, wt)`
   for both new and existing worktrees; update the header comment ("links `.env` and `cms/.env`")
   and the agent prompt ("the env files are already linked"). Smoke-test with a throwaway issue
   number if Herdr is available, otherwise by importing `linkEnvFiles` against a scratch worktree.

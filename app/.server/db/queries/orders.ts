@@ -1,4 +1,5 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import type { AccountOrderLine } from "~/lib/account";
 import {
   DISCOUNT_AMOUNT,
   FREE_SHIPPING_THRESHOLD,
@@ -187,6 +188,82 @@ export async function listOrderLines(db: Executor, orderId: number): Promise<Ord
     .from(orderItems)
     .leftJoin(products, eq(products.id, orderItems.productId))
     .where(eq(orderItems.orderId, orderId))
+    .orderBy(asc(orderItems.id));
+  return rows.map(({ id, ...line }) => ({ key: String(id), ...line }));
+}
+
+// Account dashboard (#12). Every query filters by `user_id`, so a user only ever loads their own
+// orders; guest orders with the same email aren't linked.
+
+/** The user's orders, newest first, with the number of units bought. */
+export function listUserOrders(db: Executor, userId: number) {
+  return db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      createdAt: orders.createdAt,
+      paidAt: orders.paidAt,
+      cancelledAt: orders.cancelledAt,
+      refundedAt: orders.refundedAt,
+      totalAmount: orders.totalAmount,
+      itemCount: sql<number>`coalesce(sum(${orderItems.quantity}), 0)::int`,
+    })
+    .from(orders)
+    .leftJoin(orderItems, eq(orderItems.orderId, orders.id))
+    .where(eq(orders.userId, userId))
+    .groupBy(orders.id)
+    .orderBy(desc(orders.createdAt), desc(orders.id));
+}
+
+/** The user's order with its delivery details, or `undefined` when it isn't theirs. */
+export async function findUserOrder(db: Executor, userId: number, orderId: number) {
+  const [row] = await db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      createdAt: orders.createdAt,
+      paidAt: orders.paidAt,
+      cancelledAt: orders.cancelledAt,
+      refundedAt: orders.refundedAt,
+      totalAmount: orders.totalAmount,
+      subtotal: orders.subtotal,
+      freeShipping: orders.freeShipping,
+      fullName: orders.guestFullName,
+      phone: orders.guestPhone,
+      shippingAddress: orders.shippingAddress,
+      paymentMethod: orders.paymentMethod,
+    })
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
+    .limit(1);
+  return row;
+}
+
+/**
+ * The lines of these orders in the order they were bought, at `price_at_purchase`. The caller
+ * makes sure the orders are the viewer's. The product may have been deleted since.
+ */
+export async function listOrderLinesByOrderIds(
+  db: Executor,
+  orderIds: readonly number[],
+): Promise<(AccountOrderLine & { orderId: number })[]> {
+  if (orderIds.length === 0) return [];
+  const rows = await db
+    .select({
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      title: products.title,
+      brand: products.brand,
+      imageUrl: products.imageUrl,
+      volumeMl: orderItems.volumeMl,
+      packSize: products.packSize,
+      quantity: orderItems.quantity,
+      unitPrice: orderItems.priceAtPurchase,
+      lineTotal: sql<string>`(${orderItems.priceAtPurchase} * ${orderItems.quantity})::numeric(10, 2)`,
+    })
+    .from(orderItems)
+    .leftJoin(products, eq(products.id, orderItems.productId))
+    .where(inArray(orderItems.orderId, [...orderIds]))
     .orderBy(asc(orderItems.id));
   return rows.map(({ id, ...line }) => ({ key: String(id), ...line }));
 }

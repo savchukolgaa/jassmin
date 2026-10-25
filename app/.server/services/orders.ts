@@ -8,6 +8,8 @@
 //
 // The caller records the `purchase` event (#18) for an order this call `placed`, after the
 // transaction committed.
+import type { AccountOrderDetail, AccountOrderLine, AccountOrders } from "~/lib/account";
+import { isCurrentOrder } from "~/lib/account";
 import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
 import { formatShippingAddress } from "~/lib/checkout";
 import { db as defaultDb } from "../db";
@@ -18,9 +20,12 @@ import {
   findCartStatus,
   findOrder,
   findOrderIdByCartId,
+  findUserOrder,
   insertOrder,
   insertOrderItems,
   listOrderLines,
+  listOrderLinesByOrderIds,
+  listUserOrders,
   lockCartLinesForOrder,
   markCartConverted,
 } from "../db/queries/orders";
@@ -133,4 +138,41 @@ export async function getOrderConfirmation(
   }
   const { userId: _userId, ...confirmation } = order;
   return { ...confirmation, lines: await listOrderLines(db, orderId) };
+}
+
+/** The user's orders for the account dashboard (#12), split into current and previous. */
+export async function getAccountOrders(userId: number, db: Db = defaultDb): Promise<AccountOrders> {
+  const orders = await listUserOrders(db, userId);
+  const lines = await listOrderLinesByOrderIds(
+    db,
+    orders.map((order) => order.id),
+  );
+  const linesByOrder = new Map<number, AccountOrderLine[]>();
+  for (const { orderId, ...line } of lines) {
+    const list = linesByOrder.get(orderId);
+    if (list) list.push(line);
+    else linesByOrder.set(orderId, [line]);
+  }
+
+  const result: AccountOrders = { current: [], previous: [] };
+  for (const order of orders) {
+    const withLines = { ...order, lines: linesByOrder.get(order.id) ?? [] };
+    (isCurrentOrder(order.status) ? result.current : result.previous).push(withLines);
+  }
+  return result;
+}
+
+/** The user's order for its account page, or `undefined` when it doesn't exist or isn't theirs. */
+export async function getAccountOrder(
+  userId: number,
+  orderId: number,
+  db: Db = defaultDb,
+): Promise<AccountOrderDetail | undefined> {
+  const order = await findUserOrder(db, userId, orderId);
+  if (!order) return undefined;
+  const lines = (await listOrderLinesByOrderIds(db, [orderId])).map(
+    ({ orderId: _orderId, ...line }) => line,
+  );
+  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+  return { ...order, itemCount, lines };
 }

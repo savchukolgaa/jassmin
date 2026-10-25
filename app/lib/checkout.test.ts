@@ -7,6 +7,7 @@ import {
   freeShippingInfo,
   normalizeUkrainianPhone,
   parseCheckout,
+  parseOrderId,
 } from "./checkout";
 
 const form = (fields: Record<string, string>) => {
@@ -121,5 +122,19 @@ describe("freeShippingInfo", () => {
     expect(freeShippingInfo("999.99")).toEqual({ free: false, remaining: "0.01" });
     expect(freeShippingInfo("750.00")).toEqual({ free: false, remaining: "250.00" });
     expect(freeShippingInfo("0.00")).toEqual({ free: false, remaining: "1000.00" });
+  });
+});
+
+describe("parseOrderId", () => {
+  it("accepts positive integer ids up to PostgreSQL's integer limit", () => {
+    expect(parseOrderId("1")).toBe(1);
+    expect(parseOrderId("42")).toBe(42);
+    expect(parseOrderId("2147483647")).toBe(2_147_483_647);
+  });
+
+  it("rejects ids that can't be an order's", () => {
+    for (const id of [undefined, "", "0", "-1", "abc", "1.5", "1e3", "2147483648", "99999999999"]) {
+      expect(parseOrderId(id)).toBeNull();
+    }
   });
 });

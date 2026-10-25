@@ -6,6 +6,7 @@ import { type AuthFormErrors, emailSchema } from "./auth";
 import type { CartLine } from "./cart";
 import { PAYMENT_METHODS, type PaymentMethod } from "./enums";
 import { msg, type TextKey } from "./i18n";
+import { fromKopiyky, toKopiyky } from "./money";
 
 /** From this subtotal (after discount) the store pays Nova Poshta; below it the recipient does. */
 export const FREE_SHIPPING_THRESHOLD = "1000.00";
@@ -90,19 +91,6 @@ export function checkoutValues(formData: FormData): Partial<Record<CheckoutField
 /** `orders.shipping_address`: one locale-independent line, e.g. `Київ, Відділення №12`. */
 export function formatShippingAddress({ city, branch }: { city: string; branch: string }): string {
   return `${city}, ${branch}`;
-}
-
-/** An exact `numeric(10, 2)` string (e.g. `"999.5"`, `"1000.00"`) as whole kopiyky. */
-function toKopiyky(amount: string): number {
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(amount);
-  if (!match) {
-    throw new Error(`Not a money amount: ${amount}`);
-  }
-  return Number(match[1] ?? "0") * 100 + Number((match[2] ?? "").padEnd(2, "0"));
-}
-
-function fromKopiyky(kopiyky: number): string {
-  return `${Math.floor(kopiyky / 100)}.${String(kopiyky % 100).padStart(2, "0")}`;
 }
 
 export type FreeShippingInfo = { free: true } | { free: false; remaining: string };

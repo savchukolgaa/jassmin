@@ -239,7 +239,7 @@ and in the confirmation email.
   index, array columns), write `rollbacks/0011_discounts.sql`. Mirror types in `~/lib/commerce`;
   extend `schema.test.ts`. Check: `pnpm typecheck`, `pnpm test` (schema + migrator tests),
   `pnpm db:migrate` then `pnpm db:rollback` then migrate again on the dev DB.
-- [ ] **2. Money helpers** — Move `toKopiyky` / `fromKopiyky` to `~/lib/money` (exported, with
+- [x] **2. Money helpers** — Move `toKopiyky` / `fromKopiyky` to `~/lib/money` (exported, with
   tests for `"0"`, `"999.5"`, `"1000.00"`, invalid input); `~/lib/checkout` imports them.
 - [ ] **3. `priceCart`** — `services/pricing.ts` with types `PricingLine { variantPublicId,
   productPublicId, volumeMl, packSize, unitPrice (kop), quantity }` and `PricingDiscount`

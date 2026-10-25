@@ -9,8 +9,9 @@ Status: Planned
 
 As a shopper, I want the savings shown on special offers and my promo codes to be applied at
 checkout so that I actually pay the advertised price. This adds a discount engine to the cart and
-checkout: promo codes, bundle prices ("two 30 ml perfumes, −10%") and fixed-price sets (the tester
-trio, 3 × 7 ml for 499 ₴). The saving is stored in `orders.discount_amount` (and the rule in a new
+checkout: promo codes and one fixed-price set, the tester trio (any three 10 ml sizes for 499 ₴,
+at most three sets per order). Per the owner, there are no other automatic sales: no bundle rule
+(30 ml stays full price). The saving is stored in `orders.discount_amount` (and the rule in a new
 `orders.discount_id`) and shown in the cart, at checkout, on the success and account order pages,
 and in the confirmation email.
 
@@ -46,6 +47,8 @@ and in the confirmation email.
     matches every non-null part.
   - `min_quantity integer not null default 1` (CHECK `>= 1`): qualifying **units** needed. For
     `fixed_price_set` it is the set size (CHECK `kind <> 'fixed_price_set' or min_quantity >= 2`).
+  - `max_sets integer` nullable (CHECK `> 0`): for `fixed_price_set`, the most sets one order gets
+    at the set price (the trio: 3). Units beyond that are full price.
   - `starts_at` / `ends_at timestamptz` nullable (start inclusive, end exclusive, like
     `isOfferActive`); CHECK `ends_at > starts_at` when both are set.
   - `max_redemptions integer` nullable (CHECK `> 0`), `redemption_count integer not null default 0`
@@ -77,16 +80,19 @@ and in the confirmation email.
   - `percent`: if units ≥ `min_quantity`, `floor(sum × value / 100)` kopiyky (rounded down, so
     the store never gives more than advertised).
   - `fixed_amount`: if units ≥ `min_quantity`, `min(value, sum)`.
-  - `fixed_price_set`: `sets = floor(units / min_quantity)`; the **most expensive** qualifying
-    units go into sets (best for the shopper); saving = `max(0, sum(those units) − sets × value)`.
-    Several sets per cart are allowed (6 × 7 ml = two trios).
+  - `fixed_price_set`: `sets = min(floor(units / min_quantity), max_sets ?? ∞)`; the **most
+    expensive** qualifying units go into sets (best for the shopper); saving =
+    `max(0, sum(those units) − sets × value)`. For the trio: 6 × 10 ml = two sets (998 ₴),
+    10 × 10 ml = three sets (1 497 ₴) plus one 10 ml at full price.
   - Every saving is clamped to `[0, subtotal]`, so the total never goes below 0.
 - Shipping stays `SHIPPING_AMOUNT` (`0`); `freeShipping` is `subtotal − discount ≥
   FREE_SHIPPING_THRESHOLD`. Discounts never reduce shipping (issue assumption).
 - `freeShippingInfo` takes the discounted subtotal, so the cart/checkout hint matches.
-- The bundle example "two 30 ml perfumes, −10%" is `percent`, `scope_volumes_ml {30}`,
-  `min_quantity 2`, `value 10`, and takes 10% off **all** 30 ml units once there are two
-  **(unconfirmed, Q2)**.
+- No bundle rule (owner, Q2): two or more 30 ml bottles stay at full price. The engine still
+  supports scope + `min_quantity` for `percent` / `fixed_amount` (promo codes can use them, e.g. a
+  code valid only on 50 ml), but nothing seeds an automatic percent rule.
+- The trio is the **only automatic rule**. Every other saving needs a promo code (owner, Q3:
+  "no sales in this issue") **(unconfirmed, Q6)**.
 
 **Cart**
 
@@ -131,8 +137,11 @@ and in the confirmation email.
   a "Знижка / Discount" row (`−{amount}`, with the code when there is one) between subtotal and
   shipping, only when the amount is > 0. Used by checkout, the success page and the account order
   page. `CartSummary` gets the same row plus the promo form.
-- Discount label: a generic translated label (`checkout.discount`, `checkout.discountWithCode`
-  "Знижка (промокод {code})"), not a per-rule name stored in the DB **(unconfirmed, Q3)**.
+- Discount label: a generic translated label, not a per-rule name stored in the DB:
+  `checkout.discountWithCode` "Знижка (промокод {code})" for a code and
+  `checkout.discountTesterSet` "Набір тестерів 3 × 10 мл" for the trio (the only automatic rule,
+  so a dictionary key is enough; picked by `kind === "fixed_price_set"`), with `checkout.discount`
+  "Знижка" as the fallback.
 - `findOrder` / `findUserOrder` left-join `discounts` for `discountCode`; `OrderConfirmation` and
   `AccountOrderDetail` gain `discountAmount` / `discountCode`. `buildOrderConfirmationEmail` adds
   the discount line when > 0.
@@ -144,44 +153,40 @@ and in the confirmation email.
 
 - `db/seed-data.ts` gets `SAMPLE_DISCOUNTS`, seeded by `db/seed.ts` with `onConflictDoNothing` on
   `slug`:
-  - `tester-trio`: `fixed_price_set`, `scope_volumes_ml {7}`, `min_quantity 3`, `value 499`, no
-    code, no window **(unconfirmed, Q1)**.
-  - `two-30ml-10`: `percent`, `scope_volumes_ml {30}`, `min_quantity 2`, `value 10`, no code.
+  - `tester-trio`: `fixed_price_set`, `scope_volumes_ml {10}`, `scope_pack_size 1`,
+    `min_quantity 3`, `max_sets 3`, `value 499`, no code, no window (owner, Q1).
+    `scope_pack_size 1` keeps the existing "Набір тестерів 3 × 10 мл" product (a 10 ml variant
+    with `pack_size 3`, 990 ₴) from counting as one trio unit.
   - `JASSMIN10` (`welcome-10`): `percent 10`, code, no window — for manual testing.
   - `EXPIRED5` (window in the past) and `USEDUP` (`max_redemptions 1`, `redemption_count 1`) to
     exercise the error paths in dev.
-- `cms/scripts/seed.ts`: the tester-trio `priceNote` becomes "3 × 7 мл — 499 ₴ у кошику" /
-  "3 × 7 ml — 499 ₴ in your cart", and a new `bundle` offer ("Два аромати по 30 мл — −10%") is
-  added. The seed skips offers that already exist, so existing Strapi databases keep the old text
-  until edited in the admin (noted in the PR). No Strapi content-model change **(unconfirmed, Q4)**.
+- `cms/scripts/seed.ts`: the tester-trio offer switches to 10 ml. Its `priceNote` becomes
+  "3 × 10 мл — 499 ₴" / "3 × 10 ml — 499 ₴", the body says up to three sets per order, and
+  `productIds` become products with a 10 ml size in stock (`LA_VIE_EST_BELLE`, `SAUVAGE`,
+  `MOLECULE_01`; Coco Mademoiselle's 10 ml is sold out and Wood Sage has none). No `bundle` offer
+  is added. The seed skips offers that already exist, so existing Strapi databases keep the old
+  text until edited in the admin (noted in the PR). No Strapi content-model change (Q4).
 
 ## Open questions
 
-- [ ] **Q1: Is the tester trio really any three 7 ml sizes for 499 ₴?** — Why it matters: seeded
-  7 ml prices are 590–990 ₴, so three cost 1 770–2 970 ₴ and the rule takes off 70–83%; the
-  current copy says "від 499 ₴" (from 499), which hints at a price range or a limited choice.
-  Recommended default: any three 7 ml units, 499 ₴ per set, repeatable, no product scope (as the
-  issue says). Affects steps: 2, 3, 11.
-- [ ] **Q2: Does "two 30 ml, −10%" discount every 30 ml unit once there are two, or only pairs?**
-  — Why it matters: with three 30 ml bottles it's 10% of three vs 10% of two. Recommended
-  default: every qualifying unit once `min_quantity` is reached (simpler, more generous). Affects
+- [ ] **Q6: Is the tester trio the one exception to "no sales in this issue"?** — Why it matters:
+  for Q3 you chose "only promo codes reduce prices", but for Q1 you described the trio as any
+  three 10 ml sizes for 499 ₴, which is an automatic price. Recommended default: the trio applies
+  automatically when the cart qualifies (it is the issue's acceptance criterion), and nothing else
+  does. The alternative is a trio promo code, which only changes the seed row (step 11). Affects
   steps: 3, 11.
-- [ ] **Q3: Should each rule carry its own shopper-facing name (uk/en) for the discount line?** —
-  Why it matters: a name like "Тестерне тріо" is clearer than "Знижка", but needs
-  `title_uk`/`title_en` columns (copy outside the i18n dictionaries) or a key per rule.
-  Recommended default: generic translated labels ("Знижка", "Знижка (промокод JASSMIN10)").
-  Affects steps: 1, 6, 9.
-- [ ] **Q4: Should a Strapi offer link to a rule now (e.g. a `discountSlug` field) so the page can
-  show the live price?** — Why it matters: it keeps page and price in sync automatically but means
-  a content-model change, schema/DTO/mapper updates and re-recorded fixtures. Recommended
-  default: no link in this issue; only update the seed wording, and leave the link for #40's
-  admin work. Affects steps: 11.
-- [ ] **Q5: Which wins when the entered code is valid but an automatic rule saves more?** — Why it
-  matters: the issue says "the best one for the shopper, or the entered promo code".
-  Recommended default: the larger saving wins (ties → the code); the code stays on the cart with a
-  "a better offer is already applied" note and isn't redeemed. Affects steps: 3, 5.
 
 ## Resolved questions
+
+- **Tester trio (Q1, owner)** — Any three 10 ml sizes (single units, not the 3 × 10 ml set
+  product) cost 499 ₴ per set. An order gets 1 to 3 sets; extra 10 ml units are full price.
+- **Bundle discount (Q2, owner)** — None: 30 ml bottles are always full price. The issue's
+  "two 30 ml −10%" example is dropped.
+- **Per-rule names (Q3, owner)** — No names stored per rule, and no automatic sales besides the
+  trio (see Q6). Labels come from the dictionaries.
+- **Strapi link to rules (Q4, owner: default)** — Not in this issue; only the seed wording changes.
+- **Code vs. a bigger automatic saving (Q5, owner: default)** — The larger saving wins (ties → the
+  code). The code stays on the cart with a "better offer already applied" note and isn't redeemed.
 
 - **Where do rules live?** — PostgreSQL, not Strapi, so checkout computes them in its transaction
   and a CMS outage can't change prices (source: #59 assumptions; `app/.server/AGENTS.md` "Offers
@@ -228,7 +233,7 @@ and in the confirmation email.
 | modify | `app/features/checkout/OrderSummary.tsx`, `checkout-ui.test.ts`, `cart-ui.test.ts` | discount row |
 | modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `cart.promo.*`, `cart.errors.promo*`, `checkout.discount*`, `checkout.errors.discountChanged` |
 | modify | `app/.server/db/seed-data.ts`, `seed.ts`, `seed.test.ts` | `SAMPLE_DISCOUNTS` |
-| modify | `cms/scripts/seed.ts` | trio wording, new bundle offer |
+| modify | `cms/scripts/seed.ts` | trio offer moves to 10 ml (wording, body, product ids) |
 | modify | `app/.server/AGENTS.md` | discounts section; update "Discounts aren't implemented" and offers notes |
 
 ## Steps
@@ -246,7 +251,9 @@ and in the confirmation email.
   (row subset). Implement qualification, the three kinds, best-of selection, tie-breaks, clamp,
   free shipping and `codeStatus`. `pricing.test.ts` covers: each kind; scope by volume, product
   and pack size; `min_quantity` just below / at; window edges (start inclusive, end exclusive);
-  used-up; inactive ignored; repeated sets and most-expensive-first selection; percent rounding
+  used-up; inactive ignored; trio with 2, 3, 6 and 10 × 10 ml (no set, one, two, capped at
+  `max_sets` 3 plus a full-price unit); the 3 × 10 ml set product (`pack_size 3`) and 30 ml sizes
+  never counting; most-expensive-first selection; percent rounding
   down; never below 0; best-of and ties; free shipping crossing the threshold only after the
   discount.
 - [ ] **4. Discount queries** — `db/queries/discounts.ts`: `findDiscountByCode(db, code)`
@@ -262,7 +269,7 @@ and in the confirmation email.
 - [ ] **6. i18n** — Add every new key to `uk.ts` and `en.ts`: `cart.promo.{label, placeholder,
   apply, remove, applied, notBest, notApplicable}`, `cart.errors.{promoInvalid, promoExpired,
   promoUsedUp, promoNotApplicable, promoRateLimited}`, `cart.total`, `checkout.discount`,
-  `checkout.discountWithCode`, `checkout.errors.discountChanged`. `pnpm typecheck` enforces parity.
+  `checkout.discountWithCode`, `checkout.discountTesterSet`, `checkout.errors.discountChanged`. `pnpm typecheck` enforces parity.
 - [ ] **7. Cart route and UI** — `routes/cart.tsx` handles `apply-promo` (rate limit first, then
   `applyPromoCode`; 400 for invalid input, 409 for expired / used-up / not-applicable, 429 for
   rate-limited) and `remove-promo`. `PromoCodeForm` (Option C+ input and button styles from
@@ -274,7 +281,9 @@ and in the confirmation email.
   `discount-changed`, `redeemDiscount`, then `insertOrder({ …, discountAmount, discountId })`.
   `insertOrder` binds the discount instead of `DISCOUNT_AMOUNT`. Return the new fields.
   Integration tests in `orders.test.ts`: order with a code writes `discount_amount`,
-  `discount_id`, the right total and `redemption_count + 1`; trio and bundle applied automatically;
+  `discount_id`, the right total and `redemption_count + 1`; the trio applied automatically
+  (3 × 10 ml → 499 ₴, 10 × 10 ml → three sets + one full-price unit) while two 30 ml stay full
+  price;
   1 100 ₴ cart with 10% off → `free_shipping = false`; a code with `max_redemptions 1` and two
   concurrent checkouts → exactly one discounted order, the other `discount-changed`, count = 1;
   expired code at checkout → `discount-changed`, nothing written; rollback still undoes the
@@ -288,8 +297,8 @@ and in the confirmation email.
   (`order-email.test.ts`, both locales). Add the discount properties to `checkout_start` and
   `purchase` in `checkout.tsx` (assert in `checkout.test.ts`).
 - [ ] **11. Seeds** — `SAMPLE_DISCOUNTS` in `db/seed-data.ts`, inserted by `db/seed.ts`
-  (`onConflictDoNothing` on `slug`), `seed.test.ts` updated. `cms/scripts/seed.ts`: trio wording
-  and the new `bundle` offer referencing seeded 30 ml products.
+  (`onConflictDoNothing` on `slug`), `seed.test.ts` updated. `cms/scripts/seed.ts`: the trio
+  offer moves to 10 ml (wording, body, product ids); no bundle offer.
 - [ ] **12. Docs and final checks** — Update `app/.server/AGENTS.md` (new "Discounts" section;
   orders/offers notes; kopiyky in JS for pricing). Run `pnpm typecheck`, `pnpm lint`, `pnpm test`,
   `pnpm build`; manual check under `pnpm aspire run`.
@@ -304,8 +313,9 @@ and in the confirmation email.
   promo flow, `createOrder` with discounts including the concurrent redemption test, migration
   up/down via `migrator.test.ts`.
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
-- Manual (`pnpm aspire run`, `pnpm db:seed`): add three 7 ml sizes → trio price in the cart; two
-  30 ml → −10%; `JASSMIN10` reduces the total; `EXPIRED5`, `USEDUP` and `NOPE` show translated
+- Manual (`pnpm aspire run`, `pnpm db:seed`): add three 10 ml sizes → 499 ₴ in the cart; ten
+  10 ml → three sets + one at full price; two 30 ml → full price; `JASSMIN10` reduces the total;
+  `EXPIRED5`, `USEDUP` and `NOPE` show translated
   errors and leave the total; switch to English; place a cash and a card order and check the
   success page, `/account/orders/:id`, the email in smtp4dev and `orders.discount_*` /
   `discounts.redemption_count` in the DB.
@@ -314,8 +324,10 @@ and in the confirmation email.
 
 - [ ] A valid promo code entered in the cart reduces the total, and an invalid, expired or used-up
   code shows a translated error without changing the total — steps 3, 5, 6, 7
-- [ ] A bundle rule (for example two 30 ml perfumes, −10%) and the tester trio fixed price
-  (3 × 7 ml for 499 ₴) are applied automatically when the cart qualifies — steps 3, 5, 11
+- [ ] ~~A bundle rule (for example two 30 ml perfumes, −10%) and~~ the tester trio fixed price
+  (3 × 7 ml for 499 ₴) are applied automatically when the cart qualifies — steps 3, 5, 11.
+  Changed by the owner: the trio is **3 × 10 ml for 499 ₴, up to 3 sets per order**, and there
+  is no bundle rule (Q1, Q2).
 - [ ] `orders.discount_amount` and `orders.discount_id` are written in the checkout transaction,
   and a code's redemption limit can't be exceeded by concurrent orders — steps 1, 4, 8
 - [ ] Cart, checkout, the order-confirmation email and the account order page show the discount
@@ -330,5 +342,6 @@ and in the confirmation email.
 - Stacking several discounts on one order.
 - Personalized offers, email campaigns, loyalty points, gift cards.
 - Admin UI for rules (seed / migration only; later #40), and showing discounts on `/admin/orders`.
-- Linking Strapi offers to rules in the content model (see Q4), and per-rule display names (Q3).
+- Linking Strapi offers to rules in the content model (Q4), and per-rule display names (Q3).
+- Bundle or any other automatic sale besides the trio (Q2, Q3).
 - Discounts on shipping; per-user redemption limits; minimum-subtotal rules.

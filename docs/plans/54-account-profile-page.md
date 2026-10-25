@@ -187,7 +187,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `Button`s, the `onLight` focus ring, and a phone-width variant where the menu wraps above
   stacked panels. Use only existing tokens. Publish both files in one call to the canvas URL, and
   add the row to the "Pages and issues" table in `docs/design.md`.
-- [ ] **2. Schemas.** In `app/lib/auth.ts`:
+- [x] **2. Schemas.** In `app/lib/auth.ts`:
   - Extract `fullNameSchema`, `phoneSchema` and `newPasswordSchema`, and rebuild
     `registerSchema` from them.
   - Add `contactSchema`, `changeEmailSchema`, `changePasswordSchema`, `profileIntentSchema`,
@@ -221,7 +221,7 @@ Each step is small, ordered, and leaves the app in a working state.
     address, from `CONTACT_FROM`, mentions the new address, name without line breaks).
     `notifyEmailChanged` sends through a fake `MailSender`, does nothing with `mailer: null`, and
     resolves (logging the error) when `sendMail` rejects.
-- [ ] **5. i18n.** Add `account.nav.profile` ("Дані профілю" / "Profile details") and the
+- [x] **5. i18n.** (Done together with step 2, because `msg()` only accepts keys that exist.) Add `account.nav.profile` ("Дані профілю" / "Profile details") and the
   `account.profile` keys in uk and en:
   - `title`, `memberSince`, `submitting`, `invalidIntent`
   - `contact.{heading, submit, saved}`

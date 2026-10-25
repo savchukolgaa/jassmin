@@ -221,7 +221,7 @@ and never affects the order or the redirect.
   emails" covering the outbox, the backoff, `failed` rows and a cron line
   (`*/5 * * * * … pnpm db:send-order-emails`). Check: start the resource under
   `pnpm aspire run`.
-- [ ] **8. Wire into `/checkout`.** In the action, call `const locale = await getLocale(request)`
+- [x] **8. Wire into `/checkout`.** In the action, call `const locale = await getLocale(request)`
   and pass it to `createOrder`. In `if (result.placed)`, next to the `purchase` event, add
   `void deliverOrderEmails({ orderId: result.orderId })`. In `checkout.test.ts`, mock
   `~/.server/services/order-email` and `~/.server/locale`, and check:

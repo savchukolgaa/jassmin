@@ -2,6 +2,7 @@ import { data, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { getLocale } from "~/.server/locale";
 import { getActiveCartId, getCartOwner, getCartView } from "~/.server/services/cart";
+import { deliverOrderEmails } from "~/.server/services/order-email";
 import { createOrder, getCheckoutPrefill } from "~/.server/services/orders";
 import { rememberOrder } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
@@ -75,6 +76,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   // After the order's transaction committed, and only once: a double submit gets `placed: false`.
   if (result.placed) {
+    // The confirmation was queued with the order (#45). Not awaited and never rejects: the
+    // redirect doesn't wait for SMTP, and `pnpm db:send-order-emails` retries a failure.
+    void deliverOrderEmails({ orderId: result.orderId });
     void trackEvent({ request, context }, "purchase", {
       properties: {
         orderId: result.orderId,

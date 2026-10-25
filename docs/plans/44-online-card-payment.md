@@ -154,7 +154,7 @@ For now the only provider is a **local payment simulator**: a fake hosted page s
   - **failed:** "Оплата не пройшла", with a `Form method="post" action={`/checkout/pay/${id}`}` button "Спробувати ще раз"
 
   Change `checkout.payment.cardNote` to online-payment copy ("Оплата карткою онлайн одразу після оформлення замовлення"), which also fixes the confirmation email. Add every key to `uk.ts` and `en.ts`. `cod` stays unchanged.
-- [ ] **11. Docs.** Add a Payments section to `app/.server/AGENTS.md`: the adapter, the simulator being dev-only, the idempotency rule, the never-trust-client-amounts rule and the reference format. Update the Orders bullet "online payment is #44". In the README, add "Card payments (simulator)": set `PAYMENT_PROVIDER=simulator`, what each button does, and a note that a real provider is a follow-up.
+- [x] **11. Docs.** Add a Payments section to `app/.server/AGENTS.md`: the adapter, the simulator being dev-only, the idempotency rule, the never-trust-client-amounts rule and the reference format. Update the Orders bullet "online payment is #44". In the README, add "Card payments (simulator)": set `PAYMENT_PROVIDER=simulator`, what each button does, and a note that a real provider is a follow-up.
 - [ ] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the manual simulator run below.
 
 ## Testing & verification

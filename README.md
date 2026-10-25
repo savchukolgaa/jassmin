@@ -136,6 +136,19 @@ Run the job every 5 minutes from an external scheduler, like the abandoned-cart 
 
 It needs the database URL and the mail variables (`SMTP_URL`, `ORDER_FROM`, `CONTACT_FROM`, `CONTACT_INBOX`), but not `SESSION_SECRET`. Under Aspire, start the `db-send-order-emails` resource from the dashboard; it sends to smtp4dev.
 
+## Card payments (simulator)
+
+A shopper who picks card is sent to a hosted payment page right after checkout (#44), and the page's signed callback marks the order paid. Cash on delivery isn't affected. For now the only provider is a **local simulator**: set `PAYMENT_PROVIDER=simulator` in `.env` and restart the app. It needs no merchant account, tunnel or network access, and the app refuses it when `NODE_ENV=production`. Without `PAYMENT_PROVIDER`, the card option is disabled at checkout.
+
+After a card checkout, the simulator page at `/payments/simulator` shows the payment's reference and the exact order total. Its buttons play the bank: each one POSTs a signed callback to `/payments/callback` over HTTP, like a real provider, and then returns you to the order's success page.
+
+- **Pay**: the order becomes `paid`, with `paid_at` set.
+- **Pay and send the confirmation twice**: sends the same callback twice. The order is still paid only once.
+- **Decline the payment**: the attempt is `failed` and the order stays `unpaid`. The success page offers **Try again**, which starts a new attempt.
+- **Return without paying**: no callback. The success page shows the payment as pending, with a **Pay now** button.
+
+Every attempt is a row in `payments`, with a reference like `42-1`, `42-2`. The amount always comes from the order's stored `total_amount`. A real Ukrainian provider (LiqPay, WayForPay or monobank) is a follow-up: one more `PaymentProvider` in `app/.server/payments/` plus a migration that allows it in `payments_provider_check`.
+
 ## Database migrations
 
 The schema lives in `app/.server/db/schema.ts`, and the migrations generated from it live in `app/.server/db/migrations/`. Drizzle Kit has no down migrations, so each migration has a hand-written reverse in `app/.server/db/rollbacks/<tag>.sql`. To change the schema:

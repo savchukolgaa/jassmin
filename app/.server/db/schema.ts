@@ -1,6 +1,7 @@
 // Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
-// checkout fields on orders (#11), the order email queue (#45) and card payment attempts (#44).
+// checkout fields on orders (#11), the order email queue (#45), card payment attempts (#44) and
+// the Strapi catalog and order sync (#40).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -27,6 +28,8 @@ import {
 import type { EventProperties } from "~/lib/analytics";
 import {
   CART_STATUSES,
+  CMS_SYNC_ENTITIES,
+  type CmsSyncEntity,
   EVENT_TYPES,
   type EventType,
   GENDERS,
@@ -91,6 +94,13 @@ export const products = pgTable(
     /** @deprecated Use `product_variants.stock_quantity` (#26). */
     stockQuantity: integer().notNull().default(0),
     imageUrl: text(),
+    /** URL slug edited in Strapi (#40); `null` for products not yet synced from it. */
+    slug: varchar({ length: 255 }).unique("products_slug_unique"),
+    /**
+     * `false` once the product is archived or deleted in Strapi (#40). Inactive products aren't
+     * listed or sold, but the row stays so historical orders keep their title and image.
+     */
+    active: boolean().notNull().default(true),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -293,6 +303,10 @@ export const orders = pgTable(
     paidAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),
     refundedAt: timestamp({ withTimezone: true }),
+    /** When the order was marked `shipped` (#40); with `completed_at`, a delivery-time feature. */
+    shippedAt: timestamp({ withTimezone: true }),
+    /** When the order was marked `completed` (#40). */
+    completedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     check(
@@ -417,5 +431,38 @@ export const payments = pgTable(
     check("payments_amount_check", sql`${t.amount} >= 0`),
     unique("payments_reference_unique").on(t.reference),
     index("payments_order_id_idx").on(t.orderId),
+  ],
+);
+
+/**
+ * Outbox of app changes to push to Strapi (#40): one row per order or product whose current
+ * state Strapi should show. Rows are queued in the transaction that made the change; queuing an
+ * already-queued entity bumps `version`, so a push that started before the change can't mark the
+ * newer state as synced. Like `order_emails`, a sender claims a row by pushing `next_attempt_at`
+ * out (a lease), and a push sends the entity's whole current state, so repeats are harmless.
+ */
+export const cmsOutbox = pgTable(
+  "cms_outbox",
+  {
+    id: serial().primaryKey(),
+    entity: text().$type<CmsSyncEntity>().notNull(),
+    /** `orders.id` or `products.id`; no FK, since it points at either table. */
+    entityId: integer().notNull(),
+    /** Bumped by every enqueue; a push only marks the version it claimed as synced. */
+    version: integer().notNull().default(1),
+    /** Push attempts since the last enqueue, counted when a sender claims the row. */
+    attempts: integer().notNull().default(0),
+    nextAttemptAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    lastError: text(),
+    /** `null` while a push is due. */
+    syncedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("cms_outbox_entity_check", oneOf(t.entity, CMS_SYNC_ENTITIES)),
+    check("cms_outbox_attempts_check", sql`${t.attempts} >= 0`),
+    unique("cms_outbox_entity_entity_id_unique").on(t.entity, t.entityId),
+    index("cms_outbox_synced_at_next_attempt_at_idx").on(t.syncedAt, t.nextAttemptAt),
   ],
 );

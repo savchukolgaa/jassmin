@@ -86,3 +86,8 @@ export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
 export const PAYMENT_ATTEMPT_STATUSES = ["pending", "succeeded", "failed"] as const;
 
 export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
+
+/** What the app pushes to Strapi through `cms_outbox` (#40); a CHECK constraint limits it. */
+export const CMS_SYNC_ENTITIES = ["order", "product"] as const;
+
+export type CmsSyncEntity = (typeof CMS_SYNC_ENTITIES)[number];

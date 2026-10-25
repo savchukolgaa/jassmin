@@ -8,6 +8,7 @@ import {
   cartItems,
   cartStatusType,
   carts,
+  cmsOutbox,
   genderType,
   orderEmails,
   orderItems,
@@ -110,11 +111,13 @@ describe("products", () => {
       packSize: ["integer", true, true],
       stockQuantity: ["integer", true, true],
       imageUrl: ["text", false, false],
+      slug: ["varchar(255)", false, false],
+      active: ["boolean", true, true],
       createdAt: ["timestamp with time zone", true, true],
     });
   });
 
-  it("has the checks, the unique public_id and the gender index", () => {
+  it("has the checks, the unique public_id and slug and the gender index", () => {
     const { checks, columns, indexes } = getTableConfig(products);
 
     expect(checks.map((c) => c.name).sort()).toEqual([
@@ -122,6 +125,7 @@ describe("products", () => {
       "products_stock_quantity_check",
     ]);
     expect(columns.find((c) => c.name === "publicId")?.isUnique).toBe(true);
+    expect(columns.find((c) => c.name === "slug")?.uniqueName).toBe("products_slug_unique");
     expect(indexes.map((i) => i.config.name)).toEqual(["products_gender_idx"]);
   });
 });
@@ -245,6 +249,8 @@ describe("orders", () => {
       paidAt: ["timestamp with time zone", false, false],
       cancelledAt: ["timestamp with time zone", false, false],
       refundedAt: ["timestamp with time zone", false, false],
+      shippedAt: ["timestamp with time zone", false, false],
+      completedAt: ["timestamp with time zone", false, false],
     });
   });
 
@@ -355,6 +361,32 @@ describe("payments", () => {
       checks: ["payments_amount_check", "payments_provider_check", "payments_status_check"],
       uniques: ["payments_reference_unique"],
       indexes: ["payments_order_id_idx"],
+    });
+  });
+});
+
+describe("cms_outbox", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(cmsOutbox)).toEqual({
+      id: ["serial", true, true],
+      entity: ["text", true, false],
+      entityId: ["integer", true, false],
+      version: ["integer", true, true],
+      attempts: ["integer", true, true],
+      nextAttemptAt: ["timestamp with time zone", true, true],
+      lastError: ["text", false, false],
+      syncedAt: ["timestamp with time zone", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("checks the entity, keeps one row per entity and indexes the due rows", () => {
+    expect(describeForeignKeys(cmsOutbox)).toEqual({});
+    expect(describeConstraints(cmsOutbox)).toEqual({
+      checks: ["cms_outbox_attempts_check", "cms_outbox_entity_check"],
+      uniques: ["cms_outbox_entity_entity_id_unique"],
+      indexes: ["cms_outbox_synced_at_next_attempt_at_idx"],
     });
   });
 });

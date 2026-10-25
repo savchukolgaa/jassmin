@@ -78,6 +78,13 @@
       "when": 1792931732988,
       "tag": "0010_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792961879859,
+      "tag": "0011_cms_catalog_and_orders",
+      "breakpoints": true
     }
   ]
 }

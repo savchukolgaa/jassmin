@@ -230,7 +230,7 @@ Each step leaves the app building and the tests green.
   `services/auth.ts` (`requireAdmin`) and `route-error.ts`. Keep `requireAdmin` and its tests.
   Check: `grep -rn "features/admin\|routes/admin\|admin\.nav" app` is empty, and typecheck, lint
   and test pass.
-- [ ] **2. Schema and migration 0011.** In `schema.ts` add `products.slug` (unique, nullable),
+- [x] **2. Schema and migration 0011.** In `schema.ts` add `products.slug` (unique, nullable),
   `products.active`, `orders.shippedAt` / `completedAt`, and `cmsOutbox` (`id`,
   `entity` ∈ `CMS_SYNC_ENTITIES = ["order", "product"]` with a CHECK, `entityId` int,
   `attempts`, `nextAttemptAt`, `lastError`, `syncedAt`, `createdAt`/`updatedAt`, unique

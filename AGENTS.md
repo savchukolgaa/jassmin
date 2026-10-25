@@ -75,7 +75,7 @@ Work happens through the repo skills in `.agents/skills/` (Antigravity) and `.cl
   In a new worktree, link `.env` and `cms/.env` to the main checkout's with `node scripts/link-env.mjs` (symlink, or a hard link/copy where Windows doesn't allow symlinks) and run `pnpm install`. pnpm's global virtual store makes `node_modules` a small tree of links into one shared store, so the install is fast and never changes the main checkout (see `docs/skills/worktree.md`).
 - All commits for an issue go to `issue/<number>`, inside its worktree. Stage paths explicitly and never use `git add -A` / `git add .`.
 - Plans live in `docs/plans/<n>-<slug>.md` while an issue is in progress, and are removed before the PR is merged.
-- Remove a worktree only after its PR is merged: `git worktree remove .claude/worktrees/issue-<n>` (if `node_modules` blocks it, see the cleanup section of `docs/skills/worktree.md`).
+- Remove a worktree only after its PR is merged, with `pnpm worktree:remove <n>`. Never use plain `git worktree remove` or `git clean -x` while the worktree has `node_modules`: Git for Windows follows its junctions and deletes files in pnpm's shared store (see `docs/skills/worktree.md`).
 
 ## Never
 

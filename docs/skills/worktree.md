@@ -72,20 +72,20 @@ From this point on, all file edits and command executions must target `$WT`:
 Once the PR is merged, delete the worktree, the local branch and the remote branch from the main checkout. Squash merges don't count as merged for git, so the local branch needs `-D`:
 
 ```bash
-git worktree remove .claude/worktrees/issue-<n>
+pnpm worktree:remove <n>
 git branch -D issue/<n>
 git push origin --delete issue/<n>
 ```
 
 Stop any dev or preview server still running from the worktree first; on Windows it keeps the folder locked.
 
-Because `node_modules` holds only links into the shared store, `git worktree remove` deletes it quickly. If it still fails with "Directory not empty" (a process held a file open, or the worktree was installed before the global virtual store), delete the dependency folders first and run `git worktree remove` again:
+**Never run plain `git worktree remove` (or `git clean -x`) on a worktree that still has `node_modules`.** Its `node_modules` folders are trees of junctions into pnpm's shared virtual store, and Git for Windows follows junctions when it deletes a directory: it deletes files inside the shared store, which every checkout uses, and then fails with "Directory not empty". `pnpm worktree:remove <n>` (`scripts/remove-worktree.mjs`) refuses a worktree with uncommitted or untracked changes, deletes every `node_modules` in it without following links, and then runs `git worktree remove`.
+
+To do the same by hand, delete the dependency folders with a tool that unlinks junctions instead of following them, then run `git worktree remove`:
 
 ```powershell
-Remove-Item .claude/worktrees/issue-<n>/node_modules, .claude/worktrees/issue-<n>/cms/node_modules -Recurse -Force
-```
-```bash
-rm -rf .claude/worktrees/issue-<n>/node_modules .claude/worktrees/issue-<n>/cms/node_modules
+Remove-Item .claude/worktrees/issue-<n>/node_modules, .claude/worktrees/issue-<n>/cms/node_modules, .claude/worktrees/issue-<n>/aspire-apphost/node_modules -Recurse -Force -ErrorAction SilentlyContinue
+git worktree remove .claude/worktrees/issue-<n>
 ```
 
-PowerShell 7's `Remove-Item -Recurse -Force`, `cmd /c rmdir /s /q`, Git Bash's `rm -rf` and Node's `fs.rmSync` delete a junction without touching what it points to, so they can't damage the shared store. Don't delete `node_modules` with a tool that follows junctions into their targets, and never delete anything under the pnpm store (`pnpm store path`) by hand; `pnpm store prune` cleans it up safely.
+PowerShell 7's `Remove-Item -Recurse -Force`, `cmd /c rmdir /s /q`, Git Bash's `rm -rf` and Node's `fs.rmSync` delete a junction without touching what it points to. Never delete anything under the pnpm store (`pnpm store path`) by hand; `pnpm store prune` cleans it up safely. If the shared store was damaged anyway (a package folder in it is missing files), `pnpm install --force` in any checkout re-imports every package and repairs it.

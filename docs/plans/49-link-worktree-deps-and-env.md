@@ -81,14 +81,18 @@ get much faster and use far less disk.
   path is testable on any machine. Add `"scripts/**/*.test.mjs"` to `vitest.config.ts` →
   `test.include`. Plain `.mjs` keeps the scripts runnable with bare `node` and outside `tsc` (as
   `herdr-plans.mjs` and `aspire.mjs` are today).
-- **Removal relies on `git worktree remove`.** With the global virtual store, `node_modules` is a
-  shallow tree of links, so `git worktree remove` should no longer hit "Directory not empty" on a
-  huge `node_modules/.pnpm` tree. Document a fast, safe fallback for stubborn cases (a running dev
-  server holding a lock, or a worktree created before this change): delete `node_modules` and
-  `cms/node_modules` with a tool that **unlinks junctions without following them**, then
-  `git worktree remove`. Step 2 verifies which commands are safe (PowerShell 7 `Remove-Item
-  -Recurse -Force`, `cmd /c rmdir /s /q`, Node `fs.rmSync`, Git Bash `rm -rf`) by checking that the
-  shared store is untouched afterwards; only verified commands go into the docs.
+- **Removal: `pnpm worktree:remove <n>`, never plain `git worktree remove` (deviation, step 9).**
+  The plan assumed `git worktree remove` would be fast on a `node_modules` made of links. Step 9
+  showed the opposite: Git for Windows follows junctions when deleting a directory, so it walked
+  into the shared virtual store, deleted files there (e.g. `tsx`, `@types/node`), and failed after
+  155 s with "Directory not empty". The isolated layout has the same problem inside its own
+  `node_modules/.pnpm`, which explains the original "Directory not empty". The store was repaired
+  with `pnpm install --force` (re-imports every package; all 1,337 package folders checked
+  afterwards). As the Q2 answer allowed a script once plain `git worktree remove` proved
+  inadequate, `scripts/remove-worktree.mjs` (`pnpm worktree:remove <n>`) refuses a dirty worktree,
+  deletes every `node_modules` with `fs.rmSync` (unlinks junctions, verified in step 2), then runs
+  `git worktree remove`: 2.0 s. The docs forbid plain `git worktree remove` and `git clean -x`
+  while `node_modules` exists and keep the manual equivalent.
 - **Measure on the same machine with a warm store.** "Before" numbers come from a throwaway
   worktree on `origin/main` (no global virtual store), "after" from one on `issue/49`. Record them
   in a scratch note and copy them into the PR (the issue asks for them there, not in the repo).
@@ -100,7 +104,8 @@ get much faster and use far less disk.
   this machine a stale copy, since symlinks fail with `EPERM`. (source: user, on the plan for #49)
 - **Removal script or documentation only?** — Documentation only, in `docs/skills/worktree.md` and
   `docs/skills/open-pr.md`; no `pnpm worktree:remove` script, unless the spike shows
-  `git worktree remove` alone is still slow. (source: user, on the plan for #49)
+  `git worktree remove` alone is still slow. (source: user, on the plan for #49) It wasn't only slow
+  but deleted files in the shared store, so the script was added (see Decisions).
 - **Should `scripts/herdr-plans.mjs` also run `pnpm install`?** — No; agents install when they
   need to (per the `implement` skill), so the README row only changes "copies" to "links".
   (source: user, on the plan for #49)
@@ -133,10 +138,13 @@ get much faster and use far less disk.
 | modify | `pnpm-lock.yaml` | Only if the install rewrites it (settings checksum); commit whatever pnpm produces |
 | create | `scripts/link-env.mjs` | `linkEnvFiles(main, wt)`: symlink → hard link → copy for `.env` and `cms/.env`, with notices |
 | create | `scripts/link-env.test.mjs` | Vitest tests for every link path and the skip cases |
+| create | `scripts/remove-worktree.mjs` | `pnpm worktree:remove <n>`: delete `node_modules` without following junctions, then `git worktree remove` |
+| create | `scripts/remove-worktree.test.mjs` | Vitest tests: links into a fake store survive, linked folders aren't walked |
+| modify | `package.json` | `worktree:remove` script |
 | modify | `vitest.config.ts` | Include `scripts/**/*.test.mjs` |
 | modify | `scripts/herdr-plans.mjs` | Use `linkEnvFiles` instead of `copyEnv`; update header comment and agent prompt |
 | modify | `docs/skills/worktree.md` | Link env files, install with the global virtual store, fast/safe removal |
-| modify | `docs/skills/open-pr.md` | Cleanup section points at the removal procedure in `worktree.md` |
+| modify | `docs/skills/open-pr.md` | Cleanup uses `pnpm worktree:remove` and points at `worktree.md` |
 | modify | `.claude/skills/implement/SKILL.md` | "link `.env` (see worktree.md)" instead of "copy" |
 | modify | `.agents/skills/implement/SKILL.md` | Same as above |
 | modify | `AGENTS.md` | Workflow section: link env files, removal note |
@@ -197,7 +205,7 @@ Each step is small, ordered, and leaves the app in a working state.
   that pnpm uses a global virtual store (deps are links into the pnpm store, so `node_modules` is
   small and shared across worktrees), and the `pnpm herdr:plans` row says it links the env files.
   Both `implement` SKILL.md files: "link" instead of "copy", referencing `worktree.md`.
-- [ ] **9. Measure after and check isolation** — Repeat step 1's measurements with a throwaway
+- [x] **9. Measure after and check isolation** — Repeat step 1's measurements with a throwaway
   worktree on `issue/49`. Isolation check: in a throwaway worktree, `pnpm add -D` a small package
   (or bump one), `pnpm install`, and confirm the main checkout's `node_modules` links, lockfile and
   `pnpm ls` output are unchanged; then discard. Remove the throwaway worktrees with

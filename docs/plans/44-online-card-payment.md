@@ -140,7 +140,7 @@ For now the only provider is a **local payment simulator**: a fake hosted page s
   - `handlePaymentCallback(formData)`: performs the idempotent transition described under Decisions. It returns `{ ok: false, error: "invalid-signature" | "malformed" }` or `{ ok: true, result: "paid" | "failed" | "pending" | "ignored" }`.
   - `getPaymentView(order)`
   - `isCardPaymentAvailable()`
-- [ ] **6. Callback route.** Add `routes/payments.callback.ts`. `action` reads `request.formData()` (a bad body returns 400), calls `handlePaymentCallback` and answers 400 on a failed check or `200 ok` otherwise. `loader` redirects to `/`. Register it in `app/routes.ts` outside `_shop`, with a comment.
+- [x] **6. Callback route.** Add `routes/payments.callback.ts`. `action` reads `request.formData()` (a bad body returns 400), calls `handlePaymentCallback` and answers 400 on a failed check, 404 when no provider is configured, or `200 OK` otherwise. `loader` redirects to `/`. Register it in `app/routes.ts` outside `_shop`, with a comment.
 - [ ] **7. Simulator page.** Add `routes/payments.simulator.tsx`, outside `_shop`. Every request answers 404 unless the active provider is the simulator.
   - The loader verifies `data`/`signature` from the query (400 if invalid) and returns the reference, the amount (formatted with `formatPrice`) and the result URL.
   - The component uses design tokens and `Button`, with a test-mode banner and the four buttons, each in a `Form method="post"`.

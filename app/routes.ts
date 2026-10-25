@@ -27,6 +27,8 @@ export default [
   route("consent", "routes/consent.ts"),
   // Action-only (POST) endpoint for the client tracker's beacons (#18).
   route("api/events", "routes/api.events.ts"),
+  // Action-only (POST) callback from the card payment provider (#44); no layout, session or consent.
+  route("payments/callback", "routes/payments.callback.ts"),
   // Outside the shop layout: the admin area has its own. Every admin loader and action calls
   // `requireAdmin`; product (#16) and order (#17) management replace the placeholders.
   route("admin", "routes/admin.tsx", [

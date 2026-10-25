@@ -6,7 +6,11 @@ const cart = vi.hoisted(() => ({
   getCartOwner: vi.fn(),
   getCartView: vi.fn(),
 }));
-const orders = vi.hoisted(() => ({ createOrder: vi.fn(), getCheckoutPrefill: vi.fn() }));
+const orders = vi.hoisted(() => ({
+  createOrder: vi.fn(),
+  deliverOrderConfirmation: vi.fn(),
+  getCheckoutPrefill: vi.fn(),
+}));
 const session = vi.hoisted(() => ({ rememberOrder: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 
@@ -48,10 +52,11 @@ function get(): LoaderArgs {
   return { request, params: {}, context: {} } as unknown as LoaderArgs;
 }
 
-function post(fields: Record<string, string>): ActionArgs {
+function post(fields: Record<string, string>, headers: HeadersInit = {}): ActionArgs {
   const request = new Request("http://localhost/checkout", {
     method: "POST",
     body: new URLSearchParams(fields),
+    headers,
   });
   return { request, params: {}, context: {} } as unknown as ActionArgs;
 }
@@ -147,6 +152,7 @@ describe("checkout action", () => {
       },
     });
     expect(orders.createOrder).not.toHaveBeenCalled();
+    expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
@@ -169,8 +175,28 @@ describe("checkout action", () => {
       cartId: 5,
       userId: null,
       customer: { ...valid, phone: "+380671234567" },
+      locale: "uk",
     });
     expect(session.rememberOrder).toHaveBeenCalledWith(expect.any(Request), 42);
+    expect(orders.deliverOrderConfirmation).toHaveBeenCalledExactlyOnceWith(42);
+  });
+
+  it("queues the email in the shopper's language and doesn't wait for it to be sent", async () => {
+    const { action } = await import("./checkout");
+    const { localeCookie } = await import("~/.server/locale");
+    orders.createOrder.mockResolvedValueOnce({
+      ok: true,
+      orderId: 42,
+      placed: true,
+      subtotal: "900.00",
+    });
+    // An SMTP server that never answers.
+    orders.deliverOrderConfirmation.mockReturnValueOnce(new Promise(() => {}));
+
+    const response = await action(post(valid, { Cookie: await localeCookie.serialize("en") }));
+
+    expect(orders.createOrder).toHaveBeenCalledWith(expect.objectContaining({ locale: "en" }));
+    expect((response as Response).headers.get("Location")).toBe("/checkout/success/42");
   });
 
   it("records purchase for the placed order", async () => {
@@ -201,6 +227,8 @@ describe("checkout action", () => {
 
     expect((response as Response).headers.get("Location")).toBe("/checkout/success/42");
     expect(analytics.trackEvent).not.toHaveBeenCalled();
+    // The first submit already tried to send its email.
+    expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
   });
 
   it("links a registered user's order to them", async () => {
@@ -232,6 +260,7 @@ describe("checkout action", () => {
     });
     expect(session.rememberOrder).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
+    expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
   });
 
   it("sends the visitor to the cart without an active or non-empty cart", async () => {
@@ -243,5 +272,6 @@ describe("checkout action", () => {
 
     orders.createOrder.mockResolvedValueOnce({ ok: false, error: "cart-empty" });
     expect(await redirectOf(action(post(valid)))).toBe("/cart");
+    expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
   });
 });

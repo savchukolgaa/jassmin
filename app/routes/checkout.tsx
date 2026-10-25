@@ -1,7 +1,12 @@
 import { data, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
+import { getLocale } from "~/.server/locale";
 import { getActiveCartId, getCartOwner, getCartView } from "~/.server/services/cart";
-import { createOrder, getCheckoutPrefill } from "~/.server/services/orders";
+import {
+  createOrder,
+  deliverOrderConfirmation,
+  getCheckoutPrefill,
+} from "~/.server/services/orders";
 import { rememberOrder } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
 import { CheckoutForm } from "~/features/checkout/CheckoutForm";
@@ -56,7 +61,12 @@ export async function action({ request, context }: Route.ActionArgs) {
   if (cartId === undefined) {
     return redirect("/cart");
   }
-  const result = await createOrder({ cartId, userId: owner.userId, customer: parsed.data });
+  const result = await createOrder({
+    cartId,
+    userId: owner.userId,
+    customer: parsed.data,
+    locale: await getLocale(request),
+  });
   if (!result.ok) {
     if (result.error === "cart-empty") {
       return redirect("/cart");
@@ -69,6 +79,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   // After the order's transaction committed, and only once: a double submit gets `placed: false`.
   if (result.placed) {
+    // The confirmation was queued with the order (#45). Not awaited and never rejects: the
+    // redirect doesn't wait for SMTP, and `pnpm db:send-order-emails` retries a failure.
+    void deliverOrderConfirmation(result.orderId);
     void trackEvent({ request, context }, "purchase", {
       properties: {
         orderId: result.orderId,

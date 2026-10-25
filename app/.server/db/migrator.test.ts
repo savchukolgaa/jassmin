@@ -25,6 +25,7 @@ const sampleOrder = {
 const ALL_TABLES = [
   "cart_items",
   "carts",
+  "order_emails",
   "order_items",
   "orders",
   "product_variants",
@@ -629,7 +630,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 and 0008 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0009 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0009_order_emails");
     expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
     expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
     expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
@@ -657,7 +659,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0008 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0009 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0009_order_emails");
     expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
     expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
     expect(await rollbackLatest(db)).toBe("0006_cart_abandoned_at");
@@ -742,6 +745,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0009_order_emails");
+    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "order_emails"));
     expect(await rollbackLatest(testDb.db)).toBe("0008_traffic_attribution");
     const attributionColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns
@@ -772,7 +777,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(roleColumn.rows).toEqual([]);
     expect(await listEnums()).not.toHaveProperty("user_role");
     expect(await rollbackLatest(testDb.db)).toBe("0003_product_variants");
-    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "product_variants"));
+    expect(await listTables()).toEqual(
+      ALL_TABLES.filter((t) => t !== "product_variants" && t !== "order_emails"),
+    );
     expect(await rollbackLatest(testDb.db)).toBe("0002_analytics_schema");
     expect(await listTables()).toEqual([
       "cart_items",

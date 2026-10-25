@@ -6,15 +6,19 @@
 // `orders.cart_id` is unique, so a cart becomes at most one order: a second submit of the same
 // cart waits for the first one's lock and then gets the order it created.
 //
-// The caller records the `purchase` event (#18) for an order this call `placed`, after the
-// transaction committed.
+// The order's confirmation email (#45) is queued in the same transaction (`order_emails`), so an
+// order never exists without it and a rolled-back order sends nothing. The caller records the
+// `purchase` event (#18) and makes the first delivery attempt for an order this call `placed`,
+// after the transaction committed.
 import type { AccountOrderDetail, AccountOrderLine, AccountOrders } from "~/lib/account";
 import { isCurrentOrder } from "~/lib/account";
 import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
 import { formatShippingAddress } from "~/lib/checkout";
+import type { Locale } from "~/lib/i18n";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { cartTotals, lockCart } from "../db/queries/cart";
+import { insertOrderEmail } from "../db/queries/order-emails";
 import {
   decrementVariantStock,
   findCartStatus,
@@ -30,6 +34,9 @@ import {
   markCartConverted,
 } from "../db/queries/orders";
 import { findUserContact } from "../db/queries/users";
+import { getEnv } from "../env";
+import { getMailTransport } from "../mail";
+import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
 
 /** A logged-in user's contact details for the checkout form, or `null`. */
 export async function getCheckoutPrefill(
@@ -45,6 +52,8 @@ export interface CreateOrderInput {
   /** `null` for guests. */
   userId: number | null;
   customer: CheckoutInput;
+  /** The language the shopper checked out in, for the confirmation email. */
+  locale: Locale;
 }
 
 /** A line that asks for more than is in stock now; `variantId` is the variant's `public_id`. */
@@ -62,7 +71,7 @@ export type CreateOrderResult =
 
 /** Places the order for the cart's lines at the variants' current prices. */
 export async function createOrder(
-  { cartId, userId, customer }: CreateOrderInput,
+  { cartId, userId, customer, locale }: CreateOrderInput,
   db: Db = defaultDb,
 ): Promise<CreateOrderResult> {
   return db.transaction(async (tx): Promise<CreateOrderResult> => {
@@ -101,6 +110,7 @@ export async function createOrder(
       subtotal,
     });
     await insertOrderItems(tx, orderId, lines);
+    await insertOrderEmail(tx, { orderId, type: "confirmation", locale });
     for (const line of lines) {
       await decrementVariantStock(tx, line.variantId, line.quantity);
     }
@@ -138,6 +148,17 @@ export async function getOrderConfirmation(
   }
   const { userId: _userId, ...confirmation } = order;
   return { ...confirmation, lines: await listOrderLines(db, orderId) };
+}
+
+/**
+ * The first attempt at sending a placed order's confirmation, right after its transaction
+ * committed (#45). Never rejects; `pnpm db:send-order-emails` retries a failure.
+ */
+export function deliverOrderConfirmation(
+  orderId: number,
+  db: Db = defaultDb,
+): Promise<OrderEmailReport> {
+  return deliverOrderEmails({ orderId }, () => orderEmailDeps(db, getMailTransport(), getEnv()));
 }
 
 /** The user's orders for the account dashboard (#12), split into current and previous. */

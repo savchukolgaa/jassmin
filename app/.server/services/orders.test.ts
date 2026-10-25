@@ -131,6 +131,11 @@ describe.skipIf(!hasDatabase)("order service", () => {
     return testDb.db.select().from(orders);
   }
 
+  async function queuedEmails() {
+    const { orderEmails } = await import("../db/schema");
+    return testDb.db.select().from(orderEmails);
+  }
+
   it("places a guest order with server-side totals, a size snapshot and less stock", async () => {
     const { createOrder } = await import("./orders");
     const { eq } = await import("drizzle-orm");
@@ -142,9 +147,21 @@ describe.skipIf(!hasDatabase)("order service", () => {
       { variant: thirty, quantity: 1 },
     ]);
 
-    const result = await createOrder({ cartId: cart.id, userId: null, customer }, testDb.db);
+    const result = await createOrder(
+      { cartId: cart.id, userId: null, customer, locale: "en" },
+      testDb.db,
+    );
     if (!result.ok) throw new Error(result.error);
 
+    expect(await queuedEmails()).toEqual([
+      expect.objectContaining({
+        orderId: result.orderId,
+        type: "confirmation",
+        locale: "en",
+        status: "pending",
+        attempts: 0,
+      }),
+    ]);
     expect(await allOrders()).toEqual([
       expect.objectContaining({
         id: result.orderId,
@@ -198,7 +215,12 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const seven = await variant(7, 10);
 
     const small = await createOrder(
-      { cartId: (await cartWith([{ variant: seven, quantity: 1 }], userId)).id, userId, customer },
+      {
+        cartId: (await cartWith([{ variant: seven, quantity: 1 }], userId)).id,
+        userId,
+        customer,
+        locale: "uk",
+      },
       testDb.db,
     );
     expect(small.ok).toBe(true);
@@ -214,7 +236,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
       .set({ price: "1000.00" })
       .where(eq(productVariants.id, seven.id));
     try {
-      await createOrder({ cartId: exact.id, userId: null, customer }, testDb.db);
+      await createOrder({ cartId: exact.id, userId: null, customer, locale: "uk" }, testDb.db);
       expect(await allOrders()).toEqual([
         expect.objectContaining({ subtotal: "1000.00", freeShipping: true }),
       ]);
@@ -235,12 +257,15 @@ describe.skipIf(!hasDatabase)("order service", () => {
       { variant: thirty, quantity: 2 },
     ]);
 
-    expect(await createOrder({ cartId: cart.id, userId: null, customer }, testDb.db)).toEqual({
+    expect(
+      await createOrder({ cartId: cart.id, userId: null, customer, locale: "uk" }, testDb.db),
+    ).toEqual({
       ok: false,
       error: "insufficient-stock",
       lines: [{ variantId: expect.any(String), available: 1 }],
     });
     expect(await allOrders()).toEqual([]);
+    expect(await queuedEmails()).toEqual([]);
     expect(await stockOf(seven.id)).toBe(10);
     expect(await stockOf(thirty.id)).toBe(1);
     expect((await cartOf(cart.id))?.status).toBe("active");
@@ -260,7 +285,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
     `);
     try {
       await expect(
-        createOrder({ cartId: cart.id, userId: null, customer }, testDb.db),
+        createOrder({ cartId: cart.id, userId: null, customer, locale: "uk" }, testDb.db),
       ).rejects.toThrow();
     } finally {
       await testDb.db.execute(sql`
@@ -270,6 +295,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
     }
 
     expect(await allOrders()).toEqual([]);
+    expect(await queuedEmails()).toEqual([]);
     expect(await stockOf(seven.id)).toBe(10);
     expect((await cartOf(cart.id))?.status).toBe("active");
   });
@@ -281,8 +307,8 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const second = await cartWith([{ variant: hundred, quantity: 1 }]);
 
     const results = await Promise.all([
-      createOrder({ cartId: first.id, userId: null, customer }, testDb.db),
-      createOrder({ cartId: second.id, userId: null, customer }, testDb.db),
+      createOrder({ cartId: first.id, userId: null, customer, locale: "uk" }, testDb.db),
+      createOrder({ cartId: second.id, userId: null, customer, locale: "uk" }, testDb.db),
     ]);
 
     expect(results.filter((r) => r.ok)).toHaveLength(1);
@@ -301,7 +327,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const { createOrder } = await import("./orders");
     const seven = await variant(7, 10);
     const cart = await cartWith([{ variant: seven, quantity: 3 }]);
-    const input = { cartId: cart.id, userId: null, customer };
+    const input = { cartId: cart.id, userId: null, customer, locale: "uk" as const };
 
     const [a, b] = await Promise.all([
       createOrder(input, testDb.db),
@@ -321,6 +347,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
     expect([a, b]).toContainEqual({ ok: true, orderId, placed: false });
     expect(again).toEqual({ ok: true, orderId, placed: false });
     expect(await allOrders()).toHaveLength(1);
+    expect(await queuedEmails()).toEqual([expect.objectContaining({ orderId })]);
     expect(await stockOf(seven.id)).toBe(7);
   });
 
@@ -328,11 +355,15 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const { createOrder } = await import("./orders");
 
     const empty = await cartWith([]);
-    expect(await createOrder({ cartId: empty.id, userId: null, customer }, testDb.db)).toEqual({
+    expect(
+      await createOrder({ cartId: empty.id, userId: null, customer, locale: "uk" }, testDb.db),
+    ).toEqual({
       ok: false,
       error: "cart-empty",
     });
-    expect(await createOrder({ cartId: 999_999, userId: null, customer }, testDb.db)).toEqual({
+    expect(
+      await createOrder({ cartId: 999_999, userId: null, customer, locale: "uk" }, testDb.db),
+    ).toEqual({
       ok: false,
       error: "cart-empty",
     });
@@ -343,7 +374,10 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const userId = await user();
     const seven = await variant(7, 10);
     const cart = await cartWith([{ variant: seven, quantity: 2 }], userId);
-    const result = await createOrder({ cartId: cart.id, userId, customer }, testDb.db);
+    const result = await createOrder(
+      { cartId: cart.id, userId, customer, locale: "uk" },
+      testDb.db,
+    );
     if (!result.ok) throw new Error(result.error);
 
     const confirmation = await getOrderConfirmation(
@@ -368,6 +402,10 @@ describe.skipIf(!hasDatabase)("order service", () => {
       ],
     });
     expect(confirmation).not.toHaveProperty("userId");
+    // The email's view of the order skips the viewer check but is otherwise the same.
+    const { findOrderConfirmation } = await import("../db/queries/orders");
+    expect(await findOrderConfirmation(testDb.db, result.orderId)).toEqual(confirmation);
+    expect(await findOrderConfirmation(testDb.db, 999_999)).toBeUndefined();
     expect(
       await getOrderConfirmation(result.orderId, { userId: null, orderIds: [] }, testDb.db),
     ).toBeUndefined();
@@ -383,7 +421,10 @@ describe.skipIf(!hasDatabase)("order service", () => {
   ) {
     const { createOrder } = await import("./orders");
     const cart = await cartWith(lines, userId);
-    const result = await createOrder({ cartId: cart.id, userId, customer }, testDb.db);
+    const result = await createOrder(
+      { cartId: cart.id, userId, customer, locale: "uk" },
+      testDb.db,
+    );
     if (!result.ok) throw new Error(result.error);
     return result.orderId;
   }
@@ -484,6 +525,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
         cartId: guestCart.id,
         userId: null,
         customer: { ...customer, email: account?.email ?? "" },
+        locale: "uk",
       },
       testDb.db,
     );

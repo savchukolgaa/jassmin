@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { smtpOptionsFromUrl } from "./mail";
+import { smtpOptionsFromUrl, stripLineBreaks } from "./mail";
 
 describe("smtpOptionsFromUrl", () => {
   it("maps a plain smtp URL without credentials (smtp4dev)", () => {
@@ -22,5 +22,14 @@ describe("smtpOptionsFromUrl", () => {
 
   it("defaults smtp to port 25", () => {
     expect(smtpOptionsFromUrl("smtp://mail.example.com").port).toBe(25);
+  });
+});
+
+describe("stripLineBreaks", () => {
+  it("turns CR/LF runs into single spaces", () => {
+    expect(stripLineBreaks("Olha\r\nBcc: spam@example.com\nX")).toBe(
+      "Olha Bcc: spam@example.com X",
+    );
+    expect(stripLineBreaks("Олена Коваль")).toBe("Олена Коваль");
   });
 });

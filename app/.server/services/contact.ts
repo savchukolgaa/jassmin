@@ -1,18 +1,13 @@
 import type Mail from "nodemailer/lib/mailer";
 import type { ContactMessage } from "~/features/home/contact-form";
 import { type Env, getEnv } from "../env";
-import { getMailTransport } from "../mail";
+import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
 import { createRateLimiter, type RateLimiter } from "../rate-limit";
 
 // Contact form submissions from the home page: spam checks, rate limiting and delivery by email
 // to the store (`CONTACT_INBOX`). Messages are not stored.
 
 export const CONTACT_RATE_LIMIT = { limit: 5, windowMs: 10 * 60_000 } as const;
-
-/** The part of a nodemailer transport this service uses, so tests can pass a fake. */
-export interface MailSender {
-  sendMail(options: Mail.Options): Promise<unknown>;
-}
 
 export interface ContactDeps {
   /** `null` when `SMTP_URL` is not configured. */
@@ -61,7 +56,7 @@ export function buildContactEmail(
   env: ContactDeps["env"],
   receivedAt: Date,
 ): Mail.Options {
-  const name = message.name.replace(/[\r\n]+/g, " ");
+  const name = stripLineBreaks(message.name);
   return {
     from: env.CONTACT_FROM,
     to: env.CONTACT_INBOX,

@@ -76,14 +76,25 @@ await builder
   .withParentRelationship(cms)
   .withExplicitStart();
 
-// Fake SMTP server for local development: catches every email the app sends (contact form) and
-// shows it in its web UI, so nothing reaches real inboxes.
+// Fake SMTP server for local development: catches every email the app sends (contact form, order
+// confirmations) and shows it in its web UI, so nothing reaches real inboxes.
 const smtp4dev = builder
   .addContainer("smtp4dev", "rnwood/smtp4dev")
   .withImageTag("v3")
   .withHttpEndpoint({ targetPort: 80, name: "http" })
   .withEndpoint({ targetPort: 25, name: "smtp", scheme: "smtp" })
   .withExternalHttpEndpoints();
+
+// Sends the queued order emails that are due (`pnpm db:send-order-emails`, every 5 minutes from
+// cron in production), e.g. after smtp4dev was down at checkout. Start it from the dashboard.
+await builder
+  .addJavaScriptApp("db-send-order-emails", "..", { runScriptName: "db:send-order-emails" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .withEnvironment("SMTP_URL", smtp4dev.getEndpoint("smtp"))
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(db)
+  .withExplicitStart();
 
 // `web` doesn't wait for `cms` or `smtp4dev`: the shop keeps working while either is down;
 // CMS-backed pages answer with a 503 and the contact form shows a "couldn't send" error instead.

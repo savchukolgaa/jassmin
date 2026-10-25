@@ -9,6 +9,7 @@ import {
   cartStatusType,
   carts,
   genderType,
+  orderEmails,
   orderItems,
   orderStatusType,
   orders,
@@ -293,6 +294,38 @@ describe("order_items", () => {
       checks: ["order_items_price_at_purchase_check", "order_items_quantity_check"],
       uniques: [],
       indexes: ["order_items_order_id_idx"],
+    });
+  });
+});
+
+describe("order_emails", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(orderEmails)).toEqual({
+      id: ["serial", true, true],
+      orderId: ["integer", true, false],
+      type: ["text", true, false],
+      locale: ["text", true, false],
+      status: ["text", true, true],
+      attempts: ["integer", true, true],
+      nextAttemptAt: ["timestamp with time zone", true, true],
+      lastError: ["text", false, false],
+      sentAt: ["timestamp with time zone", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("cascades order deletes, keeps one email per type and indexes the due rows", () => {
+    expect(describeForeignKeys(orderEmails)).toEqual({ orderId: ["orders", "cascade"] });
+    expect(describeConstraints(orderEmails)).toEqual({
+      checks: [
+        "order_emails_attempts_check",
+        "order_emails_locale_check",
+        "order_emails_status_check",
+        "order_emails_type_check",
+      ],
+      uniques: ["order_emails_order_id_type_unique"],
+      indexes: ["order_emails_status_next_attempt_at_idx"],
     });
   });
 });

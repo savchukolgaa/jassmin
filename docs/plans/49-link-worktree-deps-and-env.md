@@ -191,7 +191,7 @@ Each step is small, ordered, and leaves the app in a working state.
   allowed, otherwise hard link): `pnpm dev` boots and validates env; `pnpm cms:build` and
   `pnpm cms:dev` read `cms/.env`; edit a harmless variable in the main checkout's `.env` and confirm
   the worktree sees it (symlink and hard link cases). `git -C "$WT" status` shows no `.env`.
-- [ ] **8. Update `AGENTS.md`, `README.md` and the `implement` skills** — `AGENTS.md` Workflow: "run
+- [x] **8. Update `AGENTS.md`, `README.md` and the `implement` skills** — `AGENTS.md` Workflow: "run
   `pnpm install` and link `.env` and `cms/.env` from the main checkout (see
   `docs/skills/worktree.md`)" and the removal note. `README.md`: a sentence in setup/Development
   that pnpm uses a global virtual store (deps are links into the pnpm store, so `node_modules` is

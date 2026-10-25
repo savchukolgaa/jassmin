@@ -16,7 +16,7 @@ If no issue number is provided in the prompt, ask for one.
 
 ## Procedure
 
-1. **Enter worktree**: Resolve and prepare the worktree at `$MAIN/.claude/worktrees/issue-$N` following [docs/skills/worktree.md](../../docs/skills/worktree.md). Verify `$WT/.env` exists (copy from `$MAIN/.env` if missing) and install dependencies (`pnpm install`).
+1. **Enter worktree**: Resolve and prepare the worktree at `$MAIN/.claude/worktrees/issue-$N` following [docs/skills/worktree.md](../../docs/skills/worktree.md). Link `$WT/.env` and `$WT/cms/.env` to the main checkout's if missing (`node "$WT/scripts/link-env.mjs" "$WT"`, see worktree.md) and install dependencies (`pnpm install`).
 2. **Load plan and issue**: Find `$WT/docs/plans/$N-*.md` (if none exists, stop and suggest `/create-plan $N`). Read the plan and latest issue on GitHub (`gh issue view $N`). Address open questions per [docs/skills/implement.md](../../docs/skills/implement.md).
 3. **Implement step by step**: Execute each unchecked step in the plan, adhering to the architectural standards and step verification loop in [docs/skills/implement.md](../../docs/skills/implement.md):
    - Strict TypeScript, route loaders/actions, server isolation (`app/.server/`), zod validation, DB transactions, Vitest tests.

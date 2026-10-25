@@ -46,12 +46,17 @@ Once the worktree is created or entered:
 
 1. **Verify branch**: Run `git -C "$WT" branch --show-current` to confirm it outputs `issue/$N`.
 2. **Verify status**: Run `git -C "$WT" status` to verify there are no unexpected staged or modified changes.
-3. **Environment setup**: If `$WT/.env` is missing, copy it from `$MAIN/.env`:
-   - Never commit `.env`!
+3. **Environment setup**: Link the worktree's `.env` and `cms/.env` to the main checkout's, so they never go stale:
+   ```bash
+   node "$WT/scripts/link-env.mjs" "$WT"
+   ```
+   It creates a symlink for each file when the OS allows it. On Windows that needs Developer Mode (or elevated rights); without it the script makes a hard link instead, which stays in sync as long as editors save the file in place, and copies the file only if linking fails too. It prints a notice for each fallback; a copy has to be refreshed by hand when the main checkout's file changes. Files that already exist in the worktree are left alone. `pnpm herdr:plans` does this for you.
+   - Never commit `.env`! Git ignores the links like the files.
 4. **Install dependencies**: If packages or node_modules need updating, run:
    ```bash
    pnpm --dir "$WT" install
    ```
+   pnpm uses its global virtual store (`enableGlobalVirtualStore` in `pnpm-workspace.yaml`): every checkout's `node_modules` is a small tree of links (junctions on Windows) into one shared store under the pnpm store, so installing in a worktree is fast and takes almost no disk space. A worktree's install only changes that worktree's links and adds new package versions to the shared store; it never changes the main checkout's dependencies.
 
 ## Command Execution Rules
 
@@ -73,3 +78,14 @@ git push origin --delete issue/<n>
 ```
 
 Stop any dev or preview server still running from the worktree first; on Windows it keeps the folder locked.
+
+Because `node_modules` holds only links into the shared store, `git worktree remove` deletes it quickly. If it still fails with "Directory not empty" (a process held a file open, or the worktree was installed before the global virtual store), delete the dependency folders first and run `git worktree remove` again:
+
+```powershell
+Remove-Item .claude/worktrees/issue-<n>/node_modules, .claude/worktrees/issue-<n>/cms/node_modules -Recurse -Force
+```
+```bash
+rm -rf .claude/worktrees/issue-<n>/node_modules .claude/worktrees/issue-<n>/cms/node_modules
+```
+
+PowerShell 7's `Remove-Item -Recurse -Force`, `cmd /c rmdir /s /q`, Git Bash's `rm -rf` and Node's `fs.rmSync` delete a junction without touching what it points to, so they can't damage the shared store. Don't delete `node_modules` with a tool that follows junctions into their targets, and never delete anything under the pnpm store (`pnpm store path`) by hand; `pnpm store prune` cleans it up safely.

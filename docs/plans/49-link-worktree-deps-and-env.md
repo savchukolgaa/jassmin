@@ -67,6 +67,13 @@ get much faster and use far less disk.
 - **`.env` loading follows links.** `app/.server/env.ts` uses `existsSync(".env")` +
   `process.loadEnvFile(".env")`, and Strapi loads `cms/.env` with dotenv; both read through the
   OS, which resolves symlinks transparently. Verified in step 7 rather than assumed.
+- **Step 7 deviation: propagation proved without editing the main `.env`.** The issue worktree's
+  env files were linked with `node scripts/link-env.mjs` (hard links here, `EPERM` on symlinks);
+  `fsutil hardlink list` shows each is the same file as the main checkout's, both load with
+  `process.loadEnvFile`, and the full test suite passes against them. Editing the main checkout's
+  `.env` just to watch it change was skipped (no writes to the main checkout); the hard-link test in
+  `scripts/link-env.test.mjs` covers propagation. Real symlinks couldn't be exercised on this
+  machine (Developer Mode off); that test case skips here and runs where symlinks are allowed.
 - **One shared helper, tested.** Put the linking logic in `scripts/link-env.mjs`
   (`linkEnvFiles(main, wt, log = console.log)` → returns what it did per file), used by
   `scripts/herdr-plans.mjs` (replaces `copyEnv`). Test it in `scripts/link-env.test.mjs` with
@@ -173,14 +180,14 @@ Each step is small, ordered, and leaves the app in a working state.
   for both new and existing worktrees; update the header comment ("links `.env` and `cms/.env`")
   and the agent prompt ("the env files are already linked"). Smoke-test with a throwaway issue
   number if Herdr is available, otherwise by importing `linkEnvFiles` against a scratch worktree.
-- [ ] **6. Document setup and removal in `docs/skills/worktree.md`** — Setup step 3: link both env
+- [x] **6. Document setup and removal in `docs/skills/worktree.md`** — Setup step 3: link both env
   files (show the PowerShell/bash commands, or `node -e "import('./scripts/link-env.mjs')…"`, with
   the fallback order and that a copy goes stale). Step 4: `pnpm install` now only creates links
   into the shared virtual store and never changes the main checkout. Cleanup: stop dev servers,
   `git worktree remove`, and the verified fast fallback for stubborn `node_modules` (only commands
   that passed the junction test in step 2), plus a warning never to use a delete command that
   follows junctions. Point `docs/skills/open-pr.md` cleanup at this section.
-- [ ] **7. Verify `.env` loading through links** — In the worktree with linked env files (symlink if
+- [x] **7. Verify `.env` loading through links** — In the worktree with linked env files (symlink if
   allowed, otherwise hard link): `pnpm dev` boots and validates env; `pnpm cms:build` and
   `pnpm cms:dev` read `cms/.env`; edit a harmless variable in the main checkout's `.env` and confirm
   the worktree sees it (symlink and hard link cases). `git -C "$WT" status` shows no `.env`.

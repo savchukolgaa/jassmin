@@ -75,7 +75,8 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   (`guest_full_name`, `guest_phone`, `shipping_address`), payment method, and the lines/amounts via
   the existing `OrderSummary` component. Ids are validated with the same `^\d{1,10}$` and
   `≤ 2_147_483_647` rule as `checkout-success.tsx`; that parser moves to
-  `parseOrderId()` in `app/lib/checkout.ts` and both routes use it.
+  `parseOrderId()` in `app/lib/checkout.ts` and both routes use it. The payment labels
+  (`PAYMENT_KEYS`) move there too, so the detail page shows the same text as the success page.
 - **Privacy:** account routes export `meta` with `robots: noindex` and a `headers` export with
   `Cache-Control: private, no-store`, since they show personal data.
 - **No analytics events** are added (the `_shop` middleware already records `page_view`).
@@ -155,7 +156,7 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
 
 ## Steps
 
-- [ ] **1. Shared account types and helpers** — In `app/lib/account.ts` add
+- [x] **1. Shared account types and helpers** — In `app/lib/account.ts` add
   `CURRENT_ORDER_STATUSES` / `PREVIOUS_ORDER_STATUSES` (`as const satisfies readonly OrderStatus[]`),
   `ORDER_PROGRESS_STEPS`, `isCurrentOrder`, `orderProgressIndex` (index in the steps, or `-1` for
   statuses off the path), `firstName(fullName)`, and the DTOs:

@@ -9,6 +9,7 @@ import {
   CONTACTS_LINK,
   iconButtonClasses,
   navItemClasses,
+  OFFERS_LINK,
   summaryReset,
 } from "./nav";
 import { useDisclosure } from "./useDisclosure";
@@ -52,6 +53,14 @@ export function MobileMenu() {
                 </li>
               ))}
             </ul>
+          </li>
+          <li>
+            <NavLink
+              to={OFFERS_LINK.to}
+              className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
+            >
+              {t(OFFERS_LINK.labelKey)}
+            </NavLink>
           </li>
           <li>
             <Link to={CONTACTS_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>

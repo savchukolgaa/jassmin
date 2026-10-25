@@ -1,0 +1,258 @@
+{
+  "data": [
+    {
+      "id": 40,
+      "documentId": "d3l1v9ry7f2e5e8k0m4n6p1q",
+      "title": "Free delivery",
+      "slug": "free-delivery",
+      "kind": "perk",
+      "summary": "With Nova Poshta from 1000 ₴",
+      "body": null,
+      "startsAt": null,
+      "endsAt": null,
+      "priceNote": null,
+      "ctaLabel": null,
+      "ctaUrl": null,
+      "sortOrder": 0,
+      "image": null,
+      "products": [],
+      "createdAt": "2026-10-25T09:00:00.000Z",
+      "updatedAt": "2026-10-25T09:00:00.000Z",
+      "publishedAt": "2026-10-25T09:00:01.000Z",
+      "locale": "en"
+    },
+    {
+      "id": 41,
+      "documentId": "wq3n8v1hy0m2ld5k7c9t4rbx",
+      "title": "Winter holidays with Jassmin",
+      "slug": "winter-holidays",
+      "kind": "seasonal",
+      "summary": "From St Nicholas Day to Christmas: scents worth giving.",
+      "body": "Choose a gift early: **small sizes** fit under the pillow on St Nicholas Day, and a full bottle goes under the tree.",
+      "startsAt": "2026-11-30T22:00:00.000Z",
+      "endsAt": "2027-01-08T22:00:00.000Z",
+      "priceNote": null,
+      "ctaLabel": "Find a gift",
+      "ctaUrl": "/catalog/women",
+      "sortOrder": 0,
+      "image": {
+        "id": 1,
+        "documentId": "k2x8m1q0hero7d9a3l5v6w2c",
+        "name": "hero.jpg",
+        "alternativeText": "Jassmin perfume testers",
+        "caption": null,
+        "focalPoint": null,
+        "width": 1600,
+        "height": 1067,
+        "formats": {
+          "large": {
+            "ext": ".jpg",
+            "url": "/uploads/large_hero_3f9a1c2b7d.jpg",
+            "hash": "large_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "large_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 1000,
+            "height": 666,
+            "sizeInBytes": 40120
+          },
+          "small": {
+            "ext": ".jpg",
+            "url": "/uploads/small_hero_3f9a1c2b7d.jpg",
+            "hash": "small_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "small_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 500,
+            "height": 333,
+            "sizeInBytes": 40120
+          },
+          "medium": {
+            "ext": ".jpg",
+            "url": "/uploads/medium_hero_3f9a1c2b7d.jpg",
+            "hash": "medium_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "medium_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 750,
+            "height": 500,
+            "sizeInBytes": 40120
+          },
+          "thumbnail": {
+            "ext": ".jpg",
+            "url": "/uploads/thumbnail_hero_3f9a1c2b7d.jpg",
+            "hash": "thumbnail_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "thumbnail_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 234,
+            "height": 156,
+            "sizeInBytes": 40120
+          }
+        },
+        "hash": "hero_3f9a1c2b7d",
+        "ext": ".jpg",
+        "mime": "image/jpeg",
+        "size": 180.4,
+        "url": "/uploads/hero_3f9a1c2b7d.jpg",
+        "previewUrl": null,
+        "provider": "local",
+        "provider_metadata": null,
+        "createdAt": "2026-10-24T11:46:34.962Z",
+        "updatedAt": "2026-10-24T11:46:34.962Z",
+        "publishedAt": "2026-10-24T11:46:34.963Z"
+      },
+      "products": [
+        {
+          "id": 210,
+          "publicId": "01a1652b-6e25-7c3f-9567-5f694e414a33"
+        },
+        {
+          "id": 211,
+          "publicId": "01a1652b-6e25-7c48-8efe-b797385135f1"
+        }
+      ],
+      "createdAt": "2026-10-25T09:00:00.000Z",
+      "updatedAt": "2026-10-25T09:00:00.000Z",
+      "publishedAt": "2026-10-25T09:00:01.000Z",
+      "locale": "en"
+    },
+    {
+      "id": 42,
+      "documentId": "t8r1o2s5g7h0k3m6n9p4q1za",
+      "title": "Tester trio",
+      "slug": "tester-trio",
+      "kind": "discovery-set",
+      "summary": "Three 7 ml scents: the easiest way to find yours.",
+      "body": "Add three 7 ml sizes to your cart and wear each for a few days before you choose a full bottle.",
+      "startsAt": null,
+      "endsAt": null,
+      "priceNote": "3 × 7 ml — from 499 ₴",
+      "ctaLabel": "Build my trio",
+      "ctaUrl": "/catalog/women",
+      "sortOrder": 10,
+      "image": {
+        "id": 1,
+        "documentId": "k2x8m1q0hero7d9a3l5v6w2c",
+        "name": "hero.jpg",
+        "alternativeText": "Jassmin perfume testers",
+        "caption": null,
+        "focalPoint": null,
+        "width": 1600,
+        "height": 1067,
+        "formats": {
+          "large": {
+            "ext": ".jpg",
+            "url": "/uploads/large_hero_3f9a1c2b7d.jpg",
+            "hash": "large_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "large_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 1000,
+            "height": 666,
+            "sizeInBytes": 40120
+          },
+          "small": {
+            "ext": ".jpg",
+            "url": "/uploads/small_hero_3f9a1c2b7d.jpg",
+            "hash": "small_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "small_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 500,
+            "height": 333,
+            "sizeInBytes": 40120
+          },
+          "medium": {
+            "ext": ".jpg",
+            "url": "/uploads/medium_hero_3f9a1c2b7d.jpg",
+            "hash": "medium_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "medium_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 750,
+            "height": 500,
+            "sizeInBytes": 40120
+          },
+          "thumbnail": {
+            "ext": ".jpg",
+            "url": "/uploads/thumbnail_hero_3f9a1c2b7d.jpg",
+            "hash": "thumbnail_hero_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "thumbnail_hero.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 234,
+            "height": 156,
+            "sizeInBytes": 40120
+          }
+        },
+        "hash": "hero_3f9a1c2b7d",
+        "ext": ".jpg",
+        "mime": "image/jpeg",
+        "size": 180.4,
+        "url": "/uploads/hero_3f9a1c2b7d.jpg",
+        "previewUrl": null,
+        "provider": "local",
+        "provider_metadata": null,
+        "createdAt": "2026-10-24T11:46:34.962Z",
+        "updatedAt": "2026-10-24T11:46:34.962Z",
+        "publishedAt": "2026-10-24T11:46:34.963Z"
+      },
+      "products": [
+        {
+          "id": 220,
+          "publicId": "01a1652b-6e25-7c03-ae47-25b57131fb06"
+        },
+        {
+          "id": 221,
+          "publicId": "01a1652b-6e25-7c51-bcf8-0d0dd7accc0a"
+        },
+        {
+          "id": 222,
+          "publicId": "01a1652b-6e25-7c55-8003-478f2d6abfb1"
+        }
+      ],
+      "createdAt": "2026-10-25T09:00:00.000Z",
+      "updatedAt": "2026-10-25T09:00:00.000Z",
+      "publishedAt": "2026-10-25T09:00:01.000Z",
+      "locale": "en"
+    },
+    {
+      "id": 43,
+      "documentId": "w3lc0m3a8b2c6d4e9f1g5h7j",
+      "title": "Welcome to Jassmin",
+      "slug": "welcome-offer",
+      "kind": "perk",
+      "summary": "Register to keep track of your orders",
+      "body": null,
+      "startsAt": null,
+      "endsAt": null,
+      "priceNote": null,
+      "ctaLabel": "Register",
+      "ctaUrl": "/register",
+      "sortOrder": 20,
+      "image": null,
+      "products": [],
+      "createdAt": "2026-10-25T09:00:00.000Z",
+      "updatedAt": "2026-10-25T09:00:00.000Z",
+      "publishedAt": "2026-10-25T09:00:01.000Z",
+      "locale": "en"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "page": 1,
+      "pageSize": 5,
+      "pageCount": 1,
+      "total": 4
+    }
+  }
+}

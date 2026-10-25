@@ -1,6 +1,7 @@
 import { cn } from "~/lib/cn";
 import { PRIVACY_POLICY_PATH } from "~/lib/consent";
 import type { TextKey } from "~/lib/i18n";
+import { OFFERS_PATH } from "~/lib/offers";
 
 /** A nav link; the label is a message key, translated where it's rendered. */
 export interface NavLinkItem {
@@ -14,6 +15,10 @@ export const CONTACTS_LINK = {
   labelKey: "nav.contacts",
 } as const satisfies NavLinkItem;
 export const BLOG_LINK = { to: "/blog", labelKey: "nav.blog" } as const satisfies NavLinkItem;
+export const OFFERS_LINK = {
+  to: OFFERS_PATH,
+  labelKey: "nav.offers",
+} as const satisfies NavLinkItem;
 export const PRIVACY_LINK = {
   to: PRIVACY_POLICY_PATH,
   labelKey: "consent.learnMore",
@@ -29,6 +34,7 @@ const [MEN_CATALOG, WOMEN_CATALOG] = CATALOG_LINKS;
 export const FOOTER_LINKS = [
   { to: WOMEN_CATALOG.to, labelKey: WOMEN_CATALOG.shortLabelKey },
   { to: MEN_CATALOG.to, labelKey: MEN_CATALOG.shortLabelKey },
+  OFFERS_LINK,
   BLOG_LINK,
   ABOUT_LINK,
   CONTACTS_LINK,

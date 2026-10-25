@@ -196,10 +196,11 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
    ```bash
    pnpm cms:seed -- --token
    ```
-   The seed creates the home page and site settings in Ukrainian and English, two published blog posts (one translated, one Ukrainian only) and one draft, and prints `STRAPI_API_TOKEN=…` once (Strapi stores only a hash). Copy that line into the root `.env` and restart `web`. Running the seed again leaves existing content and the token alone. It uses the same database variables as `pnpm cms:dev`.
+   The seed creates the home page and site settings in Ukrainian and English, two published blog posts (one translated, one Ukrainian only), one draft, and special offers for `/offers` (a current and an expired campaign, a tester trio, gift ideas and three perks), and prints `STRAPI_API_TOKEN=…` once (Strapi stores only a hash). Copy that line into the root `.env` and restart `web`. Running the seed again leaves existing content alone. With `--token`, an existing token keeps its key and is granted any permissions it lacks (such as `offer.find`, added in #55). It uses the same database variables as `pnpm cms:dev`.
 3. **Or create the token by hand:** go to Settings → API Tokens → Create new API Token, choose type **Custom** and duration **Unlimited**, and enable only:
    - Blog-post: `find`, `findOne`
    - Home-page: `find`
+   - Offer: `find`
    - Site-setting: `find`
 
    Save the token and copy it into `STRAPI_API_TOKEN` in `.env`.
@@ -216,6 +217,7 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 |------|------|--------|
 | `blog-post` | Collection, Draft & Publish | `title` (required), `slug` (UID from title, required, unique), `excerpt` (text, max 300), `content` (Markdown, required), `coverImage` (image), `authorName`, `seo` (`shared.seo`) |
 | `home-page` | Single type | `hero` (`home.hero`), `about` (`home.about`), `location` (`home.location`) |
+| `offer` | Collection, Draft & Publish | `title` (required), `slug` (UID from title), `kind` (`discovery-set`, `seasonal`, `gift`, `bundle`, `featured`, `last-units`, `perk`), `summary`, `body` (Markdown), `image`, `startsAt` / `endsAt` (date-times, optional), `priceNote`, `products` (repeatable `offers.product-ref`), `ctaLabel`, `ctaUrl` (app path), `sortOrder` |
 | `site-setting` ("Site settings") | Single type | `phone`, `email`, `customerServiceHours`, `socialLinks` (repeatable `shared.social-link`) |
 
 | Component | Fields |
@@ -223,14 +225,15 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 | `home.hero` | `headline`, `ctaLabel`, `ctaHref`, `image` |
 | `home.about` | `title`, `body` (Markdown) |
 | `home.location` | `address`, `openingHours`, `mapEmbedUrl` |
+| `offers.product-ref` | `publicId` (a shop product's `public_id`, UUID) |
 | `shared.seo` | `metaTitle` (max 60), `metaDescription` (max 160), `ogImage` |
 | `shared.social-link` | `platform` (`instagram`, `facebook`, `tiktok`, `telegram`, `viber`, `youtube`), `url` |
 
-The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/site-setting`. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
+The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/offers`, `/api/site-setting`. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
 
 ### Translations (Ukrainian and English)
 
-All three content types use Strapi's built-in Internationalization (#43). The locales are **Ukrainian (`uk`, default)** and **English (`en`)**. Strapi creates them at startup (`ensureLocales` in `cms/src/index.ts`), so a fresh setup needs no clicking in Settings → Internationalization. Existing content was kept as Ukrainian by the migration in `cms/database/migrations/`, which makes `uk` the default before Strapi tags existing entries with a locale.
+All content types use Strapi's built-in Internationalization (#43). The locales are **Ukrainian (`uk`, default)** and **English (`en`)**. Strapi creates them at startup (`ensureLocales` in `cms/src/index.ts`), so a fresh setup needs no clicking in Settings → Internationalization. Existing content was kept as Ukrainian by the migration in `cms/database/migrations/`, which makes `uk` the default before Strapi tags existing entries with a locale.
 
 Which fields are per language:
 
@@ -239,6 +242,7 @@ Which fields are per language:
 | `blog-post` | `title`, `excerpt`, `content`, `authorName`, `seo` | `slug`, `coverImage` |
 | `home-page` | `hero`, `about`, `location` (whole components, including the hero image, CTA link and map URL) | — |
 | `site-setting` | `customerServiceHours` | `phone`, `email`, `socialLinks` |
+| `offer` | `title`, `summary`, `body`, `priceNote`, `ctaLabel` | `slug`, `kind`, `image`, `startsAt`, `endsAt`, `products`, `ctaUrl`, `sortOrder` |
 
 Strapi can't share single fields inside a localized component, so the hero `image` and `ctaHref` and the location `mapEmbedUrl` are stored once per language. Keep them the same in both.
 
@@ -252,6 +256,18 @@ Strapi can't share single fields inside a localized component, so the hero `imag
 Shared fields (a post's slug and cover, the phone, email and social links) are edited in either language and change in both.
 
 **What visitors see:** the app asks Strapi for the visitor's language (the `locale` cookie, then `Accept-Language`). When an entry has no English version yet, the Ukrainian one is shown, never an error. Ukrainian content must therefore always exist. The English blog list contains every published Ukrainian post, each in English when it has a published translation. A post published only in English isn't listed. `/blog/<slug>` is the same URL in both languages.
+
+## Special offers
+
+`/offers` (#55) lists the published Strapi `offer` entries whose window includes the current moment: `startsAt` (inclusive) up to `endsAt` (exclusive). Both are date-times, compared as instants, so a campaign can end at 23:59 Kyiv time. An empty `startsAt` means "already started" and an empty `endsAt` means "no end". Which offers are active is decided by the Ukrainian entry; English translations only replace the text.
+
+- **Kind** groups the cards: discovery sets, seasonal, gifts, bundles, featured, last units. `perk` entries (free delivery, discovery sizes, the welcome offer) form the strip under the hero instead.
+- **Sort order** (lowest first) orders offers within each group. The active non-perk offer with the lowest `sortOrder` becomes the hero at the top of the page, so lowering a campaign's `sortOrder` features it.
+- **Products** are shop products by their `public_id` (copy it from the product URL, `/products/<id>`). Products that no longer exist, or have no sizes for sale, are left out.
+- **CTA link** (`ctaUrl`) must be a path in the shop, such as `/catalog/women`; anything else hides the button.
+- **Prices aren't changed.** Checkout has no discounts yet, so `priceNote` is plain text ("3 × 7 мл — від 499 ₴"). Word offers as curated picks unless the cart prices already match.
+
+When no offer is active the page shows an empty state, and when Strapi is down a 503 error page.
 
 ## Home page and contact form
 

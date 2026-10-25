@@ -9,6 +9,7 @@ import {
   findProductByPublicId,
   findVariantForProduct,
   listFilterOptions,
+  listProductSummariesByPublicIds,
   listProducts,
   listVariantsByProductId,
   type ProductDetailRow,
@@ -88,6 +89,21 @@ export async function getCatalogPage(
     pageCount: Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE)),
     filterOptions,
   };
+}
+
+/**
+ * Product cards by `public_id`, for pages that pick products by hand (special offers, #55). Ids of
+ * products that don't exist or have nothing for sale are missing from the map. One query.
+ */
+export async function getProductSummaries(
+  publicIds: readonly string[],
+  db: Db = defaultDb,
+): Promise<Map<string, ProductSummary>> {
+  if (publicIds.length === 0) {
+    return new Map();
+  }
+  const rows = await listProductSummariesByPublicIds(db, [...new Set(publicIds)]);
+  return new Map(rows.map((row) => [row.publicId, toSummary(row)]));
 }
 
 /** The product with this `public_id`, or `null` when there is none. */

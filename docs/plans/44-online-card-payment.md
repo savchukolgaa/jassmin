@@ -127,14 +127,14 @@ For now the only provider is a **local payment simulator**: a fake hosted page s
   - a tampered `data` or `signature` rejected
   - a malformed body
   - a key derived from a different secret rejected
-- [ ] **4. Payment queries.** Add `db/queries/payments.ts`:
+- [x] **4. Payment queries.** Add `db/queries/payments.ts`:
   - `countPayments(tx, orderId)`
   - `insertPayment`
   - `lockPaymentByReference` (`FOR UPDATE`)
   - `markPayment(tx, id, { status, providerPaymentId, lastCallback })`
   - `markOrderPaid(tx, orderId)`: the conditional update, which returns whether a row changed
-  - `findLatestPayment(db, orderId)`
-  - `findPayableOrder(tx, orderId)` (`FOR UPDATE`)
+  - `findLatestPaymentStatus(db, orderId)`
+  - `findPayableOrder(db, orderId, { lock })` (`FOR UPDATE` when `lock`)
 - [ ] **5. Payments service.** Add `services/payments.ts`, with the provider and db injectable:
   - `startPayment({ orderId, locale, origin })`: in a transaction, it locks the order, checks that it's `card`/`unpaid`/`pending`, inserts the attempt `${orderId}-${n+1}` with the stored total and calls `provider.createCheckout`. It returns `{ ok: true, redirectUrl }` or `{ ok: false, error: "not-payable" | "unavailable" }`.
   - `handlePaymentCallback(formData)`: performs the idempotent transition described under Decisions. It returns `{ ok: false, error: "invalid-signature" | "malformed" }` or `{ ok: true, result: "paid" | "failed" | "pending" | "ignored" }`.

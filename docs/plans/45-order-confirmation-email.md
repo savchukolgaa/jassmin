@@ -167,7 +167,7 @@ and never affects the order or the redirect.
 | modify | `app/.server/AGENTS.md`, `aspire-apphost/AGENTS.md` if it lists resources | Document the outbox and the job |
 
 ## Steps
-- [ ] **1. Schema and migration.** Add the enum arrays to `~/lib/enums`. Add the `orderEmails`
+- [x] **1. Schema and migration.** Add the enum arrays to `~/lib/enums`. Add the `orderEmails`
   table to `schema.ts`, with `orderId` cascading, the CHECKs (types, `LOCALES`, statuses), an
   explicitly named unique constraint and the `(status, next_attempt_at)` index. Then run
   `pnpm db:generate --name order_emails`, write the rollback, and extend `schema.test.ts`. Check:

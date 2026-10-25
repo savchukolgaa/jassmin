@@ -57,3 +57,16 @@ export type PerfumeVolumeMl = (typeof PERFUME_VOLUMES_ML)[number];
 export const USER_ROLES = ["customer", "admin"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
+
+/** Emails queued per order in `order_emails.type` (#45); a CHECK constraint limits it. */
+export const ORDER_EMAIL_TYPES = ["confirmation"] as const;
+
+export type OrderEmailType = (typeof ORDER_EMAIL_TYPES)[number];
+
+/**
+ * Delivery state of a queued order email: `pending` until sent, `failed` once every retry is
+ * used up. A CHECK constraint limits `order_emails.status` to these values.
+ */
+export const ORDER_EMAIL_STATUSES = ["pending", "sent", "failed"] as const;
+
+export type OrderEmailStatus = (typeof ORDER_EMAIL_STATUSES)[number];

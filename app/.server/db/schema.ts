@@ -1,12 +1,13 @@
 // Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
-// checkout fields on orders (#11).
+// checkout fields on orders (#11) and the order email queue (#45).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
 // features for LTV and churn models: never drop or rename them.
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -29,13 +30,18 @@ import {
   EVENT_TYPES,
   type EventType,
   GENDERS,
+  ORDER_EMAIL_STATUSES,
+  ORDER_EMAIL_TYPES,
   ORDER_STATUSES,
+  type OrderEmailStatus,
+  type OrderEmailType,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
   type PaymentMethod,
   PERFUME_VOLUMES_ML,
   USER_ROLES,
 } from "~/lib/enums";
+import { LOCALES, type Locale } from "~/lib/i18n/locales";
 
 export const genderType = pgEnum("gender_type", GENDERS);
 export const orderStatusType = pgEnum("order_status_type", ORDER_STATUSES);
@@ -186,7 +192,7 @@ export const userEvents = pgTable(
   ],
 );
 
-// Shared by the carts and orders tables: refreshed by every query-builder update. Raw SQL
+// Shared by the carts, orders and order_emails tables: refreshed by every query-builder update. Raw SQL
 // updates must set `updated_at` themselves.
 const updatedAt = () =>
   timestamp({ withTimezone: true })
@@ -325,5 +331,50 @@ export const orderItems = pgTable(
     check("order_items_quantity_check", sql`${t.quantity} > 0`),
     check("order_items_price_at_purchase_check", sql`${t.priceAtPurchase} >= 0`),
     index("order_items_order_id_idx").on(t.orderId),
+  ],
+);
+
+/** `<column> in ('a', 'b', …)` for a CHECK constraint over a fixed list of values. */
+function oneOf(column: AnyPgColumn, values: readonly string[]) {
+  return sql`${column} in (${sql.join(
+    values.map((v) => sql.raw(`'${v}'`)),
+    sql`, `,
+  )})`;
+}
+
+/**
+ * Outbox for emails about an order (#45). The confirmation is queued in the order's own
+ * transaction, sent right after the commit and retried by `pnpm db:send-order-emails` until it
+ * goes out or runs out of attempts. A sender claims a row by pushing `next_attempt_at` out (a
+ * lease), so a crash mid-send means another try later rather than a lost email.
+ */
+export const orderEmails = pgTable(
+  "order_emails",
+  {
+    id: serial().primaryKey(),
+    orderId: integer()
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    type: text().$type<OrderEmailType>().notNull(),
+    /** The language the shopper checked out in. */
+    locale: text().$type<Locale>().notNull(),
+    status: text().$type<OrderEmailStatus>().notNull().default("pending"),
+    /** Send attempts so far, counted when a sender claims the row. */
+    attempts: integer().notNull().default(0),
+    /** When the row is next due; claiming moves it to the retry time. */
+    nextAttemptAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** The last failure's message, without the email body. */
+    lastError: text(),
+    sentAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("order_emails_type_check", oneOf(t.type, ORDER_EMAIL_TYPES)),
+    check("order_emails_locale_check", oneOf(t.locale, LOCALES)),
+    check("order_emails_status_check", oneOf(t.status, ORDER_EMAIL_STATUSES)),
+    check("order_emails_attempts_check", sql`${t.attempts} >= 0`),
+    unique("order_emails_order_id_type_unique").on(t.orderId, t.type),
+    index("order_emails_status_next_attempt_at_idx").on(t.status, t.nextAttemptAt),
   ],
 );

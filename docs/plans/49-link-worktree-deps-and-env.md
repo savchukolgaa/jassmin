@@ -41,7 +41,15 @@ get much faster and use far less disk.
   or a Vite `server.fs.allow` entry) and record why in a comment next to the setting. If the global
   virtual store can't be made to work for `cms/` at all, fall back to the closest alternative:
   keep the default isolated layout and only make removal fast (step 6), and document the reason in
-  the PR **(unconfirmed until the spike)**.
+  the PR.
+- **Spike result (step 2): the global virtual store works as is.** No extra setting was needed:
+  `node_modules` entries are junctions into `%LOCALAPPDATA%\pnpm\store11\links`, the lockfile
+  is unchanged, Vite serves modules from the store through `/@fs/…` without a `server.fs.allow`
+  entry, `react-router typegen`, `tsc`, Biome, Vitest (all 727 tests, with Postgres), `pnpm build`
+  and `pnpm cms:build` pass, Strapi loads under `pnpm cms:dev`, and `pnpm aspire run` brings every
+  resource up healthy (its root install via `db-migrate-installer` included). PowerShell
+  `Remove-Item -Recurse -Force`, `cmd /c rmdir /s /q`, Node `fs.rmSync` and Git Bash `rm -rf` all
+  remove a junction without touching its target, so none of them can delete the shared store.
 - **Link both env files.** Strapi reads its secrets from `cms/.env` (`aspire-apphost/AGENTS.md`,
   README "Content (Strapi CMS)"), and `pnpm cms:build` / `pnpm cms:dev` need them in a worktree too.
   So the same helper links `$WT/.env` → `$MAIN/.env` **and** `$WT/cms/.env` → `$MAIN/cms/.env`
@@ -130,14 +138,14 @@ get much faster and use far less disk.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Measure the baseline** — From the main checkout, create a throwaway worktree on
+- [x] **1. Measure the baseline** — From the main checkout, create a throwaway worktree on
   `origin/main` (e.g. `.claude/worktrees/bench-before`, detached), copy both env files, and time
   `git worktree add` + `pnpm install` (warm store) with PowerShell `Measure-Command`. Record the
   `node_modules` and `cms/node_modules` size and file count (`Get-ChildItem -Recurse -Force |
   Measure-Object -Sum Length`) and the time for `git worktree remove` (note if it fails with
   "Directory not empty" and how long manual deletion takes). Write the numbers to a scratch note
   outside the repo for the PR.
-- [ ] **2. Spike the global virtual store** — In the issue worktree, add
+- [x] **2. Spike the global virtual store** — In the issue worktree, add
   `enableGlobalVirtualStore: true` to `pnpm-workspace.yaml`, run `pnpm install`, and confirm
   `node_modules/<pkg>` entries are links into `<store>/links` (`Get-Item node_modules/react |
   Select LinkType, Target`). Then run, in the worktree **and** the main checkout (after a

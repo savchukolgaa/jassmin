@@ -4,6 +4,7 @@ import { ButtonLink } from "~/components/ui/ButtonLink";
 import { CurrentOrderCard } from "~/features/account/CurrentOrderCard";
 import { PreviousOrdersList } from "~/features/account/PreviousOrdersList";
 import { useT } from "~/lib/i18n";
+import { OFFERS_PATH } from "~/lib/offers";
 import type { Route } from "./+types/account._index";
 
 // The account layout's loader doesn't protect this one: loaders run in parallel.
@@ -28,9 +29,11 @@ export default function AccountOrders({ loaderData }: Route.ComponentProps) {
           {t("account.orders.empty.heading")}
         </h2>
         <p className="max-w-md text-lg text-body">{t("account.orders.empty.text")}</p>
-        {/* #55 points this at the special offers page once it exists. */}
         <div className="flex flex-wrap gap-3">
-          <ButtonLink to="/catalog/women">{t("account.orders.empty.women")}</ButtonLink>
+          <ButtonLink to={OFFERS_PATH}>{t("account.orders.empty.offers")}</ButtonLink>
+          <ButtonLink to="/catalog/women" variant="dark">
+            {t("account.orders.empty.women")}
+          </ButtonLink>
           <ButtonLink to="/catalog/men" variant="dark">
             {t("account.orders.empty.men")}
           </ButtonLink>

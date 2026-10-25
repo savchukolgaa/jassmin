@@ -93,6 +93,7 @@ export const en = {
     catalog: "Catalog",
     contacts: "Contacts",
     blog: "Blog",
+    offers: "Offers",
     menu: "Menu",
     account: "My account",
     logIn: "Log in",
@@ -356,6 +357,7 @@ export const en = {
     nav: {
       label: "Account",
       orders: "Orders",
+      profile: "Profile details",
       continueShopping: "Continue shopping",
     },
     orders: {
@@ -374,6 +376,7 @@ export const en = {
         text: "When you place an order, you can track its delivery here.",
         women: "Women's perfumes",
         men: "Men's perfumes",
+        offers: "Special offers",
       },
     },
     status: {
@@ -400,6 +403,47 @@ export const en = {
       refundedAt: "Refunded",
       delivery: "Delivery",
       payment: "Payment",
+    },
+    profile: {
+      title: "Profile details",
+      memberSince: "Member since {date}",
+      submitting: "Saving…",
+      contact: {
+        heading: "Contact details",
+        submit: "Save details",
+        saved: "Contact details saved.",
+      },
+      email: {
+        heading: "Email",
+        current: "Current: {email}. If you change it, we'll let the old address know.",
+        newEmail: "New email",
+        submit: "Change email",
+        saved: "Email changed.",
+      },
+      password: {
+        heading: "Password",
+        current: "Current password",
+        new: "New password",
+        confirm: "Confirm new password",
+        hint: "At least 8 characters",
+        submit: "Change password",
+        saved: "Password changed.",
+      },
+      errors: {
+        currentPasswordRequired: "Enter your current password",
+        currentPasswordWrong: "Wrong password. Try again.",
+        passwordMismatch: "Passwords don't match",
+        tooManyAttempts: "Too many attempts. Wait 15 minutes and try again.",
+        invalidIntent: "Your changes couldn't be saved. Reload the page and try again.",
+      },
+      emailChangedMail: {
+        subject: "Your account email was changed — Jassmin",
+        greeting: "Hi {name},",
+        body: "On {date}, the email of your Jassmin account was changed to {newEmail}. From now on, log in with the new address.",
+        notYou:
+          "If this wasn't you, email us right away at {email} and we'll help you get your account back.",
+        signature: "The Jassmin team",
+      },
     },
   },
   pagination: {
@@ -460,6 +504,34 @@ export const en = {
     notFound: "Article not found",
     defaultDescription:
       "Fragrance articles and scent guides from Jassmin: how to choose, wear and care for perfume.",
+  },
+  offers: {
+    title: "Special offers",
+    metaTitle: "Special offers",
+    metaDescription: "Tester sets, seasonal picks, gift ideas and last bottles at Jassmin.",
+    intro: "Testers, seasonal picks and gift ideas, all in one place.",
+    heroEyebrow: "Featured offer",
+    perks: "Always on",
+    validUntil: "Valid until {date}",
+    validUntilAt: "Valid until {date}, {time}",
+    defaultCta: "Take a look",
+    products: "Scents in this offer",
+    kinds: {
+      "discovery-set": "Discovery sets",
+      seasonal: "Seasonal offers",
+      gift: "Gift ideas",
+      bundle: "Bundles",
+      featured: "Scent of the month",
+      "last-units": "Last bottles",
+      perk: "Perks",
+    },
+    empty: {
+      heading: "No offers right now",
+      text: "New offers arrive before the holidays. In the meantime, browse our perfumes or read the blog.",
+      women: "Women's perfumes",
+      men: "Men's perfumes",
+      blog: "Blog",
+    },
   },
   admin: {
     title: "Admin",

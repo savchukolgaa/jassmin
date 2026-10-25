@@ -31,6 +31,7 @@ describe("Header", () => {
     const positions = [
       ">About us<",
       ">Catalog<",
+      ">Offers<",
       ">Contacts<",
       'aria-label="Log in"',
       'aria-label="Cart, 0 items"',
@@ -43,11 +44,25 @@ describe("Header", () => {
   it("links to the home page sections, both catalogs and the cart", () => {
     const html = renderHeader();
 
-    for (const href of ["/#about", "/catalog/men", "/catalog/women", "/#contacts", "/cart"]) {
+    for (const href of [
+      "/#about",
+      "/catalog/men",
+      "/catalog/women",
+      "/offers",
+      "/#contacts",
+      "/cart",
+    ]) {
       expect(html).toContain(`href="${href}"`);
     }
     expect(html).toContain(">Men Perfumes<");
     expect(html).toContain(">Women Perfumes<");
+  });
+
+  it("highlights Offers on the offers page", () => {
+    expect(renderHeader({}, "/offers")).toMatch(
+      /<a[^>]*class="[^"]*underline decoration-2[^"]*"[^>]*href="\/offers"[^>]*>Offers<\/a>/,
+    );
+    expect(renderHeader()).not.toMatch(/class="[^"]*underline decoration-2[^"]*"[^>]*>Offers</);
   });
 
   it("renders the catalog dropdown as a collapsed <details> disclosure", () => {

@@ -92,6 +92,7 @@ export const uk = {
     catalog: "Каталог",
     contacts: "Контакти",
     blog: "Блог",
+    offers: "Акції",
     menu: "Меню",
     account: "Мій кабінет",
     logIn: "Увійти",
@@ -361,6 +362,7 @@ export const uk = {
     nav: {
       label: "Кабінет",
       orders: "Замовлення",
+      profile: "Дані профілю",
       continueShopping: "Продовжити покупки",
     },
     orders: {
@@ -381,6 +383,7 @@ export const uk = {
         text: "Коли ви щось замовите, тут можна буде стежити за доставкою.",
         women: "Жіночі парфуми",
         men: "Чоловічі парфуми",
+        offers: "Акції та пропозиції",
       },
     },
     status: {
@@ -407,6 +410,47 @@ export const uk = {
       refundedAt: "Кошти повернено",
       delivery: "Доставка",
       payment: "Оплата",
+    },
+    profile: {
+      title: "Дані профілю",
+      memberSince: "З нами з {date}",
+      submitting: "Зберігаємо…",
+      contact: {
+        heading: "Контактні дані",
+        submit: "Зберегти дані",
+        saved: "Контактні дані збережено.",
+      },
+      email: {
+        heading: "Email",
+        current: "Зараз: {email}. Якщо його змінити, ми повідомимо про це на стару адресу.",
+        newEmail: "Новий email",
+        submit: "Змінити email",
+        saved: "Email змінено.",
+      },
+      password: {
+        heading: "Пароль",
+        current: "Поточний пароль",
+        new: "Новий пароль",
+        confirm: "Повторіть новий пароль",
+        hint: "Щонайменше 8 символів",
+        submit: "Змінити пароль",
+        saved: "Пароль змінено.",
+      },
+      errors: {
+        currentPasswordRequired: "Введіть поточний пароль",
+        currentPasswordWrong: "Неправильний пароль. Спробуйте ще раз.",
+        passwordMismatch: "Паролі не збігаються",
+        tooManyAttempts: "Забагато спроб. Зачекайте 15 хвилин і спробуйте ще раз.",
+        invalidIntent: "Не вдалося зберегти зміни. Оновіть сторінку й спробуйте ще раз.",
+      },
+      emailChangedMail: {
+        subject: "Email вашого облікового запису змінено — Jassmin",
+        greeting: "Вітаємо, {name}!",
+        body: "{date} email вашого облікового запису Jassmin змінили на {newEmail}. Тепер входьте з новою адресою.",
+        notYou:
+          "Якщо це були не ви, негайно напишіть нам на {email}: ми допоможемо повернути доступ.",
+        signature: "Команда Jassmin",
+      },
     },
   },
   pagination: {
@@ -468,6 +512,35 @@ export const uk = {
     notFound: "Статтю не знайдено",
     defaultDescription:
       "Статті про парфуми й путівники ароматами від Jassmin: як обрати, носити та зберігати парфуми.",
+  },
+  offers: {
+    title: "Акції та пропозиції",
+    metaTitle: "Акції та пропозиції",
+    metaDescription:
+      "Тестерні набори, сезонні добірки, ідеї подарунків і останні флакони в Jassmin.",
+    intro: "Тестери, сезонні добірки та ідеї подарунків — усе в одному місці.",
+    heroEyebrow: "Головна пропозиція",
+    perks: "Завжди для вас",
+    validUntil: "Діє до {date}",
+    validUntilAt: "Діє до {date}, {time}",
+    defaultCta: "Переглянути",
+    products: "Аромати в пропозиції",
+    kinds: {
+      "discovery-set": "Тестерні набори",
+      seasonal: "Сезонні акції",
+      gift: "Ідеї подарунків",
+      bundle: "Набори",
+      featured: "Аромат місяця",
+      "last-units": "Останні флакони",
+      perk: "Переваги",
+    },
+    empty: {
+      heading: "Зараз немає акцій",
+      text: "Нові пропозиції з’являться до свят. А поки перегляньте наші парфуми або почитайте блог.",
+      women: "Жіночі парфуми",
+      men: "Чоловічі парфуми",
+      blog: "Блог",
+    },
   },
   admin: {
     title: "Адмінка",

@@ -22,7 +22,7 @@ describe("Footer", () => {
     );
   });
 
-  it("links to both catalogs, the blog, about us, contacts and the privacy policy in order", () => {
+  it("links to both catalogs, offers, the blog, about us, contacts and the privacy policy in order", () => {
     const html = renderFooter();
     const positions = FOOTER_LINKS.map((link) => html.indexOf(`href="${link.to}"`));
 
@@ -30,6 +30,7 @@ describe("Footer", () => {
     expect(FOOTER_LINKS.map((link) => t(link.labelKey))).toEqual([
       "Women",
       "Men",
+      "Offers",
       "Blog",
       "About us",
       "Contacts",

@@ -1,12 +1,14 @@
 /**
  * Seeds local Strapi content for the Jassmin app in Ukrainian (`uk`, the default locale) and
  * English (`en`): the home page, site settings, two published blog posts (one of them only in
- * `uk`, to exercise the app's fallback) and one draft. Safe to run repeatedly: existing
- * localizations (single types by locale, posts by slug and locale) are left alone, and missing
- * ones are added.
+ * `uk`, to exercise the app's fallback), one draft, and special offers for /offers (a current
+ * campaign, an expired one, a tester trio, gift ideas and two perks). Safe to run repeatedly:
+ * existing localizations (single types by locale, posts and offers by slug and locale) are left
+ * alone, and missing ones are added.
  *
  *   pnpm cms:seed               # content only
- *   pnpm cms:seed -- --token    # also creates the app's read-only API token and prints it once
+ *   pnpm cms:seed -- --token    # also creates the app's read-only API token and prints it once,
+ *                               # or grants an existing token the permissions it's missing
  */
 import { stat } from "node:fs/promises";
 import path from "node:path";
@@ -20,6 +22,7 @@ const TOKEN_PERMISSIONS = [
   "api::blog-post.blog-post.find",
   "api::blog-post.blog-post.findOne",
   "api::home-page.home-page.find",
+  "api::offer.offer.find",
   "api::site-setting.site-setting.find",
 ];
 
@@ -262,11 +265,269 @@ async function seedBlogPosts(strapi: Core.Strapi, coverImageId: number): Promise
   }
 }
 
+type OfferKind =
+  | "discovery-set"
+  | "seasonal"
+  | "gift"
+  | "bundle"
+  | "featured"
+  | "last-units"
+  | "perk";
+
+interface OfferCopy {
+  title: string;
+  summary: string;
+  body?: string;
+  priceNote?: string;
+  ctaLabel?: string;
+}
+
+interface SeedOffer {
+  slug: string;
+  kind: OfferKind;
+  image?: "hero" | "cover";
+  /** ISO 8601 with an offset; left out, there is no limit on that side. */
+  startsAt?: string;
+  endsAt?: string;
+  /** `public_id`s from the app's DB seed (`app/.server/db/seed-data.ts`). */
+  productIds: string[];
+  ctaUrl?: string;
+  sortOrder: number;
+  /** `uk` is required; an offer without `en` exercises the app's fallback to Ukrainian. */
+  copy: { uk: OfferCopy; en?: OfferCopy };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Midnight in Kyiv `days` from now, with Kyiv's offset on that day (UTC+2 in winter, UTC+3 in
+ * summer), so the seeded campaigns are current or expired whenever the seed runs.
+ */
+function kyivMidnight(days: number): string {
+  const target = new Date(Date.now() + days * DAY_MS);
+  const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv" }).format(target);
+  const zone = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Kyiv",
+    timeZoneName: "longOffset",
+  })
+    .formatToParts(target)
+    .find((part) => part.type === "timeZoneName")?.value;
+  const offset = zone?.replace("GMT", "") || "+00:00";
+  return `${date}T00:00:00${offset}`;
+}
+
+const COCO_MADEMOISELLE = "01a1652b-6e25-7c03-ae47-25b57131fb06";
+const LA_VIE_EST_BELLE = "01a1652b-6e25-7c39-a4ce-d1efe1e47081";
+const JADORE = "01a1652b-6e25-7c3f-9567-5f694e414a33";
+const SAUVAGE = "01a1652b-6e25-7c44-8d5b-bce46a20ad83";
+const BLEU_DE_CHANEL = "01a1652b-6e25-7c48-8efe-b797385135f1";
+const WOOD_SAGE = "01a1652b-6e25-7c51-bcf8-0d0dd7accc0a";
+const MOLECULE_01 = "01a1652b-6e25-7c55-8003-478f2d6abfb1";
+/** Not in the app's DB: shows that offers skip products that no longer exist. */
+const MISSING_PRODUCT = "01a1652b-6e25-7fff-8000-000000000000";
+
+// Offers are editorial: price notes describe what goes in the cart, and checkout applies no
+// discount (#55).
+const OFFERS: SeedOffer[] = [
+  {
+    slug: "winter-holidays",
+    kind: "seasonal",
+    image: "hero",
+    startsAt: kyivMidnight(-1),
+    endsAt: kyivMidnight(60),
+    productIds: [JADORE, BLEU_DE_CHANEL],
+    ctaUrl: "/catalog/women",
+    sortOrder: 0,
+    copy: {
+      uk: {
+        title: "Зимові свята з Jassmin",
+        summary: "Від Миколая до Різдва: аромати, які хочеться дарувати.",
+        body: "Оберіть подарунок заздалегідь: **маленькі об’єми** зручно покласти під подушку на День святого Миколая, а повний флакон — під ялинку.",
+        ctaLabel: "Обрати подарунок",
+      },
+      en: {
+        title: "Winter holidays with Jassmin",
+        summary: "From St Nicholas Day to Christmas: scents worth giving.",
+        body: "Choose a gift early: **small sizes** fit under the pillow on St Nicholas Day, and a full bottle goes under the tree.",
+        ctaLabel: "Find a gift",
+      },
+    },
+  },
+  {
+    slug: "tester-trio",
+    kind: "discovery-set",
+    image: "hero",
+    productIds: [COCO_MADEMOISELLE, WOOD_SAGE, MOLECULE_01],
+    ctaUrl: "/catalog/women",
+    sortOrder: 10,
+    copy: {
+      uk: {
+        title: "Тестерне тріо",
+        summary: "Три аромати по 7 мл: найпростіший спосіб знайти свій.",
+        body: "Додайте до кошика три об’єми по 7 мл і носіть кожен кілька днів, перш ніж обрати повний флакон.",
+        priceNote: "3 × 7 мл — від 499 ₴",
+        ctaLabel: "Зібрати тріо",
+      },
+      en: {
+        title: "Tester trio",
+        summary: "Three 7 ml scents: the easiest way to find yours.",
+        body: "Add three 7 ml sizes to your cart and wear each for a few days before you choose a full bottle.",
+        priceNote: "3 × 7 ml — from 499 ₴",
+        ctaLabel: "Build my trio",
+      },
+    },
+  },
+  {
+    slug: "gifts-by-budget",
+    kind: "gift",
+    image: "cover",
+    productIds: [SAUVAGE, LA_VIE_EST_BELLE, MISSING_PRODUCT],
+    ctaUrl: "/catalog/men",
+    sortOrder: 20,
+    copy: {
+      uk: {
+        title: "Подарунки за бюджетом",
+        summary: "Ідеї до 500, 1000 і 2000 ₴ — для неї та для нього.",
+        body: "- **До 500 ₴**: мініатюри 7 мл\n- **До 1000 ₴**: 10 мл улюбленого аромату\n- **До 2000 ₴**: 30 мл класики",
+        ctaLabel: "Подарунки для нього",
+      },
+      en: {
+        title: "Gifts by budget",
+        summary: "Ideas up to 500, 1000 and 2000 ₴, for her and for him.",
+        body: "- **Up to 500 ₴**: 7 ml minis\n- **Up to 1000 ₴**: 10 ml of a favourite scent\n- **Up to 2000 ₴**: 30 ml of a classic",
+        ctaLabel: "Gifts for him",
+      },
+    },
+  },
+  {
+    slug: "free-delivery",
+    kind: "perk",
+    productIds: [],
+    sortOrder: 0,
+    copy: {
+      uk: { title: "Безкоштовна доставка", summary: "Новою Поштою від 1000 ₴" },
+      en: { title: "Free delivery", summary: "With Nova Poshta from 1000 ₴" },
+    },
+  },
+  {
+    slug: "discovery-sizes",
+    kind: "perk",
+    productIds: [],
+    ctaUrl: "/catalog/women",
+    sortOrder: 10,
+    copy: {
+      uk: { title: "Спершу спробуйте", summary: "Кожен аромат є в об’ємах від 7 мл" },
+      en: { title: "Try it first", summary: "Every scent comes in sizes from 7 ml" },
+    },
+  },
+  {
+    slug: "welcome-offer",
+    kind: "perk",
+    productIds: [],
+    ctaUrl: "/register",
+    sortOrder: 20,
+    copy: {
+      uk: {
+        title: "Вітаємо в Jassmin",
+        summary: "Зареєструйтеся, щоб стежити за замовленнями",
+        ctaLabel: "Зареєструватися",
+      },
+      en: {
+        title: "Welcome to Jassmin",
+        summary: "Register to keep track of your orders",
+        ctaLabel: "Register",
+      },
+    },
+  },
+  {
+    // Ended before the seed ran: the app must never show it.
+    slug: "back-to-school-ended",
+    kind: "seasonal",
+    image: "cover",
+    startsAt: kyivMidnight(-90),
+    endsAt: kyivMidnight(-30),
+    productIds: [SAUVAGE],
+    ctaUrl: "/catalog/men",
+    sortOrder: 0,
+    copy: {
+      uk: {
+        title: "Осінь, школа, нові аромати (завершено)",
+        summary: "Ця кампанія вже закінчилася: застосунок ніколи не має її показувати.",
+      },
+    },
+  },
+];
+
+async function seedOffers(
+  strapi: Core.Strapi,
+  images: { hero: number; cover: number },
+): Promise<void> {
+  const offers = strapi.documents("api::offer.offer");
+
+  for (const offer of OFFERS) {
+    for (const locale of SEED_LOCALES) {
+      const copy = offer.copy[locale];
+      if (!copy) {
+        continue;
+      }
+
+      if (await offers.findFirst({ filters: { slug: offer.slug }, locale, status: "draft" })) {
+        strapi.log.info(`Offer "${offer.slug}" (${locale}) already exists, skipping`);
+        continue;
+      }
+
+      // Kind, dates, image, products, link and order aren't localized: Strapi keeps them the same
+      // in every locale, but a new localization still has to be given them.
+      const data = {
+        ...copy,
+        slug: offer.slug,
+        kind: offer.kind,
+        image: offer.image ? images[offer.image] : null,
+        startsAt: offer.startsAt,
+        endsAt: offer.endsAt,
+        products: offer.productIds.map((publicId) => ({ publicId })),
+        ctaUrl: offer.ctaUrl,
+        sortOrder: offer.sortOrder,
+      };
+      const ukVersion =
+        locale === "uk"
+          ? null
+          : await offers.findFirst({
+              filters: { slug: offer.slug },
+              locale: "uk",
+              status: "draft",
+            });
+      if (ukVersion) {
+        await offers.update({
+          documentId: ukVersion.documentId,
+          locale,
+          data,
+          status: "published",
+        });
+      } else {
+        await offers.create({ locale, data, status: "published" });
+      }
+      strapi.log.info(`Created offer "${offer.slug}" (${locale})`);
+    }
+  }
+}
+
 async function seedApiToken(strapi: Core.Strapi): Promise<void> {
   const tokens = strapi.service("admin::api-token-content-api");
-  if (await tokens.exists({ name: TOKEN_NAME })) {
+  const existing: { id: number; permissions?: string[] } | null = await tokens.getBy({
+    name: TOKEN_NAME,
+  });
+  if (existing) {
+    // Content types added after the token was created (offers, #55) need their permissions too.
+    // The key itself stays the same.
+    const granted = existing.permissions ?? [];
+    const missing = TOKEN_PERMISSIONS.filter((action) => !granted.includes(action));
+    if (missing.length > 0) {
+      await tokens.update(existing.id, { permissions: [...granted, ...missing] });
+      strapi.log.info(`Granted API token "${TOKEN_NAME}": ${missing.join(", ")}`);
+    }
     strapi.log.info(
-      `API token "${TOKEN_NAME}" already exists, skipping. To get a new key, regenerate it in Settings → API Tokens.`,
+      `API token "${TOKEN_NAME}" already exists. To get a new key, regenerate it in Settings → API Tokens.`,
     );
     return;
   }
@@ -296,6 +557,7 @@ async function main(): Promise<void> {
     await seedHomePage(strapi, heroImageId);
     await seedSiteSettings(strapi);
     await seedBlogPosts(strapi, coverImageId);
+    await seedOffers(strapi, { hero: heroImageId, cover: coverImageId });
     if (withToken) {
       await seedApiToken(strapi);
     }

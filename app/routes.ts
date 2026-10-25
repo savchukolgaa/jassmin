@@ -7,6 +7,7 @@ export default [
     route("products/:id", "routes/product.tsx"),
     route("blog", "routes/blog.tsx"),
     route("blog/:slug", "routes/blog-post.tsx"),
+    route("offers", "routes/offers.tsx"),
     route("login", "routes/login.tsx"),
     route("register", "routes/register.tsx"),
     route("cart", "routes/cart.tsx"),
@@ -19,6 +20,7 @@ export default [
     route("account", "routes/account.tsx", [
       index("routes/account._index.tsx"),
       route("orders/:id", "routes/account.orders.$id.tsx"),
+      route("profile", "routes/account.profile.tsx"),
     ]),
     route("privacy", "routes/privacy.tsx"),
   ]),

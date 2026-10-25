@@ -242,4 +242,40 @@ describe.skipIf(!hasDatabase)("products service", () => {
       product: await getProduct(sauvage.publicId, testDb.db),
     });
   });
+
+  it("looks up product cards by public id, skipping unknown and unsold products", async () => {
+    const { getProductSummaries } = await import("./products");
+    const { products } = await import("../db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [unsold] = await testDb.db
+      .select({ publicId: products.publicId })
+      .from(products)
+      .where(eq(products.brand, UNSOLD_BRAND));
+    const coco = sampleNamed("Coco");
+    const sauvage = sampleNamed("Sauvage");
+    const unknown = "01a1652b-6e25-7fff-8000-000000000000";
+
+    const found = await getProductSummaries(
+      [sauvage.publicId, unknown, coco.publicId, unsold?.publicId ?? unknown, coco.publicId],
+      testDb.db,
+    );
+
+    expect([...found.keys()].sort()).toEqual([coco.publicId, sauvage.publicId].sort());
+    expect(found.get(coco.publicId)).toMatchObject({
+      id: coco.publicId,
+      title: coco.title,
+      brand: coco.brand,
+      minPrice: "990.00",
+      hasPriceRange: true,
+      volumes: [7, 10, 30, 50, 100],
+      inStock: true,
+      defaultVariant: { volumeMl: 7 },
+    });
+  });
+
+  it("doesn't query for an empty list of ids", async () => {
+    const { getProductSummaries } = await import("./products");
+
+    expect((await getProductSummaries([], testDb.db)).size).toBe(0);
+  });
 });

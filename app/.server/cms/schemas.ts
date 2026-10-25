@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SOCIAL_PLATFORMS } from "~/lib/cms";
+import { OFFER_KINDS, SOCIAL_PLATFORMS } from "~/lib/cms";
 
 // zod schemas for Strapi v5 REST responses (flat entries with `documentId`, no `attributes`).
 // Unknown keys are stripped, so Strapi adding fields doesn't break the app; missing or
@@ -87,6 +87,30 @@ export const blogPostEntry = blogPostSummaryEntry.extend({
   seo: seoComponent.nullish(),
 });
 
+export const offerProductRef = z.object({
+  publicId: z.string(),
+});
+
+export const offerEntry = z.object({
+  documentId: z.string(),
+  /** The locale Strapi served the entry in (`uk`, `en`). */
+  locale: z.string().nullish(),
+  title: z.string(),
+  slug: z.string(),
+  kind: z.enum(OFFER_KINDS),
+  summary: z.string().nullish(),
+  body: z.string().nullish(),
+  image: strapiMedia.nullish(),
+  // Strapi `datetime` fields; an offset is required so the instant is never ambiguous.
+  startsAt: z.iso.datetime({ offset: true }).nullish(),
+  endsAt: z.iso.datetime({ offset: true }).nullish(),
+  priceNote: z.string().nullish(),
+  products: z.array(offerProductRef).nullish(),
+  ctaLabel: z.string().nullish(),
+  ctaUrl: z.string().nullish(),
+  sortOrder: z.number().int().nullish(),
+});
+
 export const paginationMeta = z.object({
   page: z.number().int().positive(),
   pageSize: z.number().int().positive(),
@@ -110,4 +134,5 @@ export type HomePageEntry = z.infer<typeof homePageEntry>;
 export type SiteSettingEntry = z.infer<typeof siteSettingEntry>;
 export type BlogPostSummaryEntry = z.infer<typeof blogPostSummaryEntry>;
 export type BlogPostEntry = z.infer<typeof blogPostEntry>;
+export type OfferEntry = z.infer<typeof offerEntry>;
 export type PaginationMeta = z.infer<typeof paginationMeta>;

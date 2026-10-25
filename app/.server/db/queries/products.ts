@@ -71,23 +71,28 @@ export interface ListProductsOptions {
   offset: number;
 }
 
+/** The columns of a product card (`ProductSummary`), shared by every list of them. */
+function summaryColumns(stats: VariantStats) {
+  return {
+    publicId: products.publicId,
+    title: products.title,
+    brand: products.brand,
+    gender: products.gender,
+    packSize: products.packSize,
+    imageUrl: products.imageUrl,
+    minPrice: stats.minPrice,
+    maxPrice: stats.maxPrice,
+    inStock: stats.inStock,
+    volumes: stats.volumes,
+    defaultVariantId: stats.defaultVariantId,
+    defaultVolumeMl: stats.defaultVolumeMl,
+  };
+}
+
 export function listProducts(db: Db, filters: ProductFilters, options: ListProductsOptions) {
   const stats = variantStats(db);
   return db
-    .select({
-      publicId: products.publicId,
-      title: products.title,
-      brand: products.brand,
-      gender: products.gender,
-      packSize: products.packSize,
-      imageUrl: products.imageUrl,
-      minPrice: stats.minPrice,
-      maxPrice: stats.maxPrice,
-      inStock: stats.inStock,
-      volumes: stats.volumes,
-      defaultVariantId: stats.defaultVariantId,
-      defaultVolumeMl: stats.defaultVolumeMl,
-    })
+    .select(summaryColumns(stats))
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
     .where(whereFilters(filters))
@@ -97,6 +102,22 @@ export function listProducts(db: Db, filters: ProductFilters, options: ListProdu
 }
 
 export type ProductSummaryRow = Awaited<ReturnType<typeof listProducts>>[number];
+
+/**
+ * The listed products with these `public_id`s, in no particular order. Like the catalog, products
+ * without variants are left out. `publicIds` must be UUIDs: PostgreSQL rejects anything else.
+ */
+export function listProductSummariesByPublicIds(
+  db: Db,
+  publicIds: readonly string[],
+): Promise<ProductSummaryRow[]> {
+  const stats = variantStats(db);
+  return db
+    .select(summaryColumns(stats))
+    .from(products)
+    .innerJoin(stats, eq(stats.productId, products.id))
+    .where(inArray(products.publicId, [...publicIds]));
+}
 
 export async function countProducts(db: Db, filters: ProductFilters): Promise<number> {
   const stats = variantStats(db);

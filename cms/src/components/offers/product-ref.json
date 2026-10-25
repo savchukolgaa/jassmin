@@ -1,0 +1,16 @@
+{
+  "collectionName": "components_offers_product_refs",
+  "info": {
+    "displayName": "Product reference",
+    "icon": "shoppingCart",
+    "description": "A product from the Jassmin shop, by its public id (UUID)"
+  },
+  "options": {},
+  "attributes": {
+    "publicId": {
+      "type": "string",
+      "required": true,
+      "regex": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    }
+  }
+}

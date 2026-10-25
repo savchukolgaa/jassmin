@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { directionsUrl, resolveCtaHref, safeMapEmbedUrl, telHref } from "./links";
+import { directionsUrl, resolveCtaHref, safeMapEmbedUrl, telHref, toInternalPath } from "./links";
+
+describe("toInternalPath", () => {
+  it("keeps app paths, trimmed", () => {
+    expect(toInternalPath("/catalog/women")).toBe("/catalog/women");
+    expect(toInternalPath(" /products/abc?ref=offers ")).toBe("/products/abc?ref=offers");
+  });
+
+  it.each([
+    "https://jassmin.ua/offers",
+    "javascript:alert(1)",
+    "//evil.test/x",
+    "/\\evil.test",
+    "catalog/women",
+    "",
+    null,
+    undefined,
+  ])("rejects %j", (href) => {
+    expect(toInternalPath(href)).toBeNull();
+  });
+});
 
 describe("resolveCtaHref", () => {
   it("keeps app paths as router links", () => {

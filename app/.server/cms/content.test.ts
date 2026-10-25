@@ -6,16 +6,23 @@ import blogPosts from "./__fixtures__/blog-posts.json";
 import blogPostsEmpty from "./__fixtures__/blog-posts-empty.json";
 import homePageEn from "./__fixtures__/home-page.en.json";
 import homePage from "./__fixtures__/home-page.json";
+import offersEn from "./__fixtures__/offers.en.json";
+import offers from "./__fixtures__/offers.json";
+import offersEmpty from "./__fixtures__/offers-empty.json";
 import siteSettingEn from "./__fixtures__/site-setting.en.json";
 import siteSetting from "./__fixtures__/site-setting.json";
 import {
+  compareOffers,
   getBlogPostBySlug,
   getHomePage,
   getSiteSettings,
+  isOfferActive,
+  listActiveOffers,
   listBlogPosts,
   toBlogPost,
   toHomePage,
   toImage,
+  toOffer,
   toSiteSettings,
 } from "./content";
 import { CmsError } from "./errors";
@@ -23,6 +30,7 @@ import {
   blogPostEntry,
   collectionResponse,
   homePageEntry,
+  offerEntry,
   singleResponse,
   siteSettingEntry,
 } from "./schemas";
@@ -440,5 +448,245 @@ describe("toHomePage", () => {
     const { data } = singleResponse(homePageEntry).parse(homePageEn);
 
     expect(toHomePage(data, BASE_URL).locale).toBe("en");
+  });
+});
+
+const NOW = new Date("2026-12-01T10:00:00.000Z");
+
+function offerEntryFrom(index: number) {
+  const entry = collectionResponse(offerEntry).parse(offers).data[index];
+  if (!entry) {
+    throw new Error(`offers.json has no entry ${index}`);
+  }
+  return entry;
+}
+
+describe("toOffer", () => {
+  it("maps an offer with absolute image URLs and its products", () => {
+    const offer = toOffer(offerEntryFrom(2), BASE_URL);
+
+    expect(offer).toMatchObject({
+      locale: "uk",
+      slug: "tester-trio",
+      kind: "discovery-set",
+      title: "Тестерне тріо",
+      priceNote: "3 × 7 мл — від 499 ₴",
+      ctaLabel: "Зібрати тріо",
+      ctaUrl: "/catalog/women",
+      sortOrder: 10,
+      startsAt: null,
+      endsAt: null,
+    });
+    expect(offer.image?.url).toMatch(/^http:\/\/cms\.test\/uploads\//);
+    expect(offer.image?.srcSet).toContain("http://cms.test/uploads/small_");
+    expect(offer.productIds).toEqual([
+      "01a1652b-6e25-7c03-ae47-25b57131fb06",
+      "01a1652b-6e25-7c51-bcf8-0d0dd7accc0a",
+      "01a1652b-6e25-7c55-8003-478f2d6abfb1",
+    ]);
+  });
+
+  it("normalises offset date-times to UTC", () => {
+    const offer = toOffer(
+      {
+        ...offerEntryFrom(1),
+        startsAt: "2026-12-06T00:00:00+02:00",
+        endsAt: "2027-06-01T09:30:00+03:00",
+      },
+      BASE_URL,
+    );
+
+    expect(offer.startsAt).toBe("2026-12-05T22:00:00.000Z");
+    expect(offer.endsAt).toBe("2027-06-01T06:30:00.000Z");
+  });
+
+  it("drops product ids that aren't UUIDs and repeats", () => {
+    const offer = toOffer(
+      {
+        ...offerEntryFrom(1),
+        products: [
+          { publicId: "01A1652B-6E25-7C3F-9567-5F694E414A33" },
+          { publicId: "not-a-uuid" },
+          { publicId: "01a1652b-6e25-7c3f-9567-5f694e414a33" },
+          { publicId: "' or 1=1 --" },
+        ],
+      },
+      BASE_URL,
+    );
+
+    expect(offer.productIds).toEqual(["01a1652b-6e25-7c3f-9567-5f694e414a33"]);
+  });
+
+  it("turns blank and missing optional fields into null and a missing sortOrder into 0", () => {
+    const offer = toOffer(
+      {
+        ...offerEntryFrom(0),
+        summary: "  ",
+        body: undefined,
+        ctaLabel: "",
+        sortOrder: null,
+        products: null,
+      },
+      BASE_URL,
+    );
+
+    expect(offer).toMatchObject({
+      summary: null,
+      body: null,
+      ctaLabel: null,
+      sortOrder: 0,
+      productIds: [],
+      image: null,
+    });
+  });
+});
+
+describe("isOfferActive", () => {
+  const window = (startsAt: string | null, endsAt: string | null) => ({ startsAt, endsAt });
+
+  it("treats a missing start as started and a missing end as never ending", () => {
+    expect(isOfferActive(window(null, null), NOW)).toBe(true);
+    expect(isOfferActive(window("2026-11-01T00:00:00.000Z", null), NOW)).toBe(true);
+    expect(isOfferActive(window(null, "2027-01-01T00:00:00.000Z"), NOW)).toBe(true);
+  });
+
+  it("is active from startsAt (inclusive) until endsAt (exclusive)", () => {
+    const start = "2026-12-01T10:00:00.000Z";
+    const end = "2026-12-02T10:00:00.000Z";
+
+    expect(isOfferActive(window(start, end), new Date(start))).toBe(true);
+    expect(isOfferActive(window(start, end), new Date("2026-12-01T09:59:59.999Z"))).toBe(false);
+    expect(isOfferActive(window(start, end), new Date("2026-12-02T09:59:59.999Z"))).toBe(true);
+    expect(isOfferActive(window(start, end), new Date(end))).toBe(false);
+  });
+
+  it("is inactive before the start and after the end", () => {
+    expect(isOfferActive(window("2026-12-24T00:00:00.000Z", null), NOW)).toBe(false);
+    expect(isOfferActive(window(null, "2026-11-30T00:00:00.000Z"), NOW)).toBe(false);
+  });
+
+  it("compares instants, whatever offset they were written with", () => {
+    // Midnight on 6 December in Kyiv (UTC+2) is 22:00 UTC on 5 December.
+    const kyivMidnight = "2026-12-06T00:00:00+02:00";
+
+    expect(isOfferActive(window(kyivMidnight, null), new Date("2026-12-05T21:59:59Z"))).toBe(false);
+    expect(isOfferActive(window(kyivMidnight, null), new Date("2026-12-05T22:00:00Z"))).toBe(true);
+    expect(isOfferActive(window(null, kyivMidnight), new Date("2026-12-05T22:00:00Z"))).toBe(false);
+  });
+});
+
+describe("compareOffers", () => {
+  const offer = (documentId: string, sortOrder: number, startsAt: string | null = null) => ({
+    documentId,
+    sortOrder,
+    startsAt,
+  });
+
+  it("orders by sortOrder, then the latest start, then documentId", () => {
+    const sorted = [
+      offer("e", 5),
+      offer("d", 0, null),
+      offer("c", 0, "2026-11-01T00:00:00.000Z"),
+      offer("b", 0, "2026-12-01T00:00:00.000Z"),
+      offer("a", 5),
+      offer("z", -1),
+    ].sort(compareOffers);
+
+    expect(sorted.map((o) => o.documentId)).toEqual(["z", "b", "c", "d", "a", "e"]);
+  });
+});
+
+describe("listActiveOffers", () => {
+  it("returns the active offers in editor order", async () => {
+    respondWith(offers);
+
+    const result = await listActiveOffers("uk", NOW);
+
+    // PostgreSQL sorts NULL starts first in `startsAt:desc`; the app puts started offers first.
+    expect(result.map((o) => o.slug)).toEqual([
+      "winter-holidays",
+      "free-delivery",
+      "tester-trio",
+      "gifts-by-budget",
+      "welcome-offer",
+    ]);
+    expect(result.every((o) => o.locale === "uk")).toBe(true);
+  });
+
+  it("asks Strapi for published Ukrainian offers in the window around now", async () => {
+    const fetchMock = respondWith(offersEmpty);
+
+    await listActiveOffers("uk", NOW);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    const params = url.searchParams;
+    expect(url.pathname).toBe("/api/offers");
+    expect(params.get("status")).toBe("published");
+    expect(params.get("locale")).toBe("uk");
+    expect(params.get("filters[$and][0][$or][0][startsAt][$null]")).toBe("true");
+    expect(params.get("filters[$and][0][$or][1][startsAt][$lte]")).toBe(NOW.toISOString());
+    expect(params.get("filters[$and][1][$or][0][endsAt][$null]")).toBe("true");
+    expect(params.get("filters[$and][1][$or][1][endsAt][$gt]")).toBe(NOW.toISOString());
+    expect(params.get("sort[0]")).toBe("sortOrder:asc");
+    expect(params.get("sort[1]")).toBe("startsAt:desc");
+    expect(params.get("pagination[pageSize]")).toBe("50");
+    expect(params.get("populate[image]")).toBe("true");
+    expect(params.get("populate[products]")).toBe("true");
+  });
+
+  it("drops offers Strapi returns outside the window, e.g. when clocks differ", async () => {
+    respondWith(offers);
+
+    // Winter holidays end on 8 January (22:00 UTC): a minute later only the rest remain.
+    const result = await listActiveOffers("uk", new Date("2027-01-08T22:01:00.000Z"));
+
+    expect(result.map((o) => o.slug)).not.toContain("winter-holidays");
+    expect(result).toHaveLength(4);
+  });
+
+  it("re-sorts so the order doesn't depend on Strapi", async () => {
+    respondWith({ ...offers, data: [...offers.data].reverse() });
+
+    const result = await listActiveOffers("uk", NOW);
+
+    expect(result[0]?.slug).toBe("winter-holidays");
+    expect(result[1]?.slug).toBe("free-delivery");
+  });
+
+  it("swaps in English translations and keeps Ukrainian where one is missing", async () => {
+    const fetchMock = respondByLocale({ uk: offers, en: offersEn });
+
+    const result = await listActiveOffers("en", NOW);
+
+    expect(localesRequested(fetchMock)).toEqual(["uk", "en"]);
+    const translationQuery = new URL(String(fetchMock.mock.calls[1]?.[0])).searchParams;
+    expect(translationQuery.get("filters[documentId][$in][0]")).toBe(offers.data[0]?.documentId);
+    expect(result.map((o) => [o.slug, o.locale])).toEqual([
+      ["winter-holidays", "en"],
+      ["free-delivery", "en"],
+      ["tester-trio", "en"],
+      ["gifts-by-budget", "uk"],
+      ["welcome-offer", "en"],
+    ]);
+    expect(result[2]?.ctaLabel).toBe("Build my trio");
+  });
+
+  it("doesn't ask for translations when no offer is active", async () => {
+    const fetchMock = respondWith(offersEmpty);
+
+    await expect(listActiveOffers("en", NOW)).resolves.toEqual([]);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("throws a CmsError when Strapi is down", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      }),
+    );
+
+    await expect(listActiveOffers("uk", NOW)).rejects.toBeInstanceOf(CmsError);
   });
 });

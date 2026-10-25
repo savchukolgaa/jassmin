@@ -4,6 +4,7 @@ import type { Core } from "@strapi/strapi";
 const PROTECTED_UIDS = [
   "api::blog-post.blog-post",
   "api::home-page.home-page",
+  "api::offer.offer",
   "api::site-setting.site-setting",
 ];
 

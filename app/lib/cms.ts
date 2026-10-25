@@ -103,3 +103,42 @@ export interface Paginated<T> {
   pageCount: number;
   total: number;
 }
+
+/** Kinds of special offer on /offers (#55); `perk` offers form the perks strip, not cards. */
+export const OFFER_KINDS = [
+  "discovery-set",
+  "seasonal",
+  "gift",
+  "bundle",
+  "featured",
+  "last-units",
+  "perk",
+] as const;
+
+export type OfferKind = (typeof OFFER_KINDS)[number];
+
+export interface Offer {
+  /** The locale the content was served in: `uk` when an English translation was missing. */
+  locale: Locale;
+  documentId: string;
+  slug: string;
+  kind: OfferKind;
+  title: string;
+  summary: string | null;
+  /** Markdown; render and sanitize it before showing it. */
+  body: string | null;
+  image: CmsImage | null;
+  /** UTC ISO 8601 timestamp; `null` when the offer has no start (it's already running). */
+  startsAt: string | null;
+  /** UTC ISO 8601 timestamp, exclusive; `null` when the offer doesn't end. */
+  endsAt: string | null;
+  /** Editorial price text such as "3 × 7 мл — 499 ₴"; checkout doesn't apply it. */
+  priceNote: string | null;
+  /** `public_id`s of shop products (UUIDs), in the editor's order, without duplicates. */
+  productIds: string[];
+  ctaLabel: string | null;
+  /** As entered in Strapi; make it safe with `toInternalPath` before linking. */
+  ctaUrl: string | null;
+  /** Lowest first; the lowest active non-perk offer is the page's hero. */
+  sortOrder: number;
+}

@@ -12,12 +12,13 @@ Server-only code. Nothing in this folder may be imported by code that ends up in
 
 ## CMS: `cms/`
 
-Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/` at the repo root). Products, orders and users stay in PostgreSQL.
+Editorial content (blog, home page copy, contact details, special offers) lives in Strapi (`cms/` at the repo root). Products, orders and users stay in PostgreSQL.
 
-- Loaders read CMS content only through `cms/content.ts` (`getHomePage`, `getSiteSettings`, `listBlogPosts`, `getBlogPostBySlug`). These return the DTOs from `~/lib/cms`, never raw Strapi shapes, with media URLs already absolute.
-- CMS content is localized (`uk` default, `en`; #43). Every content query takes a `Locale`: pass `await getLocale(request)` from the loader. When the requested locale has no entry, it falls back to Ukrainian through `withLocaleFallback` (a single type's 404 counts as missing; other errors never fall back), and each DTO's `locale` says which language was served. Components mark fallback text with `lang={useContentLang(dto.locale)}`. The blog list paginates over the Ukrainian posts and swaps in their translations by `documentId`.
+- Loaders read CMS content only through `cms/content.ts` (`getHomePage`, `getSiteSettings`, `listBlogPosts`, `getBlogPostBySlug`, `listActiveOffers`). These return the DTOs from `~/lib/cms`, never raw Strapi shapes, with media URLs already absolute.
+- CMS content is localized (`uk` default, `en`; #43). Every content query takes a `Locale`: pass `await getLocale(request)` from the loader. When the requested locale has no entry, it falls back to Ukrainian through `withLocaleFallback` (a single type's 404 counts as missing; other errors never fall back), and each DTO's `locale` says which language was served. Components mark fallback text with `lang={useContentLang(dto.locale)}`. The blog list paginates over the Ukrainian posts and swaps in their translations by `documentId`; `listActiveOffers` does the same for the offers whose window includes `now`.
 - `cms/client.ts` (`cmsFetch`) always adds `status=published` (plus `locale` when given), sends the read-only token and times out after `CMS_TIMEOUT_MS`. Every response is validated with a schema from `cms/schemas.ts`. When you add a field in Strapi, add it to the schema, the DTO, the mapper and the fixtures. `site-setting.legalName` (optional, not localized) names the ФОП who controls personal data on `/privacy`, which renders without the CMS block instead of failing when Strapi is down.
 - Failures throw `CmsError` (`cms/errors.ts`). In loaders, wrap CMS calls with `.catch(cmsUnavailable)`, which turns them into a 503 for the `ErrorBoundary`. A missing blog post is `null`, so throw a 404 for it in the route.
+- Offers (#55) are editorial and never change prices: `priceNote` is text, and checkout discounts are #59. `startsAt`/`endsAt` are offset date-times compared as instants (`isOfferActive`: start inclusive, end exclusive), and `compareOffers` (`sortOrder`, then latest start) decides the order and the hero. Offers reference shop products by `public_id`; `getProductSummaries` resolves them in one query and drops unknown or unsold ones.
 - Tests use the recorded Strapi responses in `cms/__fixtures__/`: `<name>.json` is the `uk` response and `<name>.en.json` the `en` one. Re-record both from a seeded Strapi (`pnpm cms:seed`) when the content model changes.
 
 ## Markdown, mail and rate limiting
@@ -102,12 +103,18 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 
 - Protected loaders and actions call `requireUser(request)`, which throws a redirect to `/login?redirectTo=<current path>` when logged out. Use `getUser(request)` (`null` when logged out) when the page works for both.
 - **Every `/admin` loader and action calls `requireAdmin(request)`** (logged out → login redirect, not an admin → 403). The `routes/admin.tsx` layout loader doesn't protect child actions, and child loaders run in parallel with it, so don't rely on it. The role comes from the database on every call (`PublicUser.role`), never from the session cookie, so `pnpm db:make-admin <email> [--revoke]` takes effect on the next request.
-- Never select or return `users.password_hash` outside `findUserByEmail` / `verifyLogin`. `PublicUser` is the shape the app gets.
+- Never select or return `users.password_hash` outside `findUserByEmail` / `verifyLogin` and `findUserCredentialsById` (used only by `services/profile.ts` to check the current password). `PublicUser` is the shape the app gets.
 - Passwords are hashed with argon2id in `password.ts` (`hashPassword`, `verifyPassword`). Emails are trimmed and lowercased by the zod schemas in `~/lib/auth` before every lookup or insert.
 - Pass every redirect target that comes from the request (e.g. `redirectTo`) through `safeRedirect` from `~/lib/auth`.
 - `verifyLogin` updates `last_login_at` (a churn-model feature) on every successful login; `registerUser` sets it too.
 - Side effects after a login or registration go in `onUserAuthenticated({ request, context }, userId, kind)`: it merges the guest cart (#10), links the visitor's anonymous sessions and events to the user with `linkVisitorToUser` and records the `login` event (`method: "login" | "register"`, #18). It must never make logging in fail, so each part catches and logs its own errors.
 - Failed logins are rate-limited in memory (`loginLimiters`: 5 per email, 20 per IP per 15 minutes). The counters are per process and reset on restart.
+
+## Profile: `services/profile.ts`
+
+- `/account/profile` (#54) has three forms told apart by a hidden `intent` (`contact` | `email` | `password`), validated with the schemas in `~/lib/auth` (built from the register rules). A blank phone clears `users.phone`.
+- `changeEmail` and `changePassword` check the current password first. Wrong ones are counted by `profilePasswordLimiter` (5 per user id per 15 minutes, shared by both forms); the route checks it before verifying anything. A taken email is detected by the unique index (`23505` → `email-taken`), not a pre-check. New passwords are stored only as `hashPassword` output. Other sessions aren't revoked: the cookie session has no server-side store.
+- After a real email change the route calls `void notifyEmailChanged(…)`, a plain-text notice to the **old** address in the request's locale, from `CONTACT_FROM`. It's best effort: no outbox or retry, skipped without `SMTP_URL`, and it never rejects.
 
 ## Tests
 

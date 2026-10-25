@@ -10,7 +10,14 @@ export function productHref(id: string): string {
   return `/products/${id}`;
 }
 
-export function ProductCard({ product }: { product: ProductSummary }) {
+type ProductCardProps = {
+  product: ProductSummary;
+  /** The title's heading level: `h2` in the catalog, deeper where the card sits under others. */
+  headingLevel?: 2 | 3 | 4;
+};
+
+export function ProductCard({ product, headingLevel = 2 }: ProductCardProps) {
+  const Heading = `h${headingLevel}` as const;
   const translator = useT();
   const { t } = translator;
   const href = productHref(product.id);
@@ -30,11 +37,11 @@ export function ProductCard({ product }: { product: ProductSummary }) {
         <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">
           {product.brand}
         </p>
-        <h2 className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink">
+        <Heading className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink">
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
             {product.title}
           </Link>
-        </h2>
+        </Heading>
         <p className="text-sm text-muted">{formatVolumes(product, translator)}</p>
         <p className="mt-auto pt-3 text-xl font-extrabold text-ink">
           {product.hasPriceRange ? t("product.fromPrice", { price }) : price}

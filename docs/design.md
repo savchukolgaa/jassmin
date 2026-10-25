@@ -20,11 +20,21 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 | `C+ Product` | `/products/:id` | #8, #26 |
 | `C+ Sign in / Sign up` | `/login`, `/register` | #9 |
 | `C+ Account` | `/account` | #12 |
+| `C+ Account profile`, `C+ Account profile, phone width (errors)` | `/account/profile` | #54 |
+| `C+ Offers`, `C+ Offers, phone width` | `/offers` | #55 |
 
 Cart and checkout aren't designed yet. Build them from the tokens and components below. There is
 no Unisex catalog page: catalogs are `/catalog/women` and `/catalog/men` only.
 
-The cookie banner and the privacy policy page (#18) aren't on the canvas either. The banner
+`/offers` (#55) opens with a deep-pink hero: the page title as a small uppercase `h1`, the main
+campaign's title, text, a white price-note pill, "valid until" and a `dark` CTA, beside an arched
+image. Without a campaign the band holds only the title and intro. A blush strip of white perk cards
+follows, then one section per offer kind: white `rounded-card-lg` offer cards with a `line` border,
+a blush price-note pill, a `primary` `sm` CTA and the linked products as regular product cards. The
+empty state is the blush panel used by the account's "No orders yet". The `noCampaign` tweak on the
+artboard shows it.
+
+Like cart and checkout, the cookie banner and the privacy policy page (#18) aren't on the canvas. The banner
 (`features/consent/CookieBanner.tsx`) is a white `rounded-card` panel with a `line` border fixed to
 the bottom of every public page, with equally prominent `primary` "Accept" and `dark` "Decline"
 buttons (size `sm`): don't make declining harder to find than accepting. `/privacy` is a text page in

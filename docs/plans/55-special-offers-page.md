@@ -103,6 +103,11 @@ editorial only: they never change prices at checkout.
 - **Order of offers without a start**: PostgreSQL puts `NULL`s first for `startsAt:desc`, but
   `compareOffers` puts started offers before ones without a start (at equal `sortOrder`), so a
   running campaign beats an always-on offer for the hero. The app re-sorts every response.
+- **"Valid until" is data, not copy** (step 8): the view carries `validUntil: { date, time }`
+  (formatted in shop time) and the component composes `offers.validUntil` /
+  `offers.validUntilAt` with `t()`, so the server needs no new message keys. An offer that ends
+  at Kyiv midnight is shown as valid until the day before (it ends as that day ends). A CTA with a
+  safe path but no label keeps the link and the UI shows a default label.
 - **Follow-up issue** (Q4): `/implement` creates the "discounts and promo codes at checkout"
   issue with `/create-issue` and the PR links it.
 
@@ -230,7 +235,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `services/products.ts` (returns an empty map without querying when `ids` is empty). Test it in
   `products.test.ts` with the existing DB test utilities: unknown ids and products without
   variants are missing.
-- [ ] **8. View builder** — `app/lib/offers.ts`: `OFFER_GROUP_ORDER` (kinds minus `perk`) and
+- [x] **8. View builder** — `app/lib/offers.ts`: `OFFER_GROUP_ORDER` (kinds minus `perk`) and
   `OffersPageView { hero: OfferView | null, perks: OfferView[], groups: { kind, offers }[] }`,
   where `OfferView` adds `bodyHtml`, `validUntilLabel`, `cta: { label, to } | null` and
   `products: ProductSummary[]`. `app/lib/links.ts`: `toInternalPath(href)` (+ tests).

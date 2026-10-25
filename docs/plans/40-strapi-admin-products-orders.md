@@ -244,7 +244,7 @@ Each step leaves the app building and the tests green.
   "invalid-transition" | "invalid-payment-transition", from, to }`. `patch` holds the new
   statuses and the timestamps that are due (only the null ones). Unit-test every allowed and
   rejected pair, the timestamps and the restock flag.
-- [ ] **4. CMS outbox and writer.** `db/queries/cms-outbox.ts`: `enqueueCmsSync(tx, entity, ids)`
+- [x] **4. CMS outbox and writer.** `db/queries/cms-outbox.ts`: `enqueueCmsSync(tx, entity, ids)`
   upserts rows back to pending (`synced_at = null`, `next_attempt_at = now()`, attempts reset),
   and `claimCmsSync(db, { limit, entity?, ids? })` uses the same `FOR UPDATE SKIP LOCKED` lease
   as `claimOrderEmails`, plus `markCmsSynced` and `markCmsSyncFailed`. `cms/writer.ts`:

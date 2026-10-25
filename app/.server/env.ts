@@ -16,15 +16,27 @@ const mailEnvSchema = z.object({
   ORDER_FROM: z.string().min(1).optional(),
 });
 
+// Pushing orders and stock to Strapi (#40). Its own schema, so `pnpm db:sync-cms` can read it
+// without the web app's variables.
+const cmsSyncEnvSchema = z.object({
+  STRAPI_URL: z.url().default("http://localhost:1337"),
+  // Strapi API token that may create and update products and orders. Optional: without it,
+  // changes stay queued in `cms_outbox` until it is set.
+  STRAPI_SYNC_TOKEN: z.string().min(1).optional(),
+});
+
 const envSchema = z
   .object({
     DATABASE_URL: z.url(),
     SESSION_SECRET: z.string().min(32),
     PORT: z.coerce.number().int().positive().default(3000),
-    STRAPI_URL: z.url().default("http://localhost:1337"),
     // Optional so the app boots before the first Strapi admin has created the token;
     // CMS-backed pages answer with a 503 until it is set.
     STRAPI_API_TOKEN: z.string().min(1).optional(),
+    // Shared secret Strapi sends to the app's `/cms/*` sync routes (#40). Optional: without it
+    // those routes answer 503 and product and order edits in Strapi fail with a clear error.
+    CMS_SYNC_SECRET: z.string().min(32).optional(),
+    ...cmsSyncEnvSchema.shape,
     // Where card payments go (#44). Optional: without it the app still starts and card payment is
     // unavailable at checkout. `simulator` is the local fake payment page, never for production.
     PAYMENT_PROVIDER: z.enum(PAYMENT_PROVIDERS).optional(),
@@ -39,6 +51,8 @@ export type Env = z.infer<typeof envSchema>;
 
 export type MailEnv = z.infer<typeof mailEnvSchema>;
 
+export type CmsSyncEnv = z.infer<typeof cmsSyncEnvSchema>;
+
 /** The mail variables, with empty values counting as unset. */
 function mailSource(source: NodeJS.ProcessEnv) {
   return {
@@ -46,6 +60,14 @@ function mailSource(source: NodeJS.ProcessEnv) {
     CONTACT_INBOX: source.CONTACT_INBOX || undefined,
     CONTACT_FROM: source.CONTACT_FROM || undefined,
     ORDER_FROM: source.ORDER_FROM || undefined,
+  };
+}
+
+/** The Strapi URL (falling back to Aspire's `CMS_HTTP`) and sync token, empty values unset. */
+function cmsSyncSource(source: NodeJS.ProcessEnv) {
+  return {
+    STRAPI_URL: source.STRAPI_URL || source.CMS_HTTP || undefined,
+    STRAPI_SYNC_TOKEN: source.STRAPI_SYNC_TOKEN || undefined,
   };
 }
 
@@ -71,8 +93,9 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
   const result = envSchema.safeParse({
     ...source,
     DATABASE_URL: getDatabaseUrl(source),
-    STRAPI_URL: source.STRAPI_URL || source.CMS_HTTP || undefined,
     STRAPI_API_TOKEN: source.STRAPI_API_TOKEN || undefined,
+    CMS_SYNC_SECRET: source.CMS_SYNC_SECRET || undefined,
+    ...cmsSyncSource(source),
     PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
     ...mailSource(source),
   });
@@ -87,6 +110,15 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
 /** Validates only the mail variables, for scripts that send email without the web app's env. */
 export function parseMailEnv(source: NodeJS.ProcessEnv): MailEnv {
   const result = mailEnvSchema.safeParse({ ...source, ...mailSource(source) });
+  if (!result.success) {
+    throw invalid(result.error);
+  }
+  return result.data;
+}
+
+/** Validates only the Strapi sync variables, for `pnpm db:sync-cms` (#40). */
+export function parseCmsSyncEnv(source: NodeJS.ProcessEnv): CmsSyncEnv {
+  const result = cmsSyncEnvSchema.safeParse(cmsSyncSource(source));
   if (!result.success) {
     throw invalid(result.error);
   }

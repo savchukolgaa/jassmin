@@ -93,7 +93,8 @@ export async function cmsFetch<T>(
   return result.data;
 }
 
-function toCmsError(error: unknown, url: URL): CmsError {
+/** Turns a fetch, timeout or JSON failure into a `CmsError` (an existing one passes through). */
+export function toCmsError(error: unknown, url: URL): CmsError {
   if (error instanceof CmsError) {
     return error;
   }

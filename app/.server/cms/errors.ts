@@ -1,7 +1,7 @@
 import { data } from "react-router";
 
 export type CmsErrorKind =
-  /** `STRAPI_API_TOKEN` is not set. */
+  /** `STRAPI_API_TOKEN` (or, for writes, `STRAPI_SYNC_TOKEN`) is not set. */
   | "not_configured"
   /** Network failure: Strapi is down or the URL is wrong. */
   | "unreachable"

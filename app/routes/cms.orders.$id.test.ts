@@ -15,7 +15,9 @@ const applyCmsOrderChange = vi.hoisted(() =>
   ),
 );
 
-vi.mock("~/.server/services/cms-sync", () => ({ applyCmsOrderChange }));
+const pushToCms = vi.hoisted(() => vi.fn());
+
+vi.mock("~/.server/services/cms-sync", () => ({ applyCmsOrderChange, pushToCms }));
 vi.mock("~/.server/env", () => ({ getEnv: () => ({ CMS_SYNC_SECRET: SECRET }) }));
 
 type ActionArgs = Parameters<typeof import("./cms.orders.$id").action>[0];
@@ -32,6 +34,7 @@ function post(id: string, body: string, secret = SECRET): ActionArgs {
 describe("cms orders sync route", () => {
   beforeEach(() => {
     applyCmsOrderChange.mockClear();
+    pushToCms.mockClear();
   });
 
   it("applies a status change and answers with the stored order", async () => {
@@ -42,6 +45,7 @@ describe("cms orders sync route", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(order);
     expect(applyCmsOrderChange).toHaveBeenCalledWith(7, { status: "shipped" });
+    expect(pushToCms).toHaveBeenCalledOnce();
   });
 
   it("rejects a wrong secret", async () => {

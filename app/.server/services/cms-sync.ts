@@ -19,7 +19,6 @@ import { enqueueCmsSync } from "../db/queries/cms-outbox";
 import {
   findOrderSyncState,
   lockOrderLifecycle,
-  type OrderSyncRow,
   restockOrder,
   updateOrderLifecycle,
 } from "../db/queries/orders";
@@ -30,32 +29,24 @@ import {
   insertVariants,
   lockProductByPublicId,
   lockVariantsByProductId,
-  type ProductSyncRow,
   type ProductWrite,
   updateProduct,
   updateVariant,
 } from "../db/queries/products";
+import { getEnv } from "../env";
+import {
+  type CmsSyncReport,
+  cmsSyncDeps,
+  deliverCmsSync,
+  toCmsOrderState,
+  toCmsProductState,
+} from "./cms-push";
 
 type Failure<E extends CmsSyncError["error"]> = { ok: false } & Extract<CmsSyncError, { error: E }>;
 
 export type CmsProductResult =
   | { ok: true; product: CmsProductState }
   | Failure<"unknown-product" | "slug-taken">;
-
-export function toCmsProductState(row: ProductSyncRow): CmsProductState {
-  return {
-    publicId: row.publicId,
-    name: row.title,
-    slug: row.slug,
-    brand: row.brand,
-    description: row.description,
-    gender: row.gender,
-    fragranceFamily: row.fragranceFamily,
-    packSize: row.packSize,
-    active: row.active,
-    variants: row.variants,
-  };
-}
 
 /** The product columns for Strapi's fields; the deprecated ones come from the smallest size. */
 function productWrite(
@@ -167,35 +158,6 @@ export type CmsOrderResult =
       "unknown-order" | "invalid-transition" | "card-not-paid" | "invalid-payment-transition"
     >;
 
-const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
-
-export function toCmsOrderState({ order, items }: OrderSyncRow): CmsOrderState {
-  return {
-    orderId: order.id,
-    status: order.status,
-    paymentStatus: order.paymentStatus,
-    paymentMethod: order.paymentMethod,
-    customerName: order.guestFullName,
-    customerEmail: order.guestEmail,
-    customerPhone: order.guestPhone,
-    userId: order.userId,
-    shippingAddress: order.shippingAddress,
-    freeShipping: order.freeShipping,
-    subtotal: order.subtotal,
-    discountAmount: order.discountAmount,
-    shippingAmount: order.shippingAmount,
-    totalAmount: order.totalAmount,
-    currency: order.currency,
-    placedAt: order.createdAt.toISOString(),
-    paidAt: iso(order.paidAt),
-    cancelledAt: iso(order.cancelledAt),
-    refundedAt: iso(order.refundedAt),
-    shippedAt: iso(order.shippedAt),
-    completedAt: iso(order.completedAt),
-    items,
-  };
-}
-
 /**
  * Applies a status or payment change made in the Strapi admin, under the order's row lock:
  * checks it against the lifecycle rules (`nextOrderState`), sets the due timestamps and, when
@@ -229,4 +191,12 @@ export async function applyCmsOrderChange(
     }
     return { ok: true, order: toCmsOrderState(state) };
   });
+}
+
+/**
+ * Pushes the due `cms_outbox` rows to Strapi right after a commit (checkout, a card payment, a
+ * restock). Never rejects; `pnpm db:sync-cms` retries what fails.
+ */
+export function pushToCms(db: Db = defaultDb): Promise<CmsSyncReport> {
+  return deliverCmsSync({}, () => cmsSyncDeps(db, getEnv()));
 }

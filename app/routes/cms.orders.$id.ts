@@ -1,5 +1,5 @@
 import { checkCmsSyncAuth, readJsonBody } from "~/.server/cms/sync-auth";
-import { applyCmsOrderChange } from "~/.server/services/cms-sync";
+import { applyCmsOrderChange, pushToCms } from "~/.server/services/cms-sync";
 import { parseOrderId } from "~/lib/checkout";
 import { cmsOrderChangeSchema, toSyncIssues } from "~/lib/cms-sync";
 import type { Route } from "./+types/cms.orders.$id";
@@ -33,6 +33,8 @@ export async function action({ request, params }: Route.ActionArgs) {
     const { ok: _ok, ...error } = result;
     return Response.json(error, { status: error.error === "unknown-order" ? 404 : 422 });
   }
+  // A cancellation queued its products' restored stock for Strapi; never rejects.
+  void pushToCms();
   return Response.json(result.order);
 }
 

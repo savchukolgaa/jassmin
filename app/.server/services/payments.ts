@@ -14,6 +14,7 @@ import type { Locale } from "~/lib/i18n";
 import { createTranslator } from "~/lib/i18n";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
+import { enqueueCmsSync } from "../db/queries/cms-outbox";
 import {
   countPayments,
   findLatestPaymentStatus,
@@ -148,6 +149,8 @@ export async function handlePaymentCallback(
       case "success": {
         await markPayment(tx, payment.id, { status: "succeeded", ...update });
         if (await markOrderPaid(tx, payment.orderId)) {
+          // Strapi shows the order as paid (#40); the callback route pushes it after the commit.
+          await enqueueCmsSync(tx, "order", [payment.orderId]);
           return { ok: true, result: "paid" };
         }
         // Paid already by another attempt, or cancelled meanwhile: the money needs a manual refund.

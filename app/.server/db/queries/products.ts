@@ -336,3 +336,25 @@ export async function findProductSyncState(db: Executor, productId: number) {
 }
 
 export type ProductSyncRow = NonNullable<Awaited<ReturnType<typeof findProductSyncState>>>;
+
+/**
+ * Gives products without a slug (created before #40) one from their title and `public_id`,
+ * e.g. `sauvage-eau-de-toilette-31d4a20a`, so Strapi, which requires one, can store them. Only
+ * these products when `productIds` is given.
+ */
+export async function backfillProductSlugs(
+  db: Executor,
+  productIds?: readonly number[],
+): Promise<void> {
+  if (productIds?.length === 0) return;
+  const base = sql`coalesce(nullif(trim(both '-' from lower(regexp_replace(${products.title}, '[^A-Za-z0-9]+', '-', 'g'))), ''), 'product')`;
+  await db
+    .update(products)
+    .set({ slug: sql`left(${base}, 200) || '-' || right(${products.publicId}::text, 8)` })
+    .where(
+      and(
+        sql`${products.slug} is null`,
+        productIds ? inArray(products.id, [...productIds]) : undefined,
+      ),
+    );
+}

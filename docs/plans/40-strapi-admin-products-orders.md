@@ -284,7 +284,7 @@ Each step leaves the app building and the tests green.
   - Integration-test: cancelling restores stock exactly once (a second cancel is rejected as a
     final state), a rejected transition writes nothing, `cancelled_at`, `refunded_at` and
     `shipped_at` are set, and a concurrent checkout doesn't deadlock.
-- [ ] **7. Pushing app changes to Strapi.**
+- [x] **7. Pushing app changes to Strapi.**
   - Enqueue in the transactions that change state: `createOrder` (the order plus the products
     whose stock dropped), `markOrderPaid` (the order) and `applyCmsOrderChange` (step 6).
   - `deliverCmsSync({ entity?, ids? })` claims rows and upserts each to Strapi:

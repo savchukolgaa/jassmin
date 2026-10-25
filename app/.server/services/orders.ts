@@ -9,7 +9,8 @@
 // The order's confirmation email (#45) is queued in the same transaction (`order_emails`), so an
 // order never exists without it and a rolled-back order sends nothing. The caller records the
 // `purchase` event (#18) and makes the first delivery attempt for an order this call `placed`,
-// after the transaction committed.
+// after the transaction committed. The order and its products' stock are queued for Strapi
+// (#40) in the same transaction, and the caller pushes them after the commit (`pushToCms`).
 import type { AccountOrderDetail, AccountOrderLine, AccountOrders } from "~/lib/account";
 import { isCurrentOrder } from "~/lib/account";
 import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
@@ -18,6 +19,7 @@ import type { Locale } from "~/lib/i18n";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { cartTotals, lockCart } from "../db/queries/cart";
+import { enqueueCmsSync } from "../db/queries/cms-outbox";
 import { insertOrderEmail } from "../db/queries/order-emails";
 import {
   decrementVariantStock,
@@ -115,6 +117,13 @@ export async function createOrder(
       await decrementVariantStock(tx, line.variantId, line.quantity);
     }
     await markCartConverted(tx, cartId);
+    // Strapi shows the new order and the products' lower stock (#40); pushed after the commit.
+    await enqueueCmsSync(tx, "order", [orderId]);
+    await enqueueCmsSync(
+      tx,
+      "product",
+      lines.map((line) => line.productId),
+    );
     return { ok: true, orderId, placed: true, subtotal };
   });
 }

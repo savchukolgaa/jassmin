@@ -204,6 +204,23 @@ describe.skipIf(!hasDatabase)("order service", () => {
     );
     expect(await stockOf(seven.id)).toBe(8);
     expect(await stockOf(thirty.id)).toBe(2);
+    // The order and its product's lower stock are queued for Strapi (#40).
+    const { and, eq: equals } = await import("drizzle-orm");
+    const { cmsOutbox } = await import("../db/schema");
+    const queued = await testDb.db
+      .select({
+        entity: cmsOutbox.entity,
+        entityId: cmsOutbox.entityId,
+        syncedAt: cmsOutbox.syncedAt,
+      })
+      .from(cmsOutbox)
+      .where(and(equals(cmsOutbox.entity, "order"), equals(cmsOutbox.entityId, result.orderId)));
+    expect(queued).toEqual([{ entity: "order", entityId: result.orderId, syncedAt: null }]);
+    const products = await testDb.db
+      .select({ entityId: cmsOutbox.entityId, syncedAt: cmsOutbox.syncedAt })
+      .from(cmsOutbox)
+      .where(and(equals(cmsOutbox.entity, "product"), equals(cmsOutbox.entityId, seven.productId)));
+    expect(products).toEqual([{ entityId: seven.productId, syncedAt: null }]);
     const after = await cartOf(cart.id);
     expect(after?.status).toBe("converted");
     expect(after?.updatedAt.getTime()).toBeGreaterThan(cart.updatedAt.getTime());

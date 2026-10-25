@@ -24,7 +24,8 @@
     "db:seed": "tsx app/.server/db/scripts/seed.ts",
     "db:make-admin": "tsx app/.server/db/scripts/make-admin.ts",
     "db:mark-abandoned-carts": "tsx app/.server/db/scripts/mark-abandoned-carts.ts",
-    "db:send-order-emails": "tsx app/.server/db/scripts/send-order-emails.ts"
+    "db:send-order-emails": "tsx app/.server/db/scripts/send-order-emails.ts",
+    "db:sync-cms": "tsx app/.server/db/scripts/sync-cms.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",

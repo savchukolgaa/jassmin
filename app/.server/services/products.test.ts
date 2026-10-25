@@ -15,6 +15,9 @@ const PAGING_COUNT = 13;
 // A men's product without variants: it has nothing for sale, so it's never listed.
 const UNSOLD_BRAND = "Unsold House";
 
+// A women's product archived in Strapi (#40): kept for order history, never listed or sold.
+const ARCHIVED_BRAND = "Archived House";
+
 const sampleNamed = (prefix: string) => {
   const product = SAMPLE_PRODUCTS.find((p) => p.title.startsWith(prefix));
   if (!product) throw new Error(`No sample product ${prefix}`);
@@ -55,7 +58,35 @@ describe.skipIf(!hasDatabase)("products service", () => {
       price: "1.00",
       volumeMl: 75,
     });
+    const [archived] = await testDb.db
+      .insert(products)
+      .values({
+        title: "Archived",
+        brand: ARCHIVED_BRAND,
+        gender: "women",
+        fragranceFamily: "archived-family",
+        price: "500.00",
+        volumeMl: 30,
+        active: false,
+      })
+      .returning({ id: products.id });
+    await testDb.db
+      .insert(productVariants)
+      .values({ productId: archived?.id ?? 0, volumeMl: 30, price: "500.00", stockQuantity: 5 });
   });
+
+  /** The archived product's public id and its only size's. */
+  const archived = async () => {
+    const { eq } = await import("drizzle-orm");
+    const { products, productVariants } = await import("../db/schema");
+    const [row] = await testDb.db
+      .select({ publicId: products.publicId, variantId: productVariants.publicId })
+      .from(products)
+      .innerJoin(productVariants, eq(productVariants.productId, products.id))
+      .where(eq(products.brand, ARCHIVED_BRAND));
+    if (!row) throw new Error("no archived product");
+    return row;
+  };
 
   afterAll(async () => {
     await testDb?.drop();
@@ -277,5 +308,21 @@ describe.skipIf(!hasDatabase)("products service", () => {
     const { getProductSummaries } = await import("./products");
 
     expect((await getProductSummaries([], testDb.db)).size).toBe(0);
+  });
+
+  it("hides an archived product from the catalog, its filters, its page, offers and the cart", async () => {
+    const { checkVariantForCart, getProduct, getProductSummaries } = await import("./products");
+    const { publicId, variantId } = await archived();
+
+    const women = await catalog("women", { brand: ARCHIVED_BRAND });
+    expect(women.products).toEqual([]);
+    expect(women.filterOptions.brands).not.toContain(ARCHIVED_BRAND);
+    expect(women.filterOptions.fragranceFamilies).not.toContain("archived-family");
+    expect(await getProduct(publicId, testDb.db)).toBeNull();
+    expect((await getProductSummaries([publicId], testDb.db)).size).toBe(0);
+    expect(await checkVariantForCart(publicId, variantId, testDb.db)).toEqual({
+      ok: false,
+      error: "invalid-variant",
+    });
   });
 });

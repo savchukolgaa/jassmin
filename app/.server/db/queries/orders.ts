@@ -11,6 +11,7 @@ import type { CartStatus, PaymentMethod } from "~/lib/enums";
 import type { OrderLifecyclePatch } from "~/lib/order-status";
 import type { Db } from "../client";
 import { cartItems, carts, orderItems, orders, products, productVariants } from "../schema";
+import { availableStock } from "./products";
 
 /** A `Db` or a transaction, so the order service can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
@@ -41,11 +42,13 @@ export function lockCartLinesForOrder(db: Executor, cartId: number) {
       productId: productVariants.productId,
       volumeMl: productVariants.volumeMl,
       price: productVariants.price,
-      stockQuantity: productVariants.stockQuantity,
+      // 0 for an archived product (#40), so checkout answers `insufficient-stock` for its lines.
+      stockQuantity: availableStock,
       quantity: cartItems.quantity,
     })
     .from(cartItems)
     .innerJoin(productVariants, eq(productVariants.id, cartItems.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
     .where(eq(cartItems.cartId, cartId))
     .orderBy(asc(productVariants.id))
     .for("update", { of: productVariants });

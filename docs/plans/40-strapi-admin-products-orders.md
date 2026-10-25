@@ -353,7 +353,7 @@ Each step leaves the app building and the tests green.
   - Check: `pnpm cms:build`; in `pnpm aspire run`, create a product, change a stock number,
     archive it, and move an order through `pending → shipped → completed`, then try `cancelled
     → shipped` and see the error in the admin.
-- [ ] **9. Storefront reads only active products.** Add `eq(products.active, true)` to
+- [x] **9. Storefront reads only active products.** Add `eq(products.active, true)` to
   `whereFilters`, `listFilterOptions`, `listProductSummariesByPublicIds`, `findProductByPublicId`
   (the product page answers 404) and `checkVariantForCart`. In `lockCartLinesForOrder`, join
   `products` and report inactive lines as `stockQuantity: 0`, so checkout answers

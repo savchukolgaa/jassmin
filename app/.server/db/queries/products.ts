@@ -10,9 +10,22 @@ export interface ProductFilters {
   brand?: string;
 }
 
+/**
+ * Only active products are listed or sold (#40): a product archived in Strapi keeps its row for
+ * order history but disappears from the shop.
+ */
+const isListed = eq(products.active, true);
+
+/**
+ * A size's stock as the shop may sell it: 0 once its product is archived (#40). Queries that use
+ * it must join `products`.
+ */
+export const availableStock = sql<number>`case when ${products.active} then ${productVariants.stockQuantity} else 0 end`;
+
 // Shared by the list and the count, so the total always matches the listed products.
 function whereFilters({ genders, fragranceFamily, brand }: ProductFilters): SQL | undefined {
   return and(
+    isListed,
     inArray(products.gender, [...genders]),
     fragranceFamily ? eq(products.fragranceFamily, fragranceFamily) : undefined,
     brand ? eq(products.brand, brand) : undefined,
@@ -116,7 +129,7 @@ export function listProductSummariesByPublicIds(
     .select(summaryColumns(stats))
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
-    .where(inArray(products.publicId, [...publicIds]));
+    .where(and(isListed, inArray(products.publicId, [...publicIds])));
 }
 
 export async function countProducts(db: Db, filters: ProductFilters): Promise<number> {
@@ -132,6 +145,7 @@ export async function countProducts(db: Db, filters: ProductFilters): Promise<nu
 /** Distinct brands and fragrance families of the listed products, alphabetically. */
 export async function listFilterOptions(db: Db, genders: readonly Gender[]) {
   const listed = and(
+    isListed,
     inArray(products.gender, [...genders]),
     inArray(products.id, db.select({ id: productVariants.productId }).from(productVariants)),
   );
@@ -168,7 +182,7 @@ export async function findProductByPublicId(db: Db, publicId: string) {
       fragranceFamily: products.fragranceFamily,
     })
     .from(products)
-    .where(eq(products.publicId, publicId))
+    .where(and(isListed, eq(products.publicId, publicId)))
     .limit(1);
   return row;
 }
@@ -204,7 +218,11 @@ export async function findVariantForProduct(
     .from(productVariants)
     .innerJoin(products, eq(products.id, productVariants.productId))
     .where(
-      and(eq(products.publicId, productPublicId), eq(productVariants.publicId, variantPublicId)),
+      and(
+        isListed,
+        eq(products.publicId, productPublicId),
+        eq(productVariants.publicId, variantPublicId),
+      ),
     )
     .limit(1);
   return row;

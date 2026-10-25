@@ -37,6 +37,8 @@ export default function AccountOrder({ loaderData: order }: Route.ComponentProps
   const timeline: [TextKey, Date | null][] = [
     ["account.order.placedAt", order.createdAt],
     ["account.order.paidAt", order.paidAt],
+    ["account.order.shippedAt", order.shippedAt],
+    ["account.order.completedAt", order.completedAt],
     ["account.order.cancelledAt", order.cancelledAt],
     ["account.order.refundedAt", order.refundedAt],
   ];
@@ -67,7 +69,12 @@ export default function AccountOrder({ loaderData: order }: Route.ComponentProps
           <div className="rounded-card-lg bg-blush p-6">
             <OrderProgress
               status={order.status}
-              dates={{ pending: order.createdAt, paid: order.paidAt }}
+              dates={{
+                pending: order.createdAt,
+                paid: order.paidAt,
+                shipped: order.shippedAt,
+                completed: order.completedAt,
+              }}
             />
           </div>
         )}

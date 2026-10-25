@@ -399,6 +399,8 @@ export const en = {
       timeline: "History",
       placedAt: "Placed",
       paidAt: "Paid",
+      shippedAt: "Shipped",
+      completedAt: "Delivered",
       cancelledAt: "Cancelled",
       refundedAt: "Refunded",
       delivery: "Delivery",

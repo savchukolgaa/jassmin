@@ -55,6 +55,9 @@ export interface AccountOrder {
   paidAt: Date | null;
   cancelledAt: Date | null;
   refundedAt: Date | null;
+  /** When the order was marked `shipped` / `completed` in the Strapi admin (#40). */
+  shippedAt: Date | null;
+  completedAt: Date | null;
   totalAmount: string;
   /** Units bought, summed over the lines. */
   itemCount: number;

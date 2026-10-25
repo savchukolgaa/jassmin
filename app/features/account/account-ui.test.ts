@@ -31,6 +31,8 @@ const order = (status: OrderStatus, overrides: Partial<AccountOrder> = {}): Acco
   paidAt: null,
   cancelledAt: null,
   refundedAt: null,
+  shippedAt: null,
+  completedAt: null,
   totalAmount: "2430.00",
   itemCount: 3,
   lines: [
@@ -130,6 +132,17 @@ describe("CurrentOrderCard", () => {
     expect(html).toContain(formatPrice("2430.00"));
     expect(html).toContain('href="/account/orders/42"');
     expect(html).toContain('src="https://example.com/coco.jpg"');
+  });
+
+  it("dates the shipped step once the order was shipped (#40)", () => {
+    const html = render(
+      createElement(CurrentOrderCard, {
+        order: order("shipped", { shippedAt: new Date("2026-10-23T12:00:00Z") }),
+      }),
+      "en",
+    );
+
+    expect(steps(html)[2]).toContain("23 October 2026");
   });
 
   it("uses Ukrainian plurals for the item count", () => {

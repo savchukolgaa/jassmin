@@ -369,7 +369,7 @@ Each step leaves the app building and the tests green.
   `AGENTS.md`, plus `app/.server/AGENTS.md` (CMS: "products and orders are edited in Strapi and
   written through to PostgreSQL"; the `users.role` and `requireAdmin` bullets; the analytics
   "`/admin` isn't tracked" line; new "CMS sync" bullets) and the `cms/package.json` description.
-- [ ] **12. Account dates.** Add `shippedAt` and `completedAt` to `AccountOrder` (via
+- [x] **12. Account dates.** Add `shippedAt` and `completedAt` to `AccountOrder` (via
   `listUserOrders` / `findUserOrder`), show them in `OrderProgress`, add the i18n keys to both
   dictionaries, and update `account-ui.test.ts`.
 - [ ] **13. Final check.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`,

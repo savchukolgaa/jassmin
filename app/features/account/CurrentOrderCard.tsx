@@ -34,7 +34,12 @@ export function CurrentOrderCard({ order }: { order: AccountOrder }) {
       </div>
       <OrderProgress
         status={order.status}
-        dates={{ pending: order.createdAt, paid: order.paidAt }}
+        dates={{
+          pending: order.createdAt,
+          paid: order.paidAt,
+          shipped: order.shippedAt,
+          completed: order.completedAt,
+        }}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2">

@@ -406,6 +406,8 @@ export const uk = {
       timeline: "Історія",
       placedAt: "Оформлено",
       paidAt: "Оплачено",
+      shippedAt: "Відправлено",
+      completedAt: "Отримано",
       cancelledAt: "Скасовано",
       refundedAt: "Кошти повернено",
       delivery: "Доставка",

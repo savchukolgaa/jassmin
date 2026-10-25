@@ -226,6 +226,8 @@ export function listUserOrders(db: Executor, userId: number) {
       paidAt: orders.paidAt,
       cancelledAt: orders.cancelledAt,
       refundedAt: orders.refundedAt,
+      shippedAt: orders.shippedAt,
+      completedAt: orders.completedAt,
       totalAmount: orders.totalAmount,
       itemCount: sql<number>`coalesce(sum(${orderItems.quantity}), 0)::int`,
     })
@@ -246,6 +248,8 @@ export async function findUserOrder(db: Executor, userId: number, orderId: numbe
       paidAt: orders.paidAt,
       cancelledAt: orders.cancelledAt,
       refundedAt: orders.refundedAt,
+      shippedAt: orders.shippedAt,
+      completedAt: orders.completedAt,
       totalAmount: orders.totalAmount,
       subtotal: orders.subtotal,
       freeShipping: orders.freeShipping,

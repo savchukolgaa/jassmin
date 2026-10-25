@@ -28,6 +28,7 @@ const ALL_TABLES = [
   "order_emails",
   "order_items",
   "orders",
+  "payments",
   "product_variants",
   "products",
   "sessions",
@@ -630,7 +631,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0009 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0010 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0010_payments");
     expect(await rollbackLatest(db)).toBe("0009_order_emails");
     expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
     expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
@@ -659,7 +661,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0009 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0010 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0010_payments");
     expect(await rollbackLatest(db)).toBe("0009_order_emails");
     expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
     expect(await rollbackLatest(db)).toBe("0007_order_checkout_fields");
@@ -745,8 +748,12 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0010_payments");
+    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "payments"));
     expect(await rollbackLatest(testDb.db)).toBe("0009_order_emails");
-    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "order_emails"));
+    expect(await listTables()).toEqual(
+      ALL_TABLES.filter((t) => t !== "payments" && t !== "order_emails"),
+    );
     expect(await rollbackLatest(testDb.db)).toBe("0008_traffic_attribution");
     const attributionColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns
@@ -778,7 +785,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await listEnums()).not.toHaveProperty("user_role");
     expect(await rollbackLatest(testDb.db)).toBe("0003_product_variants");
     expect(await listTables()).toEqual(
-      ALL_TABLES.filter((t) => t !== "product_variants" && t !== "order_emails"),
+      ALL_TABLES.filter(
+        (t) => t !== "product_variants" && t !== "order_emails" && t !== "payments",
+      ),
     );
     expect(await rollbackLatest(testDb.db)).toBe("0002_analytics_schema");
     expect(await listTables()).toEqual([

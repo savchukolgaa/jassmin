@@ -1,6 +1,6 @@
 // Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
-// checkout fields on orders (#11) and the order email queue (#45).
+// checkout fields on orders (#11), the order email queue (#45) and card payment attempts (#44).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -35,9 +35,13 @@ import {
   ORDER_STATUSES,
   type OrderEmailStatus,
   type OrderEmailType,
+  PAYMENT_ATTEMPT_STATUSES,
   PAYMENT_METHODS,
+  PAYMENT_PROVIDERS,
   PAYMENT_STATUSES,
+  type PaymentAttemptStatus,
   type PaymentMethod,
+  type PaymentProvider,
   PERFUME_VOLUMES_ML,
   USER_ROLES,
 } from "~/lib/enums";
@@ -376,5 +380,42 @@ export const orderEmails = pgTable(
     check("order_emails_attempts_check", sql`${t.attempts} >= 0`),
     unique("order_emails_order_id_type_unique").on(t.orderId, t.type),
     index("order_emails_status_next_attempt_at_idx").on(t.status, t.nextAttemptAt),
+  ],
+);
+
+/**
+ * One attempt at paying a card order online (#44). Every retry is a new row with its own
+ * `reference` (`<order id>-<attempt>`), because providers want a fresh id per attempt and the
+ * success page reads the latest attempt to tell "failed" from "pending". The amount is the
+ * order's `total_amount` when the attempt started; a callback for another amount is ignored.
+ */
+export const payments = pgTable(
+  "payments",
+  {
+    id: serial().primaryKey(),
+    orderId: integer()
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    provider: text().$type<PaymentProvider>().notNull(),
+    /** Sent to the provider as its order id: `<order id>-<attempt number>`. */
+    reference: text().notNull(),
+    status: text().$type<PaymentAttemptStatus>().notNull().default("pending"),
+    amount: numeric({ precision: 10, scale: 2 }).notNull(),
+    currency: text().notNull().default("UAH"),
+    /** The provider's own id for the payment, from its callback. */
+    providerPaymentId: text(),
+    /** The last verified callback's decoded payload, for support and analytics. */
+    lastCallback: jsonb().$type<Record<string, unknown>>(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updatedAt(),
+    /** When a callback moved the attempt to `succeeded` or `failed`. */
+    completedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    check("payments_provider_check", oneOf(t.provider, PAYMENT_PROVIDERS)),
+    check("payments_status_check", oneOf(t.status, PAYMENT_ATTEMPT_STATUSES)),
+    check("payments_amount_check", sql`${t.amount} >= 0`),
+    unique("payments_reference_unique").on(t.reference),
+    index("payments_order_id_idx").on(t.orderId),
   ],
 );

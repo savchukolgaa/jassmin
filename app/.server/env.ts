@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { z } from "zod";
+import { PAYMENT_PROVIDERS } from "~/lib/enums";
 
 // Outgoing mail. Its own schema, so the order email job (`pnpm db:send-order-emails`) can read
 // it without the web app's variables.
@@ -15,16 +16,24 @@ const mailEnvSchema = z.object({
   ORDER_FROM: z.string().min(1).optional(),
 });
 
-const envSchema = z.object({
-  DATABASE_URL: z.url(),
-  SESSION_SECRET: z.string().min(32),
-  PORT: z.coerce.number().int().positive().default(3000),
-  STRAPI_URL: z.url().default("http://localhost:1337"),
-  // Optional so the app boots before the first Strapi admin has created the token;
-  // CMS-backed pages answer with a 503 until it is set.
-  STRAPI_API_TOKEN: z.string().min(1).optional(),
-  ...mailEnvSchema.shape,
-});
+const envSchema = z
+  .object({
+    DATABASE_URL: z.url(),
+    SESSION_SECRET: z.string().min(32),
+    PORT: z.coerce.number().int().positive().default(3000),
+    STRAPI_URL: z.url().default("http://localhost:1337"),
+    // Optional so the app boots before the first Strapi admin has created the token;
+    // CMS-backed pages answer with a 503 until it is set.
+    STRAPI_API_TOKEN: z.string().min(1).optional(),
+    // Where card payments go (#44). Optional: without it the app still starts and card payment is
+    // unavailable at checkout. `simulator` is the local fake payment page, never for production.
+    PAYMENT_PROVIDER: z.enum(PAYMENT_PROVIDERS).optional(),
+    ...mailEnvSchema.shape,
+  })
+  .refine((env) => !(env.PAYMENT_PROVIDER === "simulator" && env.NODE_ENV === "production"), {
+    path: ["PAYMENT_PROVIDER"],
+    message: "The payment simulator can't be used in production",
+  });
 
 export type Env = z.infer<typeof envSchema>;
 
@@ -64,6 +73,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     DATABASE_URL: getDatabaseUrl(source),
     STRAPI_URL: source.STRAPI_URL || source.CMS_HTTP || undefined,
     STRAPI_API_TOKEN: source.STRAPI_API_TOKEN || undefined,
+    PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
     ...mailSource(source),
   });
 

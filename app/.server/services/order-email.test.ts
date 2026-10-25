@@ -139,7 +139,7 @@ describe("buildOrderConfirmationEmail", () => {
         "",
         "Payment",
         "By card",
-        "We'll send you the payment details once we've confirmed your order.",
+        "Pay online by card right after placing your order.",
         "",
         "Delivery",
         "Nova Poshta",

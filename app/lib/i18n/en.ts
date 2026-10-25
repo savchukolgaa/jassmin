@@ -276,7 +276,8 @@ export const en = {
     },
     payment: {
       card: "By card",
-      cardNote: "We'll send you the payment details once we've confirmed your order.",
+      cardNote: "Pay online by card right after placing your order.",
+      cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       cod: "Cash on delivery",
       codNote: "Pay when you collect the parcel at Nova Poshta.",
     },
@@ -299,6 +300,7 @@ export const en = {
       branchRequired: "Enter a branch, parcel locker or address",
       branchTooLong: "The address must be at most 255 characters",
       paymentRequired: "Choose a payment method",
+      cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       stockChanged:
         "Some perfumes ran low while you were checking out. Check your cart and try again.",
     },
@@ -309,6 +311,14 @@ export const en = {
       contactNote: "We'll call you on {phone} to confirm your order.",
       delivery: "Delivery",
       payment: "Payment",
+      paymentPaid: "Paid. Thank you!",
+      paymentPending:
+        "We're waiting for the payment to be confirmed. If you've already paid, refresh the page.",
+      paymentFailed:
+        "The payment didn't go through, and you haven't been charged. Please try again.",
+      pay: "Pay now",
+      retry: "Try again",
+      refresh: "Refresh the page",
       continue: "Continue shopping",
     },
   },
@@ -324,6 +334,21 @@ export const en = {
     deliveryCarrier: "Nova Poshta",
     contact: "Any questions? Reply to this email or write to {email}.",
     signature: "The Jassmin team",
+  },
+  payments: {
+    description: "Jassmin order #{id}",
+    simulator: {
+      title: "Payment simulator",
+      banner: "Test mode: no real money is charged.",
+      heading: "Card payment",
+      reference: "Payment {reference}",
+      amount: "Amount due",
+      pay: "Pay",
+      payTwice: "Pay and send the confirmation twice",
+      decline: "Decline the payment",
+      leave: "Return without paying",
+      hint: "These buttons play the bank: the shop gets a signed confirmation, just as from a real payment provider.",
+    },
   },
   account: {
     title: "My account",

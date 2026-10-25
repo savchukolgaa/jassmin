@@ -6,6 +6,7 @@ import type { OrderSummaryLine } from "~/lib/checkout";
 import { I18nProvider, type Locale } from "~/lib/i18n";
 import { CheckoutForm, type CheckoutFormProps } from "./CheckoutForm";
 import { OrderSummary } from "./OrderSummary";
+import { PaymentStatus } from "./PaymentStatus";
 
 // `<Form>` needs a data router.
 const routerFor = (element: ReactElement) =>
@@ -89,6 +90,20 @@ describe("CheckoutForm", () => {
     expect(tag(html, 'value="card"')).toContain('aria-invalid="true"');
   });
 
+  it("disables card payment with a note when no provider is configured", () => {
+    const html = renderForm({
+      prefill: null,
+      values: { paymentMethod: "card" },
+      cardAvailable: false,
+    });
+    const cardRadio = tag(html, 'value="card"');
+
+    expect(cardRadio).toContain("disabled");
+    expect(cardRadio).not.toContain("checked");
+    expect(html).toContain("Card payment isn&#x27;t available right now");
+    expect(tag(html, 'value="cod"')).not.toContain("disabled");
+  });
+
   it("is in Ukrainian by default", () => {
     expect(renderForm({ prefill: null }, "uk")).toContain("Підтвердити замовлення");
   });
@@ -150,5 +165,36 @@ describe("OrderSummary", () => {
 
     expect(html).toContain("This perfume is no longer sold");
     expect(html).toContain("Qty 2");
+  });
+});
+
+describe("PaymentStatus", () => {
+  const renderStatus = (payment: "paid" | "pending" | "failed", locale?: Locale) =>
+    render(routerFor(createElement(PaymentStatus, { orderId: 42, payment })), locale);
+
+  it("says a paid order is paid, without a pay button", () => {
+    const html = renderStatus("paid");
+    expect(html).toContain("Paid. Thank you!");
+    expect(html).not.toContain("/checkout/pay/42");
+  });
+
+  it("lets a pending order pay or refresh the page", () => {
+    const html = renderStatus("pending");
+    expect(html).toContain("waiting for the payment to be confirmed");
+    expect(tag(html, 'action="/checkout/pay/42"', "form")).toContain('method="post"');
+    expect(html).toContain("Pay now");
+    expect(html).toContain('href="/checkout/success/42"');
+  });
+
+  it("offers a retry after a failed payment", () => {
+    const html = renderStatus("failed");
+    expect(html).toContain("didn&#x27;t go through");
+    expect(tag(html, 'action="/checkout/pay/42"', "form")).toContain('method="post"');
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("Refresh the page");
+  });
+
+  it("is in Ukrainian by default", () => {
+    expect(renderStatus("failed", "uk")).toContain("Спробувати ще раз");
   });
 });

@@ -68,6 +68,7 @@ pnpm dev                    # http://localhost:5173
 | `PORT` | no | Port for `pnpm start` (default `3000`). |
 | `STRAPI_URL` | no | Strapi base URL (default `http://localhost:1337`). Under Aspire it's set to the `cms` endpoint. |
 | `STRAPI_API_TOKEN` | no* | Read-only Strapi API token. *Without it the app still starts, but CMS-backed pages answer with a 503. |
+| `PAYMENT_PROVIDER` | no* | Where card payments go. Only `simulator` for now, a local fake payment page that's refused when `NODE_ENV=production` (see [Card payments](#card-payments-simulator)). *Without it the app still starts, but card payment is unavailable at checkout. |
 | `SMTP_URL` | no* | SMTP server for contact form and order emails (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container. *Without it, development logs contact messages instead of sending them, production shows a "couldn't send" error, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
@@ -134,6 +135,19 @@ Run the job every 5 minutes from an external scheduler, like the abandoned-cart 
 ```
 
 It needs the database URL and the mail variables (`SMTP_URL`, `ORDER_FROM`, `CONTACT_FROM`, `CONTACT_INBOX`), but not `SESSION_SECRET`. Under Aspire, start the `db-send-order-emails` resource from the dashboard; it sends to smtp4dev.
+
+## Card payments (simulator)
+
+A shopper who picks card is sent to a hosted payment page right after checkout (#44), and the page's signed callback marks the order paid. Cash on delivery isn't affected. For now the only provider is a **local simulator**: set `PAYMENT_PROVIDER=simulator` in `.env` and restart the app. It needs no merchant account, tunnel or network access, and the app refuses it when `NODE_ENV=production`. Without `PAYMENT_PROVIDER`, the card option is disabled at checkout.
+
+After a card checkout, the simulator page at `/payments/simulator` shows the payment's reference and the exact order total. Its buttons play the bank: each one POSTs a signed callback to `/payments/callback` over HTTP, like a real provider, and then returns you to the order's success page.
+
+- **Pay**: the order becomes `paid`, with `paid_at` set.
+- **Pay and send the confirmation twice**: sends the same callback twice. The order is still paid only once.
+- **Decline the payment**: the attempt is `failed` and the order stays `unpaid`. The success page offers **Try again**, which starts a new attempt.
+- **Return without paying**: no callback. The success page shows the payment as pending, with a **Pay now** button.
+
+Every attempt is a row in `payments`, with a reference like `42-1`, `42-2`. The amount always comes from the order's stored `total_amount`. A real Ukrainian provider (LiqPay, WayForPay or monobank) is a follow-up: one more `PaymentProvider` in `app/.server/payments/` plus a migration that allows it in `payments_provider_check`.
 
 ## Database migrations
 

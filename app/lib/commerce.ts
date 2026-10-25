@@ -2,7 +2,14 @@
 // so loaders can return them and both server and client code can import them.
 //
 // Money is an exact decimal string (e.g. `"2450.00"`), never a float.
-import type { CartStatus, OrderStatus, PaymentMethod, PaymentStatus } from "./enums";
+import type {
+  CartStatus,
+  OrderStatus,
+  PaymentAttemptStatus,
+  PaymentMethod,
+  PaymentProvider,
+  PaymentStatus,
+} from "./enums";
 
 export interface Cart {
   id: number;
@@ -78,4 +85,22 @@ export interface OrderItem {
   quantity: number;
   /** Unit price when the order was placed. */
   priceAtPurchase: string;
+}
+
+/** One attempt at paying a card order online (#44). */
+export interface Payment {
+  id: number;
+  orderId: number;
+  provider: PaymentProvider;
+  /** The provider's order id for this attempt: `<order id>-<attempt number>`. */
+  reference: string;
+  status: PaymentAttemptStatus;
+  /** The order total when the attempt started. */
+  amount: string;
+  currency: string;
+  providerPaymentId: string | null;
+  lastCallback: Record<string, unknown> | null;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt: Date | null;
 }

@@ -11,6 +11,8 @@ export interface CheckoutFormProps {
   fieldErrors?: Partial<Record<CheckoutField, TextKey>>;
   /** Submitted values after an error; they win over the prefill. */
   values?: Partial<Record<CheckoutField, string>>;
+  /** Whether card payment can be chosen (a payment provider is configured, #44). */
+  cardAvailable?: boolean;
 }
 
 function Section({ legend, children }: { legend: string; children: ReactNode }) {
@@ -26,7 +28,12 @@ function Section({ legend, children }: { legend: string; children: ReactNode }) 
  * Contact, Nova Poshta delivery and payment. The submit button is disabled while the form is
  * submitting, so a double click can't post it twice (the server also places one order per cart).
  */
-export function CheckoutForm({ prefill, fieldErrors, values }: CheckoutFormProps) {
+export function CheckoutForm({
+  prefill,
+  fieldErrors,
+  values,
+  cardAvailable = true,
+}: CheckoutFormProps) {
   const { t } = useT();
   const submitting = useNavigation().state === "submitting";
   const error = (field: CheckoutField) => {
@@ -82,7 +89,11 @@ export function CheckoutForm({ prefill, fieldErrors, values }: CheckoutFormProps
         />
       </Section>
       <Section legend={t("checkout.sections.payment")}>
-        <PaymentMethodField defaultValue={value("paymentMethod")} error={error("paymentMethod")} />
+        <PaymentMethodField
+          defaultValue={value("paymentMethod")}
+          error={error("paymentMethod")}
+          cardAvailable={cardAvailable}
+        />
       </Section>
       <Button type="submit" size="lg" className="rounded-full" loading={submitting}>
         {t("checkout.submit")}

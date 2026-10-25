@@ -22,6 +22,7 @@ describe("route config", () => {
       "/cart",
       "/checkout",
       "/checkout/success/:orderId",
+      "/checkout/pay/:orderId",
       "/account",
       "/privacy",
     ]);
@@ -41,6 +42,15 @@ describe("route config", () => {
 
   it("keeps the client events endpoint outside the shop layout", () => {
     expect(routes.find((entry) => entry.path === "api/events")?.file).toBe("routes/api.events.ts");
+  });
+
+  it("keeps the payment callback and simulator outside the shop layout", () => {
+    expect(routes.find((entry) => entry.path === "payments/callback")?.file).toBe(
+      "routes/payments.callback.ts",
+    );
+    expect(routes.find((entry) => entry.path === "payments/simulator")?.file).toBe(
+      "routes/payments.simulator.tsx",
+    );
   });
 
   it("nests the admin pages under their own layout, outside the shop layout", () => {

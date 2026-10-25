@@ -16,8 +16,8 @@ import {
   markOrderEmailSent,
 } from "../db/queries/order-emails";
 import { findOrderConfirmation } from "../db/queries/orders";
-import { getEnv, type MailEnv } from "../env";
-import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
+import type { MailEnv } from "../env";
+import { type MailSender, stripLineBreaks } from "../mail";
 
 /**
  * Minutes to wait before retrying after the 1st, 2nd, … failed attempt: about two days in all.
@@ -141,13 +141,6 @@ export function orderEmailDeps(
   };
 }
 
-// The app's pool is imported lazily: importing it validates the web app's whole env, which the
-// retry job (with its own pool) doesn't have.
-async function defaultDeps(): Promise<OrderEmailDeps> {
-  const { db } = await import("../db");
-  return orderEmailDeps(db, getMailTransport(), getEnv());
-}
-
 export interface OrderEmailReport {
   sent: number;
   /** Failed this time; due again after the backoff. */
@@ -207,15 +200,20 @@ async function deliverOne(
 
 /**
  * Sends due queued emails: only `orderId`'s right after its checkout, otherwise every due one in
- * batches (the retry job). Never rejects: every failure is logged and left to the retries.
+ * batches (the retry job). Never rejects: every failure is logged and left to the retries. `deps`
+ * may be a factory, so an error while building them (e.g. the env) is caught too.
+ *
+ * This module doesn't import the app's pool (`db/index.ts`), which validates the web app's whole
+ * env: the retry job brings its own. The app's wiring is `deliverOrderConfirmation` in
+ * `services/orders.ts`.
  */
 export async function deliverOrderEmails(
-  { orderId, limit = ORDER_EMAIL_BATCH_SIZE }: { orderId?: number; limit?: number } = {},
-  deps?: OrderEmailDeps,
+  { orderId, limit = ORDER_EMAIL_BATCH_SIZE }: { orderId?: number; limit?: number },
+  deps: OrderEmailDeps | (() => OrderEmailDeps),
 ): Promise<OrderEmailReport> {
   const report: OrderEmailReport = { sent: 0, retrying: 0, gaveUp: 0, skipped: false };
   try {
-    const resolved = deps ?? (await defaultDeps());
+    const resolved = typeof deps === "function" ? deps() : deps;
     const { mailer } = resolved;
     if (!mailer) {
       console.info(

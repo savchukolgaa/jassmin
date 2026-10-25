@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/45
 Branch: `issue/45`
 Worktree: `.claude/worktrees/issue-45`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Shoppers, guests and registered users alike, should get an order-confirmation email after checkout
@@ -110,6 +110,25 @@ and never affects the order or the redirect.
   `signature`, added to both `uk.ts` and `en.ts`.
 - **Analytics:** `order_emails` is operational, not an ML feature table, so there's no mirror in
   `~/lib/commerce`. Its row type is inferred in `db/queries/order-emails.ts`.
+- **Deviations made during implementation:**
+  - The viewer-free order loader is `findOrderConfirmation(db, orderId)` in `db/queries/orders.ts`,
+    not `loadOrderConfirmation` in `services/orders.ts`. `services/order-email.ts` must not import
+    `db/index.ts`, which validates the web app's whole env, because the retry job doesn't have it.
+    The app's wiring is `deliverOrderConfirmation(orderId)` in `services/orders.ts`, which already
+    owns the app's pool. `deliverOrderEmails(options, deps)` takes the deps (or a factory, so an
+    env error is caught as well) explicitly.
+  - `retryDelayMinutes` was dropped: the backoff is computed in SQL by `claimOrderEmails` from
+    `ORDER_EMAIL_RETRY_DELAYS_MINUTES`. `describeOrderEmailReport` formats the job's log line.
+    The report is `{ sent, retrying, gaveUp, skipped }`.
+  - The new keys are `orderEmail.subject`, `greeting`, `intro`, `itemsHeading`, `line`,
+    `quantityPrice`, `amount`, `deliveryCarrier`, `contact` and `signature`. The section labels
+    reuse `checkout.subtotal` / `shipping` / `total` and `checkout.success.payment` / `delivery`.
+  - The locale was passed to `createOrder` in step 4 rather than step 8, because the new required
+    field wouldn't compile otherwise.
+  - The checkout test proves the redirect doesn't wait for the send by giving it a promise that
+    never settles. It doesn't use a rejecting mock: `deliverOrderConfirmation` never rejects, and
+    a rejected `void` promise would only show up as an unhandled rejection.
+  - Without `SMTP_URL`, only the skip is logged (not the message text).
 
 ## Open questions
 - [ ] **Q4: How often should `db:send-order-emails` run in production, and who sets up the cron?**
@@ -230,7 +249,7 @@ and never affects the order or the redirect.
   - nothing is attempted for `placed: false`, `cart-empty`, `insufficient-stock` or validation
     errors;
   - a rejecting mock still gives the redirect.
-- [ ] **9. Docs and full verification.** Update `app/.server/AGENTS.md`:
+- [x] **9. Docs and full verification.** Update `app/.server/AGENTS.md`:
   - "Orders": the confirmation is enqueued in the transaction;
   - "mail": `order-email.ts`, `ORDER_FROM`, never fails checkout;
   - "Database": the `order_emails` outbox and lease semantics.
@@ -262,11 +281,22 @@ and never affects the order or the redirect.
      arrives, the row is `sent`, and running the job again sends nothing.
 
 ## Acceptance criteria
-- [ ] After a successful checkout, the order's email address receives one confirmation email — steps 4, 6, 7, 8
-- [ ] The email contains the order number, lines, totals, payment method and delivery address — step 5
-- [ ] The email is in the language the shopper checked out in (uk or en) — steps 4, 5, 8
-- [ ] A mail failure or missing `SMTP_URL` never fails the order or the redirect — steps 6, 8 (and failures are retried, step 7)
-- [ ] No email is sent when order creation fails — step 4 (the row rolls back with the order), step 8
+- [x] After a successful checkout, the order's email address receives one confirmation email — steps 4, 6, 7, 8
+- [x] The email contains the order number, lines, totals, payment method and delivery address — step 5
+- [x] The email is in the language the shopper checked out in (uk or en) — steps 4, 5, 8
+- [x] A mail failure or missing `SMTP_URL` never fails the order or the redirect — steps 6, 8 (and failures are retried, step 7)
+- [x] No email is sent when order creation fails — step 4 (the row rolls back with the order), step 8
+
+Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` (759 passed, 1 skipped) and `pnpm build`
+all pass. The migrate → rollback → migrate round trip is covered by `migrator.test.ts`.
+`pnpm db:send-order-emails` was run against a throwaway database and a temporary smtp4dev
+container:
+- without `SMTP_URL` the email stayed queued;
+- against an unreachable SMTP server it was retried after 1 minute, with `last_error` set;
+- against smtp4dev it was sent once, in Ukrainian, and a second run sent nothing.
+
+A full browser checkout under `pnpm aspire run` was not done: that needs the shared dev database
+migrated to `0009`.
 
 ## Out of scope
 - Payment-status emails (paid/failed), which belong to #44. The `type` column is ready for them.

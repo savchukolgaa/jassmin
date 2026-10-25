@@ -29,6 +29,9 @@ import {
   markCartConverted,
 } from "../db/queries/orders";
 import { findUserContact } from "../db/queries/users";
+import { getEnv } from "../env";
+import { getMailTransport } from "../mail";
+import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
 
 /** A logged-in user's contact details for the checkout form, or `null`. */
 export async function getCheckoutPrefill(
@@ -140,4 +143,15 @@ export async function getOrderConfirmation(
   }
   const { userId: _userId, ...confirmation } = order;
   return { ...confirmation, lines: await listOrderLines(db, orderId) };
+}
+
+/**
+ * The first attempt at sending a placed order's confirmation, right after its transaction
+ * committed (#45). Never rejects; `pnpm db:send-order-emails` retries a failure.
+ */
+export function deliverOrderConfirmation(
+  orderId: number,
+  db: Db = defaultDb,
+): Promise<OrderEmailReport> {
+  return deliverOrderEmails({ orderId }, () => orderEmailDeps(db, getMailTransport(), getEnv()));
 }

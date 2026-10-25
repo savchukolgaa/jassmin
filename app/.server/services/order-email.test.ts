@@ -300,6 +300,11 @@ describe("deliverOrderEmails", () => {
       }),
     });
     await expect(deliverOrderEmails({ orderId: 1 }, deps)).resolves.toMatchObject({ sent: 0 });
+    await expect(
+      deliverOrderEmails({ orderId: 1 }, () => {
+        throw new Error("Invalid environment variables");
+      }),
+    ).resolves.toMatchObject({ sent: 0 });
 
     const failingMarks = fakeDeps([queued(1, codOrder.id)], {
       markSent: vi.fn(async () => {

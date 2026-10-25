@@ -2,7 +2,7 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import type { CartLine } from "~/lib/cart";
+import { type CartLine, EMPTY_CART } from "~/lib/cart";
 import { createTranslator, I18nProvider } from "~/lib/i18n";
 import { CartLineItem } from "./CartLineItem";
 import { CartSummary, formatItemCount } from "./CartSummary";
@@ -132,7 +132,15 @@ describe("CartLineItem", () => {
 describe("CartSummary", () => {
   it("shows the item count, the subtotal and the checkout link", () => {
     const html = render(
-      createElement(CartSummary, { cart: { lines: [line], itemCount: 2, subtotal: "13700.00" } }),
+      createElement(CartSummary, {
+        cart: {
+          ...EMPTY_CART,
+          lines: [line],
+          itemCount: 2,
+          subtotal: "13700.00",
+          total: "13700.00",
+        },
+      }),
     );
 
     expect(html).toContain("2 items");

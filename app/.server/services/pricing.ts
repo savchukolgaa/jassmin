@@ -8,9 +8,9 @@
 // Discounts never touch shipping, and free delivery is decided on the discounted subtotal.
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_AMOUNT } from "~/lib/checkout";
 import type { Discount } from "~/lib/commerce";
-import type { PromoStatus } from "~/lib/discounts";
+import type { DiscountLine, PromoStatus } from "~/lib/discounts";
 import type { DiscountKind } from "~/lib/enums";
-import { toKopiyky } from "~/lib/money";
+import { fromKopiyky, toKopiyky } from "~/lib/money";
 
 /** One cart line, priced in kopiyky. */
 export interface PricingLine {
@@ -205,4 +205,11 @@ function promoState(
     status = "not-applicable";
   }
   return { discountId: promo.id, code: promo.code, status };
+}
+
+/** The applied discount as summaries show it, or `null`. */
+export function toDiscountLine(applied: AppliedDiscount | null): DiscountLine | null {
+  return applied === null
+    ? null
+    : { amount: fromKopiyky(applied.amount), code: applied.code, kind: applied.kind };
 }

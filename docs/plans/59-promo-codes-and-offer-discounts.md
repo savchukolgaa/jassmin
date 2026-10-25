@@ -256,7 +256,7 @@ and in the confirmation email.
   `id = cartDiscountId`), `lockCandidateDiscounts(tx, …)` (same, `FOR UPDATE`, order by id),
   `redeemDiscount(tx, id)` (conditional increment, returns boolean), `setCartDiscount(tx, cartId,
   id | null)`. Integration tests with `createTestDatabase()`.
-- [ ] **5. Cart service** — `getCartView` builds `PricingLine`s from `listCartLines` (add product
+- [x] **5. Cart service** — `getCartView` builds `PricingLine`s from `listCartLines` (add product
   `public_id` and `pack_size` if missing), loads candidates and returns `discount`, `total`,
   `promo`, `shipping`. `applyPromoCode` / `removePromoCode` (lock, check, store, `touchCart`).
   `mergeGuestCart` carries the code over. Extend `cart.test.ts` (DB): apply valid / each error,

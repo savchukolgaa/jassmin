@@ -205,7 +205,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - `updateUserPasswordHash(db, id, hash)`
 
   Extend `users.test.ts`.
-- [ ] **4. Profile service and limiter.** Write `services/profile.ts` with the result types from
+- [x] **4. Profile service and limiter.** Write `services/profile.ts` with the result types from
   Decisions. Each service function takes `database: Db = db`, as `getUser` does. `changeEmail`
   and `changePassword` use `findUserCredentialsById` and `verifyPassword`. Add
   `profilePasswordLimiter` to `rate-limit.ts`. Tests in `profile.test.ts` (`describe.skipIf`,

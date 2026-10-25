@@ -197,7 +197,7 @@ Each step is small, ordered, and leaves the app in a working state.
     `passwordTooShort`, a missing current password gives `currentPasswordRequired`, a different
     confirmation gives `passwordMismatch` on `confirmNewPassword`, and the existing register tests
     still pass.
-- [ ] **3. Queries.** In `db/queries/users.ts`:
+- [x] **3. Queries.** In `db/queries/users.ts`:
   - `findUserProfile(db, id)` → `{ fullName, email, phone, createdAt }`
   - `findUserCredentialsById(db, id)` → `UserCredentials`
   - `updateUserContact(db, id, { fullName, phone: string | null })`

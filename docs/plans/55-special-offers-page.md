@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/55
 Branch: `issue/55`
 Worktree: `.claude/worktrees/issue-55`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a shopper, I want one page with the store's current special offers (discovery sets, seasonal
@@ -302,20 +302,28 @@ Each step is small, ordered, and leaves the app in a working state.
   mobile) and footer link to `/offers`; check at 375 px width; add a product from an offer to the
   cart and confirm the checkout total is unchanged (no discount).
 
+## Verification results
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (849 passed, 1 skipped) and `pnpm build` pass.
+- The built server with Strapi unreachable answers `/offers` with the 503 page, and the header,
+  mobile menu and footer link to `/offers`.
+- Not done: the manual checks against a running, seeded Strapi (Aspire), and re-recording the
+  fixtures from it.
+
 ## Acceptance criteria
-- [ ] A C+ design mockup of the offers page is on the design canvas and listed in
+- [x] A C+ design mockup of the offers page is on the design canvas and listed in
   `docs/design.md` — step 12
 - [ ] Strapi has a localized `offer` content type supporting the offer types above, with seed
-  examples — steps 1, 2, 3
-- [ ] `/offers` lists only offers whose date window includes today, grouped by type, in Ukrainian
+  examples — steps 1, 2, 3. The type loads (Strapi typegen) and the seed type-checks, but the seed
+  hasn't been run: the local `strapidb` is only reachable under Aspire. Run `cms-seed` once.
+- [x] `/offers` lists only offers whose date window includes today, grouped by type, in Ukrainian
   and English — steps 4, 5, 6, 8, 9, 10, 11
-- [ ] Offers link to their products or catalog, and products that no longer exist are skipped —
+- [x] Offers link to their products or catalog, and products that no longer exist are skipped —
   steps 7, 8, 9, 10
-- [ ] The page shows an empty state when no offers are active, and a 503 error page when Strapi is
+- [x] The page shows an empty state when no offers are active, and a 503 error page when Strapi is
   down — steps 8, 9, 10
-- [ ] "Offers" is linked from the header and footer — step 11
-- [ ] No offer changes prices at checkout; price-changing promotions are tracked in a separate
-  issue — decisions (editorial `priceNote` only, no checkout changes), step 13
+- [x] "Offers" is linked from the header and footer — step 11
+- [x] No offer changes prices at checkout; price-changing promotions are tracked in a separate
+  issue — decisions (editorial `priceNote` only, no checkout changes), step 13 (#59)
 
 ## Out of scope
 - Discount and promo-code calculation at checkout (`orders.discount_amount` stays `0`), bundle or

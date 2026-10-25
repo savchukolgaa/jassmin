@@ -23,9 +23,12 @@ with zod and saved in the route `action`.
 - No new packages, env vars or migrations: `users.full_name`, `phone`, `email` and
   `password_hash` already exist. The schema has no `users.updated_at`, and this plan doesn't add
   one.
-- Design canvas: https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW (a claude.ai artifact owned by
-  the repo owner). The implementer reads it with the Artifact tool and republishes it to the same
-  URL.
+- Design canvas: https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW, a "Design" canvas owned by
+  this account (access checked on 2026-10-25). Its artboards are `project/<Name>.dc.html` files
+  listed in `project/canvas.json`, and the account page is `project/AccountPlus.dc.html`.
+- The email-change notice (Q3) uses the existing mail setup: `getMailTransport()` and
+  `stripLineBreaks` in `app/.server/mail.ts`, and `CONTACT_FROM` from `getEnv()`. Locally it lands
+  in smtp4dev under Aspire, and without `SMTP_URL` it's skipped.
 
 ## Decisions & assumptions
 - **Service location:** a new `app/.server/services/profile.ts` holds `getProfile`,
@@ -39,15 +42,17 @@ with zod and saved in the route `action`.
   `registerSchema` from them so nothing changes for registration. New schemas:
   - `contactSchema = { fullName, phone }`
   - `changeEmailSchema = { email: emailSchema, currentPassword }`
-  - `changePasswordSchema = { currentPassword, newPassword: newPasswordSchema }`
+  - `changePasswordSchema = { currentPassword, newPassword: newPasswordSchema,
+    confirmNewPassword }`, with a `.refine` that puts
+    `account.profile.errors.passwordMismatch` on `confirmNewPassword` when the two differ (Q2)
   - `currentPassword` is `z.string().min(1, msg("account.profile.errors.currentPasswordRequired"))`
   - `profileIntentSchema = z.enum(["contact", "email", "password"])`
 - **Error keys:** shared field rules keep their existing `auth.errors.*` keys (`nameRequired`,
   `phoneInvalid`, `emailInvalid`, `emailTaken`, `passwordTooShort`, …), so the two flows can't
   drift apart. New keys go in `account.profile.errors.*`: `currentPasswordRequired`,
-  `currentPasswordWrong`, `tooManyAttempts` and `invalidIntent`.
+  `currentPasswordWrong`, `passwordMismatch`, `tooManyAttempts` and `invalidIntent`.
 - **Clearing the phone:** a blank phone stores `NULL`, because phone is optional at registration
-  too. **(unconfirmed, Q1)**
+  too (Q1, confirmed).
 - **Action result shape:** `ProfileActionData` in `~/lib/auth` (isomorphic) is either
   `{ ok: true; intent }` or
   `{ ok: false; intent; fieldErrors?; formError?; values? }`, where `values` never includes a
@@ -67,11 +72,25 @@ with zod and saved in the route `action`.
   `{ ok: true } | { ok: false; error: "wrong-password" | "email-taken" }`. It verifies the
   password first, then updates. A `23505` from the update becomes `email-taken`, with no
   pre-check, so a race can't slip past. Setting the same email again is a harmless no-op success.
-  The session holds only `userId`, so it stays valid.
+  The session holds only `userId`, so it stays valid. On a real change, the success result
+  carries `previousEmail`.
+- **Email-change notice (Q3, confirmed):** after a successful change to a different address, the
+  action calls `void notifyEmailChanged({ to: previousEmail, newEmail, fullName, locale })`. It
+  sends a plain-text email to the **old** address: the account's email was changed to
+  `<new email>` at `<time>`, and if it wasn't you, contact the store. The copy comes from the
+  `account.profile.emailChangedMail` keys in the request's locale (`getLocale(request)`), and the
+  sender is `CONTACT_FROM`.
+  - It's built by `buildEmailChangedNotice(…)`, a pure function that is tested, and the name goes
+    through `stripLineBreaks`.
+  - The mailer is injectable (`MailSender | null`, as in `services/contact.ts`). Without
+    `SMTP_URL` it's skipped.
+  - It never throws: errors are logged, and the email change still succeeds when the mail fails.
+  - There's no outbox or retry like `order_emails`. A lost notice is acceptable here, and the
+    schema stays untouched.
 - **Password change:** `changePassword(db, userId, currentPassword, newPassword)` returns
   `{ ok: true } | { ok: false; error: "wrong-password" }` and stores only
-  `await hashPassword(newPassword)`. There's no "confirm new password" field, to match the
-  register form. **(unconfirmed, Q2)** The current session stays logged in, and other devices
+  `await hashPassword(newPassword)`. The form has a "Confirm new password" field, checked by zod
+  before any DB call (Q2, confirmed). The current session stays logged in, and other devices
   aren't signed out (issue assumption).
 - **Contact update:** `updateContact(db, userId, { fullName, phone })` needs no password. The
   layout's greeting refreshes automatically because React Router revalidates loaders after an
@@ -95,24 +114,16 @@ with zod and saved in the route `action`.
   doesn't lose the active state there. If it does, use a custom `isActive` for Orders that matches
   `/account` and `/account/orders/*`.
 
-## Open questions
-- [ ] **Q1: Can customers clear their phone number?** Why it matters: checkout requires a phone,
-  so a cleared phone just means typing it at checkout. Recommended default: yes, a blank phone
-  saves as `NULL`, the same as optional at registration. Affects steps: 2, 3.
-- [ ] **Q2: Should the password form have a "Confirm new password" field?** Why it matters: one
-  more field and error key; the register form has none. Recommended default: no, use one
-  new-password field with the same hint as registration. Affects steps: 2, 6.
-- [ ] **Q3: Should the old address get a notification email when the email changes?** Why it
-  matters: it's a security nicety, but it needs a new email template and `getMailTransport`
-  wiring, and email flows are out of scope for this issue. Recommended default: no; leave it for a
-  follow-up issue next to email verification. Affects steps: none (out of scope).
-- [ ] **Q4: Who updates the design canvas?** Why it matters: the canvas is a private claude.ai
-  artifact. The implementer can republish it only if this account has write access, or the
-  owner can add the artboard. Recommended default: `/implement` reads the artifact, adds the
-  `C+ Account profile` artboard next to `AccountPlus` and republishes it to the same URL. Affects
-  steps: 1.
-
 ## Resolved questions
+- **Q1: Can customers clear their phone number?** Yes. A blank phone saves as `NULL` (answered
+  by the user, 2026-10-25).
+- **Q2: Does the password form have a "Confirm new password" field?** Yes, with a
+  `passwordMismatch` field error (answered by the user, 2026-10-25).
+- **Q3: Does the old address get a notice when the email changes?** Yes, a plain-text notice to
+  the previous email, sent without failing the change (answered by the user, 2026-10-25).
+- **Q4: Who updates the design canvas?** `/implement` does: the canvas is owned by this account,
+  and reading it and listing its files works (checked on 2026-10-25). Add the artboard as
+  `project/AccountProfilePlus.dc.html` and update `project/canvas.json`.
 - **Does the checkout prefill need changes?** No. `getCheckoutPrefill` calls
   `findUserContact` on every checkout load, so new values show up right away (source:
   `app/.server/services/orders.ts:46`, `app/.server/db/queries/users.ts:51`).
@@ -137,12 +148,13 @@ with zod and saved in the route `action`.
 | Action | Path | Purpose |
 |--------|------|---------|
 | modify | `docs/design.md` | Add `C+ Account profile` row (`/account/profile`, #54) to "Pages and issues" |
-| modify | design canvas artifact | `C+ Account profile` artboard next to `AccountPlus` |
+| create | canvas `project/AccountProfilePlus.dc.html` | `C+ Account profile` artboard |
+| modify | canvas `project/canvas.json` | Board entry next to `AccountPlus.dc.html`, plus its `order` slot |
 | modify | `app/lib/auth.ts` | Extract field schemas; add `contactSchema`, `changeEmailSchema`, `changePasswordSchema`, `profileIntentSchema`, field types and `ProfileActionData` |
 | modify | `app/lib/auth.test.ts` | Tests for the new schemas; register schema unchanged |
 | modify | `app/.server/db/queries/users.ts` | `findUserProfile`, `findUserCredentialsById`, `updateUserContact`, `updateUserEmail`, `updateUserPasswordHash` |
 | modify | `app/.server/db/queries/users.test.ts` | Integration tests for the new queries |
-| create | `app/.server/services/profile.ts` | `getProfile`, `updateContact`, `changeEmail`, `changePassword` |
+| create | `app/.server/services/profile.ts` | `getProfile`, `updateContact`, `changeEmail`, `changePassword`, `buildEmailChangedNotice`, `notifyEmailChanged` |
 | create | `app/.server/services/profile.test.ts` | DB integration tests with `createTestDatabase()` |
 | modify | `app/.server/rate-limit.ts` | `profilePasswordLimiter` |
 | modify | `app/components/ui/TextField.tsx` | Optional `id` override |
@@ -158,17 +170,19 @@ with zod and saved in the route `action`.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Design mockup.** Read the canvas artifact, then add a `C+ Account profile` artboard
-  next to `AccountPlus`. It reuses the hero band and side menu, with "Profile details" active
-  (`bg-ink text-white` pill). Then three white `rounded-card` panels:
+- [ ] **1. Design mockup.** Read `project/canvas.json` and `project/AccountPlus.dc.html` from the
+  canvas. Create `project/AccountProfilePlus.dc.html` (title `C+ Account profile`) from a copy of
+  `AccountPlus`, then add its board entry to the index next to `AccountPlus`, 80 px to the right
+  in the same row, and its `order` slot. It reuses the hero band and side menu, with "Profile
+  details" active (`bg-ink text-white` pill). Then three white `rounded-card` panels:
   - Contact details: full name, phone (optional)
   - Email: new email, current password
-  - Password: current password, new password with hint
+  - Password: current password, new password with hint, confirm new password
 
   Show one field-error state (red-700 border and message), one success status line, primary
   `Button`s, the `onLight` focus ring, and a phone-width variant where the menu wraps above
-  stacked panels. Use only existing tokens. Republish to the same URL, and add the row to the
-  "Pages and issues" table in `docs/design.md`.
+  stacked panels. Use only existing tokens. Publish both files in one call to the canvas URL, and
+  add the row to the "Pages and issues" table in `docs/design.md`.
 - [ ] **2. Schemas.** In `app/lib/auth.ts`:
   - Extract `fullNameSchema`, `phoneSchema` and `newPasswordSchema`, and rebuild
     `registerSchema` from them.
@@ -176,8 +190,9 @@ Each step is small, ordered, and leaves the app in a working state.
     `ContactField` / `ChangeEmailField` / `ChangePasswordField` and `ProfileActionData`.
   - Tests in `auth.test.ts`: the email is trimmed and lowercased, a blank phone becomes
     `undefined`, a bad phone gives `auth.errors.phoneInvalid`, a short new password gives
-    `passwordTooShort`, a missing current password gives `currentPasswordRequired`, and the
-    existing register tests still pass.
+    `passwordTooShort`, a missing current password gives `currentPasswordRequired`, a different
+    confirmation gives `passwordMismatch` on `confirmNewPassword`, and the existing register tests
+    still pass.
 - [ ] **3. Queries.** In `db/queries/users.ts`:
   - `findUserProfile(db, id)` → `{ fullName, email, phone, createdAt }`
   - `findUserCredentialsById(db, id)` → `UserCredentials`
@@ -197,20 +212,27 @@ Each step is small, ordered, and leaves the app in a working state.
   - A taken email gives `email-taken`, and a mixed-case email is stored lowercased.
   - After a password change the stored hash starts with `$argon2id$`, `verifyLogin` succeeds with
     the new password and fails with the old one, and nothing returned contains `passwordHash`.
+  - `changeEmail` returns `previousEmail`.
+  - Unit tests (no DB) for the notice: `buildEmailChangedNotice` in uk and en (to the old
+    address, from `CONTACT_FROM`, mentions the new address, name without line breaks).
+    `notifyEmailChanged` sends through a fake `MailSender`, does nothing with `mailer: null`, and
+    resolves (logging the error) when `sendMail` rejects.
 - [ ] **5. i18n.** Add `account.nav.profile` ("Дані профілю" / "Profile details") and the
   `account.profile` keys in uk and en:
   - `title`, `memberSince`, `submitting`, `invalidIntent`
   - `contact.{heading, submit, saved}`
   - `email.{heading, newEmail, submit, saved}`
-  - `password.{heading, current, new, hint, submit, saved}`
-  - `errors.{currentPasswordRequired, currentPasswordWrong, tooManyAttempts}`
+  - `password.{heading, current, new, confirm, hint, submit, saved}`
+  - `errors.{currentPasswordRequired, currentPasswordWrong, passwordMismatch, tooManyAttempts}`
+  - `emailChangedMail.{subject, greeting, body, notYou, signature}`, where `body` has
+    `{newEmail}` and `{date}`
 - [ ] **6. UI components.** Add the `id` override to `TextField`. Write
   `features/account/ProfileForms.tsx`: each panel takes `profile`, `actionData` (only when its
   intent matches) and `submitting`. Field names and autocomplete:
   - contact: `fullName` (`name`), `phone` (`tel`)
   - email: `email` (`email`), `currentPassword` (`current-password`)
   - password: hidden `username`, `currentPassword` (`current-password`), `newPassword`
-    (`new-password`)
+    (`new-password`), `confirmNewPassword` (`new-password`)
 
   `formError` uses `FormAlert` from `features/auth/AuthLayout`. Component tests in
   `profile-ui.test.ts`:
@@ -228,6 +250,9 @@ Each step is small, ordered, and leaves the app in a working state.
     service, then `hit` on `wrong-password` (→ `currentPassword` field error
     `currentPasswordWrong`) or `reset` on success. `email-taken` → `email` field error
     `auth.errors.emailTaken`. Return `{ ok: true, intent }` on success.
+  - When the email really changed, call
+    `void notifyEmailChanged({ to: previousEmail, newEmail, fullName: user.fullName,
+    locale: await getLocale(request) })`.
 
   Register the route in `app/routes.ts` and add the `NavLink` in `account.tsx` (with the Orders
   active-state fix). Run `pnpm typecheck`.
@@ -235,14 +260,16 @@ Each step is small, ordered, and leaves the app in a working state.
   `~/.server/services/profile`, like `account._index.test.ts`), cover:
   - The loader returns the profile, and a logged-out loader or action → 302 to `/login`.
   - `contact` success and a validation error with `values` refilled.
-  - `email`: success, wrong password (limiter hit), taken email and a blocked limiter (429, with
-    no service call).
+  - `email`: success sends the notice to the old address, while the same email sends none. Also
+    wrong password (limiter hit, no notice), taken email and a blocked limiter (429, with no
+    service call).
+  - `password`: mismatched confirmation → field error with no service call.
   - `password`: success and wrong password; no response contains a password.
   - An unknown intent → 400.
   - `meta` and `headers`.
 - [ ] **9. Docs and verification.** Update `app/.server/AGENTS.md`: the password-hash rule now
   includes `findUserCredentialsById`, plus a short "Profile (#54)" note on the service, the
-  limiter and the email-taken handling. Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and
+  limiter, the email-taken handling and the email-change notice (best effort, no outbox). Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and
   `pnpm build`, and do the manual checks below.
 
 ## Testing & verification
@@ -254,8 +281,10 @@ Each step is small, ordered, and leaves the app in a working state.
   - Change the name and phone, then check that the hero greeting updates and `/checkout` is
     prefilled with the new values.
   - Change the email with a wrong password (field error), then with a taken email (field error),
-    then a valid change. Log out and log in with the new email.
-  - Change the password, then log in with the new one; the old one fails.
+    then a valid change. smtp4dev shows the notice sent to the old address. Log out and log in
+    with the new email.
+  - Change the password with a mismatched confirmation (field error), then validly, then log in
+    with the new one; the old one fails.
   - Six wrong current passwords → "too many attempts".
   - Repeat with JavaScript disabled, at phone width and in English.
 
@@ -275,8 +304,8 @@ Each step is small, ordered, and leaves the app in a working state.
 - [ ] Forms work without client JavaScript — steps 6, 7 (manual check with JS off)
 
 ## Out of scope
-- Deleting the account, email verification, password reset by email, and notifying the old
-  address of an email change (Q3).
+- Deleting the account, email verification and password reset by email.
+- An outbox or retries for the email-change notice (it's best effort).
 - Revoking sessions on other devices after a password change.
 - Saved Nova Poshta addresses and marketing preferences.
 - A `users.updated_at` column or any migration.

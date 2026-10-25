@@ -241,7 +241,7 @@ and in the confirmation email.
   `pnpm db:migrate` then `pnpm db:rollback` then migrate again on the dev DB.
 - [x] **2. Money helpers** — Move `toKopiyky` / `fromKopiyky` to `~/lib/money` (exported, with
   tests for `"0"`, `"999.5"`, `"1000.00"`, invalid input); `~/lib/checkout` imports them.
-- [ ] **3. `priceCart`** — `services/pricing.ts` with types `PricingLine { variantPublicId,
+- [x] **3. `priceCart`** — `services/pricing.ts` with types `PricingLine { variantPublicId,
   productPublicId, volumeMl, packSize, unitPrice (kop), quantity }` and `PricingDiscount`
   (row subset). Implement qualification, the three kinds, best-of selection, tie-breaks, clamp,
   free shipping and `codeStatus`. `pricing.test.ts` covers: each kind; scope by volume, product
@@ -261,7 +261,7 @@ and in the confirmation email.
   `promo`, `shipping`. `applyPromoCode` / `removePromoCode` (lock, check, store, `touchCart`).
   `mergeGuestCart` carries the code over. Extend `cart.test.ts` (DB): apply valid / each error,
   remove, stored code becoming not-applicable, merge.
-- [ ] **6. i18n** — Add every new key to `uk.ts` and `en.ts`: `cart.promo.{label, placeholder,
+- [x] **6. i18n** — (Done together with step 3, because `~/lib/discounts` and the pricing types already need the keys.) Add every new key to `uk.ts` and `en.ts`: `cart.promo.{label, placeholder,
   apply, remove, applied, notBest, notApplicable}`, `cart.errors.{promoInvalid, promoExpired,
   promoUsedUp, promoNotApplicable, promoRateLimited}`, `cart.total`, `checkout.discount`,
   `checkout.discountWithCode`, `checkout.discountTesterSet`, `checkout.errors.discountChanged`. `pnpm typecheck` enforces parity.

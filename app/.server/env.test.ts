@@ -98,6 +98,29 @@ describe("parseEnv", () => {
   });
 });
 
+describe("parseEnv: PAYMENT_PROVIDER", () => {
+  it("leaves card payment unconfigured by default and treats an empty value as unset", () => {
+    expect(parseEnv(valid).PAYMENT_PROVIDER).toBeUndefined();
+    expect(parseEnv({ ...valid, PAYMENT_PROVIDER: "" }).PAYMENT_PROVIDER).toBeUndefined();
+  });
+
+  it("accepts the simulator outside production", () => {
+    expect(parseEnv({ ...valid, PAYMENT_PROVIDER: "simulator" }).PAYMENT_PROVIDER).toBe(
+      "simulator",
+    );
+  });
+
+  it("refuses the simulator in production", () => {
+    expect(() =>
+      parseEnv({ ...valid, PAYMENT_PROVIDER: "simulator", NODE_ENV: "production" }),
+    ).toThrow(/PAYMENT_PROVIDER/);
+  });
+
+  it("rejects an unknown provider", () => {
+    expect(() => parseEnv({ ...valid, PAYMENT_PROVIDER: "liqpay" })).toThrow(/PAYMENT_PROVIDER/);
+  });
+});
+
 describe("getDatabaseUrl", () => {
   it("prefers JASSMINDB_URI over DATABASE_URL", () => {
     expect(

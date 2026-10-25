@@ -17,9 +17,6 @@ export const FREE_SHIPPING_THRESHOLD = "1000.00";
  */
 export const SHIPPING_AMOUNT = "0.00";
 
-/** No discounts or promo codes yet. */
-export const DISCOUNT_AMOUNT = "0.00";
-
 /**
  * A Ukrainian phone number as `+380XXXXXXXXX`, or `undefined` when it isn't one. Accepts
  * `+380 67 123 45 67`, `380671234567`, `(067) 123-45-67` and the like.
@@ -55,6 +52,15 @@ export const checkoutSchema = z.object({
   city: requiredText(100, "checkout.errors.cityRequired", "checkout.errors.cityTooLong"),
   branch: requiredText(255, "checkout.errors.branchRequired", "checkout.errors.branchTooLong"),
   paymentMethod: z.enum(PAYMENT_METHODS, { error: msg("checkout.errors.paymentRequired") }),
+  /**
+   * The total the page showed (#59), so the order is never placed at more: a code or offer may
+   * stop working between loading the page and submitting it. Left out, it isn't checked.
+   */
+  expectedTotal: z
+    .string()
+    .regex(/^\d{1,8}(?:\.\d{1,2})?$/)
+    .optional()
+    .catch(undefined),
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;

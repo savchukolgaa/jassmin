@@ -1,5 +1,5 @@
 // Discount rules (#59). Pricing itself is `priceCart` (`services/pricing.ts`); these queries load
-// the candidate rules for a cart, lock them at checkout and count a redemption.
+// the candidate rules for a cart and count a redemption at checkout.
 import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import type { PricingDiscount } from "../../services/pricing";
 import type { Db } from "../client";
@@ -59,25 +59,9 @@ export function listCandidateDiscounts(
 }
 
 /**
- * The same candidates, locked until the transaction ends, for checkout. Locked in id order after
- * the cart and its variant rows, so concurrent checkouts can't deadlock, and a code's
- * `redemption_count` can't change between pricing and redeeming.
- */
-export function lockCandidateDiscounts(
-  db: Executor,
-  cartDiscountId: number | null,
-): Promise<PricingDiscount[]> {
-  return db
-    .select(pricingColumns)
-    .from(discounts)
-    .where(candidatesWhere(cartDiscountId))
-    .orderBy(asc(discounts.id))
-    .for("update");
-}
-
-/**
- * Counts one more order for the rule unless it's used up; returns whether it did. The
- * `discounts_redemptions_check` constraint is the last guard against going over the limit.
+ * Counts one more order for the rule unless it's used up; returns whether it did. The row stays
+ * locked until the transaction ends, so a concurrent checkout's increment waits for it and then
+ * sees the new count. The `discounts_redemptions_check` constraint is the last guard.
  */
 export async function redeemDiscount(db: Executor, discountId: number): Promise<boolean> {
   const rows = await db

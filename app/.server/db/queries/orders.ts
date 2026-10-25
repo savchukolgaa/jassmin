@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { AccountOrderLine } from "~/lib/account";
 import {
-  DISCOUNT_AMOUNT,
   FREE_SHIPPING_THRESHOLD,
   type OrderConfirmation,
   type OrderSummaryLine,
@@ -9,7 +8,15 @@ import {
 } from "~/lib/checkout";
 import type { CartStatus, PaymentMethod } from "~/lib/enums";
 import type { Db } from "../client";
-import { cartItems, carts, orderItems, orders, products, productVariants } from "../schema";
+import {
+  cartItems,
+  carts,
+  discounts,
+  orderItems,
+  orders,
+  products,
+  productVariants,
+} from "../schema";
 
 /** A `Db` or a transaction, so the order service can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
@@ -38,6 +45,9 @@ export function lockCartLinesForOrder(db: Executor, cartId: number) {
       variantId: productVariants.id,
       variantPublicId: productVariants.publicId,
       productId: productVariants.productId,
+      // For product- and pack-scoped discount rules (#59).
+      productPublicId: products.publicId,
+      packSize: products.packSize,
       volumeMl: productVariants.volumeMl,
       price: productVariants.price,
       stockQuantity: productVariants.stockQuantity,
@@ -45,6 +55,7 @@ export function lockCartLinesForOrder(db: Executor, cartId: number) {
     })
     .from(cartItems)
     .innerJoin(productVariants, eq(productVariants.id, cartItems.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
     .where(eq(cartItems.cartId, cartId))
     .orderBy(asc(productVariants.id))
     .for("update", { of: productVariants });
@@ -60,15 +71,19 @@ export interface NewOrder {
   paymentMethod: PaymentMethod;
   /** The lines' sum as an exact decimal string, from `cartTotals`. */
   subtotal: string;
+  /** What the applied discount takes off (#59), `"0.00"` without one. */
+  discountAmount: string;
+  /** The applied rule, or `null`. */
+  discountId: number | null;
 }
 
 /**
  * Inserts the order. The total and `free_shipping` are computed by PostgreSQL as `numeric`, from
- * the subtotal and the discount, shipping and free-shipping constants.
+ * the subtotal, the discount and the shipping and free-shipping constants.
  */
 export async function insertOrder(db: Executor, order: NewOrder): Promise<number> {
   const subtotal = sql`${order.subtotal}::numeric`;
-  const discount = sql`${DISCOUNT_AMOUNT}::numeric`;
+  const discount = sql`${order.discountAmount}::numeric`;
   const [row] = await db
     .insert(orders)
     .values({
@@ -80,7 +95,8 @@ export async function insertOrder(db: Executor, order: NewOrder): Promise<number
       shippingAddress: order.shippingAddress,
       paymentMethod: order.paymentMethod,
       subtotal: order.subtotal,
-      discountAmount: DISCOUNT_AMOUNT,
+      discountAmount: order.discountAmount,
+      discountId: order.discountId,
       shippingAmount: SHIPPING_AMOUNT,
       totalAmount: sql`(${subtotal} - ${discount} + ${SHIPPING_AMOUNT}::numeric)::numeric(10, 2)`,
       freeShipping: sql`(${subtotal} - ${discount}) >= ${FREE_SHIPPING_THRESHOLD}::numeric`,

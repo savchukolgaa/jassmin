@@ -157,6 +157,18 @@ and in the confirmation email.
   code that stopped working.
 - The promo limiter (`promoCodeLimiter` in `rate-limit.ts`) counts only refused codes, keyed by
   client IP, then the visitor id.
+- Checkout doesn't lock every candidate rule (`lockCandidateDiscounts` was dropped): the trio
+  is a candidate in every cart, so locking it would make all checkouts wait for each other.
+  Instead `createOrder` prices the locked lines with unlocked candidates, then redeems the
+  chosen rule with the conditional `redeemDiscount` update. That update waits for a concurrent
+  checkout of the same rule and matches nothing once it's used up, so the cart is priced again
+  without that rule.
+- The guard against a code that stopped working is a total check: the checkout form posts the
+  `expectedTotal` it showed, and `createOrder` returns `total-changed` (and rolls back,
+  redemption included) when the total came out higher. This also covers an expired window or a
+  price change between loading the page and submitting it. The error key is
+  `checkout.errors.totalChanged` instead of `discountChanged`. Without `expectedTotal`, the
+  order is placed at the price worked out at checkout.
 
 **Analytics** — `checkout_start` properties gain `discountCode` (or `null`) and `discountAmount`;
 `purchase` gains `discountId`, `discountCode`, `discountAmount` and `totalAmount`.
@@ -282,7 +294,7 @@ and in the confirmation email.
   `docs/design.md`, visible label, error in `role="alert"` linked with `aria-describedby`).
   `CartSummary` shows subtotal, discount row, total and the discounted free-shipping note. Extend
   `routes/cart.test.ts` (mocked services) and `cart-ui.test.ts` (uk + en rendering).
-- [ ] **8. Checkout service** — `createOrder`: after the stock check, read the cart's
+- [x] **8. Checkout service** — `createOrder`: after the stock check, read the cart's
   `discount_id`, `lockCandidateDiscounts`, `priceCart` with `now = new Date()`, handle
   `discount-changed`, `redeemDiscount`, then `insertOrder({ …, discountAmount, discountId })`.
   `insertOrder` binds the discount instead of `DISCOUNT_AMOUNT`. Return the new fields.

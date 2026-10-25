@@ -47,7 +47,7 @@ describe.skipIf(!hasDatabase)("discount queries", () => {
   });
 
   it("lists active automatic rules and the cart's own code, active or not", async () => {
-    const { listCandidateDiscounts, lockCandidateDiscounts } = await import("./discounts");
+    const { listCandidateDiscounts } = await import("./discounts");
     const trio = await insertDiscount({ slug: "trio" });
     await insertDiscount({ slug: "old-auto", active: false });
     await insertDiscount({ slug: "other-code", code: "OTHER" });
@@ -56,9 +56,6 @@ describe.skipIf(!hasDatabase)("discount queries", () => {
     const ids = (rows: { id: number }[]) => rows.map((row) => row.id);
     expect(ids(await listCandidateDiscounts(testDb.db, null))).toEqual([trio]);
     expect(ids(await listCandidateDiscounts(testDb.db, retired))).toEqual([trio, retired]);
-    await testDb.db.transaction(async (tx) => {
-      expect(ids(await lockCandidateDiscounts(tx, retired))).toEqual([trio, retired]);
-    });
   });
 
   it("redeems a code until its limit, never past it", async () => {

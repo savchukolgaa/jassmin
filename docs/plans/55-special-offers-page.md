@@ -108,6 +108,12 @@ editorial only: they never change prices at checkout.
   `offers.validUntilAt` with `t()`, so the server needs no new message keys. An offer that ends
   at Kyiv midnight is shown as valid until the day before (it ends as that day ends). A CTA with a
   safe path but no label keeps the link and the UI shows a default label.
+- **Steps 9–11 were done as 11 → 10 → 9** (deviation): the route renders the page UI and both
+  need the `offers` copy, so the i18n keys and navigation went first. The route reuses the blog's
+  `blogCacheHeaders` / `blogResponseHeaders` under their current names, since they describe "CMS
+  page in the visitor's language" accurately enough. A public cache may show an offer for up to
+  a minute (plus five of `stale-while-revalidate`) after it ends. `OffersPage` composes the
+  sections so the component tests can render the whole page.
 - **Follow-up issue** (Q4): `/implement` creates the "discounts and promo codes at checkout"
   issue with `/create-issue` and the PR links it.
 
@@ -248,7 +254,7 @@ Each step is small, ordered, and leaves the app in a working state.
   the date. Unit-test hero choice (lowest `sortOrder` wins over kind), grouping, both valid-until
   labels,
   skipped products, unsafe CTA → `null`, and the empty case.
-- [ ] **9. Route** — Add `route("offers", "routes/offers.tsx")` under the `_shop` layout in
+- [x] **9. Route** — Add `route("offers", "routes/offers.tsx")` under the `_shop` layout in
   `app/routes.ts`. In `routes/offers.tsx`: `loader` gets the locale, `listActiveOffers(locale)
   .catch(cmsUnavailable)`, collects all `productIds`, calls `getProductSummaries` once, and returns
   `data(buildOffersPageView(...), { headers: blogCacheHeaders(request) })`; `headers` like

@@ -7,6 +7,7 @@ export default [
     route("products/:id", "routes/product.tsx"),
     route("blog", "routes/blog.tsx"),
     route("blog/:slug", "routes/blog-post.tsx"),
+    route("offers", "routes/offers.tsx"),
     route("login", "routes/login.tsx"),
     route("register", "routes/register.tsx"),
     route("cart", "routes/cart.tsx"),

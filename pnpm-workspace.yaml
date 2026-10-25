@@ -2,6 +2,10 @@ packages:
   - "."
   - cms
 
+# Every checkout (main and each issue worktree) links its node_modules into one shared virtual
+# store inside the pnpm store, instead of building its own node_modules/.pnpm tree (#49).
+enableGlobalVirtualStore: true
+
 # Packages whose install/build scripts may run (pnpm blocks all others).
 # Keep in sync with scripts/aspire.mjs, which passes the same list to pnpm under Aspire.
 allowBuilds:

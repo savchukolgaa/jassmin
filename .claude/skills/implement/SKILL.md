@@ -14,7 +14,7 @@ If no issue number is given, ask for one.
 
 ## Procedure
 
-1. **Enter the issue's worktree**: Follow [docs/skills/worktree.md](../../docs/skills/worktree.md) to locate or initialize `$MAIN/.claude/worktrees/issue-$N` on branch `issue/$N`. If neither the local nor remote branch exists, stop and suggest `/create-plan $N`. Ensure `$WT/.env` exists (copy from `$MAIN/.env` if missing) and run `pnpm install` in `$WT`.
+1. **Enter the issue's worktree**: Follow [docs/skills/worktree.md](../../docs/skills/worktree.md) to locate or initialize `$MAIN/.claude/worktrees/issue-$N` on branch `issue/$N`. If neither the local nor remote branch exists, stop and suggest `/create-plan $N`. Link `$WT/.env` and `$WT/cms/.env` to the main checkout's if missing (`node "$WT/scripts/link-env.mjs" "$WT"`, see worktree.md) and run `pnpm install` in `$WT`.
 2. **Load the plan and issue**: Find the plan at `$WT/docs/plans/$N-*.md`. Read the whole plan, then the issue (`gh issue view $N --json title,body,comments`) to check nothing changed. Handle open questions as specified in [docs/skills/implement.md](../../docs/skills/implement.md).
 3. **Implement step by step**: For each unchecked step in the plan, follow the implementation and verification loop in [docs/skills/implement.md](../../docs/skills/implement.md):
    - Adhere to codebase conventions (React Router SSR, `app/.server/`, strict TS, zod input validation, transactions, tests).

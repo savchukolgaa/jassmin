@@ -76,9 +76,9 @@ https://github.com/<owner>/<repo>/blob/<commit-before-removal>/docs/plans/<file>
    ```
    Add labels matching the issue (`--label "<label1>,<label2>"`). Use `--draft` if the user requested a draft PR.
 3. **Report to user**:
-   Provide the PR URL and worktree path. Remind the user of the post-merge cleanup commands (see [worktree.md](./worktree.md)):
+   Provide the PR URL and worktree path. Remind the user of the post-merge cleanup commands (see [worktree.md → Worktree Cleanup](./worktree.md#worktree-cleanup-post-merge-only); never plain `git worktree remove`, which follows `node_modules` junctions into pnpm's shared store):
    ```bash
-   git worktree remove .claude/worktrees/issue-<n>
+   pnpm worktree:remove <n>
    git branch -D issue/<n>
    git push origin --delete issue/<n>
    ```

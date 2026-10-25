@@ -1,12 +1,13 @@
 // Starts `/create-plan <n>` for several issues at once, each in its own Herdr tab
 // (e.g. `pnpm herdr:plans 11 19 43`). For every issue it prepares the worktree
-// `.claude/worktrees/issue-<n>` on branch `issue/<n>` (see docs/skills/worktree.md), copies `.env`,
-// opens a tab labelled `issue-<n>`, starts an agent named `issue-<n>` and sends it the prompt.
+// `.claude/worktrees/issue-<n>` on branch `issue/<n>` (see docs/skills/worktree.md), links `.env`
+// and `cms/.env` to the main checkout's (scripts/link-env.mjs), opens a tab labelled `issue-<n>`,
+// starts an agent named `issue-<n>` and sends it the prompt.
 // Worktrees are created one after another so parallel agents never race for git's locks.
 // Must run inside a Herdr pane; the agents keep running after the script exits.
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { linkEnvFiles } from "./link-env.mjs";
 
 const usage =
   "Usage: pnpm herdr:plans <issue> [<issue> ...] [--kind <agent>]  (default kind: claude)";
@@ -72,8 +73,9 @@ for (const n of issues) {
       "agent",
       "prompt",
       name,
-      `/create-plan ${n} — The worktree .claude/worktrees/${name} (branch issue/${n}) and .env ` +
-        "already exist; reuse them. Stop after committing the plan and report open questions.",
+      `/create-plan ${n} — The worktree .claude/worktrees/${name} (branch issue/${n}) and its ` +
+        "linked .env files already exist; reuse them. Stop after committing the plan and report " +
+        "open questions.",
     );
     console.log(`#${n}: planning in tab "${name}" (${tab.result.tab.tab_id}), worktree ${wt}`);
   } catch (error) {
@@ -93,7 +95,7 @@ function prepareWorktree(n) {
     .find((entry) => entry.split("\n").includes(`branch refs/heads/${branch}`))
     ?.match(/^worktree (.+)$/m)?.[1];
   if (existing) {
-    copyEnv(existing);
+    linkEnvFiles(main, existing);
     return existing;
   }
   if (git("-C", main, "branch", "--list", branch)) {
@@ -103,14 +105,8 @@ function prepareWorktree(n) {
   } else {
     git("-C", main, "worktree", "add", "-b", branch, wt, "origin/main");
   }
-  copyEnv(wt);
+  linkEnvFiles(main, wt);
   return wt;
-}
-
-function copyEnv(wt) {
-  const source = join(main, ".env");
-  const target = join(wt, ".env");
-  if (existsSync(source) && !existsSync(target)) copyFileSync(source, target);
 }
 
 function fail(message) {

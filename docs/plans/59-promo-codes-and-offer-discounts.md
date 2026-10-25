@@ -92,7 +92,7 @@ and in the confirmation email.
   supports scope + `min_quantity` for `percent` / `fixed_amount` (promo codes can use them, e.g. a
   code valid only on 50 ml), but nothing seeds an automatic percent rule.
 - The trio is the **only automatic rule**. Every other saving needs a promo code (owner, Q3:
-  "no sales in this issue") **(unconfirmed, Q6)**.
+  "no sales in this issue"; Q6: the trio is the one exception).
 
 **Cart**
 
@@ -139,7 +139,8 @@ and in the confirmation email.
   page. `CartSummary` gets the same row plus the promo form.
 - Discount label: a generic translated label, not a per-rule name stored in the DB:
   `checkout.discountWithCode` "Знижка (промокод {code})" for a code and
-  `checkout.discountTesterSet` "Набір тестерів 3 × 10 мл" for the trio (the only automatic rule,
+  `checkout.discountTesterSet` "Тестерне тріо 3 × 10 мл" for the trio (not "Набір тестерів", the
+  name of the separate set product) (the only automatic rule,
   so a dictionary key is enough; picked by `kind === "fixed_price_set"`), with `checkout.discount`
   "Знижка" as the fallback.
 - `findOrder` / `findUserOrder` left-join `discounts` for `discountCode`; `OrderConfirmation` and
@@ -167,16 +168,10 @@ and in the confirmation email.
   is added. The seed skips offers that already exist, so existing Strapi databases keep the old
   text until edited in the admin (noted in the PR). No Strapi content-model change (Q4).
 
-## Open questions
-
-- [ ] **Q6: Is the tester trio the one exception to "no sales in this issue"?** — Why it matters:
-  for Q3 you chose "only promo codes reduce prices", but for Q1 you described the trio as any
-  three 10 ml sizes for 499 ₴, which is an automatic price. Recommended default: the trio applies
-  automatically when the cart qualifies (it is the issue's acceptance criterion), and nothing else
-  does. The alternative is a trio promo code, which only changes the seed row (step 11). Affects
-  steps: 3, 11.
-
 ## Resolved questions
+
+- **Is the trio the one exception to "no sales" (Q6, owner: default)** — Yes: the trio applies
+  automatically when the cart qualifies, and every other saving needs a promo code.
 
 - **Tester trio (Q1, owner)** — Any three 10 ml sizes (single units, not the 3 × 10 ml set
   product) cost 499 ₴ per set. An order gets 1 to 3 sets; extra 10 ml units are full price.

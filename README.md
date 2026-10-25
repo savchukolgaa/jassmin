@@ -101,8 +101,9 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin area](#admin-area) |
 | `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
+| `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 
-The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-rollback` and `db-mark-abandoned-carts` start by hand) instead of from a terminal.
+The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-rollback`, `db-mark-abandoned-carts` and `db-send-order-emails` start by hand) instead of from a terminal.
 
 The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration and seed tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
 
@@ -119,6 +120,20 @@ The app server only handles requests, so run the job hourly from an external sch
 Like the other `db:*` scripts it runs TypeScript with `tsx`, a dev dependency, so install dev dependencies (plain `pnpm install`) where it runs. Under Aspire, start the `db-mark-abandoned-carts` resource from the dashboard.
 
 A shopper whose cart was abandoned sees an empty cart when they come back, and their next add starts a new cart. The abandoned cart stays as it was, for analytics.
+
+## Order emails
+
+Every placed order gets a plain-text confirmation email (#45) in the language the shopper checked out in, from `ORDER_FROM` (default `CONTACT_FROM`) with replies going to `CONTACT_INBOX`. It's queued in the `order_emails` table in the same transaction as the order, so an order never exists without its email and a failed checkout queues nothing. Right after the order commits, the checkout tries to send it without waiting; a mail failure is logged and never affects the order or the redirect.
+
+`pnpm db:send-order-emails` sends whatever is still due: it retries a failed email after 1, 5 and 15 minutes, then 1, 3, 6, 12 and 24 hours, and after 8 attempts (about two days) marks it `failed` with the last error in `last_error`. Sending a row first pushes its next attempt out, so two senders never send the same email and a crash mid-send only means a later retry. Without `SMTP_URL`, nothing is sent and the emails stay `pending` until it's set.
+
+Run the job every 5 minutes from an external scheduler, like the abandoned-cart job. With system cron, for example:
+
+```cron
+*/5 * * * * cd /srv/jassmin && pnpm db:send-order-emails >> /var/log/jassmin/order-emails.log 2>&1
+```
+
+It needs the database URL and the mail variables (`SMTP_URL`, `ORDER_FROM`, `CONTACT_FROM`, `CONTACT_INBOX`), but not `SESSION_SECRET`. Under Aspire, start the `db-send-order-emails` resource from the dashboard; it sends to smtp4dev.
 
 ## Database migrations
 

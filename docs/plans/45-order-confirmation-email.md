@@ -213,7 +213,7 @@ and never affects the order or the redirect.
 
   Check: unit tests with a fake `MailSender` and stubbed query functions (passed as deps), for
   each outcome and for no SMTP.
-- [ ] **7. Retry job.** Create `db/scripts/send-order-emails.ts` (load `.env`, `getDatabaseUrl`,
+- [x] **7. Retry job.** Create `db/scripts/send-order-emails.ts` (load `.env`, `getDatabaseUrl`,
   `parseMailEnv`, `createDb(url, 1)`, an SMTP transport from `smtpOptionsFromUrl`, run
   `deliverOrderEmails({}, deps)`, log the counts, then close the pool and the transport). Add the
   `db:send-order-emails` script to `package.json` and the `db-send-order-emails` resource to

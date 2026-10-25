@@ -6,6 +6,7 @@ import type { ClaimedOrderEmail } from "../db/queries/order-emails";
 import {
   buildOrderConfirmationEmail,
   deliverOrderEmails,
+  describeOrderEmailReport,
   type OrderEmailDeps,
   type OrderEmailEnv,
 } from "./order-email";
@@ -307,5 +308,16 @@ describe("deliverOrderEmails", () => {
     });
     await expect(deliverOrderEmails({}, failingMarks)).resolves.toMatchObject({ sent: 1 });
     expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe("describeOrderEmailReport", () => {
+  it("summarises a run of the retry job", () => {
+    expect(describeOrderEmailReport({ sent: 3, retrying: 1, gaveUp: 0, skipped: false })).toBe(
+      "Order emails: 3 sent, 1 to retry, 0 given up.",
+    );
+    expect(describeOrderEmailReport({ sent: 0, retrying: 0, gaveUp: 0, skipped: true })).toBe(
+      "SMTP_URL is not set, so no order emails were sent; they stay queued.",
+    );
   });
 });

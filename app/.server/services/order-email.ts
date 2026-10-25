@@ -238,3 +238,16 @@ export async function deliverOrderEmails(
   }
   return report;
 }
+
+/** The retry job's log line. */
+export function describeOrderEmailReport({
+  sent,
+  retrying,
+  gaveUp,
+  skipped,
+}: OrderEmailReport): string {
+  if (skipped) {
+    return "SMTP_URL is not set, so no order emails were sent; they stay queued.";
+  }
+  return `Order emails: ${sent} sent, ${retrying} to retry, ${gaveUp} given up.`;
+}

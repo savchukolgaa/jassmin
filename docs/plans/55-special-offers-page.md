@@ -224,7 +224,7 @@ Each step is small, ordered, and leaves the app in a working state.
   filter with `now` as UTC ISO, the sort and `locale=uk`,
   swaps in English translations and keeps Ukrainian where missing, and turns an outage into
   `CmsError`.
-- [ ] **7. Product lookup** — Add `listProductSummariesByPublicIds(db, ids)` (same select as
+- [x] **7. Product lookup** — Add `listProductSummariesByPublicIds(db, ids)` (same select as
   `listProducts`, `inArray(products.publicId, ids)`, inner join on `variantStats`) and
   `getProductSummaries(ids, db = defaultDb): Promise<Map<string, ProductSummary>>` in
   `services/products.ts` (returns an empty map without querying when `ids` is empty). Test it in

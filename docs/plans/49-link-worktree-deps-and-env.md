@@ -50,8 +50,8 @@ get much faster and use far less disk.
   first. On `EPERM` (Windows without Developer Mode), try `fs.linkSync` (NTFS hard links need no
   rights and stay in sync as long as the file is edited in place, which is what editors do for
   `.env`), and only if that fails too (e.g. different volume) copy. Every fallback prints a notice
-  saying which kind of link was made and why, so a stale copy is never silent. **(unconfirmed: see
-  Q1)**
+  saying which kind of link was made and why, so a stale copy is never silent (confirmed by the
+  user, see Resolved questions).
 - **Git ignores the links already.** Root `.gitignore` has `.env` and `cms/.gitignore` has `.env`;
   both patterns match a symlink or hard link the same as a regular file. `git worktree remove`
   deletes ignored files without `--force`, and deleting a symlink or hard link never touches the
@@ -79,27 +79,16 @@ get much faster and use far less disk.
   in a scratch note and copy them into the PR (the issue asks for them there, not in the repo).
 - Aspire's own `aspire-apphost/` package (installed with `--ignore-workspace`) is untouched.
 
-## Open questions
-- [ ] **Q1: Is a hard link an acceptable middle fallback for `.env`, or should it be symlink → copy
-  only, as the issue says?** — Why it matters: on this machine symlinks fail (`EPERM`), so with
-  symlink → copy every worktree gets a copy that goes stale, which is the problem the issue wants to
-  fix; a hard link stays in sync unless an editor replaces the file instead of writing it in place.
-  Recommended default: symlink → hard link → copy, each fallback with a printed notice. Affects
-  steps: 3, 5.
-- [ ] **Q2: Should fast removal be a script (e.g. `pnpm worktree:remove <n>` that deletes the
-  linked `node_modules`, runs `git worktree remove`, `git branch -D` and deletes the remote
-  branch), or documentation only?** — Why it matters: a script is cross-platform and avoids
-  someone using a delete command that follows junctions into the shared store; docs-only is what
-  the issue asks for and adds no new code. Recommended default: documentation only, in
-  `docs/skills/worktree.md` and `docs/skills/open-pr.md`, unless the spike shows `git worktree
-  remove` alone is still slow. Affects steps: 6.
-- [ ] **Q3: Should `scripts/herdr-plans.mjs` also run `pnpm install` in each new worktree now that
-  it's cheap?** — Why it matters: agents would start with dependencies ready, but installs would
-  run in series before tabs open. Recommended default: no, keep the script's behaviour (agents run
-  `pnpm install` when they need it, per the `implement` skill), so the README row only changes
-  "copies" to "links". Affects steps: 5.
-
 ## Resolved questions
+- **Is a hard link an acceptable middle fallback for `.env`?** — Yes: symlink → hard link → copy,
+  each fallback with a printed notice. A plain symlink → copy order would give every worktree on
+  this machine a stale copy, since symlinks fail with `EPERM`. (source: user, on the plan for #49)
+- **Removal script or documentation only?** — Documentation only, in `docs/skills/worktree.md` and
+  `docs/skills/open-pr.md`; no `pnpm worktree:remove` script, unless the spike shows
+  `git worktree remove` alone is still slow. (source: user, on the plan for #49)
+- **Should `scripts/herdr-plans.mjs` also run `pnpm install`?** — No; agents install when they
+  need to (per the `implement` skill), so the README row only changes "copies" to "links".
+  (source: user, on the plan for #49)
 - **Which pnpm version, and where does it read the setting?** — pnpm 12.15.0; workspace settings
   live in `pnpm-workspace.yaml` (that's where `allowBuilds` already is, and `pnpm config list`
   shows them). (source: `package.json`, `pnpm-workspace.yaml`)

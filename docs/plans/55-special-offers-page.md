@@ -45,17 +45,25 @@ editorial only: they never change prices at checkout.
   used by the zod schema, the DTO type and the grouping order. Card groups render in this order:
   `discovery-set`, `seasonal`, `gift`, `bundle`, `featured`, `last-units`. `perk` offers aren't
   cards: they fill the perks strip.
-- **Active window** (**unconfirmed**, Q1): `startsAt` / `endsAt` are Strapi `date` fields (no
-  time), inclusive, compared with today's date in `Europe/Kyiv` (the translator's time zone).
-  Missing `startsAt` means "already started", missing `endsAt` means "no end". Strapi filters the
-  window (`$or` of `$null` / `$lte` / `$gte`), and a pure `isOfferActive(offer, today)` applies
-  the same rule in the app so it's unit-testable and safe against clock skew.
+- **Active window** (Q1): `startsAt` / `endsAt` are Strapi `datetime` fields, so an offer can
+  start at noon or end at 23:59. The app parses them as ISO 8601 with an offset
+  (`z.iso.datetime({ offset: true })`, so `Z` and `+02:00` / `+03:00` both work) and compares
+  instants, never local wall-clock strings. The window is `startsAt <= now < endsAt` (start
+  inclusive, end exclusive). A missing `startsAt` means "already started" and a missing `endsAt`
+  means "no end". Strapi filters the window with `now.toISOString()` (`$or` of `$null` / `$lte` /
+  `$gt`), and a pure `isOfferActive(offer, now)` applies the same rule in the app so it's
+  unit-testable and copes with clock skew. "Valid until" shows `endsAt` as a date with
+  `formatDate` (Europe/Kyiv), adding the time only when the offer doesn't end at Kyiv midnight
+  (step 8).
 - **Locale fallback** like `listBlogPosts`: read the active `uk` offers (dates and kind aren't
   localized, so `uk` decides what's active), then fetch the `en` translations by `documentId` and
   swap each one in when present. One page of up to `MAX_PAGE_SIZE` (50) offers, sorted
   `sortOrder:asc`, then `startsAt:desc` as a tie-breaker.
-- **Hero** (**unconfirmed**, Q2): the "main campaign" is the first active `seasonal` offer by
-  `sortOrder`, else the first active non-perk offer. It isn't repeated as a card.
+- **Hero** (Q2): the editor chooses it through ordering. The "main campaign" is the active
+  non-perk offer with the lowest `sortOrder` (ties: latest `startsAt`, then `documentId`), whatever
+  its kind. There's no extra field and no fixed kind preference: lowering an offer's `sortOrder` in
+  Strapi moves it into the hero. It isn't repeated as a card. `sortOrder` also orders offers
+  within each group.
 - **Empty state**: shown when no non-perk offer is active. The perks strip still renders when perk
   offers exist; the empty state offers both catalogs and the blog.
 - **CTA links** are internal paths only. A new `toInternalPath(href)` in `app/lib/links.ts` reuses
@@ -81,31 +89,24 @@ editorial only: they never change prices at checkout.
   catalogs, before Blog) render it.
 - **Account empty state** (#12): add an "Offers" `ButtonLink` next to the catalog links in the
   "No orders yet" state, as the issue's context asks.
-- **Design canvas** (**unconfirmed**, Q3): add a `C+ Offers` artboard (desktop and phone width,
+- **Design canvas** (Q3): `/implement` adds a `C+ Offers` artboard (desktop and phone width,
   hero, perks strip, grouped cards, empty state) to the C+ canvas artifact
-  (https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW) with the Artifact tool, using only existing
-  tokens and components, and list it in `docs/design.md`.
-
-## Open questions
-- [ ] **Q1: Should `startsAt` / `endsAt` be dates or date-times?** — Why it matters: holiday
-  campaigns are naturally whole days ("valid until 14 February"), but a date-time allows e.g. a
-  Black Friday sale that ends at 23:59 or starts at noon. It changes the Strapi field type, the
-  filter and the "valid until" label. Recommended default: `date` fields, inclusive, in
-  `Europe/Kyiv`. Affects steps: 1, 4, 5, 7.
-- [ ] **Q2: Which offer is the hero's "main campaign"?** — Why it matters: the content type has no
-  "featured" flag. Recommended default: the first active `seasonal` offer by `sortOrder`, else the
-  first non-perk offer; no extra field. Alternative: a boolean `isHero` field. Affects steps: 1, 6.
-- [ ] **Q3: May `/implement` update the shared C+ design canvas artifact directly?** — Why it
-  matters: the canvas is the owner's private artifact, and the acceptance criteria need the
-  mockup on it. Recommended default: yes, add the `C+ Offers` artboard by republishing the canvas
-  (after reading its current version), and report the link. Affects step: 12.
-- [ ] **Q4: Should `/implement` create the follow-up "discounts at checkout" issue?** — Why it
-  matters: acceptance criteria say price-changing promotions are tracked in a separate issue, and
-  none exists. Creating a GitHub issue is outward-facing. Recommended default: yes, with
-  `/create-issue` (promo codes, bundle and trio prices, `orders.discount_amount`), and link it in
-  this issue's PR. Affects step: 13.
+  (https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW) with the Artifact tool, reading its current
+  version first and using only existing tokens and components. It's then listed in
+  `docs/design.md`.
+- **Follow-up issue** (Q4): `/implement` creates the "discounts and promo codes at checkout"
+  issue with `/create-issue` and the PR links it.
 
 ## Resolved questions
+- **Q1: Dates or date-times for `startsAt` / `endsAt`?** — Date-times with offset support:
+  Strapi `datetime`, parsed with `z.iso.datetime({ offset: true })`, compared as instants (source:
+  owner, 2026-10-25).
+- **Q2: Which offer is the hero?** — Chosen by configurable ordering: the active non-perk offer
+  with the lowest `sortOrder` (source: owner, 2026-10-25).
+- **Q3: May `/implement` update the C+ design canvas directly?** — Yes (source: owner,
+  2026-10-25).
+- **Q4: Should `/implement` create the discounts-at-checkout issue?** — Yes, with `/create-issue`
+  (source: owner, 2026-10-25).
 - **How are CMS reads, errors and locales done?** — Through `cmsFetch` with a zod schema,
   `CmsError` → `cmsUnavailable` (503), and `uk` fallback per entry by `documentId` for
   collections (source: `app/.server/cms/content.ts` `listBlogPosts`, `app/.server/AGENTS.md`).
@@ -115,8 +116,9 @@ editorial only: they never change prices at checkout.
 - **Is there a product card DTO to reuse?** — Yes, `ProductSummary` (title, brand, image, sizes,
   min price, default variant) and `ProductCard` (source: `app/lib/products.ts`,
   `app/features/catalog/ProductCard.tsx`).
-- **Which time zone do dates use?** — `Europe/Kyiv` in the translator's `formatDate` (source:
-  `app/lib/i18n/translator.ts`).
+- **Which time zone are dates shown in?** — `Europe/Kyiv` in the translator's `formatDate`
+  (source: `app/lib/i18n/translator.ts`). Offset date-times are already parsed the same way for
+  blog `publishedAt` (`z.iso.datetime({ offset: true })` in `app/.server/cms/schemas.ts`).
 - **How are editor links made safe?** — `resolveCtaHref` accepts `/path` but not `//host` or
   `/\` (source: `app/lib/links.ts`).
 - **Does the token get new permissions automatically?** — No: `seedApiToken` skips an existing
@@ -141,7 +143,7 @@ editorial only: they never change prices at checkout.
 | modify | `app/.server/AGENTS.md` | List `listActiveOffers` among the content queries |
 | modify | `app/lib/cms.ts` | `OFFER_KINDS`, `OfferKind`, `Offer` DTO |
 | modify | `app/.server/cms/schemas.ts` | `offerEntry` zod schema |
-| modify | `app/.server/cms/content.ts` | `toOffer`, `isOfferActive`, `kyivToday`, `listActiveOffers` |
+| modify | `app/.server/cms/content.ts` | `toOffer`, `isOfferActive`, `compareOffers`, `listActiveOffers` |
 | create | `app/.server/cms/__fixtures__/offers.json`, `offers.en.json`, `offers-empty.json` | Recorded responses |
 | modify | `app/.server/cms/schemas.test.ts`, `content.test.ts` | Schema, mapper, window, fallback tests |
 | modify | `app/.server/db/queries/products.ts` | `listProductSummariesByPublicIds` |
@@ -173,8 +175,10 @@ Each step is small, ordered, and leaves the app in a working state.
   `en` added via `update` on the `uk` document): a tester trio (`discovery-set`, priceNote "3 × 7
   мл — 499 ₴", CTA `/catalog/women`), gift ideas by budget (`gift`, up to 500 / 1000 / 2000 ₴), the
   free-delivery perk (`perk`, "Безкоштовна доставка Новою Поштою від 1000 ₴") and a welcome perk,
-  one current seasonal campaign (`seasonal`, window spanning the seed date, e.g. St Nicholas Day
-  to New Year) and one expired seasonal campaign to exercise filtering. `products` uses the fixed
+  one current seasonal campaign (`seasonal`, lowest `sortOrder` so it's the hero, window
+  computed relative to the seed run, e.g. `now − 1 day` to `now + 60 days`, so it stays active on
+  any machine) and one expired seasonal campaign to exercise filtering. Write the dates as Kyiv
+  offsets (e.g. `2026-12-06T00:00:00+02:00`). `products` uses the fixed
   `publicId`s from the app's DB seed (`app/.server/db/seed-data.ts`), plus one made-up UUID in the
   gift offer to show that missing products are skipped. Update the header comment.
 - [ ] **3. Token permissions** — Add `api::offer.offer.find` to `TOKEN_PERMISSIONS`. When the
@@ -182,25 +186,33 @@ Each step is small, ordered, and leaves the app in a working state.
   `update`, without regenerating the key) and log it, so existing setups don't 403. Update
   README's manual token list ("Offer: `find`"), the seed description and the content model table.
 - [ ] **4. DTO and schema** — In `app/lib/cms.ts` add `OFFER_KINDS`, `OfferKind` and
-  `interface Offer { locale, slug, kind, title, summary: string | null, body: string | null,
-  image: CmsImage | null, startsAt: string | null, endsAt: string | null, priceNote: string |
-  null, productIds: string[], ctaLabel: string | null, ctaUrl: string | null, sortOrder: number }`.
-  In `schemas.ts` add `offerEntry` (`kind: z.enum(OFFER_KINDS)`, dates as `z.iso.date()`
-  nullish, `products: z.array(z.object({ publicId: z.string() })).nullish()`, `image:
-  strapiMedia.nullish()`) and its type.
+  `interface Offer { locale, documentId, slug, kind, title, summary: string | null, body: string |
+  null, image: CmsImage | null, startsAt: string | null, endsAt: string | null, priceNote: string |
+  null, productIds: string[], ctaLabel: string | null, ctaUrl: string | null, sortOrder: number }`,
+  with `startsAt` / `endsAt` normalised to UTC ISO strings (`new Date(v).toISOString()`, as
+  `toBlogPostSummary` does for `publishedAt`). In `schemas.ts` add `offerEntry` (`kind:
+  z.enum(OFFER_KINDS)`, `startsAt` / `endsAt` as `z.iso.datetime({ offset: true }).nullish()`,
+  `sortOrder: z.number().int().nullish()` (→ `0`), `products: z.array(z.object({ publicId:
+  z.string() })).nullish()`, `image: strapiMedia.nullish()`) and its type.
 - [ ] **5. Content query** — In `content.ts` add `toOffer(entry, baseUrl, requested)` (UUID-only
-  `productIds`, de-duplicated; trims empty strings to `null`), `kyivToday(now)` returning
-  `YYYY-MM-DD` in `Europe/Kyiv`, `isOfferActive(offer, today)`, and `listActiveOffers(locale,
-  now = new Date())`: one `cmsFetch("offers", { filters: window, sort: ["sortOrder:asc",
+  `productIds`, de-duplicated; trims empty strings to `null`), `isOfferActive(offer, now)`
+  (`startsAt <= now < endsAt` on `Date` instants), `compareOffers` (`sortOrder` asc, then
+  `startsAt` desc, then `documentId`), and `listActiveOffers(locale, now = new Date())`: one
+  `cmsFetch("offers", { filters: window(now.toISOString()), sort: ["sortOrder:asc",
   "startsAt:desc"], pagination: { page: 1, pageSize: MAX_PAGE_SIZE }, populate: { image: true,
   products: true } }, collectionResponse(offerEntry), { locale: "uk" })`, then the translation
-  fetch by `documentId` for `en` as in `listBlogPosts`, mapping and a final
-  `.filter(isOfferActive)`. Record `offers.json`, `offers.en.json` and `offers-empty.json` from the
+  fetch by `documentId` for `en` as in `listBlogPosts`, mapping, a final
+  `.filter((o) => isOfferActive(o, now))` and `.sort(compareOffers)`. The sort makes the order,
+  and so the hero, the same whatever Strapi does with ties. Record `offers.json`, `offers.en.json` and `offers-empty.json` from the
   seeded Strapi.
 - [ ] **6. CMS tests** — `schemas.test.ts`: the fixtures parse; an unknown `kind` is rejected.
-  `content.test.ts`: `toOffer` maps absolute image URLs and drops non-UUID ids; `isOfferActive`
-  for no dates, only start, only end, today on each boundary, and outside the window (including
-  the Kyiv-vs-UTC midnight edge); `listActiveOffers` sends the window filter, sort and `locale=uk`,
+  `schemas.test.ts` also accepts `Z` and `+03:00` offsets and rejects a date-only or offset-less
+  `startsAt`. `content.test.ts`: `toOffer` maps absolute image URLs, normalises offset date-times
+  to UTC and drops non-UUID ids. `isOfferActive` covers no dates, only a start, only an end,
+  exactly at `startsAt` (active), exactly at `endsAt` (inactive), outside the window, and the same
+  instant written with different offsets (`2026-12-06T00:00:00+02:00` = `2026-12-05T22:00:00Z`).
+  `compareOffers` covers `sortOrder` and its tie-breakers. `listActiveOffers` sends the window
+  filter with `now` as UTC ISO, the sort and `locale=uk`,
   swaps in English translations and keeps Ukrainian where missing, and turns an outage into
   `CmsError`.
 - [ ] **7. Product lookup** — Add `listProductSummariesByPublicIds(db, ids)` (same select as
@@ -213,10 +225,14 @@ Each step is small, ordered, and leaves the app in a working state.
   `OffersPageView { hero: OfferView | null, perks: OfferView[], groups: { kind, offers }[] }`,
   where `OfferView` adds `bodyHtml`, `validUntilLabel`, `cta: { label, to } | null` and
   `products: ProductSummary[]`. `app/lib/links.ts`: `toInternalPath(href)` (+ tests).
-  `app/.server/services/offers.ts`: `buildOffersPageView(offers, productsById, locale)` picks the
-  hero, splits perks, groups the rest in `OFFER_GROUP_ORDER` (empty groups omitted), resolves
+  `app/.server/services/offers.ts`: `buildOffersPageView(offers, productsById, locale)` takes the
+  first non-perk offer in the given (`compareOffers`) order as the hero, splits perks, groups the rest in `OFFER_GROUP_ORDER` (empty groups omitted), resolves
   products in editor order skipping missing ones, renders `body` with `renderMarkdown()` and
-  formats `endsAt` with `createTranslator(locale).formatDate`. Unit-test hero choice, grouping,
+  formats `endsAt` with `createTranslator(locale).formatDate`. When `endsAt` isn't midnight in
+  Kyiv, it uses `offers.validUntilAt` with the time from an `Intl.DateTimeFormat` in the
+  translator's locale and `timeZone: "Europe/Kyiv"` (`HH:mm`), since `formatDate` shows only
+  the date. Unit-test hero choice (lowest `sortOrder` wins over kind), grouping, both valid-until
+  labels,
   skipped products, unsafe CTA → `null`, and the empty case.
 - [ ] **9. Route** — Add `route("offers", "routes/offers.tsx")` under the `_shop` layout in
   `app/routes.ts`. In `routes/offers.tsx`: `loader` gets the locale, `listActiveOffers(locale)
@@ -242,12 +258,15 @@ Each step is small, ordered, and leaves the app in a working state.
   `MobileMenu.tsx`, and put it in `FOOTER_LINKS` after the catalogs; update `Header.test.ts` and
   `Footer.test.ts`. Add an `/offers` link to the account "No orders yet" state with
   `account.orders.empty.offers`.
-- [ ] **12. Design** — Add the `C+ Offers` artboard to the C+ canvas (Q3): hero, perks strip,
+- [ ] **12. Design** — Read the C+ canvas artifact, add the `C+ Offers` artboard and republish
+  it to the same URL (approved, Q3): hero, perks strip,
   grouped cards, empty state, phone width, existing tokens and components only. Add the row
   `| \`C+ Offers\` | \`/offers\` | #55 |` to "Pages and issues" in `docs/design.md`, and match the
   implemented UI to it.
 - [ ] **13. Follow-up issue** — Create the "discounts and promo codes at checkout" issue with
-  `/create-issue` (Q4), and reference it from this issue's PR. Docs: list `listActiveOffers` in
+  `/create-issue` (approved, Q4): promo codes, bundle and trio prices, filling
+  `orders.discount_amount`, and honouring an offer's saving at checkout. Reference it from this
+  issue's PR. Docs: list `listActiveOffers` in
   `app/.server/AGENTS.md`'s CMS section.
 
 ## Testing & verification
@@ -259,7 +278,7 @@ Each step is small, ordered, and leaves the app in a working state.
 - Manual (`pnpm aspire run`, then run `cms-seed` from the dashboard): `/offers` in Ukrainian and
   English (switch locale) shows the hero, perks, grouped cards and products, not the expired
   campaign; unpublish all non-perk offers → empty state; stop the `cms` resource → 503 page;
-  delete a referenced product's variants → it disappears from its offer; header (desktop and
+  delete a referenced product's variants → it disappears from its offer; set an offer's `endsAt` a few minutes ahead → it disappears once that time passes; lower another offer's `sortOrder` → it becomes the hero; header (desktop and
   mobile) and footer link to `/offers`; check at 375 px width; add a product from an offer to the
   cart and confirm the checkout total is unchanged (no discount).
 

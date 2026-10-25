@@ -278,7 +278,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `MobileMenu.tsx`, and put it in `FOOTER_LINKS` after the catalogs; update `Header.test.ts` and
   `Footer.test.ts`. Add an `/offers` link to the account "No orders yet" state with
   `account.orders.empty.offers`.
-- [ ] **12. Design** — Read the C+ canvas artifact, add the `C+ Offers` artboard and republish
+- [x] **12. Design** — Read the C+ canvas artifact, add the `C+ Offers` artboard and republish
   it to the same URL (approved, Q3): hero, perks strip,
   grouped cards, empty state, phone width, existing tokens and components only. Add the row
   `| \`C+ Offers\` | \`/offers\` | #55 |` to "Pages and issues" in `docs/design.md`, and match the

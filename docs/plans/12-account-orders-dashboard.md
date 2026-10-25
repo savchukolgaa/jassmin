@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/12
 Branch: `issue/12`
 Worktree: `.claude/worktrees/issue-12`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -69,7 +69,11 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   `returned` / `unclaimed` = `card` / `body`, current statuses = `primary` / white. Only existing tokens are used (`primary`, `ink`, `muted`, `body`,
   `blush`, `card`, `line`, `success` / `success-bg`) and the existing `Button` / `ButtonLink`;
   animations are disabled under `prefers-reduced-motion`.
-- **First name** for the greeting = the first word of `users.full_name`.
+- **First name** for the greeting = the first word of `users.full_name`. The greeting drops its
+  "!" (`account.greeting` is now "Вітаємо, {name}" / "Hi, {name}"), because the C+ hero puts a pink
+  "." after the name; `translator.test.ts` uses this key and was updated.
+- The dashboard's line items reuse `checkout.lineQuantity` and `checkout.deletedProduct` instead of
+  duplicating them under `account`.
 - **Order detail page** `/account/orders/:id`: order number, date, status (progress indicator for
   current orders, a status pill for previous ones), status timestamps, delivery
   (`guest_full_name`, `guest_phone`, `shipping_address`), payment method, and the lines/amounts via
@@ -218,7 +222,7 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   without a lookup; `meta` is `noindex`. `account-ui.test.ts`: progress marks steps for
   `pending` / `paid` / `shipped`, status pill labels in uk and en, previous rows show
   `price_at_purchase` formatted with `formatPrice`, empty state.
-- [ ] **9. Docs and final checks** — Add an "Account (#12)" bullet list to the Orders section of
+- [x] **9. Docs and final checks** — Add an "Account (#12)" bullet list to the Orders section of
   `app/.server/AGENTS.md` (ownership via `user_id` in SQL, status split in `~/lib/account`, every
   account loader calls `requireUser`). Run `pnpm typecheck`, `pnpm lint`, `pnpm test`,
   `pnpm build`; manual check under `pnpm aspire run`.
@@ -239,13 +243,27 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   switch locale to English; check phone width and keyboard focus rings; disable JS and confirm
   `<details>` still expands.
 
+**Done during implementation (2026-10-25):**
+- **Smoke test against a throwaway database.** Your dev database is missing the latest
+  migrations (registration fails there with PostgreSQL `42703`, unrelated to #12), so instead of
+  `pnpm aspire run` the built server (`pnpm start`) ran against `jassmin_smoke12`, a throwaway
+  database migrated, seeded with orders (shipped, paid, completed, cancelled, plus another user's)
+  and dropped afterwards. What it showed:
+  - logged out, `/account` and `/account/orders/1` redirect to `/login?redirectTo=…`;
+  - logged in, the dashboard returns 200 with `Cache-Control: private, no-store`, two current and
+    two previous orders, progress steps and dates in Ukrainian;
+  - your own orders return 200; another user's order, `abc` and an unknown id return 404;
+  - no 500s in the server log.
+- **Not checked by hand:** English locale, phone width, keyboard focus and no-JS `<details>`.
+  The component tests cover the English copy and the `<details>` markup.
+
 ## Acceptance criteria
 
-- [ ] Logged-in users see only their own orders — steps 2, 3, 6, 7, 8 (`user_id` filter in SQL,
+- [x] Logged-in users see only their own orders — steps 2, 3, 6, 7, 8 (`user_id` filter in SQL,
   404 on foreign ids)
-- [ ] Orders are split into current and previous by status — steps 1, 3, 6
-- [ ] Historical prices come from `order_items.price_at_purchase` — steps 2, 3, 6, 7
-- [ ] Logged-out users are redirected to login — steps 5, 6, 7, 8 (`requireUser` in every
+- [x] Orders are split into current and previous by status — steps 1, 3, 6
+- [x] Historical prices come from `order_items.price_at_purchase` — steps 2, 3, 6, 7
+- [x] Logged-out users are redirected to login — steps 5, 6, 7, 8 (`requireUser` in every
   account loader)
 
 ## Out of scope

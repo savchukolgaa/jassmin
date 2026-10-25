@@ -116,6 +116,22 @@ export function freeShippingInfo(subtotal: string): FreeShippingInfo {
   return missing <= 0 ? { free: true } : { free: false, remaining: fromKopiyky(missing) };
 }
 
+/** Message keys for a payment method's name and what happens next. */
+export const PAYMENT_KEYS: Record<PaymentMethod, { label: TextKey; note: TextKey }> = {
+  card: { label: "checkout.payment.card", note: "checkout.payment.cardNote" },
+  cod: { label: "checkout.payment.cod", note: "checkout.payment.codNote" },
+};
+
+/** The largest `orders.id` (a PostgreSQL `integer`, serial). */
+const MAX_ORDER_ID = 2_147_483_647;
+
+/** An order id from a route param, or `null` when it can't be one, so no lookup is made. */
+export function parseOrderId(param: string | undefined): number | null {
+  if (param === undefined || !/^\d{1,10}$/.test(param)) return null;
+  const id = Number(param);
+  return id > 0 && id <= MAX_ORDER_ID ? id : null;
+}
+
 /** Contact details to prefill the form with for a logged-in user. */
 export interface CheckoutPrefill {
   fullName: string;
@@ -149,12 +165,6 @@ export function cartSummaryLine(line: CartLine): OrderSummaryLine {
     lineTotal: line.lineTotal,
   };
 }
-
-/** How each payment method is named and explained on the success page and in the email. */
-export const PAYMENT_KEYS: Record<PaymentMethod, { label: TextKey; note: TextKey }> = {
-  card: { label: "checkout.payment.card", note: "checkout.payment.cardNote" },
-  cod: { label: "checkout.payment.cod", note: "checkout.payment.codNote" },
-};
 
 /** A placed order as its success page shows it. Amounts are exact decimal strings. */
 export interface OrderConfirmation {

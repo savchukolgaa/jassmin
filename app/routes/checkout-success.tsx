@@ -4,11 +4,9 @@ import { getOrderConfirmation } from "~/.server/services/orders";
 import { getSessionOrderIds } from "~/.server/session";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { OrderSummary } from "~/features/checkout/OrderSummary";
-import { PAYMENT_KEYS } from "~/lib/checkout";
+import { PAYMENT_KEYS, parseOrderId } from "~/lib/checkout";
 import { metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/checkout-success";
-
-const MAX_ORDER_ID = 2_147_483_647;
 
 export function meta({ matches }: Route.MetaArgs) {
   const { t } = metaTranslator(matches);
@@ -21,9 +19,8 @@ export function meta({ matches }: Route.MetaArgs) {
 // Only the order's user, or the browser it was placed in (its id is in the session), may see it.
 // Everyone else gets a 404, so order ids can't be probed.
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const orderId = /^\d{1,10}$/.test(params.orderId) ? Number(params.orderId) : 0;
-  // `orders.id` is a PostgreSQL `integer` (serial).
-  if (orderId <= 0 || orderId > MAX_ORDER_ID) {
+  const orderId = parseOrderId(params.orderId);
+  if (orderId === null) {
     throw data(null, { status: 404 });
   }
   const [user, orderIds] = await Promise.all([getUser(request), getSessionOrderIds(request)]);

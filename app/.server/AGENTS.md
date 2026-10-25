@@ -81,6 +81,7 @@ Editorial content (blog, home page copy, contact details) lives in Strapi (`cms/
 - Confirmation email (#45): `createOrder` takes the checkout `locale` and queues the `confirmation` row in `order_emails` inside its transaction, so a rolled-back order queues nothing and a double submit (`placed: false`) queues no second one. The `/checkout` action then calls `void deliverOrderConfirmation(orderId)` for a `placed` order, and `pnpm db:send-order-emails` (cron, every 5 minutes) retries failures.
 - The success page `/checkout/success/:orderId` shows an order only to its user or to the browser it was placed in (`SessionData.orderIds`, set by `rememberOrder`); everyone else gets a 404.
 - #18 adds the `checkout_start` and `purchase` events where `routes/checkout.tsx` has `// #18:` comments.
+- Account (#12): `getAccountOrders` / `getAccountOrder` read a user's orders through queries that filter by `orders.user_id` in SQL (`listUserOrders`, `findUserOrder`), so an order that isn't theirs is never loaded and its page answers 404. Guest orders with the same email aren't linked. Lines come from `listOrderLinesByOrderIds` at `price_at_purchase`, in one query for all orders. Which statuses count as current or previous lives in `~/lib/account`. The `account.tsx` layout and every child loader call `requireUser` themselves, since loaders run in parallel.
 
 ## Session: `session.ts`
 

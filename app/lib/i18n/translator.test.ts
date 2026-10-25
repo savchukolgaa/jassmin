@@ -14,7 +14,7 @@ describe("t", () => {
   });
 
   it("fills placeholders and formats number params for the locale", () => {
-    expect(en.t("account.greeting", { name: "Olena" })).toBe("Hi, Olena!");
+    expect(en.t("account.greeting", { name: "Olena" })).toBe("Hi, Olena");
     expect(normalize(uk.t("contact.errors.messageTooLong", { messageMax: 2000 }))).toBe(
       "Повідомлення може містити щонайбільше 2 000 символів.",
     );
@@ -24,7 +24,7 @@ describe("t", () => {
   });
 
   it("leaves a missing param visible and ignores unused ones", () => {
-    expect(en.t("account.greeting")).toBe("Hi, {name}!");
+    expect(en.t("account.greeting")).toBe("Hi, {name}");
     expect(en.t("contact.errors.nameTooLong", { nameMax: 100, messageMax: 2000 })).toBe(
       "Your name can be at most 100 characters.",
     );

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/44
 Branch: `issue/44`
 Worktree: `.claude/worktrees/issue-44`
-Status: Planned
+Status: Implemented
 
 ## Goal
 A shopper who pays by card should pay online right after checkout. Then the order is paid and can ship without a separate payment step. Orders with `payment_method = 'card'` go to a hosted payment page. A verified provider callback marks the order `paid`. The success page shows whether the payment is paid, pending or failed, and offers a retry. Cash-on-delivery stays exactly as it is.
@@ -155,7 +155,7 @@ For now the only provider is a **local payment simulator**: a fake hosted page s
 
   Change `checkout.payment.cardNote` to online-payment copy ("Оплата карткою онлайн одразу після оформлення замовлення"), which also fixes the confirmation email. Add every key to `uk.ts` and `en.ts`. `cod` stays unchanged.
 - [x] **11. Docs.** Add a Payments section to `app/.server/AGENTS.md`: the adapter, the simulator being dev-only, the idempotency rule, the never-trust-client-amounts rule and the reference format. Update the Orders bullet "online payment is #44". In the README, add "Card payments (simulator)": set `PAYMENT_PROVIDER=simulator`, what each button does, and a note that a real provider is a follow-up.
-- [ ] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the manual simulator run below.
+- [x] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the manual simulator run below.
 
 ## Testing & verification
 - **Unit:**
@@ -186,12 +186,17 @@ For now the only provider is a **local payment simulator**: a fake hosted page s
   7. Unset `PAYMENT_PROVIDER`. The card option should be disabled and `/payments/simulator` should answer 404.
 
 ## Acceptance criteria
-- [ ] A shopper who chooses card is sent to the provider's payment page for the exact order total — steps 3, 5, 7, 8
-- [ ] A verified successful callback marks the order `paid` and sets `paid_at` — steps 4, 5, 6
-- [ ] Callbacks with an invalid signature are rejected and change nothing — steps 3, 6
-- [ ] Repeated callbacks for the same payment don't change the order twice — steps 4, 5, 7
-- [ ] A failed or cancelled payment leaves the order `unpaid`, and the shopper can retry — steps 5, 9, 10
-- [ ] Cash-on-delivery checkout works exactly as before — steps 8, 10 (regression tests in `checkout.test.ts`)
+- [x] A shopper who chooses card is sent to the provider's payment page for the exact order total — steps 3, 5, 7, 8
+- [x] A verified successful callback marks the order `paid` and sets `paid_at` — steps 4, 5, 6
+- [x] Callbacks with an invalid signature are rejected and change nothing — steps 3, 6
+- [x] Repeated callbacks for the same payment don't change the order twice — steps 4, 5, 7
+- [x] A failed or cancelled payment leaves the order `unpaid`, and the shopper can retry — steps 5, 9, 10
+- [x] Cash-on-delivery checkout works exactly as before — steps 8, 10 (regression tests in `checkout.test.ts`)
+
+## Verification notes
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (850 passed, 1 skipped; DB integration tests ran) and `pnpm build` pass. No payment or simulator code is in `build/client`.
+- Real-HTTP check: a dev server on a throwaway database with `PAYMENT_PROVIDER=simulator`. The simulator page rendered the exact total (200), a tampered checkout got 400, and a forged callback to `/payments/callback` got 400. **Pay and send the confirmation twice** redirected to `/checkout/success/1`, and the order ended `paid` once, with `paid_at` set and attempt `1-1` `succeeded`.
+- Not done by hand: the browser walk-through of the checkout form, the success-page states and Try again. Unit, render and route tests cover them.
 
 ## Out of scope
 - A real payment provider (LiqPay / WayForPay / monobank), its credentials and `PUBLIC_URL`. That's a follow-up issue that adds a `PaymentProvider` implementation and a migration extending the `provider` CHECK.

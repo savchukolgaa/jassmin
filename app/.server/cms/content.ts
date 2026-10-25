@@ -4,13 +4,14 @@ import type {
   BlogPostSummary,
   CmsImage,
   HomePage,
+  Offer,
   Paginated,
   Seo,
   SiteSettings,
 } from "~/lib/cms";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "~/lib/i18n";
 import { getEnv } from "../env";
-import { cmsFetch } from "./client";
+import { cmsFetch, type StrapiQuery } from "./client";
 import { isCmsError } from "./errors";
 import {
   type BlogPostEntry,
@@ -20,6 +21,8 @@ import {
   collectionResponse,
   type HomePageEntry,
   homePageEntry,
+  type OfferEntry,
+  offerEntry,
   type PaginationMeta,
   type SiteSettingEntry,
   type StrapiMedia,
@@ -295,4 +298,126 @@ export async function getBlogPostBySlug(
     return entry ? { entry, locale: l } : null;
   });
   return found ? toBlogPost(found.entry, getEnv().STRAPI_URL, found.locale) : null;
+}
+
+/** A UUID in any version: the shape of `products.public_id`. PostgreSQL rejects anything else. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** `null` for a missing or blank optional text field. */
+function optionalText(value: string | null | undefined): string | null {
+  return value?.trim() ? value : null;
+}
+
+function toUtcIso(value: string | null | undefined): string | null {
+  return value ? new Date(value).toISOString() : null;
+}
+
+export function toOffer(
+  entry: OfferEntry,
+  baseUrl: string,
+  requested: Locale = DEFAULT_LOCALE,
+): Offer {
+  const productIds = (entry.products ?? [])
+    .map((product) => product.publicId.trim().toLowerCase())
+    .filter((id) => UUID.test(id));
+  return {
+    locale: servedLocale(entry, requested),
+    documentId: entry.documentId,
+    slug: entry.slug,
+    kind: entry.kind,
+    title: entry.title,
+    summary: optionalText(entry.summary),
+    body: optionalText(entry.body),
+    image: toImage(entry.image, baseUrl),
+    startsAt: toUtcIso(entry.startsAt),
+    endsAt: toUtcIso(entry.endsAt),
+    priceNote: optionalText(entry.priceNote),
+    productIds: [...new Set(productIds)],
+    ctaLabel: optionalText(entry.ctaLabel),
+    ctaUrl: optionalText(entry.ctaUrl),
+    sortOrder: entry.sortOrder ?? 0,
+  };
+}
+
+/** Whether `now` is in the offer's window: from `startsAt` (inclusive) to `endsAt` (exclusive). */
+export function isOfferActive(offer: Pick<Offer, "startsAt" | "endsAt">, now: Date): boolean {
+  const time = now.getTime();
+  const started = offer.startsAt === null || Date.parse(offer.startsAt) <= time;
+  const notEnded = offer.endsAt === null || time < Date.parse(offer.endsAt);
+  return started && notEnded;
+}
+
+/**
+ * Editor order: `sortOrder` ascending, then the most recently started first (offers without a
+ * start last), then `documentId` so the order, and the hero, never depend on Strapi's tie-breaking.
+ */
+export function compareOffers(
+  a: Pick<Offer, "sortOrder" | "startsAt" | "documentId">,
+  b: Pick<Offer, "sortOrder" | "startsAt" | "documentId">,
+): number {
+  if (a.sortOrder !== b.sortOrder) {
+    return a.sortOrder - b.sortOrder;
+  }
+  const aStart = a.startsAt === null ? Number.NEGATIVE_INFINITY : Date.parse(a.startsAt);
+  const bStart = b.startsAt === null ? Number.NEGATIVE_INFINITY : Date.parse(b.startsAt);
+  if (aStart !== bStart) {
+    return bStart > aStart ? 1 : -1;
+  }
+  return a.documentId < b.documentId ? -1 : a.documentId > b.documentId ? 1 : 0;
+}
+
+/** Strapi filter for entries whose window includes the instant `nowIso`. */
+function activeWindowFilter(nowIso: string): StrapiQuery {
+  return {
+    $and: [
+      { $or: [{ startsAt: { $null: true } }, { startsAt: { $lte: nowIso } }] },
+      { $or: [{ endsAt: { $null: true } }, { endsAt: { $gt: nowIso } }] },
+    ],
+  };
+}
+
+const OFFER_POPULATE = { image: true, products: true };
+
+/**
+ * Published offers whose window includes `now`, in editor order (`compareOffers`). The Ukrainian
+ * entries decide which offers are active (dates aren't localized); in another locale, each one is
+ * swapped for its published translation when it has one.
+ */
+export async function listActiveOffers(
+  locale: Locale = DEFAULT_LOCALE,
+  now: Date = new Date(),
+): Promise<Offer[]> {
+  const { data } = await cmsFetch(
+    "offers",
+    {
+      filters: activeWindowFilter(now.toISOString()),
+      sort: ["sortOrder:asc", "startsAt:desc"],
+      pagination: { page: 1, pageSize: MAX_PAGE_SIZE },
+      populate: OFFER_POPULATE,
+    },
+    collectionResponse(offerEntry),
+    { locale: DEFAULT_LOCALE },
+  );
+
+  let entries = data;
+  if (locale !== DEFAULT_LOCALE && data.length > 0) {
+    const translations = await cmsFetch(
+      "offers",
+      {
+        filters: { documentId: { $in: data.map((entry) => entry.documentId) } },
+        pagination: { page: 1, pageSize: data.length },
+        populate: OFFER_POPULATE,
+      },
+      collectionResponse(offerEntry),
+      { locale },
+    );
+    const byDocumentId = new Map(translations.data.map((entry) => [entry.documentId, entry]));
+    entries = data.map((entry) => byDocumentId.get(entry.documentId) ?? entry);
+  }
+
+  const baseUrl = getEnv().STRAPI_URL;
+  return entries
+    .map((entry) => toOffer(entry, baseUrl))
+    .filter((offer) => isOfferActive(offer, now))
+    .sort(compareOffers);
 }

@@ -172,7 +172,7 @@ and never affects the order or the redirect.
   explicitly named unique constraint and the `(status, next_attempt_at)` index. Then run
   `pnpm db:generate --name order_emails`, write the rollback, and extend `schema.test.ts`. Check:
   `pnpm db:migrate`, then `pnpm db:rollback`, then migrate again; `pnpm typecheck`.
-- [ ] **2. Queue queries.** Create `db/queries/order-emails.ts`:
+- [x] **2. Queue queries.** Create `db/queries/order-emails.ts`:
   - `insertOrderEmail(tx, { orderId, type, locale })`
   - `claimOrderEmails(db, { orderId?, limit, delays })`: the single `UPDATE … FOR UPDATE SKIP LOCKED … RETURNING id, orderId, type, locale, attempts`. The backoff comes from `attempts` with a SQL `CASE` or array index into the delays.
   - `markOrderEmailSent(db, id)`

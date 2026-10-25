@@ -6,6 +6,11 @@
 // `orders.cart_id` is unique, so a cart becomes at most one order: a second submit of the same
 // cart waits for the first one's lock and then gets the order it created.
 //
+// Discounts (#59): the lines are priced with `priceCart` on the locked variant prices, and the
+// applied rule is redeemed with a conditional increment, which waits for a concurrent checkout
+// using the same rule and fails once it's used up; the cart is then priced without it. An order
+// whose total came out higher than the page showed (`expectedTotal`) isn't placed.
+//
 // The order's confirmation email (#45) is queued in the same transaction (`order_emails`), so an
 // order never exists without it and a rolled-back order sends nothing. The caller records the
 // `purchase` event (#18) and makes the first delivery attempt for an order this call `placed`,
@@ -15,11 +20,18 @@ import type { AccountOrderDetail, AccountOrderLine, AccountOrders } from "~/lib/
 import { isCurrentOrder } from "~/lib/account";
 import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
 import { formatShippingAddress } from "~/lib/checkout";
+import type { DiscountKind } from "~/lib/enums";
 import type { Locale } from "~/lib/i18n";
+import { fromKopiyky, toKopiyky } from "~/lib/money";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { cartTotals, lockCart } from "../db/queries/cart";
 import { enqueueCmsSync } from "../db/queries/cms-outbox";
+import {
+  findCartDiscountId,
+  listCandidateDiscounts,
+  redeemDiscount,
+} from "../db/queries/discounts";
 import { insertOrderEmail } from "../db/queries/order-emails";
 import {
   decrementVariantStock,
@@ -39,6 +51,7 @@ import { findUserContact } from "../db/queries/users";
 import { getEnv } from "../env";
 import { getMailTransport } from "../mail";
 import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
+import { type PricedCart, type PricingLine, priceCart } from "./pricing";
 
 /** A logged-in user's contact details for the checkout form, or `null`. */
 export async function getCheckoutPrefill(
@@ -56,6 +69,10 @@ export interface CreateOrderInput {
   customer: CheckoutInput;
   /** The language the shopper checked out in, for the confirmation email. */
   locale: Locale;
+  /** The total the checkout page showed; a higher total isn't placed (`total-changed`). */
+  expectedTotal?: string;
+  /** For tests: the time discount windows are checked against. */
+  now?: Date;
 }
 
 /** A line that asks for more than is in stock now; `variantId` is the variant's `public_id`. */
@@ -64,68 +81,141 @@ export interface ShortLine {
   available: number;
 }
 
+/** A placed order's amounts, for the `purchase` event. */
+export interface PlacedOrderTotals {
+  subtotal: string;
+  discountAmount: string;
+  totalAmount: string;
+  discountId: number | null;
+  /** The applied promo code; `null` for an automatic rule or no discount. */
+  discountCode: string | null;
+  discountKind: DiscountKind | null;
+}
+
 export type CreateOrderResult =
   // `placed: false` for a double submit that got the order an earlier request placed.
-  | { ok: true; orderId: number; placed: true; subtotal: string }
+  | ({ ok: true; orderId: number; placed: true } & PlacedOrderTotals)
   | { ok: true; orderId: number; placed: false }
   | { ok: false; error: "cart-empty" }
-  | { ok: false; error: "insufficient-stock"; lines: ShortLine[] };
+  | { ok: false; error: "insufficient-stock"; lines: ShortLine[] }
+  // The total is higher than the page showed, e.g. the promo code was used up meanwhile.
+  | { ok: false; error: "total-changed" };
 
 /** Places the order for the cart's lines at the variants' current prices. */
 export async function createOrder(
-  { cartId, userId, customer, locale }: CreateOrderInput,
+  { cartId, userId, customer, locale, expectedTotal, now = new Date() }: CreateOrderInput,
   db: Db = defaultDb,
 ): Promise<CreateOrderResult> {
-  return db.transaction(async (tx): Promise<CreateOrderResult> => {
-    await lockCart(tx, cartId);
-    const status = await findCartStatus(tx, cartId);
-    if (status === "converted") {
-      // A double submit: the first request already placed the order.
-      const orderId = await findOrderIdByCartId(tx, cartId);
-      if (orderId !== undefined) return { ok: true, orderId, placed: false };
-    }
-    if (status !== "active") {
-      return { ok: false, error: "cart-empty" };
-    }
+  return db
+    .transaction(async (tx): Promise<CreateOrderResult> => {
+      await lockCart(tx, cartId);
+      const status = await findCartStatus(tx, cartId);
+      if (status === "converted") {
+        // A double submit: the first request already placed the order.
+        const orderId = await findOrderIdByCartId(tx, cartId);
+        if (orderId !== undefined) return { ok: true, orderId, placed: false };
+      }
+      if (status !== "active") {
+        return { ok: false, error: "cart-empty" };
+      }
 
-    const lines = await lockCartLinesForOrder(tx, cartId);
-    if (lines.length === 0) {
-      return { ok: false, error: "cart-empty" };
-    }
-    const short = lines
-      .filter((line) => line.quantity > line.stockQuantity)
-      .map((line) => ({ variantId: line.variantPublicId, available: line.stockQuantity }));
-    if (short.length > 0) {
-      return { ok: false, error: "insufficient-stock", lines: short };
-    }
+      const lines = await lockCartLinesForOrder(tx, cartId);
+      if (lines.length === 0) {
+        return { ok: false, error: "cart-empty" };
+      }
+      const short = lines
+        .filter((line) => line.quantity > line.stockQuantity)
+        .map((line) => ({ variantId: line.variantPublicId, available: line.stockQuantity }));
+      if (short.length > 0) {
+        return { ok: false, error: "insufficient-stock", lines: short };
+      }
 
-    // The variant rows are locked, so these prices are the ones the lines are sold at.
-    const { subtotal } = await cartTotals(tx, cartId);
-    const orderId = await insertOrder(tx, {
-      cartId,
-      userId,
-      fullName: customer.fullName,
-      email: customer.email,
-      phone: customer.phone,
-      shippingAddress: formatShippingAddress(customer),
-      paymentMethod: customer.paymentMethod,
-      subtotal,
+      // The variant rows are locked, so these prices are the ones the lines are sold at.
+      const { subtotal } = await cartTotals(tx, cartId);
+      const priced = await priceAndRedeem(tx, cartId, lines, now);
+      if (expectedTotal !== undefined && priced.total > toKopiyky(expectedTotal)) {
+        // Thrown, not returned, so the redemption rolls back with the rest.
+        throw new TotalChanged();
+      }
+      const discountAmount = fromKopiyky(priced.discount);
+      const orderId = await insertOrder(tx, {
+        cartId,
+        userId,
+        fullName: customer.fullName,
+        email: customer.email,
+        phone: customer.phone,
+        shippingAddress: formatShippingAddress(customer),
+        paymentMethod: customer.paymentMethod,
+        subtotal,
+        discountAmount,
+        discountId: priced.applied?.discountId ?? null,
+      });
+      await insertOrderItems(tx, orderId, lines);
+      await insertOrderEmail(tx, { orderId, type: "confirmation", locale });
+      for (const line of lines) {
+        await decrementVariantStock(tx, line.variantId, line.quantity);
+      }
+      await markCartConverted(tx, cartId);
+      // Strapi shows the new order and the products' lower stock (#40); pushed after the commit.
+      await enqueueCmsSync(tx, "order", [orderId]);
+      await enqueueCmsSync(
+        tx,
+        "product",
+        lines.map((line) => line.productId),
+      );
+      return {
+        ok: true,
+        orderId,
+        placed: true,
+        subtotal,
+        discountAmount,
+        totalAmount: fromKopiyky(priced.total),
+        discountId: priced.applied?.discountId ?? null,
+        discountCode: priced.applied?.code ?? null,
+        discountKind: priced.applied?.kind ?? null,
+      };
+    })
+    .catch((error: unknown) => {
+      if (error instanceof TotalChanged) {
+        return { ok: false, error: "total-changed" } as const;
+      }
+      throw error;
     });
-    await insertOrderItems(tx, orderId, lines);
-    await insertOrderEmail(tx, { orderId, type: "confirmation", locale });
-    for (const line of lines) {
-      await decrementVariantStock(tx, line.variantId, line.quantity);
-    }
-    await markCartConverted(tx, cartId);
-    // Strapi shows the new order and the products' lower stock (#40); pushed after the commit.
-    await enqueueCmsSync(tx, "order", [orderId]);
-    await enqueueCmsSync(
-      tx,
-      "product",
-      lines.map((line) => line.productId),
-    );
-    return { ok: true, orderId, placed: true, subtotal };
-  });
+}
+
+class TotalChanged extends Error {}
+
+/**
+ * Prices the locked lines with the best rule and counts it as redeemed. A rule a concurrent
+ * order used up since it was read is dropped and the cart priced again.
+ */
+async function priceAndRedeem(
+  tx: Pick<Db, "select" | "insert" | "update" | "delete">,
+  cartId: number,
+  lines: {
+    productPublicId: string;
+    volumeMl: number;
+    packSize: number;
+    price: string;
+    quantity: number;
+  }[],
+  now: Date,
+): Promise<PricedCart> {
+  const pricingLines: PricingLine[] = lines.map((line) => ({
+    productPublicId: line.productPublicId,
+    volumeMl: line.volumeMl,
+    packSize: line.packSize,
+    unitPrice: toKopiyky(line.price),
+    quantity: line.quantity,
+  }));
+  let candidates = await listCandidateDiscounts(tx, await findCartDiscountId(tx, cartId));
+  let priced = priceCart(pricingLines, candidates, now);
+  while (priced.applied !== null && !(await redeemDiscount(tx, priced.applied.discountId))) {
+    const usedUp = priced.applied.discountId;
+    candidates = candidates.filter((discount) => discount.id !== usedUp);
+    priced = priceCart(pricingLines, candidates, now);
+  }
+  return priced;
 }
 
 /** Who is asking to see an order: the logged-in user and the orders placed in this browser. */

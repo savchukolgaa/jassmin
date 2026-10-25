@@ -4,8 +4,10 @@
 import { z } from "zod";
 import { type AuthFormErrors, emailSchema } from "./auth";
 import type { CartLine } from "./cart";
+import type { DiscountLine } from "./discounts";
 import { PAYMENT_METHODS, type PaymentMethod } from "./enums";
 import { msg, type TextKey } from "./i18n";
+import { fromKopiyky, toKopiyky } from "./money";
 
 /** From this subtotal (after discount) the store pays Nova Poshta; below it the recipient does. */
 export const FREE_SHIPPING_THRESHOLD = "1000.00";
@@ -15,9 +17,6 @@ export const FREE_SHIPPING_THRESHOLD = "1000.00";
  * Poshta's own rate when collecting the parcel, so it's never part of the order total.
  */
 export const SHIPPING_AMOUNT = "0.00";
-
-/** No discounts or promo codes yet. */
-export const DISCOUNT_AMOUNT = "0.00";
 
 /**
  * A Ukrainian phone number as `+380XXXXXXXXX`, or `undefined` when it isn't one. Accepts
@@ -54,6 +53,15 @@ export const checkoutSchema = z.object({
   city: requiredText(100, "checkout.errors.cityRequired", "checkout.errors.cityTooLong"),
   branch: requiredText(255, "checkout.errors.branchRequired", "checkout.errors.branchTooLong"),
   paymentMethod: z.enum(PAYMENT_METHODS, { error: msg("checkout.errors.paymentRequired") }),
+  /**
+   * The total the page showed (#59), so the order is never placed at more: a code or offer may
+   * stop working between loading the page and submitting it. Left out, it isn't checked.
+   */
+  expectedTotal: z
+    .string()
+    .regex(/^\d{1,8}(?:\.\d{1,2})?$/)
+    .optional()
+    .catch(undefined),
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
@@ -90,19 +98,6 @@ export function checkoutValues(formData: FormData): Partial<Record<CheckoutField
 /** `orders.shipping_address`: one locale-independent line, e.g. `Київ, Відділення №12`. */
 export function formatShippingAddress({ city, branch }: { city: string; branch: string }): string {
   return `${city}, ${branch}`;
-}
-
-/** An exact `numeric(10, 2)` string (e.g. `"999.5"`, `"1000.00"`) as whole kopiyky. */
-function toKopiyky(amount: string): number {
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(amount);
-  if (!match) {
-    throw new Error(`Not a money amount: ${amount}`);
-  }
-  return Number(match[1] ?? "0") * 100 + Number((match[2] ?? "").padEnd(2, "0"));
-}
-
-function fromKopiyky(kopiyky: number): string {
-  return `${Math.floor(kopiyky / 100)}.${String(kopiyky % 100).padStart(2, "0")}`;
 }
 
 export type FreeShippingInfo = { free: true } | { free: false; remaining: string };
@@ -178,6 +173,8 @@ export interface OrderConfirmation {
   freeShipping: boolean;
   subtotal: string;
   discountAmount: string;
+  /** The applied discount (#59), or `null`. */
+  discount: DiscountLine | null;
   shippingAmount: string;
   totalAmount: string;
   lines: OrderSummaryLine[];

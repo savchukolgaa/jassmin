@@ -3,6 +3,8 @@ import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
 // Coco Mademoiselle (seed data): 7 ml in stock 10, 30 ml in stock 3, 10 ml sold out.
 const COCO = "01a1652b-6e25-7c03-ae47-25b57131fb06";
+// Sauvage (seed data): 10 ml at 790 ₴, 15 in stock.
+const SAUVAGE = "01a1652b-6e25-7c44-8d5b-bce46a20ad83";
 
 beforeAll(() => {
   // `services/cart` imports the auth session, which validates the env on import.
@@ -36,8 +38,8 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     await testDb.db.delete(carts);
   });
 
-  /** A seeded size of Coco Mademoiselle, as `checkVariantForCart` returns it. */
-  async function variant(volumeMl: number) {
+  /** A seeded size (of Coco Mademoiselle by default), as `checkVariantForCart` returns it. */
+  async function variant(volumeMl: number, product = COCO) {
     const { and, eq } = await import("drizzle-orm");
     const { products, productVariants } = await import("../db/schema");
     const [row] = await testDb.db
@@ -51,7 +53,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       })
       .from(productVariants)
       .innerJoin(products, eq(products.id, productVariants.productId))
-      .where(and(eq(products.publicId, COCO), eq(productVariants.volumeMl, volumeMl)));
+      .where(and(eq(products.publicId, product), eq(productVariants.volumeMl, volumeMl)));
     if (!row) throw new Error(`No ${volumeMl} ml variant`);
     return row;
   }
@@ -311,6 +313,153 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       await cart.mergeGuestCart(userId, crypto.randomUUID(), testDb.db);
 
       expect(await cart.getCartCount({ userId }, testDb.db)).toBe(1);
+    });
+  });
+
+  describe("promo codes and discounts (#59)", () => {
+    beforeEach(async () => {
+      const { discounts } = await import("../db/schema");
+      await testDb.db.delete(discounts);
+    });
+
+    type NewDiscount = typeof import("../db/schema").discounts.$inferInsert;
+
+    async function insertDiscount(values: Partial<NewDiscount> & Pick<NewDiscount, "slug">) {
+      const { discounts } = await import("../db/schema");
+      const [row] = await testDb.db
+        .insert(discounts)
+        .values({ kind: "percent", value: "10", ...values })
+        .returning({ id: discounts.id });
+      if (!row) throw new Error("no discount");
+      return row.id;
+    }
+
+    const trio: NewDiscount = {
+      slug: "tester-trio",
+      kind: "fixed_price_set",
+      value: "499",
+      scopeVolumesMl: [10],
+      scopePackSize: 1,
+      minQuantity: 3,
+      maxSets: 3,
+    };
+
+    it("applies the trio by itself and a promo code once the trio no longer does", async () => {
+      const cart = await import("./cart");
+      await insertDiscount(trio);
+      await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
+      const visitor = await guest();
+      const tenMl = await variant(10, SAUVAGE);
+      await cart.addItem(visitor, tenMl, 3, testDb.db);
+
+      expect(await cart.getCartView(visitor, testDb.db)).toMatchObject({
+        subtotal: "2370.00",
+        discount: { amount: "1871.00", code: null, kind: "fixed_price_set" },
+        total: "499.00",
+        promo: null,
+      });
+
+      // The trio saves more, so the code is kept but not used.
+      expect(await cart.applyPromoCode(visitor, "JASSMIN10", testDb.db)).toEqual({
+        ok: true,
+        status: "not-best",
+      });
+      expect(await cart.getCartView(visitor, testDb.db)).toMatchObject({
+        total: "499.00",
+        promo: { code: "JASSMIN10", status: "not-best" },
+      });
+
+      await cart.updateQuantity(visitor, tenMl.publicId, 1, testDb.db);
+      expect(await cart.getCartView(visitor, testDb.db)).toMatchObject({
+        subtotal: "790.00",
+        discount: { amount: "79.00", code: "JASSMIN10", kind: "percent" },
+        total: "711.00",
+        promo: { code: "JASSMIN10", status: "applied" },
+      });
+    });
+
+    it("refuses unknown, expired, used-up and inapplicable codes without storing them", async () => {
+      const cart = await import("./cart");
+      await insertDiscount({ slug: "ended", code: "EXPIRED5", endsAt: new Date(Date.now() - 1) });
+      await insertDiscount({
+        slug: "used",
+        code: "USEDUP",
+        maxRedemptions: 1,
+        redemptionCount: 1,
+      });
+      await insertDiscount({
+        slug: "later",
+        code: "SOON",
+        startsAt: new Date(Date.now() + 60_000),
+      });
+      await insertDiscount({ slug: "big", code: "BIG50ML", scopeVolumesMl: [50] });
+      const visitor = await guest();
+      await cart.addItem(visitor, await variant(7), 1, testDb.db);
+
+      for (const [code, error] of [
+        ["NOPE", "promo-invalid"],
+        ["SOON", "promo-invalid"],
+        ["EXPIRED5", "promo-expired"],
+        ["USEDUP", "promo-used-up"],
+        ["BIG50ML", "promo-not-applicable"],
+      ] as const) {
+        expect(await cart.applyPromoCode(visitor, code, testDb.db)).toEqual({ ok: false, error });
+      }
+      expect(await cart.getCartView(visitor, testDb.db)).toMatchObject({
+        subtotal: "990.00",
+        discount: null,
+        total: "990.00",
+        promo: null,
+      });
+      // No cart, nothing to apply it to.
+      expect(await cart.applyPromoCode(await guest(), "BIG50ML", testDb.db)).toEqual({
+        ok: false,
+        error: "promo-not-applicable",
+      });
+    });
+
+    it("keeps a stored code that stops applying and says why, until it's removed", async () => {
+      const cart = await import("./cart");
+      await insertDiscount({ slug: "thirty", code: "THIRTY", scopeVolumesMl: [30] });
+      const visitor = await guest();
+      const thirty = await variant(30);
+      await cart.addItem(visitor, thirty, 1, testDb.db);
+      expect(await cart.applyPromoCode(visitor, "THIRTY", testDb.db)).toEqual({
+        ok: true,
+        status: "applied",
+      });
+
+      await cart.removeItem(visitor, thirty.publicId, testDb.db);
+      await cart.addItem(visitor, await variant(7), 1, testDb.db);
+      expect(await cart.getCartView(visitor, testDb.db)).toMatchObject({
+        discount: null,
+        total: "990.00",
+        promo: { code: "THIRTY", status: "not-applicable" },
+      });
+
+      await cart.removePromoCode(visitor, testDb.db);
+      expect((await cart.getCartView(visitor, testDb.db)).promo).toBeNull();
+    });
+
+    it("brings the guest's code to the user's cart unless it has its own", async () => {
+      const cart = await import("./cart");
+      await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
+      await insertDiscount({ slug: "other", code: "OTHER5", value: "5" });
+      const small = await variant(7);
+
+      const visitor = await guest();
+      const userId = await user();
+      await cart.addItem(visitor, small, 1, testDb.db);
+      await cart.applyPromoCode(visitor, "JASSMIN10", testDb.db);
+      await cart.addItem({ ...(await guest()), userId }, small, 1, testDb.db);
+      await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
+      expect((await cart.getCartView({ userId }, testDb.db)).promo?.code).toBe("JASSMIN10");
+
+      const second = await guest();
+      await cart.addItem(second, small, 1, testDb.db);
+      await cart.applyPromoCode(second, "OTHER5", testDb.db);
+      await cart.mergeGuestCart(userId, second.anonymousId, testDb.db);
+      expect((await cart.getCartView({ userId }, testDb.db)).promo?.code).toBe("JASSMIN10");
     });
   });
 

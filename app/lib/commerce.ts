@@ -4,6 +4,7 @@
 // Money is an exact decimal string (e.g. `"2450.00"`), never a float.
 import type {
   CartStatus,
+  DiscountKind,
   OrderStatus,
   PaymentAttemptStatus,
   PaymentMethod,
@@ -23,6 +24,8 @@ export interface Cart {
   updatedAt: Date;
   /** When the abandoned-cart job marked the cart `abandoned`; `null` otherwise. */
   abandonedAt: Date | null;
+  /** The promo code the shopper applied (`discounts.id`, #59). */
+  discountId: number | null;
 }
 
 export interface ProductVariant {
@@ -73,6 +76,8 @@ export interface Order {
   refundedAt: Date | null;
   shippedAt: Date | null;
   completedAt: Date | null;
+  /** The discount rule applied at checkout (#59). */
+  discountId: number | null;
 }
 
 export interface OrderItem {
@@ -105,4 +110,27 @@ export interface Payment {
   createdAt: Date;
   updatedAt: Date;
   completedAt: Date | null;
+}
+
+/** A discount rule (#59): a promo code, or an automatic rule when `code` is `null`. */
+export interface Discount {
+  id: number;
+  slug: string;
+  code: string | null;
+  kind: DiscountKind;
+  /** The percent, the amount off, or the price of one set, depending on `kind`. */
+  value: string;
+  /** Scopes; `null` matches any line. */
+  scopeVolumesMl: number[] | null;
+  scopeProductPublicIds: string[] | null;
+  scopePackSize: number | null;
+  minQuantity: number;
+  maxSets: number | null;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  maxRedemptions: number | null;
+  redemptionCount: number;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

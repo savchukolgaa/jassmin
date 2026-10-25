@@ -26,6 +26,7 @@ const ALL_TABLES = [
   "cart_items",
   "carts",
   "cms_outbox",
+  "discounts",
   "order_emails",
   "order_items",
   "orders",
@@ -169,6 +170,46 @@ describe.skipIf(!hasDatabase)("migrations", () => {
         await pgErrorCode(db.execute(sql`update users set ${sql.identifier(column)} = null`)),
       ).toBe("23502");
     }
+  });
+
+  it("enforces the discount constraints", async () => {
+    const { discounts } = await import("./schema");
+    const { pgErrorCode } = await import("./test-utils");
+    const { db } = testDb;
+    const rule = { kind: "percent" as const, value: "10" };
+
+    await db.insert(discounts).values({ ...rule, slug: "case-test", code: "CASE10" });
+    // 23514 check_violation, 23505 unique_violation
+    expect(
+      await pgErrorCode(db.insert(discounts).values({ ...rule, slug: "case-2", code: "case10" })),
+    ).toBe("23505");
+    expect(await pgErrorCode(db.insert(discounts).values({ ...rule, slug: "case-test" }))).toBe(
+      "23505",
+    );
+    // Automatic rules have no code, and any number of them may exist.
+    await db.insert(discounts).values([
+      { ...rule, slug: "auto-1" },
+      { ...rule, slug: "auto-2" },
+    ]);
+
+    for (const bad of [
+      { kind: "percent" as const, value: "0" },
+      { kind: "percent" as const, value: "100.01" },
+      { kind: "fixed_amount" as const, value: "-1" },
+      { kind: "fixed_price_set" as const, value: "499", minQuantity: 1 },
+      { ...rule, minQuantity: 0 },
+      { ...rule, maxSets: 0 },
+      { ...rule, startsAt: new Date("2026-02-01"), endsAt: new Date("2026-01-01") },
+      { ...rule, maxRedemptions: 1, redemptionCount: 2 },
+      { ...rule, redemptionCount: -1 },
+    ]) {
+      expect(await pgErrorCode(db.insert(discounts).values({ ...bad, slug: "bad" }))).toBe("23514");
+    }
+    expect(
+      await pgErrorCode(
+        db.insert(discounts).values({ slug: "bad", kind: "free_lunch" as "percent", value: "1" }),
+      ),
+    ).toBe("23514");
   });
 
   it("applies the commerce defaults", async () => {
@@ -633,8 +674,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0011 sit on top of 0006; migrateLatest below reapplies them.
-    expect(await rollbackLatest(db)).toBe("0011_cms_catalog_and_orders");
+    // 0007 to 0012 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
+    expect(await rollbackLatest(db)).toBe("0011_discounts");
     expect(await rollbackLatest(db)).toBe("0010_payments");
     expect(await rollbackLatest(db)).toBe("0009_order_emails");
     expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
@@ -664,8 +706,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0011 sit on top of 0003; migrateLatest below reapplies them.
-    expect(await rollbackLatest(db)).toBe("0011_cms_catalog_and_orders");
+    // 0004 to 0012 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
+    expect(await rollbackLatest(db)).toBe("0011_discounts");
     expect(await rollbackLatest(db)).toBe("0010_payments");
     expect(await rollbackLatest(db)).toBe("0009_order_emails");
     expect(await rollbackLatest(db)).toBe("0008_traffic_attribution");
@@ -752,20 +795,28 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
-    expect(await rollbackLatest(testDb.db)).toBe("0011_cms_catalog_and_orders");
-    const tablesBefore0011 = ALL_TABLES.filter((t) => t !== "cms_outbox");
-    expect(await listTables()).toEqual(tablesBefore0011);
+    expect(await rollbackLatest(testDb.db)).toBe("0012_cms_catalog_and_orders");
+    const tablesBefore0012 = ALL_TABLES.filter((t) => t !== "cms_outbox");
+    expect(await listTables()).toEqual(tablesBefore0012);
     const syncColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns
           where (table_name = 'products' and column_name in ('slug', 'active'))
              or (table_name = 'orders' and column_name in ('shipped_at', 'completed_at'))`,
     );
     expect(syncColumns.rows).toEqual([]);
+    expect(await rollbackLatest(testDb.db)).toBe("0011_discounts");
+    expect(await listTables()).toEqual(tablesBefore0012.filter((t) => t !== "discounts"));
+    const discountColumns = await testDb.db.execute(
+      sql`select 1 from information_schema.columns where column_name = 'discount_id'`,
+    );
+    expect(discountColumns.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0010_payments");
-    expect(await listTables()).toEqual(tablesBefore0011.filter((t) => t !== "payments"));
+    expect(await listTables()).toEqual(
+      tablesBefore0012.filter((t) => t !== "discounts" && t !== "payments"),
+    );
     expect(await rollbackLatest(testDb.db)).toBe("0009_order_emails");
     expect(await listTables()).toEqual(
-      tablesBefore0011.filter((t) => t !== "payments" && t !== "order_emails"),
+      tablesBefore0012.filter((t) => t !== "discounts" && t !== "payments" && t !== "order_emails"),
     );
     expect(await rollbackLatest(testDb.db)).toBe("0008_traffic_attribution");
     const attributionColumns = await testDb.db.execute(
@@ -798,8 +849,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await listEnums()).not.toHaveProperty("user_role");
     expect(await rollbackLatest(testDb.db)).toBe("0003_product_variants");
     expect(await listTables()).toEqual(
-      tablesBefore0011.filter(
-        (t) => t !== "product_variants" && t !== "order_emails" && t !== "payments",
+      tablesBefore0012.filter(
+        (t) =>
+          t !== "product_variants" && t !== "order_emails" && t !== "payments" && t !== "discounts",
       ),
     );
     expect(await rollbackLatest(testDb.db)).toBe("0002_analytics_schema");

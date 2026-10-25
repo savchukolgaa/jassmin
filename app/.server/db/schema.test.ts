@@ -2,13 +2,22 @@ import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { AnalyticsSession, UserEvent } from "~/lib/analytics";
-import type { Cart, CartItem, Order, OrderItem, Payment, ProductVariant } from "~/lib/commerce";
+import type {
+  Cart,
+  CartItem,
+  Discount,
+  Order,
+  OrderItem,
+  Payment,
+  ProductVariant,
+} from "~/lib/commerce";
 import { CART_STATUSES, GENDERS, ORDER_STATUSES, PAYMENT_STATUSES, USER_ROLES } from "~/lib/enums";
 import {
   cartItems,
   cartStatusType,
   carts,
   cmsOutbox,
+  discounts,
   genderType,
   orderEmails,
   orderItems,
@@ -170,11 +179,13 @@ describe("carts", () => {
       createdAt: ["timestamp with time zone", true, true],
       updatedAt: ["timestamp with time zone", true, true],
       abandonedAt: ["timestamp with time zone", false, false],
+      discountId: ["integer", false, false],
     });
   });
 
   it("links the analytics session, restricts deleting a user and has the lookup indexes", () => {
     expect(describeForeignKeys(carts)).toEqual({
+      discountId: ["discounts", "set null"],
       sessionId: ["sessions", "set null"],
       userId: ["users", "restrict"],
     });
@@ -251,6 +262,7 @@ describe("orders", () => {
       refundedAt: ["timestamp with time zone", false, false],
       shippedAt: ["timestamp with time zone", false, false],
       completedAt: ["timestamp with time zone", false, false],
+      discountId: ["integer", false, false],
     });
   });
 
@@ -258,12 +270,14 @@ describe("orders", () => {
     expect(describeForeignKeys(orders)).toEqual({
       userId: ["users", "restrict"],
       cartId: ["carts", "set null"],
+      discountId: ["discounts", "restrict"],
     });
     expect(describeConstraints(orders)).toEqual({
       checks: ["orders_amounts_check", "orders_payment_method_check"],
       uniques: [],
       indexes: [
         "orders_cart_id_unique",
+        "orders_discount_id_idx",
         "orders_guest_email_idx",
         "orders_guest_phone_idx",
         "orders_user_id_idx",
@@ -365,6 +379,46 @@ describe("payments", () => {
   });
 });
 
+describe("discounts", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(discounts)).toEqual({
+      id: ["serial", true, true],
+      slug: ["text", true, false],
+      code: ["varchar(40)", false, false],
+      kind: ["text", true, false],
+      value: ["numeric(10, 2)", true, false],
+      scopeVolumesMl: ["integer[]", false, false],
+      scopeProductPublicIds: ["uuid[]", false, false],
+      scopePackSize: ["integer", false, false],
+      minQuantity: ["integer", true, true],
+      maxSets: ["integer", false, false],
+      startsAt: ["timestamp with time zone", false, false],
+      endsAt: ["timestamp with time zone", false, false],
+      maxRedemptions: ["integer", false, false],
+      redemptionCount: ["integer", true, true],
+      active: ["boolean", true, true],
+      createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("keeps slugs and codes unique and checks kinds, values, windows and redemptions", () => {
+    expect(describeForeignKeys(discounts)).toEqual({});
+    expect(describeConstraints(discounts)).toEqual({
+      checks: [
+        "discounts_kind_check",
+        "discounts_max_sets_check",
+        "discounts_min_quantity_check",
+        "discounts_redemptions_check",
+        "discounts_value_check",
+        "discounts_window_check",
+      ],
+      uniques: ["discounts_slug_unique"],
+      indexes: ["discounts_code_unique"],
+    });
+  });
+});
+
 describe("cms_outbox", () => {
   it("has the specified columns", () => {
     expect(describeColumns(cmsOutbox)).toEqual({
@@ -399,6 +453,7 @@ describe("shared commerce types", () => {
     expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();
     expectTypeOf<typeof orderItems.$inferSelect>().toEqualTypeOf<OrderItem>();
     expectTypeOf<typeof payments.$inferSelect>().toEqualTypeOf<Payment>();
+    expectTypeOf<typeof discounts.$inferSelect>().toEqualTypeOf<Discount>();
   });
 });
 

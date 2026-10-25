@@ -79,6 +79,7 @@ export default function CheckoutSuccess({ loaderData: order }: Route.ComponentPr
         <OrderSummary
           lines={order.lines}
           subtotal={order.subtotal}
+          discount={order.discount}
           total={order.totalAmount}
           freeShipping={order.freeShipping}
         />

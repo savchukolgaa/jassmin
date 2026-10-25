@@ -1,4 +1,4 @@
--- Rolls back 0011_cms_catalog_and_orders.sql.
+-- Rolls back 0012_cms_catalog_and_orders.sql.
 DROP TABLE "cms_outbox";--> statement-breakpoint
 ALTER TABLE "products" DROP CONSTRAINT "products_slug_unique";--> statement-breakpoint
 ALTER TABLE "products" DROP COLUMN "active";--> statement-breakpoint

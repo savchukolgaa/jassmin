@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { GENDERS, PERFUME_VOLUMES_ML } from "~/lib/enums";
-import { SAMPLE_PRODUCTS } from "./seed-data";
+import { SAMPLE_DISCOUNTS, SAMPLE_PRODUCTS } from "./seed-data";
 import { hasDatabase, type TestDatabase } from "./test-utils";
 
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -59,6 +59,23 @@ describe("SAMPLE_PRODUCTS", () => {
     expect(SAMPLE_PRODUCTS.some((p) => inStock(p) === 0)).toBe(true);
   });
 
+  it("has the tester trio as the only automatic discount (#59)", () => {
+    const automatic = SAMPLE_DISCOUNTS.filter((discount) => !discount.code);
+    expect(automatic).toEqual([
+      expect.objectContaining({
+        slug: "tester-trio",
+        kind: "fixed_price_set",
+        value: "499.00",
+        scopeVolumesMl: [10],
+        scopePackSize: 1,
+        minQuantity: 3,
+        maxSets: 3,
+      }),
+    ]);
+    const slugs = SAMPLE_DISCOUNTS.map((discount) => discount.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
   it("has a unique UUID v7 publicId per product", () => {
     const ids = SAMPLE_PRODUCTS.map((p) => p.publicId);
 
@@ -110,5 +127,24 @@ describe.skipIf(!hasDatabase)("seedProducts", () => {
     expect(missing).toBeGreaterThan(0);
     expect(await seedProducts(testDb.db)).toEqual({ inserted: 0, variantsInserted: missing });
     expect(await testDb.db.$count(productVariants)).toBe(VARIANT_COUNT);
+  });
+
+  it("inserts the sample discount rules once and keeps their redemption counts", async () => {
+    const { seedDiscounts } = await import("./seed");
+    const { discounts } = await import("./schema");
+    const { eq } = await import("drizzle-orm");
+
+    expect(await seedDiscounts(testDb.db)).toBe(SAMPLE_DISCOUNTS.length);
+    await testDb.db
+      .update(discounts)
+      .set({ redemptionCount: 7 })
+      .where(eq(discounts.slug, "tester-trio"));
+    expect(await seedDiscounts(testDb.db)).toBe(0);
+    expect(await testDb.db.$count(discounts)).toBe(SAMPLE_DISCOUNTS.length);
+    const [trio] = await testDb.db
+      .select({ count: discounts.redemptionCount })
+      .from(discounts)
+      .where(eq(discounts.slug, "tester-trio"));
+    expect(trio?.count).toBe(7);
   });
 });

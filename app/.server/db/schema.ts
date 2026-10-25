@@ -1,7 +1,7 @@
 // Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
 // checkout fields on orders (#11), the order email queue (#45), card payment attempts (#44) and
-// the Strapi catalog and order sync (#40).
+// discount rules (#59) and the Strapi catalog and order sync (#40).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -30,6 +30,8 @@ import {
   CART_STATUSES,
   CMS_SYNC_ENTITIES,
   type CmsSyncEntity,
+  DISCOUNT_KINDS,
+  type DiscountKind,
   EVENT_TYPES,
   type EventType,
   GENDERS,
@@ -230,6 +232,11 @@ export const carts = pgTable(
      * leaves `updated_at` alone, so it stays the shopper's last activity.
      */
     abandonedAt: timestamp({ withTimezone: true }),
+    /**
+     * The promo code the shopper applied (#59); `null` without one. Automatic rules aren't stored,
+     * they are worked out again on every read.
+     */
+    discountId: integer().references((): AnyPgColumn => discounts.id, { onDelete: "set null" }),
   },
   (t) => [
     index("carts_user_id_idx").on(t.userId),
@@ -307,6 +314,11 @@ export const orders = pgTable(
     shippedAt: timestamp({ withTimezone: true }),
     /** When the order was marked `completed` (#40). */
     completedAt: timestamp({ withTimezone: true }),
+    /**
+     * The discount rule applied at checkout (#59), for attributing orders to promotions. Restrict:
+     * a used rule is deactivated, never deleted.
+     */
+    discountId: integer().references((): AnyPgColumn => discounts.id, { onDelete: "restrict" }),
   },
   (t) => [
     check(
@@ -325,6 +337,7 @@ export const orders = pgTable(
     index("orders_user_id_idx").on(t.userId),
     // NULLs don't collide, so orders without a cart are fine.
     uniqueIndex("orders_cart_id_unique").on(t.cartId),
+    index("orders_discount_id_idx").on(t.discountId),
   ],
 );
 
@@ -431,6 +444,70 @@ export const payments = pgTable(
     check("payments_amount_check", sql`${t.amount} >= 0`),
     unique("payments_reference_unique").on(t.reference),
     index("payments_order_id_idx").on(t.orderId),
+  ],
+);
+
+/**
+ * Discount rules (#59). A rule with a `code` applies only when the shopper enters it; one without
+ * applies by itself when the cart qualifies. Checkout picks the single best rule for the cart and
+ * counts it in `redemption_count`, which can never pass `max_redemptions`.
+ *
+ * A cart line qualifies when it matches every scope that is set (`null` = any): the unit volume,
+ * the product's `public_id` and its `pack_size`.
+ */
+export const discounts = pgTable(
+  "discounts",
+  {
+    id: serial().primaryKey(),
+    /** Stable internal key, for the seed and for linking a rule from elsewhere. */
+    slug: text().notNull(),
+    /** Stored uppercase and unique whatever its case; `null` for automatic rules. */
+    code: varchar({ length: 40 }),
+    kind: text().$type<DiscountKind>().notNull(),
+    /**
+     * The percent for `percent`, the hryvnias off for `fixed_amount` and the price of one set for
+     * `fixed_price_set`.
+     */
+    value: numeric({ precision: 10, scale: 2 }).notNull(),
+    scopeVolumesMl: integer().array(),
+    scopeProductPublicIds: uuid().array(),
+    scopePackSize: integer(),
+    /** Qualifying units the cart needs; for `fixed_price_set`, the size of one set. */
+    minQuantity: integer().notNull().default(1),
+    /** For `fixed_price_set`: the most sets one order gets at the set price. */
+    maxSets: integer(),
+    /** Start inclusive, end exclusive; `null` means no limit on that side. */
+    startsAt: timestamp({ withTimezone: true }),
+    endsAt: timestamp({ withTimezone: true }),
+    /** `null` for no limit. */
+    maxRedemptions: integer(),
+    /** Orders placed with the rule. */
+    redemptionCount: integer().notNull().default(0),
+    active: boolean().notNull().default(true),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("discounts_slug_unique").on(t.slug),
+    uniqueIndex("discounts_code_unique").on(sql`lower(${t.code})`),
+    check("discounts_kind_check", oneOf(t.kind, DISCOUNT_KINDS)),
+    check(
+      "discounts_value_check",
+      sql`${t.value} >= 0 and (${t.kind} <> 'percent' or (${t.value} > 0 and ${t.value} <= 100))`,
+    ),
+    check(
+      "discounts_min_quantity_check",
+      sql`${t.minQuantity} >= 1 and (${t.kind} <> 'fixed_price_set' or ${t.minQuantity} >= 2)`,
+    ),
+    check("discounts_max_sets_check", sql`${t.maxSets} is null or ${t.maxSets} > 0`),
+    check(
+      "discounts_window_check",
+      sql`${t.startsAt} is null or ${t.endsAt} is null or ${t.endsAt} > ${t.startsAt}`,
+    ),
+    check(
+      "discounts_redemptions_check",
+      sql`${t.redemptionCount} >= 0 and (${t.maxRedemptions} is null or (${t.maxRedemptions} > 0 and ${t.redemptionCount} <= ${t.maxRedemptions}))`,
+    ),
   ],
 );
 

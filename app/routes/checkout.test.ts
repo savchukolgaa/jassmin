@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CartLine } from "~/lib/cart";
+import { type CartLine, type CartView, EMPTY_CART } from "~/lib/cart";
 
 const cart = vi.hoisted(() => ({
   getActiveCartId: vi.fn(),
@@ -44,6 +44,11 @@ const line: CartLine = {
   stockQuantity: 3,
   lineTotal: "900.00",
 };
+
+/** A cart view without a discount unless one is given. */
+function cartView(view: Partial<CartView>): CartView {
+  return { ...EMPTY_CART, total: view.subtotal ?? EMPTY_CART.total, ...view };
+}
 
 const valid = {
   fullName: "Олена Коваль",
@@ -92,21 +97,21 @@ describe("checkout loader", () => {
   it("sends the visitor back to the cart when it's empty or a line exceeds stock", async () => {
     const { loader } = await import("./checkout");
 
-    cart.getCartView.mockResolvedValueOnce({ lines: [], itemCount: 0, subtotal: "0.00" });
+    cart.getCartView.mockResolvedValueOnce(cartView({ lines: [], itemCount: 0, subtotal: "0.00" }));
     expect(await redirectOf(loader(get()))).toBe("/cart");
 
-    cart.getCartView.mockResolvedValueOnce({
-      lines: [{ ...line, quantity: 4 }],
-      itemCount: 4,
-      subtotal: "1800.00",
-    });
+    cart.getCartView.mockResolvedValueOnce(
+      cartView({ lines: [{ ...line, quantity: 4 }], itemCount: 4, subtotal: "1800.00" }),
+    );
     expect(await redirectOf(loader(get()))).toBe("/cart");
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
   it("records checkout_start with the cart's subtotal and item count", async () => {
     const { loader } = await import("./checkout");
-    cart.getCartView.mockResolvedValueOnce({ lines: [line], itemCount: 2, subtotal: "900.00" });
+    cart.getCartView.mockResolvedValueOnce(
+      cartView({ lines: [line], itemCount: 2, subtotal: "900.00" }),
+    );
     const args = get();
 
     await loader(args);
@@ -115,13 +120,20 @@ describe("checkout loader", () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       { request: args.request, context: args.context },
       "checkout_start",
-      { properties: { subtotal: "900.00", itemCount: 2 } },
+      {
+        properties: {
+          subtotal: "900.00",
+          itemCount: 2,
+          discountAmount: "0.00",
+          discountCode: null,
+        },
+      },
     );
   });
 
   it("returns the cart, how much is missing for free delivery and no prefill for guests", async () => {
     const { loader } = await import("./checkout");
-    const view = { lines: [line], itemCount: 2, subtotal: "900.00" };
+    const view = cartView({ lines: [line], itemCount: 2, subtotal: "900.00" });
     cart.getCartView.mockResolvedValueOnce(view);
 
     expect(await loader(get())).toEqual({
@@ -133,9 +145,37 @@ describe("checkout loader", () => {
     expect(orders.getCheckoutPrefill).not.toHaveBeenCalled();
   });
 
+  it("decides free delivery on the discounted total and records the applied code (#59)", async () => {
+    const { loader } = await import("./checkout");
+    const view = cartView({
+      lines: [{ ...line, quantity: 3, lineTotal: "1350.00" }],
+      itemCount: 3,
+      subtotal: "1350.00",
+      discount: { amount: "405.00", code: "SAVE30", kind: "percent" },
+      total: "945.00",
+      promo: { code: "SAVE30", status: "applied" },
+    });
+    cart.getCartView.mockResolvedValueOnce(view);
+
+    expect(await loader(get())).toMatchObject({
+      cart: view,
+      shipping: { free: false, remaining: "55.00" },
+    });
+    expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "checkout_start", {
+      properties: {
+        subtotal: "1350.00",
+        itemCount: 3,
+        discountAmount: "405.00",
+        discountCode: "SAVE30",
+      },
+    });
+  });
+
   it("says when card payment isn't available", async () => {
     const { loader } = await import("./checkout");
-    cart.getCartView.mockResolvedValueOnce({ lines: [line], itemCount: 2, subtotal: "900.00" });
+    cart.getCartView.mockResolvedValueOnce(
+      cartView({ lines: [line], itemCount: 2, subtotal: "900.00" }),
+    );
     payments.isCardPaymentAvailable.mockReturnValue(false);
 
     expect(await loader(get())).toMatchObject({ cardPaymentAvailable: false });
@@ -145,7 +185,9 @@ describe("checkout loader", () => {
     const { loader } = await import("./checkout");
     const prefill = { fullName: "Olena", email: "olena@example.com", phone: null };
     cart.getCartOwner.mockResolvedValueOnce({ userId: 7 });
-    cart.getCartView.mockResolvedValueOnce({ lines: [line], itemCount: 2, subtotal: "1000.00" });
+    cart.getCartView.mockResolvedValueOnce(
+      cartView({ lines: [line], itemCount: 2, subtotal: "1000.00" }),
+    );
     orders.getCheckoutPrefill.mockResolvedValueOnce(prefill);
 
     expect(await loader(get())).toMatchObject({ prefill, shipping: { free: true } });
@@ -298,6 +340,11 @@ describe("checkout action", () => {
       orderId: 42,
       placed: true,
       subtotal: "900.00",
+      discountAmount: "90.00",
+      totalAmount: "810.00",
+      discountId: 3,
+      discountCode: "JASSMIN10",
+      discountKind: "percent",
     });
     const args = post(valid);
 
@@ -307,7 +354,17 @@ describe("checkout action", () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       { request: args.request, context: args.context },
       "purchase",
-      { properties: { orderId: 42, subtotal: "900.00", paymentMethod: "cod" } },
+      {
+        properties: {
+          orderId: 42,
+          subtotal: "900.00",
+          totalAmount: "810.00",
+          discountAmount: "90.00",
+          discountId: 3,
+          discountCode: "JASSMIN10",
+          paymentMethod: "cod",
+        },
+      },
     );
   });
 
@@ -353,6 +410,35 @@ describe("checkout action", () => {
     expect(session.rememberOrder).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
     expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
+  });
+
+  it("passes the total the page showed and explains when it changed (#59)", async () => {
+    const { action } = await import("./checkout");
+    orders.createOrder.mockResolvedValueOnce({ ok: false, error: "total-changed" });
+    const fields = { ...valid, expectedTotal: "810.00" };
+
+    expect(unwrap(await action(post(fields)))).toEqual({
+      status: 409,
+      body: { formError: "checkout.errors.totalChanged", values: valid },
+    });
+    expect(orders.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedTotal: "810.00",
+        customer: { ...valid, phone: "+380671234567" },
+      }),
+    );
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("ignores a malformed expected total", async () => {
+    const { action } = await import("./checkout");
+    orders.createOrder.mockResolvedValueOnce({ ok: true, orderId: 42, placed: false });
+
+    await action(post({ ...valid, expectedTotal: "lots" }));
+
+    expect(orders.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedTotal: undefined }),
+    );
   });
 
   it("sends the visitor to the cart without an active or non-empty cart", async () => {

@@ -341,6 +341,249 @@ describe.skipIf(!hasDatabase)("order service", () => {
     expect((await cartOf(cart.id))?.status).toBe("active");
   });
 
+  describe("discounts (#59)", () => {
+    beforeEach(async () => {
+      const { discounts } = await import("../db/schema");
+      // Orders keep their rule (restrict); the outer hook already deleted them.
+      await testDb.db.delete(discounts);
+    });
+
+    type NewDiscount = typeof import("../db/schema").discounts.$inferInsert;
+
+    async function insertDiscount(values: Partial<NewDiscount> & Pick<NewDiscount, "slug">) {
+      const { discounts } = await import("../db/schema");
+      const [row] = await testDb.db
+        .insert(discounts)
+        .values({ kind: "percent", value: "10", ...values })
+        .returning({ id: discounts.id });
+      if (!row) throw new Error("no discount");
+      return row.id;
+    }
+
+    async function withCode(cartId: number, discountId: number) {
+      const { eq } = await import("drizzle-orm");
+      const { carts } = await import("../db/schema");
+      await testDb.db.update(carts).set({ discountId }).where(eq(carts.id, cartId));
+    }
+
+    async function redemptions(discountId: number) {
+      const { eq } = await import("drizzle-orm");
+      const { discounts } = await import("../db/schema");
+      const [row] = await testDb.db
+        .select({ count: discounts.redemptionCount })
+        .from(discounts)
+        .where(eq(discounts.id, discountId));
+      return row?.count;
+    }
+
+    async function place(cartId: number, extra: { expectedTotal?: string; now?: Date } = {}) {
+      const { createOrder } = await import("./orders");
+      return createOrder({ cartId, userId: null, customer, locale: "uk", ...extra }, testDb.db);
+    }
+
+    it("writes the code's discount and rule on the order and counts the redemption", async () => {
+      const code = await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
+      const cart = await cartWith([{ variant: await variant(30, 3), quantity: 1 }]);
+      await withCode(cart.id, code);
+
+      const result = await place(cart.id, { expectedTotal: "4005.00" });
+
+      expect(result).toEqual({
+        ok: true,
+        orderId: expect.any(Number),
+        placed: true,
+        subtotal: "4450.00",
+        discountAmount: "445.00",
+        totalAmount: "4005.00",
+        discountId: code,
+        discountCode: "JASSMIN10",
+        discountKind: "percent",
+      });
+      expect(await allOrders()).toEqual([
+        expect.objectContaining({
+          subtotal: "4450.00",
+          discountAmount: "445.00",
+          totalAmount: "4005.00",
+          discountId: code,
+          freeShipping: true,
+        }),
+      ]);
+      expect(await redemptions(code)).toBe(1);
+    });
+
+    it("shows the discount on the confirmation and the account order page", async () => {
+      const { createOrder, getAccountOrder, getOrderConfirmation } = await import("./orders");
+      const code = await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
+      const userId = await user();
+      const cart = await cartWith([{ variant: await variant(30, 3), quantity: 1 }], userId);
+      await withCode(cart.id, code);
+
+      const result = await createOrder(
+        { cartId: cart.id, userId, customer, locale: "uk" },
+        testDb.db,
+      );
+      // One active cart per user: the next one once the first became an order.
+      const plain = await cartWith([{ variant: await variant(7, 10), quantity: 1 }], userId);
+      const plainResult = await createOrder(
+        { cartId: plain.id, userId, customer, locale: "uk" },
+        testDb.db,
+      );
+      if (!result.ok || !plainResult.ok) throw new Error("not placed");
+
+      const discount = { amount: "445.00", code: "JASSMIN10", kind: "percent" };
+      const viewer = { userId, orderIds: [] };
+      expect(await getOrderConfirmation(result.orderId, viewer, testDb.db)).toMatchObject({
+        discountAmount: "445.00",
+        discount,
+        totalAmount: "4005.00",
+      });
+      expect(await getAccountOrder(userId, result.orderId, testDb.db)).toMatchObject({
+        subtotal: "4450.00",
+        discount,
+        totalAmount: "4005.00",
+      });
+      expect((await getAccountOrder(userId, plainResult.orderId, testDb.db))?.discount).toBeNull();
+    });
+
+    it("applies the tester trio by itself, up to three sets, and nothing else", async () => {
+      const trio = await insertDiscount({
+        slug: "tester-trio",
+        kind: "fixed_price_set",
+        value: "499",
+        scopeVolumesMl: [10],
+        scopePackSize: 1,
+        minQuantity: 3,
+        maxSets: 3,
+      });
+      const ten = await variant(10, 20);
+      // Ten 10 ml at 1350 ₴: three sets at 499 ₴ each and one at full price.
+      const trioCart = await cartWith([{ variant: ten, quantity: 10 }]);
+      const thirtyCart = await cartWith([{ variant: await variant(30, 3), quantity: 2 }]);
+
+      expect(await place(trioCart.id)).toMatchObject({
+        subtotal: "13500.00",
+        discountAmount: "10653.00",
+        totalAmount: "2847.00",
+        discountId: trio,
+        discountCode: null,
+        discountKind: "fixed_price_set",
+      });
+      // Two 30 ml bottles stay at full price: there is no bundle rule.
+      expect(await place(thirtyCart.id)).toMatchObject({
+        subtotal: "8900.00",
+        discountAmount: "0.00",
+        totalAmount: "8900.00",
+        discountId: null,
+      });
+      expect(await redemptions(trio)).toBe(1);
+    });
+
+    it("decides free delivery on the discounted subtotal", async () => {
+      const code = await insertDiscount({
+        slug: "big",
+        code: "BIG",
+        kind: "fixed_amount",
+        value: "1000",
+      });
+      const seven = await variant(7, 10);
+      const discounted = await cartWith([{ variant: seven, quantity: 2 }]);
+      const full = await cartWith([{ variant: seven, quantity: 2 }]);
+      await withCode(discounted.id, code);
+
+      await place(discounted.id);
+      await place(full.id);
+
+      const byCart = new Map((await allOrders()).map((order) => [order.cartId, order]));
+      // 1980 ₴ − 1000 ₴ = 980 ₴, under the 1000 ₴ threshold.
+      expect(byCart.get(discounted.id)).toMatchObject({
+        totalAmount: "980.00",
+        freeShipping: false,
+      });
+      expect(byCart.get(full.id)).toMatchObject({ totalAmount: "1980.00", freeShipping: true });
+    });
+
+    it("never redeems a code past its limit for concurrent checkouts", async () => {
+      const code = await insertDiscount({ slug: "once", code: "ONCE", maxRedemptions: 1 });
+      const seven = await variant(7, 10);
+      const first = await cartWith([{ variant: seven, quantity: 1 }]);
+      const second = await cartWith([{ variant: seven, quantity: 1 }]);
+      await withCode(first.id, code);
+      await withCode(second.id, code);
+
+      // Both pages showed 891 ₴ (990 ₴ − 10%).
+      const results = await Promise.all([
+        place(first.id, { expectedTotal: "891.00" }),
+        place(second.id, { expectedTotal: "891.00" }),
+      ]);
+
+      expect(results.filter((r) => r.ok)).toEqual([
+        expect.objectContaining({ discountId: code, totalAmount: "891.00" }),
+      ]);
+      expect(results.filter((r) => !r.ok)).toEqual([{ ok: false, error: "total-changed" }]);
+      expect(await redemptions(code)).toBe(1);
+      expect(await allOrders()).toHaveLength(1);
+      expect(await stockOf(seven.id)).toBe(9);
+    });
+
+    it("charges full price for a used-up code when no total is expected", async () => {
+      const code = await insertDiscount({
+        slug: "used",
+        code: "USED",
+        maxRedemptions: 1,
+        redemptionCount: 1,
+      });
+      const cart = await cartWith([{ variant: await variant(7, 10), quantity: 1 }]);
+      await withCode(cart.id, code);
+
+      expect(await place(cart.id)).toMatchObject({
+        totalAmount: "990.00",
+        discountId: null,
+        discountCode: null,
+      });
+    });
+
+    it("writes nothing when the code expired after the page showed it", async () => {
+      const endsAt = new Date("2026-11-01T00:00:00Z");
+      const code = await insertDiscount({ slug: "ending", code: "ENDING", endsAt });
+      const seven = await variant(7, 10);
+      const cart = await cartWith([{ variant: seven, quantity: 1 }]);
+      await withCode(cart.id, code);
+
+      expect(await place(cart.id, { expectedTotal: "891.00", now: endsAt })).toEqual({
+        ok: false,
+        error: "total-changed",
+      });
+      expect(await allOrders()).toEqual([]);
+      expect(await queuedEmails()).toEqual([]);
+      expect(await stockOf(seven.id)).toBe(10);
+      expect((await cartOf(cart.id))?.status).toBe("active");
+      expect(await redemptions(code)).toBe(0);
+    });
+
+    it("rolls back the redemption with the order", async () => {
+      const { sql } = await import("drizzle-orm");
+      const code = await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
+      const cart = await cartWith([{ variant: await variant(7, 10), quantity: 1 }]);
+      await withCode(cart.id, code);
+      await testDb.db.execute(sql`
+        create function fail_convert() returns trigger language plpgsql as
+          $$ begin raise exception 'conversion failed'; end $$;
+        create trigger fail_convert before update of status on carts
+          for each row when (new.status = 'converted') execute function fail_convert();
+      `);
+      try {
+        await expect(place(cart.id)).rejects.toThrow();
+      } finally {
+        await testDb.db.execute(sql`
+          drop trigger fail_convert on carts;
+          drop function fail_convert();
+        `);
+      }
+      expect(await redemptions(code)).toBe(0);
+      expect(await allOrders()).toEqual([]);
+    });
+  });
+
   it("never oversells the last unit to concurrent checkouts", async () => {
     const { createOrder } = await import("./orders");
     const hundred = await variant(100, 1);
@@ -382,7 +625,12 @@ describe.skipIf(!hasDatabase)("order service", () => {
       ok: true,
       orderId: expect.any(Number),
       placed: true,
-      subtotal: expect.any(String),
+      subtotal: "2970.00",
+      discountAmount: "0.00",
+      totalAmount: "2970.00",
+      discountId: null,
+      discountCode: null,
+      discountKind: null,
     });
     const orderId = placed?.ok ? placed.orderId : undefined;
     expect([a, b]).toContainEqual({ ok: true, orderId, placed: false });

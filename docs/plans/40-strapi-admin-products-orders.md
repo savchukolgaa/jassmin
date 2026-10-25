@@ -33,7 +33,7 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
   - Aspire (`aspire-apphost/apphost.mts`): pass `web`'s endpoint to `cms` as `JASSMIN_APP_URL` and
     one generated `CMS_SYNC_SECRET` parameter to both. `cms` must **not** `waitFor(web)`, because
     `web` already references `cms`.
-- **App DB migration** `0011_cms_catalog_and_orders` (plus a hand-written rollback):
+- **App DB migration** `0012_cms_catalog_and_orders` (plus a hand-written rollback):
   - `products.slug` (`varchar(255)`, unique `products_slug_unique`, nullable for existing rows
     until the import fills it)
   - `products.active` (`boolean not null default true`)
@@ -154,6 +154,8 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
       failed before this issue too; the seed now uses `getByName`.
     - The app accepts Strapi's relative `/uploads/…` image URL and resolves it against
       `STRAPI_URL` in the `/cms/products` route, like `cms/content.ts` does for CMS images.
+    - Merging `main` brought #59's `0011_discounts`, so this issue's migration is now
+      `0012_cms_catalog_and_orders` (same SQL, regenerated on top of the discounts snapshot).
     - `cms/src/**/*.test.ts` run with the app's Vitest (`cms/src/utils/app-sync.test.ts`).
     - Verified end to end on throwaway databases (Strapi on :1338, the app on :5174): the
       `db:sync-cms --all` import, a product rename, a stock edit applied as a delta, a refused
@@ -165,7 +167,7 @@ account dashboard (#12). This issue also takes over the scope of the closed #16 
 
 Answered by the issue owner after planning:
 
-- **Q1: Add `orders.shipped_at` and `orders.completed_at`?** Yes. They go in migration 0011 with
+- **Q1: Add `orders.shipped_at` and `orders.completed_at`?** Yes. They go in migration 0012 with
   a rollback, the app sets them on those transitions, they're mirrored on the Strapi `order`, and
   the account dashboard shows them (step 12).
 - **Q2: Is the app DB the source of truth, with Strapi as a write-through admin UI?** Yes
@@ -215,7 +217,7 @@ Answered from the code and the issue:
 | modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | Remove the `admin` namespace; add `account` labels for the shipped/completed dates |
 | modify | `app/root.tsx`, `app/routes/_shop.tsx`, `app/lib/enums.ts`, `app/.server/services/auth.ts`, `app/lib/route-error.ts` | Reword comments that mention the admin area |
 | modify | `app/.server/db/schema.ts`, `app/lib/commerce.ts`, `app/.server/db/schema.test.ts` | `products.slug`/`active`, `orders.shipped_at`/`completed_at`, `cms_outbox` |
-| create | `app/.server/db/migrations/0011_cms_catalog_and_orders.sql` (+ meta), `db/rollbacks/0011_cms_catalog_and_orders.sql` | Migration and rollback |
+| create | `app/.server/db/migrations/0012_cms_catalog_and_orders.sql` (+ meta), `db/rollbacks/0012_cms_catalog_and_orders.sql` | Migration and rollback |
 | create | `app/lib/order-status.ts`, `app/lib/order-status.test.ts` | Transition table, `nextOrderState()`, restock rule |
 | create | `app/lib/cms-sync.ts` | zod schemas and DTOs for the sync requests and responses (shared with tests) |
 | create | `app/.server/db/queries/cms-outbox.ts` (+ test) | Enqueue, claim (lease), mark done or failed |
@@ -247,7 +249,7 @@ Each step leaves the app building and the tests green.
   `services/auth.ts` (`requireAdmin`) and `route-error.ts`. Keep `requireAdmin` and its tests.
   Check: `grep -rn "features/admin\|routes/admin\|admin\.nav" app` is empty, and typecheck, lint
   and test pass.
-- [x] **2. Schema and migration 0011.** In `schema.ts` add `products.slug` (unique, nullable),
+- [x] **2. Schema and migration 0012.** In `schema.ts` add `products.slug` (unique, nullable),
   `products.active`, `orders.shippedAt` / `completedAt`, and `cmsOutbox` (`id`,
   `entity` ∈ `CMS_SYNC_ENTITIES = ["order", "product"]` with a CHECK, `entityId` int,
   `attempts`, `nextAttemptAt`, `lastError`, `syncedAt`, `createdAt`/`updatedAt`, unique
@@ -394,7 +396,7 @@ Each step leaves the app building and the tests green.
   - the outbox claim/lease
   - `createOrder` enqueues
   - inactive products are hidden from the catalog and blocked at checkout
-  - migration 0011 applies and rolls back
+  - migration 0012 applies and rolls back
 - **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm cms:build`,
   `pnpm aspire:build`.
 - **Manual (`pnpm aspire run`):**

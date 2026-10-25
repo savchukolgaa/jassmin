@@ -1,5 +1,5 @@
 {
-  "id": "06878dc8-433e-486a-8136-10051dba2475",
+  "id": "288febf4-269b-40a9-9a0c-88f8bcfb85cf",
   "prevId": "e1ca7b11-8459-4d07-9a8d-d56fd62cd85c",
   "version": "7",
   "dialect": "postgresql",
@@ -158,6 +158,12 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "discount_id": {
+          "name": "discount_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -271,6 +277,19 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
+        },
+        "carts_discount_id_discounts_id_fk": {
+          "name": "carts_discount_id_discounts_id_fk",
+          "tableFrom": "carts",
+          "tableTo": "discounts",
+          "columnsFrom": [
+            "discount_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -279,8 +298,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.cms_outbox": {
-      "name": "cms_outbox",
+    "public.discounts": {
+      "name": "discounts",
       "schema": "",
       "columns": {
         "id": {
@@ -289,50 +308,92 @@
           "primaryKey": true,
           "notNull": true
         },
-        "entity": {
-          "name": "entity",
+        "slug": {
+          "name": "slug",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "entity_id": {
-          "name": "entity_id",
-          "type": "integer",
+        "code": {
+          "name": "code",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "version": {
-          "name": "version",
+        "value": {
+          "name": "value",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_volumes_ml": {
+          "name": "scope_volumes_ml",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope_product_public_ids": {
+          "name": "scope_product_public_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope_pack_size": {
+          "name": "scope_pack_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_quantity": {
+          "name": "min_quantity",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 1
         },
-        "attempts": {
-          "name": "attempts",
+        "max_sets": {
+          "name": "max_sets",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_redemptions": {
+          "name": "max_redemptions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "redemption_count": {
+          "name": "redemption_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "next_attempt_at": {
-          "name": "next_attempt_at",
-          "type": "timestamp with time zone",
+        "active": {
+          "name": "active",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
-        },
-        "last_error": {
-          "name": "last_error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "synced_at": {
-          "name": "synced_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
+          "default": true
         },
         "created_at": {
           "name": "created_at",
@@ -350,23 +411,17 @@
         }
       },
       "indexes": {
-        "cms_outbox_synced_at_next_attempt_at_idx": {
-          "name": "cms_outbox_synced_at_next_attempt_at_idx",
+        "discounts_code_unique": {
+          "name": "discounts_code_unique",
           "columns": [
             {
-              "expression": "synced_at",
-              "isExpression": false,
+              "expression": "lower(\"code\")",
               "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "next_attempt_at",
-              "isExpression": false,
-              "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -375,24 +430,39 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "cms_outbox_entity_entity_id_unique": {
-          "name": "cms_outbox_entity_entity_id_unique",
+        "discounts_slug_unique": {
+          "name": "discounts_slug_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "entity",
-            "entity_id"
+            "slug"
           ]
         }
       },
       "policies": {},
       "checkConstraints": {
-        "cms_outbox_entity_check": {
-          "name": "cms_outbox_entity_check",
-          "value": "\"cms_outbox\".\"entity\" in ('order', 'product')"
+        "discounts_kind_check": {
+          "name": "discounts_kind_check",
+          "value": "\"discounts\".\"kind\" in ('percent', 'fixed_amount', 'fixed_price_set')"
         },
-        "cms_outbox_attempts_check": {
-          "name": "cms_outbox_attempts_check",
-          "value": "\"cms_outbox\".\"attempts\" >= 0"
+        "discounts_value_check": {
+          "name": "discounts_value_check",
+          "value": "\"discounts\".\"value\" >= 0 and (\"discounts\".\"kind\" <> 'percent' or (\"discounts\".\"value\" > 0 and \"discounts\".\"value\" <= 100))"
+        },
+        "discounts_min_quantity_check": {
+          "name": "discounts_min_quantity_check",
+          "value": "\"discounts\".\"min_quantity\" >= 1 and (\"discounts\".\"kind\" <> 'fixed_price_set' or \"discounts\".\"min_quantity\" >= 2)"
+        },
+        "discounts_max_sets_check": {
+          "name": "discounts_max_sets_check",
+          "value": "\"discounts\".\"max_sets\" is null or \"discounts\".\"max_sets\" > 0"
+        },
+        "discounts_window_check": {
+          "name": "discounts_window_check",
+          "value": "\"discounts\".\"starts_at\" is null or \"discounts\".\"ends_at\" is null or \"discounts\".\"ends_at\" > \"discounts\".\"starts_at\""
+        },
+        "discounts_redemptions_check": {
+          "name": "discounts_redemptions_check",
+          "value": "\"discounts\".\"redemption_count\" >= 0 and (\"discounts\".\"max_redemptions\" is null or (\"discounts\".\"max_redemptions\" > 0 and \"discounts\".\"redemption_count\" <= \"discounts\".\"max_redemptions\"))"
         }
       },
       "isRLSEnabled": false
@@ -803,15 +873,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "shipped_at": {
-          "name": "shipped_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "timestamp with time zone",
+        "discount_id": {
+          "name": "discount_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         }
@@ -876,6 +940,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "orders_discount_id_idx": {
+          "name": "orders_discount_id_idx",
+          "columns": [
+            {
+              "expression": "discount_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -903,6 +982,19 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "orders_discount_id_discounts_id_fk": {
+          "name": "orders_discount_id_discounts_id_fk",
+          "tableFrom": "orders",
+          "tableTo": "discounts",
+          "columnsFrom": [
+            "discount_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -1258,19 +1350,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "slug": {
-          "name": "slug",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "active": {
-          "name": "active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1304,13 +1383,6 @@
           "nullsNotDistinct": false,
           "columns": [
             "public_id"
-          ]
-        },
-        "products_slug_unique": {
-          "name": "products_slug_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "slug"
           ]
         }
       },

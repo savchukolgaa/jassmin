@@ -143,13 +143,34 @@ describe.skipIf(!hasDatabase)("payments service", () => {
       const paid = await order();
       await callback(await start(paid), "success");
 
-      for (const orderId of [cod, cancelled, paid, 999_999]) {
+      for (const orderId of [cod, cancelled, paid]) {
         expect(await startPayment(input(orderId), deps())).toEqual({
           ok: false,
           error: "not-payable",
         });
       }
+      expect(await startPayment(input(999_999), deps())).toEqual({
+        ok: false,
+        error: "not-found",
+      });
       expect(await paymentRows(cod)).toEqual([]);
+    });
+
+    it("only lets a viewer pay an order they may see", async () => {
+      const { startPayment } = await import("./payments");
+      const orderId = await order();
+      const input = { orderId, locale: "uk" as const, origin: ORIGIN };
+
+      expect(
+        await startPayment({ ...input, viewer: { userId: null, orderIds: [orderId + 1] } }, deps()),
+      ).toEqual({ ok: false, error: "not-found" });
+      expect(await paymentRows(orderId)).toEqual([]);
+
+      const result = await startPayment(
+        { ...input, viewer: { userId: null, orderIds: [orderId] } },
+        deps(),
+      );
+      expect(result).toMatchObject({ ok: true, reference: `${orderId}-1` });
     });
 
     it("is unavailable without a provider", async () => {

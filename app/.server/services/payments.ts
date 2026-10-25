@@ -26,6 +26,7 @@ import {
 import { getEnv } from "../env";
 import type { ParsedCallback, PaymentProvider } from "../payments/provider";
 import { getPaymentProvider } from "../payments/provider";
+import { canViewOrder, type OrderViewer } from "./orders";
 
 export interface PaymentDeps {
   db: Db;
@@ -59,15 +60,17 @@ export interface StartPaymentInput {
   locale: Locale;
   /** This site's origin, for the absolute return and callback URLs. */
   origin: string;
+  /** When set, only an order this viewer may see can be paid; others are `not-found`. */
+  viewer?: OrderViewer;
 }
 
 export type StartPaymentResult =
   | { ok: true; redirectUrl: string; reference: string }
-  | { ok: false; error: "unavailable" | "not-payable" };
+  | { ok: false; error: "unavailable" | "not-found" | "not-payable" };
 
 /** Starts a new attempt for the order's stored total and returns the provider page to go to. */
 export async function startPayment(
-  { orderId, locale, origin }: StartPaymentInput,
+  { orderId, locale, origin, viewer }: StartPaymentInput,
   { db, provider }: PaymentDeps = defaultDeps(),
 ): Promise<StartPaymentResult> {
   if (!provider) {
@@ -76,7 +79,10 @@ export async function startPayment(
   return db.transaction(async (tx): Promise<StartPaymentResult> => {
     // Locked, so two tabs retrying at once get attempts 2 and 3 instead of clashing on 2.
     const order = await findPayableOrder(tx, orderId, { lock: true });
-    if (!order || !isPayable(order)) {
+    if (!order || (viewer && !canViewOrder(order, viewer))) {
+      return { ok: false, error: "not-found" };
+    }
+    if (!isPayable(order)) {
       return { ok: false, error: "not-payable" };
     }
     const reference = `${orderId}-${(await countPayments(tx, orderId)) + 1}`;

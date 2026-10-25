@@ -12,6 +12,9 @@ export default [
     route("cart", "routes/cart.tsx"),
     route("checkout", "routes/checkout.tsx"),
     route("checkout/success/:orderId", "routes/checkout-success.tsx"),
+    // Action-only (POST): a new card payment attempt from the success page (#44). Inside the
+    // layout, so the visitor middleware still runs.
+    route("checkout/pay/:orderId", "routes/checkout-pay.ts"),
     // Every account loader calls `requireUser`: child loaders run in parallel with the layout's.
     route("account", "routes/account.tsx", [
       index("routes/account._index.tsx"),

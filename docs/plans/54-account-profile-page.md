@@ -108,6 +108,9 @@ with zod and saved in the route `action`.
   `autoComplete="username"` email input, so password managers update the right entry. The panels
   live in `app/features/account/ProfileForms.tsx`, so component tests can render them without the
   route. "Member since {date}" uses `formatDate`.
+- **Phone-width mockup (deviation, step 1):** an artboard has one frame size, so the
+  phone-width layout is a second artboard, `AccountProfilePlusPhone.dc.html` (390 px, errors on),
+  next to the desktop one. Both have `showErrors` / `showSaved` toggles.
 - **Side menu:** insert `{ to: "/account/profile", labelKey: "account.nav.profile" }` after
   Orders. The Orders link (`/account`) needs `end: true`, otherwise it would stay active on
   `/account/profile`. It's also active on `/account/orders/:id` today, so check that change
@@ -149,6 +152,7 @@ with zod and saved in the route `action`.
 |--------|------|---------|
 | modify | `docs/design.md` | Add `C+ Account profile` row (`/account/profile`, #54) to "Pages and issues" |
 | create | canvas `project/AccountProfilePlus.dc.html` | `C+ Account profile` artboard |
+| create | canvas `project/AccountProfilePlusPhone.dc.html` | Phone-width variant (390 px) with the field errors on |
 | modify | canvas `project/canvas.json` | Board entry next to `AccountPlus.dc.html`, plus its `order` slot |
 | modify | `app/lib/auth.ts` | Extract field schemas; add `contactSchema`, `changeEmailSchema`, `changePasswordSchema`, `profileIntentSchema`, field types and `ProfileActionData` |
 | modify | `app/lib/auth.test.ts` | Tests for the new schemas; register schema unchanged |
@@ -170,7 +174,7 @@ with zod and saved in the route `action`.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Design mockup.** Read `project/canvas.json` and `project/AccountPlus.dc.html` from the
+- [x] **1. Design mockup.** Read `project/canvas.json` and `project/AccountPlus.dc.html` from the
   canvas. Create `project/AccountProfilePlus.dc.html` (title `C+ Account profile`) from a copy of
   `AccountPlus`, then add its board entry to the index next to `AccountPlus`, 80 px to the right
   in the same row, and its `order` slot. It reuses the hero band and side menu, with "Profile

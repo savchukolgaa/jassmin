@@ -20,6 +20,7 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 | `C+ Product` | `/products/:id` | #8, #26 |
 | `C+ Sign in / Sign up` | `/login`, `/register` | #9 |
 | `C+ Account` | `/account` | #12 |
+| `C+ Account profile`, `C+ Account profile, phone width (errors)` | `/account/profile` | #54 |
 
 Cart and checkout aren't designed yet. Build them from the tokens and components below. There is
 no Unisex catalog page: catalogs are `/catalog/women` and `/catalog/men` only.

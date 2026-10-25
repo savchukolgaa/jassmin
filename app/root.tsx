@@ -48,7 +48,7 @@ export default function App() {
 }
 
 // Errors in public pages are caught by the `_shop` layout's boundary (which keeps the header);
-// this one handles unmatched URLs, the admin area and failures of the layout loader itself.
+// this one handles unmatched URLs, resource routes and failures of the layout loader itself.
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const { t } = useT();
   return <ErrorContent {...describeRouteError(error, t)} />;

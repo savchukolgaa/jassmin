@@ -542,20 +542,4 @@ export const uk = {
       blog: "Блог",
     },
   },
-  admin: {
-    title: "Адмінка",
-    metaTitle: "{page} — адмінка Jassmin",
-    home: "Адмінка Jassmin, головна",
-    badge: "адмінка",
-    logOut: "Вийти",
-    placeholder: "З’явиться в #{issue}.",
-    nav: {
-      label: "Адмінка",
-      products: "Товари",
-      orders: "Замовлення",
-      content: "Контент (Strapi)",
-      newTab: "(відкривається в новій вкладці)",
-      backToShop: "До магазину",
-    },
-  },
 };

@@ -223,7 +223,7 @@ Answered from the code and the issue:
 
 Each step leaves the app building and the tests green.
 
-- [ ] **1. Delete the in-app admin.** Remove the five `app/routes/admin*` files, `app/features/admin/`,
+- [x] **1. Delete the in-app admin.** Remove the five `app/routes/admin*` files, `app/features/admin/`,
   the `route("admin", …)` block and its comment in `app/routes.ts`, and the admin test in
   `routes.test.ts`. Remove the `admin` namespace from `uk.ts`/`en.ts` (the dictionaries test
   keeps them in step). Reword the comments in `root.tsx`, `_shop.tsx`, `enums.ts` (`USER_ROLES`),

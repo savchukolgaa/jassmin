@@ -533,20 +533,4 @@ export const en = {
       blog: "Blog",
     },
   },
-  admin: {
-    title: "Admin",
-    metaTitle: "{page} — Jassmin admin",
-    home: "Jassmin admin, home",
-    badge: "admin",
-    logOut: "Log out",
-    placeholder: "Coming in #{issue}.",
-    nav: {
-      label: "Admin",
-      products: "Products",
-      orders: "Orders",
-      content: "Content (Strapi)",
-      newTab: "(opens in a new tab)",
-      backToShop: "Back to shop",
-    },
-  },
 } satisfies Dictionary;

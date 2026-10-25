@@ -42,8 +42,8 @@ export async function requireUser(request: Request, database: Db = db): Promise<
 }
 
 /**
- * The logged-in admin. Every `/admin` loader **and** action calls it (a layout loader doesn't
- * protect child actions): logged out → redirect to login like `requireUser`; logged in without
+ * The logged-in admin, for admin-only endpoints (the in-app `/admin` area was replaced by the
+ * Strapi admin in #40). Call it in every such loader **and** action: logged out → redirect to login like `requireUser`; logged in without
  * the `admin` role → 403. The role comes from the database on every call, never from the cookie.
  */
 export async function requireAdmin(request: Request, database: Db = db): Promise<PublicUser> {

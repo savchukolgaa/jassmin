@@ -183,19 +183,19 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   orders, the split by status, newest first, and that changing `product_variants.price` after the
   order doesn't change `unitPrice` / `lineTotal`; `getAccountOrder` returns `undefined` for
   another user's order and for a guest order with the user's email.
-- [ ] **4. i18n** — Add the `account` namespace to `uk.ts` (source of truth) and `en.ts`:
+- [x] **4. i18n** — Add the `account` namespace to `uk.ts` (source of truth) and `en.ts`:
   eyebrow, `greeting` ("Вітаємо, {name}."), nav labels, section headings, order number, placed
   date, plural `items` (`{ one, few, many, other }` / `{ one, other }`), status labels for all
   seven statuses (keyed by `OrderStatus` so the map is exhaustive), progress step labels,
   timestamp labels (placed/paid/cancelled/refunded), "Order details", "Back to orders", deleted
   product label, empty state, detail meta title. Remove `account.ordersSoon`. Check:
   `pnpm typecheck` (dictionary shapes must match).
-- [ ] **5. Routes and layout** — Update `app/routes.ts` as in Decisions. Rewrite
+- [x] **5. Routes and layout** — Update `app/routes.ts` as in Decisions. Rewrite
   `routes/account.tsx` as the layout: `loader` → `requireUser` → `{ firstName, email }`; `meta`
   with `noindex`; `headers` → `Cache-Control: private, no-store`; hero band + side nav
   (`NavLink` to `/account` with `end`, and Continue shopping) + `<Outlet />`. Check: `pnpm
   typecheck` (route typegen) and `/account` still renders when logged in.
-- [ ] **6. Dashboard** — `routes/account._index.tsx`: `loader` → `requireUser` →
+- [x] **6. Dashboard** — `routes/account._index.tsx`: `loader` → `requireUser` →
   `getAccountOrders(user.id)`; renders `CurrentOrderCard`s (number, date, item count, total,
   `OrderStatusPill`, `OrderProgress`, up to 3 thumbnails, "Order details →" to
   `/account/orders/:id`), then `PreviousOrdersList` (`<details>` rows: number, date, total, pill;
@@ -205,7 +205,7 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   that is empty while the other has orders. `OrderProgress` is an `<ol>` with
   `aria-current="step"` on the current step and visually hidden "done" text, so status isn't
   shown by colour alone.
-- [ ] **7. Order detail** — `routes/account.orders.$id.tsx`: `loader` → `requireUser` →
+- [x] **7. Order detail** — `routes/account.orders.$id.tsx`: `loader` → `requireUser` →
   `parseOrderId(params.id)` (null → `throw data(null, { status: 404 })`) →
   `getAccountOrder(user.id, id)` (undefined → 404). Page: "Back to orders" link, heading with the
   order number, date, progress or pill, timestamps list, delivery and payment `<dl>` (payment

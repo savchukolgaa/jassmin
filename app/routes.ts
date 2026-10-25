@@ -12,7 +12,11 @@ export default [
     route("cart", "routes/cart.tsx"),
     route("checkout", "routes/checkout.tsx"),
     route("checkout/success/:orderId", "routes/checkout-success.tsx"),
-    route("account", "routes/account.tsx"),
+    // Every account loader calls `requireUser`: child loaders run in parallel with the layout's.
+    route("account", "routes/account.tsx", [
+      index("routes/account._index.tsx"),
+      route("orders/:id", "routes/account.orders.$id.tsx"),
+    ]),
     route("privacy", "routes/privacy.tsx"),
   ]),
   // Action-only (POST); outside the layout so its loader doesn't run for it.

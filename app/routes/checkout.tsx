@@ -1,5 +1,6 @@
 import { data, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
+import { getLocale } from "~/.server/locale";
 import { getActiveCartId, getCartOwner, getCartView } from "~/.server/services/cart";
 import { createOrder, getCheckoutPrefill } from "~/.server/services/orders";
 import { rememberOrder } from "~/.server/session";
@@ -56,7 +57,12 @@ export async function action({ request, context }: Route.ActionArgs) {
   if (cartId === undefined) {
     return redirect("/cart");
   }
-  const result = await createOrder({ cartId, userId: owner.userId, customer: parsed.data });
+  const result = await createOrder({
+    cartId,
+    userId: owner.userId,
+    customer: parsed.data,
+    locale: await getLocale(request),
+  });
   if (!result.ok) {
     if (result.error === "cart-empty") {
       return redirect("/cart");

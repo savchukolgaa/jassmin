@@ -150,6 +150,12 @@ export function cartSummaryLine(line: CartLine): OrderSummaryLine {
   };
 }
 
+/** How each payment method is named and explained on the success page and in the email. */
+export const PAYMENT_KEYS: Record<PaymentMethod, { label: TextKey; note: TextKey }> = {
+  card: { label: "checkout.payment.card", note: "checkout.payment.cardNote" },
+  cod: { label: "checkout.payment.cod", note: "checkout.payment.codNote" },
+};
+
 /** A placed order as its success page shows it. Amounts are exact decimal strings. */
 export interface OrderConfirmation {
   id: number;

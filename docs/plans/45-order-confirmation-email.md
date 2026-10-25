@@ -189,7 +189,7 @@ and never affects the order or the redirect.
   through `.extend`/`.shape`. Move `stripLineBreaks` and `MailSender` into `mail.ts`. Switch
   `contact.ts` over to them. Document `ORDER_FROM` in `.env.example` and the README, and add tests
   to `env.test.ts`. Check: `pnpm test`.
-- [ ] **4. Enqueue at checkout.** Add `locale: Locale` to `CreateOrderInput`, and call
+- [x] **4. Enqueue at checkout.** Add `locale: Locale` to `CreateOrderInput`, and call
   `insertOrderEmail(tx, { orderId, type: "confirmation", locale })` inside the transaction. Extract
   `loadOrderConfirmation`. Move `PAYMENT_KEYS` to `~/lib/checkout`. Extend the `orders.test.ts`
   integration tests: a placed order has exactly one `pending` confirmation row with the locale; an

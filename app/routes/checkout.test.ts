@@ -169,6 +169,7 @@ describe("checkout action", () => {
       cartId: 5,
       userId: null,
       customer: { ...valid, phone: "+380671234567" },
+      locale: "uk",
     });
     expect(session.rememberOrder).toHaveBeenCalledWith(expect.any(Request), 42);
   });

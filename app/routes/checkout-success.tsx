@@ -4,16 +4,11 @@ import { getOrderConfirmation } from "~/.server/services/orders";
 import { getSessionOrderIds } from "~/.server/session";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { OrderSummary } from "~/features/checkout/OrderSummary";
-import type { PaymentMethod } from "~/lib/enums";
-import { metaTranslator, type TextKey, useT } from "~/lib/i18n";
+import { PAYMENT_KEYS } from "~/lib/checkout";
+import { metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/checkout-success";
 
 const MAX_ORDER_ID = 2_147_483_647;
-
-const PAYMENT_KEYS: Record<PaymentMethod, { label: TextKey; note: TextKey }> = {
-  card: { label: "checkout.payment.card", note: "checkout.payment.cardNote" },
-  cod: { label: "checkout.payment.cod", note: "checkout.payment.codNote" },
-};
 
 export function meta({ matches }: Route.MetaArgs) {
   const { t } = metaTranslator(matches);

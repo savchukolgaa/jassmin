@@ -13,11 +13,16 @@ const orders = vi.hoisted(() => ({
 }));
 const session = vi.hoisted(() => ({ rememberOrder: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
+const payments = vi.hoisted(() => ({
+  isCardPaymentAvailable: vi.fn(),
+  startPayment: vi.fn(),
+}));
 
 vi.mock("~/.server/services/cart", () => cart);
 vi.mock("~/.server/services/orders", () => orders);
 vi.mock("~/.server/session", () => session);
 vi.mock("~/.server/analytics", () => analytics);
+vi.mock("~/.server/services/payments", () => payments);
 
 type ActionArgs = Parameters<typeof import("./checkout").action>[0];
 type LoaderArgs = Parameters<typeof import("./checkout").loader>[0];
@@ -78,6 +83,7 @@ beforeEach(() => {
   cart.getCartOwner.mockResolvedValue(guest);
   cart.getActiveCartId.mockResolvedValue(5);
   session.rememberOrder.mockResolvedValue("__jassmin_session=abc; Path=/");
+  payments.isCardPaymentAvailable.mockReturnValue(true);
 });
 
 describe("checkout loader", () => {
@@ -120,8 +126,17 @@ describe("checkout loader", () => {
       cart: view,
       prefill: null,
       shipping: { free: false, remaining: "100.00" },
+      cardPaymentAvailable: true,
     });
     expect(orders.getCheckoutPrefill).not.toHaveBeenCalled();
+  });
+
+  it("says when card payment isn't available", async () => {
+    const { loader } = await import("./checkout");
+    cart.getCartView.mockResolvedValueOnce({ lines: [line], itemCount: 2, subtotal: "900.00" });
+    payments.isCardPaymentAvailable.mockReturnValue(false);
+
+    expect(await loader(get())).toMatchObject({ cardPaymentAvailable: false });
   });
 
   it("prefills a logged-in user's contact details", async () => {
@@ -179,6 +194,80 @@ describe("checkout action", () => {
     });
     expect(session.rememberOrder).toHaveBeenCalledWith(expect.any(Request), 42);
     expect(orders.deliverOrderConfirmation).toHaveBeenCalledExactlyOnceWith(42);
+    // Cash on delivery never starts an online payment.
+    expect(payments.startPayment).not.toHaveBeenCalled();
+  });
+
+  describe("card payment", () => {
+    const card = { ...valid, paymentMethod: "card" };
+    const placed = { ok: true, orderId: 42, placed: true, subtotal: "900.00" };
+    const providerUrl = "http://localhost/payments/simulator?data=abc&signature=def";
+
+    it("sends the shopper to the provider's page for the new order", async () => {
+      const { action } = await import("./checkout");
+      orders.createOrder.mockResolvedValueOnce(placed);
+      payments.startPayment.mockResolvedValueOnce({
+        ok: true,
+        redirectUrl: providerUrl,
+        reference: "42-1",
+      });
+
+      const response = (await action(post(card))) as Response;
+
+      expect(response.headers.get("Location")).toBe(providerUrl);
+      expect(response.headers.get("Set-Cookie")).toContain("__jassmin_session=abc");
+      expect(payments.startPayment).toHaveBeenCalledWith({
+        orderId: 42,
+        locale: "uk",
+        origin: "http://localhost",
+      });
+      expect(orders.deliverOrderConfirmation).toHaveBeenCalledExactlyOnceWith(42);
+    });
+
+    it("also starts a payment after a double submit", async () => {
+      const { action } = await import("./checkout");
+      orders.createOrder.mockResolvedValueOnce({ ok: true, orderId: 42, placed: false });
+      payments.startPayment.mockResolvedValueOnce({
+        ok: true,
+        redirectUrl: providerUrl,
+        reference: "42-2",
+      });
+
+      const response = (await action(post(card))) as Response;
+
+      expect(response.headers.get("Location")).toBe(providerUrl);
+      expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
+    });
+
+    it("goes to the success page when the payment can't start", async () => {
+      const { action } = await import("./checkout");
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      orders.createOrder.mockResolvedValueOnce(placed);
+      payments.startPayment.mockResolvedValueOnce({ ok: false, error: "not-payable" });
+      expect(((await action(post(card))) as Response).headers.get("Location")).toBe(
+        "/checkout/success/42",
+      );
+
+      orders.createOrder.mockResolvedValueOnce(placed);
+      payments.startPayment.mockRejectedValueOnce(new Error("db down"));
+      expect(((await action(post(card))) as Response).headers.get("Location")).toBe(
+        "/checkout/success/42",
+      );
+      expect(error).toHaveBeenCalled();
+      error.mockRestore();
+    });
+
+    it("refuses card without a payment provider and places no order", async () => {
+      const { action } = await import("./checkout");
+      payments.isCardPaymentAvailable.mockReturnValue(false);
+
+      expect(unwrap(await action(post(card)))).toEqual({
+        status: 400,
+        body: { fieldErrors: { paymentMethod: "checkout.errors.cardUnavailable" }, values: card },
+      });
+      expect(orders.createOrder).not.toHaveBeenCalled();
+    });
   });
 
   it("queues the email in the shopper's language and doesn't wait for it to be sent", async () => {

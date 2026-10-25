@@ -7,6 +7,7 @@ import {
   deliverOrderConfirmation,
   getCheckoutPrefill,
 } from "~/.server/services/orders";
+import { isCardPaymentAvailable, startPayment } from "~/.server/services/payments";
 import { rememberOrder } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
 import { CheckoutForm } from "~/features/checkout/CheckoutForm";
@@ -21,7 +22,7 @@ import {
   parseCheckout,
 } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
-import { metaTranslator, useT } from "~/lib/i18n";
+import { type Locale, metaTranslator, useT } from "~/lib/i18n";
 import type { Route } from "./+types/checkout";
 
 export function meta({ matches }: Route.MetaArgs) {
@@ -42,7 +43,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     properties: { subtotal: cart.subtotal, itemCount: cart.itemCount },
   });
   const prefill = owner.userId === null ? null : await getCheckoutPrefill(owner.userId);
-  return { cart, prefill, shipping: freeShippingInfo(cart.subtotal) };
+  return {
+    cart,
+    prefill,
+    shipping: freeShippingInfo(cart.subtotal),
+    cardPaymentAvailable: isCardPaymentAvailable(),
+  };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -56,17 +62,20 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
 
+  if (parsed.data.paymentMethod === "card" && !isCardPaymentAvailable()) {
+    return data<CheckoutFormErrors>(
+      { fieldErrors: { paymentMethod: "checkout.errors.cardUnavailable" }, values },
+      { status: 400 },
+    );
+  }
+
   const owner = await getCartOwner(request);
   const cartId = await getActiveCartId(owner);
   if (cartId === undefined) {
     return redirect("/cart");
   }
-  const result = await createOrder({
-    cartId,
-    userId: owner.userId,
-    customer: parsed.data,
-    locale: await getLocale(request),
-  });
+  const locale = await getLocale(request);
+  const result = await createOrder({ cartId, userId: owner.userId, customer: parsed.data, locale });
   if (!result.ok) {
     if (result.error === "cart-empty") {
       return redirect("/cart");
@@ -90,14 +99,40 @@ export async function action({ request, context }: Route.ActionArgs) {
       },
     });
   }
-  return redirect(`/checkout/success/${result.orderId}`, {
-    headers: { "Set-Cookie": await rememberOrder(request, result.orderId) },
-  });
+  const headers = { "Set-Cookie": await rememberOrder(request, result.orderId) };
+  // A card order goes on to the provider's payment page (#44); also after a double submit, since
+  // the browser follows the last response. `startPayment` checks the stored order, so an order
+  // that is paid already, or was placed as cash on delivery, goes to its success page instead.
+  if (parsed.data.paymentMethod === "card") {
+    const redirectUrl = await paymentRedirect(result.orderId, locale, request);
+    if (redirectUrl) {
+      return redirect(redirectUrl, { headers });
+    }
+  }
+  return redirect(`/checkout/success/${result.orderId}`, { headers });
+}
+
+/**
+ * The provider page for a new payment attempt, or `null` when one can't start. The order is placed
+ * either way: its success page then offers to pay again.
+ */
+async function paymentRedirect(
+  orderId: number,
+  locale: Locale,
+  request: Request,
+): Promise<string | null> {
+  try {
+    const payment = await startPayment({ orderId, locale, origin: new URL(request.url).origin });
+    return payment.ok ? payment.redirectUrl : null;
+  } catch (error: unknown) {
+    console.error(`Could not start the payment for order ${orderId}`, error);
+    return null;
+  }
 }
 
 export default function Checkout({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useT();
-  const { cart, prefill, shipping } = loaderData;
+  const { cart, prefill, shipping, cardPaymentAvailable } = loaderData;
 
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
@@ -120,6 +155,7 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
           prefill={prefill}
           fieldErrors={actionData?.fieldErrors}
           values={actionData?.values}
+          cardAvailable={cardPaymentAvailable}
         />
         <OrderSummary
           lines={cart.lines.map(cartSummaryLine)}

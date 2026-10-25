@@ -89,6 +89,20 @@ describe("CheckoutForm", () => {
     expect(tag(html, 'value="card"')).toContain('aria-invalid="true"');
   });
 
+  it("disables card payment with a note when no provider is configured", () => {
+    const html = renderForm({
+      prefill: null,
+      values: { paymentMethod: "card" },
+      cardAvailable: false,
+    });
+    const cardRadio = tag(html, 'value="card"');
+
+    expect(cardRadio).toContain("disabled");
+    expect(cardRadio).not.toContain("checked");
+    expect(html).toContain("Card payment isn&#x27;t available right now");
+    expect(tag(html, 'value="cod"')).not.toContain("disabled");
+  });
+
   it("is in Ukrainian by default", () => {
     expect(renderForm({ prefill: null }, "uk")).toContain("Підтвердити замовлення");
   });

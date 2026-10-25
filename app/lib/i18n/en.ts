@@ -276,6 +276,7 @@ export const en = {
     payment: {
       card: "By card",
       cardNote: "We'll send you the payment details once we've confirmed your order.",
+      cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       cod: "Cash on delivery",
       codNote: "Pay when you collect the parcel at Nova Poshta.",
     },
@@ -298,6 +299,7 @@ export const en = {
       branchRequired: "Enter a branch, parcel locker or address",
       branchTooLong: "The address must be at most 255 characters",
       paymentRequired: "Choose a payment method",
+      cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       stockChanged:
         "Some perfumes ran low while you were checking out. Check your cart and try again.",
     },

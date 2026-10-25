@@ -4,6 +4,8 @@ import { useT } from "~/lib/i18n";
 
 export type TextFieldProps = Omit<ComponentProps<"input">, "id" | "name"> & {
   name: string;
+  /** Defaults to `field-<name>`; set it when two forms on a page share a field name. */
+  id?: string;
   label: string;
   /** Shown under the input and announced with it; marks the input invalid. */
   error?: string;
@@ -15,6 +17,7 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "id" | "name"> & {
 /** A labelled input with its validation error, for the auth and checkout forms. */
 export function TextField({
   name,
+  id: idProp,
   label,
   error,
   hint,
@@ -23,7 +26,7 @@ export function TextField({
   ...props
 }: TextFieldProps) {
   const { t } = useT();
-  const id = `field-${name}`;
+  const id = idProp ?? `field-${name}`;
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const describedBy = [error && errorId, hint && hintId].filter(Boolean).join(" ") || undefined;

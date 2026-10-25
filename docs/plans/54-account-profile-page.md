@@ -230,7 +230,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - `errors.{currentPasswordRequired, currentPasswordWrong, passwordMismatch, tooManyAttempts}`
   - `emailChangedMail.{subject, greeting, body, notYou, signature}`, where `body` has
     `{newEmail}` and `{date}`
-- [ ] **6. UI components.** Add the `id` override to `TextField`. Write
+- [x] **6. UI components.** Add the `id` override to `TextField`. Write
   `features/account/ProfileForms.tsx`: each panel takes `profile`, `actionData` (only when its
   intent matches) and `submitting`. Field names and autocomplete:
   - contact: `fullName` (`name`), `phone` (`tel`)

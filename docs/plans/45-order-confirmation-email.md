@@ -195,7 +195,7 @@ and never affects the order or the redirect.
   integration tests: a placed order has exactly one `pending` confirmation row with the locale; an
   `insufficient-stock` or `cart-empty` result, or a double submit, adds none; a thrown error rolls
   the row back too.
-- [ ] **5. Translations and the email builder.** Add `orderEmail.*` to `uk.ts` and `en.ts`. In the
+- [x] **5. Translations and the email builder.** Add `orderEmail.*` to `uk.ts` and `en.ts`. In the
   new `services/order-email.ts`, write the pure
   `buildOrderConfirmationEmail(order: OrderConfirmation, translator: Translator, env: Pick<Env, "ORDER_FROM" | "CONTACT_FROM" | "CONTACT_INBOX">): Mail.Options`
   with the content listed under the decisions, plus `retryDelayMinutes(attempts)`. Check: exact

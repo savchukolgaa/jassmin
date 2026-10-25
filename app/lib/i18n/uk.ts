@@ -318,6 +318,19 @@ export const uk = {
       continue: "Продовжити покупки",
     },
   },
+  orderEmail: {
+    subject: "Замовлення №{id} прийнято — Jassmin",
+    greeting: "Вітаємо, {name}!",
+    intro:
+      "Дякуємо за замовлення в Jassmin. Ваше замовлення №{id} від {date} прийнято. Ми зв’яжемося з вами за номером {phone}, щоб його підтвердити.",
+    itemsHeading: "Ваше замовлення",
+    line: "• {name}, {details} = {total}",
+    quantityPrice: "{quantity} × {price}",
+    amount: "{label}: {amount}",
+    deliveryCarrier: "Нова Пошта",
+    contact: "Маєте запитання? Відповідайте на цей лист або пишіть на {email}.",
+    signature: "Команда Jassmin",
+  },
   account: {
     title: "Мій кабінет",
     greeting: "Вітаємо, {name}!",

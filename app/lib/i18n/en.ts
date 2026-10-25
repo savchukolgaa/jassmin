@@ -311,6 +311,19 @@ export const en = {
       continue: "Continue shopping",
     },
   },
+  orderEmail: {
+    subject: "Order №{id} received — Jassmin",
+    greeting: "Hello {name},",
+    intro:
+      "Thank you for shopping at Jassmin. We've received your order №{id} of {date}. We'll call you on {phone} to confirm it.",
+    itemsHeading: "Your order",
+    line: "• {name}, {details} = {total}",
+    quantityPrice: "{quantity} × {price}",
+    amount: "{label}: {amount}",
+    deliveryCarrier: "Nova Poshta",
+    contact: "Any questions? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+  },
   account: {
     title: "My account",
     greeting: "Hi, {name}!",

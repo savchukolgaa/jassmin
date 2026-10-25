@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import type Mail from "nodemailer/lib/mailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import { getEnv } from "./env";
 
@@ -6,6 +7,16 @@ import { getEnv } from "./env";
 // and shows it in its web UI, so nothing leaves the machine.
 
 const TIMEOUT_MS = 10_000;
+
+/** The part of a nodemailer transport the mail services use, so tests can pass a fake. */
+export interface MailSender {
+  sendMail(options: Mail.Options): Promise<unknown>;
+}
+
+/** User input for a header (a name or subject): line breaks become spaces, so no header injection. */
+export function stripLineBreaks(value: string): string {
+  return value.replace(/[\r\n]+/g, " ");
+}
 
 /** SMTP options for an `smtp://` or `smtps://` URL (`smtps` = implicit TLS, default port 465). */
 export function smtpOptionsFromUrl(smtpUrl: string): SMTPTransport.Options {

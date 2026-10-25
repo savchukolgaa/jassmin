@@ -183,7 +183,7 @@ and never affects the order or the redirect.
   - two concurrent claims never return the same row;
   - the last failed attempt becomes `failed`;
   - a `sent` row is never claimed again.
-- [ ] **3. Env and shared mail helpers.** Add `ORDER_FROM` (optional, empty → unset) to
+- [x] **3. Env and shared mail helpers.** Add `ORDER_FROM` (optional, empty → unset) to
   `envSchema`, and export `parseMailEnv(source)`, which validates only
   `SMTP_URL`/`ORDER_FROM`/`CONTACT_FROM`/`CONTACT_INBOX`/`NODE_ENV` and is reused by `envSchema`
   through `.extend`/`.shape`. Move `stripLineBreaks` and `MailSender` into `mail.ts`. Switch

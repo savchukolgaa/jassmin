@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDatabaseUrl, parseEnv } from "./env";
+import { getDatabaseUrl, parseEnv, parseMailEnv } from "./env";
 
 const valid = {
   DATABASE_URL: "postgres://jassmin:jassmin@localhost:5432/jassmin",
@@ -116,9 +116,16 @@ describe("getDatabaseUrl", () => {
   });
 
   it("leaves SMTP unset by default and treats empty mail variables as unset", () => {
-    const env = parseEnv({ ...valid, SMTP_URL: "", CONTACT_INBOX: "", CONTACT_FROM: "" });
+    const env = parseEnv({
+      ...valid,
+      SMTP_URL: "",
+      CONTACT_INBOX: "",
+      CONTACT_FROM: "",
+      ORDER_FROM: "",
+    });
 
     expect(env.SMTP_URL).toBeUndefined();
+    expect(env.ORDER_FROM).toBeUndefined();
     expect(env.CONTACT_INBOX).toBe("hello@jassmin.ua");
     expect(env.CONTACT_FROM).toBe("Jassmin website <no-reply@jassmin.ua>");
   });
@@ -129,12 +136,14 @@ describe("getDatabaseUrl", () => {
       SMTP_URL: "smtp://localhost:2525",
       CONTACT_INBOX: "shop@example.com",
       CONTACT_FROM: "Shop <no-reply@example.com>",
+      ORDER_FROM: "Shop orders <orders@example.com>",
     });
 
     expect(env).toMatchObject({
       SMTP_URL: "smtp://localhost:2525",
       CONTACT_INBOX: "shop@example.com",
       CONTACT_FROM: "Shop <no-reply@example.com>",
+      ORDER_FROM: "Shop orders <orders@example.com>",
     });
     expect(
       parseEnv({ ...valid, SMTP_URL: "smtps://user:pass@mail.example.com:465" }).SMTP_URL,
@@ -144,5 +153,22 @@ describe("getDatabaseUrl", () => {
   it("rejects a non-SMTP SMTP_URL and an invalid CONTACT_INBOX", () => {
     expect(() => parseEnv({ ...valid, SMTP_URL: "http://localhost:5000" })).toThrow(/SMTP_URL/);
     expect(() => parseEnv({ ...valid, CONTACT_INBOX: "not-an-email" })).toThrow(/CONTACT_INBOX/);
+  });
+});
+
+describe("parseMailEnv", () => {
+  it("reads the mail variables without the web app's", () => {
+    expect(
+      parseMailEnv({ SMTP_URL: "smtp://localhost:2525", ORDER_FROM: "", NODE_ENV: "production" }),
+    ).toEqual({
+      NODE_ENV: "production",
+      SMTP_URL: "smtp://localhost:2525",
+      CONTACT_INBOX: "hello@jassmin.ua",
+      CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
+    });
+  });
+
+  it("rejects invalid mail variables", () => {
+    expect(() => parseMailEnv({ SMTP_URL: "http://localhost:5000" })).toThrow(/SMTP_URL/);
   });
 });

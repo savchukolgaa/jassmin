@@ -1,15 +1,14 @@
 import nodemailer from "nodemailer";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { MailSender } from "../mail";
 import { createRateLimiter } from "../rate-limit";
-import {
-  buildContactEmail,
-  type ContactDeps,
-  type MailSender,
-  submitContactMessage,
-} from "./contact";
+import { buildContactEmail, type ContactDeps, submitContactMessage } from "./contact";
 
 vi.mock("../env", () => ({ getEnv: () => ({}) }));
-vi.mock("../mail", () => ({ getMailTransport: () => null }));
+vi.mock("../mail", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../mail")>()),
+  getMailTransport: () => null,
+}));
 
 const message = {
   name: "Olha",

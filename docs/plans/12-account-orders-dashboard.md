@@ -166,7 +166,7 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   Add `parseOrderId(param): number | null` to `app/lib/checkout.ts` and switch
   `checkout-success.tsx` to it (its tests must still pass). Tests in `account.test.ts` /
   `checkout.test.ts`. Check: `pnpm typecheck && pnpm test`.
-- [ ] **2. Queries** — In `app/.server/db/queries/orders.ts`:
+- [x] **2. Queries** — In `app/.server/db/queries/orders.ts`:
   `listUserOrders(db, userId)` selects the order columns above plus
   `itemCount = coalesce(sum(order_items.quantity), 0)::int` (left join + group by), ordered by
   `created_at desc, id desc`; `listOrderLinesByOrderIds(db, orderIds)` returns `orderId`, the
@@ -174,7 +174,7 @@ the order is the user's. Everything is loaded server-side in loaders, and line p
   `products.image_url`, ordered by `order_items.id` (returns `[]` without a query for no ids);
   `findUserOrder(db, userId, orderId)` = `findOrder`'s columns plus `status`, timestamps, filtered
   by both ids. Keep them typed via the query builder (dates come back as `Date`).
-- [ ] **3. Service** — In `app/.server/services/orders.ts`: `getAccountOrders(userId, db)` →
+- [x] **3. Service** — In `app/.server/services/orders.ts`: `getAccountOrders(userId, db)` →
   `{ current: AccountOrder[]; previous: AccountOrder[] }` (lines grouped by `orderId`, split with
   `isCurrentOrder`); `getAccountOrder(userId, orderId, db)` → `AccountOrderDetail | undefined`
   (lines via `listOrderLinesByOrderIds([orderId])`). Integration tests in `orders.test.ts`

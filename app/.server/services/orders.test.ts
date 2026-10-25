@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CheckoutInput } from "~/lib/checkout";
+import type { OrderStatus } from "~/lib/enums";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 import { canViewOrder } from "./orders";
 
@@ -373,5 +374,137 @@ describe.skipIf(!hasDatabase)("order service", () => {
     expect(
       await getOrderConfirmation(999_999, { userId, orderIds: [999_999] }, testDb.db),
     ).toBeUndefined();
+  });
+
+  /** Places an order for the user from a fresh cart with these lines. */
+  async function placeOrder(
+    userId: number | null,
+    lines: { variant: { id: number; productId: number }; quantity: number }[],
+  ) {
+    const { createOrder } = await import("./orders");
+    const cart = await cartWith(lines, userId);
+    const result = await createOrder({ cartId: cart.id, userId, customer }, testDb.db);
+    if (!result.ok) throw new Error(result.error);
+    return result.orderId;
+  }
+
+  async function setStatus(orderId: number, status: OrderStatus, createdAt?: Date) {
+    const { eq } = await import("drizzle-orm");
+    const { orders } = await import("../db/schema");
+    await testDb.db
+      .update(orders)
+      .set(createdAt ? { status, createdAt } : { status })
+      .where(eq(orders.id, orderId));
+  }
+
+  it("lists only the user's own orders, split by status, newest first", async () => {
+    const { getAccountOrders } = await import("./orders");
+    const me = await user();
+    const other = await user();
+    const seven = await variant(7, 50);
+    const thirty = await variant(30, 50);
+
+    const pending = await placeOrder(me, [{ variant: seven, quantity: 1 }]);
+    const shipped = await placeOrder(me, [
+      { variant: seven, quantity: 2 },
+      { variant: thirty, quantity: 1 },
+    ]);
+    const completed = await placeOrder(me, [{ variant: thirty, quantity: 1 }]);
+    const cancelled = await placeOrder(me, [{ variant: seven, quantity: 1 }]);
+    await placeOrder(other, [{ variant: seven, quantity: 1 }]);
+    await placeOrder(null, [{ variant: seven, quantity: 1 }]);
+    await setStatus(pending, "pending", new Date("2026-10-01T10:00:00Z"));
+    await setStatus(shipped, "shipped", new Date("2026-10-03T10:00:00Z"));
+    await setStatus(completed, "completed", new Date("2026-09-01T10:00:00Z"));
+    await setStatus(cancelled, "cancelled", new Date("2026-09-15T10:00:00Z"));
+
+    const { current, previous } = await getAccountOrders(me, testDb.db);
+
+    expect(current.map((o) => [o.id, o.status])).toEqual([
+      [shipped, "shipped"],
+      [pending, "pending"],
+    ]);
+    expect(previous.map((o) => [o.id, o.status])).toEqual([
+      [cancelled, "cancelled"],
+      [completed, "completed"],
+    ]);
+    expect(current[0]).toMatchObject({
+      itemCount: 3,
+      totalAmount: "6430.00",
+      lines: [
+        { volumeMl: 7, quantity: 2, unitPrice: "990.00", lineTotal: "1980.00" },
+        { volumeMl: 30, quantity: 1, unitPrice: "4450.00", lineTotal: "4450.00" },
+      ],
+    });
+    expect(await getAccountOrders(await user(), testDb.db)).toEqual({ current: [], previous: [] });
+  });
+
+  it("keeps the price at purchase when the product's price changes later", async () => {
+    const { getAccountOrder, getAccountOrders } = await import("./orders");
+    const { eq } = await import("drizzle-orm");
+    const { productVariants } = await import("../db/schema");
+    const me = await user();
+    const seven = await variant(7, 10);
+    const orderId = await placeOrder(me, [{ variant: seven, quantity: 2 }]);
+
+    await testDb.db
+      .update(productVariants)
+      .set({ price: "1500.00" })
+      .where(eq(productVariants.id, seven.id));
+    try {
+      const { current } = await getAccountOrders(me, testDb.db);
+      expect(current[0]?.lines[0]).toMatchObject({ unitPrice: "990.00", lineTotal: "1980.00" });
+      expect((await getAccountOrder(me, orderId, testDb.db))?.lines[0]).toMatchObject({
+        unitPrice: "990.00",
+        lineTotal: "1980.00",
+      });
+    } finally {
+      await testDb.db
+        .update(productVariants)
+        .set({ price: "990.00" })
+        .where(eq(productVariants.id, seven.id));
+    }
+  });
+
+  it("shows an order's details only to the user who placed it", async () => {
+    const { getAccountOrder } = await import("./orders");
+    const { eq } = await import("drizzle-orm");
+    const { users } = await import("../db/schema");
+    const me = await user();
+    const other = await user();
+    const seven = await variant(7, 10);
+    const mine = await placeOrder(me, [{ variant: seven, quantity: 1 }]);
+    const theirs = await placeOrder(other, [{ variant: seven, quantity: 1 }]);
+    // A guest order placed with my email isn't mine (linking guest orders is out of scope).
+    const [account] = await testDb.db.select().from(users).where(eq(users.id, me));
+    const { createOrder } = await import("./orders");
+    const guestCart = await cartWith([{ variant: seven, quantity: 1 }]);
+    const guest = await createOrder(
+      {
+        cartId: guestCart.id,
+        userId: null,
+        customer: { ...customer, email: account?.email ?? "" },
+      },
+      testDb.db,
+    );
+    if (!guest.ok) throw new Error(guest.error);
+
+    expect(await getAccountOrder(me, mine, testDb.db)).toMatchObject({
+      id: mine,
+      status: "pending",
+      fullName: "Олена Коваль",
+      phone: "+380671234567",
+      shippingAddress: "Київ, Відділення №12",
+      paymentMethod: "cod",
+      subtotal: "990.00",
+      totalAmount: "990.00",
+      freeShipping: false,
+      itemCount: 1,
+      paidAt: null,
+      lines: [{ title: "Coco Mademoiselle Eau de Parfum", volumeMl: 7, quantity: 1 }],
+    });
+    expect(await getAccountOrder(me, theirs, testDb.db)).toBeUndefined();
+    expect(await getAccountOrder(me, guest.orderId, testDb.db)).toBeUndefined();
+    expect(await getAccountOrder(me, 999_999, testDb.db)).toBeUndefined();
   });
 });

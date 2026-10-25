@@ -41,4 +41,5 @@ export default [
   // and orders in the Strapi admin, and the app applies each edit before Strapi saves it.
   // Authenticated by `CMS_SYNC_SECRET`; no layout, session or consent.
   route("cms/products", "routes/cms.products.ts"),
+  route("cms/orders/:id", "routes/cms.orders.$id.ts"),
 ] satisfies RouteConfig;

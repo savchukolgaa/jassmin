@@ -4,14 +4,25 @@
 // routes before Strapi saves it; the functions here apply it in one transaction and return the
 // authoritative state for Strapi to store, or a typed error that Strapi shows to staff.
 import type {
+  CmsOrderChange,
+  CmsOrderState,
   CmsProductChange,
   CmsProductFields,
   CmsProductState,
   CmsSyncError,
 } from "~/lib/cms-sync";
+import { nextOrderState } from "~/lib/order-status";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
+import { enqueueCmsSync } from "../db/queries/cms-outbox";
+import {
+  findOrderSyncState,
+  lockOrderLifecycle,
+  type OrderSyncRow,
+  restockOrder,
+  updateOrderLifecycle,
+} from "../db/queries/orders";
 import {
   deleteVariants,
   findProductSyncState,
@@ -148,4 +159,74 @@ export async function applyCmsProductChange(
     }
     throw error;
   }
+}
+
+export type CmsOrderResult =
+  | { ok: true; order: CmsOrderState }
+  | Failure<
+      "unknown-order" | "invalid-transition" | "card-not-paid" | "invalid-payment-transition"
+    >;
+
+const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
+
+export function toCmsOrderState({ order, items }: OrderSyncRow): CmsOrderState {
+  return {
+    orderId: order.id,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
+    customerName: order.guestFullName,
+    customerEmail: order.guestEmail,
+    customerPhone: order.guestPhone,
+    userId: order.userId,
+    shippingAddress: order.shippingAddress,
+    freeShipping: order.freeShipping,
+    subtotal: order.subtotal,
+    discountAmount: order.discountAmount,
+    shippingAmount: order.shippingAmount,
+    totalAmount: order.totalAmount,
+    currency: order.currency,
+    placedAt: order.createdAt.toISOString(),
+    paidAt: iso(order.paidAt),
+    cancelledAt: iso(order.cancelledAt),
+    refundedAt: iso(order.refundedAt),
+    shippedAt: iso(order.shippedAt),
+    completedAt: iso(order.completedAt),
+    items,
+  };
+}
+
+/**
+ * Applies a status or payment change made in the Strapi admin, under the order's row lock:
+ * checks it against the lifecycle rules (`nextOrderState`), sets the due timestamps and, when
+ * the order is cancelled or comes back unclaimed, puts its units back in stock, all in one
+ * transaction. The restocked products are queued for a push, so Strapi shows their new stock.
+ * A refused change writes nothing.
+ */
+export async function applyCmsOrderChange(
+  orderId: number,
+  change: CmsOrderChange,
+  db: Db = defaultDb,
+  now: Date = new Date(),
+): Promise<CmsOrderResult> {
+  return db.transaction(async (tx): Promise<CmsOrderResult> => {
+    const current = await lockOrderLifecycle(tx, orderId);
+    if (!current) {
+      return { ok: false, error: "unknown-order" };
+    }
+    const next = nextOrderState(current, change, now);
+    if (!next.ok) {
+      return next;
+    }
+    await updateOrderLifecycle(tx, orderId, next.patch);
+    if (next.restock) {
+      await enqueueCmsSync(tx, "product", await restockOrder(tx, orderId));
+    }
+
+    const state = await findOrderSyncState(tx, orderId);
+    if (!state) {
+      throw new Error(`Order ${orderId} vanished inside its transaction`);
+    }
+    return { ok: true, order: toCmsOrderState(state) };
+  });
 }

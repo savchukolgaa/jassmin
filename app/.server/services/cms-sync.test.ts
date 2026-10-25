@@ -80,7 +80,14 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
   }
 
   /** An order with one line of this size, as checkout would leave it. */
-  async function orderWith(productId: number, variantId: number) {
+  async function orderWith(
+    productId: number,
+    variantId: number,
+    {
+      quantity = 1,
+      paymentMethod = "cod",
+    }: { quantity?: number; paymentMethod?: "cod" | "card" } = {},
+  ) {
     const { orderItems, orders } = await import("../db/schema");
     const [order] = await testDb.db
       .insert(orders)
@@ -89,7 +96,7 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
         guestEmail: "a@example.com",
         guestPhone: "+380",
         shippingAddress: "Kyiv",
-        paymentMethod: "cod",
+        paymentMethod,
         subtotal: "1900.00",
         totalAmount: "1900.00",
       })
@@ -99,7 +106,7 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       productId,
       variantId,
       volumeMl: 10,
-      quantity: 1,
+      quantity,
       priceAtPurchase: "1900.00",
     });
     return order?.id ?? 0;
@@ -265,5 +272,110 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
         testDb.db,
       ),
     ).toEqual({ ok: false, error: "unknown-product" });
+  });
+
+  /** A product whose 10 ml size has 6 in stock, and an order for `quantity` of it. */
+  async function placed(options: { quantity?: number; paymentMethod?: "cod" | "card" } = {}) {
+    const product = await created();
+    const { id } = await productRow(product.publicId);
+    const small = await variantRow(id, 10);
+    const orderId = await orderWith(id, small?.id ?? 0, options);
+    return { productId: id, variantId: small?.id ?? 0, orderId };
+  }
+
+  async function outbox() {
+    const { cmsOutbox } = await import("../db/schema");
+    return testDb.db
+      .select({ entity: cmsOutbox.entity, entityId: cmsOutbox.entityId })
+      .from(cmsOutbox);
+  }
+
+  it("ships a cash-on-delivery order unpaid and returns it for Strapi", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed();
+    const now = new Date("2026-10-25T10:00:00Z");
+
+    const result = await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db, now);
+
+    expect(result).toMatchObject({
+      ok: true,
+      order: {
+        orderId,
+        status: "shipped",
+        paymentStatus: "unpaid",
+        shippedAt: now.toISOString(),
+        items: [{ productName: "Gypsy Water", volumeMl: 10, quantity: 1, unitPrice: "1900.00" }],
+      },
+    });
+  });
+
+  it("cancels an order and puts its units back in stock exactly once", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { cmsOutbox } = await import("../db/schema");
+    await testDb.db.delete(cmsOutbox);
+    const { productId, orderId } = await placed({ quantity: 2 });
+
+    const result = await applyCmsOrderChange(orderId, { status: "cancelled" }, testDb.db);
+    expect(result).toMatchObject({ ok: true, order: { status: "cancelled" } });
+    expect((await variantRow(productId, 10))?.stockQuantity).toBe(8);
+    expect(await outbox()).toEqual([{ entity: "product", entityId: productId }]);
+
+    // A repeat of the same change is no change; leaving `cancelled` is refused.
+    expect(await applyCmsOrderChange(orderId, { status: "cancelled" }, testDb.db)).toMatchObject({
+      ok: true,
+    });
+    expect(await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db)).toEqual({
+      ok: false,
+      error: "invalid-transition",
+      from: "cancelled",
+      to: "shipped",
+    });
+    expect((await variantRow(productId, 10))?.stockQuantity).toBe(8);
+  });
+
+  it("writes nothing for a refused change", async () => {
+    const { eq } = await import("drizzle-orm");
+    const { orders } = await import("../db/schema");
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed({ paymentMethod: "card" });
+
+    expect(await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db)).toEqual({
+      ok: false,
+      error: "card-not-paid",
+      from: "pending",
+      to: "shipped",
+    });
+    const [row] = await testDb.db.select().from(orders).where(eq(orders.id, orderId));
+    expect(row).toMatchObject({ status: "pending", shippedAt: null });
+  });
+
+  it("refunds a paid order and sets the timestamps", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed({ paymentMethod: "card" });
+
+    const paid = await applyCmsOrderChange(orderId, { paymentStatus: "paid" }, testDb.db);
+    expect(paid).toMatchObject({ ok: true, order: { status: "paid", paymentStatus: "paid" } });
+    const refunded = await applyCmsOrderChange(
+      orderId,
+      { status: "cancelled", paymentStatus: "refunded" },
+      testDb.db,
+    );
+    expect(refunded).toMatchObject({
+      ok: true,
+      order: { status: "cancelled", paymentStatus: "refunded" },
+    });
+    if (!refunded.ok) throw new Error("expected a refund");
+    expect(refunded.order.paidAt).not.toBeNull();
+    expect(refunded.order.refundedAt).not.toBeNull();
+    expect(refunded.order.cancelledAt).not.toBeNull();
+  });
+
+  it("answers unknown-order for a missing order", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+
+    expect(await applyCmsOrderChange(2_000_000, { status: "shipped" }, testDb.db)).toEqual({
+      ok: false,
+      error: "unknown-order",
+    });
   });
 });

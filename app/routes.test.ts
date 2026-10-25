@@ -57,6 +57,9 @@ describe("route config", () => {
     expect(routes.find((entry) => entry.path === "cms/products")?.file).toBe(
       "routes/cms.products.ts",
     );
+    expect(routes.find((entry) => entry.path === "cms/orders/:id")?.file).toBe(
+      "routes/cms.orders.$id.ts",
+    );
   });
 
   it("has no in-app admin area: products and orders are managed in Strapi (#40)", () => {

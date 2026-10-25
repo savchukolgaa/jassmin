@@ -271,7 +271,7 @@ Each step leaves the app building and the tests green.
   - Unit-test the route (401, 400, 422, 200 with mocked services) and integration-test the
     service (the delta with a concurrent decrement, removing a size whose cart line cascades, and
     an archive that keeps order history readable).
-- [ ] **6. Order sync on the app side.**
+- [x] **6. Order sync on the app side.**
   - `cmsOrderChangeSchema`: `{ status?, paymentStatus? }`.
   - `applyCmsOrderChange(orderId, change, db)`, in one transaction: lock the order
     (`SELECT … FOR UPDATE`), run `nextOrderState`, update the order with `patch`. When `restock`

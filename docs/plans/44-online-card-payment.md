@@ -113,7 +113,7 @@ For now the only provider is a **local payment simulator**: a fake hosted page s
 
   Mirror the row type in `~/lib/commerce` and extend `schema.test.ts`. Run `pnpm db:generate --name payments` and write `rollbacks/0010_payments.sql` (`DROP TABLE payments;`). Check that `pnpm db:migrate` / `pnpm db:rollback` round-trip.
 - [x] **2. Env.** Add an optional `PAYMENT_PROVIDER: z.enum(PAYMENT_PROVIDERS)` (empty = unset) with a refinement that rejects `simulator` when `NODE_ENV=production`. Add `env.test.ts` cases: unset (boots), `simulator` in development, `simulator` in production (error), and an unknown value (error). Update `.env.example` (`PAYMENT_PROVIDER=simulator`, commented) and the README table.
-- [ ] **3. Provider adapter and simulator.** Add `payments/provider.ts` with the interface and `getPaymentProvider(env)`. Add `payments/simulator.ts`:
+- [x] **3. Provider adapter and simulator.** Add `payments/provider.ts` with the interface and `getPaymentProvider(env)`. Add `payments/simulator.ts`:
   - `signingKey(sessionSecret)`
   - `sign(data)`
   - `createCheckout`: builds `{ reference, amount, currency, description, result_url, callback_url, locale }`, base64-encodes it, signs it and returns `/payments/simulator?data=…&signature=…`

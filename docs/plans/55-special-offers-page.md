@@ -114,8 +114,8 @@ editorial only: they never change prices at checkout.
   page in the visitor's language" accurately enough. A public cache may show an offer for up to
   a minute (plus five of `stale-while-revalidate`) after it ends. `OffersPage` composes the
   sections so the component tests can render the whole page.
-- **Follow-up issue** (Q4): `/implement` creates the "discounts and promo codes at checkout"
-  issue with `/create-issue` and the PR links it.
+- **Follow-up issue** (Q4): created as #59, "Apply promo codes and offer discounts at checkout";
+  the PR links it.
 
 ## Resolved questions
 - **Q1: Dates or date-times for `startsAt` / `endsAt`?** — Date-times with offset support:
@@ -283,7 +283,7 @@ Each step is small, ordered, and leaves the app in a working state.
   grouped cards, empty state, phone width, existing tokens and components only. Add the row
   `| \`C+ Offers\` | \`/offers\` | #55 |` to "Pages and issues" in `docs/design.md`, and match the
   implemented UI to it.
-- [ ] **13. Follow-up issue** — Create the "discounts and promo codes at checkout" issue with
+- [x] **13. Follow-up issue** — Create the "discounts and promo codes at checkout" issue with
   `/create-issue` (approved, Q4): promo codes, bundle and trio prices, filling
   `orders.discount_amount`, and honouring an offer's saving at checkout. Reference it from this
   issue's PR. Docs: list `listActiveOffers` in

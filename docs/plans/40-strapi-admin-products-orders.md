@@ -238,7 +238,7 @@ Each step leaves the app building and the tests green.
   cms_catalog_and_orders`, write the rollback, and mirror the row types in `~/lib/commerce` so
   `schema.test.ts` stays green. Check: `pnpm db:migrate`, then `pnpm db:rollback`, then migrate
   again on a scratch DB (`migrator.test.ts`).
-- [ ] **3. Transition rules (`app/lib/order-status.ts`).** Export `ORDER_STATUS_TRANSITIONS`,
+- [x] **3. Transition rules (`app/lib/order-status.ts`).** Export `ORDER_STATUS_TRANSITIONS`,
   `PAYMENT_STATUS_TRANSITIONS`, `RESTOCK_STATUSES` and a pure `nextOrderState(current, change,
   now)` that returns `{ ok: true, patch, restock: boolean }` or `{ ok: false, error:
   "invalid-transition" | "invalid-payment-transition", from, to }`. `patch` holds the new

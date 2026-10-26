@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
+import { fragranceFamilyLabel } from "~/lib/catalog";
 import { useT } from "~/lib/i18n";
 import { formatVolume, formatVolumes, type ProductSummary } from "~/lib/products";
 import { FamilyChip } from "./FamilyChip";
@@ -115,12 +116,8 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
           />
         </div>
         {product.fragranceFamily && (
-          // Families are stored in Ukrainian until #65 adds translated labels.
-          <span
-            lang="uk"
-            className="absolute top-3 left-3 rounded-pill bg-white px-2.5 py-1.5 text-xs font-extrabold text-ink"
-          >
-            {product.fragranceFamily}
+          <span className="absolute top-3 left-3 rounded-pill bg-white px-2.5 py-1.5 text-xs font-extrabold text-ink">
+            {fragranceFamilyLabel(product.fragranceFamily, translator)}
           </span>
         )}
       </Link>

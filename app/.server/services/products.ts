@@ -108,14 +108,11 @@ export async function getBestsellers(db: Db = defaultDb): Promise<ProductSummary
 }
 
 /**
- * The fragrance families of listed products of any gender, alphabetically, for the trio builder
- * and the marquee (#64). Shown as stored until #65 adds translated family labels.
+ * Every fragrance family of the listed products of any gender (primary or not, #65), for the trio
+ * builder and the marquee (#64). Stored values; the UI labels them in its language.
  */
-export async function getTrioFamilies(
-  db: Db = defaultDb,
-): Promise<{ value: string; label: string }[]> {
-  const { fragranceFamilies } = await listFilterOptions(db, GENDERS);
-  return fragranceFamilies.map((value) => ({ value, label: value }));
+export async function getTrioFamilies(db: Db = defaultDb): Promise<string[]> {
+  return (await listFilterOptions(db, GENDERS)).fragranceFamilies;
 }
 
 /**

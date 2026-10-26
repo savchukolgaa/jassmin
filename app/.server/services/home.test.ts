@@ -53,7 +53,7 @@ describe("buildHomePageView", () => {
 
   it("adds the trio offer, the trio builder's families and picks, and the bestsellers", () => {
     const trioOffer = { price: "499.00", setSize: 3, volumeMl: 10 };
-    const families = [{ value: "квіткові", label: "квіткові" }];
+    const families = ["квіткові"];
     const view = buildHomePageView(homePage, siteSettings, {
       trioOffer,
       trioFamilies: families,

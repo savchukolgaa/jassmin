@@ -30,7 +30,8 @@ describe.skipIf(!hasDatabase)("home page bestsellers and trio families", () => {
       minutesAgo?: number;
       active?: boolean;
       variants?: boolean;
-      family?: string;
+      /** Primary first. */
+      families?: string[];
       gender?: "women" | "men" | "unisex";
     } = {},
   ) {
@@ -41,7 +42,8 @@ describe.skipIf(!hasDatabase)("home page bestsellers and trio families", () => {
         title,
         brand: "House",
         gender: options.gender ?? "women",
-        fragranceFamily: options.family ?? null,
+        fragranceFamily: options.families?.[0] ?? null,
+        fragranceFamilies: options.families ?? [],
         price: "100.00",
         volumeMl: 30,
         active: options.active ?? true,
@@ -141,19 +143,17 @@ describe.skipIf(!hasDatabase)("home page bestsellers and trio families", () => {
     expect(await bestsellerTitles()).toHaveLength(4);
   });
 
-  it("offers the families of listed products of every gender", async () => {
+  it("offers every family of listed products of every gender", async () => {
     const { getTrioFamilies } = await import("./products");
-    await product("Floral", { family: "квіткові", gender: "women" });
-    await product("Woody", { family: "деревні", gender: "men" });
-    await product("Fresh", { family: "свіжі", gender: "unisex" });
-    await product("Archived", { family: "архівні", active: false });
-    await product("No sizes", { family: "без розмірів", variants: false });
+    await product("Floral", { families: ["квіткові", "свіжі"], gender: "women" });
+    await product("Woody", { families: ["деревні"], gender: "men" });
+    await product("Fresh", { families: ["свіжі"], gender: "unisex" });
+    await product("Spicy", { families: ["квіткові", "пряні"], gender: "men" });
+    await product("Archived", { families: ["архівні"], active: false });
+    await product("No sizes", { families: ["без розмірів"], variants: false });
     await product("Plain");
 
-    expect(await getTrioFamilies(testDb.db)).toEqual([
-      { value: "деревні", label: "деревні" },
-      { value: "квіткові", label: "квіткові" },
-      { value: "свіжі", label: "свіжі" },
-    ]);
+    // Secondary families count too (#65).
+    expect(await getTrioFamilies(testDb.db)).toEqual(["деревні", "квіткові", "пряні", "свіжі"]);
   });
 });

@@ -1,5 +1,7 @@
 // The home page's tester trio (#64): the offer it advertises and the "Build your trio" picker.
 // Isomorphic: no server imports.
+import { fragranceFamilyLabel } from "./catalog";
+import { INTL_LOCALES, type Translator } from "./i18n";
 
 /** How many fragrance families the trio builder takes, one per tester. */
 export const TRIO_SIZE = 3;
@@ -63,4 +65,24 @@ export function trioHref(families: readonly string[]): string {
   const params = new URLSearchParams(families.map((family) => ["family", family]));
   const query = params.toString();
   return query ? `${TRIO_TARGET_PATH}?${query}` : TRIO_TARGET_PATH;
+}
+
+/** A family as the trio builder and the marquee show it: the URL value and its label. */
+export interface TrioFamily {
+  value: string;
+  label: string;
+}
+
+/**
+ * Stored families (Ukrainian values) with their labels in the UI's language, alphabetical in it,
+ * like the catalog filter (#65).
+ */
+export function labelTrioFamilies(
+  values: readonly string[],
+  translator: Pick<Translator, "t" | "locale">,
+): TrioFamily[] {
+  const collator = new Intl.Collator(INTL_LOCALES[translator.locale]);
+  return values
+    .map((value) => ({ value, label: fragranceFamilyLabel(value, translator) }))
+    .sort((a, b) => collator.compare(a.label, b.label));
 }

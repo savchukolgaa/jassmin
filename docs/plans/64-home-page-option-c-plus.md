@@ -86,6 +86,11 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   look; new home-specific utilities are added for the artboard effects that differ. Only
   `animate-marquee` changes (30s → 26s, plus pause on hover); it isn't used by any page yet.
   Hero text uses `animate-fade-up` with `anim-delay-2/4/6` (160/320/480 ms ≈ artboard 150/300/450).
+- **After #65 (merged into `issue/64` before the PR)**: `getTrioFamilies` returns every family of
+  listed products (#65's `unnest(fragrance_families)` in `listFilterOptions`) as stored values;
+  `labelTrioFamilies` in `app/lib/trio.ts` labels them with `fragranceFamilyLabel` and sorts them
+  alphabetically in the UI's language, like the catalog filter. The compact card's badge uses the
+  same label. #65 already added `fragranceFamily` to `ProductSummary`, so #64's copy was dropped.
 - **Restyle (step 12)**: "Get directions" uses the `outline-light` variant on the pink card
   (the artboard's solid white button isn't a `Button` variant, and no new variants are added).
   Form inputs keep `border-muted` (2px, white background) instead of the artboard's `line`

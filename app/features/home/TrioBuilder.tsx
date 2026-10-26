@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/Button";
 import { ButtonLink } from "~/components/ui/ButtonLink";
-import type { TrioFamily } from "~/lib/home";
 import { useT } from "~/lib/i18n";
-import { TRIO_SIZE, type TrioOffer, toggleTrioFamily, trioHref } from "~/lib/trio";
+import {
+  labelTrioFamilies,
+  TRIO_SIZE,
+  type TrioOffer,
+  toggleTrioFamily,
+  trioHref,
+} from "~/lib/trio";
 
 type TrioBuilderProps = {
-  families: TrioFamily[];
+  /** Stored family values; the chips show them in the UI's language. */
+  families: string[];
   /** Families picked in the URL, from a submission without JS. */
   selected: string[];
   trioOffer: TrioOffer | null;
@@ -19,7 +25,8 @@ type TrioBuilderProps = {
  * It never adds anything to the cart.
  */
 export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps) {
-  const { t, formatPrice } = useT();
+  const translator = useT();
+  const { t, formatPrice } = translator;
   const [picked, setPicked] = useState(selected);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -31,7 +38,8 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
     return null;
   }
 
-  const labels = new Map(families.map((family) => [family.value, family.label]));
+  const options = labelTrioFamilies(families, translator);
+  const labels = new Map(options.map((family) => [family.value, family.label]));
   const full = picked.length >= TRIO_SIZE;
   const toggle = (value: string, checked: boolean) =>
     setPicked((current) => toggleTrioFamily(current, value, checked));
@@ -55,7 +63,7 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
             <fieldset>
               <legend className="sr-only">{t("home.trio.families")}</legend>
               <div className="flex flex-wrap gap-2.5">
-                {families.map((family) => {
+                {options.map((family) => {
                   const checked = picked.includes(family.value);
                   return (
                     <label key={family.value} className="relative">

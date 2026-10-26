@@ -1,9 +1,8 @@
 import { Fragment } from "react";
-import type { TrioFamily } from "~/lib/home";
 import { useT } from "~/lib/i18n";
-import type { TrioOffer } from "~/lib/trio";
+import { labelTrioFamilies, type TrioOffer } from "~/lib/trio";
 
-type OfferMarqueeProps = { trioOffer: TrioOffer | null; families: TrioFamily[] };
+type OfferMarqueeProps = { trioOffer: TrioOffer | null; families: string[] };
 
 /**
  * The dark band that scrolls the tester-trio offer and the fragrance families. Decorative: the
@@ -11,7 +10,8 @@ type OfferMarqueeProps = { trioOffer: TrioOffer | null; families: TrioFamily[] }
  * skip it.
  */
 export function OfferMarquee({ trioOffer, families }: OfferMarqueeProps) {
-  const { t, formatPrice } = useT();
+  const translator = useT();
+  const { t, formatPrice } = translator;
   const items = [
     ...(trioOffer
       ? [
@@ -21,7 +21,7 @@ export function OfferMarquee({ trioOffer, families }: OfferMarqueeProps) {
           }),
         ]
       : []),
-    ...families.map((family) => family.label),
+    ...labelTrioFamilies(families, translator).map((family) => family.label),
   ];
   if (items.length === 0) {
     return null;

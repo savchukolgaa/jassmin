@@ -35,7 +35,6 @@ const PRODUCT: ProductSummary = {
   gender: "women",
   packSize: 1,
   imageUrl: null,
-  fragranceFamily: "квіткові",
   minPrice: "990.00",
   hasPriceRange: true,
   volumes: [7, 30, 50],
@@ -118,7 +117,7 @@ describe("ProductCard, compact (home bestsellers)", () => {
   it("shows the family on the image, the brand with the default size, title and price", () => {
     const html = compact(PRODUCT);
 
-    expect(html).toMatch(/<span lang="uk" class="absolute[^"]*">квіткові<\/span>/);
+    expect(html).toMatch(/<span class="absolute[^"]*">Chypre<\/span>/);
     expect(html).toContain("Chanel · 7 ml");
     expect(html).toMatch(/<h3[^>]*><a[^>]*>Coco Mademoiselle Eau de Parfum<\/a><\/h3>/);
     expect(html).toContain("from ₴990");
@@ -128,7 +127,7 @@ describe("ProductCard, compact (home bestsellers)", () => {
   });
 
   it("leaves the family badge out when the product has none", () => {
-    expect(compact({ ...PRODUCT, fragranceFamily: null })).not.toContain('lang="uk"');
+    expect(compact({ ...PRODUCT, fragranceFamily: null })).not.toContain("Chypre");
   });
 
   it("quick-adds the default variant with a round + button named after the product", () => {

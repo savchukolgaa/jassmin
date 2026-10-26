@@ -22,7 +22,6 @@ const sauvage: ProductSummary = {
   gender: "men",
   packSize: 1,
   imageUrl: null,
-  fragranceFamily: null,
   minPrice: "790.00",
   hasPriceRange: true,
   volumes: [10, 50, 100],

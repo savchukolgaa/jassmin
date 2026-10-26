@@ -3,17 +3,12 @@ import type { Locale } from "./i18n";
 import type { ProductSummary } from "./products";
 import type { TrioOffer } from "./trio";
 
-/** A fragrance family the trio builder offers: the URL value and what the chip says. */
-export interface TrioFamily {
-  value: string;
-  label: string;
-}
-
 /** The shop data the home page shows next to its CMS content (#64). */
 export interface HomeShopData {
   /** The live tester-trio offer; `null` hides every price the page would advertise. */
   trioOffer: TrioOffer | null;
-  trioFamilies: TrioFamily[];
+  /** Stored family values of listed products; the UI labels them (`labelTrioFamilies`). */
+  trioFamilies: string[];
   /** Families picked in the URL (the trio builder without JS), at most `TRIO_SIZE`. */
   selectedFamilies: string[];
   bestsellers: ProductSummary[];
@@ -33,7 +28,7 @@ export interface HomePageView {
     image: CmsImage | null;
   };
   trioOffer: TrioOffer | null;
-  trio: { families: TrioFamily[]; selected: string[] };
+  trio: { families: string[]; selected: string[] };
   bestsellers: ProductSummary[];
   location: {
     address: string;

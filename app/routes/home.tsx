@@ -44,10 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     getTrioFamilies(),
     getBestsellers(),
   ]);
-  const selectedFamilies = parseTrioSearch(
-    new URL(request.url).searchParams,
-    trioFamilies.map((family) => family.value),
-  );
+  const selectedFamilies = parseTrioSearch(new URL(request.url).searchParams, trioFamilies);
   return buildHomePageView(homePage, siteSettings, {
     trioOffer,
     trioFamilies,

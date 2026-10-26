@@ -2,18 +2,12 @@ import { type ComponentProps, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createRoutesStub } from "react-router";
 import { describe, expect, it } from "vitest";
-import type { TrioFamily } from "~/lib/home";
 import { I18nProvider, type Locale } from "~/lib/i18n";
 import { formatPrice } from "~/lib/money";
 import type { TrioOffer } from "~/lib/trio";
 import { TrioBuilder } from "./TrioBuilder";
 
-const families: TrioFamily[] = [
-  { value: "квіткові", label: "Floral" },
-  { value: "деревні", label: "Woody" },
-  { value: "свіжі", label: "Fresh" },
-  { value: "східні", label: "Oriental" },
-];
+const families = ["квіткові", "деревні", "свіжі", "східні"];
 const trioOffer: TrioOffer = { price: "499.00", setSize: 3, volumeMl: 10 };
 
 let props: ComponentProps<typeof TrioBuilder> = { families, selected: [], trioOffer };
@@ -31,7 +25,7 @@ function render(
     offer = trioOffer,
     locale = "en",
     trioFamilies = families,
-  }: { offer?: TrioOffer | null; locale?: Locale; trioFamilies?: TrioFamily[] } = {},
+  }: { offer?: TrioOffer | null; locale?: Locale; trioFamilies?: string[] } = {},
 ) {
   props = { families: trioFamilies, selected, trioOffer: offer };
   return renderToStaticMarkup(

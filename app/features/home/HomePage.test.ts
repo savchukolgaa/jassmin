@@ -29,12 +29,7 @@ const view: HomePageView = {
   about: { title: "About Jassmin", bodyHtml: "<p>Our <strong>story</strong>.</p>", image: null },
   trioOffer: { price: "499.00", setSize: 3, volumeMl: 10 },
   trio: {
-    families: [
-      { value: "квіткові", label: "Floral" },
-      { value: "деревні", label: "Woody" },
-      { value: "свіжі", label: "Fresh" },
-      { value: "східні", label: "Oriental" },
-    ],
+    families: ["квіткові", "деревні", "свіжі", "східні"],
     selected: [],
   },
   bestsellers: [],

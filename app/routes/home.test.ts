@@ -62,10 +62,7 @@ function post(fields: Record<string, string>, headers: Record<string, string> = 
 }
 
 const trioOffer = { price: "499.00", setSize: 3, volumeMl: 10 };
-const families = ["квіткові", "деревні", "свіжі", "східні"].map((value) => ({
-  value,
-  label: value,
-}));
+const families = ["квіткові", "деревні", "свіжі", "східні"];
 
 beforeEach(() => {
   shop.getBestsellers.mockResolvedValue([]);

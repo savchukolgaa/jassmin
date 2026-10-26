@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseTrioSearch, toggleTrioFamily, trioHref } from "./trio";
+import { createTranslator } from "./i18n";
+import { labelTrioFamilies, parseTrioSearch, toggleTrioFamily, trioHref } from "./trio";
 
 const known = ["квіткові", "деревні", "свіжі", "східні"];
 
@@ -51,5 +52,21 @@ describe("toggleTrioFamily", () => {
     const full = ["квіткові", "деревні", "свіжі"];
     expect(toggleTrioFamily(full, "східні", true)).toEqual(full);
     expect(toggleTrioFamily(["свіжі"], "свіжі", true)).toEqual(["свіжі"]);
+  });
+});
+
+describe("labelTrioFamilies", () => {
+  it("labels families in the UI's language, alphabetical in it, keeping the stored value", () => {
+    expect(labelTrioFamilies(["свіжі", "деревні", "квіткові"], createTranslator("en"))).toEqual([
+      { value: "квіткові", label: "Floral" },
+      { value: "свіжі", label: "Fresh" },
+      { value: "деревні", label: "Woody" },
+    ]);
+  });
+
+  it("shows a family outside the fixed list as stored", () => {
+    expect(labelTrioFamilies(["старі"], createTranslator("en"))).toEqual([
+      { value: "старі", label: "старі" },
+    ]);
   });
 });

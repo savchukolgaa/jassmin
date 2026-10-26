@@ -35,6 +35,7 @@ const PRODUCT: ProductSummary = {
   gender: "women",
   packSize: 1,
   imageUrl: null,
+  fragranceFamily: "квіткові",
   minPrice: "990.00",
   hasPriceRange: true,
   volumes: [7, 30, 50],

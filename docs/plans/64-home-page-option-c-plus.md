@@ -149,8 +149,9 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 | modify | `app/lib/discounts.ts` | `TESTER_TRIO_DISCOUNT_SLUG` |
 | modify | `app/.server/db/queries/discounts.ts` | `findDiscountBySlug` |
 | create | `app/.server/services/trio.ts` (+ `.test.ts`) | `getTesterTrioOffer(now)`, `toTrioOffer` (reuses `discountAvailability`) |
-| modify | `app/.server/db/queries/products.ts` | `listBestsellers`, `listNewestProducts`, `listListedFamilies` |
-| modify | `app/.server/services/products.ts` (+ `.test.ts`) | `getBestsellers`, `getTrioFamilies`; pass `fragranceFamilies` |
+| modify | `app/.server/db/queries/products.ts` | `listBestsellers`; `fragranceFamily` in `summaryColumns` |
+| modify | `app/.server/services/products.ts` | `getBestsellers`, `getTrioFamilies`, `fragranceFamily` on `ProductSummary` |
+| create | `app/.server/services/bestsellers.test.ts` | DB tests for both |
 | create | `app/lib/trio.ts` (+ `.test.ts`) | `TRIO_SIZE`, `parseTrioSearch`, `trioHref`, `TrioOffer` type |
 | modify | `app/lib/home.ts` | `HomePageView`: hero fields, `about.image`, `trioOffer`, `trio`, `bestsellers` |
 | modify | `app/.server/services/home.ts` (+ `home.test.ts`) | `buildHomePageView` takes the new inputs |
@@ -242,21 +243,21 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   `role="status"` "{count} more to pick" or the CTA `ButtonLink` to `trioHref(selected)`
   (`/popular?family=…`, in `app/lib/trio.ts`). State: `useState(selected)` from the loader,
   re-synced when `selected` changes. Families come in as a `{ value, label }[]` prop.
-- [ ] **9. Trio families** — `listListedFamilies(db)` in `queries/products.ts` (distinct
-  non-null `fragrance_family` of listed products with variants, any gender, alphabetical) and
-  `getTrioFamilies(db)` in `services/products.ts` returning `{ value, label }[]` (label = value for
-  now). **After #65 is on `main`:** read `unnest(fragrance_families)`, order by
-  `FRAGRANCE_FAMILIES` and label with `t("catalog.families.…")` (so it takes the translator), and
-  show the primary family label on the compact card. Tests: DB test that inactive products' and
-  products without variants' families are left out; `trioHref` encodes each family.
-- [ ] **10. Bestsellers query** — `listBestsellers(db, limit)` in `queries/products.ts`: a
-  subquery summing `order_items.quantity` per `product_id` joined to `orders` with
-  `status in ('paid','shipped','completed')` joined to `products` + `variantStats`, `isListed`,
-  ordered by units desc, `products.createdAt` desc; `listNewestProducts(db, limit, excludeIds)`
-  for the top-up. `getBestsellers(db = defaultDb)` in `services/products.ts` → 4
-  `ProductSummary` via `toSummary`. DB integration test (`createTestDatabase`): sales order wins,
-  cancelled/pending orders ignored, inactive products skipped, fallback to newest with < 4 sold,
-  never duplicates.
+- [x] **9. Trio families** — `getTrioFamilies(db)` in `services/products.ts` reuses
+  `listFilterOptions(db, GENDERS)` (distinct non-null `fragrance_family` of listed products with
+  variants, any gender, alphabetical) and returns `{ value, label }[]` (label = value for now).
+  `ProductSummary` gains `fragranceFamily` (the stored primary family) for the card badge.
+  **After #65 is on `main`:** read `unnest(fragrance_families)`, order by `FRAGRANCE_FAMILIES` and
+  label with `t("catalog.families.…")`, and show the translated primary family on the compact
+  card. Tests: DB test that inactive products' and products without variants' families are left
+  out; `trioHref` encodes each family.
+- [x] **10. Bestsellers query** — `listBestsellers(db, limit)` in `queries/products.ts`: one
+  query, `products` + `variantStats`, left-joined to a subquery summing `order_items.quantity` per
+  `product_id` over orders with `status in ('paid','shipped','completed')`, `isListed`, ordered by
+  `coalesce(units, 0) desc`, then newest. Unsold products come after sold ones, newest first, so
+  the top-up needs no second query. `getBestsellers(db = defaultDb)` → `BESTSELLER_COUNT` (4)
+  `ProductSummary`. DB integration test (`services/bestsellers.test.ts`): ranking, ignored
+  statuses, inactive/variant-less skipped, newest top-up, at most 4.
 - [ ] **11. Bestseller cards** — `AddToCartForm` gets `appearance?: "button" | "icon"`: icon renders
   a 48 px round `primary` button with "+" (`quick-add`), turning `bg-success` "✓" with
   `aria-label` "Added to cart" after an ok result; status text unchanged. `ProductCard` gets

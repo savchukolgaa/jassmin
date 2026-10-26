@@ -16,6 +16,8 @@ interface ProductBase {
 
 /** A catalog card. Only products with at least one variant are listed. */
 export interface ProductSummary extends ProductBase {
+  /** The (primary) fragrance family as stored, e.g. "квіткові"; `null` when not set. */
+  fragranceFamily: string | null;
   /** The lowest variant price. */
   minPrice: string;
   /** Whether the variants have different prices, so the card says "from". */

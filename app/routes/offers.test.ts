@@ -50,6 +50,7 @@ function product(id: string): ProductSummary {
     gender: "women",
     packSize: 1,
     imageUrl: null,
+    fragranceFamily: null,
     minPrice: "990.00",
     hasPriceRange: false,
     volumes: [7],

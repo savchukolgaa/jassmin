@@ -25,6 +25,8 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   that filter**; step 9 only extends it to several values on top of #65. Steps 1–8 and 10–14 don't
   need #65 and can land first; step 9 and the family-dependent parts of steps 6, 7 and 11 (chip
   labels, card family badge) wait for #65 to be merged into `main` (rebase `issue/64` on it).
+- **#67 (open):** the `/popular` page and header button that "Order Now" links to. Not a blocker:
+  the CTA is a Strapi field, so only its seeded value depends on #67.
 - Done and on `main`: tester-trio discount rule (#59, `discounts.slug = 'tester-trio'`), offers
   (#55), Strapi product sync (#40), cart and add-to-cart (#10), Strapi home content (#20, #43),
   i18n (#28), C+ header/footer (#27).
@@ -43,8 +45,8 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   `tester-trio` discount (`TESTER_TRIO_DISCOUNT_SLUG` in `app/lib/discounts.ts`) and returns
   `{ price, setSize, volumeMl }` only when it's `active`, inside its window (start inclusive, end
   exclusive, like `priceCart`) and not used up (`redemption_count < max_redemptions`); otherwise
-  `null`. The home page doesn't fetch Strapi offers: the hero CTA (`hero.ctaHref`, seeded as
-  `/#trio`) and the trio section are the "link". This is what checkout charges, which is the
+  `null`. The home page doesn't fetch Strapi offers: the trio section is the "link"; the hero CTA
+  (`hero.ctaHref`) goes to `/popular` (#67). This is what checkout charges, which is the
   issue's requirement.
 - **Without the trio offer** (`trioOffer === null`): the hero badge, the marquee's offer text,
   the trio CTA price, and the whole "How it works" section (it explains the 499 ₴ offer, step 02
@@ -60,15 +62,14 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   decorative `bg-primary-light` block, like the hero image placeholder today.
 - **Bestsellers** (`getBestsellers`, home loader): the 4 listed products (`isListed`, with
   variants) with the most units sold in `order_items` of orders whose `status` is `paid`,
-  `shipped` or `completed` **(unconfirmed, Q4)**; ties by newest; topped up with the newest listed
+  `shipped` or `completed`; ties by newest; topped up with the newest listed
   products not already chosen when fewer than 4 have sales. Returned as `ProductSummary[]` from the
   existing `summaryColumns` / `toSummary`.
 - **Bestseller card**: reuse `ProductCard` with a new `variant="compact"` that matches the
   artboard card (family badge on the image, "brand · volume", round quick-add button + → ✓). The
   quick-add button is `AddToCartForm` with a new `appearance="icon"` (48 px circle, `aria-label`
   "Add {title} to cart" / "Added to cart"), keeping its fetcher, `/cart` action and the existing
-  inline `animate-toast` "Added to cart · View cart" status. The catalog keeps the current card
-  **(unconfirmed, Q2)**.
+  inline `animate-toast` "Added to cart · View cart" status. The catalog keeps the current card.
 - **Trio builder is a GET form**: `<Form method="get" action="/" preventScrollReset>` with one
   checkbox per family (`name="family"`), styled as pills. Checkboxes already expose their state
   to screen readers, so they get no `aria-pressed` (that's for toggle buttons); the group is a
@@ -77,7 +78,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   slots pop in place) and unchecked chips are `disabled` once 3 are picked; the server caps at 3
   as well (`parseTrioSearch`, first 3 known families, deduped). The builder never adds to the cart.
 - **Trio CTA target**: `/catalog/women?fragrance_family=a&fragrance_family=b&fragrance_family=c`,
-  plus a secondary "For men →" link with the same families **(unconfirmed, Q1)**. `/offers` can't
+  plus a secondary "For men →" link with the same families **(unconfirmed, Q1b)**. `/offers` can't
   filter by family, so it doesn't meet the acceptance criterion.
 - **Chip families**: the families that listed products of either gender have (from #65's
   `fragrance_families`), in `FRAGRANCE_FAMILIES` order, with #65's `catalog.families.*` labels.
@@ -94,31 +95,25 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 
 ## Open questions
 
-- [ ] **Q1: Where does "Show my trio" go, given every catalog needs a gender?** — Why it matters:
-  the artboard has one CTA but there are two catalogs and no Unisex. Recommended default: the main
-  CTA goes to `/catalog/women?fragrance_family=…` and a small "For men →" link next to it goes to
-  `/catalog/men?…` (unisex products show in both). Alternatives: a Women/Men toggle inside the
-  builder, or two equal CTAs. Affects steps: 7, 9.
-- [ ] **Q2: Should the bestseller cards use the artboard's compact card (family badge on the
-  image, round +/✓ quick add) while the catalog keeps today's card?** — Why it matters: the issue
-  says "reuse `ProductCard`", but the artboard card differs (no size label on the button, no
-  "Choose size"). Recommended default: a `variant="compact"` of `ProductCard` for the home page
-  only; the + adds the default variant (as the catalog button does), with the size in its
-  `aria-label` and in the "brand · 50 ml" line. Affects steps: 11.
-- [ ] **Q3: Does #65 already accept several `fragrance_family` values in one URL?** — Why it
-  matters: the trio needs up to 3 families at once; #65 as written matches one chosen family
-  against the array. Recommended default: #64 extends `CatalogSearch.fragranceFamily?: string` to
-  `fragranceFamilies: string[]` (repeated `fragrance_family` params, at most 3, so existing
-  single-family links keep working) and `whereFilters` to `arrayOverlaps(fragranceFamilies, …)`
-  on #65's column; `CatalogFilters` shows several active families as removable chips above its
-  select. If #65 ends up doing this, step 9 only adds tests. Affects steps: 9.
-- [ ] **Q4: Which orders count as sales for bestsellers?** — Why it matters: the issue says
-  "completed or paid orders"; paid card orders go on to `shipped` and `completed`, and COD orders
-  go `pending → shipped → completed`. Recommended default: `orders.status in ('paid', 'shipped',
-  'completed')`; `pending`, `cancelled`, `returned` and `unclaimed` don't count. Affects steps: 10.
+- [ ] **Q1b: Where does the trio builder's "Show my trio" go?** — The answer to Q1 (2026-10-26)
+  moved the hero's "Order Now" to `/popular` (#67) but didn't cover the trio CTA, and every catalog
+  page needs a gender. Recommended default: `/catalog/women?fragrance_family=…` plus a small
+  "For men →" link with the same families. Affects steps: 8, 9.
 
 ## Resolved questions
 
+- **Q1: Where does the hero's "Order Now" go?** — To the new Popular page `/popular`, which also
+  gets a header button and its own C+ design; both are #67, not this issue. Here the hero keeps
+  its Strapi `ctaHref`; the seed sets it to `/popular`. Until #67 ships, `/popular` is a 404, so
+  #64 seeds `/popular` only if #67 is merged first, otherwise `/#trio` and #67 switches it
+  (owner, 2026-10-26).
+- **Q2: Bestseller card style** — the artboard's compact card on the home page only; the catalog
+  keeps its card (owner, 2026-10-26, default).
+- **Q3: Several families in one URL** — #64 extends #65's filter to repeated `fragrance_family`
+  params, at most 3 (owner, 2026-10-26, default).
+- **Q4: Which orders count as sales** — `status in ('paid', 'shipped', 'completed')`. The owner will
+  provide the perfume information for the first bestseller list (owner, 2026-10-26); that data is
+  seeded by #67 / the product import, not here.
 - **Is there a Unisex link to remove?** — No: header, footer and empty cart already link only to
   women/men (source: `app/features/cart/EmptyCart.tsx`, #27, memory "no Unisex catalog"). The hero
   chip reads "Women · Men" and there are two tiles.
@@ -186,7 +181,8 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   and the mapper in `content.ts` (trim; blank → `null`; image through the same absolute-URL helper
   as `hero.image`); populate `about: { populate: ["image"] }` in `getHomePage`. Seed both locales
   in `cms/scripts/seed.ts` (uk: eyebrow "Тестерний набір", subtitle, "Усі парфуми" →
-  `/catalog/women`; en: "Tester set", "See all perfumes"; `ctaHref: "/#trio"`; about image = the
+  `/catalog/women`; en: "Tester set", "See all perfumes"; `ctaHref`: `/popular` if #67 is merged,
+  else `/#trio`; about image = the
   uploaded hero/cover image). Restart Strapi, `pnpm cms:seed`, re-record both home fixtures.
   Update `content.test.ts` / `schemas.test.ts`: fields mapped, missing fields → `null`.
   Check: `pnpm test app/.server/cms`.
@@ -244,12 +240,12 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   too), and an "Update" submit button (`home.trio.update`) that is rendered on the server and
   removed after hydration (a `useEffect` flag), so no-JS users can submit. Three slots (dashed
   arch; filled slot `animate-slot-pop` with the family label; empty shows its number), then either
-  `role="status"` "{count} more to pick" or the CTA `ButtonLink` + "For men →" link (Q1) built
+  `role="status"` "{count} more to pick" or the CTA `ButtonLink` + "For men →" link (Q1b) built
   with `trioCatalogHref` (step 9). State: `useState(selected)` from the loader, re-synced when
   `selected` changes. Without #65 merged yet, build against a `families: { value, label }[]` prop
   and wire it in step 9.
 - [ ] **9. Multi-family catalog filter (needs #65)** — After rebasing on #65, and only where #65
-  doesn't already do it (Q3): `CatalogSearch.fragranceFamilies: string[]` from
+  doesn't already do it : `CatalogSearch.fragranceFamilies: string[]` from
   `params.getAll("fragrance_family")` (trimmed, ≤ 100 chars, deduped, at most 3), `catalogHref`
   writes each, `hasActiveFilters` checks the array; `whereFilters` uses `arrayOverlaps` on #65's
   `products.fragranceFamilies` (single value unchanged in behaviour); `getCatalogPage` passes the
@@ -261,7 +257,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   that a product matching any of the families is listed once.
 - [ ] **10. Bestsellers query** — `listBestsellers(db, limit)` in `queries/products.ts`: a
   subquery summing `order_items.quantity` per `product_id` joined to `orders` with
-  `status in ('paid','shipped','completed')` (Q4), joined to `products` + `variantStats`, `isListed`,
+  `status in ('paid','shipped','completed')` joined to `products` + `variantStats`, `isListed`,
   ordered by units desc, `products.createdAt` desc; `listNewestProducts(db, limit, excludeIds)`
   for the top-up. `getBestsellers(db = defaultDb)` in `services/products.ts` → 4
   `ProductSummary` via `toSummary`. DB integration test (`createTestDatabase`): sales order wins,
@@ -349,6 +345,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 
 - The catalog's family filter redesign, `fragrance_families`, family labels and the product
   page's families/notes (#65).
+- The Popular page, its header button and design (#67).
 - Header and footer (#27), a dark theme, new tokens or fonts, other pages.
 - The artboard's fixed bottom toast and header cart-count animation; the existing inline toast is
   reused.

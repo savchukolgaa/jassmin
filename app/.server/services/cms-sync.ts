@@ -64,7 +64,11 @@ function productWrite(
     brand: fields.brand,
     description: fields.description,
     gender: fields.gender,
-    fragranceFamily: fields.fragranceFamily,
+    // The ML column keeps the primary family; a CHECK holds it to the first one (#65).
+    fragranceFamily: fields.fragranceFamilies[0] ?? null,
+    fragranceFamilies: fields.fragranceFamilies,
+    notes: fields.notes,
+    storeCode: fields.storeCode,
     imageUrl: fields.imageUrl,
     packSize: fields.packSize,
     active: fields.active,

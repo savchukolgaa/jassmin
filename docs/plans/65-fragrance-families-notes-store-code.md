@@ -186,7 +186,7 @@ the primary family.
   passes `fragranceFamilies: search.fragranceFamily ? [search.fragranceFamily] : []`. Update
   `services/products.test.ts`: filtering by a **secondary** family lists the product, the options
   include secondary families, the archived-product case still holds.
-- [ ] **6. CMS sync contract** (`~/lib/cms-sync`, `services/cms-sync.ts`, `cms-push.ts`) — Replace
+- [x] **6. CMS sync contract** (`~/lib/cms-sync`, `services/cms-sync.ts`, `cms-push.ts`) — Replace
   `fragranceFamily` in `productFields` with `fragranceFamilies`, `notes`, `storeCode` (rules in
   Decisions), with a `.superRefine` on the object for "at least one family when `packSize === 1`"
   (`"family-required"`, path `fragranceFamilies`). `CmsProductState` gets the same three fields

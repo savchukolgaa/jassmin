@@ -237,7 +237,7 @@ everywhere and 5 ml is added.
   0 / 0 / 0 and adds no rows; a product whose stock, price, title and families were changed and one
   size deleted keeps all of that; an `active = false` product stays inactive. An empty price table
   throws and writes nothing.
-- [ ] **8. Script, Aspire, docs** — `db/scripts/import-catalog.ts` (shaped like `scripts/seed.ts`)
+- [x] **8. Script, Aspire, docs** — `db/scripts/import-catalog.ts` (shaped like `scripts/seed.ts`)
   prints "Imported N of 128 perfumes with M sizes; queued N for Strapi. Run `pnpm db:sync-cms` to push
   them." Add `"db:import-catalog"` to `package.json`. In `apphost.mts`, add `db-import-catalog` after
   `db-seed` (`addJavaScriptApp(..., { runScriptName: "db:import-catalog" })`,

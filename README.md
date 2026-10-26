@@ -102,14 +102,16 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:rollback` | Roll back the latest applied migration |
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
+| `pnpm db:import-catalog` | Add the shop's perfume range (`app/.server/db/catalog-data.ts`) that isn't in the database yet, every size at the price table's price (`catalog-prices.ts`) and stock 0; existing products are never changed (safe to re-run). Then run `pnpm db:sync-cms` |
+| `pnpm db:convert-catalog <path>` | Convert the owner's Markdown perfume list into `catalog-data.ts`, applying `app/.server/db/catalog/fixes.ts` (the list itself isn't committed) |
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin role](#admin-role) |
 | `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
-The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-rollback`, `db-mark-abandoned-carts`, `db-send-order-emails` and `db-sync-cms` start by hand) instead of from a terminal.
+The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-send-order-emails` and `db-sync-cms` start by hand) instead of from a terminal.
 
-The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration and seed tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
+The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`, `import-catalog.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration, seed and import tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
 
 ## Abandoned carts
 
@@ -325,6 +327,7 @@ There is no admin area in the app any more (#40): staff manage the catalogue and
 1. Set the same `CMS_SYNC_SECRET` (32+ characters) in the root `.env` and in `cms/.env`, and `JASSMIN_APP_URL` (the app's URL, e.g. `http://localhost:5173`) in `cms/.env`. Under `pnpm aspire run`, Aspire generates the secret and sets both.
 2. Run `pnpm cms:seed -- --token` (or the `cms-seed` resource) and copy `STRAPI_SYNC_TOKEN=…` into the root `.env`.
 3. Copy the existing catalogue and orders into Strapi once: `pnpm db:sync-cms -- --all`. Products from before #40 get a slug from their title. It only upserts, so running it again is safe.
+4. Load the shop's perfume range with `pnpm db:import-catalog` (or the `db-import-catalog` resource), then push it with `pnpm db:sync-cms`. Staff add photos, descriptions and stock in Strapi; a re-run of the import only adds perfumes that aren't there yet.
 
 ## Admin role
 

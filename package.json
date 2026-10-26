@@ -26,7 +26,8 @@
     "db:mark-abandoned-carts": "tsx app/.server/db/scripts/mark-abandoned-carts.ts",
     "db:send-order-emails": "tsx app/.server/db/scripts/send-order-emails.ts",
     "db:sync-cms": "tsx app/.server/db/scripts/sync-cms.ts",
-    "db:convert-catalog": "tsx app/.server/db/scripts/convert-catalog.ts"
+    "db:convert-catalog": "tsx app/.server/db/scripts/convert-catalog.ts",
+    "db:import-catalog": "tsx app/.server/db/scripts/import-catalog.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",

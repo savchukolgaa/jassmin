@@ -95,7 +95,7 @@ export const products = pgTable(
     fragranceFamilies: text().array().notNull().default(sql`'{}'::text[]`),
     /** Scent notes in Ukrainian, in the order staff entered them (#65). */
     notes: text().array().notNull().default(sql`'{}'::text[]`),
-    /** The shop's own code for the bottle, e.g. `3-D` (#65); not unique yet (#66 decides). */
+    /** The shop's own code for the bottle, e.g. `3-D` (#65); not unique: the lists reuse codes (#66). */
     storeCode: varchar({ length: 20 }),
     description: text(),
     /** @deprecated Price, volume and stock live in `product_variants` (#26); not read by the app. */

@@ -43,6 +43,15 @@ await builder
   .withParentRelationship(db)
   .withExplicitStart();
 
+// Loads the owner's perfume range (#66); `db-sync-cms` then pushes the new products to Strapi.
+await builder
+  .addJavaScriptApp("db-import-catalog", "..", { runScriptName: "db:import-catalog" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
 await builder
   .addJavaScriptApp("db-rollback", "..", { runScriptName: "db:rollback" })
   .withPnpm({ install: false })

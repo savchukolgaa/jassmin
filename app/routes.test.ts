@@ -17,6 +17,7 @@ describe("route config", () => {
       "/blog",
       "/blog/:slug",
       "/offers",
+      "/popular",
       "/login",
       "/register",
       "/cart",

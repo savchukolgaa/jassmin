@@ -74,14 +74,12 @@ the primary family.
     (`{ family: enumeration [the 16 Ukrainian values], required }`). Staff drag to reorder; the
     first row is the primary family. Strapi 5 has no native multi-select, and a repeatable
     component keeps the order, which a plain multi-select wouldn't.
-  - `notes`: repeatable component `catalog.note` (`{ name: string, required, maxLength 100 }`)
-    **(unconfirmed, Q1)**.
+  - `notes`: repeatable component `catalog.note` (`{ name: string, required, maxLength 100 }`) (Q1, confirmed).
   - `storeCode`: `string`, `maxLength 20`.
   - The old `fragranceFamily` string attribute is **removed** from the Strapi content type: the
     app derives it, and two editable sources would contradict each other.
 - **"At least one family"** is enforced by the app's zod schema for single perfumes
-  (`packSize === 1`); sets (`packSize > 1`, like the seed's tester trio) may have none
-  **(unconfirmed, Q2)**. The Strapi component therefore has no `min`, and the app's 422 explains
+  (`packSize === 1`); sets (`packSize > 1`, like the seed's tester trio) may have none (Q2, confirmed). The Strapi component therefore has no `min`, and the app's 422 explains
   the refusal in Strapi (`cms/src/utils/app-sync.ts` already shows `invalid-input` issues).
 - **Validation (`~/lib/cms-sync`)**: `fragranceFamilies: z.array(z.enum(FRAGRANCE_FAMILIES))`
   refined for duplicates (`"duplicate-family"`, like `"duplicate-volume"`); `notes`: each trimmed,
@@ -93,26 +91,15 @@ the primary family.
   `docs/design.md` → Pills). Notes are Ukrainian on both sites; on `en` the list gets `lang="uk"`.
 - **Cards:** `ProductSummary.fragranceFamily: string | null` (the primary), shown as a small blush
   chip above the volumes in `ProductCard` when set. #64's bestseller "family badge" reuses it.
-- **Store code** is staff-only: stored and synced, not shown to shoppers **(unconfirmed, Q3)**.
-
-## Open questions
-
-- [ ] **Q1: Notes in Strapi: one row per note (repeatable component) or one comma-separated text
-  field?** — Why it matters: the owner's list writes notes as `Дзвіночок, лимон, …`; a text field
-  lets staff paste that line, while a repeatable component means one "Add entry" per note (8–15 per
-  perfume) but allows reordering and per-note limits. Storage (`text[]`) is the same either way.
-  Recommended default: repeatable component `catalog.note`, as the issue suggests. Affects
-  steps: 6, 7.
-- [ ] **Q2: May a product have no fragrance family?** — Why it matters: the issue says "at least
-  one", but the seed's tester set (`packSize: 3`, family `мікс`) has no family from the fixed list,
-  and future sets/offers won't either. Recommended default: require at least one family only when
-  `packSize === 1`; sets may have none (their `fragrance_family` is then `null`). Affects steps:
-  6, 9.
-- [ ] **Q3: Should shoppers see the store code (e.g. "Код: 3-D") on the product page?** — Why it
-  matters: in the shop staff refer to bottles by code, so shoppers asking about a perfume in person
-  might use it. Recommended default: not shown (staff-only). Affects step: 8.
+- **Store code** is staff-only: stored and synced, not shown to shoppers (Q3, confirmed).
 
 ## Resolved questions
+
+- **Q1: Notes in Strapi: repeatable component or comma-separated text?** — Repeatable component
+  `catalog.note`, one row per note (owner, 2026-10-26).
+- **Q2: May a product have no fragrance family?** — At least one is required only for single
+  perfumes (`packSize === 1`); sets may have none (owner, 2026-10-26).
+- **Q3: Do shoppers see the store code?** — No, it's staff-only (owner, 2026-10-26).
 
 - **Can `fragrance_family` be replaced?** — No: it's an ML feature and must not be dropped or
   renamed (`AGENTS.md`, `app/.server/db/schema.ts` header comment); it holds the primary family.

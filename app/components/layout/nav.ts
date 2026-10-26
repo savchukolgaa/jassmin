@@ -2,6 +2,7 @@ import { cn } from "~/lib/cn";
 import { PRIVACY_POLICY_PATH } from "~/lib/consent";
 import type { TextKey } from "~/lib/i18n";
 import { OFFERS_PATH } from "~/lib/offers";
+import { POPULAR_PATH } from "~/lib/popular";
 
 /** A nav link; the label is a message key, translated where it's rendered. */
 export interface NavLinkItem {
@@ -15,6 +16,11 @@ export const CONTACTS_LINK = {
   labelKey: "nav.contacts",
 } as const satisfies NavLinkItem;
 export const BLOG_LINK = { to: "/blog", labelKey: "nav.blog" } as const satisfies NavLinkItem;
+/** The popular perfumes (#67), labelled "Bestsellers" in the header. */
+export const BESTSELLERS_LINK = {
+  to: POPULAR_PATH,
+  labelKey: "nav.bestsellers",
+} as const satisfies NavLinkItem;
 export const OFFERS_LINK = {
   to: OFFERS_PATH,
   labelKey: "nav.offers",

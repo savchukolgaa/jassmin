@@ -8,6 +8,7 @@ import { LocaleSwitcher } from "./LocaleSwitcher";
 import { MobileMenu } from "./MobileMenu";
 import {
   ABOUT_LINK,
+  BESTSELLERS_LINK,
   CONTACTS_LINK,
   focusRing,
   iconButtonClasses,
@@ -40,7 +41,7 @@ export function Header({ user, cartCount }: HeaderProps) {
         </Link>
 
         <nav aria-label={t("nav.main")} className="flex items-center gap-1">
-          <ul className="hidden items-center gap-1 md:flex">
+          <ul className="hidden items-center gap-1 lg:flex">
             <li>
               <Link to={ABOUT_LINK.to} className={navItemClasses()}>
                 {t(ABOUT_LINK.labelKey)}
@@ -48,6 +49,14 @@ export function Header({ user, cartCount }: HeaderProps) {
             </li>
             <li>
               <CatalogMenu />
+            </li>
+            <li>
+              <NavLink
+                to={BESTSELLERS_LINK.to}
+                className={({ isActive }) => navItemClasses(isActive)}
+              >
+                {t(BESTSELLERS_LINK.labelKey)}
+              </NavLink>
             </li>
             <li>
               <NavLink to={OFFERS_LINK.to} className={({ isActive }) => navItemClasses(isActive)}>
@@ -61,7 +70,7 @@ export function Header({ user, cartCount }: HeaderProps) {
             </li>
           </ul>
 
-          <LocaleSwitcher className="hidden md:flex" />
+          <LocaleSwitcher className="hidden lg:flex" />
           <NavLink
             to={user ? "/account" : "/login"}
             aria-label={user ? t("nav.account") : t("nav.logIn")}

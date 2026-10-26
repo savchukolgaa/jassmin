@@ -36,7 +36,7 @@ empty state is the blush panel used by the account's "No orders yet". The `noCam
 artboard shows it.
 
 `/popular` (#67) is reached from the header's "Bestsellers" item (between Catalog and Offers,
-marked current), the home hero's "Order Now" and the trio builder's "Show my trio". It opens with
+marked current; with five links the inline nav shows from `lg`, the hamburger menu below it), the home hero's "Order Now" and the trio builder's "Show my trio". It opens with
 a deep-pink band: a small uppercase "Bestsellers" eyebrow, the page title as the `h1` and an
 intro. When the trio builder sent families, they follow as white removable chips (`primary-dark`
 text, a "×", each a link without that family) and a white "Show all popular" link. Below, a muted

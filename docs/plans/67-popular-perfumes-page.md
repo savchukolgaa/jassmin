@@ -115,6 +115,10 @@ popular) becomes the seed data.
   `popularHref` from it, so it can't import `parseTrioSearch` back without a cycle, and the loader
   calls both. Per the approved artboard the band has a "Bestsellers" eyebrow and the list ends with
   a blush "Looking for something else?" panel; the count reuses `catalog.count`.
+- **Header breakpoint (step 7):** measured in headless Edge with the built CSS, the bar with five
+  links is 805px (uk) / 816px (en) wide, but the `md` container is 768px, so it overflowed between
+  768 and 1023px. The inline nav and the language switcher now show from `lg` and the hamburger
+  menu below `lg` (was `md`); at 1024px and wider the bar fits (1024px container).
 - **Analytics:** no new event; `page_view` is recorded by the `_shop` layout middleware as usual.
 
 ## Resolved questions
@@ -257,7 +261,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `describeRouteError`. Register `route("popular", "routes/popular.tsx")` in `app/routes.ts` after
   `offers`. Tests in `popular.test.ts`: only known families are passed (max 3, unknown dropped),
   the page param is parsed and clamped, meta in uk/en, canonical URL, `shouldRevalidate`.
-- [ ] **7. Header and mobile menu** — Add `BESTSELLERS_LINK` to `nav.ts`, and a `NavLink` item
+- [x] **7. Header and mobile menu** — Add `BESTSELLERS_LINK` to `nav.ts`, and a `NavLink` item
   between `CatalogMenu` and Offers in `Header.tsx`, and between the catalogue list and Offers in
   `MobileMenu.tsx`, with `navItemClasses(isActive)` / `navItemClasses(isActive, "onLight")`. Update
   `Header.test.ts`: the order test (About, Catalog, Bestsellers, Offers, Contacts), the hrefs test

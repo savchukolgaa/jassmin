@@ -209,14 +209,14 @@ the primary family.
   `app-sync.test.ts`. Run `pnpm --dir cms build` (and `develop` once) to check that Strapi accepts
   Cyrillic enumeration values and to regenerate `cms/types/generated`; if Strapi rejects them,
   switch the enumeration to the ASCII slugs from step 1 and map slug ↔ value in the middleware.
-- [ ] **8. UI** — `CatalogFilters.tsx`: options show `fragranceFamilyLabel(family, t)`, sorted by
+- [x] **8. UI** — `CatalogFilters.tsx`: options show `fragranceFamilyLabel(family, t)`, sorted by
   label with `Intl.Collator(locale)` (`useT()` exposes the locale). `ProductCard.tsx`: primary
   family chip when set. `product.tsx`: families as a `<ul aria-label={t("product.families")}>` of
   chips, then (after `ProductPurchase`) a "Notes" section when `notes.length > 0`, `lang="uk"` on
   the list when the locale is `en`. Tests (`catalog-ui.test.ts`, `product-ui.test.ts`): labels in
   `uk` and in `<I18nProvider locale="en">`, option `value` stays Ukrainian, chips and notes render,
   nothing renders for empty lists.
-- [ ] **9. Seed** — In `seed-data.ts` give each sample perfume 1–3 families from the list (primary
+- [x] **9. Seed** — In `seed-data.ts` give each sample perfume 1–3 families from the list (primary
   = its current `fragranceFamily`) and 4–8 notes; the tester set gets `fragranceFamilies: []` and
   `fragranceFamily: null` (per Q2). Because the seed skips existing products
   (`onConflictDoNothing`), add an update in `seed.ts` that fills `fragrance_families` / `notes`

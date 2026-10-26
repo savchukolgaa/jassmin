@@ -216,7 +216,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   `product.quickAdd` for the round add button. `badgeLabel`, `marquee.offer` and `trio.left` are
   plurals (`{ one, few, many, other }` in uk). The location title follows the artboard ("Come smell
   them in person"). `pnpm typecheck` catches missing keys.
-- [ ] **6. Hero** — `HeroSection`: eyebrow pill (`bg-white/16`, uppercase, `animate-fade-up`),
+- [x] **6. Hero** — `HeroSection`: eyebrow pill (`bg-white/16`, uppercase, `animate-fade-up`),
   `h1` (`text-5xl md:text-8xl`, `leading-[0.92]`, `anim-delay-2`), subtitle
   (`text-lg md:text-xl`, `anim-delay-4`), `dark` "Order Now" + `outline-light` second CTA
   (`anim-delay-6`), arched image with `animate-rise`. Over the image: the white round badge

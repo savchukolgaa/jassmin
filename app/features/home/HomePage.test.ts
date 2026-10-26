@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { ContactActionResult } from "~/lib/contact";
 import type { HomePageView } from "~/lib/home";
 import { I18nProvider } from "~/lib/i18n";
+import { formatPrice } from "~/lib/money";
 import { HomePage } from "./HomePage";
 
 const view: HomePageView = {
@@ -78,7 +79,7 @@ describe("HomePage", () => {
   it("marks Ukrainian fallback content with lang=uk under the English UI", () => {
     const html = render({ contentLocale: "uk", contacts: { ...view.contacts, locale: "uk" } });
 
-    expect(html).toMatch(/<div lang="uk"><h1[^>]*id="hero-title"/);
+    expect(html).toMatch(/<div lang="uk"[^>]*>.*?<h1[^>]*id="hero-title"/s);
     expect(html).toMatch(/<h2[^>]*id="about-title"[^>]*lang="uk"/);
     expect(html).toMatch(/<div lang="uk"[^>]*><p>Our <strong>story/);
     expect(html).toContain('<dd class="mt-1" lang="uk">вул. Хрещатик');
@@ -105,6 +106,39 @@ describe("HomePage", () => {
     expect(html).toMatch(/<a[^>]*href="\/popular"[^>]*>Order Now<\/a>/);
     expect(html).toContain('alt="Jassmin perfume testers"');
     expect(html).toContain("small_hero.jpg 500w");
+  });
+
+  it("renders the hero eyebrow, subtitle, second CTA and floating chip", () => {
+    const html = render();
+
+    expect(html).toContain("Tester set");
+    expect(html).toContain("Find the one worth a full bottle.");
+    expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>See all perfumes<\/a>/);
+    expect(html).toContain("Women · Men");
+    expect(html).not.toMatch(/unisex/i);
+  });
+
+  it("leaves out the optional hero parts that aren't set", () => {
+    const html = render({
+      hero: { ...view.hero, eyebrow: null, subtitle: null, secondaryCta: null },
+    });
+
+    expect(html).not.toContain("Tester set");
+    expect(html).not.toContain("See all perfumes");
+  });
+
+  it("shows the trio price on the hero badge, with a sentence for screen readers", () => {
+    const html = render();
+
+    expect(html).toContain("animate-badge");
+    expect(html).toContain(`Only ${formatPrice("499.00", "en")} for 3 testers`);
+  });
+
+  it("hides the price badge without a live trio offer", () => {
+    const html = render({ trioOffer: null });
+
+    expect(html).not.toContain("animate-badge");
+    expect(html).not.toContain("Only ");
   });
 
   it("renders the sanitized about body as HTML", () => {

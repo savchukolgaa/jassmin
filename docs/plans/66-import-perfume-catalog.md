@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/66
 Branch: `issue/66`
 Worktree: `.claude/worktrees/issue-66`
-Status: Planned (owner answers Q1–Q7 in; Q8 open with a default)
+Status: Implemented (Q8 implemented with its default; the live Aspire/Strapi check in step 9 is still to do)
 
 ## Goal
 
@@ -97,6 +97,7 @@ everywhere and 5 ml is added.
 - **Other columns**: `packSize` 1; `description` / `imageUrl` / `slug` null (photos and descriptions
   come later in Strapi, and `ProductImage` already handles a missing image); `active` true.
 - **Data fixes (Q5, Q6)**: the Appendix is applied as proposed.
+- **Found during implementation:** the list has 11 unisex perfumes (the data test pins it). The CMS seed already described the trio as 3 × 10 ml; only the recorded fixtures `cms/__fixtures__/offers*.json` still said 7 ml, so they were edited to match the seed by hand instead of being re-recorded. `pnpm aspire:build` needs the generated SDK, so a fresh worktree runs `pnpm aspire restore` first. Both scripts were also run on a throwaway database (`db:migrate`, then `db:import-catalog` twice: 128 perfumes and 640 sizes, then 0).
 
 ## Open questions
 
@@ -246,9 +247,11 @@ everywhere and 5 ml is added.
   README: rows for `pnpm db:import-catalog` and `pnpm db:convert-catalog <path>`, and a step in
   "Products and orders in Strapi" (import, then `pnpm db:sync-cms`). `app/.server/AGENTS.md`: the
   sizes, the import, and the `storeCode` comment in `schema.ts`.
-- [ ] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm aspire:build`, `pnpm build`.
-  Under `pnpm aspire run`: `db-migrate`, then `db-import-catalog` twice (the second run imports 0),
-  then `db-sync-cms`; check the Strapi admin and `/catalog/women` and `/catalog/men`.
+- [x] **9a. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm aspire:build`, `pnpm build` all pass.
+- [ ] **9b. Check live (not done)** — Under `pnpm aspire run`: `db-migrate`, then `db-import-catalog`
+  twice (the second run imports 0), then `db-sync-cms`; check the Strapi admin and `/catalog/women`
+  and `/catalog/men`. This needs a running Strapi with `STRAPI_SYNC_TOKEN`, and it writes to the
+  development database, so it was left to the owner or developer.
 - [ ] **10. Remove the plan** before the PR is merged (`docs/plans/66-import-perfume-catalog.md`).
 
 ## Testing & verification
@@ -264,17 +267,17 @@ everywhere and 5 ml is added.
 
 ## Acceptance criteria
 
-- [ ] Every perfume in the owner's list is in the catalog with its brand, all families, notes and store
+- [x] Every perfume in the owner's list is in the catalog with its brand, all families, notes and store
   code — steps 3, 4, 5, 6, 7
-- [ ] Perfumes marked "(Unisex)" appear in both the Women and Men catalogs without "(Unisex)" in the
+- [x] Perfumes marked "(Unisex)" appear in both the Women and Men catalogs without "(Unisex)" in the
   name — steps 3, 5, 7
-- [ ] Every imported perfume has the same sizes and prices from one price table, with stock 0 —
+- [x] Every imported perfume has the same sizes and prices from one price table, with stock 0 —
   steps 1, 2, 6, 7
-- [ ] Running the import twice creates no duplicates and doesn't overwrite staff changes — steps 6, 7
-- [ ] Imported products appear in the Strapi admin after `pnpm db:sync-cms` — steps 6, 8, 9
-- [ ] The duplicate code, duplicate perfume and typos listed above are resolved with the owner before
+- [x] Running the import twice creates no duplicates and doesn't overwrite staff changes — steps 6, 7
+- [ ] Imported products appear in the Strapi admin after `pnpm db:sync-cms` — steps 6, 8, 9b (unverified live: the import queues every new product in `cms_outbox`, tested, and `db:sync-cms` pushes queued products as for #40, but no push to a running Strapi was tried)
+- [x] The duplicate code, duplicate perfume and typos listed above are resolved with the owner before
   import — resolved Q2–Q6, step 3 (`fixes.ts`)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9a
 
 ## Out of scope
 

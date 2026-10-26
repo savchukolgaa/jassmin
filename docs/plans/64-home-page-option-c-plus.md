@@ -291,7 +291,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   links as `outline-light` pills (`min-h-11`); `ContactForm` inside a white `rounded-[2rem] p-9`
   panel, inputs `rounded-2xl border-2 border-line min-h-13`, `primary` submit. Keep every
   existing id, label, `name`, honeypot, `aria-*`, action result handling and test.
-- [ ] **13. Loader, view and page** — `HomePageView` gains `hero.{eyebrow,subtitle,secondaryCta}`,
+- [x] **13. Loader, view and page** — `HomePageView` gains `hero.{eyebrow,subtitle,secondaryCta}`,
   `about.image`, `trioOffer: TrioOffer | null`, `trio: { families, selected }`,
   `bestsellers: ProductSummary[]`. The home `loader` runs in parallel: CMS calls (as today, with
   `cmsUnavailable`), `getTesterTrioOffer()`, `getTrioFamilies(locale)`, `getBestsellers()`; then
@@ -299,7 +299,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   `buildHomePageView` takes an object of these inputs. `shouldRevalidate`: still skip the contact
   POST; GET trio submissions revalidate (cheap enough). `HomePage` renders the sections in the
   artboard order. Update `home.test.ts` (service) and `routes/home.test.ts`.
-- [ ] **14. Polish and layout checks** — 375 px: no horizontal scroll (hero `overflow-hidden`,
+- [x] **14. Polish and layout checks** — 375 px: no horizontal scroll (hero `overflow-hidden`,
   marquee clipped, grids collapse to one column), touch targets ≥ 44 px, visible `focusRing()` on
   chips, tiles, cards, quick add, social pills and form fields. Search the diff for `#` hex values
   and user-facing literals.

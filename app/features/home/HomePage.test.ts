@@ -55,6 +55,21 @@ const view: HomePageView = {
   seo: { title: "Jassmin", description: "Story", image: null },
 };
 
+const BESTSELLER: ProductSummary = {
+  id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+  title: "La Vie Est Belle",
+  brand: "Lancôme",
+  gender: "women",
+  packSize: 1,
+  imageUrl: null,
+  fragranceFamily: "гурманські",
+  minPrice: "450.00",
+  hasPriceRange: true,
+  volumes: [10, 50],
+  inStock: true,
+  defaultVariant: { id: "01a1652b-6e25-7d00-8000-000000000001", volumeMl: 10 },
+};
+
 let props: ComponentProps<typeof HomePage> = { view };
 
 function TestHome() {
@@ -89,14 +104,33 @@ describe("HomePage", () => {
     expect(html).not.toMatch(/lang="uk"[^>]*>About us/);
   });
 
-  it("renders Hero, About Us, Location and Contacts in that order", () => {
-    const html = render();
-    const positions = ['id="hero-title"', 'id="about"', 'id="location-title"', 'id="contacts"'].map(
-      (marker) => html.indexOf(marker),
-    );
+  it("renders every section of the HomeBoldPlus artboard in its order", () => {
+    const html = render({ bestsellers: [BESTSELLER] });
+    const positions = [
+      'id="hero-title"',
+      "animate-marquee",
+      'id="how-it-works-title"',
+      'id="trio"',
+      'aria-label="Categories"',
+      'id="bestsellers-title"',
+      'id="about"',
+      'id="location-title"',
+      'id="contacts"',
+    ].map((marker) => html.indexOf(marker));
 
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+  });
+
+  it("speaks Ukrainian by default", () => {
+    props = { view };
+    const html = renderToStaticMarkup(
+      createElement(I18nProvider, { locale: "uk" }, createElement(Stub, { initialEntries: ["/"] })),
+    );
+
+    expect(html).toContain("Як це працює");
+    expect(html).toContain("Зберіть своє тріо");
+    expect(html).toContain("Жінкам · Чоловікам");
   });
 
   it("renders the hero headline, CTA link and responsive image", () => {
@@ -183,21 +217,7 @@ describe("HomePage", () => {
   });
 
   it("lists the bestsellers as compact cards with quick add and a link to the catalog", () => {
-    const product: ProductSummary = {
-      id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
-      title: "La Vie Est Belle",
-      brand: "Lancôme",
-      gender: "women",
-      packSize: 1,
-      imageUrl: null,
-      fragranceFamily: "гурманські",
-      minPrice: "450.00",
-      hasPriceRange: true,
-      volumes: [10, 50],
-      inStock: true,
-      defaultVariant: { id: "01a1652b-6e25-7d00-8000-000000000001", volumeMl: 10 },
-    };
-    const html = render({ bestsellers: [product] });
+    const html = render({ bestsellers: [BESTSELLER] });
     const section = html.match(/<section aria-labelledby="bestsellers-title".*?<\/section>/s)?.[0];
 
     expect(section).toContain(">Bestsellers</h2>");

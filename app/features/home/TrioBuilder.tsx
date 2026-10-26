@@ -85,7 +85,7 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
           </form>
 
           <div className="flex min-w-0 flex-[1_1_22rem] flex-col items-start gap-5">
-            <ol aria-label={t("home.trio.slots")} className="flex gap-3">
+            <ol aria-label={t("home.trio.slots")} className="flex gap-2 sm:gap-3">
               {Array.from({ length: TRIO_SIZE }, (_, index) => {
                 const family = picked[index];
                 const n = index + 1;
@@ -93,13 +93,13 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
                   <li
                     // biome-ignore lint/suspicious/noArrayIndexKey: the slots are fixed positions.
                     key={index}
-                    className="flex h-33 w-26 items-center justify-center rounded-[3.25rem_3.25rem_1rem_1rem] border-2 border-dashed border-muted"
+                    className="flex h-28 w-22 items-center justify-center rounded-[3.25rem_3.25rem_1rem_1rem] border-2 border-dashed border-muted sm:h-33 sm:w-26"
                   >
                     {family ? (
                       <span
                         // A new key replays the pop when the slot gets another family.
                         key={family}
-                        className="animate-slot-pop flex h-30 w-23 items-end justify-center rounded-[2.875rem_2.875rem_0.75rem_0.75rem] bg-primary-light px-1 pb-3.5 text-center text-[0.8125rem] font-extrabold text-ink"
+                        className="animate-slot-pop flex h-25 w-19 items-end sm:h-30 sm:w-23 justify-center rounded-[2.875rem_2.875rem_0.75rem_0.75rem] bg-primary-light px-1 pb-3.5 text-center text-[0.8125rem] font-extrabold text-ink"
                       >
                         <span className="sr-only">{t("home.trio.slot", { n })}: </span>
                         {labels.get(family) ?? family}

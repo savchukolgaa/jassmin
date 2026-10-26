@@ -192,7 +192,7 @@ Each step is small, ordered, and leaves the app in a working state.
   768px with the extra item. Ask the owner to approve before step 5, then add a `C+ Popular`,
   `C+ Popular, phone width` | `/popular` | #67 row to `docs/design.md` with a short paragraph like
   the `/offers` one.
-- [ ] **2. Add `products.popular_rank`** — In `schema.ts` add `popularRank: integer()` with a doc
+- [x] **2. Add `products.popular_rank`** — In `schema.ts` add `popularRank: integer()` with a doc
   comment (staff order on `/popular`, `null` = not on it, #67) and
   `check("products_popular_rank_check", sql\`${t.popularRank} > 0\`)`. Run
   `pnpm db:generate --name product_popular_rank`; write

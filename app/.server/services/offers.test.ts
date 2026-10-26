@@ -42,6 +42,7 @@ function product(id: string, title: string): ProductSummary {
     volumes: [7],
     inStock: true,
     defaultVariant: { id: `${id}-v`, volumeMl: 7 },
+    fragranceFamily: null,
   };
 }
 

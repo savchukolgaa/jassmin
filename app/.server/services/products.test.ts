@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CatalogSearch } from "~/lib/catalog";
+import type { FragranceFamily } from "~/lib/enums";
 import { SAMPLE_PRODUCTS } from "../db/seed-data";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
@@ -65,6 +66,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
         brand: ARCHIVED_BRAND,
         gender: "women",
         fragranceFamily: "archived-family",
+        fragranceFamilies: ["archived-family"],
         price: "500.00",
         volumeMl: 30,
         active: false,
@@ -118,12 +120,19 @@ describe.skipIf(!hasDatabase)("products service", () => {
     expect((await catalog("men", { brand: "Dior" })).products.map((p) => p.title)).toEqual([
       "Sauvage Eau de Toilette",
     ]);
-    const woody = await catalog("men", { fragranceFamily: "деревні" });
-    expect(woody.products.map((p) => p.title).sort()).toEqual(
-      SAMPLE_PRODUCTS.filter((p) => p.fragranceFamily === "деревні" && p.gender !== "women")
+    const withFamily = (family: string) =>
+      SAMPLE_PRODUCTS.filter((p) => p.fragranceFamilies.includes(family as FragranceFamily))
+        .filter((p) => p.gender !== "women")
         .map((p) => p.title)
-        .sort(),
-    );
+        .sort();
+    const woody = await catalog("men", { fragranceFamily: "деревні" });
+    expect(woody.products.map((p) => p.title).sort()).toEqual(withFamily("деревні"));
+    // A secondary family finds the product too, not only a primary one (#65).
+    expect(SAMPLE_PRODUCTS.some((p) => p.fragranceFamilies[0] === "ароматичні")).toBe(false);
+    const aromatic = await catalog("men", { fragranceFamily: "ароматичні" });
+    expect(aromatic.products.map((p) => p.title).sort()).toEqual(withFamily("ароматичні"));
+    expect(aromatic.total).toBeGreaterThan(1);
+    expect((await catalog("men", { fragranceFamily: "мікс" })).products).toEqual([]);
     expect((await catalog("men", { brand: "Nobody" })).products).toEqual([]);
   });
 
@@ -160,9 +169,11 @@ describe.skipIf(!hasDatabase)("products service", () => {
     const scoped = SAMPLE_PRODUCTS.filter((p) => p.gender !== "women");
 
     expect(filterOptions.brands).toEqual([...new Set(scoped.map((p) => p.brand))].sort());
-    expect(filterOptions.fragranceFamilies.sort()).toEqual(
-      [...new Set(scoped.map((p) => p.fragranceFamily ?? ""))].sort(),
+    // Every family of a product, not only the primary (#65).
+    expect(filterOptions.fragranceFamilies).toEqual(
+      [...new Set(scoped.flatMap((p) => p.fragranceFamilies))].sort(),
     );
+    expect(filterOptions.fragranceFamilies).not.toContain("archived-family");
   });
 
   it("summarises each product's variants on its card", async () => {
@@ -176,6 +187,8 @@ describe.skipIf(!hasDatabase)("products service", () => {
       volumes: [30, 100],
       inStock: false,
       defaultVariant: { id: expect.any(String), volumeMl: 30 },
+      // The card shows the primary family only (#65).
+      fragranceFamily: "водяні",
     });
 
     const coco = (await catalog("women", { brand: "Chanel" })).products[0];
@@ -212,7 +225,8 @@ describe.skipIf(!hasDatabase)("products service", () => {
       packSize: 1,
       imageUrl: null,
       description: sauvage.description,
-      fragranceFamily: "фужерні",
+      fragranceFamilies: ["фужерні", "пряні", "свіжі"],
+      notes: sauvage.notes,
       variants: [
         { id: expect.any(String), volumeMl: 10, price: "790.00", stockQuantity: 15, inStock: true },
         { id: expect.any(String), volumeMl: 50, price: "3290.00", stockQuantity: 6, inStock: true },

@@ -172,7 +172,7 @@ the primary family.
   `fragrance_family = 'деревні'` and one with `null`, migrate, and expect
   `fragrance_families = {деревні}` / `{}`, `notes = {}`, `store_code = null`; then expect the
   CHECK to reject `fragrance_families = {квіткові}` with `fragrance_family = 'деревні'`.
-- [ ] **4. Queries** (`db/queries/products.ts`) — `ProductFilters.fragranceFamily` →
+- [x] **4. Queries** (`db/queries/products.ts`) — `ProductFilters.fragranceFamily` →
   `fragranceFamilies?: readonly string[]`; a `familyFilter(families)` helper returns
   `arrayOverlaps(products.fragranceFamilies, [...families])` or `undefined` for an empty list,
   used by `whereFilters`. `listFilterOptions`: families from
@@ -180,7 +180,7 @@ the primary family.
   `db.execute`), dropping the `isNotNull(fragranceFamily)` query. Add `fragranceFamily` to
   `summaryColumns`; `fragranceFamilies`, `notes` to `findProductByPublicId`; `fragranceFamilies`,
   `notes`, `storeCode` to `findProductSyncState` and `ProductWrite`.
-- [ ] **5. Service and DTOs** — `app/lib/products.ts`: `ProductSummary.fragranceFamily: string |
+- [x] **5. Service and DTOs** — `app/lib/products.ts`: `ProductSummary.fragranceFamily: string |
   null`; `ProductDetail` replaces `fragranceFamily` with `fragranceFamilies: string[]` and adds
   `notes: string[]`. `services/products.ts`: map them in `toSummary` / `toDetail`; `getCatalogPage`
   passes `fragranceFamilies: search.fragranceFamily ? [search.fragranceFamily] : []`. Update

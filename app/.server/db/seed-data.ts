@@ -1,4 +1,4 @@
-import type { PerfumeVolumeMl } from "~/lib/enums";
+import type { FragranceFamily, PerfumeVolumeMl } from "~/lib/enums";
 import type { discounts, products } from "./schema";
 
 export interface SampleVariant {
@@ -7,8 +7,10 @@ export interface SampleVariant {
   stockQuantity: number;
 }
 
-export type SampleProduct = typeof products.$inferInsert & {
+export type SampleProduct = Omit<typeof products.$inferInsert, "fragranceFamily"> & {
   publicId: string;
+  /** Primary first; the seed copies the first into `fragrance_family` (#65). */
+  fragranceFamilies: FragranceFamily[];
   /** Sizes for sale. One of them repeats the legacy `volumeMl`/`price`/`stockQuantity`. */
   variants: SampleVariant[];
 };
@@ -27,7 +29,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Coco Mademoiselle Eau de Parfum",
     brand: "Chanel",
     gender: "women",
-    fragranceFamily: "шипрові",
+    fragranceFamilies: ["шипрові", "квіткові"],
+    notes: ["апельсин", "бергамот", "троянда", "жасмин", "пачулі", "ветивер"],
     description: "Свіжий і чуттєвий аромат з нотами апельсина, троянди, пачулі та ветиверу.",
     price: "6850.00",
     volumeMl: 50,
@@ -45,7 +48,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "La Vie Est Belle Eau de Parfum",
     brand: "Lancôme",
     gender: "women",
-    fragranceFamily: "гурманські",
+    fragranceFamilies: ["гурманські", "квіткові"],
+    notes: ["чорна смородина", "груша", "ірис", "жасмин", "праліне", "ваніль", "пачулі"],
     description: "Солодкий аромат з ірисом, праліне та ваніллю.",
     price: "4790.00",
     volumeMl: 50,
@@ -62,7 +66,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "J'adore Eau de Parfum",
     brand: "Dior",
     gender: "women",
-    fragranceFamily: "квіткові",
+    fragranceFamilies: ["квіткові", "фруктові"],
+    notes: ["груша", "диня", "іланг-іланг", "жасмин", "троянда", "ваніль", "мускус"],
     description: "Розкішний букет з жасмину, троянди та іланг-ілангу.",
     price: "5990.00",
     volumeMl: 50,
@@ -78,7 +83,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Sauvage Eau de Toilette",
     brand: "Dior",
     gender: "men",
-    fragranceFamily: "фужерні",
+    fragranceFamilies: ["фужерні", "пряні", "свіжі"],
+    notes: ["бергамот", "перець", "лаванда", "ветивер", "амброксан"],
     description: "Свіжий пряний аромат з бергамотом, перцем і амброксаном.",
     price: "4450.00",
     volumeMl: 100,
@@ -94,7 +100,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Bleu de Chanel Eau de Parfum",
     brand: "Chanel",
     gender: "men",
-    fragranceFamily: "деревні",
+    fragranceFamilies: ["деревні", "ароматичні", "цитрусові"],
+    notes: ["грейпфрут", "лимон", "мʼята", "імбир", "ладан", "сандал", "кедр"],
     description: "Деревно-ароматичний аромат з грейпфрутом, ладаном і сандалом.",
     price: "6290.00",
     volumeMl: 100,
@@ -110,7 +117,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Acqua di Giò Eau de Toilette",
     brand: "Giorgio Armani",
     gender: "men",
-    fragranceFamily: "водяні",
+    fragranceFamilies: ["водяні", "цитрусові", "ароматичні"],
+    notes: ["морські ноти", "бергамот", "неролі", "розмарин", "пачулі"],
     description: "Морська свіжість з нотами цитрусів, розмарину та пачулі.",
     price: "3890.00",
     volumeMl: 100,
@@ -125,7 +133,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Wood Sage & Sea Salt Cologne",
     brand: "Jo Malone London",
     gender: "unisex",
-    fragranceFamily: "деревні",
+    fragranceFamilies: ["деревні", "ароматичні"],
+    notes: ["амбретта", "морська сіль", "шавлія", "водорості"],
     description: "Мінеральний аромат морської солі та шавлії.",
     price: "5350.00",
     volumeMl: 100,
@@ -141,7 +150,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Molecule 01 Eau de Toilette",
     brand: "Escentric Molecules",
     gender: "unisex",
-    fragranceFamily: "деревні",
+    fragranceFamilies: ["деревні", "мускусні"],
+    notes: ["ізо-E-супер"],
     description: "Мінімалістичний аромат на основі однієї молекули ізо-E-супер.",
     price: "4200.00",
     volumeMl: 100,
@@ -159,7 +169,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Набір тестерів 3 × 10 мл",
     brand: "Jassmin",
     gender: "unisex",
-    fragranceFamily: "мікс",
+    // A set of different perfumes: no family of its own (#65).
+    fragranceFamilies: [],
     description: "Три тестери по 10 мл, щоб спробувати аромати перед покупкою повного флакона.",
     price: "990.00",
     volumeMl: 10,

@@ -32,7 +32,8 @@ const PRODUCT: ProductDetail = {
   packSize: 1,
   imageUrl: null,
   description: null,
-  fragranceFamily: "шипрові",
+  fragranceFamilies: ["шипрові", "квіткові"],
+  notes: ["апельсин", "троянда", "пачулі"],
   variants: [
     variant(7, "990.00", 0),
     variant(10, "1350.00", 2),

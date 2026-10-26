@@ -83,9 +83,9 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
             {product.title}
           </h1>
-          {product.fragranceFamily && (
+          {product.fragranceFamilies[0] && (
             <span className="self-start rounded-pill bg-blush px-3 py-1 text-sm font-bold text-primary-dark">
-              {product.fragranceFamily}
+              {product.fragranceFamilies[0]}
             </span>
           )}
           <ProductPurchase product={product} />

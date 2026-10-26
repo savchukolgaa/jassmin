@@ -40,6 +40,7 @@ const PRODUCT: ProductSummary = {
   volumes: [7, 30, 50],
   inStock: true,
   defaultVariant: { id: VARIANT_ID, volumeMl: 7 },
+  fragranceFamily: "шипрові",
 };
 
 /** A product sold in one size only. */

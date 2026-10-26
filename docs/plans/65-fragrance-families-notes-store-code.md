@@ -160,7 +160,7 @@ the primary family.
   `fragranceFamilyLabel(value, t)` to `app/lib/catalog.ts`. Tests in `app/lib/catalog.test.ts`:
   every family has a key, `uk` and `en` labels for one value, unknown value → raw value.
   `pnpm typecheck` catches missing keys.
-- [ ] **2. Schema and migration** — Add the three columns, the GIN index and the CHECK to
+- [x] **2. Schema and migration** — Add the three columns, the GIN index and the CHECK to
   `products` in `schema.ts` (comments: primary family mirrored by `fragrance_family`, store code
   uniqueness left to #66). `pnpm db:generate --name product_families_notes_code`, then append the
   backfill `UPDATE` to `0013_…sql` **before** the `ADD CONSTRAINT … CHECK` statement (reorder by

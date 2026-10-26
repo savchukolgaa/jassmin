@@ -248,7 +248,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `popular-ui.test.ts`: cards in order with add-to-cart forms, chips and their hrefs, pagination
   links keeping the families, empty states, Ukrainian by default and English in
   `<I18nProvider locale="en">`.
-- [ ] **6. Route** — `app/routes/popular.tsx`: the `loader` gets `getTrioFamilies()`, parses
+- [x] **6. Route** — `app/routes/popular.tsx`: the `loader` gets `getTrioFamilies()`, parses
   `parsePopularSearch(url.searchParams, known)`, then `getPopularPage(families, page)`, and returns
   the view with labels from `createTranslator(await getLocale(request))`. `meta` via
   `metaTranslator(matches)`: `meta.title` with `popular.metaTitle`, `popular.metaDescription`,

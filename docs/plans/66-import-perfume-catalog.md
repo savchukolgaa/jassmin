@@ -211,7 +211,7 @@ everywhere and 5 ml is added.
   `pnpm exec biome format --write` on it. Add `"db:convert-catalog"` to `package.json`, run
   `pnpm db:convert-catalog "C:\Users\КТС\jassmin\makrtextfiles\catalog.md"` and commit the output
   (never the Markdown). Check it has 128 entries and reads sensibly.
-- [ ] **5. Data tests** — `db/catalog-data.test.ts`: 75 women's and 53 men's entries, 30 popular;
+- [x] **5. Data tests** — `db/catalog-data.test.ts`: 75 women's and 53 men's entries, 30 popular;
   every `publicId` unique and `(list, storeCode, title)` unique; both `11-L` entries and both
   `15-D` / `14-Z` present; every family in `FRAGRANCE_FAMILIES`, no duplicates, at least one; at least
   one note and at most `MAX_PRODUCT_NOTES`; no title contains "unisex" or "popular" (any case), and the

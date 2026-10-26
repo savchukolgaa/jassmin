@@ -204,7 +204,7 @@ everywhere and 5 ml is added.
   de-duplicated and respelled; a title or brand fix leaving `publicId` unchanged; two entries with the
   same list and code but different titles getting different ids; each failure; `catalogPublicId`
   stable and a valid UUID.
-- [ ] **4. Conversion script and data file** — `db/catalog/render.ts` turns entries into a TypeScript
+- [x] **4. Conversion script and data file** — `db/catalog/render.ts` turns entries into a TypeScript
   module (`import type { CatalogEntry } from "./catalog/parse"`, then `export const CATALOG_PRODUCTS:
   readonly CatalogEntry[] = [...]`) with `JSON.stringify` for every string. `db/scripts/convert-catalog.ts`
   reads `process.argv[2]`, writes `app/.server/db/catalog-data.ts` and runs

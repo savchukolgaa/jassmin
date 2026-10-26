@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/67
 Branch: `issue/67`
 Worktree: `.claude/worktrees/issue-67`
-Status: Planned (owner answers to Q1–Q4 applied, 2026-10-26)
+Status: Planned (all owner answers applied, 2026-10-26)
 
 ## Goal
 Shoppers get a `/popular` page that lists the store's most popular perfumes, so they can start from
@@ -39,7 +39,7 @@ popular) becomes the seed data.
 - **Owner's catalogue:** `makrtextfiles/catalog.md` in the main checkout (outside git), one line per
   perfume: `store code | title | brand | families | notes`, `(popular)` on 30 of them, split into
   "Womens perfume" (75) and "Mens perfume" (53). It has **no** prices, sizes, stock, descriptions or
-  images (see Q5).
+  images (placeholders, Q5).
 
 ## Decisions & assumptions
 - **Field shape:** `products.popular_rank integer NULL` with `CHECK (popular_rank > 0)`. `NULL` means
@@ -78,7 +78,7 @@ popular) becomes the seed data.
   words as #64's home section title), sits **between Catalog and Offers** in `Header.tsx` and
   `MobileMenu.tsx`, and links to `/popular`. It's a `NavLink` with `navItemClasses(isActive)`, so
   React Router sets `aria-current="page"`; the active state also covers `/popular?…`. The footer is
-  unchanged. The route stays `/popular` and the page heading matches the button **(unconfirmed, Q6)**.
+  unchanged. The route stays `/popular`, and the page is titled "Популярні аромати" / "Popular perfumes" (Q6).
 - **Route constant:** `POPULAR_PATH = "/popular"` in a new isomorphic `app/lib/popular.ts`;
   `TRIO_TARGET_PATH` (`~/lib/trio`) and `FALLBACK_CTA_PATH` (`~/lib/links`) reuse it, and
   `BESTSELLERS_LINK = { to: POPULAR_PATH, labelKey: "nav.bestsellers" }` joins `OFFERS_LINK` in
@@ -95,7 +95,7 @@ popular) becomes the seed data.
   `storeCode`, title, brand, families (primary first, as listed) and notes, `gender` from its
   section (`women` / `men`), or `unisex` when the title ends in "(Unisex)" (the suffix is dropped
   from the title; 11 products). The 30 `(popular)` ones get `popularRank` 1–30 in file order (women
-  first, then men) **(unconfirmed, Q7)**. Notes are lower-cased like the existing samples. Prices,
+  first, then men) (Q7). Notes are lower-cased like the existing samples. Prices,
   sizes and stock are placeholders (Q5). Data fixes, all listed in the seed file's header comment
   for the owner: `Цитрус` → `цитрусові` (2-Y Lordly, 1-X Xeryus Rouge), `Древовидні` → `деревні`
   (4-Y Spisebomb), `Пряні, пряні` → `пряні` (3-G Givenchy Blue Label).
@@ -111,44 +111,20 @@ popular) becomes the seed data.
   `cms/scripts/seed.ts` needs no product change and its hero `ctaHref` is already `/popular`.
 - **Analytics:** no new event; `page_view` is recorded by the `_shop` layout middleware as usual.
 
-## Open questions
-- [ ] **Q5: The catalogue has no prices, sizes or stock. What should the seed use?** — Why it
-  matters: products without a size aren't listed or sold, so the seed must give each one at least
-  one size, and invented prices could be mistaken for real ones. Recommended default: the same
-  placeholder sizes for every new product (10 ml 450.00, 30 ml 1100.00, 50 ml 1650.00, stock 5),
-  marked as placeholders in the file header; the owner sends real prices later, or staff enter them
-  in Strapi. No descriptions or images (cards show the existing image placeholder). Affects steps: 8.
-- [ ] **Q6: With the button called "Bestsellers", should the page also be called that, and should
-  the URL become `/bestsellers`?** — Why it matters: the label, the page heading and the URL would
-  otherwise say different things. Renaming the URL means changing `TRIO_TARGET_PATH`,
-  `FALLBACK_CTA_PATH`, the Strapi seed's `ctaHref`, the fixtures and the home tests, and staff
-  re-entering the hero link in Strapi. Recommended default: keep `/popular` (already wired from the
-  hero and the trio, and already stored in Strapi), and title the page "Бестселери" / "Bestsellers"
-  to match the button. Affects steps: 5, 6, 8.
-- [ ] **Q7: In what order should the 30 popular perfumes appear?** — Why it matters: with 12 per
-  page, the file order (women first) puts only women's perfumes on page 1 and men's from page 2.
-  Recommended default: file order, as the owner wrote it; staff can reorder in Strapi at any time.
-  The alternative is alternating women and men. Affects steps: 8.
-- [ ] **Q8: Data the owner should double-check in the catalogue** — Why it matters: the seed would
-  carry these as written. Recommended default: seed them as written and list them in the seed
-  file's header comment:
-  - 11-L is used twice in women's: Lolita Lempicka and Lift (store codes aren't unique yet, #66).
-  - "Dolce & Gabbana Anthology L'Imperatrice 3" (15-D) and "D&G L'Imperatrice 3" (14-Z) look like
-    the same perfume, both marked popular.
-  - Davidoff Cool Water (women 1-D, men 2-D) and Hugo Boss (women 2-H, men 1-H) are in both lists:
-    seeded as separate women's and men's products, each popular.
-  - Typos in names and notes are kept as written, e.g. "Spisebomb" (Spicebomb), "Omnia Bvlgarі"
-    (with a Cyrillic "і"), "Kelys Pyu" for Xeryus Rouge, "Monmole 02" as the brand of Molecule 02,
-    "Перец", "іпельсин", "Гардения", "Вітьки".
-
-  Affects steps: 8.
-- [ ] **Q9: Is the seed how the owner's catalogue reaches production?** — Why it matters:
-  `pnpm db:seed` is for local development (`seed-data.ts`), and production products are entered in
-  Strapi (#40). Recommended default: this issue only seeds dev databases; loading the real catalogue
-  into production (with real prices and stock) is a follow-up issue, e.g. running the seed once
-  against production followed by `pnpm db:sync-cms --all`. Affects steps: 8.
-
 ## Resolved questions
+- **Q5: Prices, sizes and stock for the catalogue?** — Placeholders: the same sizes for every new
+  product (10 ml 450.00, 30 ml 1100.00, 50 ml 1650.00, stock 5), marked as placeholders in the seed
+  file header; no descriptions or images (cards show the existing image placeholder). (source: owner)
+- **Q6: Page name and URL?** — The URL stays `/popular` and the page is called "Популярні аромати" /
+  "Popular perfumes"; only the header button says "Бестселери" / "Bestsellers" (Q3). (source: owner)
+- **Q7: Order of the 30 popular perfumes?** — File order (women first, then men), ranks 1–30; staff
+  can reorder in Strapi. (source: owner)
+- **Q8: Entries that look alike?** — They are different perfumes and become different products:
+  11-L Lolita Lempicka and 11-L Lift, 15-D Dolce & Gabbana Anthology L'Imperatrice 3 and 14-Z D&G
+  L'Imperatrice 3, and the women's and men's Davidoff Cool Water and Hugo Boss. Names and notes
+  are seeded as written. (source: owner)
+- **Q9: Load the catalogue into production?** — Not now: this issue only seeds dev databases.
+  (source: owner)
 - **Q1: Which perfumes are popular?** — The 30 marked `(popular)` in the owner's catalogue; the
   whole catalogue is added to the seed. (source: owner, `makrtextfiles/catalog.md`)
 - **Q2: Pagination?** — Yes: 12 per page with the catalogue's `Pagination`, ranked products topped
@@ -210,7 +186,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `PopularPlus.dc.html` (desktop, `expand: "fill"`, w 1440) and `PopularPlusPhone.dc.html` (375 px)
   to the "Chosen direction: Option C+" row, built only from C+ tokens, Manrope, `Button` variants,
   the compact product card and the motion utilities in `docs/design.md`. Show: the header with
-  "Bestsellers" between Catalog and Offers, marked current; the page header (`h1` per Q6 + intro);
+  "Bestsellers" between Catalog and Offers, marked current; the page header (`h1` "Популярні аромати" + intro);
   the 12-card grid with pagination; the filtered state with family chips and "Show all"
   (`data-props` tweak); and the empty state (tweak). Check that the desktop nav still fits at
   768px with the extra item. Ask the owner to approve before step 5, then add a `C+ Popular`,
@@ -257,7 +233,7 @@ Each step is small, ordered, and leaves the app in a working state.
   plus the chosen families with labels via `labelTrioFamilies`, in pick order). Point
   `TRIO_TARGET_PATH`, `trioHref` and `FALLBACK_CTA_PATH` at them; unit tests in `popular.test.ts`
   (and `trio.test.ts` stays green). `app/features/popular/PopularPage.tsx` per the approved
-  artboard: `main` with the `h1` (Q6), intro, the family chips with remove links (`popularHref` of
+  artboard: `main` with the `h1` (`popular.title`: "Популярні аромати" / "Popular perfumes"), intro, the family chips with remove links (`popularHref` of
   the other families) and "Show all" when filtered, a `ul` grid of `ProductCard variant="compact"
   headingLevel={2}`, `Pagination` with `hrefForPage={(n) => popularHref(families, n)}`, and the empty
   states (`popular.empty.*`, linking to `/popular` when filtered and to both catalogues).
@@ -287,8 +263,8 @@ Each step is small, ordered, and leaves the app in a working state.
   `{family}`, `showAll`, `empty.heading`, `empty.text`, `empty.filteredText`, `browseWomen`,
   `browseMen`, plus any copy the artboard adds) in `uk.ts` and `en.ts`. Seed: write
   `seed-catalog.ts` from `makrtextfiles/catalog.md` as described in Decisions (fresh UUID v7s from
-  `select uuidv7()`, placeholder sizes per Q5, ranks per Q7, the data fixes and Q8's notes in the
-  header comment), include it in `SAMPLE_PRODUCTS`, and give the three overlapping samples their
+  `select uuidv7()`, placeholder sizes per Q5, ranks per Q7, the family fixes in the header comment;
+  look-alike entries stay separate products, Q8), include it in `SAMPLE_PRODUCTS`, and give the three overlapping samples their
   store codes, the owner's families and notes and their ranks. In `seedProducts` add the backfill
   (store codes where `null`; ranks only while no product has one). `seed.test.ts`: every seed
   product's families are in `FRAGRANCE_FAMILIES` and its sizes in `PERFUME_VOLUMES_ML`; `publicId`s

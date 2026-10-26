@@ -69,3 +69,17 @@ describe("cmsProductChangeSchema: families, notes and store code (#65)", () => {
     expect(parse({ storeCode: "x".repeat(21) }).success).toBe(false);
   });
 });
+
+describe("cmsProductChangeSchema: popular position (#67)", () => {
+  it("is optional, and empty means not on the popular list", () => {
+    expect(parse({}).data).toMatchObject({ popularRank: null });
+    expect(parse({ popularRank: null }).data).toMatchObject({ popularRank: null });
+    expect(parse({ popularRank: 3 }).data).toMatchObject({ popularRank: 3 });
+  });
+
+  it("accepts only whole positions from 1", () => {
+    for (const popularRank of [0, -1, 1.5, "2", 10_000]) {
+      expect(issues({ popularRank })[0]?.[0]).toBe("popularRank");
+    }
+  });
+});

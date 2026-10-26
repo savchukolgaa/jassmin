@@ -200,7 +200,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `schema.test.ts`'s products column list and add a 0014 case to `migrator.test.ts` (column exists
   and is nullable; `0` is refused; rollback removes it). Check: `pnpm test`, `pnpm db:migrate`,
   `pnpm db:rollback`, migrate again.
-- [ ] **3. Sync the field with Strapi** — `~/lib/cms-sync`: `popularRank:
+- [x] **3. Sync the field with Strapi** — `~/lib/cms-sync`: `popularRank:
   z.number().int().min(1).max(9999).nullish().transform((v) => v ?? null)` in `productFields`, and
   `popularRank: number | null` in `CmsProductState`. `ProductWrite` and `productWrite()` in
   `services/cms-sync.ts` carry it; `findProductSyncState` selects it and `toCmsProductState` maps it

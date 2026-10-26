@@ -48,6 +48,10 @@
       "type": "string",
       "maxLength": 20
     },
+    "popularRank": {
+      "type": "integer",
+      "min": 1
+    },
     "image": {
       "type": "media",
       "multiple": false,

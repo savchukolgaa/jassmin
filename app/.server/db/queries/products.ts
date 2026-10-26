@@ -289,6 +289,8 @@ export interface ProductWrite {
   fragranceFamilies: string[];
   notes: string[];
   storeCode: string | null;
+  /** Position on `/popular` (#67); `null` when not on the list. */
+  popularRank: number | null;
   imageUrl: string | null;
   packSize: number;
   active: boolean;
@@ -384,6 +386,7 @@ export async function findProductSyncState(db: Executor, productId: number) {
       fragranceFamilies: products.fragranceFamilies,
       notes: products.notes,
       storeCode: products.storeCode,
+      popularRank: products.popularRank,
       imageUrl: products.imageUrl,
       packSize: products.packSize,
       active: products.active,

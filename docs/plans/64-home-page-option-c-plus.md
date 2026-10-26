@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/64
 Branch: `issue/64`
 Worktree: `.claude/worktrees/issue-64`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -332,13 +332,13 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   layout, at desktop and phone widths — steps 6, 7, 8, 11, 12, 13, 14
 - [ ] Hero has the eyebrow, headline, subtitle, both CTAs, arched image, price badge and floating
   chip, with the artboard's entrance animations — steps 1, 4, 6
-- [ ] The badge, marquee offer text and trio price come from the active tester-trio offer and are
+- [x] The badge, marquee offer text and trio price come from the active tester-trio offer and are
   hidden when there is none — steps 2, 6, 7, 8, 13
-- [ ] The marquee scrolls in a loop, pauses on hover and is hidden from screen readers — steps 4, 7
+- [x] The marquee scrolls in a loop, pauses on hover and is hidden from screen readers — steps 4, 7
 - [ ] "Build your trio" allows at most 3 families, fills the slots, and leads to products
   filtered by those families, also without JS — steps 3, 8, 9 (the CTA passes the families to
   `/popular`; the filtering there is #67)
-- [ ] Category tiles link to `/catalog/women` and `/catalog/men`; there is no Unisex tile, chip or
+- [x] Category tiles link to `/catalog/women` and `/catalog/men`; there is no Unisex tile, chip or
   link — steps 6, 7
 - [ ] "Bestsellers" shows 4 real products with working quick add and the "Added to cart" toast —
   steps 10, 11
@@ -346,10 +346,15 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   and contact form behaviour — steps 1, 12
 - [ ] All hover and entrance animations match the artboard, and none run with
   `prefers-reduced-motion: reduce` — step 4 (used in 6–12)
-- [ ] Only C+ tokens are used; no hard-coded hex colours or user-facing strings; all copy is in
+- [x] Only C+ tokens are used; no hard-coded hex colours or user-facing strings; all copy is in
   `uk.ts` and `en.ts` — steps 5, 14
 - [ ] No horizontal scroll at 375px; focus rings are visible on every interactive element — step 14
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
+
+Not yet verified in a browser (Strapi wasn't running, so the page couldn't be loaded): the
+artboard comparison at 1440 and 375 px, the animations and reduced motion, focus rings, quick add
+end to end, and the no-JS trio flow. The trio's family filtering on `/popular` is #67. Check these
+manually before merging.
 
 ## Out of scope
 

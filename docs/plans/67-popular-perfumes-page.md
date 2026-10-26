@@ -119,6 +119,12 @@ popular) becomes the seed data.
   links is 805px (uk) / 816px (en) wide, but the `md` container is 768px, so it overflowed between
   768 and 1023px. The inline nav and the language switcher now show from `lg` and the hamburger
   menu below `lg` (was `md`); at 1024px and wider the bar fits (1024px container).
+- **Seed list (step 8):** `seed-catalog.ts` was generated from `catalog.md` by a one-off script
+  (125 perfumes; the three overlaps update the existing samples). Instead of appending it to
+  `SAMPLE_PRODUCTS`, `seed-data.ts` exports `SEED_PRODUCTS = [...SAMPLE_PRODUCTS, ...OWNER_CATALOG]`
+  and `seedProducts(db, catalog = SEED_PRODUCTS)` takes the list: the catalog service tests seed the
+  small `SAMPLE_PRODUCTS` only, since they expect it to fit on one catalog page. The overlapping
+  samples keep their prices and descriptions; their notes, families and store codes are the owner's.
 - **Analytics:** no new event; `page_view` is recorded by the `_shop` layout middleware as usual.
 
 ## Resolved questions
@@ -268,7 +274,7 @@ Each step is small, ordered, and leaves the app in a working state.
   (`/popular`), and a "highlights Bestsellers on the popular page" test checking the active classes
   and `aria-current="page"`, including with `?family=…&page=2`, plus the same in the mobile menu.
   Check the header at 768px and 375px for wrapping.
-- [ ] **8. i18n and seed** — `nav.bestsellers` ("Бестселери" / "Bestsellers") and a `popular`
+- [x] **8. i18n and seed** — `nav.bestsellers` ("Бестселери" / "Bestsellers") and a `popular`
   namespace (`title`, `metaTitle`, `metaDescription`, `intro`, `filteredBy`, `removeFamily` with
   `{family}`, `showAll`, `empty.heading`, `empty.text`, `empty.filteredText`, `browseWomen`,
   `browseMen`, plus any copy the artboard adds) in `uk.ts` and `en.ts`. Seed: write

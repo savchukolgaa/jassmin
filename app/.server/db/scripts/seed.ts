@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { getDatabaseUrl } from "../../env";
 import { createDb } from "../client";
 import { seedDiscounts, seedProducts } from "../seed";
-import { SAMPLE_DISCOUNTS, SAMPLE_PRODUCTS } from "../seed-data";
+import { SAMPLE_DISCOUNTS, SEED_PRODUCTS } from "../seed-data";
 
 if (existsSync(".env")) {
   process.loadEnvFile(".env");
@@ -19,9 +19,9 @@ if (!url) {
 const db = createDb(url, 1);
 try {
   const { inserted, variantsInserted } = await seedProducts(db);
-  const variantCount = SAMPLE_PRODUCTS.reduce((sum, p) => sum + p.variants.length, 0);
+  const variantCount = SEED_PRODUCTS.reduce((sum, p) => sum + p.variants.length, 0);
   console.log(
-    `Seeded ${inserted} of ${SAMPLE_PRODUCTS.length} sample products and ${variantsInserted} of ${variantCount} sizes (the rest already existed).`,
+    `Seeded ${inserted} of ${SEED_PRODUCTS.length} sample products and ${variantsInserted} of ${variantCount} sizes (the rest already existed).`,
   );
   const discountsInserted = await seedDiscounts(db);
   console.log(

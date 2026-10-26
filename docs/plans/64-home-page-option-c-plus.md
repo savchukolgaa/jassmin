@@ -197,7 +197,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 - [x] **3. Trio search parsing** — In `app/lib/trio.ts`: `TRIO_SIZE = 3`,
   `parseTrioSearch(params, knownFamilies): string[]` (all `family` values, trimmed, known only,
   deduped, first 3). Tests: unknown values dropped, 4 values → 3, duplicates, empty.
-- [ ] **4. Motion utilities** — In `app/app.css`, add keyframes (start state only, as today) and
+- [x] **4. Motion utilities** — In `app/app.css`, add keyframes (start state only, as today) and
   utilities matching the artboard: `animate-rise` (80px, 1s, delay 0.2s), `animate-badge`
   (`spin-in-badge` from `rotate(-200deg) scale(0)` 0.9s `cubic-bezier(.3,1.4,.5,1)` at 0.7s, then
   `wobble` −8°↔6° ×1.04 4s infinite from 1.6s; resting `rotate: -8deg`), `animate-float` (−14px,

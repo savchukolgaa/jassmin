@@ -286,7 +286,7 @@ Each step is small, ordered, and leaves the app in a working state.
   product's families are in `FRAGRANCE_FAMILIES` and its sizes in `PERFUME_VOLUMES_ML`; `publicId`s
   are unique; ranks 1–30 are unique; a fresh seed lists 30 ranked products; a re-seed doesn't
   override a rank staff changed.
-- [ ] **9. Docs** — `app/.server/AGENTS.md`: a bullet on `products.popular_rank` (staff order on
+- [x] **9. Docs** — `app/.server/AGENTS.md`: a bullet on `products.popular_rank` (staff order on
   `/popular`, nullable, not unique, synced from Strapi's `popularRank`; the ranking, the one-page
   top-up and the pagination) and on `seed-catalog.ts` (the owner's catalogue with placeholder
   prices). Make sure `docs/design.md` (step 1) matches the built page.

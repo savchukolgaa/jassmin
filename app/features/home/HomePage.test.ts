@@ -141,6 +141,46 @@ describe("HomePage", () => {
     expect(html).not.toContain("Only ");
   });
 
+  it("scrolls the offer and the families in a marquee hidden from screen readers", () => {
+    const html = render();
+    const track = html.match(/<div aria-hidden="true" class="animate-marquee[^"]*"/)?.[0];
+
+    expect(track).toContain("marquee-pause");
+    expect(html).toContain(`Order 3 testers only for ${formatPrice("499.00", "en")}`);
+    // Twice, so the loop is seamless.
+    expect(html.match(/<span>Woody<\/span>/g)).toHaveLength(2);
+  });
+
+  it("keeps the marquee's families but drops its offer without a live trio offer", () => {
+    const html = render({ trioOffer: null });
+
+    expect(html).toContain("animate-marquee");
+    expect(html).not.toContain("Order 3 testers");
+  });
+
+  it("leaves the marquee out when it has nothing to say", () => {
+    const html = render({ trioOffer: null, trio: { families: [], selected: [] } });
+
+    expect(html).not.toContain("animate-marquee");
+  });
+
+  it("explains the trio in three steps with its live price", () => {
+    const html = render();
+
+    expect(html).toContain('id="how-it-works-title"');
+    expect(html).toContain(`Pay ${formatPrice("499.00", "en")}`);
+    expect(render({ trioOffer: null })).not.toContain('id="how-it-works-title"');
+  });
+
+  it("links the category tiles to the women's and men's catalogs only", () => {
+    const html = render();
+    const nav = html.match(/<nav aria-label="Categories".*?<\/nav>/s)?.[0] ?? "";
+
+    expect(nav.match(/href="[^"]*"/g)).toEqual(['href="/catalog/women"', 'href="/catalog/men"']);
+    expect(nav).toContain(">Women<");
+    expect(nav).toContain(">Men<");
+  });
+
   it("renders the sanitized about body as HTML", () => {
     expect(render()).toContain("<p>Our <strong>story</strong>.</p>");
   });

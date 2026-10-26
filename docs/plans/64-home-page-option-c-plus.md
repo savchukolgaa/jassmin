@@ -224,7 +224,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   for {count}") only when `trioOffer`, and the `ink` floating chip (`animate-float`). Section keeps
   `overflow-hidden`; badge/chip offsets are smaller below `md` so nothing overflows at 375px.
   Prices via `formatPrice`.
-- [ ] **7. Marquee, How it works, Category tiles** — `OfferMarquee`: `ink` band,
+- [x] **7. Marquee, How it works, Category tiles** — `OfferMarquee`: `ink` band,
   `overflow-hidden`, track `aria-hidden="true"` with `animate-marquee marquee-pause`, content
   rendered twice: optional offer text (`home.marquee.offer`) then family labels separated by
   `primary-light` "✦". Rendered only when it has at least one item. `HowItWorks` (only with

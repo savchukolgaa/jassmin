@@ -190,7 +190,7 @@ everywhere and 5 ml is added.
   Check: `pnpm typecheck`, `pnpm lint`, `pnpm test`.
 - [x] **2. Prices** — `db/catalog-prices.ts`: `CATALOG_PRICES` as in Decisions, with a comment that
   the owner set it on 2026-10-26 for every perfume (#66).
-- [ ] **3. Parser and fixes** — In `db/catalog/parse.ts`, define `CATALOG_LISTS = ["women", "men"]`,
+- [x] **3. Parser and fixes** — In `db/catalog/parse.ts`, define `CATALOG_LISTS = ["women", "men"]`,
   `CatalogEntry { publicId, list, storeCode, title, brand, gender, fragranceFamilies:
   FragranceFamily[], notes: string[], popular: boolean }` and `parseCatalogMarkdown(text, fixes)`: the
   headings `**Womens perfume**` / `**Mens perfume**` switch the list; each `- **code** | **title** |

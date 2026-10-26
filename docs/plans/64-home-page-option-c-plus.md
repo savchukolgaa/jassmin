@@ -148,7 +148,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 | modify | `app/.server/cms/content.test.ts`, `schemas.test.ts` | new fields and fallbacks |
 | modify | `app/lib/discounts.ts` | `TESTER_TRIO_DISCOUNT_SLUG` |
 | modify | `app/.server/db/queries/discounts.ts` | `findDiscountBySlug` |
-| create | `app/.server/services/trio.ts` (+ `.test.ts`) | `getTesterTrioOffer(now)`, `isRuleLive` |
+| create | `app/.server/services/trio.ts` (+ `.test.ts`) | `getTesterTrioOffer(now)`, `toTrioOffer` (reuses `discountAvailability`) |
 | modify | `app/.server/db/queries/products.ts` | `listBestsellers`, `listNewestProducts`, `listListedFamilies` |
 | modify | `app/.server/services/products.ts` (+ `.test.ts`) | `getBestsellers`, `getTrioFamilies`; pass `fragranceFamilies` |
 | create | `app/lib/trio.ts` (+ `.test.ts`) | `TRIO_SIZE`, `parseTrioSearch`, `trioHref`, `TrioOffer` type |
@@ -185,15 +185,16 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   uploaded hero/cover image). Restart Strapi, `pnpm cms:seed`, re-record both home fixtures.
   Update `content.test.ts` / `schemas.test.ts`: fields mapped, missing fields → `null`.
   Check: `pnpm test app/.server/cms`.
-- [ ] **2. Tester-trio offer** — `TESTER_TRIO_DISCOUNT_SLUG = "tester-trio"` in
+- [x] **2. Tester-trio offer** — `TESTER_TRIO_DISCOUNT_SLUG = "tester-trio"` in
   `app/lib/discounts.ts`; `findDiscountBySlug(db, slug)` (pricing columns + `scopeVolumesMl`) in
   `queries/discounts.ts`; `app/.server/services/trio.ts` with
   `getTesterTrioOffer(now = new Date(), db = defaultDb): Promise<TrioOffer | null>`, live only when
   `active`, `kind === "fixed_price_set"`, `startsAt <= now < endsAt` and not used up.
   `TrioOffer = { price: string; setSize: number; volumeMl: number | null }` in `app/lib/trio.ts`.
-  Unit-test the pure `isRuleLive(rule, now)` and a DB integration test (seeded rule → offer;
+  (Implemented as the pure `toTrioOffer(rule, now)` on top of `discountAvailability` from
+  `services/pricing.ts`, so the window and limit rules are checkout's own.) Unit-test it and a DB integration test (seeded rule → offer;
   `active = false`, expired, used up → `null`).
-- [ ] **3. Trio search parsing** — In `app/lib/trio.ts`: `TRIO_SIZE = 3`,
+- [x] **3. Trio search parsing** — In `app/lib/trio.ts`: `TRIO_SIZE = 3`,
   `parseTrioSearch(params, knownFamilies): string[]` (all `family` values, trimmed, known only,
   deduped, first 3). Tests: unknown values dropped, 4 values → 3, duplicates, empty.
 - [ ] **4. Motion utilities** — In `app/app.css`, add keyframes (start state only, as today) and

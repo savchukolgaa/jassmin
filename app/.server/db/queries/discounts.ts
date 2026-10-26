@@ -38,6 +38,19 @@ export async function findDiscountByCode(
   return row;
 }
 
+/** The rule with this slug, active or not; `undefined` when there's none. */
+export async function findDiscountBySlug(
+  db: Executor,
+  slug: string,
+): Promise<PricingDiscount | undefined> {
+  const [row] = await db
+    .select(pricingColumns)
+    .from(discounts)
+    .where(eq(discounts.slug, slug))
+    .limit(1);
+  return row;
+}
+
 /**
  * The automatic rules (no code, active) plus the cart's promo code even when it's no longer
  * active, so the cart can say why it stopped working. Pricing checks the windows and limits.

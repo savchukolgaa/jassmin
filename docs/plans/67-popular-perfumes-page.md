@@ -211,7 +211,7 @@ Each step is small, ordered, and leaves the app in a working state.
   saves the app's value. Tests: the schema accepts `null`, missing and `3`, and refuses `0`, `-1`,
   `1.5`; `applyCmsProductChange` writes and clears it on create and update; `cms.products.test.ts`
   round-trips it; `cms-push.test.ts` and `middleware.test.ts` include it.
-- [ ] **4. Queries and service** — In `queries/products.ts` extract `soldUnits(db)` and use it in
+- [x] **4. Queries and service** — In `queries/products.ts` extract `soldUnits(db)` and use it in
   `listBestsellers` (no behaviour change; `bestsellers.test.ts` stays green). Add
   `listPopularProducts(db, { fragranceFamilies }, { limit, offset })`: `summaryColumns`, inner join
   on `variantStats`, left join on `soldUnits`, `where(and(isListed, familyFilter(fragranceFamilies)))`,

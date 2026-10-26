@@ -145,13 +145,9 @@ export function listProductSummariesByPublicIds(
 /** Orders whose units count as sold for the bestsellers (#64). */
 const SOLD_ORDER_STATUSES: OrderStatus[] = ["paid", "shipped", "completed"];
 
-/**
- * The listed products with the most units sold in paid, shipped or completed orders, then the
- * newest ones, so the list is full whenever enough products are listed (#64).
- */
-export function listBestsellers(db: Db, limit: number): Promise<ProductSummaryRow[]> {
-  const stats = variantStats(db);
-  const sold = db
+/** Units sold per product in paid, shipped or completed orders (#64). */
+function soldUnits(db: Db) {
+  return db
     .select({
       productId: orderItems.productId,
       units: sql<number>`sum(${orderItems.quantity})`.as("units"),
@@ -161,14 +157,81 @@ export function listBestsellers(db: Db, limit: number): Promise<ProductSummaryRo
     .where(inArray(orders.status, SOLD_ORDER_STATUSES))
     .groupBy(orderItems.productId)
     .as("sold");
+}
+
+type SoldUnits = ReturnType<typeof soldUnits>;
+
+/** The bestseller order: most units sold, then the newest, with `id` as the tie-breaker. */
+function bestsellerOrder(sold: SoldUnits): SQL[] {
+  return [sql`coalesce(${sold.units}, 0) desc`, desc(products.createdAt), desc(products.id)];
+}
+
+/**
+ * The listed products with the most units sold in paid, shipped or completed orders, then the
+ * newest ones, so the list is full whenever enough products are listed (#64).
+ */
+export function listBestsellers(db: Db, limit: number): Promise<ProductSummaryRow[]> {
+  const stats = variantStats(db);
+  const sold = soldUnits(db);
   return db
     .select(summaryColumns(stats))
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
     .leftJoin(sold, eq(sold.productId, products.id))
     .where(isListed)
-    .orderBy(sql`coalesce(${sold.units}, 0) desc`, desc(products.createdAt), desc(products.id))
+    .orderBy(...bestsellerOrder(sold))
     .limit(limit);
+}
+
+export interface PopularFilters {
+  /** Products with **any** of these families (the trio builder's picks); none means no filter. */
+  fragranceFamilies?: readonly string[];
+}
+
+/**
+ * The listed products of every gender for `/popular` (#67): the ones staff ranked, by
+ * `popular_rank`, then the rest in the bestseller order. The caller decides how far into the
+ * unranked ones to go (see `getPopularPage`).
+ */
+export function listPopularProducts(
+  db: Db,
+  { fragranceFamilies }: PopularFilters,
+  options: { limit: number; offset: number },
+): Promise<ProductSummaryRow[]> {
+  const stats = variantStats(db);
+  const sold = soldUnits(db);
+  return db
+    .select(summaryColumns(stats))
+    .from(products)
+    .innerJoin(stats, eq(stats.productId, products.id))
+    .leftJoin(sold, eq(sold.productId, products.id))
+    .where(and(isListed, familyFilter(fragranceFamilies)))
+    .orderBy(
+      sql`${products.popularRank} is null`,
+      asc(products.popularRank),
+      ...bestsellerOrder(sold),
+    )
+    .limit(options.limit)
+    .offset(options.offset);
+}
+
+/** How many products `listPopularProducts` can return, and how many of them staff ranked. */
+export async function countPopularProducts(
+  db: Db,
+  { fragranceFamilies }: PopularFilters,
+): Promise<{ ranked: number; listed: number }> {
+  const stats = variantStats(db);
+  const [row] = await db
+    .select({
+      ranked: sql<number>`count(*) filter (where ${products.popularRank} is not null)`.mapWith(
+        Number,
+      ),
+      listed: count(),
+    })
+    .from(products)
+    .innerJoin(stats, eq(stats.productId, products.id))
+    .where(and(isListed, familyFilter(fragranceFamilies)));
+  return { ranked: row?.ranked ?? 0, listed: row?.listed ?? 0 };
 }
 
 export async function countProducts(db: Db, filters: ProductFilters): Promise<number> {
@@ -289,6 +352,8 @@ export interface ProductWrite {
   fragranceFamilies: string[];
   notes: string[];
   storeCode: string | null;
+  /** Position on `/popular` (#67); `null` when not on the list. */
+  popularRank: number | null;
   imageUrl: string | null;
   packSize: number;
   active: boolean;
@@ -384,6 +449,7 @@ export async function findProductSyncState(db: Executor, productId: number) {
       fragranceFamilies: products.fragranceFamilies,
       notes: products.notes,
       storeCode: products.storeCode,
+      popularRank: products.popularRank,
       imageUrl: products.imageUrl,
       packSize: products.packSize,
       active: products.active,

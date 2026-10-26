@@ -93,6 +93,7 @@ export const en = {
     catalog: "Catalog",
     contacts: "Contacts",
     blog: "Blog",
+    bestsellers: "Bestsellers",
     offers: "Offers",
     menu: "Menu",
     account: "My account",
@@ -623,6 +624,32 @@ export const en = {
       women: "Women's perfumes",
       men: "Men's perfumes",
       blog: "Blog",
+    },
+  },
+  popular: {
+    eyebrow: "Bestsellers",
+    title: "Popular perfumes",
+    metaTitle: "Popular perfumes",
+    metaDescription:
+      "The scents Jassmin customers come back for most, picked by our team, in sizes from 7 ml.",
+    intro:
+      "The scents our customers come back for, picked by the Jassmin team. Every one comes in sizes from 7 ml.",
+    yourTrio: "Your trio:",
+    chosenFamilies: "Chosen fragrance families",
+    removeFamily: "Remove {family}",
+    showAll: "Show all popular",
+    list: "Popular perfumes",
+    more: {
+      heading: "Looking for something else?",
+      text: "More than a hundred scents for her and for him in the catalog.",
+    },
+    women: "Women's perfumes",
+    men: "Men's perfumes",
+    empty: {
+      heading: "No popular perfumes yet",
+      text: "Our picks are on their way. In the meantime, browse the catalog.",
+      filteredHeading: "No popular perfumes with these families yet",
+      filteredText: "Try other families, see every popular perfume, or browse the whole catalog.",
     },
   },
 } satisfies Dictionary;

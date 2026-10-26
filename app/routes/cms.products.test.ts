@@ -18,6 +18,7 @@ const applyCmsProductChange = vi.hoisted(() =>
         fragranceFamilies: ["квіткові"],
         notes: [],
         storeCode: null,
+        popularRank: null,
         packSize: 1,
         active: true,
         variants: [{ volumeMl: 50, price: "6850.00", stock: 4 }],
@@ -52,6 +53,7 @@ const update = {
   fragranceFamilies: ["квіткові", "фруктові"],
   notes: [" жасмин ", "Жасмин", "", "мускус"],
   storeCode: " 3-D ",
+  popularRank: 4,
   variants: [{ volumeMl: 50, price: 6850, stock: 5, expectedStock: 6 }],
 };
 

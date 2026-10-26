@@ -97,6 +97,11 @@ export const products = pgTable(
     notes: text().array().notNull().default(sql`'{}'::text[]`),
     /** The shop's own code for the bottle, e.g. `3-D` (#65); not unique yet (#66 decides). */
     storeCode: varchar({ length: 20 }),
+    /**
+     * Position on `/popular`, set by staff in Strapi (#67): 1 is first, `null` means not on the
+     * list. Not unique, so staff can renumber one product at a time; ties keep the sales order.
+     */
+    popularRank: integer(),
     description: text(),
     /** @deprecated Price, volume and stock live in `product_variants` (#26); not read by the app. */
     price: numeric({ precision: 10, scale: 2 }).notNull(),
@@ -119,6 +124,7 @@ export const products = pgTable(
   (t) => [
     check("products_stock_quantity_check", sql`${t.stockQuantity} >= 0`),
     check("products_pack_size_check", sql`${t.packSize} > 0`),
+    check("products_popular_rank_check", sql`${t.popularRank} > 0`),
     check(
       "products_fragrance_family_primary_check",
       sql`${t.fragranceFamily} is not distinct from ${t.fragranceFamilies}[1]`,

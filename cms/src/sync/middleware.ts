@@ -96,6 +96,11 @@ export async function productPayload(strapi: Core.Strapi, merged: Data, stored: 
     fragranceFamilies: componentValues(merged.fragranceFamilies, "family"),
     notes: componentValues(merged.notes, "name"),
     storeCode: text(merged.storeCode),
+    // An emptied number field is `null`: the product leaves the popular list (#67).
+    popularRank:
+      merged.popularRank === undefined || merged.popularRank === null || merged.popularRank === ""
+        ? null
+        : toNumber(merged.popularRank),
     imageUrl: await imageUrl(strapi, merged.image),
     packSize:
       merged.packSize === undefined || merged.packSize === null ? 1 : toNumber(merged.packSize),
@@ -114,7 +119,8 @@ export async function productPayload(strapi: Core.Strapi, merged: Data, stored: 
 
 /**
  * Writes the app's answer into the data Strapi is about to save, keeping the sizes' ids. Families,
- * notes and the store code are saved as the app normalised them (trimmed, repeats dropped).
+ * notes, the store code and the popular position are saved as the app normalised them (trimmed,
+ * repeats dropped).
  */
 export function applyProductAnswer(data: Data, answer: unknown): Data {
   if (!isRecord(answer) || typeof answer.publicId !== "string") {
@@ -128,6 +134,7 @@ export function applyProductAnswer(data: Data, answer: unknown): Data {
     fragranceFamilies: strings(answer.fragranceFamilies).map((family) => ({ family })),
     notes: strings(answer.notes).map((name) => ({ name })),
     storeCode: typeof answer.storeCode === "string" ? answer.storeCode : null,
+    popularRank: typeof answer.popularRank === "number" ? answer.popularRank : null,
     variants: records(data.variants).map((variant) => {
       const stored = byVolume.get(toNumber(variant.volumeMl));
       return stored ? { ...variant, price: toNumber(stored.price), stock: stored.stock } : variant;

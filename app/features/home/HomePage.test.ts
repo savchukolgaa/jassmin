@@ -83,7 +83,7 @@ describe("HomePage", () => {
     expect(html).toMatch(/<div lang="uk"[^>]*>.*?<h1[^>]*id="hero-title"/s);
     expect(html).toMatch(/<h2[^>]*id="about-title"[^>]*lang="uk"/);
     expect(html).toMatch(/<div lang="uk"[^>]*><p>Our <strong>story/);
-    expect(html).toContain('<dd class="mt-1" lang="uk">вул. Хрещатик');
+    expect(html).toMatch(/<dd class="[^"]*" lang="uk">вул. Хрещатик/);
     expect(html).toContain('<span lang="uk">Mon–Fri 9:00–18:00</span>');
     // UI copy around it stays in the page's language.
     expect(html).not.toMatch(/lang="uk"[^>]*>About us/);
@@ -205,6 +205,34 @@ describe("HomePage", () => {
     expect(section).toMatch(/<h3[^>]*><a[^>]*>La Vie Est Belle<\/a><\/h3>/);
     expect(section).toContain("quick-add");
     expect(render()).not.toContain('id="bestsellers-title"');
+  });
+
+  it("shows the about store photo, or a decorative frame without one", () => {
+    const image = {
+      url: "http://cms.test/uploads/store.jpg",
+      alt: "Jassmin store",
+      width: 1200,
+      height: 800,
+      srcSet: null,
+    };
+    const html = render({ about: { ...view.about, image } });
+
+    expect(html).toMatch(
+      /<img[^>]*src="http:\/\/cms\.test\/uploads\/store\.jpg"[^>]*alt="Jassmin store"/,
+    );
+    expect(render()).not.toContain("store.jpg");
+  });
+
+  it("puts the address and hours on a deep-pink card with a directions link", () => {
+    const html = render();
+
+    expect(html).toMatch(
+      /<div class="[^"]*bg-primary[^"]*"><p class="[^"]*text-white[^"]*">Location<\/p>/,
+    );
+    expect(html).toContain("Come smell them in person");
+    expect(html).toMatch(
+      /<a href="https:\/\/www\.google\.com\/maps\/search[^"]*"[^>]*>Get directions<\/a>/,
+    );
   });
 
   it("renders the sanitized about body as HTML", () => {

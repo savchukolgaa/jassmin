@@ -6,38 +6,41 @@ import { Eyebrow } from "./Eyebrow";
 
 type LocationSectionProps = { location: HomePageView["location"]; contentLocale: Locale };
 
-/** Store / pickup address, opening hours and the embedded map from Strapi. */
+/**
+ * Store / pickup address and opening hours from Strapi on a deep-pink card, beside the embedded
+ * map.
+ */
 export function LocationSection({ location, contentLocale }: LocationSectionProps) {
   const { t } = useT();
   const lang = useContentLang(contentLocale);
 
   return (
-    <section aria-labelledby="location-title" className="bg-white py-16 md:py-24">
-      <div className="reveal container mx-auto grid gap-10 px-4 md:grid-cols-2 md:items-center">
-        <div>
-          <Eyebrow>{t("home.location.eyebrow")}</Eyebrow>
+    <section aria-labelledby="location-title" className="bg-white">
+      <div className="reveal container mx-auto flex flex-wrap gap-6 px-4 py-16 md:py-26">
+        <div className="flex min-w-0 flex-[1_1_21rem] flex-col gap-6 rounded-card-lg bg-primary p-8 text-white sm:p-10">
+          <Eyebrow tone="onPrimary">{t("home.location.eyebrow")}</Eyebrow>
           <h2
             id="location-title"
-            className="mt-2 text-3xl leading-tight font-extrabold tracking-[-0.04em] text-ink md:text-4xl"
+            className="text-4xl leading-[1.05] font-extrabold tracking-[-0.03em] text-balance md:text-5xl"
           >
             {t("home.location.title")}
           </h2>
-          <dl className="mt-8 space-y-6 text-body">
-            <div className="flex gap-4">
-              <MapPinIcon className="size-6 shrink-0 text-primary-dark" />
+          <dl className="space-y-6">
+            <div className="flex gap-3.5">
+              <MapPinIcon className="mt-0.5 size-6 shrink-0" />
               <div>
-                <dt className="font-bold text-ink">{t("home.location.address")}</dt>
-                <dd className="mt-1" lang={lang}>
+                <dt className="font-extrabold">{t("home.location.address")}</dt>
+                <dd className="mt-1 leading-relaxed" lang={lang}>
                   {location.address}
                 </dd>
               </div>
             </div>
             {location.openingHours && (
-              <div className="flex gap-4">
-                <ClockIcon className="size-6 shrink-0 text-primary-dark" />
+              <div className="flex gap-3.5">
+                <ClockIcon className="mt-0.5 size-6 shrink-0" />
                 <div>
-                  <dt className="font-bold text-ink">{t("home.location.hours")}</dt>
-                  <dd className="mt-1 whitespace-pre-line" lang={lang}>
+                  <dt className="font-extrabold">{t("home.location.hours")}</dt>
+                  <dd className="mt-1 leading-relaxed whitespace-pre-line" lang={lang}>
                     {location.openingHours}
                   </dd>
                 </div>
@@ -48,7 +51,7 @@ export function LocationSection({ location, contentLocale }: LocationSectionProp
             href={location.directionsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={buttonClasses({ className: "mt-8" })}
+            className={buttonClasses({ variant: "outline-light", className: "self-start" })}
           >
             {t("home.location.directions")}
           </a>
@@ -59,7 +62,7 @@ export function LocationSection({ location, contentLocale }: LocationSectionProp
             title={t("home.location.map", { address: location.address })}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            className="aspect-[4/3] w-full rounded-card-lg border-0 bg-card shadow-md"
+            className="min-h-80 w-full min-w-0 flex-[2_1_30rem] rounded-card-lg border-0 bg-card md:min-h-110"
           />
         )}
       </div>

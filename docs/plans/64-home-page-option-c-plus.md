@@ -86,6 +86,11 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   look; new home-specific utilities are added for the artboard effects that differ. Only
   `animate-marquee` changes (30s → 26s, plus pause on hover); it isn't used by any page yet.
   Hero text uses `animate-fade-up` with `anim-delay-2/4/6` (160/320/480 ms ≈ artboard 150/300/450).
+- **Restyle (step 12)**: "Get directions" uses the `outline-light` variant on the pink card
+  (the artboard's solid white button isn't a `Button` variant, and no new variants are added).
+  Form inputs keep `border-muted` (2px, white background) instead of the artboard's `line`
+  border, because `line` on white is below the 3:1 contrast inputs need. `Eyebrow` gains an
+  `onPrimary` tone (white).
 - **Bestseller cards (step 11)**: the compact card shows the stored (Ukrainian) family with
   `lang="uk"` until #65 adds labels. The round button's accessible name is "Add {title}, {size},
   to cart", then "Added to cart"; the existing status pill floats under it. The home loader skips
@@ -277,7 +282,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   to `/catalog/women`, grid `sm:grid-cols-2 lg:grid-cols-4` of compact cards with
   `headingLevel={3}`; hidden when the list is empty. Tests in `catalog-ui.test.ts` /
   `cart-ui.test.ts`.
-- [ ] **12. About, location, contacts restyle** — `AboutSection`: `blush`, two columns: photo
+- [x] **12. About, location, contacts restyle** — `AboutSection`: `blush`, two columns: photo
   (`about.image`, asymmetric radius, `loading="lazy"`) and eyebrow/`h2` (`text-4xl md:text-5xl`)/
   `RichText`. `LocationSection`: deep-pink card (`bg-primary text-white rounded-card-lg p-10`,
   eyebrow, `h2`, address and hours with white icons, white "Get directions" `ButtonLink`

@@ -219,7 +219,7 @@ everywhere and 5 ml is added.
   gender; no two entries of the same gender share a title (Q5); `storeCode` ≤ 20 and title/brand ≤ 255
   characters. `CATALOG_PRICES`: keys exactly `PERFUME_VOLUMES_ML`, values match `/^\d+\.\d{2}$/` and
   are > 0.
-- [ ] **6. `importCatalog`** — `db/import-catalog.ts`, `importCatalog(db: Db, entries:
+- [x] **6. `importCatalog`** — `db/import-catalog.ts`, `importCatalog(db: Db, entries:
   readonly CatalogEntry[], prices: Partial<Record<PerfumeVolumeMl, string>>): Promise<{ inserted:
   number; variantsInserted: number; queued: number }>`. Throws if `prices` has no sizes. In one
   `db.transaction`: insert every entry (`fragranceFamily: families[0] ?? null`, legacy columns from the

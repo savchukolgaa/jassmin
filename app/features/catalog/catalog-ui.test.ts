@@ -100,6 +100,46 @@ describe("ProductCard", () => {
   });
 });
 
+describe("ProductCard, compact (home bestsellers)", () => {
+  const compact = (product: ProductSummary) =>
+    normalize(render(createElement(ProductCard, { product, headingLevel: 3, variant: "compact" })));
+
+  it("shows the family on the image, the brand with the default size, title and price", () => {
+    const html = compact(PRODUCT);
+
+    expect(html).toMatch(/<span lang="uk" class="absolute[^"]*">квіткові<\/span>/);
+    expect(html).toContain("Chanel · 7 ml");
+    expect(html).toMatch(/<h3[^>]*><a[^>]*>Coco Mademoiselle Eau de Parfum<\/a><\/h3>/);
+    expect(html).toContain("from ₴990");
+    expect(html).toContain("card-tilt");
+    expect(html).toContain("data-zoom");
+    expect(html).not.toMatch(chooseVolume);
+  });
+
+  it("leaves the family badge out when the product has none", () => {
+    expect(compact({ ...PRODUCT, fragranceFamily: null })).not.toContain('lang="uk"');
+  });
+
+  it("quick-adds the default variant with a round + button named after the product", () => {
+    const html = compact(PRODUCT);
+
+    expect(formTag(html)).toContain('action="/cart"');
+    expect(html).toContain(`name="variantId" value="${VARIANT_ID}"`);
+    expect(buttonTag(html)).toContain(
+      'aria-label="Add Coco Mademoiselle Eau de Parfum, 7 ml, to cart"',
+    );
+    expect(buttonTag(html)).toContain("quick-add");
+    expect(html).toContain('<span aria-hidden="true">+</span>');
+  });
+
+  it("disables the quick add when the product is out of stock", () => {
+    const html = compact({ ...PRODUCT, inStock: false });
+
+    expect(buttonTag(html)).toContain(' disabled=""');
+    expect(buttonTag(html)).toContain('aria-label="Out of stock"');
+  });
+});
+
 describe("CatalogFilters", () => {
   const options = { brands: ["Chanel", "Dior"], fragranceFamilies: ["квіткові", "шипрові"] };
 

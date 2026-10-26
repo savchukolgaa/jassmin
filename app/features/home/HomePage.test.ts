@@ -6,6 +6,7 @@ import type { ContactActionResult } from "~/lib/contact";
 import type { HomePageView } from "~/lib/home";
 import { I18nProvider } from "~/lib/i18n";
 import { formatPrice } from "~/lib/money";
+import type { ProductSummary } from "~/lib/products";
 import { HomePage } from "./HomePage";
 
 const view: HomePageView = {
@@ -179,6 +180,31 @@ describe("HomePage", () => {
     expect(nav.match(/href="[^"]*"/g)).toEqual(['href="/catalog/women"', 'href="/catalog/men"']);
     expect(nav).toContain(">Women<");
     expect(nav).toContain(">Men<");
+  });
+
+  it("lists the bestsellers as compact cards with quick add and a link to the catalog", () => {
+    const product: ProductSummary = {
+      id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+      title: "La Vie Est Belle",
+      brand: "Lancôme",
+      gender: "women",
+      packSize: 1,
+      imageUrl: null,
+      fragranceFamily: "гурманські",
+      minPrice: "450.00",
+      hasPriceRange: true,
+      volumes: [10, 50],
+      inStock: true,
+      defaultVariant: { id: "01a1652b-6e25-7d00-8000-000000000001", volumeMl: 10 },
+    };
+    const html = render({ bestsellers: [product] });
+    const section = html.match(/<section aria-labelledby="bestsellers-title".*?<\/section>/s)?.[0];
+
+    expect(section).toContain(">Bestsellers</h2>");
+    expect(section).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>View all →<\/a>/);
+    expect(section).toMatch(/<h3[^>]*><a[^>]*>La Vie Est Belle<\/a><\/h3>/);
+    expect(section).toContain("quick-add");
+    expect(render()).not.toContain('id="bestsellers-title"');
   });
 
   it("renders the sanitized about body as HTML", () => {

@@ -1,6 +1,7 @@
 import type { ContactActionResult } from "~/lib/contact";
 import type { HomePageView } from "~/lib/home";
 import { AboutSection } from "./AboutSection";
+import { Bestsellers } from "./Bestsellers";
 import { CategoryTiles } from "./CategoryTiles";
 import { ContactForm } from "./ContactForm";
 import { ContactsSection } from "./ContactsSection";
@@ -29,6 +30,7 @@ export function HomePage({ view, actionData }: HomePageProps) {
         trioOffer={view.trioOffer}
       />
       <CategoryTiles />
+      <Bestsellers products={view.bestsellers} />
       <AboutSection about={view.about} contentLocale={view.contentLocale} />
       <LocationSection location={view.location} contentLocale={view.contentLocale} />
       <ContactsSection contacts={view.contacts}>

@@ -86,6 +86,10 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   look; new home-specific utilities are added for the artboard effects that differ. Only
   `animate-marquee` changes (30s → 26s, plus pause on hover); it isn't used by any page yet.
   Hero text uses `animate-fade-up` with `anim-delay-2/4/6` (160/320/480 ms ≈ artboard 150/300/450).
+- **Bestseller cards (step 11)**: the compact card shows the stored (Ukrainian) family with
+  `lang="uk"` until #65 adds labels. The round button's accessible name is "Add {title}, {size},
+  to cart", then "Added to cart"; the existing status pill floats under it. The home loader skips
+  revalidation after a `/cart` POST (the layout still refreshes the header count).
 - **Trio builder details (step 8)**: a plain `<form method="get" action="/#trio">` (no router
   `Form`, since with JS it never submits). The chip limit is the pure `toggleTrioFamily` in
   `app/lib/trio.ts`, unit-tested, because component tests render static markup in Node. Unchecked
@@ -264,7 +268,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   the top-up needs no second query. `getBestsellers(db = defaultDb)` → `BESTSELLER_COUNT` (4)
   `ProductSummary`. DB integration test (`services/bestsellers.test.ts`): ranking, ignored
   statuses, inactive/variant-less skipped, newest top-up, at most 4.
-- [ ] **11. Bestseller cards** — `AddToCartForm` gets `appearance?: "button" | "icon"`: icon renders
+- [x] **11. Bestseller cards** — `AddToCartForm` gets `appearance?: "button" | "icon"`: icon renders
   a 48 px round `primary` button with "+" (`quick-add`), turning `bg-success` "✓" with
   `aria-label` "Added to cart" after an ok result; status text unchanged. `ProductCard` gets
   `variant?: "default" | "compact"`: `bg-card` card with `card-tilt`, image wrapper

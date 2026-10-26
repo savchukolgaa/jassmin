@@ -4,6 +4,7 @@ import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import type { ButtonSize } from "~/components/ui/button-styles";
 import { type CartActionResult, cartErrorMessage } from "~/lib/cart";
+import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
 
 export interface AddToCartFormProps {
@@ -16,6 +17,11 @@ export interface AddToCartFormProps {
   /** The button text when in stock; "Додати в кошик" / "Add to cart" by default. */
   label?: string;
   size?: ButtonSize;
+  /**
+   * `icon`: a round "+" button that turns into "✓" once added (home bestsellers, #64); `label` is
+   * then its accessible name, and the "Added to cart" status floats below it.
+   */
+  appearance?: "button" | "icon";
   className?: string;
   /** Fields rendered inside the form, before the button. */
   children?: ReactNode;
@@ -28,6 +34,7 @@ export function AddToCartForm({
   inStock,
   label,
   size = "md",
+  appearance = "button",
   className,
   children,
 }: AddToCartFormProps) {
@@ -35,23 +42,39 @@ export function AddToCartForm({
   const { t } = translator;
   const fetcher = useFetcher<CartActionResult>({ key: `add-to-cart-${productId}` });
   const result = fetcher.state === "idle" ? fetcher.data : undefined;
+  const icon = appearance === "icon";
 
   return (
-    <fetcher.Form method="post" action="/cart" className={className}>
+    <fetcher.Form method="post" action="/cart" className={cn(icon && "relative", className)}>
       <input type="hidden" name="intent" value="add" />
       <input type="hidden" name="productId" value={productId} />
       {variantId && <input type="hidden" name="variantId" value={variantId} />}
       {children}
-      <Button
-        type="submit"
-        size={size}
-        className="w-full"
-        disabled={!inStock}
-        loading={fetcher.state !== "idle"}
+      {icon ? (
+        <QuickAddButton
+          label={inStock ? (label ?? t("cart.add")) : t("product.outOfStock")}
+          inStock={inStock}
+          busy={fetcher.state !== "idle"}
+          added={result?.ok === true}
+        />
+      ) : (
+        <Button
+          type="submit"
+          size={size}
+          className="w-full"
+          disabled={!inStock}
+          loading={fetcher.state !== "idle"}
+        >
+          {inStock ? (label ?? t("cart.add")) : t("product.outOfStock")}
+        </Button>
+      )}
+      <div
+        aria-live="polite"
+        className={cn(
+          "text-sm",
+          icon ? "absolute top-full right-0 z-10 mt-2 w-max max-w-64" : "mt-2 min-h-5",
+        )}
       >
-        {inStock ? (label ?? t("cart.add")) : t("product.outOfStock")}
-      </Button>
-      <div aria-live="polite" className="mt-2 min-h-5 text-sm">
         {result?.ok === true && (
           <p
             role="status"
@@ -71,5 +94,37 @@ export function AddToCartForm({
         )}
       </div>
     </fetcher.Form>
+  );
+}
+
+/** The round "+" of a compact product card; a green "✓" once the product is in the cart. */
+function QuickAddButton({
+  label,
+  inStock,
+  busy,
+  added,
+}: {
+  label: string;
+  inStock: boolean;
+  busy: boolean;
+  added: boolean;
+}) {
+  const { t } = useT();
+  return (
+    <button
+      type="submit"
+      aria-label={added ? t("cart.added") : label}
+      title={added ? t("cart.added") : label}
+      disabled={!inStock || busy}
+      aria-busy={busy || undefined}
+      className={cn(
+        "quick-add flex size-12 items-center justify-center rounded-full text-2xl font-extrabold text-white",
+        "disabled:cursor-not-allowed disabled:opacity-60",
+        focusRing("onLight"),
+        added ? "bg-success" : "bg-primary not-disabled:hover:bg-primary-dark",
+      )}
+    >
+      <span aria-hidden="true">{added ? "✓" : "+"}</span>
+    </button>
   );
 }

@@ -188,7 +188,7 @@ everywhere and 5 ml is added.
   Switch the sample data and the tests from 7 ml to 5 ml (see Files), and update
   `variant.json`'s description, the CMS seed copy and the offer fixtures (10 ml trio, 5 ml minis).
   Check: `pnpm typecheck`, `pnpm lint`, `pnpm test`.
-- [ ] **2. Prices** — `db/catalog-prices.ts`: `CATALOG_PRICES` as in Decisions, with a comment that
+- [x] **2. Prices** — `db/catalog-prices.ts`: `CATALOG_PRICES` as in Decisions, with a comment that
   the owner set it on 2026-10-26 for every perfume (#66).
 - [ ] **3. Parser and fixes** — In `db/catalog/parse.ts`, define `CATALOG_LISTS = ["women", "men"]`,
   `CatalogEntry { publicId, list, storeCode, title, brand, gender, fragranceFamilies:

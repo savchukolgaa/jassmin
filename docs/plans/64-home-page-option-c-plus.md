@@ -16,15 +16,13 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 
 ## Dependencies & prerequisites
 
-- **#65 (open, planned in parallel): required for the trio's family filtering and the family
-  labels.** #65 adds `products.fragrance_families text[]` (GIN index), `FRAGRANCE_FAMILIES` in
-  `app/lib/enums.ts` with `catalog.families.*` labels, a translated family list in
-  `listFilterOptions`, the primary family on cards, and changes the catalog filter
-  (`app/lib/catalog.ts`, `whereFilters` in `app/.server/db/queries/products.ts`) to match a
-  product when the chosen family is in its `fragrance_families`. This plan **does not redesign
-  that filter**; step 9 only extends it to several values on top of #65. Steps 1–8 and 10–14 don't
-  need #65 and can land first; step 9 and the family-dependent parts of steps 6, 7 and 11 (chip
-  labels, card family badge) wait for #65 to be merged into `main` (rebase `issue/64` on it).
+- **#65 (open, planned in parallel): only for the family labels.** #65 adds
+  `products.fragrance_families text[]`, `FRAGRANCE_FAMILIES` in `app/lib/enums.ts` with
+  `catalog.families.*` labels, and the primary family on cards. Since the trio CTA goes to
+  `/popular` (#67), this issue doesn't touch the catalog filter at all. Until #65 is merged, the
+  trio chips, the marquee and the card badge use today's single `products.fragrance_family`
+  values (shown as stored); step 9 switches them to #65's array and translated labels once #65 is
+  on `main` (rebase `issue/64` on it). If #64 merges first, step 9 moves into #65.
 - **#67 (open):** the `/popular` page and header button that "Order Now" links to. Not a blocker:
   the CTA is a Strapi field, so only its seeded value depends on #67.
 - Done and on `main`: tester-trio discount rule (#59, `discounts.slug = 'tester-trio'`), offers
@@ -77,12 +75,13 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   the loader renders the filled slots and the CTA. With JS, chip changes update local state (the
   slots pop in place) and unchecked chips are `disabled` once 3 are picked; the server caps at 3
   as well (`parseTrioSearch`, first 3 known families, deduped). The builder never adds to the cart.
-- **Trio CTA target**: `/catalog/women?fragrance_family=a&fragrance_family=b&fragrance_family=c`,
-  plus a secondary "For men →" link with the same families **(unconfirmed, Q1b)**. `/offers` can't
-  filter by family, so it doesn't meet the acceptance criterion.
-- **Chip families**: the families that listed products of either gender have (from #65's
-  `fragrance_families`), in `FRAGRANCE_FAMILIES` order, with #65's `catalog.families.*` labels.
-  The marquee uses the same list. Values stay the Ukrainian enum values in the URL (#65).
+- **Trio CTA target**: `/popular?family=a&family=b&family=c` (owner, 2026-10-26). The chosen
+  families travel in the URL; showing popular products filtered by them is #67's job (comment
+  added to #67). With no family picked the CTA isn't shown.
+- **Chip families**: the distinct families of listed products of either gender. Today that is
+  `products.fragrance_family` (alphabetical, as stored); after #65, `unnest(fragrance_families)`
+  in `FRAGRANCE_FAMILIES` order with `catalog.families.*` labels. The marquee uses the same list.
+  URL values are the stored Ukrainian values.
 - **Motion**: shared utilities used elsewhere (`fade-up`, `pop`, `spin-in`, `lift`) keep their
   look; new home-specific utilities are added for the artboard effects that differ. Only
   `animate-marquee` changes (30s → 26s, plus pause on hover); it isn't used by any page yet.
@@ -93,15 +92,11 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   colours map to the nearest token: `#f3e7ea` (map bg) → `card`, `#6f6367`/`#8a7d81` (empty slot
   border/number) → `muted` / `on-dark-muted`, product tints → `card`. No new colours.
 
-## Open questions
-
-- [ ] **Q1b: Where does the trio builder's "Show my trio" go?** — The answer to Q1 (2026-10-26)
-  moved the hero's "Order Now" to `/popular` (#67) but didn't cover the trio CTA, and every catalog
-  page needs a gender. Recommended default: `/catalog/women?fragrance_family=…` plus a small
-  "For men →" link with the same families. Affects steps: 8, 9.
-
 ## Resolved questions
 
+- **Q1b: Where does "Show my trio" go?** — Also to `/popular`, with the chosen families as
+  `family` params (owner, 2026-10-26). The catalog filter stays as it is.
+  Until #67 ships, that link is a 404; the home page is still built and tested with it.
 - **Q1: Where does the hero's "Order Now" go?** — To the new Popular page `/popular`, which also
   gets a header button and its own C+ design; both are #67, not this issue. Here the hero keeps
   its Strapi `ctaHref`; the seed sets it to `/popular`. Until #67 ships, `/popular` is a 404, so
@@ -109,8 +104,8 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   (owner, 2026-10-26).
 - **Q2: Bestseller card style** — the artboard's compact card on the home page only; the catalog
   keeps its card (owner, 2026-10-26, default).
-- **Q3: Several families in one URL** — #64 extends #65's filter to repeated `fragrance_family`
-  params, at most 3 (owner, 2026-10-26, default).
+- **Q3: Several families in one URL** — moot after Q1b: the catalog isn't the trio's target, so
+  its filter is unchanged.
 - **Q4: Which orders count as sales** — `status in ('paid', 'shipped', 'completed')`. The owner will
   provide the perfume information for the first bestseller list (owner, 2026-10-26); that data is
   seeded by #67 / the product import, not here.
@@ -148,11 +143,9 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 | modify | `app/lib/discounts.ts` | `TESTER_TRIO_DISCOUNT_SLUG` |
 | modify | `app/.server/db/queries/discounts.ts` | `findDiscountBySlug` |
 | create | `app/.server/services/trio.ts` (+ `.test.ts`) | `getTesterTrioOffer(now)`, `isRuleLive` |
-| modify | `app/.server/db/queries/products.ts` | `listBestsellers`, `listNewestProducts`, `listListedFamilies`; multi-family filter (after #65) |
+| modify | `app/.server/db/queries/products.ts` | `listBestsellers`, `listNewestProducts`, `listListedFamilies` |
 | modify | `app/.server/services/products.ts` (+ `.test.ts`) | `getBestsellers`, `getTrioFamilies`; pass `fragranceFamilies` |
-| modify | `app/lib/catalog.ts` (+ `.test.ts`) | `fragranceFamilies: string[]`, `catalogHref`, `trioCatalogHref` (after #65) |
-| modify | `app/features/catalog/CatalogFilters.tsx` | show several active families (after #65) |
-| create | `app/lib/trio.ts` (+ `.test.ts`) | `TRIO_SIZE`, `parseTrioSearch`, `TrioOffer` type |
+| create | `app/lib/trio.ts` (+ `.test.ts`) | `TRIO_SIZE`, `parseTrioSearch`, `trioHref`, `TrioOffer` type |
 | modify | `app/lib/home.ts` | `HomePageView`: hero fields, `about.image`, `trioOffer`, `trio`, `bestsellers` |
 | modify | `app/.server/services/home.ts` (+ `home.test.ts`) | `buildHomePageView` takes the new inputs |
 | modify | `app/routes/home.tsx` (+ `home.test.ts`) | loader loads trio offer, families, bestsellers, trio search; `shouldRevalidate` |
@@ -213,7 +206,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   `marquee.offer` ("Order {count} testers only for {price}"), `howItWorks.{title,
   steps.{pick,pay,decide}.{title,body}}` (pay title takes `{price}`), `trio.{title, intro,
   families, update, slot ("Slot {n}"), left (plural `{count} more to pick`), cta ("Show my trio ·
-  {price} →"), ctaNoPrice, men ("For men →")}`, `tiles.{women,men}`, `bestsellers.{title,
+  {price} →"), ctaNoPrice}`, `tiles.{women,men}`, `bestsellers.{title,
   viewAll}`. Social pills keep the existing platform names. Plurals use `{ one, few,
   many, other }` in uk. `pnpm typecheck` catches missing keys.
 - [ ] **6. Hero** — `HeroSection`: eyebrow pill (`bg-white/16`, uppercase, `animate-fade-up`),
@@ -240,21 +233,16 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   too), and an "Update" submit button (`home.trio.update`) that is rendered on the server and
   removed after hydration (a `useEffect` flag), so no-JS users can submit. Three slots (dashed
   arch; filled slot `animate-slot-pop` with the family label; empty shows its number), then either
-  `role="status"` "{count} more to pick" or the CTA `ButtonLink` + "For men →" link (Q1b) built
-  with `trioCatalogHref` (step 9). State: `useState(selected)` from the loader, re-synced when
-  `selected` changes. Without #65 merged yet, build against a `families: { value, label }[]` prop
-  and wire it in step 9.
-- [ ] **9. Multi-family catalog filter (needs #65)** — After rebasing on #65, and only where #65
-  doesn't already do it : `CatalogSearch.fragranceFamilies: string[]` from
-  `params.getAll("fragrance_family")` (trimmed, ≤ 100 chars, deduped, at most 3), `catalogHref`
-  writes each, `hasActiveFilters` checks the array; `whereFilters` uses `arrayOverlaps` on #65's
-  `products.fragranceFamilies` (single value unchanged in behaviour); `getCatalogPage` passes the
-  array; `CatalogFilters` shows several active families as removable chip links above the select.
-  Add `trioCatalogHref(gender, families)` in `app/lib/catalog.ts`. Add
-  `listListedFamilies(db)` (distinct `unnest(fragrance_families)` of listed products, any gender)
-  and `getTrioFamilies(locale)` returning `{ value, label }[]` in `FRAGRANCE_FAMILIES` order with
-  #65's labels. Tests: `parseCatalogSearch` with 0/1/3/4 values, `catalogHref` round trip, DB test
-  that a product matching any of the families is listed once.
+  `role="status"` "{count} more to pick" or the CTA `ButtonLink` to `trioHref(selected)`
+  (`/popular?family=…`, in `app/lib/trio.ts`). State: `useState(selected)` from the loader,
+  re-synced when `selected` changes. Families come in as a `{ value, label }[]` prop.
+- [ ] **9. Trio families** — `listListedFamilies(db)` in `queries/products.ts` (distinct
+  non-null `fragrance_family` of listed products with variants, any gender, alphabetical) and
+  `getTrioFamilies(db)` in `services/products.ts` returning `{ value, label }[]` (label = value for
+  now). **After #65 is on `main`:** read `unnest(fragrance_families)`, order by
+  `FRAGRANCE_FAMILIES` and label with `t("catalog.families.…")` (so it takes the translator), and
+  show the primary family label on the compact card. Tests: DB test that inactive products' and
+  products without variants' families are left out; `trioHref` encodes each family.
 - [ ] **10. Bestsellers query** — `listBestsellers(db, limit)` in `queries/products.ts`: a
   subquery summing `order_items.quantity` per `product_id` joined to `orders` with
   `status in ('paid','shipped','completed')` joined to `products` + `variantStats`, `isListed`,
@@ -296,8 +284,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 
 ## Testing & verification
 
-- **Unit**: `parseTrioSearch`, `isRuleLive`, `parseCatalogSearch`/`catalogHref`/`trioCatalogHref`
-  with several families, `buildHomePageView` (new fields, `trioOffer: null`), CMS mapping of the
+- **Unit**: `parseTrioSearch`, `isRuleLive`, `trioHref`, `buildHomePageView` (new fields, `trioOffer: null`), CMS mapping of the
   new fields, `theme.test.ts` utilities.
 - **Component** (`renderToStaticMarkup` + `createRoutesStub`, as in `HomePage.test.ts`): sections
   present and in artboard order (by heading ids / `id`s); badge, marquee offer text, "How it works"
@@ -327,7 +314,8 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   hidden when there is none — steps 2, 6, 7, 8, 13
 - [ ] The marquee scrolls in a loop, pauses on hover and is hidden from screen readers — steps 4, 7
 - [ ] "Build your trio" allows at most 3 families, fills the slots, and leads to products
-  filtered by those families, also without JS — steps 3, 8, 9 (needs #65)
+  filtered by those families, also without JS — steps 3, 8, 9 (the CTA passes the families to
+  `/popular`; the filtering there is #67)
 - [ ] Category tiles link to `/catalog/women` and `/catalog/men`; there is no Unisex tile, chip or
   link — steps 6, 7
 - [ ] "Bestsellers" shows 4 real products with working quick add and the "Added to cart" toast —
@@ -343,7 +331,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 
 ## Out of scope
 
-- The catalog's family filter redesign, `fragrance_families`, family labels and the product
+- Any change to the catalog's family filter, filtering `/popular` by family (#67), `fragrance_families`, family labels and the product
   page's families/notes (#65).
 - The Popular page, its header button and design (#67).
 - Header and footer (#27), a dark theme, new tokens or fonts, other pages.

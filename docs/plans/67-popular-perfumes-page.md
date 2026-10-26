@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/67
 Branch: `issue/67`
 Worktree: `.claude/worktrees/issue-67`
-Status: Planned (all owner answers applied, 2026-10-26)
+Status: Implemented
 
 ## Goal
 Shoppers get a `/popular` page that lists the store's most popular perfumes, so they can start from
@@ -290,7 +290,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `/popular`, nullable, not unique, synced from Strapi's `popularRank`; the ranking, the one-page
   top-up and the pagination) and on `seed-catalog.ts` (the owner's catalogue with placeholder
   prices). Make sure `docs/design.md` (step 1) matches the built page.
-- [ ] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual
+- [x] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual
   checks below.
 
 ## Testing & verification
@@ -311,17 +311,17 @@ Each step is small, ordered, and leaves the app in a working state.
   `prefers-reduced-motion: reduce` and check nothing animates.
 
 ## Acceptance criteria
-- [ ] A `PopularPlus` artboard (desktop and phone) exists on the C+ canvas and is approved by the owner — step 1
-- [ ] `/popular` lists the popular perfumes in the staff-defined order, topped up from bestsellers, and matches the artboard at desktop and 375px widths — steps 4, 5, 6, 10
-- [ ] Staff can set and change a product's popular position in the Strapi admin, and it is saved to PostgreSQL — steps 2, 3
-- [ ] The header (desktop and mobile menu) has a button linking to `/popular` ("Bestsellers", per the owner), marked current on that page — step 7
-- [ ] The home hero's "Order Now" button leads to `/popular` — already linked (#64); works once step 6 adds the route; `POPULAR_PATH` reuse in step 5
-- [ ] Cards support add to cart with the "Added to cart" toast — steps 5, 6
-- [ ] Only C+ tokens are used; all copy is in `uk.ts` and `en.ts`; animations stop with `prefers-reduced-motion: reduce` — steps 1, 5, 8
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
-- [ ] (comment) `/popular?family=…` (up to 3) shows the popular perfumes with any of those families, and the design covers the filtered state — steps 1, 4, 5, 6
-- [ ] (owner) The list is paginated — steps 4, 5, 6
-- [ ] (owner) The owner's catalogue is in the seed, with its 30 popular perfumes ranked — step 8
+- [x] A `PopularPlus` artboard (desktop and phone) exists on the C+ canvas and is approved by the owner — step 1 (approved 2026-10-26)
+- [x] `/popular` lists the popular perfumes in the staff-defined order, topped up from bestsellers, and matches the artboard at desktop and 375px widths — steps 4, 5, 6, 10 (checked on a production build with the seeded catalogue: 30 ranked on 3 pages; screenshots at 1440px and 375px)
+- [ ] Staff can set and change a product's popular position in the Strapi admin, and it is saved to PostgreSQL — steps 2, 3 — **not checked in a live Strapi admin**: covered by the schema, middleware, route and DB sync tests only
+- [x] The header (desktop and mobile menu) has a button linking to `/popular` ("Bestsellers", per the owner), marked current on that page — step 7
+- [x] The home hero's "Order Now" button leads to `/popular` — already linked (#64); works once step 6 adds the route; `POPULAR_PATH` reuse in step 5
+- [ ] Cards support add to cart with the "Added to cart" toast — steps 5, 6 — the compact cards post the existing add-to-cart form (render tests, served HTML); **not clicked in a browser**
+- [x] Only C+ tokens are used; all copy is in `uk.ts` and `en.ts`; animations stop with `prefers-reduced-motion: reduce` — steps 1, 5, 8
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] (comment) `/popular?family=…` (up to 3) shows the popular perfumes with any of those families, and the design covers the filtered state — steps 1, 4, 5, 6
+- [x] (owner) The list is paginated — steps 4, 5, 6
+- [x] (owner) The owner's catalogue is in the seed, with its 30 popular perfumes ranked — step 8
 
 ## Out of scope
 - A new design system, tokens or fonts; changes to the catalogue pages or the footer (unless the

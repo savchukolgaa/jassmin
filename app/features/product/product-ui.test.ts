@@ -2,17 +2,18 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import { I18nProvider } from "~/lib/i18n";
+import { I18nProvider, type Locale } from "~/lib/i18n";
 import type { ProductDetail, ProductVariant } from "~/lib/products";
 import { ProductPurchase } from "./ProductPurchase";
+import { ProductFamilies, ProductNotes } from "./ProductScent";
 
 // Fetchers need a data router. Rendered in English, like the assertions.
-const render = (element: ReactElement) => {
+const render = (element: ReactElement, locale: Locale = "en") => {
   const router = createMemoryRouter([{ path: "/products/:id", element }], {
     initialEntries: ["/products/01a1652b-6e25-7c03-ae47-25b57131fb06"],
   });
   return renderToStaticMarkup(
-    createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+    createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })),
   ).replace(/\s/gu, " ");
 };
 
@@ -32,7 +33,8 @@ const PRODUCT: ProductDetail = {
   packSize: 1,
   imageUrl: null,
   description: null,
-  fragranceFamily: "шипрові",
+  fragranceFamilies: ["шипрові", "квіткові"],
+  notes: ["апельсин", "троянда", "пачулі"],
   variants: [
     variant(7, "990.00", 0),
     variant(10, "1350.00", 2),
@@ -103,5 +105,45 @@ describe("ProductPurchase", () => {
 
     expect(html).not.toContain("<select");
     expect(html).toContain("Currently unavailable");
+  });
+});
+
+describe("ProductFamilies", () => {
+  it("lists every family, primary first, in the UI's language", () => {
+    const html = render(createElement(ProductFamilies, { families: PRODUCT.fragranceFamilies }));
+    expect(html).toContain('aria-label="Fragrance families"');
+    expect(html.indexOf(">Chypre<")).toBeGreaterThan(-1);
+    expect(html.indexOf(">Chypre<")).toBeLessThan(html.indexOf(">Floral<"));
+
+    const uk = render(
+      createElement(ProductFamilies, { families: PRODUCT.fragranceFamilies }),
+      "uk",
+    );
+    expect(uk).toContain('aria-label="Сімейства аромату"');
+    expect(uk).toContain(">Шипрові<");
+    expect(uk).toContain(">Квіткові<");
+  });
+
+  it("renders nothing without families", () => {
+    expect(render(createElement(ProductFamilies, { families: [] }))).not.toContain("<ul");
+  });
+});
+
+describe("ProductNotes", () => {
+  it("lists the notes under a heading, marked as Ukrainian on the English site", () => {
+    const html = render(createElement(ProductNotes, { notes: PRODUCT.notes }));
+    expect(html).toContain(">Scent notes</h2>");
+    expect(html).toContain('<ul lang="uk"');
+    for (const note of PRODUCT.notes) {
+      expect(html).toContain(`>${note}</li>`);
+    }
+
+    const uk = render(createElement(ProductNotes, { notes: PRODUCT.notes }), "uk");
+    expect(uk).toContain(">Ноти аромату</h2>");
+    expect(uk).not.toContain('lang="uk"');
+  });
+
+  it("renders nothing without notes", () => {
+    expect(render(createElement(ProductNotes, { notes: [] }))).not.toContain("<section");
   });
 });

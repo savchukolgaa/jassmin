@@ -28,6 +28,7 @@ const sauvage: ProductSummary = {
   volumes: [10, 50, 100],
   inStock: true,
   defaultVariant: { id: "01a1652b-6e25-7c44-8d5b-000000000010", volumeMl: 10 },
+  fragranceFamily: null,
 };
 
 function offer(overrides: Partial<OfferView> = {}): OfferView {

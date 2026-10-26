@@ -51,7 +51,9 @@ const product: CmsProductState = {
   brand: "Chanel",
   description: null,
   gender: "women",
-  fragranceFamily: "шипрові",
+  fragranceFamilies: ["шипрові", "квіткові"],
+  notes: ["апельсин", "троянда"],
+  storeCode: "1-D",
   packSize: 1,
   active: true,
   variants: [{ volumeMl: 7, price: "990.00", stock: 8 }],
@@ -122,8 +124,16 @@ describe("toStrapiOrderData / toStrapiProductData", () => {
     expect(toStrapiOrderData(order)).not.toHaveProperty("status");
     expect(toStrapiProductData(product)).toMatchObject({
       publicId: product.publicId,
+      storeCode: "1-D",
       variants: [{ volumeMl: 7, price: 990, stock: 8 }],
     });
+  });
+
+  it("sends families and notes as Strapi component rows, primary first (#65)", () => {
+    const data = toStrapiProductData(product);
+    expect(data.fragranceFamilies).toEqual([{ family: "шипрові" }, { family: "квіткові" }]);
+    expect(data.notes).toEqual([{ name: "апельсин" }, { name: "троянда" }]);
+    expect(data).not.toHaveProperty("fragranceFamily");
   });
 });
 

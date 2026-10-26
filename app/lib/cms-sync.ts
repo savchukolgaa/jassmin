@@ -5,6 +5,8 @@
 // imports. Money is an exact decimal string.
 import { z } from "zod";
 import {
+  FRAGRANCE_FAMILIES,
+  type FragranceFamily,
   GENDERS,
   ORDER_STATUSES,
   PAYMENT_STATUSES,
@@ -45,6 +47,27 @@ export const cmsVariantSchema = z.object({
 
 export type CmsVariantInput = z.infer<typeof cmsVariantSchema>;
 
+/** The most notes a product may list (#65). */
+export const MAX_PRODUCT_NOTES = 40;
+
+/**
+ * Scent notes (#65): trimmed, empty entries dropped and repeats (ignoring case) dropped, in the
+ * order staff entered them.
+ */
+const notesSchema = z
+  .array(z.string().trim().max(100))
+  .default([])
+  .transform((notes) => {
+    const seen = new Set<string>();
+    return notes.filter((note) => {
+      const key = note.toLocaleLowerCase("uk");
+      if (!note || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })
+  .pipe(z.array(z.string()).max(MAX_PRODUCT_NOTES));
+
 const productFields = {
   name: z.string().trim().min(1).max(255),
   slug: z
@@ -56,7 +79,19 @@ const productFields = {
   brand: z.string().trim().min(1).max(255),
   description: optionalText,
   gender: z.enum(GENDERS),
-  fragranceFamily: optionalText,
+  /** Primary first (#65); the app mirrors the first into `products.fragrance_family`. */
+  fragranceFamilies: z
+    .array(z.enum(FRAGRANCE_FAMILIES))
+    .default([])
+    .refine((families) => new Set(families).size === families.length, "duplicate-family"),
+  notes: notesSchema,
+  /** The shop's own code for the bottle, e.g. `3-D` (#65). */
+  storeCode: z
+    .string()
+    .trim()
+    .max(20)
+    .nullish()
+    .transform((value) => (value ? value : null)),
   /** Strapi's relative `/uploads/…` URL or an absolute `http(s)` one; the route resolves it. */
   imageUrl: z
     .string()
@@ -81,9 +116,21 @@ const productFields = {
     ),
 };
 
+/** A single perfume needs a family; a set of several (`packSize > 1`) may have none (#65). */
+function requireFamily(
+  product: { packSize: number; fragranceFamilies: readonly FragranceFamily[] },
+  ctx: z.RefinementCtx,
+) {
+  if (product.packSize === 1 && product.fragranceFamilies.length === 0) {
+    ctx.addIssue({ code: "custom", path: ["fragranceFamilies"], message: "family-required" });
+  }
+}
+
 export const cmsProductChangeSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("create"), ...productFields }),
-  z.object({ action: z.literal("update"), publicId: z.uuid(), ...productFields }),
+  z.object({ action: z.literal("create"), ...productFields }).superRefine(requireFamily),
+  z
+    .object({ action: z.literal("update"), publicId: z.uuid(), ...productFields })
+    .superRefine(requireFamily),
   z.object({ action: z.literal("delete"), publicId: z.uuid() }),
 ]);
 
@@ -99,7 +146,10 @@ export interface CmsProductState {
   brand: string;
   description: string | null;
   gender: (typeof GENDERS)[number];
-  fragranceFamily: string | null;
+  /** Primary first; rows from before #65 may hold a value outside `FRAGRANCE_FAMILIES`. */
+  fragranceFamilies: string[];
+  notes: string[];
+  storeCode: string | null;
   packSize: number;
   active: boolean;
   /** Smallest first, with the real stock. */

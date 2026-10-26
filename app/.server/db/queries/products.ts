@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, isNotNull, type SQL, sql } from "drizzle-orm";
+import { and, arrayOverlaps, asc, count, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
 import type { CatalogSort } from "~/lib/catalog";
 import type { Gender, OrderStatus } from "~/lib/enums";
 import type { Db } from "../client";
@@ -6,7 +6,8 @@ import { orderItems, orders, products, productVariants } from "../schema";
 
 export interface ProductFilters {
   genders: readonly Gender[];
-  fragranceFamily?: string;
+  /** Products with **any** of these families (#65); none or an empty list means no filter. */
+  fragranceFamilies?: readonly string[];
   brand?: string;
 }
 
@@ -22,12 +23,20 @@ const isListed = eq(products.active, true);
  */
 export const availableStock = sql<number>`case when ${products.active} then ${productVariants.stockQuantity} else 0 end`;
 
+/**
+ * Products that have any of `families` among their `fragrance_families`, primary or not (#65),
+ * via the GIN index. The one place to change for "all of these families" (`arrayContains`).
+ */
+function familyFilter(families: readonly string[] | undefined): SQL | undefined {
+  return families?.length ? arrayOverlaps(products.fragranceFamilies, [...families]) : undefined;
+}
+
 // Shared by the list and the count, so the total always matches the listed products.
-function whereFilters({ genders, fragranceFamily, brand }: ProductFilters): SQL | undefined {
+function whereFilters({ genders, fragranceFamilies, brand }: ProductFilters): SQL | undefined {
   return and(
     isListed,
     inArray(products.gender, [...genders]),
-    fragranceFamily ? eq(products.fragranceFamily, fragranceFamily) : undefined,
+    familyFilter(fragranceFamilies),
     brand ? eq(products.brand, brand) : undefined,
   );
 }
@@ -172,29 +181,33 @@ export async function countProducts(db: Db, filters: ProductFilters): Promise<nu
   return row?.total ?? 0;
 }
 
-/** Distinct brands and fragrance families of the listed products, alphabetically. */
+/**
+ * Distinct brands and fragrance families of the listed products, alphabetically. Families count
+ * every one of a product's `fragrance_families`, not only the primary (#65).
+ */
 export async function listFilterOptions(db: Db, genders: readonly Gender[]) {
   const listed = and(
     isListed,
     inArray(products.gender, [...genders]),
     inArray(products.id, db.select({ id: productVariants.productId }).from(productVariants)),
   );
+  const family = db
+    .select({ value: sql<string>`unnest(${products.fragranceFamilies})`.as("value") })
+    .from(products)
+    .where(listed)
+    .as("family");
   const [brands, families] = await Promise.all([
     db
       .selectDistinct({ value: products.brand })
       .from(products)
       .where(listed)
       .orderBy(asc(products.brand)),
-    db
-      .selectDistinct({ value: products.fragranceFamily })
-      .from(products)
-      .where(and(listed, isNotNull(products.fragranceFamily)))
-      .orderBy(asc(products.fragranceFamily)),
+    db.selectDistinct({ value: family.value }).from(family).orderBy(asc(family.value)),
   ]);
 
   return {
     brands: brands.map((row) => row.value),
-    fragranceFamilies: families.flatMap((row) => (row.value ? [row.value] : [])),
+    fragranceFamilies: families.map((row) => row.value),
   };
 }
 
@@ -209,7 +222,8 @@ export async function findProductByPublicId(db: Db, publicId: string) {
       packSize: products.packSize,
       imageUrl: products.imageUrl,
       description: products.description,
-      fragranceFamily: products.fragranceFamily,
+      fragranceFamilies: products.fragranceFamilies,
+      notes: products.notes,
     })
     .from(products)
     .where(and(isListed, eq(products.publicId, publicId)))
@@ -270,7 +284,11 @@ export interface ProductWrite {
   brand: string;
   description: string | null;
   gender: Gender;
+  /** Always `fragranceFamilies[0] ?? null`: a CHECK enforces it (#65). */
   fragranceFamily: string | null;
+  fragranceFamilies: string[];
+  notes: string[];
+  storeCode: string | null;
   imageUrl: string | null;
   packSize: number;
   active: boolean;
@@ -363,7 +381,9 @@ export async function findProductSyncState(db: Executor, productId: number) {
       brand: products.brand,
       description: products.description,
       gender: products.gender,
-      fragranceFamily: products.fragranceFamily,
+      fragranceFamilies: products.fragranceFamilies,
+      notes: products.notes,
+      storeCode: products.storeCode,
       imageUrl: products.imageUrl,
       packSize: products.packSize,
       active: products.active,

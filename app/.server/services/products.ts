@@ -61,7 +61,8 @@ function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): Product
     packSize: row.packSize,
     imageUrl: row.imageUrl,
     description: row.description,
-    fragranceFamily: row.fragranceFamily,
+    fragranceFamilies: row.fragranceFamilies,
+    notes: row.notes,
     variants: variants.map(toVariant),
   };
 }
@@ -73,7 +74,12 @@ export async function getCatalogPage(
   db: Db = defaultDb,
 ): Promise<CatalogPage> {
   const genders = GENDER_SCOPE[gender];
-  const filters = { genders, fragranceFamily: search.fragranceFamily, brand: search.brand };
+  const filters = {
+    genders,
+    // One family from the URL today; the queries already take a list (#64's trio builder).
+    fragranceFamilies: search.fragranceFamily ? [search.fragranceFamily] : [],
+    brand: search.brand,
+  };
   const [rows, total, filterOptions] = await Promise.all([
     listProducts(db, filters, {
       sort: search.sort,

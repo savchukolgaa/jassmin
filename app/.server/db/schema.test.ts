@@ -114,6 +114,9 @@ describe("products", () => {
       brand: ["varchar(255)", true, false],
       gender: ["gender_type", true, false],
       fragranceFamily: ["text", false, false],
+      fragranceFamilies: ["text[]", true, true],
+      notes: ["text[]", true, true],
+      storeCode: ["varchar(20)", false, false],
       description: ["text", false, false],
       price: ["numeric(10, 2)", true, false],
       volumeMl: ["integer", true, false],
@@ -126,16 +129,20 @@ describe("products", () => {
     });
   });
 
-  it("has the checks, the unique public_id and slug and the gender index", () => {
+  it("has the checks, the unique public_id and slug and the gender and family indexes", () => {
     const { checks, columns, indexes } = getTableConfig(products);
 
     expect(checks.map((c) => c.name).sort()).toEqual([
+      "products_fragrance_family_primary_check",
       "products_pack_size_check",
       "products_stock_quantity_check",
     ]);
     expect(columns.find((c) => c.name === "publicId")?.isUnique).toBe(true);
     expect(columns.find((c) => c.name === "slug")?.uniqueName).toBe("products_slug_unique");
-    expect(indexes.map((i) => i.config.name)).toEqual(["products_gender_idx"]);
+    expect(indexes.map((i) => [i.config.name, i.config.method])).toEqual([
+      ["products_gender_idx", "btree"],
+      ["products_fragrance_families_idx", "gin"],
+    ]);
   });
 });
 

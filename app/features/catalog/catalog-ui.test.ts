@@ -3,18 +3,18 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { CatalogSearch } from "~/lib/catalog";
-import { I18nProvider } from "~/lib/i18n";
+import { I18nProvider, type Locale } from "~/lib/i18n";
 import type { ProductSummary } from "~/lib/products";
 import { CatalogFilters } from "./CatalogFilters";
 import { ProductCard } from "./ProductCard";
 
 // Fetchers and `<Form>` need a data router. Rendered in English, like the assertions.
-const render = (element: ReactElement) => {
+const render = (element: ReactElement, locale: Locale = "en") => {
   const router = createMemoryRouter([{ path: "/catalog/:gender", element }], {
     initialEntries: ["/catalog/women"],
   });
   return renderToStaticMarkup(
-    createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+    createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })),
   );
 };
 
@@ -41,6 +41,7 @@ const PRODUCT: ProductSummary = {
   volumes: [7, 30, 50],
   inStock: true,
   defaultVariant: { id: VARIANT_ID, volumeMl: 7 },
+  fragranceFamily: "шипрові",
 };
 
 /** A product sold in one size only. */
@@ -65,6 +66,16 @@ describe("ProductCard", () => {
     expect(html).toContain("7 · 30 · 50 ml");
     expect(html).toContain("from ₴990");
     expect(html).toContain(`href="/products/${PRODUCT.id}"`);
+  });
+
+  it("shows the primary fragrance family in the UI's language, and none without one", () => {
+    expect(render(createElement(ProductCard, { product: PRODUCT }))).toContain(">Chypre<");
+    expect(render(createElement(ProductCard, { product: PRODUCT }), "uk")).toContain(">Шипрові<");
+    const html = render(
+      createElement(ProductCard, { product: { ...PRODUCT, fragranceFamily: null } }),
+    );
+    expect(html).not.toContain("Chypre");
+    expect(html).not.toContain("rounded-pill bg-blush");
   });
 
   it("shows a single size's price without 'from'", () => {
@@ -141,7 +152,50 @@ describe("ProductCard, compact (home bestsellers)", () => {
 });
 
 describe("CatalogFilters", () => {
-  const options = { brands: ["Chanel", "Dior"], fragranceFamilies: ["квіткові", "шипрові"] };
+  const options = {
+    brands: ["Chanel", "Dior"],
+    fragranceFamilies: ["водяні", "квіткові", "шипрові", "мікс"],
+  };
+
+  /** The family select's options as `[value, label]`, without "All families". */
+  const familyOptions = (html: string) =>
+    [
+      ...(html.match(/<select name="fragrance_family"[\s\S]*?<\/select>/)?.[0] ?? "").matchAll(
+        /<option value="([^"]+)"[^>]*>([^<]*)</g,
+      ),
+    ].map((m) => [m[1], m[2]]);
+
+  it("labels the families in the UI's language, alphabetically, keeping the Ukrainian value", () => {
+    const element = createElement(CatalogFilters, {
+      pathname: "/catalog/women",
+      search: SEARCH,
+      options,
+    });
+
+    expect(familyOptions(render(element))).toEqual([
+      ["водяні", "Aquatic"],
+      ["шипрові", "Chypre"],
+      ["квіткові", "Floral"],
+      ["мікс", "мікс"],
+    ]);
+    expect(familyOptions(render(element, "uk"))).toEqual([
+      ["водяні", "Водяні"],
+      ["квіткові", "Квіткові"],
+      ["мікс", "мікс"],
+      ["шипрові", "Шипрові"],
+    ]);
+  });
+
+  it("preselects the current family", () => {
+    const html = render(
+      createElement(CatalogFilters, {
+        pathname: "/catalog/women",
+        search: { ...SEARCH, fragranceFamily: "шипрові" },
+        options,
+      }),
+    );
+    expect(html).toMatch(/<option value="шипрові" selected="">Chypre</);
+  });
 
   it("is a GET form with the filter and sort fields", () => {
     const html = render(

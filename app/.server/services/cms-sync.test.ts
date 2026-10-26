@@ -17,7 +17,9 @@ const fields: CmsProductFields = {
   brand: "Byredo",
   description: "Свіжий деревний аромат.",
   gender: "unisex",
-  fragranceFamily: "деревні",
+  fragranceFamilies: ["деревні", "свіжі"],
+  notes: ["лимон", "ялівець", "ладан"],
+  storeCode: "7-B",
   imageUrl: null,
   packSize: 1,
   active: true,
@@ -131,6 +133,61 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       volumeMl: 10,
       stockQuantity: 6,
     });
+  });
+
+  it("stores families, notes and the store code and keeps fragrance_family the first family", async () => {
+    const { applyCmsProductChange } = await import("./cms-sync");
+    const product = await created();
+
+    expect(product).toMatchObject({
+      fragranceFamilies: ["деревні", "свіжі"],
+      notes: ["лимон", "ялівець", "ладан"],
+      storeCode: "7-B",
+    });
+    expect(await productRow(product.publicId)).toMatchObject({
+      fragranceFamily: "деревні",
+      fragranceFamilies: ["деревні", "свіжі"],
+      notes: ["лимон", "ялівець", "ладан"],
+      storeCode: "7-B",
+    });
+
+    // Staff reorder the families: the new first one becomes the primary.
+    const reordered = await applyCmsProductChange(
+      {
+        action: "update",
+        ...fields,
+        fragranceFamilies: ["свіжі", "деревні"],
+        notes: [],
+        storeCode: null,
+        publicId: product.publicId,
+        slug: product.slug,
+      },
+      testDb.db,
+    );
+    expect(reordered).toMatchObject({
+      ok: true,
+      product: { fragranceFamilies: ["свіжі", "деревні"], notes: [], storeCode: null },
+    });
+    expect(await productRow(product.publicId)).toMatchObject({
+      fragranceFamily: "свіжі",
+      notes: [],
+      storeCode: null,
+    });
+
+    // A set may have no family: the primary is then null.
+    const set = await applyCmsProductChange(
+      {
+        action: "update",
+        ...fields,
+        packSize: 3,
+        fragranceFamilies: [],
+        publicId: product.publicId,
+        slug: product.slug,
+      },
+      testDb.db,
+    );
+    expect(set).toMatchObject({ ok: true, product: { fragranceFamilies: [] } });
+    expect((await productRow(product.publicId)).fragranceFamily).toBeNull();
   });
 
   it("applies a stock edit as a difference, so sales made meanwhile stay sold", async () => {

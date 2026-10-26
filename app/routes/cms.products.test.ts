@@ -15,7 +15,9 @@ const applyCmsProductChange = vi.hoisted(() =>
         brand: "Chanel",
         description: null,
         gender: "women",
-        fragranceFamily: null,
+        fragranceFamilies: ["квіткові"],
+        notes: [],
+        storeCode: null,
         packSize: 1,
         active: true,
         variants: [{ volumeMl: 50, price: "6850.00", stock: 4 }],
@@ -47,6 +49,9 @@ const update = {
   slug: "coco",
   brand: "Chanel",
   gender: "women",
+  fragranceFamilies: ["квіткові", "фруктові"],
+  notes: [" жасмин ", "Жасмин", "", "мускус"],
+  storeCode: " 3-D ",
   variants: [{ volumeMl: 50, price: 6850, stock: 5, expectedStock: 6 }],
 };
 
@@ -66,7 +71,8 @@ describe("cms products sync route", () => {
       ...update,
       name: "Coco",
       description: null,
-      fragranceFamily: null,
+      notes: ["жасмин", "мускус"],
+      storeCode: "3-D",
       imageUrl: null,
       packSize: 1,
       active: true,
@@ -120,6 +126,21 @@ describe("cms products sync route", () => {
       "variants.0.price",
       "variants.0.stock",
     ]);
+    expect(applyCmsProductChange).not.toHaveBeenCalled();
+  });
+
+  it("answers 422 for a family outside the list or a perfume without one", async () => {
+    const { action } = await import("./cms.products");
+
+    for (const fragranceFamilies of [["мікс"], ["квіткові", "квіткові"], []]) {
+      const response = await action(post(JSON.stringify({ ...update, fragranceFamilies })));
+      expect(response.status).toBe(422);
+      const body = (await response.json()) as { error: string; issues: { path: string }[] };
+      expect(body.error).toBe("invalid-input");
+      expect(body.issues.map((issue) => issue.path)).toEqual([
+        fragranceFamilies.length === 1 ? "fragranceFamilies.0" : "fragranceFamilies",
+      ]);
+    }
     expect(applyCmsProductChange).not.toHaveBeenCalled();
   });
 

@@ -4,6 +4,7 @@ import { ButtonLink } from "~/components/ui/ButtonLink";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { useT } from "~/lib/i18n";
 import { formatVolume, formatVolumes, type ProductSummary } from "~/lib/products";
+import { FamilyChip } from "./FamilyChip";
 import { ProductImage } from "./ProductImage";
 
 export function productHref(id: string): string {
@@ -57,6 +58,11 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
             {product.title}
           </Link>
         </Heading>
+        {product.fragranceFamily && (
+          <p className="pt-1">
+            <FamilyChip family={product.fragranceFamily} size="sm" />
+          </p>
+        )}
         <p className="text-sm text-muted">{formatVolumes(product, translator)}</p>
         <p className="mt-auto pt-3 text-xl font-extrabold text-ink">
           {product.hasPriceRange ? t("product.fromPrice", { price }) : price}

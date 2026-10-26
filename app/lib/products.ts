@@ -28,11 +28,16 @@ export interface ProductSummary extends ProductBase {
   inStock: boolean;
   /** The variant the card's add button adds (see `defaultVariant`). */
   defaultVariant: { id: string; volumeMl: number };
+  /** The primary fragrance family (stored Ukrainian value), if any (#65). */
+  fragranceFamily: string | null;
 }
 
 export interface ProductDetail extends ProductBase {
   description: string | null;
-  fragranceFamily: string | null;
+  /** Stored Ukrainian values, primary first; label them with `fragranceFamilyLabel` (#65). */
+  fragranceFamilies: string[];
+  /** Scent notes, Ukrainian only (#65). */
+  notes: string[];
   /** Ascending by volume; empty when the product has no sizes for sale. */
   variants: ProductVariant[];
 }

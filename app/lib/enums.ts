@@ -100,3 +100,34 @@ export type CmsSyncEntity = (typeof CMS_SYNC_ENTITIES)[number];
 export const DISCOUNT_KINDS = ["percent", "fixed_amount", "fixed_price_set"] as const;
 
 export type DiscountKind = (typeof DISCOUNT_KINDS)[number];
+
+/**
+ * The fragrance families a product can have (#65), lowercase Ukrainian as stored in
+ * `products.fragrance_families` and used in the catalog's `fragrance_family` URL param. Labels
+ * live in `catalog.families.*` (`FRAGRANCE_FAMILY_LABEL_KEYS` in `~/lib/catalog`). Rows written
+ * before #65 may hold other values, so reads stay `string`.
+ */
+export const FRAGRANCE_FAMILIES = [
+  "квіткові",
+  "фруктові",
+  "східні",
+  "водяні",
+  "шипрові",
+  "деревні",
+  "мускусні",
+  "пряні",
+  "гурманські",
+  "зелені",
+  "ванільні",
+  "ароматичні",
+  "альдегідні",
+  "цитрусові",
+  "свіжі",
+  "фужерні",
+] as const;
+
+export type FragranceFamily = (typeof FRAGRANCE_FAMILIES)[number];
+
+export function isFragranceFamily(value: string): value is FragranceFamily {
+  return (FRAGRANCE_FAMILIES as readonly string[]).includes(value);
+}

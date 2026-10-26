@@ -208,14 +208,13 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   to 26s and add `@utility marquee-pause` (`&:hover { animation-play-state: paused }`). All rely on
   the existing reduced-motion block. Extend `app/theme.test.ts` to assert each utility exists and
   the reduced-motion block is still last. Update the Motion table in `docs/design.md`.
-- [ ] **5. i18n keys** — Add to `home` in `uk.ts` and `en.ts`: `hero.chip` ("Жінкам · Чоловікам" /
-  "Women · Men"), `hero.badge.{only,forCount}` ("for {count}"), `hero.imageAlt` fallback,
-  `marquee.offer` ("Order {count} testers only for {price}"), `howItWorks.{title,
-  steps.{pick,pay,decide}.{title,body}}` (pay title takes `{price}`), `trio.{title, intro,
-  families, update, slot ("Slot {n}"), left (plural `{count} more to pick`), cta ("Show my trio ·
-  {price} →"), ctaNoPrice}`, `tiles.{women,men}`, `bestsellers.{title,
-  viewAll}`. Social pills keep the existing platform names. Plurals use `{ one, few,
-  many, other }` in uk. `pnpm typecheck` catches missing keys.
+- [x] **5. i18n keys** — Add to `home` in `uk.ts` and `en.ts`: `hero.{chip, badgeOnly, badgeFor,
+  badgeLabel}`, `marquee.offer`, `howItWorks.{title, pick/pay/decide Title and Body}` (`payTitle`
+  takes `{price}`), `trio.{title, intro, families, update, slots, slot, slotFilled, left, cta,
+  ctaNoPrice}`, `tiles.{label, women, men}`, `bestsellers.{title, viewAll}`, plus
+  `product.quickAdd` for the round add button. `badgeLabel`, `marquee.offer` and `trio.left` are
+  plurals (`{ one, few, many, other }` in uk). The location title follows the artboard ("Come smell
+  them in person"). `pnpm typecheck` catches missing keys.
 - [ ] **6. Hero** — `HeroSection`: eyebrow pill (`bg-white/16`, uppercase, `animate-fade-up`),
   `h1` (`text-5xl md:text-8xl`, `leading-[0.92]`, `anim-delay-2`), subtitle
   (`text-lg md:text-xl`, `anim-delay-4`), `dark` "Order Now" + `outline-light` second CTA

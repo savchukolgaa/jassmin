@@ -210,6 +210,7 @@ export const uk = {
     ml: "мл",
     fromPrice: "від {price}",
     addSize: "Додати {size}",
+    quickAdd: "Додати {title}, {size}, у кошик",
     chooseVolume: "Обрати об’єм",
     volume: "Об’єм",
     soldOutOption: "{option} (немає в наявності)",
@@ -484,9 +485,64 @@ export const uk = {
   home: {
     defaultDescription: "Магазин парфумів Jassmin",
     about: "Про нас",
+    hero: {
+      chip: "Жінкам · Чоловікам",
+      badgeOnly: "лише",
+      badgeFor: "за {count}",
+      badgeLabel: {
+        one: "Лише {price} за {count} тестер",
+        few: "Лише {price} за {count} тестери",
+        many: "Лише {price} за {count} тестерів",
+        other: "Лише {price} за {count} тестера",
+      },
+    },
+    marquee: {
+      offer: {
+        one: "Замовте {count} тестер всього за {price}",
+        few: "Замовте {count} тестери всього за {price}",
+        many: "Замовте {count} тестерів всього за {price}",
+        other: "Замовте {count} тестера всього за {price}",
+      },
+    },
+    howItWorks: {
+      title: "Як це працює",
+      pickTitle: "Оберіть три аромати",
+      pickBody: "Оберіть будь-які три тестери в каталозі або почніть з улюблених родин ароматів.",
+      payTitle: "Сплатіть {price}",
+      payBody: "Одна ціна за набір. Оформіть замовлення як гість або зі своїм акаунтом.",
+      decideTitle: "Носіть, потім вирішуйте",
+      decideBody: "Поживіть з кожним ароматом кілька днів, а потім оберіть свій повний флакон.",
+    },
+    trio: {
+      title: "Зберіть своє тріо",
+      intro:
+        "Не знаєте, з чого почати? Оберіть три родини ароматів, і ми покажемо тестери, що їм відповідають.",
+      families: "Родини ароматів",
+      update: "Показати вибір",
+      slots: "Ваше тріо",
+      slot: "Місце {n}",
+      slotFilled: "Місце {n}: {family}",
+      left: {
+        one: "Оберіть ще {count}",
+        few: "Оберіть ще {count}",
+        many: "Оберіть ще {count}",
+        other: "Оберіть ще {count}",
+      },
+      cta: "Показати моє тріо · {price} →",
+      ctaNoPrice: "Показати мій вибір →",
+    },
+    tiles: {
+      label: "Категорії",
+      women: "Жінкам",
+      men: "Чоловікам",
+    },
+    bestsellers: {
+      title: "Бестселери",
+      viewAll: "Дивитися всі →",
+    },
     location: {
       eyebrow: "Розташування",
-      title: "Завітайте до нашого магазину",
+      title: "Приходьте понюхати наживо",
       address: "Адреса",
       hours: "Години роботи",
       directions: "Прокласти маршрут",

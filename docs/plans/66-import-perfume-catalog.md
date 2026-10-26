@@ -175,7 +175,7 @@ everywhere and 5 ml is added.
 
 ## Steps
 
-- [ ] **1. Sizes: 5 ml in, 7 ml out** — Change `PERFUME_VOLUMES_ML` and its test. Run
+- [x] **1. Sizes: 5 ml in, 7 ml out** — Change `PERFUME_VOLUMES_ML` and its test. Run
   `pnpm db:generate --name volume_5ml` (drop and re-add `product_variants_volume_ml_check`), then add
   to the generated SQL, **before** the new CHECK: (a) queue the products that have a 7 ml size
   (`insert into cms_outbox (entity, entity_id) select 'product', product_id … on conflict (entity,

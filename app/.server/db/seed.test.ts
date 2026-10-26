@@ -133,7 +133,7 @@ describe.skipIf(!hasDatabase)("seedProducts", () => {
     const { productVariants } = await import("./schema");
     const { inArray } = await import("drizzle-orm");
 
-    await testDb.db.delete(productVariants).where(inArray(productVariants.volumeMl, [7, 10]));
+    await testDb.db.delete(productVariants).where(inArray(productVariants.volumeMl, [5, 10]));
     const missing = VARIANT_COUNT - (await testDb.db.$count(productVariants));
 
     expect(missing).toBeGreaterThan(0);

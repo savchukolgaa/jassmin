@@ -36,10 +36,10 @@ function offer(overrides: Partial<OfferView> = {}): OfferView {
     kind: "discovery-set",
     contentLocale: "uk",
     title: "Тестерне тріо",
-    summary: "Три аромати по 7 мл.",
+    summary: "Три аромати по 10 мл.",
     bodyHtml: "<p>Носіть кожен <strong>кілька днів</strong>.</p>",
     image: null,
-    priceNote: "3 × 7 мл — від 499 ₴",
+    priceNote: "3 × 10 мл — 499 ₴",
     validUntil: null,
     cta: { to: "/catalog/women", label: "Зібрати тріо" },
     products: [],
@@ -59,9 +59,9 @@ describe("OfferCard", () => {
     const html = render(createElement(OfferCard, { offer: offer() }));
 
     expect(html).toMatch(/<h3[^>]*>Тестерне тріо<\/h3>/);
-    expect(html).toContain("Три аромати по 7 мл.");
+    expect(html).toContain("Три аромати по 10 мл.");
     expect(html).toContain("<strong>кілька днів</strong>");
-    expect(html).toContain("3 × 7 мл — від 499 ₴");
+    expect(html).toContain("3 × 10 мл — 499 ₴");
     expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>Зібрати тріо<\/a>/);
   });
 

@@ -282,19 +282,19 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await pgErrorCode(db.insert(productVariants).values({ ...variant, volumeMl: 50 }))).toBe(
       "23505",
     );
-    for (const volumeMl of [0, 5, 20, 75, 150]) {
+    for (const volumeMl of [0, 7, 20, 75, 150]) {
       expect(await pgErrorCode(db.insert(productVariants).values({ ...variant, volumeMl }))).toBe(
         "23514",
       );
     }
     expect(
       await pgErrorCode(
-        db.insert(productVariants).values({ ...variant, volumeMl: 7, stockQuantity: -1 }),
+        db.insert(productVariants).values({ ...variant, volumeMl: 5, stockQuantity: -1 }),
       ),
     ).toBe("23514");
     expect(
       await pgErrorCode(
-        db.insert(productVariants).values({ ...variant, volumeMl: 7, price: "-1" }),
+        db.insert(productVariants).values({ ...variant, volumeMl: 5, price: "-1" }),
       ),
     ).toBe("23514");
 
@@ -679,7 +679,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0013 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0014 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
     expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
@@ -712,7 +713,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0013 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0014 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
     expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
@@ -804,6 +806,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
     expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     // Products as they looked before #65, with one family or none.
     const legacy = await db.execute<{ id: number }>(
@@ -856,9 +859,86 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
   });
 
+  it("replaces 7 ml with 5 ml, keeping order lines and queuing the products for Strapi", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { pgErrorCode } = await import("./test-utils");
+    const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
+    // Before #66: a product sold in 7 and 30 ml (legacy columns on 7 ml) and one only in 7 ml.
+    const legacy = await db.execute<{ id: number }>(
+      sql`insert into products (title, brand, gender, price, volume_ml, stock_quantity)
+          values ('Mini', 'Old', 'women', '500.00', 7, 2), ('Only mini', 'Old', 'men', '400.00', 7, 1)
+          returning id`,
+    );
+    const [mini, onlyMini] = legacy.rows.map((r) => r.id);
+    const sizes = await db.execute<{ id: number }>(
+      sql`insert into product_variants (product_id, volume_ml, price, stock_quantity)
+          values (${mini}, 7, '500.00', 2), (${mini}, 30, '1500.00', 4), (${onlyMini}, 7, '400.00', 1)
+          returning id`,
+    );
+    const [miniSeven] = sizes.rows.map((r) => r.id);
+    const cart = await db.execute<{ id: number }>(
+      sql`insert into carts default values returning id`,
+    );
+    const order = await db.execute<{ id: number }>(
+      sql`insert into orders (guest_full_name, guest_email, guest_phone, shipping_address,
+            payment_method, subtotal, total_amount)
+          values ('B', 'b@example.com', '+380', 'Kyiv', 'cod', '500.00', '500.00') returning id`,
+    );
+    const cartId = cart.rows[0]?.id;
+    const orderId = order.rows[0]?.id;
+    await db.execute(
+      sql`insert into cart_items (cart_id, product_id, variant_id) values (${cartId}, ${mini}, ${miniSeven})`,
+    );
+    await db.execute(
+      sql`insert into order_items (order_id, product_id, variant_id, volume_ml, quantity, price_at_purchase)
+          values (${orderId}, ${mini}, ${miniSeven}, 7, 1, '500.00')`,
+    );
+
+    await migrateLatest(db);
+
+    const variants = await db.execute<{ product_id: number; volume_ml: number }>(
+      sql`select product_id, volume_ml from product_variants where product_id in (${mini}, ${onlyMini})`,
+    );
+    expect(variants.rows).toEqual([{ product_id: mini, volume_ml: 30 }]);
+    const products = await db.execute<{ price: string; volume_ml: number; stock_quantity: number }>(
+      sql`select price, volume_ml, stock_quantity from products where id in (${mini}, ${onlyMini})
+          order by id`,
+    );
+    // The only-7-ml product has no size left, so its legacy columns stay as they were.
+    expect(products.rows).toEqual([
+      { price: "1500.00", volume_ml: 30, stock_quantity: 4 },
+      { price: "400.00", volume_ml: 7, stock_quantity: 1 },
+    ]);
+    const cartLines = await db.execute(sql`select 1 from cart_items where cart_id = ${cartId}`);
+    expect(cartLines.rows).toEqual([]);
+    const orderLines = await db.execute<{ variant_id: number | null; volume_ml: number }>(
+      sql`select variant_id, volume_ml from order_items where order_id = ${orderId}`,
+    );
+    expect(orderLines.rows).toEqual([{ variant_id: null, volume_ml: 7 }]);
+    const queued = await db.execute<{ entity_id: number; synced_at: string | null }>(
+      sql`select entity_id, synced_at from cms_outbox
+          where entity = 'product' and entity_id in (${mini}, ${onlyMini}) order by entity_id`,
+    );
+    expect(queued.rows).toEqual([
+      { entity_id: mini, synced_at: null },
+      { entity_id: onlyMini, synced_at: null },
+    ]);
+
+    // 23514 check_violation: 7 ml is refused from now on, 5 ml is a size.
+    const size = { productId: mini ?? 0, price: "100.00" };
+    const { productVariants } = await import("./schema");
+    expect(await pgErrorCode(db.insert(productVariants).values({ ...size, volumeMl: 7 }))).toBe(
+      "23514",
+    );
+    await db.insert(productVariants).values({ ...size, volumeMl: 5 });
+  });
+
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0014_volume_5ml");
     expect(await rollbackLatest(testDb.db)).toBe("0013_product_families_notes_code");
     const familyColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns where table_name = 'products'

@@ -37,7 +37,7 @@ const order: CmsOrderState = {
       productPublicId: "01a1652b-6e25-7c03-ae47-25b57131fb06",
       productName: "Coco Mademoiselle",
       brand: "Chanel",
-      volumeMl: 7,
+      volumeMl: 5,
       quantity: 2,
       unitPrice: "990.00",
     },
@@ -56,7 +56,7 @@ const product: CmsProductState = {
   storeCode: "1-D",
   packSize: 1,
   active: true,
-  variants: [{ volumeMl: 7, price: "990.00", stock: 8 }],
+  variants: [{ volumeMl: 5, price: "990.00", stock: 8 }],
 };
 
 const env = { STRAPI_URL: "http://cms.test", STRAPI_SYNC_TOKEN: "write" };
@@ -125,7 +125,7 @@ describe("toStrapiOrderData / toStrapiProductData", () => {
     expect(toStrapiProductData(product)).toMatchObject({
       publicId: product.publicId,
       storeCode: "1-D",
-      variants: [{ volumeMl: 7, price: 990, stock: 8 }],
+      variants: [{ volumeMl: 5, price: 990, stock: 8 }],
     });
   });
 

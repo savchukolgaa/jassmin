@@ -36,7 +36,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 50,
     stockQuantity: 6,
     variants: [
-      { volumeMl: 7, price: "990.00", stockQuantity: 10 },
+      { volumeMl: 5, price: "990.00", stockQuantity: 10 },
       { volumeMl: 10, price: "1350.00", stockQuantity: 0 },
       { volumeMl: 30, price: "4450.00", stockQuantity: 3 },
       { volumeMl: 50, price: "6850.00", stockQuantity: 6 },
@@ -73,7 +73,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 50,
     stockQuantity: 4,
     variants: [
-      { volumeMl: 7, price: "890.00", stockQuantity: 6 },
+      { volumeMl: 5, price: "890.00", stockQuantity: 6 },
       { volumeMl: 50, price: "5990.00", stockQuantity: 4 },
       { volumeMl: 100, price: "8650.00", stockQuantity: 1 },
     ],
@@ -140,7 +140,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 100,
     stockQuantity: 3,
     variants: [
-      { volumeMl: 7, price: "690.00", stockQuantity: 12 },
+      { volumeMl: 5, price: "690.00", stockQuantity: 12 },
       { volumeMl: 30, price: "2690.00", stockQuantity: 2 },
       { volumeMl: 100, price: "5350.00", stockQuantity: 3 },
     ],
@@ -157,7 +157,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 100,
     stockQuantity: 7,
     variants: [
-      { volumeMl: 7, price: "590.00", stockQuantity: 20 },
+      { volumeMl: 5, price: "590.00", stockQuantity: 20 },
       { volumeMl: 10, price: "790.00", stockQuantity: 15 },
       { volumeMl: 30, price: "1890.00", stockQuantity: 4 },
       { volumeMl: 50, price: "2890.00", stockQuantity: 0 },

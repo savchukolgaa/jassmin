@@ -808,10 +808,10 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
-    fragranceFamily: Schema.Attribute.String &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 100;
-      }>;
+    fragranceFamilies: Schema.Attribute.Component<
+      'catalog.fragrance-family',
+      true
+    >;
     gender: Schema.Attribute.Enumeration<['women', 'men', 'unisex']> &
       Schema.Attribute.Required;
     image: Schema.Attribute.Media<'images'>;
@@ -826,6 +826,7 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 255;
       }>;
+    notes: Schema.Attribute.Component<'catalog.note', true>;
     packSize: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
@@ -838,6 +839,10 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     publicId: Schema.Attribute.String & Schema.Attribute.Unique;
     publishedAt: Schema.Attribute.DateTime;
     slug: Schema.Attribute.UID<'name'> & Schema.Attribute.Required;
+    storeCode: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

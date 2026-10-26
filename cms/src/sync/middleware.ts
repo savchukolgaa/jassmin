@@ -36,12 +36,25 @@ const isRecord = (value: unknown): value is Data =>
 
 const records = (value: unknown): Data[] => (Array.isArray(value) ? value.filter(isRecord) : []);
 
+const strings = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+
 /** `NaN` for a missing value, so the app's validation names the field. */
 const toNumber = (value: unknown): number =>
   value === null || value === undefined || value === "" ? Number.NaN : Number(value);
 
 const text = (value: unknown): string | null =>
   typeof value === "string" && value.trim() !== "" ? value : null;
+
+/**
+ * The `field` of each row of a repeatable component, e.g. the families of
+ * `[{ id: 1, family: "квіткові" }]` (#65). Kept in order, since the first family is the primary.
+ */
+export const componentValues = (rows: unknown, field: string): unknown[] =>
+  records(rows).map((row) => row[field]);
+
+/** The repeatable components of a product, populated when the stored product is read. */
+export const PRODUCT_COMPONENTS = ["variants", "fragranceFamilies", "notes"] as const;
 
 /** Whether the current request is a staff member's, made in the admin panel. */
 export function isStaffEdit(strapi: Core.Strapi): boolean {
@@ -67,7 +80,7 @@ async function imageUrl(strapi: Core.Strapi, image: unknown): Promise<string | n
 }
 
 /** The product as the app's `cmsProductChangeSchema` expects it (without `action`). */
-async function productPayload(strapi: Core.Strapi, merged: Data, stored: Data | null) {
+export async function productPayload(strapi: Core.Strapi, merged: Data, stored: Data | null) {
   const storedStock = new Map(
     records(stored?.variants).map((variant) => [
       toNumber(variant.volumeMl),
@@ -80,7 +93,9 @@ async function productPayload(strapi: Core.Strapi, merged: Data, stored: Data | 
     brand: merged.brand,
     description: text(merged.description),
     gender: merged.gender,
-    fragranceFamily: text(merged.fragranceFamily),
+    fragranceFamilies: componentValues(merged.fragranceFamilies, "family"),
+    notes: componentValues(merged.notes, "name"),
+    storeCode: text(merged.storeCode),
     imageUrl: await imageUrl(strapi, merged.image),
     packSize:
       merged.packSize === undefined || merged.packSize === null ? 1 : toNumber(merged.packSize),
@@ -97,8 +112,11 @@ async function productPayload(strapi: Core.Strapi, merged: Data, stored: Data | 
   };
 }
 
-/** Writes the app's answer into the data Strapi is about to save, keeping the sizes' ids. */
-function applyProductAnswer(data: Data, answer: unknown): Data {
+/**
+ * Writes the app's answer into the data Strapi is about to save, keeping the sizes' ids. Families,
+ * notes and the store code are saved as the app normalised them (trimmed, repeats dropped).
+ */
+export function applyProductAnswer(data: Data, answer: unknown): Data {
   if (!isRecord(answer) || typeof answer.publicId !== "string") {
     throw new AppSyncError("Магазин надіслав неочікувану відповідь. Зміни не збережено.");
   }
@@ -107,6 +125,9 @@ function applyProductAnswer(data: Data, answer: unknown): Data {
     ...data,
     publicId: answer.publicId,
     active: answer.active,
+    fragranceFamilies: strings(answer.fragranceFamilies).map((family) => ({ family })),
+    notes: strings(answer.notes).map((name) => ({ name })),
+    storeCode: typeof answer.storeCode === "string" ? answer.storeCode : null,
     variants: records(data.variants).map((variant) => {
       const stored = byVolume.get(toNumber(variant.volumeMl));
       return stored ? { ...variant, price: toNumber(stored.price), stock: stored.stock } : variant;
@@ -139,7 +160,7 @@ async function findStored(strapi: Core.Strapi, uid: string, documentId: string |
   const documents = strapi.documents(uid as typeof PRODUCT_UID);
   const stored: unknown = await documents.findOne({
     documentId,
-    populate: uid === PRODUCT_UID ? ["variants", "image"] : [],
+    populate: uid === PRODUCT_UID ? [...PRODUCT_COMPONENTS, "image"] : [],
   });
   return isRecord(stored) ? stored : null;
 }

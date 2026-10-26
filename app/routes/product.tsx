@@ -6,6 +6,7 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
+import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
 import { shouldRevalidateView } from "~/lib/analytics";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
@@ -83,12 +84,9 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
             {product.title}
           </h1>
-          {product.fragranceFamily && (
-            <span className="self-start rounded-pill bg-blush px-3 py-1 text-sm font-bold text-primary-dark">
-              {product.fragranceFamily}
-            </span>
-          )}
+          <ProductFamilies families={product.fragranceFamilies} />
           <ProductPurchase product={product} />
+          <ProductNotes notes={product.notes} />
           {product.description && (
             <section aria-labelledby="description-heading" className="mt-2">
               <h2

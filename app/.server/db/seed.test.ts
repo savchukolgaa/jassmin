@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { GENDERS, PERFUME_VOLUMES_ML } from "~/lib/enums";
+import { FRAGRANCE_FAMILIES, GENDERS, PERFUME_VOLUMES_ML } from "~/lib/enums";
 import { SAMPLE_DISCOUNTS, SAMPLE_PRODUCTS } from "./seed-data";
 import { hasDatabase, type TestDatabase } from "./test-utils";
 
@@ -20,7 +20,19 @@ describe("SAMPLE_PRODUCTS", () => {
       expect(product.volumeMl).toBeGreaterThan(0);
       expect(product.packSize ?? 1).toBeGreaterThanOrEqual(1);
       expect(product.stockQuantity ?? 0).toBeGreaterThanOrEqual(0);
-      expect(product.fragranceFamily).toBeTruthy();
+    }
+  });
+
+  it("gives every perfume its families and notes; sets may have none", () => {
+    for (const product of SAMPLE_PRODUCTS) {
+      for (const family of product.fragranceFamilies) {
+        expect(FRAGRANCE_FAMILIES).toContain(family);
+      }
+      expect(new Set(product.fragranceFamilies).size).toBe(product.fragranceFamilies.length);
+      if ((product.packSize ?? 1) === 1) {
+        expect(product.fragranceFamilies.length).toBeGreaterThan(0);
+        expect(product.notes?.length).toBeGreaterThan(0);
+      }
     }
   });
 
@@ -127,6 +139,38 @@ describe.skipIf(!hasDatabase)("seedProducts", () => {
     expect(missing).toBeGreaterThan(0);
     expect(await seedProducts(testDb.db)).toEqual({ inserted: 0, variantsInserted: missing });
     expect(await testDb.db.$count(productVariants)).toBe(VARIANT_COUNT);
+  });
+
+  it("stores the families with the primary first and fills them in for older sample rows", async () => {
+    const { seedProducts } = await import("./seed");
+    const { products } = await import("./schema");
+    const { eq } = await import("drizzle-orm");
+    const [sample] = SAMPLE_PRODUCTS.filter((p) => p.fragranceFamilies.length > 1);
+    if (!sample) throw new Error("A sample product needs several families");
+    const stored = () =>
+      testDb.db
+        .select({
+          fragranceFamily: products.fragranceFamily,
+          fragranceFamilies: products.fragranceFamilies,
+          notes: products.notes,
+        })
+        .from(products)
+        .where(eq(products.publicId, sample.publicId));
+
+    const expected = {
+      fragranceFamily: sample.fragranceFamilies[0],
+      fragranceFamilies: sample.fragranceFamilies,
+      notes: sample.notes,
+    };
+    expect(await stored()).toEqual([expected]);
+
+    // A row seeded before #65: only the primary family, no notes.
+    await testDb.db
+      .update(products)
+      .set({ fragranceFamilies: [sample.fragranceFamilies[0] ?? ""], notes: [] })
+      .where(eq(products.publicId, sample.publicId));
+    await seedProducts(testDb.db);
+    expect(await stored()).toEqual([expected]);
   });
 
   it("inserts the sample discount rules once and keeps their redemption counts", async () => {

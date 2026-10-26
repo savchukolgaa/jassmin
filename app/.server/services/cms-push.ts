@@ -66,7 +66,9 @@ export function toCmsProductState(row: ProductSyncRow): CmsProductState {
     brand: row.brand,
     description: row.description,
     gender: row.gender,
-    fragranceFamily: row.fragranceFamily,
+    fragranceFamilies: row.fragranceFamilies,
+    notes: row.notes,
+    storeCode: row.storeCode,
     packSize: row.packSize,
     active: row.active,
     variants: row.variants,
@@ -89,10 +91,15 @@ export function toStrapiOrderData({ status, ...order }: CmsOrderState) {
   };
 }
 
-/** The `data` of a product document in Strapi. The image is Strapi's own and isn't sent. */
-export function toStrapiProductData(product: CmsProductState) {
+/**
+ * The `data` of a product document in Strapi. The image is Strapi's own and isn't sent. Families
+ * and notes are repeatable components there (#65): one `{ family }` / `{ name }` row each.
+ */
+export function toStrapiProductData({ fragranceFamilies, notes, ...product }: CmsProductState) {
   return {
     ...product,
+    fragranceFamilies: fragranceFamilies.map((family) => ({ family })),
+    notes: notes.map((name) => ({ name })),
     variants: product.variants.map((variant) => ({ ...variant, price: Number(variant.price) })),
   };
 }

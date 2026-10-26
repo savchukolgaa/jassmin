@@ -1,7 +1,8 @@
 // Drizzle schema: core tables (#3), commerce tables (#4), analytics tables (#5),
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
 // checkout fields on orders (#11), the order email queue (#45), card payment attempts (#44) and
-// discount rules (#59) and the Strapi catalog and order sync (#40).
+// discount rules (#59), the Strapi catalog and order sync (#40) and several fragrance families,
+// notes and a store code per product (#65).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -85,7 +86,17 @@ export const products = pgTable(
     title: varchar({ length: 255 }).notNull(),
     brand: varchar({ length: 255 }).notNull(),
     gender: genderType().notNull(),
+    /** The primary (first) of `fragrance_families`; kept for the ML models, see the CHECK. */
     fragranceFamily: text(),
+    /**
+     * Every family of the product, primary first (#65); values from `FRAGRANCE_FAMILIES`, except
+     * ones copied from `fragrance_family` before #65. The catalog filter matches any of them.
+     */
+    fragranceFamilies: text().array().notNull().default(sql`'{}'::text[]`),
+    /** Scent notes in Ukrainian, in the order staff entered them (#65). */
+    notes: text().array().notNull().default(sql`'{}'::text[]`),
+    /** The shop's own code for the bottle, e.g. `3-D` (#65); not unique yet (#66 decides). */
+    storeCode: varchar({ length: 20 }),
     description: text(),
     /** @deprecated Price, volume and stock live in `product_variants` (#26); not read by the app. */
     price: numeric({ precision: 10, scale: 2 }).notNull(),
@@ -108,7 +119,12 @@ export const products = pgTable(
   (t) => [
     check("products_stock_quantity_check", sql`${t.stockQuantity} >= 0`),
     check("products_pack_size_check", sql`${t.packSize} > 0`),
+    check(
+      "products_fragrance_family_primary_check",
+      sql`${t.fragranceFamily} is not distinct from ${t.fragranceFamilies}[1]`,
+    ),
     index("products_gender_idx").on(t.gender),
+    index("products_fragrance_families_idx").using("gin", t.fragranceFamilies),
   ],
 );
 

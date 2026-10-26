@@ -5,9 +5,10 @@ import {
   CATALOG_SORT_LABEL_KEYS,
   CATALOG_SORTS,
   type CatalogSearch,
+  fragranceFamilyLabel,
   hasActiveFilters,
 } from "~/lib/catalog";
-import { useT } from "~/lib/i18n";
+import { INTL_LOCALES, useT } from "~/lib/i18n";
 import type { CatalogFilterOptions } from "~/lib/products";
 
 export interface CatalogFiltersProps {
@@ -24,7 +25,13 @@ export const selectClasses = `min-h-11 w-full rounded-pill border border-muted b
  * changing a filter goes back to the first page.
  */
 export function CatalogFilters({ pathname, search, options }: CatalogFiltersProps) {
-  const { t } = useT();
+  const translator = useT();
+  const { t } = translator;
+  // Labels in the UI's language, alphabetical in it; the value stays the Ukrainian family (#65).
+  const collator = new Intl.Collator(INTL_LOCALES[translator.locale]);
+  const families = options.fragranceFamilies
+    .map((value) => ({ value, label: fragranceFamilyLabel(value, translator) }))
+    .sort((a, b) => collator.compare(a.label, b.label));
 
   return (
     <Form
@@ -43,9 +50,9 @@ export function CatalogFilters({ pathname, search, options }: CatalogFiltersProp
           className={selectClasses}
         >
           <option value="">{t("catalog.filters.allFamilies")}</option>
-          {options.fragranceFamilies.map((family) => (
-            <option key={family} value={family}>
-              {family}
+          {families.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
             </option>
           ))}
         </select>

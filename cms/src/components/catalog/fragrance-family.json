@@ -1,0 +1,33 @@
+{
+  "collectionName": "components_catalog_fragrance_families",
+  "info": {
+    "displayName": "Fragrance family",
+    "icon": "seed",
+    "description": "One fragrance family of a perfume. The first one is the main family, shown on the product card; drag to reorder"
+  },
+  "options": {},
+  "attributes": {
+    "family": {
+      "type": "enumeration",
+      "enum": [
+        "квіткові",
+        "фруктові",
+        "східні",
+        "водяні",
+        "шипрові",
+        "деревні",
+        "мускусні",
+        "пряні",
+        "гурманські",
+        "зелені",
+        "ванільні",
+        "ароматичні",
+        "альдегідні",
+        "цитрусові",
+        "свіжі",
+        "фужерні"
+      ],
+      "required": true
+    }
+  }
+}

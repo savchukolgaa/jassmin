@@ -1,12 +1,13 @@
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "./client";
 import { discounts, products, productVariants } from "./schema";
 import { SAMPLE_DISCOUNTS, SAMPLE_PRODUCTS } from "./seed-data";
 
 /**
  * Inserts the sample products and variants that don't exist yet (matched by `publicId`, and by
- * `(product, volume)` for variants). Existing rows are never changed, so the seed is safe to run
- * repeatedly, and it adds new sample sizes to products seeded before #26. Returns how many
+ * `(product, volume)` for variants). Existing rows are not changed, except that products seeded
+ * before #65 get their families and notes while their notes are still empty, so the seed is safe to
+ * run repeatedly. It also adds new sample sizes to products seeded before #26. Returns how many
  * products and variants were added.
  */
 export async function seedProducts(
@@ -15,9 +16,26 @@ export async function seedProducts(
   return db.transaction(async (tx) => {
     const inserted = await tx
       .insert(products)
-      .values(SAMPLE_PRODUCTS.map(({ variants: _, ...product }) => product))
+      .values(
+        SAMPLE_PRODUCTS.map(({ variants: _, ...product }) => ({
+          ...product,
+          fragranceFamily: product.fragranceFamilies[0] ?? null,
+        })),
+      )
       .onConflictDoNothing({ target: products.publicId })
       .returning({ id: products.id });
+
+    for (const product of SAMPLE_PRODUCTS) {
+      if (!product.notes?.length) continue;
+      await tx
+        .update(products)
+        .set({
+          fragranceFamilies: product.fragranceFamilies,
+          fragranceFamily: product.fragranceFamilies[0] ?? null,
+          notes: product.notes,
+        })
+        .where(and(eq(products.publicId, product.publicId), sql`${products.notes} = '{}'`));
+    }
 
     const rows = await tx
       .select({ id: products.id, publicId: products.publicId })

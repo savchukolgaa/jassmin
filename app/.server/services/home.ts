@@ -1,15 +1,29 @@
 import type { HomePage, SiteSettings } from "~/lib/cms";
-import type { HomePageView } from "~/lib/home";
+import type { HomePageView, HomeShopData } from "~/lib/home";
 import { directionsUrl, safeMapEmbedUrl } from "~/lib/links";
 import { renderMarkdown, toPlainText } from "../markdown";
 
-/** Prepares the Strapi home page and site settings for the home route. */
-export function buildHomePageView(homePage: HomePage, siteSettings: SiteSettings): HomePageView {
+const NO_SHOP_DATA: HomeShopData = {
+  trioOffer: null,
+  trioFamilies: [],
+  selectedFamilies: [],
+  bestsellers: [],
+};
+
+/** Prepares the Strapi home page, site settings and shop data for the home route. */
+export function buildHomePageView(
+  homePage: HomePage,
+  siteSettings: SiteSettings,
+  shop: HomeShopData = NO_SHOP_DATA,
+): HomePageView {
   const { hero, about, location } = homePage;
   return {
     contentLocale: homePage.locale,
     hero,
-    about: { title: about.title, bodyHtml: renderMarkdown(about.body) },
+    about: { title: about.title, bodyHtml: renderMarkdown(about.body), image: about.image },
+    trioOffer: shop.trioOffer,
+    trio: { families: shop.trioFamilies, selected: shop.selectedFamilies },
+    bestsellers: shop.bestsellers,
     location: {
       address: location.address,
       openingHours: location.openingHours,

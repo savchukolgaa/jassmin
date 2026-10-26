@@ -5,10 +5,13 @@ import { getLocale } from "~/.server/locale";
 import { getClientIp } from "~/.server/rate-limit";
 import { submitContactMessage } from "~/.server/services/contact";
 import { buildHomePageView } from "~/.server/services/home";
+import { getBestsellers, getTrioFamilies } from "~/.server/services/products";
+import { getTesterTrioOffer } from "~/.server/services/trio";
 import { parseContactForm } from "~/features/home/contact-form";
 import { HomePage } from "~/features/home/HomePage";
 import type { ContactActionResult } from "~/lib/contact";
 import { metaTranslator } from "~/lib/i18n";
+import { parseTrioSearch } from "~/lib/trio";
 import type { Route } from "./+types/home";
 
 export function meta({ loaderData, matches }: Route.MetaArgs) {
@@ -29,14 +32,28 @@ export function meta({ loaderData, matches }: Route.MetaArgs) {
 }
 
 // Content is edited in Strapi (`home-page`, `site-settings`), in the visitor's language with a
-// Ukrainian fallback; an outage becomes a 503 page.
+// Ukrainian fallback; an outage becomes a 503 page. The tester-trio price, the trio builder's
+// families and the bestsellers come from PostgreSQL (#64); `?family=` holds the trio picks when
+// the builder was submitted without JS.
 export async function loader({ request }: Route.LoaderArgs) {
   const locale = await getLocale(request);
-  const [homePage, siteSettings] = await Promise.all([
+  const [homePage, siteSettings, trioOffer, trioFamilies, bestsellers] = await Promise.all([
     getHomePage(locale).catch(cmsUnavailable),
     getSiteSettings(locale).catch(cmsUnavailable),
+    getTesterTrioOffer(),
+    getTrioFamilies(),
+    getBestsellers(),
   ]);
-  return buildHomePageView(homePage, siteSettings);
+  const selectedFamilies = parseTrioSearch(
+    new URL(request.url).searchParams,
+    trioFamilies.map((family) => family.value),
+  );
+  return buildHomePageView(homePage, siteSettings, {
+    trioOffer,
+    trioFamilies,
+    selectedFamilies,
+    bestsellers,
+  });
 }
 
 // The contact form. User mistakes come back as typed results (never thrown) so the form can show
@@ -74,13 +91,17 @@ export async function action({ request }: Route.ActionArgs) {
   }
 }
 
-// Sending the contact form doesn't change any CMS content, so skip reloading it from Strapi.
+// Sending the contact form or adding a bestseller to the cart doesn't change anything this page
+// shows, so skip reloading it from Strapi (the layout still refreshes the cart count).
 export function shouldRevalidate({
   formMethod,
   formAction,
   defaultShouldRevalidate,
 }: ShouldRevalidateFunctionArgs) {
-  if (formMethod?.toUpperCase() === "POST" && formAction?.startsWith("/?index")) {
+  if (
+    formMethod?.toUpperCase() === "POST" &&
+    (formAction?.startsWith("/?index") || formAction === "/cart")
+  ) {
     return false;
   }
   return defaultShouldRevalidate;

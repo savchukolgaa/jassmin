@@ -24,7 +24,18 @@ const view: HomePageView = {
     subtitle: "Find the one worth a full bottle.",
     secondaryCta: { label: "See all perfumes", href: "/catalog/women" },
   },
-  about: { title: "About Jassmin", bodyHtml: "<p>Our <strong>story</strong>.</p>" },
+  about: { title: "About Jassmin", bodyHtml: "<p>Our <strong>story</strong>.</p>", image: null },
+  trioOffer: { price: "499.00", setSize: 3, volumeMl: 10 },
+  trio: {
+    families: [
+      { value: "квіткові", label: "Floral" },
+      { value: "деревні", label: "Woody" },
+      { value: "свіжі", label: "Fresh" },
+      { value: "східні", label: "Oriental" },
+    ],
+    selected: [],
+  },
+  bestsellers: [],
   location: {
     address: "вул. Хрещатик, 1, Київ",
     openingHours: "Mon–Fri 10:00–20:00\nSat–Sun 11:00–18:00",

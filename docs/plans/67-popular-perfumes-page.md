@@ -3,16 +3,18 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/67
 Branch: `issue/67`
 Worktree: `.claude/worktrees/issue-67`
-Status: Planned
+Status: Planned (owner answers to Q1–Q4 applied, 2026-10-26)
 
 ## Goal
 Shoppers get a `/popular` page that lists the store's most popular perfumes, so they can start from
 scents other customers love. Staff set the order in the Strapi admin with a per-product "popular"
 position, and the page tops itself up from #64's sales-based bestsellers, so it is never empty
-while products are listed. A "Popular" button in the C+ header (desktop and mobile menu) and the
-home hero's "Order Now" CTA lead to it. The home page's "Build your trio" CTA also links here with
-up to three `family` params, which narrow the list (issue comment). The page is designed first as a
-`PopularPlus` artboard on the C+ canvas and built after the owner approves it.
+while products are listed. A **"Bestsellers"** button in the C+ header (desktop and mobile menu,
+between Catalog and Offers) and the home hero's "Order Now" CTA lead to it. The home page's
+"Build your trio" CTA also links here with up to three `family` params, which narrow the list
+(issue comment). The list is paginated. The page is designed first as a `PopularPlus` artboard on
+the C+ canvas and built after the owner approves it. The owner's catalogue (128 perfumes, 30 marked
+popular) becomes the seed data.
 
 ## Dependencies & prerequisites
 - **#64 (home page), merged** (`ef70ebf`): `listBestsellers` in `app/.server/db/queries/products.ts`,
@@ -21,104 +23,158 @@ up to three `family` params, which narrow the list (issue comment). The page is 
   `parseTrioSearch`, `trioHref`). The hero CTA already points at `/popular`: `FALLBACK_CTA_PATH` in
   `app/lib/links.ts`, `ctaHref: "/popular"` in `cms/scripts/seed.ts` and both
   `app/.server/cms/__fixtures__/home-page*.json`. Today these links 404.
-- **#65 (families, notes, store code), merged**: `products.fragrance_families` and
-  `familyFilter` (any of the families, `&&`), the end-to-end pattern for adding one product field
-  (`storeCode`) through the Strapi sync.
+- **#65 (families, notes, store code), merged**: `products.fragrance_families`, `FRAGRANCE_FAMILIES`
+  (`~/lib/enums`), `familyFilter` (any of the families, `&&`), `products.store_code` (not unique,
+  #66), and the end-to-end pattern for adding a product field (`storeCode`) through the Strapi sync.
 - **#40 (Strapi CMS), merged**: product edits flow through `cms/src/sync/middleware.ts`
   (`productPayload`, `applyProductAnswer`) → `POST /cms/products` → `cmsProductChangeSchema`
   (`~/lib/cms-sync`) → `applyCmsProductChange` (`services/cms-sync.ts`), and back via
   `findProductSyncState` → `toCmsProductState` / `toStrapiProductData` (`services/cms-push.ts`).
+- **#8 catalog**: `CATALOG_PAGE_SIZE = 12`, the `page` search param schema and
+  `~/components/ui/Pagination` (`page`, `pageCount`, `hrefForPage`), reused for `/popular`.
 - **#27, #10, #28**: header/footer, add to cart with the "Added to cart" status, i18n. All merged.
 - **Migration:** `0014_product_popular_rank` with a hand-written rollback. No new packages or env vars.
 - **Design canvas** https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW: checked on 2026-10-26, it
-  has no `PopularPlus` artboard yet (only `HomeBoldPlus`, `CatalogPlus`, `ProductPlus`,
-  `OffersPlus(Phone)`, `AuthPlus`, `AccountPlus`, `AccountProfilePlus(Phone)` in the C+ row).
-- **The owner's list of popular perfumes** is not in the repo or the issue yet (see Q1).
+  has no `PopularPlus` artboard yet.
+- **Owner's catalogue:** `makrtextfiles/catalog.md` in the main checkout (outside git), one line per
+  perfume: `store code | title | brand | families | notes`, `(popular)` on 30 of them, split into
+  "Womens perfume" (75) and "Mens perfume" (53). It has **no** prices, sizes, stock, descriptions or
+  images (see Q5).
 
 ## Decisions & assumptions
 - **Field shape:** `products.popular_rank integer NULL` with `CHECK (popular_rank > 0)`. `NULL` means
-  "not on the popular list"; 1 is first. **Not unique**: staff can renumber products one save at a
-  time in Strapi without hitting a constraint, and equal ranks fall back to the bestseller order.
-  No index: the catalog is small and the query already scans listed products for bestsellers.
-  Strapi field `popularRank` (`integer`, `min: 1`, optional), app field `popularRank` everywhere
-  (schema, `ProductWrite`, `cmsProductChangeSchema`, `CmsProductState`, sync middleware).
-- **One query, not two:** `listPopularProducts(db, { families, limit })` orders listed products by
-  `popular_rank IS NULL, popular_rank, units sold desc, created_at desc, id desc`. Ranked products
-  come first in staff order; the rest of the list is exactly #64's bestseller ranking, so the
-  "top-up" never repeats a product and needs no merging in JS. The `sold` subquery and its
-  `SOLD_ORDER_STATUSES` move into a shared helper used by both `listBestsellers` and the new query,
-  so the two rankings can't drift apart. Returns `ProductSummaryRow[]` → `ProductSummary[]` via
-  `toSummary`. Inactive products and products without variants are excluded (`isListed`, inner join
-  on `variantStats`), and both genders plus unisex are included.
-- **Family filter:** the loader reads `family` params with `parseTrioSearch(params, await
-  getTrioFamilies())` (known values only, at most `TRIO_SIZE` = 3, deduplicated, in order) and
-  passes them to `familyFilter`, so both the ranked part and the top-up are narrowed. Unknown
-  families are ignored, so a stale link shows the unfiltered page rather than an error.
-- **Page size:** `POPULAR_COUNT = 12` in `services/products.ts`, no pagination **(unconfirmed, Q2)**.
+  "not on the popular list"; 1 is first. **Not unique**: staff can renumber one product at a time in
+  Strapi without hitting a constraint, and equal ranks fall back to the bestseller order. No index:
+  the catalogue is small. Strapi field `popularRank` (`integer`, `min: 1`, optional), app field
+  `popularRank` everywhere (schema, `ProductWrite`, `cmsProductChangeSchema`, `CmsProductState`,
+  sync middleware).
+- **What the list holds (Q2: paginated):** every listed product that has a popular rank, in rank
+  order. When fewer than one page (`POPULAR_PAGE_SIZE = CATALOG_PAGE_SIZE` = 12) are ranked, the
+  list is topped up with the best-selling unranked products until it fills one page. So the total
+  is `max(ranked, min(12, listed))`: with the owner's 30 popular perfumes that is 30 products on
+  3 pages (12, 12, 6), and with none ranked it is #64's top 12. The page doesn't turn into the whole
+  catalogue sorted by sales.
+- **One ordering, two queries:** `listPopularProducts(db, filters, { limit, offset })` orders listed
+  products by `popular_rank IS NULL, popular_rank, units sold desc, created_at desc, id desc`, so
+  ranked products come first and the rest are exactly #64's bestseller ranking, with no duplicates
+  and no merging in JS. `countPopularProducts(db, filters)` returns `{ ranked, listed }` in one
+  query (`count(*) filter (where popular_rank is not null)`, `count(*)`), and the service works out
+  the total, clamps `page` to `pageCount`, and passes `limit = min(12, total − offset)`. The `sold`
+  subquery and `SOLD_ORDER_STATUSES` move into a shared `soldUnits(db)` used by `listBestsellers`
+  too, so the two rankings can't drift apart. Inactive products and products without variants are
+  excluded (`isListed`, inner join on `variantStats`), and women, men and unisex are all included.
+- **Family filter (Q4 default):** the loader reads `family` params with `parseTrioSearch(params,
+  await getTrioFamilies())` (known values only, at most `TRIO_SIZE` = 3, deduplicated, in pick
+  order) and passes them as `fragranceFamilies`, so the ranked part, the top-up and the count are
+  all narrowed. Unknown families are ignored, so a stale link shows the unfiltered page. The chosen
+  families appear as removable chips (`FamilyChip`) with a "Show all" link to `/popular`, with no
+  trio price block. When nothing matches, an empty state (a blush panel like `OffersEmpty`) links to
+  `/popular` and both catalogues.
+- **URLs:** `popularHref(families, page)` in `app/lib/popular.ts` builds `/popular?family=…&page=n`
+  (families in order, `page` omitted when 1), like `catalogHref`. `trioHref` becomes
+  `popularHref(families, 1)`. The page param uses the catalogue's `page` schema (`z.coerce…catch(1)`),
+  and a page past the end clamps to the last one.
+- **Header (Q3):** the button reads **"Бестселери" / "Bestsellers"** (`nav.bestsellers`, the same
+  words as #64's home section title), sits **between Catalog and Offers** in `Header.tsx` and
+  `MobileMenu.tsx`, and links to `/popular`. It's a `NavLink` with `navItemClasses(isActive)`, so
+  React Router sets `aria-current="page"`; the active state also covers `/popular?…`. The footer is
+  unchanged. The route stays `/popular` and the page heading matches the button **(unconfirmed, Q6)**.
 - **Route constant:** `POPULAR_PATH = "/popular"` in a new isomorphic `app/lib/popular.ts`;
-  `TRIO_TARGET_PATH` (`~/lib/trio`) and `FALLBACK_CTA_PATH` (`~/lib/links`) reuse it, and a
-  `POPULAR_LINK` nav item is added to `app/components/layout/nav.ts` beside `OFFERS_LINK`.
-- **Header placement:** between Catalog and Offers, desktop and mobile menu, as a `NavLink` with
-  `navItemClasses(isActive)` (React Router sets `aria-current="page"`) **(unconfirmed, Q3 — the
-  artboard may style it differently)**. The footer is unchanged.
+  `TRIO_TARGET_PATH` (`~/lib/trio`) and `FALLBACK_CTA_PATH` (`~/lib/links`) reuse it, and
+  `BESTSELLERS_LINK = { to: POPULAR_PATH, labelKey: "nav.bestsellers" }` joins `OFFERS_LINK` in
+  `app/components/layout/nav.ts`.
 - **Cards:** the `compact` `ProductCard` with the round `icon` add-to-cart, as in #64's home
   bestsellers, in a 1 / 2 / 4-column grid **(unconfirmed until the artboard is approved)**.
   `AddToCartForm` already shows the "Added to cart" status (`role="status"`, `animate-toast`).
 - **Revalidation:** like `routes/home.tsx`, `shouldRevalidate` skips reloading after a POST to
   `/cart`, so adding to the cart doesn't re-run the ranking (the layout still updates the count).
-- **No cache headers:** like `/catalog/:gender` and `/products/:id`, the page reads only PostgreSQL;
-  it doesn't use the blog's `blogCacheHeaders`.
-- **Seed:** sample products in `app/.server/db/seed-data.ts` get placeholder `popularRank`s until
-  the owner's list arrives **(unconfirmed, Q1)**. `seedProducts` sets them on existing databases
-  only while **no** product has a rank, so it never overrides staff choices. Strapi gets products
-  from `pnpm db:sync-cms --all`, not from `cms/scripts/seed.ts`, so the Strapi seed needs no product
-  change; its hero `ctaHref` is already `/popular`.
+- **No cache headers:** like `/catalog/:gender`, the page reads only PostgreSQL.
+- **Seed from the owner's catalogue (Q1):** all 128 perfumes go into a new
+  `app/.server/db/seed-catalog.ts` (`OWNER_CATALOG: SampleProduct[]`), which `seed-data.ts` appends
+  to `SAMPLE_PRODUCTS`, so `seed-data.ts` stays readable. Each gets a fresh fixed UUID v7, its
+  `storeCode`, title, brand, families (primary first, as listed) and notes, `gender` from its
+  section (`women` / `men`), or `unisex` when the title ends in "(Unisex)" (the suffix is dropped
+  from the title; 11 products). The 30 `(popular)` ones get `popularRank` 1–30 in file order (women
+  first, then men) **(unconfirmed, Q7)**. Notes are lower-cased like the existing samples. Prices,
+  sizes and stock are placeholders (Q5). Data fixes, all listed in the seed file's header comment
+  for the owner: `Цитрус` → `цитрусові` (2-Y Lordly, 1-X Xeryus Rouge), `Древовидні` → `деревні`
+  (4-Y Spisebomb), `Пряні, пряні` → `пряні` (3-G Givenchy Blue Label).
+- **Overlap with the existing samples:** 1-L La Vie Est Belle, 2-C Christian Dior Sauvage and 2-A
+  Acqua Di Gio are already sample products. They keep their `publicId`s (never change one) and take
+  the owner's store code, families and notes; their sizes and prices stay. The other existing samples
+  (Coco Mademoiselle, J'adore, Bleu de Chanel, Wood Sage & Sea Salt, Molecule 01, the tester set) stay
+  as they are, without a rank.
+- **Existing databases:** `seedProducts` keeps inserting with `onConflictDoNothing`, so the new
+  products reach existing dev databases. A new backfill sets the sample products' `store_code`
+  where it is still `null`, and their `popular_rank` only while **no** product has a rank yet, so a
+  re-seed never overrides what staff set. Strapi gets the products with `pnpm db:sync-cms --all`;
+  `cms/scripts/seed.ts` needs no product change and its hero `ctaHref` is already `/popular`.
 - **Analytics:** no new event; `page_view` is recorded by the `_shop` layout middleware as usual.
 
 ## Open questions
-- [ ] **Q1: Which perfumes are on the owner's first popular list, in what order, and with what
-  details?** — Why it matters: the issue says the owner provides the list "separately"; it is not in
-  the repo or on the issue. If it includes perfumes that aren't in `SAMPLE_PRODUCTS`, they need new
-  sample products (fixed UUID v7s, families, notes, sizes, prices). Recommended default: rank four
-  existing sample products (Coco Mademoiselle 1, Sauvage 2, La Vie Est Belle 3, Molecule 01 4) as
-  placeholders, and swap in the owner's list when it arrives; on production staff set the ranks in
-  Strapi anyway. Affects steps: 8.
-- [ ] **Q2: How many perfumes does `/popular` show, and should it paginate?** — Why it matters:
-  sets `POPULAR_COUNT` and whether the page needs the catalog's pagination. Recommended default: 12
-  (three rows of four on desktop), no pagination, plus a "whole catalog" link. Affects steps: 1, 4, 5.
-- [ ] **Q3: Where does "Popular" sit in the header, and does it look different from the other nav
-  items (e.g. a white pill)?** — Why it matters: the desktop nav already holds About, Catalog,
-  Offers, Contacts, the language switcher, profile and cart; a fifth item may be tight at `md`
-  (768px). Recommended default: a plain nav item between Catalog and Offers; if it doesn't fit at
-  `md`, the artboard decides (e.g. move the language switcher into the menu below `lg`). Affects
-  steps: 1, 7.
-- [ ] **Q4: What does the filtered state (`?family=…` from "Show my trio") show beyond the narrowed
-  list?** — Why it matters: shapes the page header and whether the tester-trio offer is repeated.
-  Recommended default: the heading stays, the chosen families appear as removable chips
-  (`FamilyChip`) with a "Show all popular" link to `/popular`, no trio price block; when no popular
-  perfume has those families, an empty state (blush panel like `OffersEmpty`) links to `/popular`
-  and the catalogs. Affects steps: 1, 5.
+- [ ] **Q5: The catalogue has no prices, sizes or stock. What should the seed use?** — Why it
+  matters: products without a size aren't listed or sold, so the seed must give each one at least
+  one size, and invented prices could be mistaken for real ones. Recommended default: the same
+  placeholder sizes for every new product (10 ml 450.00, 30 ml 1100.00, 50 ml 1650.00, stock 5),
+  marked as placeholders in the file header; the owner sends real prices later, or staff enter them
+  in Strapi. No descriptions or images (cards show the existing image placeholder). Affects steps: 8.
+- [ ] **Q6: With the button called "Bestsellers", should the page also be called that, and should
+  the URL become `/bestsellers`?** — Why it matters: the label, the page heading and the URL would
+  otherwise say different things. Renaming the URL means changing `TRIO_TARGET_PATH`,
+  `FALLBACK_CTA_PATH`, the Strapi seed's `ctaHref`, the fixtures and the home tests, and staff
+  re-entering the hero link in Strapi. Recommended default: keep `/popular` (already wired from the
+  hero and the trio, and already stored in Strapi), and title the page "Бестселери" / "Bestsellers"
+  to match the button. Affects steps: 5, 6, 8.
+- [ ] **Q7: In what order should the 30 popular perfumes appear?** — Why it matters: with 12 per
+  page, the file order (women first) puts only women's perfumes on page 1 and men's from page 2.
+  Recommended default: file order, as the owner wrote it; staff can reorder in Strapi at any time.
+  The alternative is alternating women and men. Affects steps: 8.
+- [ ] **Q8: Data the owner should double-check in the catalogue** — Why it matters: the seed would
+  carry these as written. Recommended default: seed them as written and list them in the seed
+  file's header comment:
+  - 11-L is used twice in women's: Lolita Lempicka and Lift (store codes aren't unique yet, #66).
+  - "Dolce & Gabbana Anthology L'Imperatrice 3" (15-D) and "D&G L'Imperatrice 3" (14-Z) look like
+    the same perfume, both marked popular.
+  - Davidoff Cool Water (women 1-D, men 2-D) and Hugo Boss (women 2-H, men 1-H) are in both lists:
+    seeded as separate women's and men's products, each popular.
+  - Typos in names and notes are kept as written, e.g. "Spisebomb" (Spicebomb), "Omnia Bvlgarі"
+    (with a Cyrillic "і"), "Kelys Pyu" for Xeryus Rouge, "Monmole 02" as the brand of Molecule 02,
+    "Перец", "іпельсин", "Гардения", "Вітьки".
+
+  Affects steps: 8.
+- [ ] **Q9: Is the seed how the owner's catalogue reaches production?** — Why it matters:
+  `pnpm db:seed` is for local development (`seed-data.ts`), and production products are entered in
+  Strapi (#40). Recommended default: this issue only seeds dev databases; loading the real catalogue
+  into production (with real prices and stock) is a follow-up issue, e.g. running the seed once
+  against production followed by `pnpm db:sync-cms --all`. Affects steps: 8.
 
 ## Resolved questions
+- **Q1: Which perfumes are popular?** — The 30 marked `(popular)` in the owner's catalogue; the
+  whole catalogue is added to the seed. (source: owner, `makrtextfiles/catalog.md`)
+- **Q2: Pagination?** — Yes: 12 per page with the catalogue's `Pagination`, ranked products topped
+  up to one page from bestsellers. (source: owner)
+- **Q3: Header button?** — "Bestsellers" ("Бестселери"), between Catalog and Offers, linking to the
+  page. (source: owner)
+- **Q4: Filtered state?** — The default: removable family chips, "Show all", no trio price block,
+  an empty state when nothing matches. (source: owner)
 - **Does the hero "Order Now" CTA already lead to `/popular`?** — Yes: `FALLBACK_CTA_PATH` is
   `/popular`, the Strapi seed sets `ctaHref: "/popular"` for both locales, and the fixtures and
   `HomePage.test.ts` assert it. Only the route is missing. (source: `app/lib/links.ts`,
   `cms/scripts/seed.ts:138`, `app/.server/cms/__fixtures__/home-page*.json`, #64)
 - **"Update #64's plan/fixtures"** — #64's plan was removed when it merged and its fixtures already
-  use `/popular`; nothing to update. (source: `ef70ebf`, `app/.server/cms/__fixtures__/`)
+  use `/popular`; nothing to update. (source: `ef70ebf`)
 - **Is the query called `getBestsellers` in `queries/products.ts`?** — No: the query is
-  `listBestsellers(db, limit)` and `getBestsellers` is the service in `services/products.ts`
-  (fixed at `BESTSELLER_COUNT = 4`); the new query shares the sold-units subquery instead of calling
-  either. (source: `app/.server/db/queries/products.ts`, `app/.server/services/products.ts`)
-- **How does the trio CTA link here and which values does it send?** — `trioHref` builds
-  `/popular?family=…` with the stored Ukrainian values; `parseTrioSearch` already validates them
-  against known families. (source: `app/lib/trio.ts`, issue comment)
+  `listBestsellers(db, limit)` and `getBestsellers` is the service (fixed at `BESTSELLER_COUNT = 4`);
+  the new query shares the sold-units subquery instead. (source: `app/.server/db/queries/products.ts`,
+  `app/.server/services/products.ts`)
+- **Do the catalogue's families fit `FRAGRANCE_FAMILIES`?** — All but three spellings (`цитрус`,
+  `древовидні`, a repeated `пряні`), mapped as above. (source: `app/lib/enums.ts`, `catalog.md`)
+- **How does the trio CTA link here?** — `trioHref` builds `/popular?family=…` with the stored
+  Ukrainian values; `parseTrioSearch` already validates them. (source: `app/lib/trio.ts`, issue comment)
 - **Does the Strapi seed need products?** — No: Strapi's products come from the app's database via
-  `pnpm db:sync-cms --all` (`enqueueAllForCmsSync`). (source: `app/.server/db/scripts/sync-cms.ts`)
-- **Unisex?** — Shown together with women and men; no Unisex catalog or link. (source: issue,
+  `pnpm db:sync-cms --all`. (source: `app/.server/db/scripts/sync-cms.ts`)
+- **Unisex?** — Shown together with women and men; no Unisex catalogue or link. (source: issue,
   `docs/design.md`)
-- **Field shape (left to planning by the issue)** — settled above: `popular_rank`, nullable,
-  positive, not unique. (source: issue "exact field shape is settled when this issue is planned")
 
 ## Files
 | Action | Path | Purpose |
@@ -128,23 +184,24 @@ up to three `family` params, which narrow the list (issue comment). The page is 
 | modify | `app/.server/db/schema.ts`, `app/.server/db/schema.test.ts` | `popularRank` column and CHECK |
 | create | `app/.server/db/migrations/0014_product_popular_rank.sql` (+ `meta/`), `app/.server/db/rollbacks/0014_product_popular_rank.sql` | Migration and rollback |
 | modify | `app/.server/db/migrator.test.ts` | Migrate and roll back 0014 |
-| modify | `app/.server/db/queries/products.ts` | Shared sold-units subquery, `listPopularProducts`, `popularRank` in `ProductWrite` and `findProductSyncState` |
-| modify | `app/.server/services/products.ts` | `POPULAR_COUNT`, `getPopularProducts(families)` |
-| create | `app/.server/services/popular.test.ts` | DB integration tests for the ranking |
+| modify | `app/.server/db/queries/products.ts` | `soldUnits`, `listPopularProducts`, `countPopularProducts`, `popularRank` in `ProductWrite` and `findProductSyncState` |
+| modify | `app/.server/services/products.ts` | `POPULAR_PAGE_SIZE`, `getPopularPage(families, page)` |
+| create | `app/.server/services/popular.test.ts` | DB integration tests for the ranking, top-up and pages |
 | modify | `app/lib/cms-sync.ts`, `app/lib/cms-sync.test.ts` | `popularRank` in the change schema and `CmsProductState` |
 | modify | `app/.server/services/cms-sync.ts`, `cms-sync.test.ts`, `cms-push.ts`, `cms-push.test.ts` | Write and push `popularRank` |
 | modify | `app/routes/cms.products.test.ts` | The route accepts and returns `popularRank` |
 | modify | `cms/src/api/product/content-types/product/schema.json`, `cms/types/generated/contentTypes.d.ts` | Strapi `popularRank` field |
 | modify | `cms/src/sync/middleware.ts`, `cms/src/sync/middleware.test.ts` | Send and save `popularRank` |
-| create | `app/lib/popular.ts` | `POPULAR_PATH`, `PopularPageView` DTO |
-| modify | `app/lib/trio.ts`, `app/lib/links.ts` | Reuse `POPULAR_PATH` |
+| create | `app/lib/popular.ts`, `app/lib/popular.test.ts` | `POPULAR_PATH`, `parsePopularSearch`, `popularHref`, `PopularPageView` |
+| modify | `app/lib/trio.ts`, `app/lib/links.ts` | Reuse `POPULAR_PATH` / `popularHref` |
 | create | `app/features/popular/PopularPage.tsx` (+ sub-components the artboard needs), `app/features/popular/popular-ui.test.ts` | Page UI and its render tests |
 | create | `app/routes/popular.tsx`, `app/routes/popular.test.ts` | Loader, `meta`, `shouldRevalidate`, `ErrorBoundary` |
 | modify | `app/routes.ts` | `route("popular", "routes/popular.tsx")` under `_shop` |
-| modify | `app/components/layout/nav.ts`, `Header.tsx`, `MobileMenu.tsx`, `Header.test.ts` | "Popular" link with `aria-current` |
-| modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `nav.popular`, `popular.*` |
-| modify | `app/.server/db/seed-data.ts`, `app/.server/db/seed.ts`, `app/.server/db/seed.test.ts` | Sample ranks and their backfill |
-| modify | `app/.server/AGENTS.md` | Document `popular_rank` and the ranking |
+| modify | `app/components/layout/nav.ts`, `Header.tsx`, `MobileMenu.tsx`, `Header.test.ts` | "Bestsellers" link with `aria-current` |
+| modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `nav.bestsellers`, `popular.*` |
+| create | `app/.server/db/seed-catalog.ts` | The owner's 128 perfumes with ranks for the 30 popular ones |
+| modify | `app/.server/db/seed-data.ts`, `app/.server/db/seed.ts`, `app/.server/db/seed.test.ts` | Include the catalogue, update the 3 overlapping samples, backfill store codes and ranks |
+| modify | `app/.server/AGENTS.md` | Document `popular_rank`, the ranking and the seed catalogue |
 
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
@@ -152,20 +209,21 @@ Each step is small, ordered, and leaves the app in a working state.
 - [ ] **1. Design the `PopularPlus` artboards and get approval** — On the C+ canvas add
   `PopularPlus.dc.html` (desktop, `expand: "fill"`, w 1440) and `PopularPlusPhone.dc.html` (375 px)
   to the "Chosen direction: Option C+" row, built only from C+ tokens, Manrope, `Button` variants,
-  the compact product card and the motion utilities in `docs/design.md`. Show: the header with the
-  "Popular" item marked current (Q3), a page header (`h1` + intro), the card grid (Q2), the filtered
-  state with family chips and "Show all popular" (Q4, as a `data-props` tweak), and the empty state
-  (tweak). Ask the owner to approve before step 5; record the decisions in the plan. Then add a
-  `C+ Popular`, `C+ Popular, phone width` | `/popular` | #67 row to `docs/design.md` with a short
-  paragraph like the `/offers` one.
+  the compact product card and the motion utilities in `docs/design.md`. Show: the header with
+  "Bestsellers" between Catalog and Offers, marked current; the page header (`h1` per Q6 + intro);
+  the 12-card grid with pagination; the filtered state with family chips and "Show all"
+  (`data-props` tweak); and the empty state (tweak). Check that the desktop nav still fits at
+  768px with the extra item. Ask the owner to approve before step 5, then add a `C+ Popular`,
+  `C+ Popular, phone width` | `/popular` | #67 row to `docs/design.md` with a short paragraph like
+  the `/offers` one.
 - [ ] **2. Add `products.popular_rank`** — In `schema.ts` add `popularRank: integer()` with a doc
-  comment (staff order on `/popular`, `null` = not listed there, #67) and
+  comment (staff order on `/popular`, `null` = not on it, #67) and
   `check("products_popular_rank_check", sql\`${t.popularRank} > 0\`)`. Run
   `pnpm db:generate --name product_popular_rank`; write
   `rollbacks/0014_product_popular_rank.sql` (`DROP CONSTRAINT`, then `DROP COLUMN`). Update
   `schema.test.ts`'s products column list and add a 0014 case to `migrator.test.ts` (column exists
-  and is nullable; a `0` is refused; rollback removes it). Check: `pnpm test`, `pnpm db:migrate` then
-  `pnpm db:rollback` and migrate again.
+  and is nullable; `0` is refused; rollback removes it). Check: `pnpm test`, `pnpm db:migrate`,
+  `pnpm db:rollback`, migrate again.
 - [ ] **3. Sync the field with Strapi** — `~/lib/cms-sync`: `popularRank:
   z.number().int().min(1).max(9999).nullish().transform((v) => v ?? null)` in `productFields`, and
   `popularRank: number | null` in `CmsProductState`. `ProductWrite` and `productWrite()` in
@@ -174,93 +232,110 @@ Each step is small, ordered, and leaves the app in a working state.
   to the product `schema.json` and regenerate `cms/types/generated/contentTypes.d.ts`
   (`pnpm --dir cms strapi ts:generate-types`, or edit to match); in `cms/src/sync/middleware.ts`
   `productPayload` sends `popularRank` (empty → `null`, else `toNumber`) and `applyProductAnswer`
-  saves the app's value. Tests: schema accepts `null`/missing/`3`, refuses `0`, `-1`, `1.5`;
-  `applyCmsProductChange` writes and clears it on create/update; `cms.products.test.ts` round-trips
-  it; `cms-push.test.ts` and `middleware.test.ts` include it.
-- [ ] **4. Query and service for the popular list** — In `queries/products.ts` extract the
-  sold-units subquery (`soldUnits(db)`, with `SOLD_ORDER_STATUSES`) and use it in `listBestsellers`
-  (no behaviour change; `bestsellers.test.ts` stays green). Add
-  `listPopularProducts(db, { fragranceFamilies, limit })`: `summaryColumns`, inner join on
-  `variantStats`, left join on `soldUnits`, `where(and(isListed, familyFilter(fragranceFamilies)))`,
+  saves the app's value. Tests: the schema accepts `null`, missing and `3`, and refuses `0`, `-1`,
+  `1.5`; `applyCmsProductChange` writes and clears it on create and update; `cms.products.test.ts`
+  round-trips it; `cms-push.test.ts` and `middleware.test.ts` include it.
+- [ ] **4. Queries and service** — In `queries/products.ts` extract `soldUnits(db)` and use it in
+  `listBestsellers` (no behaviour change; `bestsellers.test.ts` stays green). Add
+  `listPopularProducts(db, { fragranceFamilies }, { limit, offset })`: `summaryColumns`, inner join
+  on `variantStats`, left join on `soldUnits`, `where(and(isListed, familyFilter(fragranceFamilies)))`,
   ordered by `${products.popularRank} is null, ${products.popularRank}`, units sold desc,
-  `created_at` desc, `id` desc. In `services/products.ts` add `POPULAR_COUNT = 12` and
-  `getPopularProducts(families: readonly string[] = [], db = defaultDb): Promise<ProductSummary[]>`.
-  Integration tests in `services/popular.test.ts` (pattern of `bestsellers.test.ts`, `skipIf(!hasDatabase)`):
-  ranked first in rank order; the rest topped up by units sold then newest, with no duplicates;
-  equal ranks fall back to sales; ranked but inactive or variant-less products excluded; unisex,
-  men and women all included; the family filter narrows both parts (any of the families); at most
-  `POPULAR_COUNT`; empty when nothing is listed.
-- [ ] **5. Page UI** — `app/lib/popular.ts`: `POPULAR_PATH` and
-  `interface PopularPageView { products: ProductSummary[]; families: TrioFamily[] }` (chosen
-  families with labels, via `labelTrioFamilies`, kept in pick order). Point `TRIO_TARGET_PATH` and
-  `FALLBACK_CTA_PATH` at `POPULAR_PATH`. `app/features/popular/PopularPage.tsx` per the approved
-  artboard: `main` with an `h1` (`popular.title`), intro, the family chips with remove links
-  (`trioHref` of the other families) and "Show all popular" when filtered, a `ul` grid of
-  `ProductCard variant="compact" headingLevel={2}`, and the empty state (`popular.empty.*`, links to
-  `/popular` when filtered and to both catalogs). `animate-fade-up` / `reveal` only as the artboard
-  shows; nothing new in `app/app.css` unless the artboard needs it, and then inside the
-  reduced-motion block. Render tests in `popular-ui.test.ts`: cards in order with add-to-cart forms,
-  filtered chips and their hrefs, empty states, Ukrainian by default and English in
+  `created_at` desc, `id` desc. Add `countPopularProducts(db, { fragranceFamilies })` returning
+  `{ ranked, listed }` over the same join and filter. In `services/products.ts` add
+  `POPULAR_PAGE_SIZE = CATALOG_PAGE_SIZE` and `getPopularPage(families, page, db = defaultDb):
+  Promise<PopularPage>` (`products`, `total`, `page`, `pageCount`): total =
+  `max(ranked, min(POPULAR_PAGE_SIZE, listed))`, page clamped to `1…pageCount`, limit
+  `min(POPULAR_PAGE_SIZE, total − offset)`. Integration tests in `services/popular.test.ts` (pattern
+  of `bestsellers.test.ts`, `skipIf(!hasDatabase)`): ranked first in rank order; topped up by units
+  sold then newest, without duplicates, only up to one page; 30 ranked → 3 pages of 12/12/6 and no
+  top-up; equal ranks fall back to sales; ranked but inactive or size-less products excluded; women,
+  men and unisex included; the family filter narrows the list, the top-up and the count; a page past
+  the end clamps; empty when nothing is listed.
+- [ ] **5. URL helpers and page UI** — `app/lib/popular.ts`: `POPULAR_PATH`,
+  `parsePopularSearch(params, knownFamilies)` (`parseTrioSearch` for the families plus the
+  catalogue's `page` schema), `popularHref(families, page)`, and `PopularPageView` (`PopularPage`
+  plus the chosen families with labels via `labelTrioFamilies`, in pick order). Point
+  `TRIO_TARGET_PATH`, `trioHref` and `FALLBACK_CTA_PATH` at them; unit tests in `popular.test.ts`
+  (and `trio.test.ts` stays green). `app/features/popular/PopularPage.tsx` per the approved
+  artboard: `main` with the `h1` (Q6), intro, the family chips with remove links (`popularHref` of
+  the other families) and "Show all" when filtered, a `ul` grid of `ProductCard variant="compact"
+  headingLevel={2}`, `Pagination` with `hrefForPage={(n) => popularHref(families, n)}`, and the empty
+  states (`popular.empty.*`, linking to `/popular` when filtered and to both catalogues).
+  `animate-fade-up` / `reveal` only as the artboard shows; nothing new in `app/app.css` unless the
+  artboard needs it, and then inside the reduced-motion block. Render tests in
+  `popular-ui.test.ts`: cards in order with add-to-cart forms, chips and their hrefs, pagination
+  links keeping the families, empty states, Ukrainian by default and English in
   `<I18nProvider locale="en">`.
-- [ ] **6. Route** — `app/routes/popular.tsx`: `loader` gets `getTrioFamilies()`, parses
-  `parseTrioSearch(url.searchParams, known)`, then `getPopularProducts(selected)`, and returns the
-  view with `labelTrioFamilies(selected, createTranslator(await getLocale(request)))` (sorted back
-  into pick order). `meta` via `metaTranslator(matches)`: `meta.title` with `popular.metaTitle`,
-  `popular.metaDescription`, `og:*`, and a canonical URL of `/popular` without params.
-  `shouldRevalidate` skips POSTs to `/cart` (as in `home.tsx`). `ErrorBoundary` with
+- [ ] **6. Route** — `app/routes/popular.tsx`: the `loader` gets `getTrioFamilies()`, parses
+  `parsePopularSearch(url.searchParams, known)`, then `getPopularPage(families, page)`, and returns
+  the view with labels from `createTranslator(await getLocale(request))`. `meta` via
+  `metaTranslator(matches)`: `meta.title` with `popular.metaTitle`, `popular.metaDescription`,
+  `og:*`, and a canonical URL of `/popular` (plus `?page=n` after page 1; family filters aren't
+  canonical). `shouldRevalidate` skips POSTs to `/cart` (as in `home.tsx`). `ErrorBoundary` with
   `describeRouteError`. Register `route("popular", "routes/popular.tsx")` in `app/routes.ts` after
-  `offers`. Tests in `popular.test.ts`: loader passes known families only (max 3, unknown dropped),
-  returns the service's products; meta in uk/en; `shouldRevalidate`.
-- [ ] **7. Header and mobile menu** — `POPULAR_LINK = { to: POPULAR_PATH, labelKey: "nav.popular" }`
-  in `nav.ts`; a `NavLink` item in `Header.tsx` and `MobileMenu.tsx` at the position from step 1
-  (default between Catalog and Offers) with `navItemClasses(isActive)` /
-  `navItemClasses(isActive, "onLight")`. Update `Header.test.ts`: the order test, the hrefs test
-  (`/popular`), and a "highlights Popular on the popular page" test checking the active classes and
-  `aria-current="page"`, plus the same in the mobile menu. Check the header at 768px and 375px for
-  wrapping.
-- [ ] **8. i18n and seed** — `nav.popular` ("Популярні" / "Popular") and a `popular` namespace
-  (`title`, `metaTitle`, `metaDescription`, `intro`, `filteredBy`, `removeFamily` with `{family}`,
-  `showAll`, `empty.heading`, `empty.text`, `empty.filteredText`, `browseWomen`, `browseMen`, plus
-  any copy the artboard adds) in `uk.ts` and `en.ts`. Seed: `popularRank` on the sample products of
-  Q1's default in `seed-data.ts`; in `seedProducts`, after the insert, set the sample ranks when no
-  product has `popular_rank` yet; `seed.test.ts` covers both the fresh seed and "doesn't override an
-  existing rank".
+  `offers`. Tests in `popular.test.ts`: only known families are passed (max 3, unknown dropped),
+  the page param is parsed and clamped, meta in uk/en, canonical URL, `shouldRevalidate`.
+- [ ] **7. Header and mobile menu** — Add `BESTSELLERS_LINK` to `nav.ts`, and a `NavLink` item
+  between `CatalogMenu` and Offers in `Header.tsx`, and between the catalogue list and Offers in
+  `MobileMenu.tsx`, with `navItemClasses(isActive)` / `navItemClasses(isActive, "onLight")`. Update
+  `Header.test.ts`: the order test (About, Catalog, Bestsellers, Offers, Contacts), the hrefs test
+  (`/popular`), and a "highlights Bestsellers on the popular page" test checking the active classes
+  and `aria-current="page"`, including with `?family=…&page=2`, plus the same in the mobile menu.
+  Check the header at 768px and 375px for wrapping.
+- [ ] **8. i18n and seed** — `nav.bestsellers` ("Бестселери" / "Bestsellers") and a `popular`
+  namespace (`title`, `metaTitle`, `metaDescription`, `intro`, `filteredBy`, `removeFamily` with
+  `{family}`, `showAll`, `empty.heading`, `empty.text`, `empty.filteredText`, `browseWomen`,
+  `browseMen`, plus any copy the artboard adds) in `uk.ts` and `en.ts`. Seed: write
+  `seed-catalog.ts` from `makrtextfiles/catalog.md` as described in Decisions (fresh UUID v7s from
+  `select uuidv7()`, placeholder sizes per Q5, ranks per Q7, the data fixes and Q8's notes in the
+  header comment), include it in `SAMPLE_PRODUCTS`, and give the three overlapping samples their
+  store codes, the owner's families and notes and their ranks. In `seedProducts` add the backfill
+  (store codes where `null`; ranks only while no product has one). `seed.test.ts`: every seed
+  product's families are in `FRAGRANCE_FAMILIES` and its sizes in `PERFUME_VOLUMES_ML`; `publicId`s
+  are unique; ranks 1–30 are unique; a fresh seed lists 30 ranked products; a re-seed doesn't
+  override a rank staff changed.
 - [ ] **9. Docs** — `app/.server/AGENTS.md`: a bullet on `products.popular_rank` (staff order on
-  `/popular`, nullable, not unique, synced from Strapi's `popularRank`, the ranking and its top-up
-  from the sold-units ranking). Make sure `docs/design.md` (step 1) matches the built page.
+  `/popular`, nullable, not unique, synced from Strapi's `popularRank`; the ranking, the one-page
+  top-up and the pagination) and on `seed-catalog.ts` (the owner's catalogue with placeholder
+  prices). Make sure `docs/design.md` (step 1) matches the built page.
 - [ ] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual
   checks below.
 
 ## Testing & verification
-- **Unit/render:** `cms-sync.test.ts` (schema), `popular-ui.test.ts`, `popular.test.ts` (loader,
-  meta, revalidation), `Header.test.ts`, `seed.test.ts`, `middleware.test.ts` (Strapi side),
-  `cms-push.test.ts`.
+- **Unit/render:** `cms-sync.test.ts` (schema), `lib/popular.test.ts`, `trio.test.ts`,
+  `popular-ui.test.ts`, `routes/popular.test.ts`, `Header.test.ts`, `seed.test.ts`,
+  `middleware.test.ts` (Strapi side), `cms-push.test.ts`.
 - **DB integration** (with a database configured): `services/popular.test.ts`,
-  `bestsellers.test.ts` (unchanged after the refactor), `cms-sync.test.ts`, `migrator.test.ts`.
+  `bestsellers.test.ts` (unchanged after the refactor), `cms-sync.test.ts`, `migrator.test.ts`,
+  `seed.test.ts`.
 - **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
-- **Manual** (`pnpm aspire run`, `pnpm db:seed`, `pnpm db:sync-cms --all`): in the Strapi admin set,
-  change and clear a product's popular position and see `/popular` reorder; archive a ranked product
-  and see it disappear; click "Order Now" on `/` and the header's "Popular" (desktop and mobile menu,
-  marked current); pick three families in "Build your trio" → "Show my trio" lands on the filtered
-  list; add a card to the cart and see "Added to cart" and the header count; compare with the
-  artboard at 1440px and 375px (no horizontal scroll); switch to English; turn on
+- **Manual** (`pnpm aspire run`, `pnpm db:seed`, `pnpm db:sync-cms --all`): `/popular` shows the 30
+  popular perfumes on 3 pages; in the Strapi admin set, change and clear a product's popular
+  position and see `/popular` reorder; archive a ranked product and see it disappear; click "Order
+  Now" on `/` and the header's "Bestsellers" (desktop and mobile menu, marked current); pick three
+  families in "Build your trio" → "Show my trio" lands on the filtered list, and its pagination keeps
+  the families; add a card to the cart and see "Added to cart" and the header count; compare with
+  the artboard at 1440px and 375px (no horizontal scroll); switch to English; turn on
   `prefers-reduced-motion: reduce` and check nothing animates.
 
 ## Acceptance criteria
 - [ ] A `PopularPlus` artboard (desktop and phone) exists on the C+ canvas and is approved by the owner — step 1
 - [ ] `/popular` lists the popular perfumes in the staff-defined order, topped up from bestsellers, and matches the artboard at desktop and 375px widths — steps 4, 5, 6, 10
 - [ ] Staff can set and change a product's popular position in the Strapi admin, and it is saved to PostgreSQL — steps 2, 3
-- [ ] The header (desktop and mobile menu) has a "Popular" button linking to `/popular`, marked current on that page — step 7
+- [ ] The header (desktop and mobile menu) has a button linking to `/popular` ("Bestsellers", per the owner), marked current on that page — step 7
 - [ ] The home hero's "Order Now" button leads to `/popular` — already linked (#64); works once step 6 adds the route; `POPULAR_PATH` reuse in step 5
 - [ ] Cards support add to cart with the "Added to cart" toast — steps 5, 6
 - [ ] Only C+ tokens are used; all copy is in `uk.ts` and `en.ts`; animations stop with `prefers-reduced-motion: reduce` — steps 1, 5, 8
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
 - [ ] (comment) `/popular?family=…` (up to 3) shows the popular perfumes with any of those families, and the design covers the filtered state — steps 1, 4, 5, 6
+- [ ] (owner) The list is paginated — steps 4, 5, 6
+- [ ] (owner) The owner's catalogue is in the seed, with its 30 popular perfumes ranked — step 8
 
 ## Out of scope
-- A new design system, tokens or fonts; changes to the catalog pages or the footer (unless the
+- A new design system, tokens or fonts; changes to the catalogue pages or the footer (unless the
   approved artboard adds a link).
 - The home page's own `Bestsellers` section beyond sharing the sold-units subquery (#64).
-- Sorting, pagination or other filters on `/popular` beyond the trio's `family` params.
-- Making `popular_rank` unique or a drag-and-drop ordering UI in Strapi.
-- New sample products beyond the owner's list (Q1).
+- Sorting or other filters on `/popular` beyond the trio's `family` params and the page.
+- Making `popular_rank` or `store_code` unique (#66), or a drag-and-drop ordering UI in Strapi.
+- Real prices, stock, descriptions and images for the owner's catalogue, and loading it into
+  production (Q5, Q9).

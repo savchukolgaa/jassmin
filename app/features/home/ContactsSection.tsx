@@ -33,14 +33,14 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
     <section
       id="contacts"
       aria-labelledby="contacts-title"
-      className="scroll-mt-20 bg-ink py-16 text-white md:py-24"
+      className="scroll-mt-20 bg-ink text-white"
     >
-      <div className="reveal container mx-auto grid gap-12 px-4 md:grid-cols-2">
-        <div>
+      <div className="reveal container mx-auto flex flex-wrap gap-14 px-4 py-16 md:py-26">
+        <div className="min-w-0 flex-[1_1_22rem]">
           <Eyebrow tone="onDark">{t("home.contacts.eyebrow")}</Eyebrow>
           <h2
             id="contacts-title"
-            className="mt-2 text-3xl leading-tight font-extrabold tracking-[-0.04em] md:text-4xl"
+            className="mt-6 text-4xl leading-[1.02] font-extrabold tracking-[-0.04em] text-balance md:text-5xl"
           >
             {t("home.contacts.title")}
           </h2>
@@ -84,7 +84,7 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
             </ul>
           )}
         </div>
-        {children}
+        <div className="min-w-0 flex-[1_1_28rem]">{children}</div>
       </div>
     </section>
   );

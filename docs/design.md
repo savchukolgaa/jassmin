@@ -161,9 +161,18 @@ The utilities are in `app/app.css`. Use motion to support content, never to hide
 | `animate-fade-up` + `anim-delay-1` … `anim-delay-6` | fade in from 16px below, each delay step +80ms | hero text, staggered sections and cards |
 | `animate-pop` | fade in from 90% scale | chips, badges, small confirmations |
 | `animate-spin-in` | rotate and scale in | the price badge |
-| `animate-marquee` | scroll −50% in a loop over 30s | the offer banner (render the content twice in the track) |
+| `animate-marquee` + `marquee-pause` | scroll −50% in a loop over 26s; pauses on hover | the offer banner (render the content twice in the track, `aria-hidden`) |
 | `animate-toast` | slide up and fade in | the "Added to cart" popup (use `role="status"`) |
 | `lift` | rise 4px with a shadow on hover | product and blog cards |
+| `animate-rise` | fade in from 80px below over 1s, after 0.2s | the hero's arched image |
+| `animate-badge` | spin in from −200° and zero size at 0.7s, then wobble −8°↔6° every 4s (give it `-rotate-8`) | the hero's round price badge |
+| `animate-float` | drift up 14px and back every 6s | the hero's floating chip |
+| `animate-slot-pop` | grow from 30% with a twist, overshoot, settle | a filled "Build your trio" slot |
+| `card-tilt` | rise 6px and tilt −1° on hover; its `[data-zoom]` image scales to 1.04 | compact product cards (home bestsellers) |
+| `tile-arrow` | rise 6px on hover and slide its `[data-arrow]` 10px right | category tiles |
+| `quick-add` | turn 90° and scale to 1.08 on hover | the round + add-to-cart button |
+| `chip-hover` | lift 2px on hover | filter chips (trio builder) |
+| `step-hover` | lift 4px on hover | "How it works" step cards |
 | `reveal` | fade up as it scrolls into view (`animation-timeline: view()`) | sections below the fold |
 
 Rules:
@@ -172,6 +181,8 @@ Rules:
   `app/app.css` turns off every animation and transition. Keyframes only define their start state,
   so with motion off everything shows in its final, visible state. The button hover scale is also
   `motion-safe:`.
+- The hover utilities above only move inside `@media (prefers-reduced-motion: no-preference)`,
+  so with reduced motion nothing shifts on hover.
 - `reveal` only applies inside `@supports (animation-timeline: view())`. Other browsers show the
   content without animation.
 - Never put information only in motion. The toast must stay readable long enough, and the marquee

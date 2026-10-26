@@ -15,10 +15,14 @@ const homePage: HomePage = {
       height: 800,
       srcSet: null,
     },
+    eyebrow: null,
+    subtitle: null,
+    secondaryCta: null,
   },
   about: {
     title: "About Jassmin",
     body: "We are **Jassmin**.\n\n<script>alert(1)</script>",
+    image: null,
   },
   location: {
     address: "вул. Хрещатик, 1, Київ",
@@ -43,7 +47,30 @@ describe("buildHomePageView", () => {
     expect(view.about).toEqual({
       title: "About Jassmin",
       bodyHtml: "<p>We are <strong>Jassmin</strong>.</p>\n",
+      image: null,
     });
+  });
+
+  it("adds the trio offer, the trio builder's families and picks, and the bestsellers", () => {
+    const trioOffer = { price: "499.00", setSize: 3, volumeMl: 10 };
+    const families = ["квіткові"];
+    const view = buildHomePageView(homePage, siteSettings, {
+      trioOffer,
+      trioFamilies: families,
+      selectedFamilies: ["квіткові"],
+      bestsellers: [],
+    });
+
+    expect(view.trioOffer).toEqual(trioOffer);
+    expect(view.trio).toEqual({ families, selected: ["квіткові"] });
+    expect(view.bestsellers).toEqual([]);
+  });
+
+  it("has no trio offer, families or bestsellers without shop data", () => {
+    const view = buildHomePageView(homePage, siteSettings);
+
+    expect(view.trioOffer).toBeNull();
+    expect(view.trio).toEqual({ families: [], selected: [] });
   });
 
   it("passes on the locale the home page copy was served in", () => {
@@ -79,7 +106,11 @@ describe("buildHomePageView", () => {
 
   it("leaves the description empty for the route's default, and has no image", () => {
     const { seo } = buildHomePageView(
-      { ...homePage, hero: { ...homePage.hero, image: null }, about: { title: "A", body: " " } },
+      {
+        ...homePage,
+        hero: { ...homePage.hero, image: null },
+        about: { title: "A", body: " ", image: null },
+      },
       siteSettings,
     );
 

@@ -225,6 +225,7 @@ export const en = {
     ml: "ml",
     fromPrice: "from {price}",
     addSize: "Add {size}",
+    quickAdd: "Add {title}, {size}, to cart",
     chooseVolume: "Choose volume",
     volume: "Volume",
     soldOutOption: "{option} (out of stock)",
@@ -497,9 +498,57 @@ export const en = {
   home: {
     defaultDescription: "Jassmin perfume store",
     about: "About us",
+    hero: {
+      chip: "Women · Men",
+      badgeOnly: "only",
+      badgeFor: "for {count}",
+      badgeLabel: {
+        one: "Only {price} for {count} tester",
+        other: "Only {price} for {count} testers",
+      },
+    },
+    marquee: {
+      offer: {
+        one: "Order {count} tester only for {price}",
+        other: "Order {count} testers only for {price}",
+      },
+    },
+    howItWorks: {
+      title: "How it works",
+      pickTitle: "Pick three scents",
+      pickBody: "Choose any three testers from the catalog, or start from the families you like.",
+      payTitle: "Pay {price}",
+      payBody: "One price for the set. Check out as a guest or with your account.",
+      decideTitle: "Wear, then decide",
+      decideBody: "Live with each scent for a few days, then pick your full bottle.",
+    },
+    trio: {
+      title: "Build your trio",
+      intro:
+        "Not sure where to start? Pick three scent families and we'll show you testers to match.",
+      families: "Scent families",
+      update: "Show my picks",
+      slots: "Your trio",
+      slot: "Slot {n}",
+      left: {
+        one: "{count} more to pick",
+        other: "{count} more to pick",
+      },
+      cta: "Show my trio · {price} →",
+      ctaNoPrice: "Show my picks →",
+    },
+    tiles: {
+      label: "Categories",
+      women: "Women",
+      men: "Men",
+    },
+    bestsellers: {
+      title: "Bestsellers",
+      viewAll: "View all →",
+    },
     location: {
       eyebrow: "Location",
-      title: "Visit our store",
+      title: "Come smell them in person",
       address: "Address",
       hours: "Opening hours",
       directions: "Get directions",

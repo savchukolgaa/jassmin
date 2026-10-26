@@ -31,11 +31,16 @@ export const heroComponent = z.object({
   ctaLabel: z.string(),
   ctaHref: z.string(),
   image: strapiMedia.nullish(),
+  eyebrow: z.string().nullish(),
+  subtitle: z.string().nullish(),
+  secondaryCtaLabel: z.string().nullish(),
+  secondaryCtaHref: z.string().nullish(),
 });
 
 export const aboutComponent = z.object({
   title: z.string(),
   body: z.string(),
+  image: strapiMedia.nullish(),
 });
 
 export const locationComponent = z.object({

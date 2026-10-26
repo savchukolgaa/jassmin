@@ -4,6 +4,9 @@ import { z } from "zod";
 import type { DiscountKind } from "./enums";
 import { createTranslator, msg, type TextKey, type Translator } from "./i18n";
 
+/** `discounts.slug` of the automatic tester-trio rule, the price the home page advertises. */
+export const TESTER_TRIO_DISCOUNT_SLUG = "tester-trio";
+
 /** Longest code `discounts.code` holds. */
 export const MAX_PROMO_CODE_LENGTH = 40;
 

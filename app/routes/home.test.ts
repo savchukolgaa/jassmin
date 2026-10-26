@@ -1,12 +1,22 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CmsError } from "~/.server/cms/errors";
 import { localeCookie } from "~/.server/locale";
 import type { HomePage, SiteSettings } from "~/lib/cms";
 
 const content = vi.hoisted(() => ({ getHomePage: vi.fn(), getSiteSettings: vi.fn() }));
 const contact = vi.hoisted(() => ({ submitContactMessage: vi.fn() }));
+const shop = vi.hoisted(() => ({
+  getBestsellers: vi.fn(),
+  getTrioFamilies: vi.fn(),
+  getTesterTrioOffer: vi.fn(),
+}));
 vi.mock("~/.server/cms/content", () => content);
 vi.mock("~/.server/services/contact", () => contact);
+vi.mock("~/.server/services/products", () => ({
+  getBestsellers: shop.getBestsellers,
+  getTrioFamilies: shop.getTrioFamilies,
+}));
+vi.mock("~/.server/services/trio", () => ({ getTesterTrioOffer: shop.getTesterTrioOffer }));
 
 const { action, loader, shouldRevalidate } = await import("./home");
 
@@ -17,8 +27,11 @@ const homePage: HomePage = {
     ctaLabel: "Order Now",
     ctaHref: "/popular",
     image: null,
+    eyebrow: null,
+    subtitle: null,
+    secondaryCta: null,
   },
-  about: { title: "About Jassmin", body: "Our **story**." },
+  about: { title: "About Jassmin", body: "Our **story**.", image: null },
   location: {
     address: "вул. Хрещатик, 1, Київ",
     openingHours: null,
@@ -48,6 +61,15 @@ function post(fields: Record<string, string>, headers: Record<string, string> = 
   return action({ request, params: {} } as unknown as ActionArgs);
 }
 
+const trioOffer = { price: "499.00", setSize: 3, volumeMl: 10 };
+const families = ["квіткові", "деревні", "свіжі", "східні"];
+
+beforeEach(() => {
+  shop.getBestsellers.mockResolvedValue([]);
+  shop.getTrioFamilies.mockResolvedValue(families);
+  shop.getTesterTrioOffer.mockResolvedValue(trioOffer);
+});
+
 afterEach(() => {
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -55,8 +77,8 @@ afterEach(() => {
 
 type LoaderArgs = Parameters<typeof loader>[0];
 
-function load(headers?: HeadersInit) {
-  return loader({ request: new Request("http://localhost/", { headers }) } as LoaderArgs);
+function load(headers?: HeadersInit, path = "/") {
+  return loader({ request: new Request(`http://localhost${path}`, { headers }) } as LoaderArgs);
 }
 
 describe("home loader", () => {
@@ -70,6 +92,29 @@ describe("home loader", () => {
     expect(view.location.mapEmbedUrl).toBeNull();
     expect(view.contacts).toEqual(siteSettings);
     expect(view.seo.title).toBe("Jassmin — Order 3 Testers only for 499₴");
+  });
+
+  it("adds the trio offer, the families and the bestsellers from the shop", async () => {
+    content.getHomePage.mockResolvedValue(homePage);
+    content.getSiteSettings.mockResolvedValue(siteSettings);
+
+    const view = await load();
+
+    expect(view.trioOffer).toEqual(trioOffer);
+    expect(view.trio).toEqual({ families, selected: [] });
+    expect(shop.getBestsellers).toHaveBeenCalledOnce();
+  });
+
+  it("reads the trio picks of a no-JS submission, at most three known families", async () => {
+    content.getHomePage.mockResolvedValue(homePage);
+    content.getSiteSettings.mockResolvedValue(siteSettings);
+    const query = ["свіжі", "nope", "деревні", "квіткові", "східні"]
+      .map((family) => `family=${encodeURIComponent(family)}`)
+      .join("&");
+
+    const view = await load(undefined, `/?${query}`);
+
+    expect(view.trio.selected).toEqual(["свіжі", "деревні", "квіткові"]);
   });
 
   it("turns a CMS outage into a 503 for the error boundary", async () => {
@@ -174,8 +219,13 @@ describe("home shouldRevalidate", () => {
     expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/?index" }))).toBe(false);
   });
 
+  it("skips reloading after a bestseller's quick add", () => {
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/cart" }))).toBe(false);
+  });
+
   it("follows the default otherwise", () => {
     expect(shouldRevalidate(args({}))).toBe(true);
-    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/cart" }))).toBe(true);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/locale" }))).toBe(true);
+    expect(shouldRevalidate(args({ formMethod: "GET", formAction: "/" }))).toBe(true);
   });
 });

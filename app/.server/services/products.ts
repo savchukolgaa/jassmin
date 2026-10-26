@@ -1,6 +1,6 @@
 import type { CartActionError } from "~/lib/cart";
 import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib/catalog";
-import type { Gender } from "~/lib/enums";
+import { GENDERS, type Gender } from "~/lib/enums";
 import type { CatalogPage, ProductDetail, ProductSummary, ProductVariant } from "~/lib/products";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
@@ -8,6 +8,7 @@ import {
   countProducts,
   findProductByPublicId,
   findVariantForProduct,
+  listBestsellers,
   listFilterOptions,
   listProductSummariesByPublicIds,
   listProducts,
@@ -96,6 +97,22 @@ export async function getCatalogPage(
     pageCount: Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE)),
     filterOptions,
   };
+}
+
+/** How many bestsellers the home page shows (#64). */
+export const BESTSELLER_COUNT = 4;
+
+/** The home page's bestsellers: most units sold, topped up with the newest products (#64). */
+export async function getBestsellers(db: Db = defaultDb): Promise<ProductSummary[]> {
+  return (await listBestsellers(db, BESTSELLER_COUNT)).map(toSummary);
+}
+
+/**
+ * Every fragrance family of the listed products of any gender (primary or not, #65), for the trio
+ * builder and the marquee (#64). Stored values; the UI labels them in its language.
+ */
+export async function getTrioFamilies(db: Db = defaultDb): Promise<string[]> {
+  return (await listFilterOptions(db, GENDERS)).fragranceFamilies;
 }
 
 /**

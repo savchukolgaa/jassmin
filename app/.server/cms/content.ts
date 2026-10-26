@@ -87,6 +87,20 @@ function servedLocale(entry: { locale?: string | null }, requested: Locale): Loc
   return isLocale(entry.locale) ? entry.locale : requested;
 }
 
+/** Optional Strapi text, trimmed; blank means not set. */
+function textOrNull(value: string | null | undefined): string | null {
+  return value?.trim() || null;
+}
+
+function toSecondaryCta(
+  label: string | null | undefined,
+  href: string | null | undefined,
+): HomePage["hero"]["secondaryCta"] {
+  const text = textOrNull(label);
+  const link = textOrNull(href);
+  return text && link ? { label: text, href: link } : null;
+}
+
 export function toHomePage(
   entry: HomePageEntry,
   baseUrl: string,
@@ -100,8 +114,11 @@ export function toHomePage(
       ctaLabel: hero.ctaLabel,
       ctaHref: hero.ctaHref,
       image: toImage(hero.image, baseUrl),
+      eyebrow: textOrNull(hero.eyebrow),
+      subtitle: textOrNull(hero.subtitle),
+      secondaryCta: toSecondaryCta(hero.secondaryCtaLabel, hero.secondaryCtaHref),
     },
-    about: { title: about.title, body: about.body },
+    about: { title: about.title, body: about.body, image: toImage(about.image, baseUrl) },
     location: {
       address: location.address,
       openingHours: location.openingHours ?? null,
@@ -204,7 +221,9 @@ export async function getHomePage(locale: Locale = DEFAULT_LOCALE): Promise<Home
   const { data } = await getSingleType(locale, (l) =>
     cmsFetch(
       "home-page",
-      { populate: { hero: { populate: ["image"] }, about: true, location: true } },
+      {
+        populate: { hero: { populate: ["image"] }, about: { populate: ["image"] }, location: true },
+      },
       singleResponse(homePageEntry),
       { locale: l },
     ),

@@ -191,6 +191,9 @@ describe("getHomePage", () => {
           "http://cms.test/uploads/hero_86b09bc538.jpg 1200w",
         ].join(", "),
       },
+      eyebrow: "Тестерний набір",
+      subtitle: expect.stringContaining("499₴"),
+      secondaryCta: { label: "Усі парфуми", href: "/catalog/women" },
     });
     expect(page.about.title).toBe("Про Jassmin");
     expect(page.location.address).toContain("Хрещатик");
@@ -448,6 +451,39 @@ describe("toHomePage", () => {
     const { data } = singleResponse(homePageEntry).parse(homePageEn);
 
     expect(toHomePage(data, BASE_URL).locale).toBe("en");
+  });
+
+  it("maps the optional hero fields and the about image", () => {
+    const { data } = singleResponse(homePageEntry).parse(homePageEn);
+    const page = toHomePage(data, BASE_URL);
+
+    expect(page.hero).toMatchObject({
+      eyebrow: "Tester set",
+      subtitle: expect.stringContaining("499₴"),
+      secondaryCta: { label: "See all perfumes", href: "/catalog/women" },
+    });
+    expect(page.about.image?.url).toMatch(/^http:\/\/cms\.test\/uploads\//);
+  });
+
+  it("treats blank or missing optional fields as not set", () => {
+    const { data } = singleResponse(homePageEntry).parse(homePage);
+    const page = toHomePage(
+      {
+        ...data,
+        hero: {
+          ...data.hero,
+          eyebrow: "  ",
+          subtitle: null,
+          secondaryCtaLabel: "All perfumes",
+          secondaryCtaHref: undefined,
+        },
+        about: { title: data.about.title, body: data.about.body },
+      },
+      BASE_URL,
+    );
+
+    expect(page.hero).toMatchObject({ eyebrow: null, subtitle: null, secondaryCta: null });
+    expect(page.about.image).toBeNull();
   });
 });
 

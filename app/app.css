@@ -31,8 +31,15 @@
   --animate-fade-up: fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-pop: pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
   --animate-spin-in: spin-in 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-  --animate-marquee: marquee 30s linear infinite;
+  --animate-marquee: marquee 26s linear infinite;
   --animate-toast: toast 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  /* Home page (#64, HomeBoldPlus artboard). */
+  --animate-rise: rise 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both;
+  --animate-badge:
+    badge-in 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) 0.7s both, wobble 4s ease-in-out 1.6s infinite;
+  --animate-float: float 6s ease-in-out 1s infinite;
+  --animate-slot-pop: slot-pop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
 
 /* Light-only: C+ has no dark theme, so pages and native controls stay light (docs/design.md). */
@@ -88,6 +95,43 @@ body {
   }
 }
 
+/* The hero image rises from further below than `fade-up`. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(80px);
+  }
+}
+
+/* The price badge spins in to its resting tilt (set with `rotate`), then wobbles around it. */
+@keyframes badge-in {
+  from {
+    transform: rotate(-192deg) scale(0);
+  }
+}
+
+@keyframes wobble {
+  50% {
+    transform: rotate(14deg) scale(1.04);
+  }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+/* A filled trio slot: grows past full size with a twist, then settles. */
+@keyframes slot-pop {
+  from {
+    transform: scale(0.3) rotate(-20deg);
+  }
+  70% {
+    transform: scale(1.15) rotate(6deg);
+  }
+}
+
 /* Staggered entrance steps: `animate-fade-up anim-delay-2` starts 160ms later. */
 @utility anim-delay-* {
   animation-delay: calc(--value(integer) * 80ms);
@@ -104,6 +148,100 @@ body {
     box-shadow:
       0 20px 25px -5px rgb(31 26 28 / 0.12),
       0 8px 10px -6px rgb(31 26 28 / 0.08);
+  }
+}
+
+/*
+ * Home page hovers (#64). Each moves only when motion is allowed, so with reduced motion nothing
+ * shifts on hover either.
+ */
+
+/* Pauses a running animation (the marquee track) while the pointer is over it. */
+@utility marquee-pause {
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+
+/* Product card: rises 6px with a slight tilt; its `[data-zoom]` image grows a little. */
+@utility card-tilt {
+  transition:
+    translate 0.3s ease,
+    rotate 0.3s ease;
+
+  & [data-zoom] {
+    transition: scale 0.5s ease;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover {
+      translate: 0 -6px;
+      rotate: -1deg;
+    }
+
+    &:hover [data-zoom] {
+      scale: 1.04;
+    }
+  }
+}
+
+/* Category tile: rises 6px and slides its `[data-arrow]` 10px to the right. */
+@utility tile-arrow {
+  transition: translate 0.3s ease;
+
+  & [data-arrow] {
+    display: inline-block;
+    transition: translate 0.3s ease;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover {
+      translate: 0 -6px;
+    }
+
+    &:hover [data-arrow] {
+      translate: 10px 0;
+    }
+  }
+}
+
+/* Round quick-add button: the + turns a quarter and grows a little. */
+@utility quick-add {
+  transition:
+    rotate 0.3s ease,
+    scale 0.3s ease,
+    background-color 0.3s ease;
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover:not(:disabled) {
+      rotate: 90deg;
+      scale: 1.08;
+    }
+  }
+}
+
+/* Filter chip: lifts 2px. */
+@utility chip-hover {
+  transition:
+    translate 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover {
+      translate: 0 -2px;
+    }
+  }
+}
+
+/* "How it works" step card: lifts 4px. */
+@utility step-hover {
+  transition: translate 0.3s ease;
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover {
+      translate: 0 -4px;
+    }
   }
 }
 

@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import type { ContactActionResult } from "~/lib/contact";
 import type { HomePageView } from "~/lib/home";
 import { I18nProvider } from "~/lib/i18n";
+import { formatPrice } from "~/lib/money";
+import type { ProductSummary } from "~/lib/products";
 import { HomePage } from "./HomePage";
 
 const view: HomePageView = {
@@ -20,8 +22,17 @@ const view: HomePageView = {
       height: 800,
       srcSet: "http://cms.test/uploads/small_hero.jpg 500w, http://cms.test/uploads/hero.jpg 1200w",
     },
+    eyebrow: "Tester set",
+    subtitle: "Find the one worth a full bottle.",
+    secondaryCta: { label: "See all perfumes", href: "/catalog/women" },
   },
-  about: { title: "About Jassmin", bodyHtml: "<p>Our <strong>story</strong>.</p>" },
+  about: { title: "About Jassmin", bodyHtml: "<p>Our <strong>story</strong>.</p>", image: null },
+  trioOffer: { price: "499.00", setSize: 3, volumeMl: 10 },
+  trio: {
+    families: ["квіткові", "деревні", "свіжі", "східні"],
+    selected: [],
+  },
+  bestsellers: [],
   location: {
     address: "вул. Хрещатик, 1, Київ",
     openingHours: "Mon–Fri 10:00–20:00\nSat–Sun 11:00–18:00",
@@ -37,6 +48,21 @@ const view: HomePageView = {
     socialLinks: [{ platform: "instagram", url: "https://www.instagram.com/jassmin" }],
   },
   seo: { title: "Jassmin", description: "Story", image: null },
+};
+
+const BESTSELLER: ProductSummary = {
+  id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+  title: "La Vie Est Belle",
+  brand: "Lancôme",
+  gender: "women",
+  packSize: 1,
+  imageUrl: null,
+  fragranceFamily: "гурманські",
+  minPrice: "450.00",
+  hasPriceRange: true,
+  volumes: [10, 50],
+  inStock: true,
+  defaultVariant: { id: "01a1652b-6e25-7d00-8000-000000000001", volumeMl: 10 },
 };
 
 let props: ComponentProps<typeof HomePage> = { view };
@@ -64,23 +90,42 @@ describe("HomePage", () => {
   it("marks Ukrainian fallback content with lang=uk under the English UI", () => {
     const html = render({ contentLocale: "uk", contacts: { ...view.contacts, locale: "uk" } });
 
-    expect(html).toMatch(/<div lang="uk"><h1[^>]*id="hero-title"/);
+    expect(html).toMatch(/<div lang="uk"[^>]*>.*?<h1[^>]*id="hero-title"/s);
     expect(html).toMatch(/<h2[^>]*id="about-title"[^>]*lang="uk"/);
     expect(html).toMatch(/<div lang="uk"[^>]*><p>Our <strong>story/);
-    expect(html).toContain('<dd class="mt-1" lang="uk">вул. Хрещатик');
+    expect(html).toMatch(/<dd class="[^"]*" lang="uk">вул. Хрещатик/);
     expect(html).toContain('<span lang="uk">Mon–Fri 9:00–18:00</span>');
     // UI copy around it stays in the page's language.
     expect(html).not.toMatch(/lang="uk"[^>]*>About us/);
   });
 
-  it("renders Hero, About Us, Location and Contacts in that order", () => {
-    const html = render();
-    const positions = ['id="hero-title"', 'id="about"', 'id="location-title"', 'id="contacts"'].map(
-      (marker) => html.indexOf(marker),
-    );
+  it("renders every section of the HomeBoldPlus artboard in its order", () => {
+    const html = render({ bestsellers: [BESTSELLER] });
+    const positions = [
+      'id="hero-title"',
+      "animate-marquee",
+      'id="how-it-works-title"',
+      'id="trio"',
+      'aria-label="Categories"',
+      'id="bestsellers-title"',
+      'id="about"',
+      'id="location-title"',
+      'id="contacts"',
+    ].map((marker) => html.indexOf(marker));
 
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+  });
+
+  it("speaks Ukrainian by default", () => {
+    props = { view };
+    const html = renderToStaticMarkup(
+      createElement(I18nProvider, { locale: "uk" }, createElement(Stub, { initialEntries: ["/"] })),
+    );
+
+    expect(html).toContain("Як це працює");
+    expect(html).toContain("Зберіть своє тріо");
+    expect(html).toContain("Жінкам · Чоловікам");
   });
 
   it("renders the hero headline, CTA link and responsive image", () => {
@@ -91,6 +136,118 @@ describe("HomePage", () => {
     expect(html).toMatch(/<a[^>]*href="\/popular"[^>]*>Order Now<\/a>/);
     expect(html).toContain('alt="Jassmin perfume testers"');
     expect(html).toContain("small_hero.jpg 500w");
+  });
+
+  it("renders the hero eyebrow, subtitle, second CTA and floating chip", () => {
+    const html = render();
+
+    expect(html).toContain("Tester set");
+    expect(html).toContain("Find the one worth a full bottle.");
+    expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>See all perfumes<\/a>/);
+    expect(html).toContain("Women · Men");
+    expect(html).not.toMatch(/unisex/i);
+  });
+
+  it("leaves out the optional hero parts that aren't set", () => {
+    const html = render({
+      hero: { ...view.hero, eyebrow: null, subtitle: null, secondaryCta: null },
+    });
+
+    expect(html).not.toContain("Tester set");
+    expect(html).not.toContain("See all perfumes");
+  });
+
+  it("shows the trio price on the hero badge, with a sentence for screen readers", () => {
+    const html = render();
+
+    expect(html).toContain("animate-badge");
+    expect(html).toContain(`Only ${formatPrice("499.00", "en")} for 3 testers`);
+  });
+
+  it("hides the price badge without a live trio offer", () => {
+    const html = render({ trioOffer: null });
+
+    expect(html).not.toContain("animate-badge");
+    expect(html).not.toContain("Only ");
+  });
+
+  it("scrolls the offer and the families in a marquee hidden from screen readers", () => {
+    const html = render();
+    const track = html.match(/<div aria-hidden="true" class="animate-marquee[^"]*"/)?.[0];
+
+    expect(track).toContain("marquee-pause");
+    expect(html).toContain(`Order 3 testers only for ${formatPrice("499.00", "en")}`);
+    // Twice, so the loop is seamless.
+    expect(html.match(/<span>Woody<\/span>/g)).toHaveLength(2);
+  });
+
+  it("keeps the marquee's families but drops its offer without a live trio offer", () => {
+    const html = render({ trioOffer: null });
+
+    expect(html).toContain("animate-marquee");
+    expect(html).not.toContain("Order 3 testers");
+  });
+
+  it("leaves the marquee out when it has nothing to say", () => {
+    const html = render({ trioOffer: null, trio: { families: [], selected: [] } });
+
+    expect(html).not.toContain("animate-marquee");
+  });
+
+  it("explains the trio in three steps with its live price", () => {
+    const html = render();
+
+    expect(html).toContain('id="how-it-works-title"');
+    expect(html).toContain(`Pay ${formatPrice("499.00", "en")}`);
+    expect(render({ trioOffer: null })).not.toContain('id="how-it-works-title"');
+  });
+
+  it("links the category tiles to the women's and men's catalogs only", () => {
+    const html = render();
+    const nav = html.match(/<nav aria-label="Categories".*?<\/nav>/s)?.[0] ?? "";
+
+    expect(nav.match(/href="[^"]*"/g)).toEqual(['href="/catalog/women"', 'href="/catalog/men"']);
+    expect(nav).toContain(">Women<");
+    expect(nav).toContain(">Men<");
+  });
+
+  it("lists the bestsellers as compact cards with quick add and a link to the catalog", () => {
+    const html = render({ bestsellers: [BESTSELLER] });
+    const section = html.match(/<section aria-labelledby="bestsellers-title".*?<\/section>/s)?.[0];
+
+    expect(section).toContain(">Bestsellers</h2>");
+    expect(section).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>View all →<\/a>/);
+    expect(section).toMatch(/<h3[^>]*><a[^>]*>La Vie Est Belle<\/a><\/h3>/);
+    expect(section).toContain("quick-add");
+    expect(render()).not.toContain('id="bestsellers-title"');
+  });
+
+  it("shows the about store photo, or a decorative frame without one", () => {
+    const image = {
+      url: "http://cms.test/uploads/store.jpg",
+      alt: "Jassmin store",
+      width: 1200,
+      height: 800,
+      srcSet: null,
+    };
+    const html = render({ about: { ...view.about, image } });
+
+    expect(html).toMatch(
+      /<img[^>]*src="http:\/\/cms\.test\/uploads\/store\.jpg"[^>]*alt="Jassmin store"/,
+    );
+    expect(render()).not.toContain("store.jpg");
+  });
+
+  it("puts the address and hours on a deep-pink card with a directions link", () => {
+    const html = render();
+
+    expect(html).toMatch(
+      /<div class="[^"]*bg-primary[^"]*"><p class="[^"]*text-white[^"]*">Location<\/p>/,
+    );
+    expect(html).toContain("Come smell them in person");
+    expect(html).toMatch(
+      /<a href="https:\/\/www\.google\.com\/maps\/search[^"]*"[^>]*>Get directions<\/a>/,
+    );
   });
 
   it("renders the sanitized about body as HTML", () => {
@@ -119,8 +276,8 @@ describe("HomePage", () => {
   it("renders a contact form that posts to the home route action", () => {
     const html = render();
 
-    const form = html.match(/<form[^>]*>/)?.[0];
-    expect(form).toContain('method="post"');
+    const form = html.match(/<form[^>]*method="post"[^>]*>/)?.[0];
+    expect(form).toBeDefined();
     expect(form).toContain('action="/?index#contacts"');
     for (const name of ["name", "email", "message", "website"]) {
       expect(html).toContain(`name="${name}"`);

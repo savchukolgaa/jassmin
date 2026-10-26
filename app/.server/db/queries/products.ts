@@ -1,8 +1,8 @@
 import { and, arrayOverlaps, asc, count, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
 import type { CatalogSort } from "~/lib/catalog";
-import type { Gender } from "~/lib/enums";
+import type { Gender, OrderStatus } from "~/lib/enums";
 import type { Db } from "../client";
-import { products, productVariants } from "../schema";
+import { orderItems, orders, products, productVariants } from "../schema";
 
 export interface ProductFilters {
   genders: readonly Gender[];
@@ -140,6 +140,35 @@ export function listProductSummariesByPublicIds(
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
     .where(and(isListed, inArray(products.publicId, [...publicIds])));
+}
+
+/** Orders whose units count as sold for the bestsellers (#64). */
+const SOLD_ORDER_STATUSES: OrderStatus[] = ["paid", "shipped", "completed"];
+
+/**
+ * The listed products with the most units sold in paid, shipped or completed orders, then the
+ * newest ones, so the list is full whenever enough products are listed (#64).
+ */
+export function listBestsellers(db: Db, limit: number): Promise<ProductSummaryRow[]> {
+  const stats = variantStats(db);
+  const sold = db
+    .select({
+      productId: orderItems.productId,
+      units: sql<number>`sum(${orderItems.quantity})`.as("units"),
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .where(inArray(orders.status, SOLD_ORDER_STATUSES))
+    .groupBy(orderItems.productId)
+    .as("sold");
+  return db
+    .select(summaryColumns(stats))
+    .from(products)
+    .innerJoin(stats, eq(stats.productId, products.id))
+    .leftJoin(sold, eq(sold.productId, products.id))
+    .where(isListed)
+    .orderBy(sql`coalesce(${sold.units}, 0) desc`, desc(products.createdAt), desc(products.id))
+    .limit(limit);
 }
 
 export async function countProducts(db: Db, filters: ProductFilters): Promise<number> {

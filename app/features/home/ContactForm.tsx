@@ -54,7 +54,7 @@ export function ContactForm({ actionData }: ContactFormProps) {
       action="/?index#contacts"
       noValidate
       aria-labelledby="contact-form-title"
-      className="relative flex flex-col gap-5 rounded-card-lg bg-white p-6 text-ink shadow-lg sm:p-9"
+      className="relative flex flex-col gap-5 rounded-card-lg bg-white p-6 text-ink sm:p-9"
     >
       <h3 id="contact-form-title" className="text-2xl font-extrabold tracking-[-0.03em]">
         {t("contact.title")}
@@ -144,7 +144,7 @@ function Field({ name, label, error, multiline = false, ...inputProps }: FieldPr
     "aria-invalid": error ? true : undefined,
     "aria-describedby": error ? errorId : undefined,
     className: cn(
-      "w-full rounded-2xl border bg-card px-4 py-3 text-base text-ink",
+      "min-h-13 w-full rounded-2xl border-2 bg-white px-4 py-3 text-base text-ink",
       "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary",
       error ? "border-red-700" : "border-muted",
     ),

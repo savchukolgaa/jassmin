@@ -96,6 +96,33 @@ describe("motion", () => {
     expect(css).toContain("@utility lift {");
   });
 
+  it.each(["rise", "float", "slot-pop"])("defines the home %s animation", (name) => {
+    expect(css).toContain(`@keyframes ${name} {`);
+    expect(css).toMatch(new RegExp(`--animate-${name}: ${name} `));
+  });
+
+  it("spins the badge in, then wobbles it forever", () => {
+    expect(css).toContain("@keyframes badge-in {");
+    expect(css).toContain("@keyframes wobble {");
+    expect(css).toMatch(/--animate-badge:\s*badge-in [^;]*, wobble [^;]*infinite;/);
+  });
+
+  it("scrolls the marquee in 26s and pauses it on hover", () => {
+    expect(css).toContain("--animate-marquee: marquee 26s linear infinite;");
+    expect(css).toMatch(/@utility marquee-pause \{\s*&:hover \{\s*animation-play-state: paused;/);
+  });
+
+  it.each(["card-tilt", "tile-arrow", "quick-add", "chip-hover", "step-hover"])(
+    "moves %s on hover only when motion is allowed",
+    (name) => {
+      const body = css.split(`@utility ${name} {`)[1]?.split("\n}\n")[0] ?? "";
+      expect(body).toContain("@media (prefers-reduced-motion: no-preference) {");
+      expect(body.split("@media (prefers-reduced-motion: no-preference)")[0]).not.toContain(
+        ":hover",
+      );
+    },
+  );
+
   it("only enables scroll reveal where animation-timeline is supported", () => {
     expect(css).toMatch(/@supports \(animation-timeline: view\(\)\) \{\s*\.reveal \{/);
     expect(css.match(/\.reveal/g)).toHaveLength(1);

@@ -84,7 +84,7 @@ popular) becomes the seed data.
   `BESTSELLERS_LINK = { to: POPULAR_PATH, labelKey: "nav.bestsellers" }` joins `OFFERS_LINK` in
   `app/components/layout/nav.ts`.
 - **Cards:** the `compact` `ProductCard` with the round `icon` add-to-cart, as in #64's home
-  bestsellers, in a 1 / 2 / 4-column grid **(unconfirmed until the artboard is approved)**.
+  bestsellers, in a 1 / 2 / 4-column grid, as on the approved artboard (owner, 2026-10-26).
   `AddToCartForm` already shows the "Added to cart" status (`role="status"`, `animate-toast`).
 - **Revalidation:** like `routes/home.tsx`, `shouldRevalidate` skips reloading after a POST to
   `/cart`, so adding to the cart doesn't re-run the ranking (the layout still updates the count).
@@ -182,7 +182,7 @@ popular) becomes the seed data.
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Design the `PopularPlus` artboards and get approval** — On the C+ canvas add
+- [x] **1. Design the `PopularPlus` artboards and get approval** — On the C+ canvas add
   `PopularPlus.dc.html` (desktop, `expand: "fill"`, w 1440) and `PopularPlusPhone.dc.html` (375 px)
   to the "Chosen direction: Option C+" row, built only from C+ tokens, Manrope, `Button` variants,
   the compact product card and the motion utilities in `docs/design.md`. Show: the header with

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/65
 Branch: `issue/65`
 Worktree: `.claude/worktrees/issue-65`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -92,6 +92,18 @@ the primary family.
 - **Cards:** `ProductSummary.fragranceFamily: string | null` (the primary), shown as a small blush
   chip above the volumes in `ProductCard` when set. #64's bestseller "family badge" reuses it.
 - **Store code** is staff-only: stored and synced, not shown to shoppers (Q3, confirmed).
+- **Implementation notes (deviations):**
+  - The seed (step 9) landed in the same commit as steps 4–5, because the catalog tests read the
+    sample families. Between the schema commit and that one, writers that only set
+    `fragrance_family` failed the new CHECK; every commit from `d513fad` on passes the full suite.
+  - Strapi accepts Cyrillic enumeration values (it only rejects values starting with a digit), so
+    no slug mapping was needed. `strapi ts:generate-types` and `pnpm cms:build` pass. The UI pieces
+    are `FamilyChip` (`features/catalog`) and `ProductFamilies` / `ProductNotes`
+    (`features/product/ProductScent.tsx`).
+  - `pnpm db:migrate` and `strapi develop` were **not** run against the shared dev database and
+    Strapi: the main checkout uses them too, and its code would fail the new CHECK. Migrate and
+    rollback are covered by `migrator.test.ts` on throwaway databases; the manual checks below are
+    still to do.
 
 ## Resolved questions
 
@@ -223,7 +235,7 @@ the primary family.
   for sample products whose `notes` are still empty, so existing dev databases get them.
   `seed.test.ts`: every sample perfume has ≥1 family, `fragranceFamily === fragranceFamilies[0]`,
   and notes.
-- [ ] **10. Docs and checks** — Update `app/.server/AGENTS.md` (Database: new columns, the CHECK,
+- [x] **10. Docs and checks** — Update `app/.server/AGENTS.md` (Database: new columns, the CHECK,
   `fragrance_family` = primary; CMS sync: new fields; catalog filter is list-based). Run
   `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
@@ -244,14 +256,17 @@ the primary family.
 
 - [ ] A product can have several fragrance families and a list of notes, editable in the Strapi
   admin and saved to PostgreSQL — steps 2, 6, 7
-- [ ] `products.fragrance_family` still exists and always holds the first family — steps 2, 3, 6
-- [ ] Filtering the catalog by a family lists every product that has it, not only those where it
+  (covered by the middleware, route and sync tests and `pnpm cms:build`; not yet checked by hand
+  in a running Strapi admin)
+- [x] `products.fragrance_family` still exists and always holds the first family — steps 2, 3, 6
+- [x] Filtering the catalog by a family lists every product that has it, not only those where it
   comes first — steps 4, 5
-- [ ] Family names are shown in English on the English site and in Ukrainian on the Ukrainian
+- [x] Family names are shown in English on the English site and in Ukrainian on the Ukrainian
   site — steps 1, 8
-- [ ] The product page shows all families and the notes — steps 5, 8
-- [ ] Products can store the shop's own product code, editable in Strapi — steps 2, 6, 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] The product page shows all families and the notes — steps 5, 8
+- [ ] Products can store the shop's own product code, editable in Strapi — steps 2, 6, 7 (same: not yet
+  checked by hand in the admin)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
 
 ## Out of scope
 

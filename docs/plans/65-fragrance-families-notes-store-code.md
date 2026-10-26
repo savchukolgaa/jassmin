@@ -167,7 +167,7 @@ the primary family.
   hand if drizzle-kit emits the check first). Write the rollback: drop the check, index and the
   three columns. Update `schema.test.ts` for the new columns. Run `pnpm db:migrate`, then
   `pnpm db:rollback` and migrate again locally.
-- [ ] **3. Migration tests** (`migrator.test.ts`) — In the rollback-chain test, add
+- [x] **3. Migration tests** (`migrator.test.ts`) — In the rollback-chain test, add
   `0013_product_families_notes_code` first. New test: roll back 0013, insert a product with
   `fragrance_family = 'деревні'` and one with `null`, migrate, and expect
   `fragrance_families = {деревні}` / `{}`, `notes = {}`, `store_code = null`; then expect the

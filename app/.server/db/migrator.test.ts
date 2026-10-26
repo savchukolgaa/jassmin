@@ -107,6 +107,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
           and contype in ('c', 'u') order by conname`,
     );
     expect(constraints.rows.map((r) => r.conname)).toEqual([
+      "products_fragrance_family_primary_check",
       "products_pack_size_check",
       "products_public_id_unique",
       "products_slug_unique",
@@ -118,6 +119,10 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       sql`select indexdef from pg_indexes where indexname = 'products_gender_idx'`,
     );
     expect(indexes.rows[0]?.indexdef).toContain("(gender)");
+    const familyIndex = await testDb.db.execute<{ indexdef: string }>(
+      sql`select indexdef from pg_indexes where indexname = 'products_fragrance_families_idx'`,
+    );
+    expect(familyIndex.rows[0]?.indexdef).toContain("USING gin (fragrance_families)");
   });
 
   it("applies the column defaults", async () => {
@@ -674,7 +679,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0012 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0013 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
     expect(await rollbackLatest(db)).toBe("0010_payments");
@@ -706,7 +712,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0012 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0013 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
     expect(await rollbackLatest(db)).toBe("0010_payments");
@@ -792,9 +799,72 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ]);
   });
 
+  it("backfills fragrance_families from fragrance_family and keeps the primary in sync", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { pgErrorCode } = await import("./test-utils");
+    const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
+    // Products as they looked before #65, with one family or none.
+    const legacy = await db.execute<{ id: number }>(
+      sql`insert into products (title, brand, gender, price, volume_ml, fragrance_family)
+          values ('Woody', 'Old', 'men', '100.00', 50, 'деревні'),
+                 ('None', 'Old', 'women', '100.00', 50, null)
+          returning id`,
+    );
+    const [woody, none] = legacy.rows.map((r) => r.id);
+
+    await migrateLatest(db);
+
+    const rows = await db.execute<{
+      id: number;
+      fragrance_family: string | null;
+      fragrance_families: string[];
+      notes: string[];
+      store_code: string | null;
+    }>(
+      sql`select id, fragrance_family, fragrance_families, notes, store_code from products
+          where id in (${woody}, ${none}) order by id`,
+    );
+    expect(rows.rows).toEqual([
+      {
+        id: woody,
+        fragrance_family: "деревні",
+        fragrance_families: ["деревні"],
+        notes: [],
+        store_code: null,
+      },
+      { id: none, fragrance_family: null, fragrance_families: [], notes: [], store_code: null },
+    ]);
+
+    // 23514 check_violation: fragrance_family must be the first of fragrance_families.
+    expect(
+      await pgErrorCode(
+        db.execute(
+          sql`update products set fragrance_families = '{квіткові,деревні}' where id = ${woody}`,
+        ),
+      ),
+    ).toBe("23514");
+    expect(
+      await pgErrorCode(
+        db.execute(sql`update products set fragrance_family = 'деревні' where id = ${none}`),
+      ),
+    ).toBe("23514");
+    await db.execute(
+      sql`update products set fragrance_families = '{квіткові,деревні}',
+            fragrance_family = 'квіткові' where id = ${woody}`,
+    );
+  });
+
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0013_product_families_notes_code");
+    const familyColumns = await testDb.db.execute(
+      sql`select 1 from information_schema.columns where table_name = 'products'
+          and column_name in ('fragrance_families', 'notes', 'store_code')`,
+    );
+    expect(familyColumns.rows).toEqual([]);
     expect(await rollbackLatest(testDb.db)).toBe("0012_cms_catalog_and_orders");
     const tablesBefore0012 = ALL_TABLES.filter((t) => t !== "cms_outbox");
     expect(await listTables()).toEqual(tablesBefore0012);

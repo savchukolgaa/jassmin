@@ -24,7 +24,7 @@ everywhere and 5 ml is added.
   (`services/cms-push.ts:128`).
 - **Source list**: `makrtextfiles/catalog.md` in the main checkout (`C:\Users\КТС\jassmin`). It's
   untracked and stays that way: the converter reads it from a path argument, and only the converted
-  data file is committed. Since the first plan, the owner has marked 29 lines `(popular)` (Q8).
+  data file is committed. Since the first plan, the owner has marked 30 lines `(popular)` (Q8).
 - **One migration** (step 1): `product_variants_volume_ml_check` becomes `(5, 10, 30, 50, 100)` and
   existing 7 ml sizes are deleted. No new packages or env vars. The scripts use
   `getDatabaseUrl(process.env)` (`JASSMINDB_URI`, else `DATABASE_URL`) like `db/scripts/seed.ts`.
@@ -100,7 +100,7 @@ everywhere and 5 ml is added.
 
 ## Open questions
 
-- [ ] **Q8: What should "(popular)" do?** The owner marked 29 perfumes `(popular)` after the plan was
+- [ ] **Q8: What should "(popular)" do?** The owner marked 30 perfumes `(popular)` after the plan was
   written. The home page's bestsellers come from units sold (`listBestsellers`,
   `db/queries/products.ts:152`), and there's no popular flag in the schema or in Strapi. — Why it
   matters: storing and showing it means a column, a migration, a Strapi field, the CMS sync schema and
@@ -211,7 +211,7 @@ everywhere and 5 ml is added.
   `pnpm exec biome format --write` on it. Add `"db:convert-catalog"` to `package.json`, run
   `pnpm db:convert-catalog "C:\Users\КТС\jassmin\makrtextfiles\catalog.md"` and commit the output
   (never the Markdown). Check it has 128 entries and reads sensibly.
-- [ ] **5. Data tests** — `db/catalog-data.test.ts`: 75 women's and 53 men's entries, 29 popular;
+- [ ] **5. Data tests** — `db/catalog-data.test.ts`: 75 women's and 53 men's entries, 30 popular;
   every `publicId` unique and `(list, storeCode, title)` unique; both `11-L` entries and both
   `15-D` / `14-Z` present; every family in `FRAGRANCE_FAMILIES`, no duplicates, at least one; at least
   one note and at most `MAX_PRODUCT_NOTES`; no title contains "unisex" or "popular" (any case), and the

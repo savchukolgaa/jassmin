@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   type CatalogSearch,
   catalogHref,
+  FRAGRANCE_FAMILY_LABEL_KEYS,
+  fragranceFamilyLabel,
   hasActiveFilters,
   isCatalogGender,
   parseCatalogSearch,
 } from "./catalog";
+
+import { FRAGRANCE_FAMILIES } from "./enums";
+import { createTranslator } from "./i18n";
 
 const parse = (query: string) => parseCatalogSearch(new URLSearchParams(query));
 
@@ -78,5 +83,21 @@ describe("catalogHref", () => {
     expect(catalogHref("/catalog/women", search, 2)).toBe(
       "/catalog/women?brand=Jo+Malone+London&sort=price_desc&page=2",
     );
+  });
+});
+
+describe("fragranceFamilyLabel", () => {
+  it("has a label key for every family", () => {
+    expect(Object.keys(FRAGRANCE_FAMILY_LABEL_KEYS).sort()).toEqual([...FRAGRANCE_FAMILIES].sort());
+  });
+
+  it("translates a family into the locale", () => {
+    expect(fragranceFamilyLabel("деревні", createTranslator("uk"))).toBe("Деревні");
+    expect(fragranceFamilyLabel("деревні", createTranslator("en"))).toBe("Woody");
+    expect(fragranceFamilyLabel("фужерні", createTranslator("en"))).toBe("Fougère");
+  });
+
+  it("shows a value outside the list as stored", () => {
+    expect(fragranceFamilyLabel("мікс", createTranslator("en"))).toBe("мікс");
   });
 });

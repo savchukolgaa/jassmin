@@ -153,7 +153,7 @@ the primary family.
 
 ## Steps
 
-- [ ] **1. Shared list and labels** — Add `FRAGRANCE_FAMILIES` / `FragranceFamily` /
+- [x] **1. Shared list and labels** — Add `FRAGRANCE_FAMILIES` / `FragranceFamily` /
   `isFragranceFamily` to `app/lib/enums.ts`. Add `catalog.families.<slug>` (16 keys) to `uk.ts`
   and `en.ts`, plus `product.families` ("Ароматичні родини" / "Fragrance families") and
   `product.notes` ("Ноти" / "Notes"). Add `FRAGRANCE_FAMILY_LABEL_KEYS` and

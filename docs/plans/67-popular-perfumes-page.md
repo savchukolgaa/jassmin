@@ -109,6 +109,12 @@ popular) becomes the seed data.
   where it is still `null`, and their `popular_rank` only while **no** product has a rank yet, so a
   re-seed never overrides what staff set. Strapi gets the products with `pnpm db:sync-cms --all`;
   `cms/scripts/seed.ts` needs no product change and its hero `ctaHref` is already `/popular`.
+- **Implementation notes (deviations):** the `nav.bestsellers` and `popular.*` copy landed in
+  step 5, since the page doesn't typecheck without its keys; step 8 keeps the seed. `~/lib/popular`
+  has `parsePopularPage` (the page only) instead of `parsePopularSearch`: `~/lib/trio` now imports
+  `popularHref` from it, so it can't import `parseTrioSearch` back without a cycle, and the loader
+  calls both. Per the approved artboard the band has a "Bestsellers" eyebrow and the list ends with
+  a blush "Looking for something else?" panel; the count reuses `catalog.count`.
 - **Analytics:** no new event; `page_view` is recorded by the `_shop` layout middleware as usual.
 
 ## Resolved questions
@@ -227,7 +233,7 @@ Each step is small, ordered, and leaves the app in a working state.
   top-up; equal ranks fall back to sales; ranked but inactive or size-less products excluded; women,
   men and unisex included; the family filter narrows the list, the top-up and the count; a page past
   the end clamps; empty when nothing is listed.
-- [ ] **5. URL helpers and page UI** — `app/lib/popular.ts`: `POPULAR_PATH`,
+- [x] **5. URL helpers and page UI** — `app/lib/popular.ts`: `POPULAR_PATH`,
   `parsePopularSearch(params, knownFamilies)` (`parseTrioSearch` for the families plus the
   catalogue's `page` schema), `popularHref(families, page)`, and `PopularPageView` (`PopularPage`
   plus the chosen families with labels via `labelTrioFamilies`, in pick order). Point

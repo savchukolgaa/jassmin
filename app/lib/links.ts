@@ -1,7 +1,8 @@
 // Turns editor-controlled values from Strapi into safe link targets. Isomorphic: no server imports.
+import { POPULAR_PATH } from "./popular";
 
 /** Where the hero CTA goes when Strapi holds an unusable `ctaHref`. */
-export const FALLBACK_CTA_PATH = "/popular";
+export const FALLBACK_CTA_PATH = POPULAR_PATH;
 
 export type CtaTarget = { kind: "internal"; to: string } | { kind: "external"; href: string };
 

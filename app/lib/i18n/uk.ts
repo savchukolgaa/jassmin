@@ -521,7 +521,6 @@ export const uk = {
       update: "Показати вибір",
       slots: "Ваше тріо",
       slot: "Місце {n}",
-      slotFilled: "Місце {n}: {family}",
       left: {
         one: "Оберіть ще {count}",
         few: "Оберіть ще {count}",

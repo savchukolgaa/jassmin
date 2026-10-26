@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTrioSearch, trioHref } from "./trio";
+import { parseTrioSearch, toggleTrioFamily, trioHref } from "./trio";
 
 const known = ["квіткові", "деревні", "свіжі", "східні"];
 
@@ -38,5 +38,18 @@ describe("trioHref", () => {
 
   it("links to the popular page alone without families", () => {
     expect(trioHref([])).toBe("/popular");
+  });
+});
+
+describe("toggleTrioFamily", () => {
+  it("adds a checked family at the end and removes an unchecked one", () => {
+    expect(toggleTrioFamily(["квіткові"], "свіжі", true)).toEqual(["квіткові", "свіжі"]);
+    expect(toggleTrioFamily(["квіткові", "свіжі"], "квіткові", false)).toEqual(["свіжі"]);
+  });
+
+  it("refuses a fourth family and duplicates", () => {
+    const full = ["квіткові", "деревні", "свіжі"];
+    expect(toggleTrioFamily(full, "східні", true)).toEqual(full);
+    expect(toggleTrioFamily(["свіжі"], "свіжі", true)).toEqual(["свіжі"]);
   });
 });

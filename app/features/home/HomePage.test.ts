@@ -207,8 +207,8 @@ describe("HomePage", () => {
   it("renders a contact form that posts to the home route action", () => {
     const html = render();
 
-    const form = html.match(/<form[^>]*>/)?.[0];
-    expect(form).toContain('method="post"');
+    const form = html.match(/<form[^>]*method="post"[^>]*>/)?.[0];
+    expect(form).toBeDefined();
     expect(form).toContain('action="/?index#contacts"');
     for (const name of ["name", "email", "message", "website"]) {
       expect(html).toContain(`name="${name}"`);

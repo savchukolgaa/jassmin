@@ -43,6 +43,21 @@ export function parseTrioSearch(
   return [...picked];
 }
 
+/**
+ * The picks after a chip was checked or unchecked. A fourth family is refused: the shopper has to
+ * drop one first.
+ */
+export function toggleTrioFamily(
+  picked: readonly string[],
+  family: string,
+  checked: boolean,
+): string[] {
+  if (!checked) {
+    return picked.filter((value) => value !== family);
+  }
+  return picked.length < TRIO_SIZE && !picked.includes(family) ? [...picked, family] : [...picked];
+}
+
 /** "Show my trio": `/popular?family=…` with each chosen family. */
 export function trioHref(families: readonly string[]): string {
   const params = new URLSearchParams(families.map((family) => ["family", family]));

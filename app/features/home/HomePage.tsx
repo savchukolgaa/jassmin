@@ -8,6 +8,7 @@ import { HeroSection } from "./HeroSection";
 import { HowItWorks } from "./HowItWorks";
 import { LocationSection } from "./LocationSection";
 import { OfferMarquee } from "./OfferMarquee";
+import { TrioBuilder } from "./TrioBuilder";
 
 type HomePageProps = {
   view: HomePageView;
@@ -22,6 +23,11 @@ export function HomePage({ view, actionData }: HomePageProps) {
       <HeroSection hero={view.hero} trioOffer={view.trioOffer} contentLocale={view.contentLocale} />
       <OfferMarquee trioOffer={view.trioOffer} families={view.trio.families} />
       {view.trioOffer && <HowItWorks trioOffer={view.trioOffer} />}
+      <TrioBuilder
+        families={view.trio.families}
+        selected={view.trio.selected}
+        trioOffer={view.trioOffer}
+      />
       <CategoryTiles />
       <AboutSection about={view.about} contentLocale={view.contentLocale} />
       <LocationSection location={view.location} contentLocale={view.contentLocale} />

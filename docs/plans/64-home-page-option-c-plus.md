@@ -86,6 +86,12 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   look; new home-specific utilities are added for the artboard effects that differ. Only
   `animate-marquee` changes (30s → 26s, plus pause on hover); it isn't used by any page yet.
   Hero text uses `animate-fade-up` with `anim-delay-2/4/6` (160/320/480 ms ≈ artboard 150/300/450).
+- **Trio builder details (step 8)**: a plain `<form method="get" action="/#trio">` (no router
+  `Form`, since with JS it never submits). The chip limit is the pure `toggleTrioFamily` in
+  `app/lib/trio.ts`, unit-tested, because component tests render static markup in Node. Unchecked
+  chips are only disabled after hydration; without JS the loader caps the picks at 3. Empty slots
+  have an `sr-only` "Slot n", filled ones "Slot n: family". The section isn't rendered when no
+  listed product has a family.
 - **CMS fixtures and generated types (step 1)**: Strapi wasn't running during implementation, so
   `home-page(.en).json` and `cms/types/generated/components.d.ts` were updated by hand in Strapi's
   shape (the about image mirrors the seeded `blog-cover.jpg` upload). Re-record them from a seeded
@@ -211,7 +217,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   the reduced-motion block is still last. Update the Motion table in `docs/design.md`.
 - [x] **5. i18n keys** — Add to `home` in `uk.ts` and `en.ts`: `hero.{chip, badgeOnly, badgeFor,
   badgeLabel}`, `marquee.offer`, `howItWorks.{title, pick/pay/decide Title and Body}` (`payTitle`
-  takes `{price}`), `trio.{title, intro, families, update, slots, slot, slotFilled, left, cta,
+  takes `{price}`), `trio.{title, intro, families, update, slots, slot, left, cta,
   ctaNoPrice}`, `tiles.{label, women, men}`, `bestsellers.{title, viewAll}`, plus
   `product.quickAdd` for the round add button. `badgeLabel`, `marquee.offer` and `trio.left` are
   plurals (`{ one, few, many, other }` in uk). The location title follows the artboard ("Come smell
@@ -232,7 +238,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   `ink` with `primary-light` / `on-dark-muted`), `rounded-card-lg`. `CategoryTiles`: two
   `Link`s (`/catalog/women` `blush`, `/catalog/men` `ink`), `min-h-50`, big label and
   `aria-hidden` arrow, `tile-arrow`, `focusRing("onLight")`.
-- [ ] **8. Trio builder (UI)** — `TrioBuilder({ families, selected, trioOffer })`: `ink` panel
+- [x] **8. Trio builder (UI)** — `TrioBuilder({ families, selected, trioOffer })`: `ink` panel
   `id="trio"` (`scroll-mt-20`), `h2`, intro; `<Form method="get" action="/#trio"
   preventScrollReset>` with a `fieldset` of checkbox pills (`sr-only` input + styled label,
   `peer-checked:bg-primary-light peer-checked:text-ink`, `peer-focus-visible` ring,

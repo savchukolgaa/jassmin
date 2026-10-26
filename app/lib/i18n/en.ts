@@ -510,7 +510,6 @@ export const en = {
       update: "Show my picks",
       slots: "Your trio",
       slot: "Slot {n}",
-      slotFilled: "Slot {n}: {family}",
       left: {
         one: "{count} more to pick",
         other: "{count} more to pick",

@@ -1,0 +1,16 @@
+{
+  "collectionName": "components_catalog_notes",
+  "info": {
+    "displayName": "Scent note",
+    "icon": "feather",
+    "description": "One scent note of a perfume, in Ukrainian, e.g. «лимон»"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    }
+  }
+}

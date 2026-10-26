@@ -198,7 +198,7 @@ the primary family.
   duplicate family, missing family (single perfume) are 422 `invalid-input`; set without family is
   accepted; notes are trimmed/deduped; `toStrapiProductData` shape; `routes/cms.products.test.ts`
   round trip.
-- [ ] **7. Strapi** — Create `cms/src/components/catalog/fragrance-family.json` (enumeration
+- [x] **7. Strapi** — Create `cms/src/components/catalog/fragrance-family.json` (enumeration
   `family`, the 16 values, required) and `note.json` (`name`, string, required, maxLength 100).
   In the product schema add `fragranceFamilies` (repeatable `catalog.fragrance-family`), `notes`
   (repeatable `catalog.note`), `storeCode` (string, maxLength 20), and remove `fragranceFamily`.

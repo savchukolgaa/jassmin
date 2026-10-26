@@ -34,9 +34,19 @@
       "enum": ["women", "men", "unisex"],
       "required": true
     },
-    "fragranceFamily": {
+    "fragranceFamilies": {
+      "type": "component",
+      "repeatable": true,
+      "component": "catalog.fragrance-family"
+    },
+    "notes": {
+      "type": "component",
+      "repeatable": true,
+      "component": "catalog.note"
+    },
+    "storeCode": {
       "type": "string",
-      "maxLength": 100
+      "maxLength": 20
     },
     "image": {
       "type": "media",

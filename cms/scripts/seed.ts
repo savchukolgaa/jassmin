@@ -79,6 +79,9 @@ const SEED_LOCALES: SeedLocale[] = ["uk", "en"];
 interface HomePageCopy {
   headline: string;
   ctaLabel: string;
+  eyebrow: string;
+  subtitle: string;
+  secondaryCtaLabel: string;
   aboutTitle: string;
   aboutBody: string;
   address: string;
@@ -89,6 +92,9 @@ const HOME_PAGE_COPY: Record<SeedLocale, HomePageCopy> = {
   uk: {
     headline: "Замовте 3 тестери всього за 499₴",
     ctaLabel: "Замовити",
+    eyebrow: "Тестерний набір",
+    subtitle: "Замовте 3 тестери всього за 499₴ і знайдіть той, що вартий повного флакона.",
+    secondaryCtaLabel: "Усі парфуми",
     aboutTitle: "Про Jassmin",
     aboutBody:
       "Jassmin — невеликий парфумерний магазин в Україні. Ми допомагаємо знайти аромат до душі: кожен парфум можна спершу спробувати як тестер, перш ніж обрати повний флакон.",
@@ -98,6 +104,9 @@ const HOME_PAGE_COPY: Record<SeedLocale, HomePageCopy> = {
   en: {
     headline: "Order 3 Testers only for 499₴",
     ctaLabel: "Order Now",
+    eyebrow: "Tester set",
+    subtitle: "Order 3 testers only for 499₴, and find the one worth a full bottle.",
+    secondaryCtaLabel: "See all perfumes",
     aboutTitle: "About Jassmin",
     aboutBody:
       "Jassmin is a small perfume store in Ukraine. We help you find a scent you love by trying it first: every fragrance is available as a tester before you commit to a full bottle.",
@@ -106,7 +115,11 @@ const HOME_PAGE_COPY: Record<SeedLocale, HomePageCopy> = {
   },
 };
 
-async function seedHomePage(strapi: Core.Strapi, heroImageId: number): Promise<void> {
+async function seedHomePage(
+  strapi: Core.Strapi,
+  heroImageId: number,
+  aboutImageId: number,
+): Promise<void> {
   const homePages = strapi.documents("api::home-page.home-page");
 
   for (const locale of SEED_LOCALES) {
@@ -124,8 +137,12 @@ async function seedHomePage(strapi: Core.Strapi, heroImageId: number): Promise<v
         ctaLabel: copy.ctaLabel,
         ctaHref: "/popular",
         image: heroImageId,
+        eyebrow: copy.eyebrow,
+        subtitle: copy.subtitle,
+        secondaryCtaLabel: copy.secondaryCtaLabel,
+        secondaryCtaHref: "/catalog/women",
       },
-      about: { title: copy.aboutTitle, body: copy.aboutBody },
+      about: { title: copy.aboutTitle, body: copy.aboutBody, image: aboutImageId },
       location: {
         address: copy.address,
         openingHours: copy.openingHours,
@@ -591,7 +608,7 @@ async function main(): Promise<void> {
     const heroImageId = await uploadImage(strapi, "hero.jpg", "Jassmin perfume testers");
     const coverImageId = await uploadImage(strapi, "blog-cover.jpg", "Perfume bottles");
 
-    await seedHomePage(strapi, heroImageId);
+    await seedHomePage(strapi, heroImageId, coverImageId);
     await seedSiteSettings(strapi);
     await seedBlogPosts(strapi, coverImageId);
     await seedOffers(strapi, { hero: heroImageId, cover: coverImageId });

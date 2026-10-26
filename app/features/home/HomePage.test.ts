@@ -20,6 +20,9 @@ const view: HomePageView = {
       height: 800,
       srcSet: "http://cms.test/uploads/small_hero.jpg 500w, http://cms.test/uploads/hero.jpg 1200w",
     },
+    eyebrow: "Tester set",
+    subtitle: "Find the one worth a full bottle.",
+    secondaryCta: { label: "See all perfumes", href: "/catalog/women" },
   },
   about: { title: "About Jassmin", bodyHtml: "<p>Our <strong>story</strong>.</p>" },
   location: {

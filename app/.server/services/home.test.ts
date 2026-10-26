@@ -15,10 +15,14 @@ const homePage: HomePage = {
       height: 800,
       srcSet: null,
     },
+    eyebrow: null,
+    subtitle: null,
+    secondaryCta: null,
   },
   about: {
     title: "About Jassmin",
     body: "We are **Jassmin**.\n\n<script>alert(1)</script>",
+    image: null,
   },
   location: {
     address: "вул. Хрещатик, 1, Київ",
@@ -79,7 +83,11 @@ describe("buildHomePageView", () => {
 
   it("leaves the description empty for the route's default, and has no image", () => {
     const { seo } = buildHomePageView(
-      { ...homePage, hero: { ...homePage.hero, image: null }, about: { title: "A", body: " " } },
+      {
+        ...homePage,
+        hero: { ...homePage.hero, image: null },
+        about: { title: "A", body: " ", image: null },
+      },
       siteSettings,
     );
 

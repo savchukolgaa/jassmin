@@ -17,8 +17,11 @@ const homePage: HomePage = {
     ctaLabel: "Order Now",
     ctaHref: "/popular",
     image: null,
+    eyebrow: null,
+    subtitle: null,
+    secondaryCta: null,
   },
-  about: { title: "About Jassmin", body: "Our **story**." },
+  about: { title: "About Jassmin", body: "Our **story**.", image: null },
   location: {
     address: "вул. Хрещатик, 1, Київ",
     openingHours: null,

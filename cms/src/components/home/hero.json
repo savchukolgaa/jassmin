@@ -10,6 +10,10 @@
     "headline": { "type": "string", "required": true, "maxLength": 200 },
     "ctaLabel": { "type": "string", "required": true, "maxLength": 60 },
     "ctaHref": { "type": "string", "required": true, "maxLength": 500 },
+    "eyebrow": { "type": "string", "maxLength": 60 },
+    "subtitle": { "type": "text", "maxLength": 300 },
+    "secondaryCtaLabel": { "type": "string", "maxLength": 60 },
+    "secondaryCtaHref": { "type": "string", "maxLength": 500 },
     "image": { "type": "media", "multiple": false, "allowedTypes": ["images"] }
   }
 }

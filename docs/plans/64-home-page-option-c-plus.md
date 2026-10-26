@@ -86,6 +86,12 @@ active tester-trio discount rule, so the page never advertises a price checkout 
   look; new home-specific utilities are added for the artboard effects that differ. Only
   `animate-marquee` changes (30s → 26s, plus pause on hover); it isn't used by any page yet.
   Hero text uses `animate-fade-up` with `anim-delay-2/4/6` (160/320/480 ms ≈ artboard 150/300/450).
+- **CMS fixtures and generated types (step 1)**: Strapi wasn't running during implementation, so
+  `home-page(.en).json` and `cms/types/generated/components.d.ts` were updated by hand in Strapi's
+  shape (the about image mirrors the seeded `blog-cover.jpg` upload). Re-record them from a seeded
+  Strapi when convenient. The seed skips existing home pages, so a dev Strapi needs the new hero
+  fields filled in the admin (or a fresh `pnpm cms:seed`). The seeded hero CTA was already
+  `/popular`, so it stays.
 - **Tokens**: artboard hex → tokens: `#c22f4b` `primary`, `#a8233d` `primary-dark`, `#ff8fa1`
   `primary-light` (only on `ink`/`primary`), `#1f1a1c` `ink`, `#fff4f5` `blush`, `#f7f3f4` `card`,
   `#5f5558` `muted`, `#d9cfd2` `on-dark-muted`, `#e5dadd` `line`, `#4a4245` `body`. Artboard-only
@@ -167,7 +173,7 @@ active tester-trio discount rule, so the page never advertises a price checkout 
 
 ## Steps
 
-- [ ] **1. CMS: hero and about fields** — Add the four optional hero attributes to
+- [x] **1. CMS: hero and about fields** — Add the four optional hero attributes to
   `cms/src/components/home/hero.json` and `image` (single, images) to `about.json`. Extend
   `heroComponent` / `aboutComponent` in `app/.server/cms/schemas.ts` (`.nullish()`), the
   `HomePage` DTO in `app/lib/cms.ts` (`eyebrow: string | null`, …, `about.image: CmsImage | null`)

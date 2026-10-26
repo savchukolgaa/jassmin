@@ -39,11 +39,18 @@ export interface HomePage {
     ctaLabel: string;
     ctaHref: string;
     image: CmsImage | null;
+    /** The small pill above the headline, e.g. "Tester set"; `null` when blank. */
+    eyebrow: string | null;
+    subtitle: string | null;
+    /** The second hero button; `null` unless both its label and link are filled in. */
+    secondaryCta: { label: string; href: string } | null;
   };
   about: {
     title: string;
     /** Markdown. */
     body: string;
+    /** The store photo beside the text. */
+    image: CmsImage | null;
   };
   location: {
     address: string;

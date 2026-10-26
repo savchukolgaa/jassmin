@@ -4,6 +4,7 @@
   "options": {},
   "attributes": {
     "title": { "type": "string", "required": true, "maxLength": 200 },
-    "body": { "type": "richtext", "required": true }
+    "body": { "type": "richtext", "required": true },
+    "image": { "type": "media", "multiple": false, "allowedTypes": ["images"] }
   }
 }

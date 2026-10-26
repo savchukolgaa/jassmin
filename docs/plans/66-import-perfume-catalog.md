@@ -228,7 +228,7 @@ everywhere and 5 ml is added.
   product's sizes (stock 0) with `onConflictDoNothing` on `(productId, volumeMl)`; then
   `enqueueCmsSync(tx, "product", insertedIds)`. Existing products get nothing (Q7). 128 rows × ~15
   columns fit one statement, and 640 sizes × 4 columns too.
-- [ ] **7. Import tests** — `db/import-catalog.test.ts`, `describe.skipIf(!hasDatabase)`, a migrated
+- [x] **7. Import tests** — `db/import-catalog.test.ts`, `describe.skipIf(!hasDatabase)`, a migrated
   `createTestDatabase()` (as in `seed.test.ts`): with a small entry list and the full
   `CATALOG_PRODUCTS` + `CATALOG_PRICES`: counts of products and sizes (128 / 640); every product has
   exactly 5, 10, 30, 50 and 100 ml at the table's prices with stock 0; both `11-L` products exist;

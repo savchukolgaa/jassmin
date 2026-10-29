@@ -149,7 +149,7 @@ header turns white with `ink` text, the home marquee gets about half as tall and
 - [x] **3. Catalog dropdown and mobile menu** — `CatalogMenu` summary uses the `onLight` bar style
   (underline when `inCatalog`); `MobileMenu` summary `iconButtonClasses(false, "onLight")`, panel
   gets `border-t border-line`. Check the menu at 375px: opens below the bar, no horizontal scroll.
-- [ ] **4. Marquee** — In `OfferMarquee.tsx`: props `{ trioOffer: TrioOffer | null }`; items =
+- [x] **4. Marquee** — In `OfferMarquee.tsx`: props `{ trioOffer: TrioOffer | null }`; items =
   trio offer (if any) + `t("home.marquee.freeDelivery", { threshold:
   formatPrice(FREE_SHIPPING_THRESHOLD) })`; repeat items `REPEAT` times per copy (index keys); band
   `py-2`, text `text-base md:text-lg`, `gap-8 pr-8`; drop the `null` return and

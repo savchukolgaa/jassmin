@@ -22,7 +22,7 @@ export function HomePage({ view, actionData }: HomePageProps) {
   return (
     <main>
       <HeroSection hero={view.hero} trioOffer={view.trioOffer} contentLocale={view.contentLocale} />
-      <OfferMarquee trioOffer={view.trioOffer} families={view.trio.families} />
+      <OfferMarquee trioOffer={view.trioOffer} />
       {view.trioOffer && <HowItWorks trioOffer={view.trioOffer} />}
       <TrioBuilder
         families={view.trio.families}

@@ -513,6 +513,7 @@ export const en = {
         one: "Order {count} tester only for {price}",
         other: "Order {count} testers only for {price}",
       },
+      freeDelivery: "Free delivery from {threshold}",
     },
     howItWorks: {
       title: "How it works",

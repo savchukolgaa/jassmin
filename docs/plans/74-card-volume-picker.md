@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/74
 Branch: `issue/74`
 Worktree: `.claude/worktrees/issue-74`
-Status: Planned
+Status: Implemented (browser check pending, see step 7)
 
 ## Goal
 Shoppers want to pick a perfume's size (e.g. 10 ml instead of the default) right on a product card
@@ -226,7 +226,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `user.keyboard("{ArrowRight}")` from the default moves the check to the next enabled size;
   both the catalog and the compact card. Use plain `expect` on DOM properties unless
   `@testing-library/jest-dom` is added too (not planned).
-- [ ] **10. Verify and clean up** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- [x] **10. Verify and clean up** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
   Grep for leftover `addSize`, `chooseVolume`, `formatVolumes`, `defaultVolumeMl`.
 
 ## Testing & verification
@@ -245,13 +245,18 @@ Each step is small, ordered, and leaves the app in a working state.
   horizontal scroll at 375px.
 
 ## Acceptance criteria
-- [ ] Every product card with several sizes lets the shopper pick a size before adding to cart — steps 6, 7
-- [ ] The card's price changes to the selected size's price — steps 5, 6, 7, 9
+- [x] Every product card with several sizes lets the shopper pick a size before adding to cart — steps 6, 7
+- [x] The card's price changes to the selected size's price — steps 5, 6, 7, 9
 - [ ] Add to cart adds the selected size, and the cart shows that size — steps 6, 7, 9 (manual check in 10)
-- [ ] Out-of-stock sizes are visible but can't be selected — steps 2, 3, 6, 8, 9
+- [x] Out-of-stock sizes are visible but can't be selected — steps 2, 3, 6, 8, 9
 - [ ] The picker works without JavaScript and by keyboard, with visible focus and screen-reader labels — steps 4, 5, 6, 8, 9
 - [ ] It works in the catalog, home Bestsellers, the popular page and offer cards, with no horizontal scroll at 375px — step 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+
+Still to check in the running app (no browser was available to the implementing agent):
+the posted size showing in `/cart` (the DOM tests check the posted `variantId`), the visible focus
+ring and screen-reader reading, the skeleton on a slow load and the "from" price with JS off, and
+the layout at 375px on all four pages. The compact card's "+" label (Q1) is up for review there too.
 
 ## Out of scope
 - Quantity selection on the card, the product page's `VolumeSelect`, and the cart page.

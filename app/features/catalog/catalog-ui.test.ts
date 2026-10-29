@@ -37,9 +37,9 @@ const PRODUCT: ProductSummary = {
   imageUrl: null,
   minPrice: "990.00",
   hasPriceRange: true,
-  volumes: [7, 30, 50],
+  volumes: [5, 30, 50],
   inStock: true,
-  defaultVariant: { id: VARIANT_ID, volumeMl: 7 },
+  defaultVariant: { id: VARIANT_ID, volumeMl: 5 },
   fragranceFamily: "шипрові",
 };
 
@@ -62,7 +62,7 @@ describe("ProductCard", () => {
 
     expect(html).toContain("Chanel");
     expect(html).toContain("Coco Mademoiselle Eau de Parfum");
-    expect(html).toContain("7 · 30 · 50 ml");
+    expect(html).toContain("5 · 30 · 50 ml");
     expect(html).toContain("from ₴990");
     expect(html).toContain(`href="/products/${PRODUCT.id}"`);
   });
@@ -93,7 +93,7 @@ describe("ProductCard", () => {
     expect(html).toContain(`name="productId" value="${PRODUCT.id}"`);
     expect(html).toContain(`name="variantId" value="${VARIANT_ID}"`);
     expect(buttonTag(html)).not.toContain(' disabled=""');
-    expect(html).toContain("Add 7 ml");
+    expect(html).toContain("Add 5 ml");
   });
 
   it("offers 'Choose volume' next to add to cart only for several sizes", () => {
@@ -118,7 +118,7 @@ describe("ProductCard, compact (home bestsellers)", () => {
     const html = compact(PRODUCT);
 
     expect(html).toMatch(/<span class="absolute[^"]*">Chypre<\/span>/);
-    expect(html).toContain("Chanel · 7 ml");
+    expect(html).toContain("Chanel · 5 ml");
     expect(html).toMatch(/<h3[^>]*><a[^>]*>Coco Mademoiselle Eau de Parfum<\/a><\/h3>/);
     expect(html).toContain("from ₴990");
     expect(html).toContain("card-tilt");
@@ -136,7 +136,7 @@ describe("ProductCard, compact (home bestsellers)", () => {
     expect(formTag(html)).toContain('action="/cart"');
     expect(html).toContain(`name="variantId" value="${VARIANT_ID}"`);
     expect(buttonTag(html)).toContain(
-      'aria-label="Add Coco Mademoiselle Eau de Parfum, 7 ml, to cart"',
+      'aria-label="Add Coco Mademoiselle Eau de Parfum, 5 ml, to cart"',
     );
     expect(buttonTag(html)).toContain("quick-add");
     expect(html).toContain('<span aria-hidden="true">+</span>');

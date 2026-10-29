@@ -51,8 +51,8 @@ export const FOOTER_LINKS = [
 // would drop white text below 4.5:1.
 
 /**
- * Which surface a nav item sits on: the deep-pink header/footer bar (`onPrimary`) or a white
- * panel such as the catalog dropdown and mobile menu (`onLight`).
+ * Which surface a nav item sits on: the deep-pink footer and hero bands (`onPrimary`) or a white
+ * surface such as the header bar, its catalog dropdown and mobile menu (`onLight`, #72).
  */
 export type NavTone = "onPrimary" | "onLight";
 
@@ -64,28 +64,38 @@ export function focusRing(tone: NavTone = "onPrimary"): string {
   );
 }
 
-/** Text link in the header nav; `active` highlights the current section. */
-export function navItemClasses(active = false, tone: NavTone = "onPrimary"): string {
+/**
+ * Text link in a nav; `active` highlights the current section. `underline` marks it with more than
+ * colour, as the header bar does; the dropdown and mobile menu panels go without.
+ */
+export function navItemClasses(
+  active = false,
+  tone: NavTone = "onPrimary",
+  { underline = tone === "onPrimary" }: { underline?: boolean } = {},
+): string {
   return cn(
     "inline-flex min-h-11 items-center gap-1 rounded-pill px-3 text-sm font-bold transition-colors",
     focusRing(tone),
     tone === "onPrimary"
-      ? cn(
-          "text-white hover:bg-primary-dark",
-          active && "underline decoration-2 underline-offset-8",
-        )
-      : cn("hover:bg-blush", active ? "text-primary" : "text-ink hover:text-primary-dark"),
+      ? "text-white hover:bg-primary-dark"
+      : cn("hover:bg-blush", active ? "text-primary-dark" : "text-ink hover:text-primary-dark"),
+    active && underline && "underline decoration-2 underline-offset-8",
   );
 }
 
-/** Round icon-only link or button in the header bar (profile, menu). */
+/** Text link in the white header bar, underlined when it's the current section. */
+export function headerNavItemClasses(active = false): string {
+  return navItemClasses(active, "onLight", { underline: true });
+}
+
+/** Round icon-only link or button (profile, menu); the header bar passes `"onLight"`. */
 export function iconButtonClasses(active = false, tone: NavTone = "onPrimary"): string {
   return cn(
     "relative inline-flex size-11 items-center justify-center rounded-full transition-colors",
     focusRing(tone),
     tone === "onPrimary"
       ? cn("text-white hover:bg-primary-dark", active && "bg-primary-dark")
-      : cn("hover:bg-blush", active ? "text-primary" : "text-ink"),
+      : cn("hover:bg-blush", active ? "bg-blush text-primary-dark" : "text-ink"),
   );
 }
 

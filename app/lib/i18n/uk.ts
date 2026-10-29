@@ -524,6 +524,7 @@ export const uk = {
         many: "Замовте {count} тестерів всього за {price}",
         other: "Замовте {count} тестера всього за {price}",
       },
+      freeDelivery: "Безкоштовна доставка від {threshold}",
     },
     howItWorks: {
       title: "Як це працює",

@@ -18,12 +18,23 @@ const renderHeader = (props: Partial<HeaderProps> = {}, path = "/", locale: Loca
 describe("Header", () => {
   it("links the jassmin. wordmark to the home page", () => {
     expect(renderHeader()).toMatch(
-      /<a(?=[^>]*href="\/")(?=[^>]*aria-label="Jassmin, home")[^>]*>jassmin<span aria-hidden="true" class="text-primary-light">\.<\/span><\/a>/,
+      /<a(?=[^>]*href="\/")(?=[^>]*aria-label="Jassmin, home")[^>]*>jassmin<span aria-hidden="true" class="text-primary">\.<\/span><\/a>/,
     );
   });
 
-  it("renders a sticky deep-pink bar", () => {
-    expect(renderHeader()).toMatch(/^<header class="sticky top-0[^"]*bg-primary text-white"/);
+  it("renders a sticky white bar with dark text and a bottom border (#72)", () => {
+    expect(renderHeader()).toMatch(
+      /^<header class="sticky top-0[^"]*border-line border-b bg-white text-ink"/,
+    );
+  });
+
+  it("styles the white bar with tokens only, so a palette change recolours it (#73)", () => {
+    const html = renderHeader({ user: { id: 1 }, cartCount: 2 }, "/offers");
+
+    // The flags' fills are the flags' own colours, so only class names are checked.
+    const classes = [...html.matchAll(/class="([^"]*)"/g)].map(([, value = ""]) => value).join(" ");
+    expect(classes).not.toMatch(/(?:bg|text|border|outline|ring|decoration)-\[/);
+    expect(classes).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 
   it("renders the nav items in the specified order", () => {
@@ -62,7 +73,7 @@ describe("Header", () => {
 
   it("highlights Offers on the offers page", () => {
     expect(renderHeader({}, "/offers")).toMatch(
-      /<a[^>]*class="[^"]*underline decoration-2[^"]*"[^>]*href="\/offers"[^>]*>Offers<\/a>/,
+      /<a[^>]*class="[^"]*text-primary-dark[^"]*underline decoration-2[^"]*"[^>]*href="\/offers"[^>]*>Offers<\/a>/,
     );
     expect(renderHeader()).not.toMatch(/class="[^"]*underline decoration-2[^"]*"[^>]*>Offers</);
   });
@@ -75,7 +86,10 @@ describe("Header", () => {
         expect(link).toContain('aria-current="page"');
       }
       expect(links?.[0]).toContain("underline decoration-2");
-      expect(links?.[1]).toContain("text-primary");
+      expect(links?.[0]).toContain("text-primary-dark");
+      // The mobile menu panel marks it by colour and weight, without the bar's underline.
+      expect(links?.[1]).toContain("text-primary-dark");
+      expect(links?.[1]).not.toContain("underline");
     }
     expect(renderHeader()).not.toMatch(/aria-current="page"[^>]*>Bestsellers</);
   });
@@ -111,29 +125,44 @@ describe("Header", () => {
     expect(html).not.toContain('href="/login"');
   });
 
-  it("shows the logged-in profile as a white circle and logged out as a white icon", () => {
+  it("shows the logged-in profile as a deep-pink circle and logged out as a dark icon", () => {
     const profileClass = (html: string) =>
       html.match(/<a[^>]*aria-label="(?:My account|Log in)"[^>]*class="([^"]*)"/)?.[1] ?? "";
 
     expect(profileClass(renderHeader({ user: { id: 1 } }))).toContain(
-      "rounded-full bg-white text-primary",
+      "rounded-full bg-primary text-white",
     );
     const loggedOut = profileClass(renderHeader());
-    expect(loggedOut).toContain("text-white");
-    expect(loggedOut).not.toContain("bg-white ");
-    expect(loggedOut).toContain("hover:bg-primary-dark");
+    expect(loggedOut).toContain("text-ink");
+    expect(loggedOut).not.toContain("bg-primary");
+    expect(loggedOut).toContain("hover:bg-blush");
+    expect(profileClass(renderHeader({}, "/login"))).toContain("bg-blush text-primary-dark");
   });
 
-  it("renders the cart as a white pill", () => {
+  it("renders the cart as a deep-pink pill with white text", () => {
     expect(renderHeader()).toMatch(
-      /<a[^>]*aria-label="Cart, 0 items"[^>]*class="[^"]*rounded-pill[^"]*bg-white[^"]*text-primary/,
+      /<a[^>]*aria-label="Cart, 0 items"[^>]*class="[^"]*rounded-pill[^"]*bg-primary[^"]*text-white[^"]*hover:bg-primary-dark/,
     );
   });
 
-  it("uses a white focus ring on the pink bar", () => {
-    expect(renderHeader()).toMatch(
-      /<a[^>]*aria-label="Cart, 0 items"[^>]*class="[^"]*focus-visible:outline-3[^"]*focus-visible:outline-white/,
+  it("uses the deep-pink focus ring of light surfaces on every header control", () => {
+    const html = renderHeader({ user: { id: 1 } });
+
+    expect(html).toMatch(
+      /<a[^>]*aria-label="Cart, 0 items"[^>]*class="[^"]*focus-visible:outline-3[^"]*focus-visible:outline-primary/,
     );
+    for (const control of html.match(/<(?:a|button|summary)\b[^>]*>/g) ?? []) {
+      expect(control).toContain("focus-visible:outline-primary");
+    }
+    expect(html).not.toContain("focus-visible:outline-white");
+  });
+
+  it("puts the bar's language switcher and the menu button on the light style", () => {
+    const html = renderHeader();
+
+    expect(html).toMatch(/aria-pressed="true" class="[^"]*bg-blush text-primary-dark/);
+    expect(html).toMatch(/<summary[^>]*aria-label="Menu"[^>]*class="[^"]*text-ink/);
+    expect(html).not.toContain("text-white hover:bg-primary-dark");
   });
 
   it("shows no count for an empty cart", () => {

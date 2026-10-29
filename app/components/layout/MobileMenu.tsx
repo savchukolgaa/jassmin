@@ -25,13 +25,13 @@ export function MobileMenu() {
       <summary
         {...summaryProps}
         aria-label={t("nav.menu")}
-        className={cn(iconButtonClasses(), summaryReset)}
+        className={cn(iconButtonClasses(false, "onLight"), summaryReset)}
       >
         <MenuIcon className="size-6 group-open:hidden" />
         <CloseIcon className="hidden size-6 group-open:block" />
       </summary>
       {/* Positioned against the sticky <header>, so it spans the full width below the bar. */}
-      <div className="absolute inset-x-0 top-full rounded-b-card bg-white text-ink shadow-xl">
+      <div className="absolute inset-x-0 top-full rounded-b-card border-line border-t bg-white text-ink shadow-xl">
         <ul className="container mx-auto flex flex-col gap-1 p-4">
           <li>
             <Link to={ABOUT_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>

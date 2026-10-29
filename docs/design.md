@@ -4,7 +4,8 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 
 - **Design canvas:** https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW (private; ask the owner for
   access). Use the row titled **"Chosen direction: Option C+"**. Options A–G stay on the canvas only
-  for reference and must not be implemented.
+  for reference and must not be implemented. Until the owner updates it, the canvas still shows the
+  old deep-pink header: follow the white header described below (#72).
 - **Shared foundation** (#27): theme tokens in `app/app.css`, `Button` / `ButtonLink` in
   `app/components/ui/`, and `Header` / `Footer` in `app/components/layout/`. Page issues reuse
   these instead of adding new colours, fonts or button styles.
@@ -60,7 +61,7 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
 
 | Token | Hex | Use | Contrast |
 |---|---|---|---|
-| `primary` | `#C22F4B` | Deep pink: sticky header, footer, primary buttons, hero bands | white text on it **5.52:1**; as text on white 5.52:1, on `blush` 5.13:1 |
+| `primary` | `#C22F4B` | Deep pink: footer, primary buttons, hero bands, the header's cart pill | white text on it **5.52:1**; as text on white 5.52:1, on `blush` 5.13:1 |
 | `primary-dark` | `#A8233D` | Primary hover; **pink text on light backgrounds** | white on it 7.06:1; on white 7.06:1, on `blush` 6.56:1 |
 | `primary-light` | `#FF8FA1` | Soft-pink accent, **only on `ink` or `primary` surfaces** | as text on `ink` 7.93:1; on `primary` 2.55:1, so decorative only |
 | `brand-legacy` | `#FF5C77` | The original brand pink, kept for reference | white on it 2.98:1, so **never behind text** |
@@ -80,13 +81,18 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
   sizes.
 - Pink text on a light background uses `text-primary-dark` (or `text-primary` for small UI such as
   the cart count). Never use `primary-light` or `brand-legacy` as text on light.
-- `primary-light` is only an accent on dark or deep-pink surfaces: the wordmark dot, decorative
-  wordmarks, and text on `ink`.
+- `primary-light` is only an accent on dark or deep-pink surfaces: decorative wordmarks (such as
+  the footer's) and text on `ink`. The header's wordmark dot sits on white, so it's `primary`.
 - The storefront is light-only: C+ has no dark theme. `app/app.css` forces `color-scheme: light` on
   `html` and `app/root.tsx` sets `<meta name="color-scheme" content="light">`, so pages, native form
   controls and scrollbars stay light when the OS or browser uses dark mode. Don't add `dark:`
   variants (`app/theme.test.ts` fails if one appears); a dark theme would need its own design issue.
-  The header and footer are always deep pink.
+- **The header is white** (#72), on every page, so it stands apart from the deep-pink hero bands:
+  `bg-white` with a `line` bottom border, `ink` wordmark and links, `primary-dark` for the current
+  section (underlined in the bar) and on hover over `blush`, a `primary` cart pill and logged-in
+  profile circle with white text, and the language switcher's active flag on `blush`. Its catalog
+  dropdown and mobile menu are white panels in the same style. It uses tokens only, so a palette
+  change in `app/app.css` recolours it. **The footer stays deep pink.**
 
 ## Typeface and scale
 
@@ -107,8 +113,9 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
   | Body | `text-base`, weight 400–500, `text-body` or `text-ink` |
   | Labels, nav | `text-sm`, weight 700 |
 
-- **Wordmark:** "jassmin." in lower case, weight 800, `tracking-[-0.05em]`, with the dot in
-  `primary-light` and marked `aria-hidden`.
+- **Wordmark:** "jassmin." in lower case, weight 800, `tracking-[-0.05em]`. In the white header it's
+  `ink` with a `primary` dot; on dark or deep-pink surfaces the dot is `primary-light`. The dot is
+  marked `aria-hidden`.
 
 ## Shape and spacing
 
@@ -128,12 +135,13 @@ keeps at least 3:1 against its surface:
 
 | Surface | Ring | Contrast |
 |---|---|---|
-| Deep pink (`primary`: header, footer, hero bands) | white | 5.52:1 |
+| Deep pink (`primary`: footer, hero bands) | white | 5.52:1 |
 | Dark (`ink`) | `primary-light` | 7.93:1 |
-| White, `blush` or `card` | `primary` | 5.52:1 |
+| White, `blush` or `card` (header, its dropdown and mobile menu, page content) | `primary` | 5.52:1 on white, 5.13:1 on `blush` |
 
 `primary-light` isn't used on deep pink, because it's only 2.55:1 there. In layout code, use
-`focusRing("onPrimary" | "onLight")` from `app/components/layout/nav.ts`.
+`focusRing("onPrimary" | "onLight")` from `app/components/layout/nav.ts`; the white header and its
+panels use `"onLight"`, the footer `"onPrimary"`.
 
 **Hover on deep pink:** darken to `primary-dark` (white text stays at 7.06:1) or invert to white.
 Don't use a translucent white overlay such as `bg-white/15`: white text on it drops to about 4.35:1.
@@ -174,7 +182,7 @@ The utilities are in `app/app.css`. Use motion to support content, never to hide
 | `animate-fade-up` + `anim-delay-1` … `anim-delay-6` | fade in from 16px below, each delay step +80ms | hero text, staggered sections and cards |
 | `animate-pop` | fade in from 90% scale | chips, badges, small confirmations |
 | `animate-spin-in` | rotate and scale in | the price badge |
-| `animate-marquee` + `marquee-pause` | scroll −50% in a loop over 26s; pauses on hover | the offer banner (render the content twice in the track, `aria-hidden`) |
+| `animate-marquee` + `marquee-pause` | scroll −50% in a loop over 26s; pauses on hover | the home offers band: a slim `ink` strip (`py-2`, `text-base`/`md:text-lg`) with the tester trio and free delivery only, no fragrance families (#72); render the content twice in the track, repeating the offers so a half is wider than the screen, and keep it `aria-hidden` |
 | `animate-toast` | slide up and fade in | the "Added to cart" popup (use `role="status"`) |
 | `lift` | rise 4px with a shadow on hover | product and blog cards |
 | `animate-rise` | fade in from 80px below over 1s, after 0.2s | the hero's arched image |

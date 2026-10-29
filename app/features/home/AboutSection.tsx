@@ -34,9 +34,9 @@ export function AboutSection({ about, contentLocale }: AboutSectionProps) {
   );
 }
 
-// The artboard's asymmetric arch: one big rounded corner, top right.
+// The artboard's asymmetric arch: one big rounded corner, top right. Enlarged in #72.
 const photoFrame =
-  "h-80 w-full min-w-0 flex-[1_1_24rem] rounded-[1.75rem_13.75rem_1.75rem_1.75rem] bg-primary-light object-cover md:h-115";
+  "h-96 w-full min-w-0 flex-[1_1_28rem] rounded-[1.75rem_13.75rem_1.75rem_1.75rem] bg-primary-light object-cover md:h-136";
 
 function StorePhoto({ image }: { image: HomePageView["about"]["image"] }) {
   if (!image) {
@@ -46,7 +46,7 @@ function StorePhoto({ image }: { image: HomePageView["about"]["image"] }) {
     <img
       src={image.url}
       srcSet={image.srcSet ?? undefined}
-      sizes="(min-width: 768px) 560px, 100vw"
+      sizes="(min-width: 768px) 640px, 100vw"
       width={image.width ?? undefined}
       height={image.height ?? undefined}
       alt={image.alt}

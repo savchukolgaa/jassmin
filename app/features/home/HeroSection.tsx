@@ -54,7 +54,7 @@ export function HeroSection({ hero, trioOffer, contentLocale }: HeroSectionProps
             )}
           </div>
         </div>
-        <div className="relative mx-auto w-full max-w-md min-w-0 flex-[2_1_20rem]">
+        <div className="relative mx-auto w-full max-w-lg min-w-0 flex-[2_1_24rem]">
           <HeroImage image={hero.image} />
           {trioOffer && <PriceBadge offer={trioOffer} />}
           <FloatingChip />
@@ -85,8 +85,9 @@ function CtaLink({
   );
 }
 
+// Enlarged in #72; the badge and the chip sit in the same wrapper, so they follow the image.
 const imageFrame =
-  "animate-rise block h-96 w-full rounded-t-full bg-primary-light object-cover md:h-130";
+  "animate-rise block h-112 w-full rounded-t-full bg-primary-light object-cover md:h-152";
 
 function HeroImage({ image }: { image: HomePageView["hero"]["image"] }) {
   if (!image) {
@@ -96,7 +97,7 @@ function HeroImage({ image }: { image: HomePageView["hero"]["image"] }) {
     <img
       src={image.url}
       srcSet={image.srcSet ?? undefined}
-      sizes="(min-width: 768px) 448px, 100vw"
+      sizes="(min-width: 768px) 512px, 100vw"
       width={image.width ?? undefined}
       height={image.height ?? undefined}
       alt={image.alt}

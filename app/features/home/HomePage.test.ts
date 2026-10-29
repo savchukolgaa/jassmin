@@ -2,9 +2,10 @@ import { type ComponentProps, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createRoutesStub } from "react-router";
 import { describe, expect, it } from "vitest";
+import { FREE_SHIPPING_THRESHOLD } from "~/lib/checkout";
 import type { ContactActionResult } from "~/lib/contact";
 import type { HomePageView } from "~/lib/home";
-import { I18nProvider } from "~/lib/i18n";
+import { I18nProvider, type Locale } from "~/lib/i18n";
 import { formatPrice } from "~/lib/money";
 import type { ProductSummary } from "~/lib/products";
 import { HomePage } from "./HomePage";
@@ -74,12 +75,21 @@ function TestHome() {
 // `ContactForm` uses `useFetcher`, which needs a data router.
 const Stub = createRoutesStub([{ path: "/", Component: TestHome }]);
 
-function render(overrides: Partial<HomePageView> = {}, actionData?: ContactActionResult) {
+function render(
+  overrides: Partial<HomePageView> = {},
+  actionData?: ContactActionResult,
+  // In English by default, like the assertions.
+  locale: Locale = "en",
+) {
   props = { view: { ...view, ...overrides }, actionData };
-  // In English, like the assertions.
   return renderToStaticMarkup(
-    createElement(I18nProvider, { locale: "en" }, createElement(Stub, { initialEntries: ["/"] })),
+    createElement(I18nProvider, { locale }, createElement(Stub, { initialEntries: ["/"] })),
   );
+}
+
+/** The marquee band: from its dark wrapper up to the next section. */
+function marquee(html: string): string {
+  return html.match(/<div class="overflow-hidden bg-ink[\s\S]*?(?=<section)/)?.[0] ?? "";
 }
 
 describe("HomePage", () => {
@@ -138,6 +148,15 @@ describe("HomePage", () => {
     expect(html).toContain("small_hero.jpg 500w");
   });
 
+  it("shows the hero image in the larger frame, with sizes to match (#72)", () => {
+    const html = render();
+    const image = html.match(/<img[^>]*alt="Jassmin perfume testers"[^>]*>/)?.[0] ?? "";
+
+    expect(image).toContain('sizes="(min-width: 768px) 512px, 100vw"');
+    expect(image).toMatch(/class="[^"]*h-112[^"]*md:h-152/);
+    expect(html).toMatch(/class="relative mx-auto w-full max-w-lg min-w-0 flex-\[2_1_24rem\]"/);
+  });
+
   it("renders the hero eyebrow, subtitle, second CTA and floating chip", () => {
     const html = render();
 
@@ -171,27 +190,46 @@ describe("HomePage", () => {
     expect(html).not.toContain("Only ");
   });
 
-  it("scrolls the offer and the families in a marquee hidden from screen readers", () => {
+  it("scrolls the trio offer and free delivery in a slim marquee hidden from screen readers", () => {
+    const band = marquee(render());
+    const trio = `Order 3 testers only for ${formatPrice("499.00", "en")}`;
+    const delivery = `Free delivery from ${formatPrice(FREE_SHIPPING_THRESHOLD, "en")}`;
+
+    expect(band).toMatch(/^<div class="overflow-hidden bg-ink py-2 text-white">/);
+    expect(band).toMatch(/<div aria-hidden="true" class="animate-marquee marquee-pause[^"]*"/);
+    expect(band).toContain("text-base");
+    expect(band).toContain("md:text-lg");
+    // Repeated to fill wide screens, in both halves of the seamless loop.
+    expect(band.match(new RegExp(`<span>${trio}</span>`, "g"))).toHaveLength(8);
+    expect(band.match(new RegExp(`<span>${delivery}</span>`, "g"))).toHaveLength(8);
+    expect(band.indexOf(trio)).toBeLessThan(band.indexOf(delivery));
+  });
+
+  it("shows no fragrance families in the marquee (#72)", () => {
     const html = render();
-    const track = html.match(/<div aria-hidden="true" class="animate-marquee[^"]*"/)?.[0];
+    const band = marquee(html);
 
-    expect(track).toContain("marquee-pause");
-    expect(html).toContain(`Order 3 testers only for ${formatPrice("499.00", "en")}`);
-    // Twice, so the loop is seamless.
-    expect(html.match(/<span>Woody<\/span>/g)).toHaveLength(2);
+    // The trio builder still offers them.
+    expect(html).toContain("Woody");
+    for (const family of ["Floral", "Woody", "Fresh", "Oriental"]) {
+      expect(band).not.toContain(family);
+    }
   });
 
-  it("keeps the marquee's families but drops its offer without a live trio offer", () => {
-    const html = render({ trioOffer: null });
+  it("drops the trio item without a live rule but keeps free delivery", () => {
+    const band = marquee(render({ trioOffer: null }));
 
-    expect(html).toContain("animate-marquee");
-    expect(html).not.toContain("Order 3 testers");
+    expect(band).toContain("animate-marquee");
+    expect(band).not.toContain("Order 3 testers");
+    expect(band).toContain("Free delivery from");
   });
 
-  it("leaves the marquee out when it has nothing to say", () => {
-    const html = render({ trioOffer: null, trio: { families: [], selected: [] } });
+  it("shows free delivery in Ukrainian", () => {
+    const band = marquee(render({}, undefined, "uk"));
 
-    expect(html).not.toContain("animate-marquee");
+    expect(band).toContain(
+      `Безкоштовна доставка від ${formatPrice(FREE_SHIPPING_THRESHOLD, "uk")}`,
+    );
   });
 
   it("explains the trio in three steps with its live price", () => {
@@ -236,6 +274,10 @@ describe("HomePage", () => {
       /<img[^>]*src="http:\/\/cms\.test\/uploads\/store\.jpg"[^>]*alt="Jassmin store"/,
     );
     expect(render()).not.toContain("store.jpg");
+    // The larger frame from #72, with sizes to match.
+    const photo = html.match(/<img[^>]*alt="Jassmin store"[^>]*>/)?.[0] ?? "";
+    expect(photo).toContain('sizes="(min-width: 768px) 640px, 100vw"');
+    expect(photo).toMatch(/class="[^"]*h-96[^"]*flex-\[1_1_28rem\][^"]*md:h-136/);
   });
 
   it("puts the address and hours on a deep-pink card with a directions link", () => {

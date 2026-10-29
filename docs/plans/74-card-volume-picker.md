@@ -56,11 +56,23 @@ follow the chosen size, and the form still posts the chosen size without JavaScr
   `formatVolume({ volumeMl, packSize })`, e.g. `30 мл` or `3 × 7 мл`.
 - **Single size:** with only one variant there's no picker; the card shows the size as plain text
   (`formatVolume`) and posts it through `AddToCartForm`'s hidden `variantId`, as today.
-- **Price:** the card keeps `selectedId` in state (initially `defaultVariant.id`) and a
-  `hydrated` flag (the `useState` + `useEffect` pattern from `TrioBuilder`). Before hydration (and
-  so without JS) it shows `from {min}` when the sizes have different prices, as now. Once
-  hydrated it shows the selected size's price. A pure helper `cardPrice(product, selectedId,
-  hydrated)` in `app/lib/products.ts` makes this testable without a DOM.
+- **Price (Q3: loading skeleton).** The card keeps `selectedId` in state (initially
+  `defaultVariant.id`) and a `hydrated` flag (the `useState` + `useEffect` pattern from
+  `TrioBuilder`). Once hydrated it shows the selected size's price. Before hydration the server
+  HTML holds two things in the price slot:
+  - a **skeleton**: `aria-hidden` `span`, `h-7 w-24 rounded-pill bg-line motion-safe:animate-pulse`,
+    shown only when JS runs (`hidden in-[.js]:inline-block`);
+  - the **no-JS fallback**: `from {min}` (or the single price) as now, hidden when JS runs
+    (`in-[.js]:hidden`).
+
+  The `js` class comes from a one-line inline script in `<head>` in `app/root.tsx`
+  (`document.documentElement.classList.add("js")`). It runs before first paint, so JS visitors
+  never see the "from" price flash, and visitors without JS never see a skeleton that would
+  never resolve. `<html>` gets `suppressHydrationWarning` because the script changes its class
+  before React hydrates. The slot has a fixed height (`min-h-7`) so the swap from skeleton to
+  price doesn't shift the layout. The site has no CSP (no `Content-Security-Policy` or nonce in
+  `app/`), so an inline script is allowed. A small pure helper `cardPrice(product, selectedId)`
+  in `app/lib/products.ts` returns the selected size's price (falling back to the default size).
 - **Add button:** the catalog card's button becomes the default `cart.add` ("Додати в кошик" /
   "Add to cart"), and the "Choose volume" `ButtonLink` is removed. `inStock` stays
   `product.inStock`: the default variant is in stock whenever any size is, and sold-out sizes
@@ -68,37 +80,32 @@ follow the chosen size, and the form still posts the chosen size without JavaScr
 - **Compact card:** keeps the round "+" (`appearance="icon"`) with the pill row above the
   price/button row. The brand line drops `· {defaultSize}`. Its accessible name becomes
   "Add {title} to cart" (`product.quickAdd` without `{size}`), because without JS a fixed size
-  in the label could be wrong after the shopper picks another pill **(unconfirmed, Q1)**.
+  in the label could be wrong after the shopper picks another pill (Q1: confirmed, to be
+  reviewed once it's visible in the running app).
 - **The volumes line** (`formatVolumes`, "7 · 30 · 50 мл") on the catalog card is replaced by the
   picker (or by the single size as plain text). `formatVolumes` then has no users and is deleted
   along with its tests in `app/lib/products.test.ts`.
 - **i18n:** add `product.volumeLegend` ("Об’єм" / "Volume") and `product.outOfStockSize`
   ("немає в наявності" / "out of stock"); remove `product.addSize` and `product.chooseVolume`;
   change `product.quickAdd`. The Ukrainian apostrophe follows the existing `’` in `uk.ts`.
-- **Tests without a DOM.** Vitest runs in `node` with `renderToStaticMarkup` and no
-  jsdom/testing-library (`vitest.config.ts`). Interaction is covered by the pure `cardPrice`
-  helper and by asserting the server markup: radios named `variantId` inside the form, the default
-  `checked`, sold-out ones `disabled`, and no hidden `variantId` when the picker is shown
-  **(unconfirmed, Q2)**.
-
-## Open questions
-- [ ] **Q1: Should the compact card's "+" keep naming the size in its accessible name?** — Why it
-  matters: today it says "Add {title}, 7 ml, to cart". With a picker, a size baked into the label
-  is wrong without JS once another pill is picked; with JS it could follow the state. Recommended
-  default: drop the size ("Add {title} to cart"); the checked radio already tells screen-reader
-  users which size it is. Affects steps: 5, 6.
-- [ ] **Q2: Add jsdom and Testing Library so the tests can click a pill?** — Why it matters: "the
-  price follows the selection" and "submitting posts the chosen `variantId`" can then be tested
-  end to end in the browser DOM rather than through a pure helper plus static markup. Recommended
-  default: no new dev dependencies; test `cardPrice` and the rendered markup, and check the
-  interaction by hand. Affects step: 7.
-- [ ] **Q3: Should the card's price be visible as "from {min}" or the default size's price before
-  hydration?** — Why it matters: the issue keeps "from {min}" without JS. With JS, the server
-  HTML shows "from" for a moment and then switches to the default size's price on hydration, a
-  small visible jump. Recommended default: follow the issue (keep "from" until hydrated). Affects
-  step: 5.
+- **DOM tests (Q2).** Add dev dependencies `jsdom`, `@testing-library/react`,
+  `@testing-library/dom` and `@testing-library/user-event` to the root `package.json` with
+  `pnpm add -D` (exact versions as pnpm resolves them). The global `environment` stays `node`;
+  only DOM test files opt in with a `// @vitest-environment jsdom` docblock, so the server and DB
+  suites don't change. The interactive tests live in
+  `app/features/catalog/ProductCard.dom.test.ts` (still `*.test.ts`, so `vitest.config.ts`'s
+  `include` picks it up) and render the card in a `createMemoryRouter` with a `/cart` route whose
+  `action` records the posted `FormData`. They call `cleanup()` in `afterEach`. Static markup
+  checks (server HTML, no-JS fallback) stay in `catalog-ui.test.ts`.
 
 ## Resolved questions
+- **Q1: Should the compact card's "+" keep naming the size?** — No: it becomes "Add {title} to
+  cart" for now; the user will review it in the running app (answered by the user).
+- **Q2: Add jsdom and Testing Library?** — Yes, for click-through tests of the picker
+  (answered by the user).
+- **Q3: What does the price show before hydration?** — A loading skeleton when JS runs, and the
+  "from {min}" fallback without JS (answered by the user; the no-JS fallback keeps the issue's
+  "works without JavaScript" criterion).
 - **Does the cart action accept any variant posted from a card?** — Yes: `variantId` is validated
   with zod and checked against the product and its stock by `checkVariantForCart`
   (source: `app/.server/services/products.ts`, `app/features/cart/AddToCartForm.tsx`).
@@ -131,7 +138,10 @@ follow the chosen size, and the form still posts the chosen size without JavaScr
 | modify | `app/.server/services/products.test.ts` | summaries carry ordered variants (catalog, bestsellers, popular, by ids) |
 | create | `app/features/catalog/CardVolumePicker.tsx` | the pill radio group |
 | modify | `app/features/catalog/ProductCard.tsx` | both cards render the picker and the selected price |
-| modify | `app/features/catalog/catalog-ui.test.ts` | picker, price, single size, uk/en copy |
+| modify | `app/features/catalog/catalog-ui.test.ts` | server markup: picker, skeleton + no-JS fallback, single size, uk/en copy |
+| create | `app/features/catalog/ProductCard.dom.test.ts` | jsdom: click a pill, price follows, form posts the chosen `variantId`, keyboard |
+| modify | `app/root.tsx` | inline `js`-class script in `<head>`, `suppressHydrationWarning` on `<html>` |
+| modify | `package.json`, `pnpm-lock.yaml` | dev deps `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event` |
 | modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | new keys, removed keys, `quickAdd` |
 | modify | `app/.server/services/offers.test.ts`, `app/routes/offers.test.ts`, `app/features/home/HomePage.test.ts`, `app/features/offers/offers-ui.test.ts`, `app/features/popular/popular-ui.test.ts` | add `variants` to `ProductSummary` fixtures |
 
@@ -163,57 +173,81 @@ Each step is small, ordered, and leaves the app in a working state.
 - [ ] **4. i18n keys** — In `uk.ts` and `en.ts` under `product`: add
   `volumeLegend: "Об’єм"` / `"Volume"` and `outOfStockSize: "немає в наявності"` /
   `"out of stock"`; change `quickAdd` to `"Додати {title} у кошик"` / `"Add {title} to cart"`
-  **(Q1)**; remove `addSize` and `chooseVolume` once step 5 no longer uses them.
-- [ ] **5. `CardVolumePicker` and `cardPrice`** — Create
+  (Q1); remove `addSize` and `chooseVolume` once step 6 no longer uses them.
+- [ ] **5. `js` class on `<html>`** — In `app/root.tsx` add
+  `<script dangerouslySetInnerHTML={{ __html: 'document.documentElement.classList.add("js")' }} />`
+  as the first child of `<head>` (with a comment pointing at the card price skeleton) and
+  `suppressHydrationWarning` on `<html>`. Check in the browser that `<html class="js">` is set and
+  that React logs no hydration warning.
+- [ ] **6. `CardVolumePicker`, `CardPrice` and `cardPrice`** — Create
   `app/features/catalog/CardVolumePicker.tsx` with props `{ variants: CardVariant[]; packSize:
   number; defaultId: string; onChange: (id: string) => void; className?: string }`, markup and
   classes as in Decisions (`useId()` prefix for each input's `id` and the label's `htmlFor`, or
-  wrapping labels). Add `cardPrice(product, selectedId, hydrated)` to `app/lib/products.ts`:
-  before hydration `{ price: minPrice, from: hasPriceRange }`, after it the selected variant's
-  price with `from: false`, falling back to the default variant.
-- [ ] **6. Use the picker on both cards** — In `ProductCard.tsx`, add a small `useCardSize(product)`
+  wrapping labels). Add `cardPrice(product, selectedId)` to `app/lib/products.ts`: the selected
+  variant's price, falling back to the default variant's. Add a `CardPrice` component in
+  `ProductCard.tsx` taking `{ product, selectedId, hydrated }`: hydrated → the formatted
+  `cardPrice` (re-keyed with `animate-spin-in` like `ProductPurchase`); not hydrated → the
+  skeleton plus the no-JS fallback from Decisions, in a `min-h-7` slot.
+- [ ] **7. Use the picker on both cards** — In `ProductCard.tsx`, add a small `useCardSize(product)`
   hook (selected id state plus hydrated flag) shared by both cards. `CatalogProductCard`:
   replace the `formatVolumes` line with the picker as `children` of `AddToCartForm` (no
   `variantId` prop) when `variants.length > 1`, else the size as plain `text-sm text-muted`
-  text and the hidden `variantId`; the price uses `cardPrice`; the button uses the default
+  text and the hidden `variantId`; the price is `CardPrice`; the button uses the default
   label; remove the `ButtonLink` and its import. `CompactProductCard`: brand line without the
   size; the picker above a row with the price and the "+" (the form wraps both, e.g. the form
   becomes the bottom block with `className="flex flex-col gap-3"` and a `flex justify-between`
   row inside, keeping the icon status's `relative` positioning on the button's wrapper so "Added
   to cart" still floats below the "+"). Check in the browser at 375px: catalog, home
-  Bestsellers, `/popular` and `/offers`.
-- [ ] **7. UI tests** — Update `catalog-ui.test.ts` (English unless stated): a multi-size card
-  renders a `fieldset` with a legend "Volume" and one `type="radio" name="variantId"` per size
-  inside the form, the default one `checked`, a sold-out one `disabled` with "out of stock", no
-  hidden `variantId` input, unique input ids across two cards on one page, and the button
-  "Add to cart"; a single-size card has no radios, shows "50 ml" and posts the hidden
-  `variantId`; packs show "3 × 7 ml"; the server HTML price is "from ₴990"; no "Choose volume";
-  Ukrainian legend "Об’єм" and "немає в наявності"; the compact card gets the same picker and
-  keeps the "+". Add `cardPrice` cases to `products.test.ts` (before/after hydration, selected
-  size, unknown id falls back to the default). Update the home, popular and offers UI tests that
-  asserted "Add 7 ml" or "Chanel · 7 ml".
-- [ ] **8. Verify and clean up** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+  Bestsellers, `/popular` and `/offers`, and look at the compact "+" label and skeleton with the
+  user (Q1).
+- [ ] **8. Static markup tests** — Update `catalog-ui.test.ts` (English unless stated): a
+  multi-size card renders a `fieldset` with a legend "Volume" and one
+  `type="radio" name="variantId"` per size inside the form, the default one `checked`, a sold-out
+  one `disabled` with "out of stock", no hidden `variantId` input, unique input ids across two
+  cards on one page, and the button "Add to cart"; a single-size card has no radios, shows
+  "50 ml" and posts the hidden `variantId`; packs show "3 × 7 ml"; the server HTML has the
+  skeleton (`aria-hidden`, `in-[.js]:inline-block`) and the fallback "from ₴990"
+  (`in-[.js]:hidden`); no "Choose volume"; Ukrainian legend "Об’єм" and "немає в наявності";
+  the compact card gets the same picker and keeps the "+". Add `cardPrice` cases to
+  `app/lib/products.test.ts` (selected size, unknown id falls back to the default). Update the
+  home, popular and offers UI tests that asserted "Add 7 ml" or "Chanel · 7 ml".
+- [ ] **9. DOM tests (jsdom + Testing Library)** — `pnpm add -D jsdom @testing-library/react
+  @testing-library/dom @testing-library/user-event` in the worktree root. Create
+  `app/features/catalog/ProductCard.dom.test.ts` with `// @vitest-environment jsdom`, rendering
+  the card inside `I18nProvider` and a memory router with a `/cart` action that stores the
+  posted `FormData`. Cases: after mount the skeleton is gone and the default size's price shows;
+  clicking the "30 ml" radio (`getByRole("radio", { name: /30 ml/ })`) shows its price; clicking
+  a sold-out radio changes nothing and it is `toBeDisabled()`-equivalent (`disabled` property);
+  submitting with the "+" or "Add to cart" posts `variantId` = the chosen size's id;
+  `user.keyboard("{ArrowRight}")` from the default moves the check to the next enabled size;
+  both the catalog and the compact card. Use plain `expect` on DOM properties unless
+  `@testing-library/jest-dom` is added too (not planned).
+- [ ] **10. Verify and clean up** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
   Grep for leftover `addSize`, `chooseVolume`, `formatVolumes`, `defaultVolumeMl`.
 
 ## Testing & verification
 - Automated: `products.test.ts` (service, DB integration) for `variants` on all summary queries;
-  `app/lib/products.test.ts` for `cardPrice`; `catalog-ui.test.ts` for the picker markup, the
-  form fields, single-size and pack cards, and uk/en copy; the fixtures of the other suites.
+  `app/lib/products.test.ts` for `cardPrice`; `catalog-ui.test.ts` for the server markup
+  (picker, skeleton and no-JS fallback, form fields, single-size and pack cards, uk/en copy);
+  `ProductCard.dom.test.ts` (jsdom) for clicking, arrow keys, the price following the selection
+  and the posted `variantId`; the fixtures of the other suites.
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 - Manual (`pnpm aspire run`): on the catalog, home Bestsellers, `/popular` and `/offers`, pick
   10 ml, see the price change, add to cart and see 10 ml in `/cart`; sold-out pills can't be
   picked; Tab into the group, arrow keys move between enabled sizes with a visible ring; a screen
-  reader reads "Volume", each size and "out of stock"; with JS disabled, pick a size and add, and
-  the cart gets that size; no horizontal scroll at 375px.
+  reader reads "Volume", each size and "out of stock"; on a throttled connection the price slot
+  shows the skeleton until hydration with no layout jump; with JS disabled, the price reads
+  "from …" (no skeleton), and picking a size and adding puts that size in the cart; no
+  horizontal scroll at 375px.
 
 ## Acceptance criteria
-- [ ] Every product card with several sizes lets the shopper pick a size before adding to cart — steps 5, 6
-- [ ] The card's price changes to the selected size's price — steps 5, 6, 7
-- [ ] Add to cart adds the selected size, and the cart shows that size — steps 5, 6, 7 (manual check in 8)
-- [ ] Out-of-stock sizes are visible but can't be selected — steps 2, 3, 5, 7
-- [ ] The picker works without JavaScript and by keyboard, with visible focus and screen-reader labels — steps 4, 5, 7
-- [ ] It works in the catalog, home Bestsellers, the popular page and offer cards, with no horizontal scroll at 375px — step 6
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 8
+- [ ] Every product card with several sizes lets the shopper pick a size before adding to cart — steps 6, 7
+- [ ] The card's price changes to the selected size's price — steps 5, 6, 7, 9
+- [ ] Add to cart adds the selected size, and the cart shows that size — steps 6, 7, 9 (manual check in 10)
+- [ ] Out-of-stock sizes are visible but can't be selected — steps 2, 3, 6, 8, 9
+- [ ] The picker works without JavaScript and by keyboard, with visible focus and screen-reader labels — steps 4, 5, 6, 8, 9
+- [ ] It works in the catalog, home Bestsellers, the popular page and offer cards, with no horizontal scroll at 375px — step 7
+- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
 
 ## Out of scope
 - Quantity selection on the card, the product page's `VolumeSelect`, and the cart page.

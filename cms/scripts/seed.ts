@@ -437,8 +437,8 @@ const OFFERS: SeedOffer[] = [
     productIds: [],
     sortOrder: 0,
     copy: {
-      uk: { title: "Безкоштовна доставка", summary: "Новою Поштою від 1000 ₴" },
-      en: { title: "Free delivery", summary: "With Nova Poshta from 1000 ₴" },
+      uk: { title: "Безкоштовна доставка", summary: "Новою Поштою від 1500 ₴" },
+      en: { title: "Free delivery", summary: "With Nova Poshta from 1500 ₴" },
     },
   },
   {

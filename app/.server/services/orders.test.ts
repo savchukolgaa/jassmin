@@ -226,7 +226,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
     expect(after?.updatedAt.getTime()).toBeGreaterThan(cart.updatedAt.getTime());
   });
 
-  it("links a registered user's order and only gives free shipping from 1000 UAH", async () => {
+  it("links a registered user's order and only gives free shipping from 1500 UAH", async () => {
     const { createOrder } = await import("./orders");
     const userId = await user();
     const five = await variant(5, 10);
@@ -244,19 +244,24 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const [order] = await allOrders();
     expect(order).toMatchObject({ userId, subtotal: "990.00", freeShipping: false });
 
-    await testDb.db.delete((await import("../db/schema")).orders);
-    const exact = await cartWith([{ variant: five, quantity: 1 }]);
     const { eq } = await import("drizzle-orm");
-    const { productVariants } = await import("../db/schema");
-    await testDb.db
-      .update(productVariants)
-      .set({ price: "1000.00" })
-      .where(eq(productVariants.id, five.id));
+    const { orders, productVariants } = await import("../db/schema");
     try {
-      await createOrder({ cartId: exact.id, userId: null, customer, locale: "uk" }, testDb.db);
-      expect(await allOrders()).toEqual([
-        expect.objectContaining({ subtotal: "1000.00", freeShipping: true }),
-      ]);
+      for (const [price, freeShipping] of [
+        ["1499.99", false],
+        ["1500.00", true],
+      ] as const) {
+        await testDb.db.delete(orders);
+        const cart = await cartWith([{ variant: five, quantity: 1 }]);
+        await testDb.db
+          .update(productVariants)
+          .set({ price })
+          .where(eq(productVariants.id, five.id));
+        await createOrder({ cartId: cart.id, userId: null, customer, locale: "uk" }, testDb.db);
+        expect(await allOrders()).toEqual([
+          expect.objectContaining({ subtotal: price, freeShipping }),
+        ]);
+      }
     } finally {
       await testDb.db
         .update(productVariants)
@@ -491,7 +496,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
       await place(full.id);
 
       const byCart = new Map((await allOrders()).map((order) => [order.cartId, order]));
-      // 1980 ₴ − 1000 ₴ = 980 ₴, under the 1000 ₴ threshold.
+      // 1980 ₴ − 1000 ₴ = 980 ₴, under the 1500 ₴ threshold.
       expect(byCart.get(discounted.id)).toMatchObject({
         totalAmount: "980.00",
         freeShipping: false,

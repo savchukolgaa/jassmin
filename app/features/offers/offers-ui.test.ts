@@ -115,7 +115,7 @@ describe("OffersPage", () => {
               slug: "delivery",
               kind: "perk",
               title: "Free delivery",
-              summary: "With Nova Poshta from 1000 ₴",
+              summary: "With Nova Poshta from 1500 ₴",
               cta: null,
             }),
           ],
@@ -131,7 +131,7 @@ describe("OffersPage", () => {
     expect(html).toMatch(/<h1[^>]*>Special offers<\/h1>/);
     expect(html).toMatch(/<section[^>]*class="[^"]*bg-primary[^"]*"[^>]*>[\s\S]*Winter holidays/);
     expect(html).toContain("Free delivery");
-    expect(html).toContain("With Nova Poshta from 1000 ₴");
+    expect(html).toContain("With Nova Poshta from 1500 ₴");
     const positions = [">Discovery sets<", ">Tester trio<", ">Gift ideas<", ">Gifts<"].map(
       (marker) => html.indexOf(marker),
     );

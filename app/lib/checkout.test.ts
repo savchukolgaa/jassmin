@@ -113,15 +113,15 @@ describe("formatShippingAddress", () => {
 });
 
 describe("freeShippingInfo", () => {
-  it("is free from 1000 UAH", () => {
-    expect(freeShippingInfo("1000.00")).toEqual({ free: true });
-    expect(freeShippingInfo("1500.5")).toEqual({ free: true });
+  it("is free from 1500 UAH", () => {
+    expect(freeShippingInfo("1500.00")).toEqual({ free: true });
+    expect(freeShippingInfo("2000.5")).toEqual({ free: true });
   });
 
-  it("says exactly how much is missing below 1000 UAH", () => {
-    expect(freeShippingInfo("999.99")).toEqual({ free: false, remaining: "0.01" });
-    expect(freeShippingInfo("750.00")).toEqual({ free: false, remaining: "250.00" });
-    expect(freeShippingInfo("0.00")).toEqual({ free: false, remaining: "1000.00" });
+  it("says exactly how much is missing below 1500 UAH", () => {
+    expect(freeShippingInfo("1499.99")).toEqual({ free: false, remaining: "0.01" });
+    expect(freeShippingInfo("1000.00")).toEqual({ free: false, remaining: "500.00" });
+    expect(freeShippingInfo("0.00")).toEqual({ free: false, remaining: "1500.00" });
   });
 });
 

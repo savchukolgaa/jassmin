@@ -272,7 +272,7 @@ export const uk = {
     },
     subtotal: "Разом",
     total: "До сплати",
-    deliveryNote: "Вартість доставки розрахуємо під час оформлення.",
+    deliveryNote: "Безкоштовна доставка Новою Поштою від {threshold}.",
     promo: {
       label: "Промокод",
       apply: "Застосувати",
@@ -336,7 +336,7 @@ export const uk = {
     shipping: "Доставка",
     shippingFree: "Безкоштовно",
     shippingCarrierRate: "За тарифами Нової Пошти при отриманні",
-    freeShippingHint: "Додайте ще {amount}, щоб доставка була безкоштовною.",
+    freeShippingHint: "Додайте ще {amount}, щоб доставка була безкоштовною (від {threshold}).",
     total: "До сплати",
     submit: "Підтвердити замовлення",
     errors: {

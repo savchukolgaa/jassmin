@@ -1,6 +1,7 @@
 import { and, arrayOverlaps, asc, count, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
 import type { CatalogSort } from "~/lib/catalog";
 import type { Gender, OrderStatus } from "~/lib/enums";
+import type { CardVariant } from "~/lib/products";
 import type { Db } from "../client";
 import { orderItems, orders, products, productVariants } from "../schema";
 
@@ -41,13 +42,10 @@ function whereFilters({ genders, fragranceFamilies, brand }: ProductFilters): SQ
   );
 }
 
-// The default variant is the smallest in-stock size, else the smallest; keep this order in sync
-// with `defaultVariant()` in ~/lib/products.
-const DEFAULT_VARIANT_ORDER = sql`${productVariants.stockQuantity} = 0, ${productVariants.volumeMl}`;
-
 /**
- * Price, stock and sizes per product, aggregated over its variants. Catalog queries inner-join
- * it, so products without variants aren't listed.
+ * Price and sizes per product, aggregated over its variants. Catalog queries inner-join it, so
+ * products without variants aren't listed. `variants` is every size, smallest first (#74);
+ * `price::text` keeps the exact decimal string, which a JSON number would not.
  */
 function variantStats(db: Db) {
   return db
@@ -55,18 +53,12 @@ function variantStats(db: Db) {
       productId: productVariants.productId,
       minPrice: sql<string>`min(${productVariants.price})`.as("min_price"),
       maxPrice: sql<string>`max(${productVariants.price})`.as("max_price"),
-      inStock: sql<boolean>`bool_or(${productVariants.stockQuantity} > 0)`.as("in_stock"),
-      volumes: sql<
-        number[]
-      >`array_agg(${productVariants.volumeMl} order by ${productVariants.volumeMl})`.as("volumes"),
-      defaultVariantId:
-        sql<string>`(array_agg(${productVariants.publicId} order by ${DEFAULT_VARIANT_ORDER}))[1]`.as(
-          "default_variant_id",
-        ),
-      defaultVolumeMl:
-        sql<number>`(array_agg(${productVariants.volumeMl} order by ${DEFAULT_VARIANT_ORDER}))[1]`.as(
-          "default_volume_ml",
-        ),
+      variants: sql<CardVariant[]>`json_agg(json_build_object(
+        'id', ${productVariants.publicId},
+        'volumeMl', ${productVariants.volumeMl},
+        'price', ${productVariants.price}::text,
+        'inStock', ${productVariants.stockQuantity} > 0
+      ) order by ${productVariants.volumeMl})`.as("variants"),
     })
     .from(productVariants)
     .groupBy(productVariants.productId)
@@ -105,10 +97,7 @@ function summaryColumns(stats: VariantStats) {
     fragranceFamily: products.fragranceFamily,
     minPrice: stats.minPrice,
     maxPrice: stats.maxPrice,
-    inStock: stats.inStock,
-    volumes: stats.volumes,
-    defaultVariantId: stats.defaultVariantId,
-    defaultVolumeMl: stats.defaultVolumeMl,
+    variants: stats.variants,
   };
 }
 

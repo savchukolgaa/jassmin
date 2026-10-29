@@ -135,6 +135,16 @@ describe.skipIf(!hasDatabase)("home page bestsellers and trio families", () => {
     expect(await bestsellerTitles()).toEqual(["Top", "Newer", "Older"]);
   });
 
+  it("carries each product's sizes for the card's volume picker (#74)", async () => {
+    await product("A");
+    const { getBestsellers } = await import("./products");
+    const [first] = await getBestsellers(testDb.db);
+
+    expect(first?.variants).toEqual([
+      { id: first?.defaultVariant.id, volumeMl: 30, price: "100.00", inStock: true },
+    ]);
+  });
+
   it("shows four products at most", async () => {
     for (const title of ["1", "2", "3", "4", "5"]) {
       await product(title);

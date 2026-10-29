@@ -2,7 +2,13 @@ import type { CartActionError } from "~/lib/cart";
 import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib/catalog";
 import { GENDERS, type Gender } from "~/lib/enums";
 import type { PopularPage } from "~/lib/popular";
-import type { CatalogPage, ProductDetail, ProductSummary, ProductVariant } from "~/lib/products";
+import {
+  type CatalogPage,
+  defaultVariant,
+  type ProductDetail,
+  type ProductSummary,
+  type ProductVariant,
+} from "~/lib/products";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import {
@@ -29,6 +35,12 @@ const GENDER_SCOPE: Record<CatalogGender, readonly Gender[]> = {
 
 // The only place rows become DTOs.
 function toSummary(row: ProductSummaryRow): ProductSummary {
+  const { variants } = row;
+  // Never undefined: the catalog queries inner-join the variants, so every row has one.
+  const preselected = defaultVariant(variants);
+  if (!preselected) {
+    throw new Error(`Product ${row.publicId} has no variants`);
+  }
   return {
     id: row.publicId,
     title: row.title,
@@ -39,9 +51,10 @@ function toSummary(row: ProductSummaryRow): ProductSummary {
     fragranceFamily: row.fragranceFamily,
     minPrice: row.minPrice,
     hasPriceRange: row.minPrice !== row.maxPrice,
-    volumes: row.volumes,
-    inStock: row.inStock,
-    defaultVariant: { id: row.defaultVariantId, volumeMl: row.defaultVolumeMl },
+    variants,
+    volumes: variants.map((v) => v.volumeMl),
+    inStock: variants.some((v) => v.inStock),
+    defaultVariant: { id: preselected.id, volumeMl: preselected.volumeMl },
   };
 }
 

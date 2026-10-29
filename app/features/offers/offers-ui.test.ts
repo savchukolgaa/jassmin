@@ -22,6 +22,11 @@ const sauvage: ProductSummary = {
   gender: "men",
   packSize: 1,
   imageUrl: null,
+  variants: [
+    { id: "01a1652b-6e25-7c44-8d5b-000000000010", volumeMl: 10, price: "790.00", inStock: true },
+    { id: "01a1652b-6e25-7c44-8d5b-000000000050", volumeMl: 50, price: "3290.00", inStock: true },
+    { id: "01a1652b-6e25-7c44-8d5b-000000000100", volumeMl: 100, price: "5190.00", inStock: true },
+  ],
   minPrice: "790.00",
   hasPriceRange: true,
   volumes: [10, 50, 100],

@@ -200,6 +200,21 @@ describe.skipIf(!hasDatabase)("products service", () => {
       inStock: true,
       defaultVariant: { volumeMl: 7 },
     });
+    // Every size for the card's volume picker, smallest first, with exact prices (#74).
+    expect(coco?.variants).toEqual([
+      { id: expect.any(String), volumeMl: 7, price: "990.00", inStock: true },
+      { id: expect.any(String), volumeMl: 10, price: "1350.00", inStock: false },
+      { id: expect.any(String), volumeMl: 30, price: "4450.00", inStock: true },
+      { id: expect.any(String), volumeMl: 50, price: "6850.00", inStock: true },
+      { id: expect.any(String), volumeMl: 100, price: "9900.00", inStock: true },
+    ]);
+    expect(coco?.variants[0]?.id).toBe(coco?.defaultVariant.id);
+    expect(new Set(coco?.variants.map((v) => v.id)).size).toBe(5);
+    expect(acqua?.variants.map((v) => [v.volumeMl, v.inStock])).toEqual([
+      [30, false],
+      [100, false],
+    ]);
+    expect(acqua?.variants[0]?.id).toBe(acqua?.defaultVariant.id);
 
     const testers = (await catalog("women", { brand: "Jassmin" })).products[0];
     expect(testers).toMatchObject({ hasPriceRange: false, volumes: [10], packSize: 3 });
@@ -316,6 +331,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
       inStock: true,
       defaultVariant: { volumeMl: 7 },
     });
+    expect(found.get(coco.publicId)?.variants.map((v) => v.volumeMl)).toEqual([7, 10, 30, 50, 100]);
   });
 
   it("doesn't query for an empty list of ids", async () => {

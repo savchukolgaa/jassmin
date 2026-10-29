@@ -50,6 +50,7 @@ function product(id: string): ProductSummary {
     gender: "women",
     packSize: 1,
     imageUrl: null,
+    variants: [{ id: `${id}-v`, volumeMl: 7, price: "990.00", inStock: true }],
     minPrice: "990.00",
     hasPriceRange: false,
     volumes: [7],

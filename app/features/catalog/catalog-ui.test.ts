@@ -35,6 +35,11 @@ const PRODUCT: ProductSummary = {
   gender: "women",
   packSize: 1,
   imageUrl: null,
+  variants: [
+    { id: VARIANT_ID, volumeMl: 7, price: "990.00", inStock: true },
+    { id: "01a1652b-6e25-7d00-8000-000000000030", volumeMl: 30, price: "3490.00", inStock: true },
+    { id: "01a1652b-6e25-7d00-8000-000000000050", volumeMl: 50, price: "4890.00", inStock: false },
+  ],
   minPrice: "990.00",
   hasPriceRange: true,
   volumes: [7, 30, 50],
@@ -46,6 +51,7 @@ const PRODUCT: ProductSummary = {
 /** A product sold in one size only. */
 const SINGLE: ProductSummary = {
   ...PRODUCT,
+  variants: [{ id: VARIANT_ID, volumeMl: 50, price: "6850.00", inStock: true }],
   minPrice: "6850.00",
   hasPriceRange: false,
   volumes: [50],

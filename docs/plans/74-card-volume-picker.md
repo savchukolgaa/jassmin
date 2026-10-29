@@ -34,6 +34,7 @@ follow the chosen size, and the form still posts the chosen size without JavaScr
   `DEFAULT_VARIANT_ORDER` go away, along with their "keep in sync" comment. `min_price` and
   `max_price` stay in SQL because the `price_asc` / `price_desc` sort uses `min_price`.
   The `ProductSummary` fields keep their shapes, so existing callers don't change.
+- **Steps 1–3 are one commit:** the new required `variants` field doesn't typecheck until the query and `toSummary` fill it.
 - **Type:** `ProductSummary.variants: CardVariant[]`, where
   `type CardVariant = Pick<ProductVariant, "id" | "volumeMl" | "price" | "inStock">`. Card
   variants carry no `stockQuantity`, so the exact stock doesn't reach the client.
@@ -148,20 +149,20 @@ follow the chosen size, and the form still posts the chosen size without JavaScr
 ## Steps
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Add variants to the summary type** — In `app/lib/products.ts` add
+- [x] **1. Add variants to the summary type** — In `app/lib/products.ts` add
   `export type CardVariant = Pick<ProductVariant, "id" | "volumeMl" | "price" | "inStock">` and
   `variants: CardVariant[]` (ascending by volume) on `ProductSummary`, documenting that the other
   stats are derived from it. Add `variants` to every `ProductSummary` fixture listed in Files so
   `pnpm typecheck` passes (`satisfies`-compatible literals; ids reuse each fixture's
   `defaultVariant.id` for the default size).
-- [ ] **2. Aggregate variants in SQL** — In `variantStats()` add
+- [x] **2. Aggregate variants in SQL** — In `variantStats()` add
   `variants: sql<CardVariant[]>`json_agg(json_build_object('id', ${productVariants.publicId},
   'volumeMl', ${productVariants.volumeMl}, 'price', ${productVariants.price}::text, 'inStock',
   ${productVariants.stockQuantity} > 0) order by ${productVariants.volumeMl})`.as("variants")`,
   and add it to `summaryColumns`. Remove `inStock`, `volumes`, `defaultVariantId`,
   `defaultVolumeMl` and `DEFAULT_VARIANT_ORDER` (check `countPopularProducts` / `countProducts`
   only use the join). Import `CardVariant` as a type from `~/lib/products`.
-- [ ] **3. Map variants in `toSummary`** — In `app/.server/services/products.ts`, set
+- [x] **3. Map variants in `toSummary`** — In `app/.server/services/products.ts`, set
   `variants: row.variants`, `volumes: variants.map((v) => v.volumeMl)`,
   `inStock: variants.some((v) => v.inStock)`, `hasPriceRange: row.minPrice !== row.maxPrice`, and
   `defaultVariant` from `defaultVariant(variants)` (non-empty thanks to the inner join; narrow

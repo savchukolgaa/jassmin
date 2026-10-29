@@ -110,6 +110,15 @@ describe.skipIf(!hasDatabase)("popular perfumes (#67)", () => {
     expect(result).toMatchObject({ total: 4, page: 1, pageCount: 1 });
   });
 
+  it("carries each product's sizes for the card's volume picker (#74)", async () => {
+    await product("First", { rank: 1 });
+    const [first] = (await popular()).products;
+
+    expect(first?.variants).toEqual([
+      { id: first?.defaultVariant.id, volumeMl: 30, price: "100.00", inStock: true },
+    ]);
+  });
+
   it("orders equal ranks by sales", async () => {
     await product("Tied A", { rank: 1, minutesAgo: 5 });
     const b = await product("Tied B", { rank: 1, minutesAgo: 10 });

@@ -14,8 +14,16 @@ interface ProductBase {
   imageUrl: string | null;
 }
 
-/** A catalog card. Only products with at least one variant are listed. */
+/** A size on a product card (#74). No exact stock, which the card doesn't show. */
+export type CardVariant = Pick<ProductVariant, "id" | "volumeMl" | "price" | "inStock">;
+
+/**
+ * A catalog card. Only products with at least one variant are listed. The price, stock and size
+ * fields are derived from `variants`.
+ */
 export interface ProductSummary extends ProductBase {
+  /** Every size, ascending by volume; never empty. The card's volume picker lists them (#74). */
+  variants: CardVariant[];
   /** The lowest variant price. */
   minPrice: string;
   /** Whether the variants have different prices, so the card says "from". */

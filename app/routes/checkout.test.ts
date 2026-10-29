@@ -139,7 +139,7 @@ describe("checkout loader", () => {
     expect(await loader(get())).toEqual({
       cart: view,
       prefill: null,
-      shipping: { free: false, remaining: "100.00" },
+      shipping: { free: false, remaining: "600.00" },
       cardPaymentAvailable: true,
     });
     expect(orders.getCheckoutPrefill).not.toHaveBeenCalled();
@@ -159,7 +159,7 @@ describe("checkout loader", () => {
 
     expect(await loader(get())).toMatchObject({
       cart: view,
-      shipping: { free: false, remaining: "55.00" },
+      shipping: { free: false, remaining: "555.00" },
     });
     expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "checkout_start", {
       properties: {
@@ -186,7 +186,7 @@ describe("checkout loader", () => {
     const prefill = { fullName: "Olena", email: "olena@example.com", phone: null };
     cart.getCartOwner.mockResolvedValueOnce({ userId: 7 });
     cart.getCartView.mockResolvedValueOnce(
-      cartView({ lines: [line], itemCount: 2, subtotal: "1000.00" }),
+      cartView({ lines: [line], itemCount: 2, subtotal: "1500.00" }),
     );
     orders.getCheckoutPrefill.mockResolvedValueOnce(prefill);
 

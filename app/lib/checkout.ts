@@ -10,7 +10,7 @@ import { msg, type TextKey } from "./i18n";
 import { fromKopiyky, toKopiyky } from "./money";
 
 /** From this subtotal (after discount) the store pays Nova Poshta; below it the recipient does. */
-export const FREE_SHIPPING_THRESHOLD = "1000.00";
+export const FREE_SHIPPING_THRESHOLD = "1500.00";
 
 /**
  * What the store charges for delivery: nothing. Below the threshold the recipient pays Nova

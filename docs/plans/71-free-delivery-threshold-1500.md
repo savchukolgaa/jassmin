@@ -45,6 +45,7 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
   summaries) in the Strapi admin by hand.
 - The gift-guide text "До 1000 ₴" / "Up to 1000 ₴" (`seed.ts:422-429`, `offers.json:234-235`) is a
   gift price band, not the delivery threshold, so it stays as it is.
+- **Steps 1, 5, 6 and 7 land in one commit.** Raising the constant breaks the pricing, order and checkout route tests that pin 1000 ₴, so they change together and every commit passes `pnpm test`. The exact-1500-after-discount pricing case uses `166_666` kopiyky, because percentage discounts round down to the kopiyka (`166_667` would give 1500.01 ₴).
 - `cart.test.ts`, listed in the issue, doesn't pin the threshold (its only "1000" is
   `60 * 60 * 1000`). The cart copy is tested in `app/features/cart/cart-ui.test.ts`.
 
@@ -88,7 +89,7 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
 | modify | `app/.server/AGENTS.md` | Orders section: "1000 UAH" → "1500 UAH" |
 
 ## Steps
-- [ ] **1. Raise the constant.** — In `app/lib/checkout.ts`, set `FREE_SHIPPING_THRESHOLD =
+- [x] **1. Raise the constant.** — In `app/lib/checkout.ts`, set `FREE_SHIPPING_THRESHOLD =
   "1500.00"`. In `app/lib/checkout.test.ts`, update `freeShippingInfo`: `"1500.00"` → free,
   `"1499.99"` → `{ free: false, remaining: "0.01" }`, `"0.00"` → `remaining: "1500.00"`. Run
   `pnpm test app/lib/checkout.test.ts`.
@@ -108,19 +109,19 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
   `app/.server/cms/__fixtures__/offers.json` and `offers.en.json`. Leave the gift-guide "1000 ₴"
   alone. In `offers-ui.test.ts`, update the perk summary and the assertion to 1500 ₴. Run
   `pnpm test app/.server/cms app/features/offers`.
-- [ ] **5. Server pricing tests.** — In `pricing.test.ts` → "decides free delivery on the
+- [x] **5. Server pricing tests.** — In `pricing.test.ts` → "decides free delivery on the
   discounted subtotal", the undiscounted 1100 ₴ line is no longer free, so rebuild the case around
   1500 ₴. Example: a 1600 ₴ line is free without a code, and minus 10% (1440 ₴) it isn't. Add
   undiscounted `149_999` (paid) and `150_000` (free) cases, and an exact-1500-after-discount case
   with a price whose 10% discount gives exactly 150 000 kopiyky (e.g. `166_667` if rounding lands
   there, otherwise use a fixed-amount rule).
-- [ ] **6. Order creation tests.** — In `orders.test.ts` → "links a registered user's order…",
+- [x] **6. Order creation tests.** — In `orders.test.ts` → "links a registered user's order…",
   change the title to 1500 UAH. Keep the 990 ₴ order (paid). Set the variant price to `"1499.99"`
   and expect `freeShipping: false`, then to `"1500.00"` and expect `freeShipping: true`, each on a
   fresh cart. Restore the price in the `finally` block as now. The "discounted subtotal" test
   (1980 ₴ free, 980 ₴ paid) still holds: update only the comment to say the 1500 ₴ threshold.
   These are DB integration tests, so they need the test database.
-- [ ] **7. Checkout route tests.** — In `app/routes/checkout.test.ts`, change the `remaining`
+- [x] **7. Checkout route tests.** — In `app/routes/checkout.test.ts`, change the `remaining`
   values: 900 → `"600.00"` and 945 → `"555.00"`. Change the prefill case's subtotal from
   `"1000.00"` to `"1500.00"` so it stays `{ free: true }`.
 - [ ] **8. Docs and sweep.** — Change the threshold in `app/.server/AGENTS.md` (Orders) to 1500

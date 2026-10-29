@@ -35,6 +35,9 @@ follow the chosen size, and the form still posts the chosen size without JavaScr
   `max_price` stay in SQL because the `price_asc` / `price_desc` sort uses `min_price`.
   The `ProductSummary` fields keep their shapes, so existing callers don't change.
 - **Steps 1–3 are one commit:** the new required `variants` field doesn't typecheck until the query and `toSummary` fill it.
+- **Steps 4, 6, 7 and 8 are one commit:** removing `addSize`/`chooseVolume` and `formatVolumes` only typechecks once the cards stop using them, and the old card tests fail until they are rewritten. Step 7 stays unticked until the browser check.
+- **Single price, no skeleton:** when every size costs the same (`hasPriceRange` false) the server already knows the price, so the card renders it directly and never shows a skeleton.
+- **Compact card layout:** the form is a two-column grid: the picker spans both columns, then the price sits beside the round "+". The "Added to cart" status still floats below the "+" (the form is `relative`).
 - **Type:** `ProductSummary.variants: CardVariant[]`, where
   `type CardVariant = Pick<ProductVariant, "id" | "volumeMl" | "price" | "inStock">`. Card
   variants carry no `stockQuantity`, so the exact stock doesn't reach the client.
@@ -171,7 +174,7 @@ Each step is small, ordered, and leaves the app in a working state.
   10 ml `inStock: false`; Acqua's are all out of stock; and the bestseller, popular and
   by-id summaries include `variants` (extend `bestsellers.test.ts` / `popular.test.ts` /
   `offers.test.ts` where they hit the DB). Run `pnpm test`.
-- [ ] **4. i18n keys** — In `uk.ts` and `en.ts` under `product`: add
+- [x] **4. i18n keys** — In `uk.ts` and `en.ts` under `product`: add
   `volumeLegend: "Об’єм"` / `"Volume"` and `outOfStockSize: "немає в наявності"` /
   `"out of stock"`; change `quickAdd` to `"Додати {title} у кошик"` / `"Add {title} to cart"`
   (Q1); remove `addSize` and `chooseVolume` once step 6 no longer uses them.
@@ -180,7 +183,7 @@ Each step is small, ordered, and leaves the app in a working state.
   as the first child of `<head>` (with a comment pointing at the card price skeleton) and
   `suppressHydrationWarning` on `<html>`. Check in the browser that `<html class="js">` is set and
   that React logs no hydration warning.
-- [ ] **6. `CardVolumePicker`, `CardPrice` and `cardPrice`** — Create
+- [x] **6. `CardVolumePicker`, `CardPrice` and `cardPrice`** — Create
   `app/features/catalog/CardVolumePicker.tsx` with props `{ variants: CardVariant[]; packSize:
   number; defaultId: string; onChange: (id: string) => void; className?: string }`, markup and
   classes as in Decisions (`useId()` prefix for each input's `id` and the label's `htmlFor`, or
@@ -201,7 +204,7 @@ Each step is small, ordered, and leaves the app in a working state.
   to cart" still floats below the "+"). Check in the browser at 375px: catalog, home
   Bestsellers, `/popular` and `/offers`, and look at the compact "+" label and skeleton with the
   user (Q1).
-- [ ] **8. Static markup tests** — Update `catalog-ui.test.ts` (English unless stated): a
+- [x] **8. Static markup tests** — Update `catalog-ui.test.ts` (English unless stated): a
   multi-size card renders a `fieldset` with a legend "Volume" and one
   `type="radio" name="variantId"` per size inside the form, the default one `checked`, a sold-out
   one `disabled` with "out of stock", no hidden `variantId` input, unique input ids across two

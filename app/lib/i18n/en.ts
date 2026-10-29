@@ -225,10 +225,10 @@ export const en = {
   product: {
     ml: "ml",
     fromPrice: "from {price}",
-    addSize: "Add {size}",
-    quickAdd: "Add {title}, {size}, to cart",
-    chooseVolume: "Choose volume",
+    quickAdd: "Add {title} to cart",
     volume: "Volume",
+    volumeLegend: "Volume",
+    outOfStockSize: "out of stock",
     soldOutOption: "{option} (out of stock)",
     inStock: "In stock",
     outOfStock: "Out of stock",

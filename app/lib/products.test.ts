@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "./i18n";
 import { formatPrice } from "./money";
-import { defaultVariant, formatVariantOption, formatVolume, formatVolumes } from "./products";
+import { cardPrice, defaultVariant, formatVariantOption, formatVolume } from "./products";
 
 const en = createTranslator("en");
 
@@ -34,19 +34,24 @@ describe("defaultVariant", () => {
   });
 });
 
-describe("formatVolumes", () => {
-  it("lists the sizes", () => {
-    expect(formatVolumes({ volumes: [10, 30, 50], packSize: 1 }, en)).toBe("10 · 30 · 50 ml");
-    expect(formatVolumes({ volumes: [100], packSize: 1 }, en)).toBe("100 ml");
-    expect(formatVolumes({ volumes: [10, 30], packSize: 1 })).toBe("10 · 30 мл");
+describe("cardPrice", () => {
+  const product = {
+    minPrice: "990.00",
+    defaultVariant: { id: "v10", volumeMl: 10 },
+    variants: [
+      { id: "v7", volumeMl: 7, price: "990.00", inStock: false },
+      { id: "v10", volumeMl: 10, price: "1350.00", inStock: true },
+      { id: "v30", volumeMl: 30, price: "4450.00", inStock: true },
+    ],
+  };
+
+  it("is the price of the picked size", () => {
+    expect(cardPrice(product, "v30")).toBe("4450.00");
+    expect(cardPrice(product, "v10")).toBe("1350.00");
   });
 
-  it("shows the unit count of a pack", () => {
-    expect(formatVolumes({ volumes: [10], packSize: 3 }, en)).toBe("3 × 10 ml");
-  });
-
-  it("is empty without sizes", () => {
-    expect(formatVolumes({ volumes: [], packSize: 1 })).toBe("");
+  it("falls back to the default size for an unknown id", () => {
+    expect(cardPrice(product, "nope")).toBe("1350.00");
   });
 });
 

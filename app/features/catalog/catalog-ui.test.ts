@@ -58,17 +58,20 @@ const SINGLE: ProductSummary = {
   defaultVariant: { id: VARIANT_ID, volumeMl: 50 },
 };
 
-const chooseVolume = /<a[^>]*href="\/products\/[^"]+"[^>]*>Choose volume<\/a>/;
+/** The opening tags of the size radios (#74). */
+const radios = (html: string) => html.match(/<input type="radio"[^>]*>/g) ?? [];
+
+/** The first `<form>` with its contents. */
+const formOf = (html: string) => html.match(/<form[\s\S]*<\/form>/)?.[0] ?? "";
 
 const SEARCH: CatalogSearch = { sort: "newest", page: 1 };
 
 describe("ProductCard", () => {
-  it("shows the brand, title, sizes and lowest price and links to the product", () => {
+  it("shows the brand, title and lowest price and links to the product", () => {
     const html = normalize(render(createElement(ProductCard, { product: PRODUCT })));
 
     expect(html).toContain("Chanel");
     expect(html).toContain("Coco Mademoiselle Eau de Parfum");
-    expect(html).toContain("7 · 30 · 50 ml");
     expect(html).toContain("from ₴990");
     expect(html).toContain(`href="/products/${PRODUCT.id}"`);
   });
@@ -83,36 +86,97 @@ describe("ProductCard", () => {
     expect(html).not.toContain("rounded-pill bg-blush");
   });
 
-  it("shows a single size's price without 'from'", () => {
-    const html = normalize(render(createElement(ProductCard, { product: SINGLE })));
+  it("lets the shopper pick a size with a radio per size inside the add-to-cart form", () => {
+    const html = normalize(render(createElement(ProductCard, { product: PRODUCT })));
+    const form = formOf(html);
+    const [seven, thirty, fifty] = radios(form);
 
-    expect(html).toContain("₴6,850");
-    expect(html).not.toContain("from ");
+    expect(form).toMatch(/<fieldset[^>]*><legend class="sr-only">Volume<\/legend>/);
+    expect(radios(form)).toHaveLength(3);
+    expect(radios(html)).toHaveLength(3);
+    expect(seven).toContain('name="variantId"');
+    expect(seven).toContain(`value="${VARIANT_ID}"`);
+    expect(seven).toContain('checked=""');
+    expect(seven).not.toContain("disabled");
+    expect(thirty).not.toContain("checked");
+    // 50 ml is sold out: shown, struck through and announced, but it can't be picked.
+    expect(fifty).toContain('disabled=""');
+    expect(form).toContain('50 ml<span class="sr-only">, out of stock</span>');
+    expect(form).toContain(">7 ml<");
+    expect(form).toContain(">30 ml<");
+    // The radios post the size, so there's no hidden `variantId` next to them.
+    expect(form).not.toContain('type="hidden" name="variantId"');
+    expect(buttonTag(html)).not.toContain(' disabled=""');
+    expect(html).toContain(">Add to cart<");
+    expect(html).not.toContain("Choose volume");
   });
 
-  it("posts the default variant to the cart and names its size", () => {
+  it("gives every card's radios their own ids", () => {
+    const html = render(
+      createElement(
+        "div",
+        null,
+        createElement(ProductCard, { product: PRODUCT }),
+        createElement(ProductCard, { product: PRODUCT }),
+      ),
+    );
+    const ids = [...html.matchAll(/<input type="radio" id="([^"]+)"/g)].map((m) => m[1]);
+
+    expect(ids).toHaveLength(6);
+    expect(new Set(ids).size).toBe(6);
+    expect([...html.matchAll(/<label for="([^"]+)"/g)].map((m) => m[1])).toEqual(ids);
+  });
+
+  it("renders a price skeleton for JS and the lowest price without JS before hydration", () => {
     const html = normalize(render(createElement(ProductCard, { product: PRODUCT })));
 
-    expect(formTag(html)).toContain('method="post"');
+    const skeleton = html.match(/<span[^>]*data-price-skeleton[^>]*>/)?.[0] ?? "";
+    expect(skeleton).toContain('aria-hidden="true"');
+    expect(skeleton).toContain("in-[.js]:inline-block");
+    expect(html).toContain('<span class="in-[.js]:hidden">from ₴990</span>');
+  });
+
+  it("shows a single size as text with its price, and posts it without a picker", () => {
+    const html = normalize(render(createElement(ProductCard, { product: SINGLE })));
+
+    expect(radios(html)).toHaveLength(0);
+    expect(html).not.toContain("<fieldset");
+    expect(html).toContain(">50 ml<");
+    expect(html).toContain("₴6,850");
+    expect(html).not.toContain("from ");
+    expect(html).not.toContain("data-price-skeleton");
     expect(formTag(html)).toContain('action="/cart"');
     expect(html).toContain('name="intent" value="add"');
     expect(html).toContain(`name="productId" value="${PRODUCT.id}"`);
-    expect(html).toContain(`name="variantId" value="${VARIANT_ID}"`);
-    expect(buttonTag(html)).not.toContain(' disabled=""');
-    expect(html).toContain("Add 7 ml");
+    expect(html).toContain(`type="hidden" name="variantId" value="${VARIANT_ID}"`);
   });
 
-  it("offers 'Choose volume' next to add to cart only for several sizes", () => {
-    expect(render(createElement(ProductCard, { product: PRODUCT }))).toMatch(chooseVolume);
-    expect(render(createElement(ProductCard, { product: SINGLE }))).not.toMatch(chooseVolume);
+  it("labels the sizes of a pack with the unit count", () => {
+    const html = normalize(
+      render(createElement(ProductCard, { product: { ...PRODUCT, packSize: 3 } })),
+    );
+
+    expect(html).toContain(">3 × 7 ml<");
+    expect(html).toContain(">3 × 30 ml<");
   });
 
-  it("disables add to cart when the product is out of stock but keeps 'Choose volume'", () => {
-    const html = render(createElement(ProductCard, { product: { ...PRODUCT, inStock: false } }));
+  it("speaks Ukrainian", () => {
+    const html = normalize(render(createElement(ProductCard, { product: PRODUCT }), "uk"));
+
+    expect(html).toContain('<legend class="sr-only">Об’єм</legend>');
+    expect(html).toContain('50 мл<span class="sr-only">, немає в наявності</span>');
+    expect(html).toContain(">Додати в кошик<");
+  });
+
+  it("disables add to cart and every size when the product is out of stock", () => {
+    const variants = PRODUCT.variants.map((v) => ({ ...v, inStock: false }));
+    const html = render(
+      createElement(ProductCard, { product: { ...PRODUCT, variants, inStock: false } }),
+    );
 
     expect(buttonTag(html)).toContain(' disabled=""');
     expect(html).toContain("Out of stock");
-    expect(html).toMatch(chooseVolume);
+    expect(radios(html).every((tag) => tag.includes('disabled=""'))).toBe(true);
   });
 });
 
@@ -120,32 +184,42 @@ describe("ProductCard, compact (home bestsellers)", () => {
   const compact = (product: ProductSummary) =>
     normalize(render(createElement(ProductCard, { product, headingLevel: 3, variant: "compact" })));
 
-  it("shows the family on the image, the brand with the default size, title and price", () => {
+  it("shows the family on the image, the brand, title and price", () => {
     const html = compact(PRODUCT);
 
     expect(html).toMatch(/<span class="absolute[^"]*">Chypre<\/span>/);
-    expect(html).toContain("Chanel · 7 ml");
+    expect(html).toMatch(/<p class="[^"]*">Chanel<\/p>/);
     expect(html).toMatch(/<h3[^>]*><a[^>]*>Coco Mademoiselle Eau de Parfum<\/a><\/h3>/);
     expect(html).toContain("from ₴990");
     expect(html).toContain("card-tilt");
     expect(html).toContain("data-zoom");
-    expect(html).not.toMatch(chooseVolume);
+  });
+
+  it("names a single size next to the brand", () => {
+    expect(compact(SINGLE)).toContain("Chanel · 50 ml");
   });
 
   it("leaves the family badge out when the product has none", () => {
     expect(compact({ ...PRODUCT, fragranceFamily: null })).not.toContain("Chypre");
   });
 
-  it("quick-adds the default variant with a round + button named after the product", () => {
+  it("has the same size picker as the catalog card", () => {
+    const form = formOf(compact(PRODUCT));
+
+    expect(radios(form)).toHaveLength(3);
+    expect(radios(form)[0]).toContain('checked=""');
+    expect(radios(form)[2]).toContain('disabled=""');
+    expect(form).not.toContain('type="hidden" name="variantId"');
+  });
+
+  it("quick-adds the picked size with a round + button named after the product", () => {
     const html = compact(PRODUCT);
 
     expect(formTag(html)).toContain('action="/cart"');
-    expect(html).toContain(`name="variantId" value="${VARIANT_ID}"`);
-    expect(buttonTag(html)).toContain(
-      'aria-label="Add Coco Mademoiselle Eau de Parfum, 7 ml, to cart"',
-    );
+    expect(buttonTag(html)).toContain('aria-label="Add Coco Mademoiselle Eau de Parfum to cart"');
     expect(buttonTag(html)).toContain("quick-add");
     expect(html).toContain('<span aria-hidden="true">+</span>');
+    expect(compact(SINGLE)).toContain(`type="hidden" name="variantId" value="${VARIANT_ID}"`);
   });
 
   it("disables the quick add when the product is out of stock", () => {

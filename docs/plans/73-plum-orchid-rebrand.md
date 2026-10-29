@@ -146,7 +146,8 @@ follows.
 ## Steps
 
 - [ ] **1. Canvas artboards** — Read the canvas artifact; add recoloured copies of `HomeBoldPlus`
-  and `ProductPlus` to the "Chosen direction" row with the new tokens and a tweak switching
+  and `ProductPlus` to the "Chosen direction" row, starting from #72's white-header versions of
+  them (#72 updates `HomeBoldPlus`), with the new tokens and a tweak switching
   Playfair Display / Cormorant Garamond; show the Q3 spots (cookie banner buttons, contacts →
   footer) and orchid uses (Q4). Republish to the same URL.
 - [ ] **2. Owner approval (gate)** — Stop and ask the owner to approve palette, serif, heading

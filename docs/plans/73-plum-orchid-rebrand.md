@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/73
 Branch: `issue/73`
 Worktree: `.claude/worktrees/issue-73`
-Status: Planned
+Status: Planned (open questions answered 2026-10-29)
 
 ## Goal
 
@@ -54,7 +54,7 @@ follows.
   the "≥3:1 on light surfaces" criterion. Switch both to `outline-primary` (11.11:1).
 - **Shadows follow the tokens:** `--shadow-button*` tint `rgb(194 47 75)` → plum `rgb(111 23 71)`;
   the `lift` utility's ink tint `rgb(31 26 28)` → `rgb(69 42 61)`.
-- **Serif** (**unconfirmed**, Q2): Playfair Display 600–700, Cyrillic + Latin, from Google Fonts.
+- **Serif** (Q2): Playfair Display 600–700, Cyrillic + Latin, from Google Fonts.
   `--font-serif: "Playfair Display", Georgia, serif;` next to `--font-sans`. The css2 API serves
   every subset (Cyrillic, Latin, …) as separate `unicode-range` files automatically, so the URL only
   needs `family=Playfair+Display:wght@600..700&display=swap`; the browser downloads only the
@@ -76,37 +76,25 @@ follows.
   `tracking-[-0.01em]`, values tuned on the canvas (**unconfirmed** until approval). Applied as a
   mechanical sweep (`rg "<h[1-3][^>]*font-extrabold"` and the wordmark/number classes); body and
   button `font-extrabold` stay.
-- **Orchid `accent`** (**unconfirmed**, Q3) is decorative only: the marquee ✦
+- **Orchid `accent`** (Q4, to be judged on the canvas) is decorative only: the marquee ✦
   (`OfferMarquee.tsx:42`), the hero price badge background with ink or large white text (≥24px, or
   18.66px bold), and the hero/About image placeholder tints. Never behind normal-size white text,
   never as small text. Everything else that is `primary-light` today keeps that token.
 - **Copy:** no i18n changes. Email templates (#45) stay plain text. The Strapi admin's look is out
   of scope.
 
-## Open questions
-
-- [ ] **Q1: Who adds the canvas artboards, and do we block on approval?** — Why it matters:
-  acceptance criterion 1 requires the owner's approval before the token change. Recommended
-  default: `/implement 73` starts with step 1 (add `HomeBoldPlus` + `ProductPlus` recoloured
-  copies with a Playfair/Cormorant tweak to the "Chosen direction" row), then **stops** and asks
-  the owner to approve; steps 3+ run only after approval. Affects steps: 1, 2.
-- [ ] **Q2: Playfair Display or Cormorant Garamond?** — Why it matters: the font URL, the
-  `--font-serif` stack, and heading weights (Cormorant tops out at 700 and runs smaller, so
-  headings may need one size step up). Recommended default: Playfair Display 600–700. Affects
-  steps: 2, 5, 6, 7.
-- [ ] **Q3: Plum (`primary`) and aubergine (`ink`) are almost the same lightness (1.14:1).** — Why
-  it matters: a `dark` button next to a `primary` one (e.g. cookie banner "Accept"/"Decline", the
-  offers empty state) and an `ink` section directly above the plum footer (home `ContactsSection`)
-  will barely look different, and the `dark` button's `hover:bg-black` reads off-brand.
-  Recommended default: keep the issue's roles; check those spots on the canvas, and if they blur,
-  give the `dark` variant `hover:bg-primary-dark` and separate adjacent plum/aubergine bands with a
-  white/blush gap. No token changes. Affects steps: 1, 4, 8.
-- [ ] **Q4: Which elements get orchid?** — Why it matters: the issue lists only examples
-  ("badges, ✦, illustrations, hover glow"). Recommended default: the marquee ✦, the hero price
-  badge and the image placeholder tints as above; no hover glow (it would need a new utility,
-  and new components are out of scope). Affects steps: 1, 8.
-
 ## Resolved questions
+
+- **Q1: Who adds the canvas artboards, and do we block on approval?** — `/implement 73` adds
+  them (step 1) and then stops for the owner's approval (step 2); code steps start only after it.
+  (source: owner, 2026-10-29)
+- **Q2: Playfair Display or Cormorant Garamond?** — Playfair Display 600–700, the default; the
+  canvas still shows Cormorant as a tweak for comparison. (source: owner, 2026-10-29)
+- **Q3: Plum and aubergine are nearly the same lightness (1.14:1).** — Keep the issue's roles;
+  check the spots on the canvas, and if they blur give the `dark` button `hover:bg-primary-dark`
+  and separate adjacent plum/aubergine bands with a white/blush gap. (source: owner, 2026-10-29)
+- **Q4: Which elements get orchid?** — Try the default: marquee ✦, hero price badge, image
+  placeholder tints, no hover glow; judged on the canvas in step 2. (source: owner, 2026-10-29)
 
 - **Does a token change reach every page?** — Yes: pages use `bg-primary`, `text-ink`, … and the
   only raw hex in `app/` outside `app.css` is the flag icons in `components/layout/icons.tsx`
@@ -175,7 +163,7 @@ follows.
   prominent prices. Update `consent-ui.test.ts:39` and any other test that pins those classes.
 - [ ] **8. Accents and fixes** — Orchid on the elements approved in step 2 (default: marquee ✦,
   hero badge, image placeholder tints), checking each against the accent rules. Switch
-  `TextField`/`PaymentMethodField` focus rings to `outline-primary`. If Q3 says so, change the
+  `TextField`/`PaymentMethodField` focus rings to `outline-primary`. If plum and aubergine blur on the canvas (Q3), change the
   `dark` button hover to `primary-dark` and update `button-styles.test.ts`. Grep `app/` for the old
   values (`c22f4b|a8233d|ff8fa1|1f1a1c|194 47 75|31 26 28`) and comments that say "deep pink"
   (e.g. `nav.ts`, `button-styles.ts`), and update them.

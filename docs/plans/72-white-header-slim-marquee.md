@@ -64,7 +64,9 @@ header turns white with `ink` text, the home marquee gets about half as tall and
     item styles, no separate button.
   - All focus rings: `focusRing("onLight")` (`primary` ring, 5.52:1 on white, 5.13:1 on `blush`).
 - **Mobile menu panel / catalog dropdown:** already `bg-white text-ink`. Add `border-t border-line`
-  to the mobile panel so it reads as separate from the now-white bar; keep the dropdown's shadow.
+  to the mobile panel so it reads as separate from the now-white bar. The dropdown keeps its shadow
+  and also gets a `border border-line` (implemented), since it now opens over a white bar and often
+  a white page.
 - **Marquee:** `py-2` and `text-base md:text-lg font-extrabold` (from `py-4.5`, `text-xl/md:text-2xl`),
   gap reduced to `gap-8 pr-8` to match the smaller type (final size checked with the
   owner on the running page). Items: the trio offer (when `trioOffer` exists) and
@@ -137,14 +139,14 @@ header turns white with `ink` text, the home marquee gets about half as tall and
   option. Rewrite the `NavTone` doc: `onPrimary` = the deep-pink footer and hero bands, `onLight` =
   the white header and its panels. Keep `"onPrimary"` defaults for `Footer.tsx`. Check: footer tests
   still pass unchanged.
-- [ ] **2. White header** — In `Header.tsx`: `<header className="sticky top-0 z-40 border-b
+- [x] **2. White header** — In `Header.tsx`: `<header className="sticky top-0 z-40 border-b
   border-line bg-white text-ink">`; wordmark `text-ink` + `focusRing("onLight")`, dot
   `text-primary`; bar links `navItemClasses(isActive, "onLight", { underline: true })` (About and
   Contacts with `false`); `LocaleSwitcher tone="onLight"`; logged-in profile
   `bg-primary text-white hover:bg-primary-dark`, logged-out `iconButtonClasses(isActive, "onLight")`;
   cart pill `bg-primary text-white hover:bg-primary-dark` with `focusRing("onLight")`. Only token
   classes. Check in the dev server that the header separates from the hero.
-- [ ] **3. Catalog dropdown and mobile menu** — `CatalogMenu` summary uses the `onLight` bar style
+- [x] **3. Catalog dropdown and mobile menu** — `CatalogMenu` summary uses the `onLight` bar style
   (underline when `inCatalog`); `MobileMenu` summary `iconButtonClasses(false, "onLight")`, panel
   gets `border-t border-line`. Check the menu at 375px: opens below the bar, no horizontal scroll.
 - [ ] **4. Marquee** — In `OfferMarquee.tsx`: props `{ trioOffer: TrioOffer | null }`; items =

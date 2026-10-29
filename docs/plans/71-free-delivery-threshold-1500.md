@@ -104,7 +104,7 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
   `amount`. In `checkout-ui.test.ts`, rename the "1000 UAH" tests to 1500 and use realistic
   amounts (e.g. subtotal `"1499.99"`, remaining `"0.01"`). Assert the English hint contains
   `₴1,500`, and add a Ukrainian assertion.
-- [ ] **4. Update Strapi seed and fixtures.** — `cms/scripts/seed.ts:440-441`: «Новою Поштою від
+- [x] **4. Update Strapi seed and fixtures.** — `cms/scripts/seed.ts:440-441`: «Новою Поштою від
   1500 ₴» / "With Nova Poshta from 1500 ₴". Make the same change at line 9 of
   `app/.server/cms/__fixtures__/offers.json` and `offers.en.json`. Leave the gift-guide "1000 ₴"
   alone. In `offers-ui.test.ts`, update the perk summary and the assertion to 1500 ₴. Run

@@ -162,7 +162,7 @@ header turns white with `ink` text, the home marquee gets about half as tall and
   375px width.
 - [x] **6. About photo** — In `AboutSection.tsx`: `photoFrame` `h-96 … flex-[1_1_28rem] … md:h-136`,
   `sizes="(min-width: 768px) 640px, 100vw"`. Check at 375px and desktop.
-- [ ] **7. Design doc** — In `docs/design.md`: `primary` row no longer lists "sticky header";
+- [x] **7. Design doc** — In `docs/design.md`: `primary` row no longer lists "sticky header";
   replace "The header and footer are always deep pink." with "The header is white (`bg-white`,
   `ink` text, `line` bottom border, `primary-dark` active/hover, `primary` cart pill); the footer is
   deep pink."; wordmark dot is `primary` on white and `primary-light` on dark/pink; focus-ring table:

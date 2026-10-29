@@ -265,7 +265,7 @@ export const en = {
     },
     subtotal: "Subtotal",
     total: "Total",
-    deliveryNote: "Delivery is calculated at checkout.",
+    deliveryNote: "Free Nova Poshta delivery from {threshold}.",
     promo: {
       label: "Promo code",
       apply: "Apply",
@@ -329,7 +329,7 @@ export const en = {
     shipping: "Delivery",
     shippingFree: "Free",
     shippingCarrierRate: "Nova Poshta rates, paid on delivery",
-    freeShippingHint: "Add {amount} more for free delivery.",
+    freeShippingHint: "Add {amount} more for free delivery (from {threshold}).",
     total: "Total",
     submit: "Place order",
     errors: {

@@ -1,6 +1,7 @@
 import { useFetchers } from "react-router";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import type { CartView } from "~/lib/cart";
+import { FREE_SHIPPING_THRESHOLD } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
 import { discountLabel } from "~/lib/discounts";
 import { createTranslator, type Translator, useT } from "~/lib/i18n";
@@ -65,7 +66,9 @@ export function CartSummary({ cart }: { cart: CartView }) {
         )}
       </dl>
       <PromoCodeForm promo={cart.promo} />
-      <p className="text-sm text-muted">{t("cart.deliveryNote")}</p>
+      <p className="text-sm text-muted">
+        {t("cart.deliveryNote", { threshold: formatPrice(FREE_SHIPPING_THRESHOLD) })}
+      </p>
       <ButtonLink to="/checkout" size="lg" className="w-full">
         {t("cart.checkout")}
       </ButtonLink>

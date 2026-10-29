@@ -147,6 +147,7 @@ describe("CartSummary", () => {
     expect(html).toContain("2 items");
     expect(html).toContain("₴13,700");
     expect(html).toMatch(/<a[^>]*href="\/checkout"[^>]*>Proceed to checkout<\/a>/);
+    expect(html).toContain("Free Nova Poshta delivery from ₴1,500.");
   });
 });
 
@@ -195,6 +196,7 @@ describe("CartSummary with a discount (#59)", () => {
     expect(html).toContain("−79 ₴");
     expect(html).toContain("До сплати");
     expect(html).toContain("Промокод JASSMIN10 застосовано.");
+    expect(html).toContain("Безкоштовна доставка Новою Поштою від 1 500 ₴.");
   });
 });
 

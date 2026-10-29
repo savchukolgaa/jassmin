@@ -93,13 +93,13 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
   "1500.00"`. In `app/lib/checkout.test.ts`, update `freeShippingInfo`: `"1500.00"` → free,
   `"1499.99"` → `{ free: false, remaining: "0.01" }`, `"0.00"` → `remaining: "1500.00"`. Run
   `pnpm test app/lib/checkout.test.ts`.
-- [ ] **2. Show the threshold in the cart.** — Add `{threshold}` to `cart.deliveryNote` in `uk.ts`
+- [x] **2. Show the threshold in the cart.** — Add `{threshold}` to `cart.deliveryNote` in `uk.ts`
   and `en.ts`. In `CartSummary.tsx`, call `t("cart.deliveryNote", { threshold:
   formatPrice(FREE_SHIPPING_THRESHOLD) })`, importing the constant from `~/lib/checkout`
   (isomorphic, so the client can import it). In `cart-ui.test.ts`, assert "1 500 ₴" (uk, matching
   whitespace with a regex or `normalize` as in `translator.test.ts`) and "₴1,500" (en inside
   `<I18nProvider locale="en">`).
-- [ ] **3. Show the threshold at checkout.** — Add `{threshold}` to `checkout.freeShippingHint`
+- [x] **3. Show the threshold at checkout.** — Add `{threshold}` to `checkout.freeShippingHint`
   (uk, en). In `OrderSummary.tsx`, pass `threshold: formatPrice(FREE_SHIPPING_THRESHOLD)` with
   `amount`. In `checkout-ui.test.ts`, rename the "1000 UAH" tests to 1500 and use realistic
   amounts (e.g. subtotal `"1499.99"`, remaining `"0.01"`). Assert the English hint contains

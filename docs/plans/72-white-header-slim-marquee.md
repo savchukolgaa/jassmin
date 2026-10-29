@@ -62,13 +62,13 @@ header turns white with `ink` text, the home marquee gets about half as tall and
 - **Mobile menu panel / catalog dropdown:** already `bg-white text-ink`. Add `border-t border-line`
   to the mobile panel so it reads as separate from the now-white bar; keep the dropdown's shadow.
 - **Marquee:** `py-2` and `text-base md:text-lg font-extrabold` (from `py-4.5`, `text-xl/md:text-2xl`),
-  gap reduced to `gap-8 pr-8` to match the smaller type **(unconfirmed, final size checked with the
-  owner on the running page)**. Items: the trio offer (when `trioOffer` exists) and
+  gap reduced to `gap-8 pr-8` to match the smaller type (final size checked with the
+  owner on the running page). Items: the trio offer (when `trioOffer` exists) and
   `home.marquee.freeDelivery` with `formatPrice(FREE_SHIPPING_THRESHOLD)`. Since free delivery is
   always present, the "nothing to say → `null`" branch goes away.
 - **Marquee fill:** with only two short items, one copy of the track is narrower than a wide
   viewport, which would leave an empty stretch before the loop restarts. Repeat the items inside
-  each copy a fixed number of times (`const REPEAT = 4`, see Q1) so a copy is wider than ~1600px.
+  each copy a fixed number of times (`const REPEAT = 4`, Q1) so a copy is wider than ~1600px.
   The 26s duration and the `animate-marquee`/`marquee-pause` utilities are unchanged (speed and
   animation are out of scope). Keys become index-based since items repeat.
 - **`labelTrioFamilies` stays** in `app/lib/trio.ts`: `TrioBuilder.tsx` still uses it. Only the
@@ -79,24 +79,17 @@ header turns white with `ink` text, the home marquee gets about half as tall and
   same relative wrapper, so they keep their place relative to the image.
 - **About photo:** frame `h-96 md:h-136` (24rem / 34rem) and `flex-[1_1_28rem]` (from `h-80 md:h-115`,
   `24rem`), `sizes="(min-width: 768px) 640px, 100vw"`.
-- **Design canvas (`HomeBoldPlus`)** is updated with the owner, outside the code (see Q3).
-
-## Open questions
-
-- [ ] **Q1: Marquee density and repeat count.** — Why it matters: two items at `text-lg` are about
-  700px per pass; without repeats the band shows a gap on desktop, and the repeat count also sets
-  the effective scroll speed (px/s) because the duration stays 26s. Recommended default: `py-2`,
-  `text-base`/`md:text-lg`, items repeated 4× per copy, tuned on the running page with the owner.
-  Affects steps: 4.
-- [ ] **Q2: Bottom border or shadow for the white header?** — Why it matters: on white pages
-  (catalog, cart, product) the sticky header needs some edge while scrolling. Recommended default:
-  `border-b border-line` only; add `shadow-sm` if the owner finds it too flat. Affects steps: 2.
-- [ ] **Q3: Who updates the design canvas's `HomeBoldPlus` header?** — Why it matters: later pages
-  are built from the canvas; the issue says "with the owner". Recommended default: the code and
-  `docs/design.md` change in this PR; the canvas is updated by the owner (or in a follow-up session
-  with canvas access) and the PR description notes it. Affects steps: 7.
+- **Design canvas (`HomeBoldPlus`)** is updated with the owner, outside the code (Q3).
 
 ## Resolved questions
+
+- **Q1: Marquee density and repeat count?** — `py-2`, `text-base`/`md:text-lg`, items repeated 4×
+  per copy; fine-tuned on the running page with the owner (source: owner, 2026-10-29).
+- **Q2: Bottom border or shadow for the white header?** — `border-b border-line` only; `shadow-sm`
+  only if the owner later finds it too flat (source: owner, 2026-10-29).
+- **Q3: Who updates the design canvas's `HomeBoldPlus` header?** — The code and `docs/design.md`
+  change in this PR; the owner updates the canvas, and the PR description notes it (source: owner,
+  2026-10-29).
 
 - **Is the "Popular" button a separate component?** — No, it's the `BESTSELLERS_LINK` NavLink
   labelled "Bestsellers" (source: `app/components/layout/nav.ts`, `Header.tsx`, #67).

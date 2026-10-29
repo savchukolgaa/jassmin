@@ -83,6 +83,19 @@ follows.
 - **Copy:** no i18n changes. Email templates (#45) stay plain text. The Strapi admin's look is out
   of scope.
 
+- **Canvas artboards (step 1, done 2026-10-29):** `HomeRebrand.dc.html` and
+  `ProductRebrand.dc.html` at the end of the "Chosen direction" row (canvas version 33). #72 hadn't
+  updated `HomeBoldPlus` yet, so they draw #72's white header themselves (white bar, `line` border,
+  `ink` links, plum wordmark dot, plum cart pill). Tweaks: `serif` (Playfair Display / Cormorant
+  Garamond), `lang` (uk / en, real `uk.ts` headings to check Cyrillic) and, on home, `heroCta`
+  (aubergine `dark` button vs white, for Q3). The Unisex tile and footer link are dropped (no
+  Unisex catalog). Headings, wordmarks, step numbers, card titles and prices are serif 700 with
+  `-0.01em` tracking (`0` for Cormorant).
+- **Deviation: the hero badge uses orchid as *text*, not background.** Orchid behind the badge's
+  small "only"/"for 3" labels would fail (white 4.14:1, ink 3.07:1), so the badge stays white and
+  its 44px serif price is orchid (4.14:1, passes as large text). Orchid also fills the hero and
+  product image placeholders, with the placeholder label on a white pill.
+
 ## Resolved questions
 
 - **Q1: Who adds the canvas artboards, and do we block on approval?** — `/implement 73` adds
@@ -133,7 +146,7 @@ follows.
 
 ## Steps
 
-- [ ] **1. Canvas artboards** — Read the canvas artifact; add recoloured copies of `HomeBoldPlus`
+- [x] **1. Canvas artboards** — Read the canvas artifact; add recoloured copies of `HomeBoldPlus`
   and `ProductPlus` to the "Chosen direction" row, starting from #72's white-header versions of
   them (#72 updates `HomeBoldPlus`), with the new tokens and a tweak switching
   Playfair Display / Cormorant Garamond; show the Q3 spots (cookie banner buttons, contacts →

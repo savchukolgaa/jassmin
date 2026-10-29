@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/72
 Branch: `issue/72`
 Worktree: `.claude/worktrees/issue-72`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -169,7 +169,7 @@ header turns white with `ink` text, the home marquee gets about half as tall and
   deep pink row becomes "footer, hero bands", white row adds "header"; `focusRing` note says the
   header uses `"onLight"`; marquee motion row says "offers banner (trio, free delivery)". Note in
   the PR that the canvas's `HomeBoldPlus` header needs the same change (Q3).
-- [ ] **8. Tests** — see below; then run the full check set.
+- [x] **8. Tests** — see below; then run the full check set.
 
 ## Testing & verification
 
@@ -182,9 +182,10 @@ header turns white with `ink` text, the home marquee gets about half as tall and
   - Cart pill `rounded-pill … bg-primary … text-white`.
   - Focus rings: cart, wordmark and locale buttons use `focus-visible:outline-primary`; the header
     contains no `focus-visible:outline-white`.
-  - No hex/arbitrary colour in the header markup: `not.toMatch(/(bg|text|border|outline)-\[#/)`.
+  - No hex/arbitrary colour in the header's class names (implemented over `class` attributes
+    only: the flag icons' SVG fills are hex, and those are the flags' own colours).
 - `app/components/layout/Footer.test.ts`: unchanged, still passes (footer stays pink).
-- `app/theme.test.ts`: a `describe("header (white)")` listing the pairs the header relies on —
+- `app/theme.test.ts`: a `describe("white header")` listing the pairs the header relies on —
   `ink`/white, `primary-dark`/white, `primary-dark`/`blush`, white/`primary`, white/`primary-dark`
   (4.5:1) and `primary` ring on white and `blush` (3:1) — so #73's new tokens are checked against
   the header.
@@ -205,17 +206,18 @@ header turns white with `ink` text, the home marquee gets about half as tall and
 
 ## Acceptance criteria
 
-- [ ] The header is white with dark text on every page, and on the home page it's clearly separate
+- [x] The header is white with dark text on every page, and on the home page it's clearly separate
   from the deep-pink hero — steps 2, 3
-- [ ] Every header element (links, active link, Popular button, cart, locale switcher, mobile menu)
+- [x] Every header element (links, active link, Popular button, cart, locale switcher, mobile menu)
   passes WCAG AA contrast and has a visible focus ring — steps 1, 2, 3, 8
-- [ ] The marquee is noticeably thinner and shows only offers: the tester trio (when the rule
+- [x] The marquee is noticeably thinner and shows only offers: the tester trio (when the rule
   exists) and free delivery from the current threshold — step 4
-- [ ] No fragrance families appear in the marquee — steps 4, 8
+- [x] No fragrance families appear in the marquee — steps 4, 8
 - [ ] The hero image and the About us photo are visibly larger on desktop and phone, with no
-  horizontal scroll at 375px — steps 5, 6
-- [ ] `docs/design.md` describes the white header — step 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 8
+  horizontal scroll at 375px — steps 5, 6. The larger frames and `sizes` are in place and tested;
+  **not yet checked in a browser at 375px** (manual check with the owner)
+- [x] `docs/design.md` describes the white header — step 7
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 8
 
 ## Out of scope
 

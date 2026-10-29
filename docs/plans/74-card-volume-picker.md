@@ -215,7 +215,7 @@ Each step is small, ordered, and leaves the app in a working state.
   the compact card gets the same picker and keeps the "+". Add `cardPrice` cases to
   `app/lib/products.test.ts` (selected size, unknown id falls back to the default). Update the
   home, popular and offers UI tests that asserted "Add 7 ml" or "Chanel · 7 ml".
-- [ ] **9. DOM tests (jsdom + Testing Library)** — `pnpm add -D jsdom @testing-library/react
+- [x] **9. DOM tests (jsdom + Testing Library)** — `pnpm add -D jsdom @testing-library/react
   @testing-library/dom @testing-library/user-event` in the worktree root. Create
   `app/features/catalog/ProductCard.dom.test.ts` with `// @vitest-environment jsdom`, rendering
   the card inside `I18nProvider` and a memory router with a `/cart` action that stores the

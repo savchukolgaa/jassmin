@@ -175,7 +175,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `volumeLegend: "Об’єм"` / `"Volume"` and `outOfStockSize: "немає в наявності"` /
   `"out of stock"`; change `quickAdd` to `"Додати {title} у кошик"` / `"Add {title} to cart"`
   (Q1); remove `addSize` and `chooseVolume` once step 6 no longer uses them.
-- [ ] **5. `js` class on `<html>`** — In `app/root.tsx` add
+- [x] **5. `js` class on `<html>`** — In `app/root.tsx` add
   `<script dangerouslySetInnerHTML={{ __html: 'document.documentElement.classList.add("js")' }} />`
   as the first child of `<head>` (with a comment pointing at the card price skeleton) and
   `suppressHydrationWarning` on `<html>`. Check in the browser that `<html class="js">` is set and

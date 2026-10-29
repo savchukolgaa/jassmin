@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/71
 Branch: `issue/71`
 Worktree: `.claude/worktrees/issue-71`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a store owner, I want free Nova Poshta delivery to start at 1500 ₴ instead of 1000 ₴, so that
@@ -127,7 +127,7 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
 - [x] **8. Docs and sweep.** — Change the threshold in `app/.server/AGENTS.md` (Orders) to 1500
   UAH. Grep for leftovers: `rg -n "1000 ?(₴|UAH)|1 000|from 1000|від 1000" app cms/scripts
   README.md docs`. Only the gift-guide band and unrelated numbers (image widths, ms) should remain.
-- [ ] **9. Verify.** — `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
+- [x] **9. Verify.** — `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
 
 ## Testing & verification
 - Unit: `freeShippingInfo` at 1499.99 / 1500.00 (step 1). `priceCart` at 1499.99 / 1500 and with
@@ -143,10 +143,15 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
   hand.
 
 ## Acceptance criteria
-- [ ] An order whose subtotal minus discount is below 1500 ₴ pays delivery; at 1500 ₴ or more delivery is free — steps 1, 5, 6, 7
-- [ ] The cart, checkout and offers page show 1500 ₴, in Ukrainian and English — steps 2, 3, 4
-- [ ] No user-facing text or seed content still says 1000 ₴ for free delivery — steps 4, 8
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+- [x] An order whose subtotal minus discount is below 1500 ₴ pays delivery; at 1500 ₴ or more delivery is free — steps 1, 5, 6, 7
+- [x] The cart, checkout and offers page show 1500 ₴, in Ukrainian and English — steps 2, 3, 4
+- [x] No user-facing text or seed content still says 1000 ₴ for free delivery — steps 4, 8
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+
+Verification note: every test passes (1186 passed, 1 skipped). With the full parallel run, one
+DB suite sometimes fails in `afterAll` because `testDb.drop()` passes the 10 s hook timeout. The
+failing suite changes between runs (e.g. `products.test.ts`), each passes on its own, and none of
+them is touched by this branch.
 
 ## Out of scope
 - Delivery prices themselves and other perks.

@@ -48,8 +48,11 @@ export const EVENT_TYPES = [
 
 export type EventType = (typeof EVENT_TYPES)[number];
 
-/** Bottle sizes a perfume can be sold in, ascending: decants/samples (7, 10 ml) to full bottles. */
-export const PERFUME_VOLUMES_ML = [7, 10, 30, 50, 100] as const;
+/**
+ * Bottle sizes a perfume can be sold in, ascending: samples (5 ml), testers (10 ml) and full
+ * bottles. 7 ml was dropped in #66.
+ */
+export const PERFUME_VOLUMES_ML = [5, 10, 30, 50, 100] as const;
 
 export type PerfumeVolumeMl = (typeof PERFUME_VOLUMES_ML)[number];
 

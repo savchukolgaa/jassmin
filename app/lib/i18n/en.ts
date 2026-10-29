@@ -631,9 +631,9 @@ export const en = {
     title: "Popular perfumes",
     metaTitle: "Popular perfumes",
     metaDescription:
-      "The scents Jassmin customers come back for most, picked by our team, in sizes from 7 ml.",
+      "The scents Jassmin customers come back for most, picked by our team, in sizes from 5 ml.",
     intro:
-      "The scents our customers come back for, picked by the Jassmin team. Every one comes in sizes from 7 ml.",
+      "The scents our customers come back for, picked by the Jassmin team. Every one comes in sizes from 5 ml.",
     yourTrio: "Your trio:",
     chosenFamilies: "Chosen fragrance families",
     removeFamily: "Remove {family}",

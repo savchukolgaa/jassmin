@@ -54,7 +54,7 @@ describe("enum values", () => {
   });
 
   it("lists the perfume volumes in ascending order", () => {
-    expect(PERFUME_VOLUMES_ML).toEqual([7, 10, 30, 50, 100]);
+    expect(PERFUME_VOLUMES_ML).toEqual([5, 10, 30, 50, 100]);
   });
 
   it("lists the user roles", () => {

@@ -506,7 +506,7 @@ describe("toOffer", () => {
       slug: "tester-trio",
       kind: "discovery-set",
       title: "Тестерне тріо",
-      priceNote: "3 × 7 мл — від 499 ₴",
+      priceNote: "3 × 10 мл — 499 ₴",
       ctaLabel: "Зібрати тріо",
       ctaUrl: "/catalog/women",
       sortOrder: 10,

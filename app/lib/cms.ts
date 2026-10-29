@@ -139,7 +139,7 @@ export interface Offer {
   startsAt: string | null;
   /** UTC ISO 8601 timestamp, exclusive; `null` when the offer doesn't end. */
   endsAt: string | null;
-  /** Editorial price text such as "3 × 7 мл — 499 ₴"; checkout doesn't apply it. */
+  /** Editorial price text such as "3 × 10 мл — 499 ₴"; checkout doesn't apply it. */
   priceNote: string | null;
   /** `public_id`s of shop products (UUIDs), in the editor's order, without duplicates. */
   productIds: string[];

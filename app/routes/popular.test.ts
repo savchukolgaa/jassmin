@@ -78,7 +78,7 @@ describe("popular meta", () => {
     expect(tags).toContainEqual({
       name: "description",
       content:
-        "The scents Jassmin customers come back for most, picked by our team, in sizes from 7 ml.",
+        "The scents Jassmin customers come back for most, picked by our team, in sizes from 5 ml.",
     });
   });
 

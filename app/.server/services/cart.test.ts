@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
-// Coco Mademoiselle (seed data): 7 ml in stock 10, 30 ml in stock 3, 10 ml sold out.
+// Coco Mademoiselle (seed data): 5 ml in stock 10, 30 ml in stock 3, 10 ml sold out.
 const COCO = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 // Sauvage (seed data): 10 ml at 790 ₴, 15 in stock.
 const SAUVAGE = "01a1652b-6e25-7c44-8d5b-bce46a20ad83";
@@ -83,11 +83,11 @@ describe.skipIf(!hasDatabase)("cart service", () => {
   it("creates one guest cart tied to the session and adds up repeated adds", async () => {
     const cart = await import("./cart");
     const visitor = await guest();
-    const small = await variant(7);
+    const small = await variant(5);
 
     const added = (quantityDelta: number) => ({
       ok: true,
-      change: { productId: small.productId, volumeMl: 7, quantityDelta },
+      change: { productId: small.productId, volumeMl: 5, quantityDelta },
     });
     expect(await cart.addItem(visitor, small, 1, testDb.db)).toEqual(added(1));
     expect(await cart.addItem(visitor, small, 2, testDb.db)).toEqual(added(2));
@@ -101,7 +101,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       expect.objectContaining({
         variantId: small.publicId,
         productId: COCO,
-        volumeMl: 7,
+        volumeMl: 5,
         unitPrice: "990.00",
         quantity: 3,
         lineTotal: "2970.00",
@@ -114,7 +114,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
   it("keeps a guest's cart when they come back in a new session", async () => {
     const cart = await import("./cart");
     const first = await guest();
-    await cart.addItem(first, await variant(7), 1, testDb.db);
+    await cart.addItem(first, await variant(5), 1, testDb.db);
 
     const later = await guest(first.anonymousId);
 
@@ -151,7 +151,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
   it("updates and removes lines and bumps updated_at on every change", async () => {
     const cart = await import("./cart");
     const visitor = await guest();
-    const small = await variant(7);
+    const small = await variant(5);
     const big = await variant(100);
     await cart.addItem(visitor, small, 1, testDb.db);
     const { carts } = await import("../db/schema");
@@ -170,7 +170,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     expect(await bumps(() => cart.removeItem(visitor, big.publicId, testDb.db))).toBe(true);
 
     const view = await cart.getCartView(visitor, testDb.db);
-    expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([[7, 5]]);
+    expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([[5, 5]]);
     expect(await cart.removeItem(visitor, big.publicId, testDb.db)).toEqual({
       ok: false,
       error: "not-in-cart",
@@ -180,10 +180,10 @@ describe.skipIf(!hasDatabase)("cart service", () => {
   it("reports the units each change added or removed", async () => {
     const cart = await import("./cart");
     const visitor = await guest();
-    const small = await variant(7);
+    const small = await variant(5);
     const change = (quantityDelta: number) => ({
       ok: true,
-      change: { productId: small.productId, volumeMl: 7, quantityDelta },
+      change: { productId: small.productId, volumeMl: 5, quantityDelta },
     });
     await cart.addItem(visitor, small, 2, testDb.db);
 
@@ -197,7 +197,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     const cart = await import("./cart");
     const owner = await guest();
     const stranger = await guest();
-    const small = await variant(7);
+    const small = await variant(5);
     await cart.addItem(owner, small, 1, testDb.db);
     await cart.addItem(stranger, await variant(30), 1, testDb.db);
 
@@ -230,7 +230,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     const cart = await import("./cart");
     const visitor = await guest();
     const userId = await user();
-    await cart.addItem({ ...visitor, userId }, await variant(7), 2, testDb.db);
+    await cart.addItem({ ...visitor, userId }, await variant(5), 2, testDb.db);
 
     expect(await cartRows()).toEqual([
       expect.objectContaining({ userId, sessionId: visitor.sessionId }),
@@ -245,7 +245,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       const cart = await import("./cart");
       const visitor = await guest();
       const userId = await user();
-      await cart.addItem(visitor, await variant(7), 2, testDb.db);
+      await cart.addItem(visitor, await variant(5), 2, testDb.db);
 
       await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
 
@@ -259,7 +259,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       const visitor = await guest();
       const userId = await user();
       const userWriter = { ...(await guest()), userId };
-      const small = await variant(7);
+      const small = await variant(5);
       const thirty = await variant(30);
       const fifty = await variant(50);
       await cart.addItem(userWriter, thirty, 2, testDb.db);
@@ -273,7 +273,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       const view = await cart.getCartView({ userId }, testDb.db);
       expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([
         [30, 3],
-        [7, 1],
+        [5, 1],
         [50, 1],
       ]);
     });
@@ -285,7 +285,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       const visitor = await guest();
       const userId = await user();
       const big = await variant(100);
-      await cart.addItem({ ...(await guest()), userId }, await variant(7), 1, testDb.db);
+      await cart.addItem({ ...(await guest()), userId }, await variant(5), 1, testDb.db);
       await cart.addItem(visitor, big, 1, testDb.db);
       await testDb.db
         .update(productVariants)
@@ -296,7 +296,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
         await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
 
         const view = await cart.getCartView({ userId }, testDb.db);
-        expect(view.lines.map((l) => l.volumeMl)).toEqual([7]);
+        expect(view.lines.map((l) => l.volumeMl)).toEqual([5]);
       } finally {
         await testDb.db
           .update(productVariants)
@@ -308,7 +308,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     it("does nothing without a guest cart", async () => {
       const cart = await import("./cart");
       const userId = await user();
-      await cart.addItem({ ...(await guest()), userId }, await variant(7), 1, testDb.db);
+      await cart.addItem({ ...(await guest()), userId }, await variant(5), 1, testDb.db);
 
       await cart.mergeGuestCart(userId, crypto.randomUUID(), testDb.db);
 
@@ -394,7 +394,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       });
       await insertDiscount({ slug: "big", code: "BIG50ML", scopeVolumesMl: [50] });
       const visitor = await guest();
-      await cart.addItem(visitor, await variant(7), 1, testDb.db);
+      await cart.addItem(visitor, await variant(5), 1, testDb.db);
 
       for (const [code, error] of [
         ["NOPE", "promo-invalid"],
@@ -430,7 +430,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       });
 
       await cart.removeItem(visitor, thirty.publicId, testDb.db);
-      await cart.addItem(visitor, await variant(7), 1, testDb.db);
+      await cart.addItem(visitor, await variant(5), 1, testDb.db);
       expect(await cart.getCartView(visitor, testDb.db)).toMatchObject({
         discount: null,
         total: "990.00",
@@ -445,7 +445,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       const cart = await import("./cart");
       await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
       await insertDiscount({ slug: "other", code: "OTHER5", value: "5" });
-      const small = await variant(7);
+      const small = await variant(5);
 
       const visitor = await guest();
       const userId = await user();
@@ -514,7 +514,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     it("reports whether the locked cart is still active", async () => {
       const cart = await import("./cart");
       const { lockCart } = await import("../db/queries/cart");
-      await cart.addItem(await guest(), await variant(7), 1, testDb.db);
+      await cart.addItem(await guest(), await variant(5), 1, testDb.db);
       const cartId = await onlyCartId();
 
       expect(await testDb.db.transaction((tx) => lockCart(tx, cartId))).toBe(true);
@@ -526,7 +526,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       const cart = await import("./cart");
       const userId = await user();
       const shopper = { ...(await guest()), userId };
-      await cart.addItem(shopper, await variant(7), 2, testDb.db);
+      await cart.addItem(shopper, await variant(5), 2, testDb.db);
       const oldId = await onlyCartId();
       await abandon(oldId);
 
@@ -548,7 +548,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     it("adds to a new cart when the job abandons the cart during an add", async () => {
       const cart = await import("./cart");
       const visitor = await guest();
-      const small = await variant(7);
+      const small = await variant(5);
       await cart.addItem(visitor, small, 1, testDb.db);
       const oldId = await onlyCartId();
 
@@ -556,7 +556,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
 
       expect(result).toEqual({
         ok: true,
-        change: { productId: small.productId, volumeMl: 7, quantityDelta: 2 },
+        change: { productId: small.productId, volumeMl: 5, quantityDelta: 2 },
       });
       const rows = await cartRows();
       expect(rows.find((r) => r.id === oldId)?.status).toBe("abandoned");
@@ -568,7 +568,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     it("doesn't change lines of a cart the job abandons during the change", async () => {
       const cart = await import("./cart");
       const visitor = await guest();
-      const small = await variant(7);
+      const small = await variant(5);
       await cart.addItem(visitor, small, 1, testDb.db);
       const cartId = await onlyCartId();
 
@@ -586,7 +586,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     it("doesn't remove lines of a cart the job abandons during the removal", async () => {
       const cart = await import("./cart");
       const visitor = await guest();
-      const small = await variant(7);
+      const small = await variant(5);
       await cart.addItem(visitor, small, 1, testDb.db);
       const cartId = await onlyCartId();
 

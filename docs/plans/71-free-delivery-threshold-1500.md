@@ -31,17 +31,15 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
   (`cart.deliveryNote`), and checkout only says "Add {amount} more for free delivery"
   (`checkout.freeShippingHint`). To meet "the cart, checkout and offers page show 1500 ₴", we add
   `{threshold}` to both messages:
-  - `cart.deliveryNote`: uk «Безкоштовна доставка Новою Поштою від {threshold}. Решту вартості
-    розрахуємо під час оформлення.» / en "Free Nova Poshta delivery from {threshold}. Any delivery
-    cost is worked out at checkout." **(unconfirmed wording, Q2)**
+  - `cart.deliveryNote`: uk «Безкоштовна доставка Новою Поштою від {threshold}.» / en "Free Nova
+    Poshta delivery from {threshold}." The old "calculated at checkout" sentence is dropped.
   - `checkout.freeShippingHint`: uk «Додайте ще {amount}, щоб доставка була безкоштовною (від
     {threshold}).» / en "Add {amount} more for free delivery (from {threshold})."
-    **(unconfirmed wording, Q2)**
   - Both are filled with `formatPrice(FREE_SHIPPING_THRESHOLD)` from the translator, so the result
     is "1 500 ₴" in uk and "₴1,500" in en.
 - **The offers perk stays editorial Strapi text**, as the issue's Technical section says. In
   `cms/scripts/seed.ts` and `offers*.json`, "від 1000 ₴" / "from 1000 ₴" becomes 1500 ₴. The app
-  doesn't rewrite CMS text. **(unconfirmed, Q1)**
+  doesn't rewrite CMS text.
 - **The seed skips entries that already exist** (`seed.ts:507`), so live Strapi entries aren't
   touched. The PR description must tell staff to edit the `free-delivery` offer (uk and en
   summaries) in the Strapi admin by hand.
@@ -50,20 +48,14 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
 - `cart.test.ts`, listed in the issue, doesn't pin the threshold (its only "1000" is
   `60 * 60 * 1000`). The cart copy is tested in `app/features/cart/cart-ui.test.ts`.
 
-## Open questions
-- [ ] **Q1: Should the offers perk get its number from the constant instead of Strapi text?** — Why
-  it matters: the issue wants every message to read the constant, but the perk summary is CMS
-  copy, so a later threshold change would again mean a seed, fixture and manual Strapi edit. One
-  option is to replace a `{threshold}` token in perk summaries in `app/.server/cms/` before
-  rendering. Recommended default: follow the issue and keep literal "1500 ₴" in Strapi. Affects
-  steps: 4.
-- [ ] **Q2: Wording of the new cart and checkout copy.** — Why it matters: this is shopper-facing
-  copy in two languages. Recommended default: the texts in Decisions above. Affects steps: 2, 3.
-- [ ] **Q3: Should checkout also state the threshold when delivery is already free?** — Why it
-  matters: the hint only shows below the threshold, so a shopper at 1500 ₴ or more sees only
-  "Free". Recommended default: no. "Free" is enough once it applies. Affects steps: 3.
-
 ## Resolved questions
+- **Should the offers perk get its number from the constant instead of Strapi text?** — No. It
+  stays literal "1500 ₴" Strapi text, as the issue says (source: owner, on the plan).
+- **Wording of the new cart and checkout copy?** — The checkout hint uses the wording in Decisions.
+  The cart note keeps only "Free Nova Poshta delivery from {threshold}." without the
+  "calculated at checkout" sentence (source: owner, on the plan).
+- **Should checkout state the threshold when delivery is already free?** — No. "Free" is enough
+  (source: owner, on the plan).
 - **Where is the threshold enforced?** — In `priceCart` (`app/.server/services/pricing.ts:172`) and
   in the `createOrder` SQL (`app/.server/db/queries/orders.ts:106`). Both read
   `FREE_SHIPPING_THRESHOLD`, and the checkout loader uses `freeShippingInfo` from

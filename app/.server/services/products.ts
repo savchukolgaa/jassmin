@@ -1,15 +1,18 @@
 import type { CartActionError } from "~/lib/cart";
 import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib/catalog";
 import { GENDERS, type Gender } from "~/lib/enums";
+import type { PopularPage } from "~/lib/popular";
 import type { CatalogPage, ProductDetail, ProductSummary, ProductVariant } from "~/lib/products";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import {
+  countPopularProducts,
   countProducts,
   findProductByPublicId,
   findVariantForProduct,
   listBestsellers,
   listFilterOptions,
+  listPopularProducts,
   listProductSummariesByPublicIds,
   listProducts,
   listVariantsByProductId,
@@ -105,6 +108,31 @@ export const BESTSELLER_COUNT = 4;
 /** The home page's bestsellers: most units sold, topped up with the newest products (#64). */
 export async function getBestsellers(db: Db = defaultDb): Promise<ProductSummary[]> {
   return (await listBestsellers(db, BESTSELLER_COUNT)).map(toSummary);
+}
+
+/** Cards per page of `/popular`, like the catalog (#67). */
+export const POPULAR_PAGE_SIZE = CATALOG_PAGE_SIZE;
+
+/**
+ * One page of `/popular` (#67): every listed product staff ranked, in their order, narrowed to
+ * `families` (any of them) when given. When fewer than a page are ranked, the best-selling
+ * unranked products fill the first page, so it is never empty while products are listed; the list
+ * never grows into the whole catalog. A page past the end shows the last one.
+ */
+export async function getPopularPage(
+  families: readonly string[],
+  page: number,
+  db: Db = defaultDb,
+): Promise<PopularPage> {
+  const filters = { fragranceFamilies: families };
+  const { ranked, listed } = await countPopularProducts(db, filters);
+  const total = Math.max(ranked, Math.min(POPULAR_PAGE_SIZE, listed));
+  const pageCount = Math.max(1, Math.ceil(total / POPULAR_PAGE_SIZE));
+  const current = Math.min(Math.max(1, page), pageCount);
+  const offset = (current - 1) * POPULAR_PAGE_SIZE;
+  const limit = Math.min(POPULAR_PAGE_SIZE, total - offset);
+  const rows = limit > 0 ? await listPopularProducts(db, filters, { limit, offset }) : [];
+  return { products: rows.map(toSummary), total, page: current, pageCount };
 }
 
 /**

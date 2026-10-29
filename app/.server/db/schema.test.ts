@@ -117,6 +117,7 @@ describe("products", () => {
       fragranceFamilies: ["text[]", true, true],
       notes: ["text[]", true, true],
       storeCode: ["varchar(20)", false, false],
+      popularRank: ["integer", false, false],
       description: ["text", false, false],
       price: ["numeric(10, 2)", true, false],
       volumeMl: ["integer", true, false],
@@ -135,6 +136,7 @@ describe("products", () => {
     expect(checks.map((c) => c.name).sort()).toEqual([
       "products_fragrance_family_primary_check",
       "products_pack_size_check",
+      "products_popular_rank_check",
       "products_stock_quantity_check",
     ]);
     expect(columns.find((c) => c.name === "publicId")?.isUnique).toBe(true);

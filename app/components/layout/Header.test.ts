@@ -31,6 +31,7 @@ describe("Header", () => {
     const positions = [
       ">About us<",
       ">Catalog<",
+      ">Bestsellers<",
       ">Offers<",
       ">Contacts<",
       'aria-label="Log in"',
@@ -48,6 +49,7 @@ describe("Header", () => {
       "/#about",
       "/catalog/men",
       "/catalog/women",
+      "/popular",
       "/offers",
       "/#contacts",
       "/cart",
@@ -63,6 +65,23 @@ describe("Header", () => {
       /<a[^>]*class="[^"]*underline decoration-2[^"]*"[^>]*href="\/offers"[^>]*>Offers<\/a>/,
     );
     expect(renderHeader()).not.toMatch(/class="[^"]*underline decoration-2[^"]*"[^>]*>Offers</);
+  });
+
+  it("highlights Bestsellers on the popular page, filtered or paged, in the bar and the menu", () => {
+    for (const path of ["/popular", "/popular?family=%D1%81%D0%B2%D1%96%D0%B6%D1%96&page=2"]) {
+      const links = renderHeader({}, path).match(/<a[^>]*href="\/popular"[^>]*>Bestsellers<\/a>/g);
+      expect(links).toHaveLength(2);
+      for (const link of links ?? []) {
+        expect(link).toContain('aria-current="page"');
+      }
+      expect(links?.[0]).toContain("underline decoration-2");
+      expect(links?.[1]).toContain("text-primary");
+    }
+    expect(renderHeader()).not.toMatch(/aria-current="page"[^>]*>Bestsellers</);
+  });
+
+  it("labels Bestsellers in Ukrainian", () => {
+    expect(renderHeader({}, "/", "uk")).toContain(">Бестселери<");
   });
 
   it("renders the catalog dropdown as a collapsed <details> disclosure", () => {

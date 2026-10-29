@@ -20,6 +20,7 @@ const fields: CmsProductFields = {
   fragranceFamilies: ["деревні", "свіжі"],
   notes: ["лимон", "ялівець", "ладан"],
   storeCode: "7-B",
+  popularRank: null,
   imageUrl: null,
   packSize: 1,
   active: true,
@@ -133,6 +134,31 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       volumeMl: 10,
       stockQuantity: 6,
     });
+  });
+
+  it("sets, changes and clears the popular position (#67)", async () => {
+    const { applyCmsProductChange } = await import("./cms-sync");
+    const product = await created();
+    expect(product.popularRank).toBeNull();
+
+    const update = (popularRank: number | null) =>
+      applyCmsProductChange(
+        {
+          action: "update",
+          ...fields,
+          popularRank,
+          publicId: product.publicId,
+          slug: product.slug,
+        },
+        testDb.db,
+      );
+
+    expect(await update(3)).toMatchObject({ ok: true, product: { popularRank: 3 } });
+    expect(await productRow(product.publicId)).toMatchObject({ popularRank: 3 });
+    expect(await update(1)).toMatchObject({ ok: true, product: { popularRank: 1 } });
+    expect(await productRow(product.publicId)).toMatchObject({ popularRank: 1 });
+    expect(await update(null)).toMatchObject({ ok: true, product: { popularRank: null } });
+    expect(await productRow(product.publicId)).toMatchObject({ popularRank: null });
   });
 
   it("stores families, notes and the store code and keeps fragrance_family the first family", async () => {

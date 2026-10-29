@@ -36,7 +36,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
     const { productVariants, products } = await import("../db/schema");
     testDb = await createTestDatabase("jassmin_products_test");
     await migrateLatest(testDb.db);
-    await seedProducts(testDb.db);
+    await seedProducts(testDb.db, SAMPLE_PRODUCTS);
     const paging = await testDb.db
       .insert(products)
       .values(
@@ -225,7 +225,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
       packSize: 1,
       imageUrl: null,
       description: sauvage.description,
-      fragranceFamilies: ["фужерні", "пряні", "свіжі"],
+      fragranceFamilies: sauvage.fragranceFamilies,
       notes: sauvage.notes,
       variants: [
         { id: expect.any(String), volumeMl: 10, price: "790.00", stockQuantity: 15, inStock: true },

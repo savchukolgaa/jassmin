@@ -109,6 +109,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(constraints.rows.map((r) => r.conname)).toEqual([
       "products_fragrance_family_primary_check",
       "products_pack_size_check",
+      "products_popular_rank_check",
       "products_public_id_unique",
       "products_slug_unique",
       "products_stock_quantity_check",
@@ -679,8 +680,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0014 sit on top of 0006; migrateLatest below reapplies them.
-    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
+    // 0007 to 0015 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
+    expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
     expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
@@ -713,8 +715,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0014 sit on top of 0003; migrateLatest below reapplies them.
-    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
+    // 0004 to 0015 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
+    expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
     expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     expect(await rollbackLatest(db)).toBe("0012_cms_catalog_and_orders");
     expect(await rollbackLatest(db)).toBe("0011_discounts");
@@ -801,12 +804,43 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ]);
   });
 
+  it("adds an optional, positive popular_rank and rolls it back", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { pgErrorCode } = await import("./test-utils");
+    const { db } = testDb;
+
+    const inserted = await db.execute<{ id: number; popular_rank: number | null }>(
+      sql`insert into products (title, brand, gender, price, volume_ml)
+          values ('Ranked', 'Test', 'women', '100.00', 50) returning id, popular_rank`,
+    );
+    const [row] = inserted.rows;
+    expect(row?.popular_rank).toBeNull();
+    await db.execute(sql`update products set popular_rank = 1 where id = ${row?.id}`);
+    // 23514 check_violation: positions start at 1.
+    expect(
+      await pgErrorCode(
+        db.execute(sql`update products set popular_rank = 0 where id = ${row?.id}`),
+      ),
+    ).toBe("23514");
+
+    expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
+    expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
+    const columns = await db.execute(
+      sql`select 1 from information_schema.columns where table_name = 'products'
+          and column_name = 'popular_rank'`,
+    );
+    expect(columns.rows).toEqual([]);
+    await migrateLatest(db);
+    await db.execute(sql`delete from products where id = ${row?.id}`);
+  });
+
   it("backfills fragrance_families from fragrance_family and keeps the primary in sync", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
-    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
+    expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
+    expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
     expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
     // Products as they looked before #65, with one family or none.
     const legacy = await db.execute<{ id: number }>(
@@ -864,7 +898,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
-    expect(await rollbackLatest(db)).toBe("0014_volume_5ml");
+    expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
     // Before #66: a product sold in 7 and 30 ml (legacy columns on 7 ml) and one only in 7 ml.
     const legacy = await db.execute<{ id: number }>(
       sql`insert into products (title, brand, gender, price, volume_ml, stock_quantity)
@@ -938,7 +972,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
-    expect(await rollbackLatest(testDb.db)).toBe("0014_volume_5ml");
+    expect(await rollbackLatest(testDb.db)).toBe("0015_volume_5ml");
+    expect(await rollbackLatest(testDb.db)).toBe("0014_product_popular_rank");
     expect(await rollbackLatest(testDb.db)).toBe("0013_product_families_notes_code");
     const familyColumns = await testDb.db.execute(
       sql`select 1 from information_schema.columns where table_name = 'products'

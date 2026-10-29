@@ -22,6 +22,7 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 | `C+ Account` | `/account` | #12 |
 | `C+ Account profile`, `C+ Account profile, phone width (errors)` | `/account/profile` | #54 |
 | `C+ Offers`, `C+ Offers, phone width` | `/offers` | #55 |
+| `C+ Popular`, `C+ Popular, phone width` | `/popular` | #67 |
 
 Cart and checkout aren't designed yet. Build them from the tokens and components below. There is
 no Unisex catalog page: catalogs are `/catalog/women` and `/catalog/men` only.
@@ -33,6 +34,18 @@ follows, then one section per offer kind: white `rounded-card-lg` offer cards wi
 a blush price-note pill, a `primary` `sm` CTA and the linked products as regular product cards. The
 empty state is the blush panel used by the account's "No orders yet". The `noCampaign` tweak on the
 artboard shows it.
+
+`/popular` (#67) is reached from the header's "Bestsellers" item (between Catalog and Offers,
+marked current; with five links the inline nav shows from `lg`, the hamburger menu below it), the home hero's "Order Now" and the trio builder's "Show my trio". It opens with
+a deep-pink band: a small uppercase "Bestsellers" eyebrow, the page title as the `h1` and an
+intro. When the trio builder sent families, they follow as white removable chips (`primary-dark`
+text, a "×", each a link without that family) and a white "Show all popular" link. Below, a muted
+count and a grid of the home page's compact bestseller cards (`card-tilt`, the round `quick-add`
++ button and the "Added to cart" toast), 12 per page with the catalog's pagination. A blush
+`rounded-card-lg` panel "Looking for something else?" links to both catalogs. With no matches the
+grid and that panel give way to the blush empty panel used by `/offers`, with "Show all popular"
+(`primary`) and the two catalogs (`dark`). The `filtered` and `noMatches` tweaks on the
+artboard show both states.
 
 Like cart and checkout, the cookie banner and the privacy policy page (#18) aren't on the canvas. The banner
 (`features/consent/CookieBanner.tsx`) is a white `rounded-card` panel with a `line` border fixed to

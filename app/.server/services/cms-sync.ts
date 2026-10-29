@@ -69,6 +69,7 @@ function productWrite(
     fragranceFamilies: fields.fragranceFamilies,
     notes: fields.notes,
     storeCode: fields.storeCode,
+    popularRank: fields.popularRank,
     imageUrl: fields.imageUrl,
     packSize: fields.packSize,
     active: fields.active,

@@ -5,6 +5,7 @@ import { CloseIcon, MenuIcon } from "./icons";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import {
   ABOUT_LINK,
+  BESTSELLERS_LINK,
   CATALOG_LINKS,
   CONTACTS_LINK,
   iconButtonClasses,
@@ -14,13 +15,13 @@ import {
 } from "./nav";
 import { useDisclosure } from "./useDisclosure";
 
-/** Hamburger menu below `md` with the same links and language switcher as the inline nav. */
+/** Hamburger menu below `lg` with the same links and language switcher as the inline nav. */
 export function MobileMenu() {
   const { t } = useT();
   const { detailsProps, summaryProps } = useDisclosure();
 
   return (
-    <details {...detailsProps} className="group md:hidden">
+    <details {...detailsProps} className="group lg:hidden">
       <summary
         {...summaryProps}
         aria-label={t("nav.menu")}
@@ -53,6 +54,14 @@ export function MobileMenu() {
                 </li>
               ))}
             </ul>
+          </li>
+          <li>
+            <NavLink
+              to={BESTSELLERS_LINK.to}
+              className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
+            >
+              {t(BESTSELLERS_LINK.labelKey)}
+            </NavLink>
           </li>
           <li>
             <NavLink

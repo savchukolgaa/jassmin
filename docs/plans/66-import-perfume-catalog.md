@@ -150,8 +150,8 @@ everywhere and 5 ml is added.
 | Action | Path | Purpose |
 |--------|------|---------|
 | modify | `app/lib/enums.ts`, `app/lib/enums.test.ts` | `PERFUME_VOLUMES_ML = [5, 10, 30, 50, 100]` |
-| create | `app/.server/db/migrations/0014_volume_5ml.sql` (+ `meta/`) | New CHECK; delete 7 ml sizes, fix legacy columns, queue products |
-| create | `app/.server/db/rollbacks/0014_volume_5ml.sql` | Reverse |
+| create | `app/.server/db/migrations/0015_volume_5ml.sql` (+ `meta/`) | New CHECK; delete 7 ml sizes, fix legacy columns, queue products |
+| create | `app/.server/db/rollbacks/0015_volume_5ml.sql` | Reverse |
 | modify | `app/.server/db/migrator.test.ts` | Migration test; 7 ml → 5 ml in existing cases |
 | modify | `app/.server/db/seed-data.ts`, `seed.test.ts` | Sample 7 ml sizes → 5 ml |
 | modify | `app/.server/services/{cart,orders,products,cms-push,order-email}.test.ts`, `app/.server/cms/content.test.ts` | 7 ml → 5 ml / 10 ml |

@@ -1,5 +1,5 @@
 {
-  "id": "4e700409-c168-4ff3-aa88-477ce62eeabb",
+  "id": "8114a428-9cb3-4be8-b187-7b131a6d3b4b",
   "prevId": "34179ec3-d02c-4c5e-990d-dd6ced6e9881",
   "version": "7",
   "dialect": "postgresql",
@@ -1387,7 +1387,7 @@
       "checkConstraints": {
         "product_variants_volume_ml_check": {
           "name": "product_variants_volume_ml_check",
-          "value": "\"product_variants\".\"volume_ml\" in (5, 10, 30, 50, 100)"
+          "value": "\"product_variants\".\"volume_ml\" in (7, 10, 30, 50, 100)"
         },
         "product_variants_price_check": {
           "name": "product_variants_price_check",
@@ -1459,6 +1459,12 @@
         "store_code": {
           "name": "store_code",
           "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "popular_rank": {
+          "name": "popular_rank",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -1580,6 +1586,10 @@
         "products_pack_size_check": {
           "name": "products_pack_size_check",
           "value": "\"products\".\"pack_size\" > 0"
+        },
+        "products_popular_rank_check": {
+          "name": "products_popular_rank_check",
+          "value": "\"products\".\"popular_rank\" > 0"
         },
         "products_fragrance_family_primary_check": {
           "name": "products_fragrance_family_primary_check",

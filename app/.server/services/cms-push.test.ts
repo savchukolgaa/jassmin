@@ -54,6 +54,7 @@ const product: CmsProductState = {
   fragranceFamilies: ["шипрові", "квіткові"],
   notes: ["апельсин", "троянда"],
   storeCode: "1-D",
+  popularRank: 2,
   packSize: 1,
   active: true,
   variants: [{ volumeMl: 5, price: "990.00", stock: 8 }],
@@ -125,6 +126,7 @@ describe("toStrapiOrderData / toStrapiProductData", () => {
     expect(toStrapiProductData(product)).toMatchObject({
       publicId: product.publicId,
       storeCode: "1-D",
+      popularRank: 2,
       variants: [{ volumeMl: 5, price: 990, stock: 8 }],
     });
   });

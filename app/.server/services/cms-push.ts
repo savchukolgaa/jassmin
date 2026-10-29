@@ -69,6 +69,7 @@ export function toCmsProductState(row: ProductSyncRow): CmsProductState {
     fragranceFamilies: row.fragranceFamilies,
     notes: row.notes,
     storeCode: row.storeCode,
+    popularRank: row.popularRank,
     packSize: row.packSize,
     active: row.active,
     variants: row.variants,

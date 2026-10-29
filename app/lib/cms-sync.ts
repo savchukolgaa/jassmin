@@ -92,6 +92,14 @@ const productFields = {
     .max(20)
     .nullish()
     .transform((value) => (value ? value : null)),
+  /** Position on `/popular` (#67): 1 is first; empty means not on the list. */
+  popularRank: z
+    .number()
+    .int()
+    .min(1)
+    .max(9999)
+    .nullish()
+    .transform((value) => value ?? null),
   /** Strapi's relative `/uploads/…` URL or an absolute `http(s)` one; the route resolves it. */
   imageUrl: z
     .string()
@@ -150,6 +158,7 @@ export interface CmsProductState {
   fragranceFamilies: string[];
   notes: string[];
   storeCode: string | null;
+  popularRank: number | null;
   packSize: number;
   active: boolean;
   /** Smallest first, with the real stock. */

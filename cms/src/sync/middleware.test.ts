@@ -19,6 +19,7 @@ const stored = {
     { id: 4, name: "зелене яблуко" },
   ],
   storeCode: "3-D",
+  popularRank: 2,
   variants: [{ id: 5, volumeMl: 50, price: 3200, stock: 2 }],
 };
 
@@ -52,6 +53,17 @@ describe("productPayload (#65)", () => {
   });
 });
 
+describe("productPayload: popular position (#67)", () => {
+  it("sends the position, and none once staff empty the field", async () => {
+    expect((await productPayload(strapi, stored, stored)).popularRank).toBe(2);
+    for (const popularRank of [null, undefined, ""]) {
+      expect((await productPayload(strapi, { ...stored, popularRank }, stored)).popularRank).toBe(
+        null,
+      );
+    }
+  });
+});
+
 describe("applyProductAnswer (#65)", () => {
   it("saves the families, notes and store code the app stored", () => {
     const data = applyProductAnswer(
@@ -62,6 +74,7 @@ describe("applyProductAnswer (#65)", () => {
         fragranceFamilies: ["квіткові", "фруктові"],
         notes: ["лимон"],
         storeCode: null,
+        popularRank: 5,
         variants: [{ volumeMl: 50, price: "3200.00", stock: 2 }],
       },
     );
@@ -69,6 +82,7 @@ describe("applyProductAnswer (#65)", () => {
       fragranceFamilies: [{ family: "квіткові" }, { family: "фруктові" }],
       notes: [{ name: "лимон" }],
       storeCode: null,
+      popularRank: 5,
       variants: [{ id: 5, volumeMl: 50, price: 3200, stock: 2 }],
     });
   });

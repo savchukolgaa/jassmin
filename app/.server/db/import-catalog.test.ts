@@ -21,7 +21,7 @@ function entry(
     gender: list,
     fragranceFamilies: ["квіткові", "фруктові"],
     notes: ["лимон", "жасмин"],
-    popular: false,
+    popularRank: null,
     ...extra,
   };
 }
@@ -30,6 +30,7 @@ function entry(
 const LOLITA = entry("women", "11-L", "Test Lolita");
 const LIFT = entry("women", "11-L", "Test Lift");
 const BACCARAT = entry("men", "9-A", "Test Baccarat", {
+  popularRank: 1,
   brand: "Maison Francis Kurkdjian",
   gender: "unisex",
 });
@@ -97,6 +98,7 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
       fragranceFamily: "квіткові",
       fragranceFamilies: ["квіткові", "фруктові"],
       notes: ["лимон", "жасмин"],
+      popularRank: null,
       packSize: 1,
       active: true,
       slug: null,
@@ -110,6 +112,7 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
     ]);
     // Both perfumes with code 11-L are in the catalog.
     expect((await stored(LOLITA.publicId)).storeCode).toBe("11-L");
+    expect((await stored(BACCARAT.publicId)).popularRank).toBe(1);
 
     const queued = await testDb.db.select().from(cmsOutbox);
     expect(queued.map((row) => [row.entity, row.syncedAt])).toEqual([
@@ -136,7 +139,8 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
     const lift = await stored(LIFT.publicId);
     const lolita = await stored(LOLITA.publicId);
 
-    // Staff edits in Strapi: renamed, other families, stock and price set, 10 ml deleted, archived.
+    // Staff edits in Strapi: renamed, other families and code, a popular position, stock and price
+    // set, 10 ml deleted, archived.
     await testDb.db
       .update(products)
       .set({
@@ -144,6 +148,7 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
         fragranceFamily: "східні",
         fragranceFamilies: ["східні"],
         storeCode: "12-L",
+        popularRank: 3,
       })
       .where(eq(products.id, lift.id));
     await testDb.db
@@ -168,6 +173,7 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
       title: "Test Lift Edition",
       fragranceFamilies: ["східні"],
       storeCode: "12-L",
+      popularRank: 3,
     });
     expect(after.sizes).toEqual([[50, "650.00", 4]]);
     expect((await stored(LOLITA.publicId)).active).toBe(false);
@@ -195,6 +201,7 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
         fragranceFamily: entry.fragranceFamilies[0],
         fragranceFamilies: entry.fragranceFamilies,
         notes: entry.notes,
+        popularRank: entry.popularRank,
       });
       expect(row.sizes).toEqual([
         [5, "119.00", 0],

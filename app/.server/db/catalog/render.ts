@@ -18,7 +18,7 @@ export function renderCatalogData(entries: readonly CatalogEntry[]): string {
       gender: entry.gender,
       fragranceFamilies: entry.fragranceFamilies,
       notes: entry.notes,
-      popular: entry.popular,
+      popularRank: entry.popularRank,
     };
     return `  ${JSON.stringify(ordered)},`;
   });

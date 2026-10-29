@@ -11,7 +11,10 @@ describe("CATALOG_PRODUCTS", () => {
   it("has every perfume of the owner's list", () => {
     expect(CATALOG_PRODUCTS.filter((p) => p.list === "women")).toHaveLength(75);
     expect(CATALOG_PRODUCTS.filter((p) => p.list === "men")).toHaveLength(53);
-    expect(CATALOG_PRODUCTS.filter((p) => p.popular)).toHaveLength(30);
+    const ranks = CATALOG_PRODUCTS.flatMap((p) => (p.popularRank === null ? [] : [p.popularRank]));
+    expect(ranks).toEqual(Array.from({ length: 30 }, (_, i) => i + 1));
+    expect(CATALOG_PRODUCTS.find((p) => p.popularRank === 1)?.title).toBe("La Vie Est Belle");
+    expect(CATALOG_PRODUCTS.find((p) => p.popularRank === 30)?.title).toBe("Molecule 02");
   });
 
   it("gives every perfume its own id, including perfumes that share a code", () => {

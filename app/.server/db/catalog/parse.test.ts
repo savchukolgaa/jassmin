@@ -57,7 +57,7 @@ describe("parseCatalogMarkdown", () => {
         gender: "women",
         fragranceFamilies: ["квіткові", "фруктові"],
         notes: ["дзвіночок", "лимон", "зелене яблуко"],
-        popular: false,
+        popularRank: null,
       },
     ]);
   });
@@ -80,10 +80,14 @@ describe("parseCatalogMarkdown", () => {
     ]);
   });
 
-  it("strips the popular marker from the notes and flags the entry", () => {
-    const [entry] = parseCatalogMarkdown(list([FLOWERBOMB]), NO_FIXES);
-    expect(entry?.popular).toBe(true);
-    expect(entry?.notes).toEqual(["бергамот", "чай"]);
+  it("strips the popular marker from the notes and numbers the popular perfumes in order", () => {
+    const entries = parseCatalogMarkdown(
+      list([FLOWERBOMB, LIGHT_BLUE], [`${SPICEBOMB} (Popular)`]),
+      FIXES,
+    );
+    expect(entries.map((e) => e.popularRank)).toEqual([1, null, 2]);
+    expect(entries[0]?.notes).toEqual(["бергамот", "чай"]);
+    expect(entries[2]?.notes).toEqual(["бергамот", "перець", "кориця"]);
   });
 
   it("applies the fixes without changing the id", () => {

@@ -1,6 +1,5 @@
 import type { FragranceFamily, PerfumeVolumeMl } from "~/lib/enums";
 import type { discounts, products } from "./schema";
-import { OWNER_CATALOG } from "./seed-catalog";
 
 export interface SampleVariant {
   volumeMl: PerfumeVolumeMl;
@@ -49,9 +48,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "La Vie Est Belle Eau de Parfum",
     brand: "Lancôme",
     gender: "women",
-    // The owner's 1-L (#67, seed-catalog.ts): their families and notes, first on /popular.
-    storeCode: "1-L",
-    popularRank: 1,
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["чорна смородина", "груша", "ірис", "жасмин", "пачулі", "ваніль", "боби тонка"],
     description: "Солодкий аромат з ірисом, праліне та ваніллю.",
@@ -87,8 +83,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Sauvage Eau de Toilette",
     brand: "Dior",
     gender: "men",
-    // The owner's 2-C (#67, seed-catalog.ts).
-    storeCode: "2-C",
     fragranceFamilies: ["фужерні", "пряні"],
     notes: ["аніс", "бергамот", "яблуко", "дубовий мох", "пачулі"],
     description: "Свіжий пряний аромат з бергамотом, перцем і амброксаном.",
@@ -123,8 +117,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Acqua di Giò Eau de Toilette",
     brand: "Giorgio Armani",
     gender: "men",
-    // The owner's 2-A (#67, seed-catalog.ts).
-    storeCode: "2-A",
     fragranceFamilies: ["водяні", "фужерні"],
     notes: ["бергамот", "лимон", "апельсин", "лайм", "морські ноти", "мускус"],
     description: "Морська свіжість з нотами цитрусів, розмарину та пачулі.",
@@ -187,12 +179,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     variants: [{ volumeMl: 10, price: "990.00", stockQuantity: 20 }],
   },
 ];
-
-/**
- * What `pnpm db:seed` inserts: the sample products above, then the owner's catalogue (#67, with
- * placeholder prices). Tests that need a small, known catalog seed `SAMPLE_PRODUCTS` only.
- */
-export const SEED_PRODUCTS: SampleProduct[] = [...SAMPLE_PRODUCTS, ...OWNER_CATALOG];
 
 export type SampleDiscount = typeof discounts.$inferInsert;
 

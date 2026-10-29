@@ -36,7 +36,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
     const { productVariants, products } = await import("../db/schema");
     testDb = await createTestDatabase("jassmin_products_test");
     await migrateLatest(testDb.db);
-    await seedProducts(testDb.db, SAMPLE_PRODUCTS);
+    await seedProducts(testDb.db);
     const paging = await testDb.db
       .insert(products)
       .values(

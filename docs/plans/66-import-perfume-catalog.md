@@ -97,6 +97,7 @@ everywhere and 5 ml is added.
 - **Other columns**: `packSize` 1; `description` / `imageUrl` / `slug` null (photos and descriptions
   come later in Strapi, and `ProductImage` already handles a missing image); `active` true.
 - **Data fixes (Q5, Q6)**: the Appendix is applied as proposed.
+- **Merged with #67 (2026-10-29, owner's choice "one source"):** #67 added `products.popular_rank` and seeded the owner's list into dev databases with its own ids and placeholder prices. The seed goes back to the sample products (`seed-catalog.ts` removed, and the three samples that stood in for 1-L, 2-C and 2-A lose those codes and rank), so the import is the only source of the owner's range. Q8 is resolved by #67: `(popular)` becomes `popularRank` 1–30 in list order (identical to #67's ranks), stored on the products the import inserts. The 5 ml migration is renumbered `0015_volume_5ml`, after #67's `0014_product_popular_rank`. A dev database seeded since #67 still holds that seeded copy: reset it before running the import.
 - **Found during implementation:** the list has 11 unisex perfumes (the data test pins it). The CMS seed already described the trio as 3 × 10 ml; only the recorded fixtures `cms/__fixtures__/offers*.json` still said 7 ml, so they were edited to match the seed by hand instead of being re-recorded. `pnpm aspire:build` needs the generated SDK, so a fresh worktree runs `pnpm aspire restore` first. Both scripts were also run on a throwaway database (`db:migrate`, then `db:import-catalog` twice: 128 perfumes and 640 sizes, then 0).
 
 ## Open questions

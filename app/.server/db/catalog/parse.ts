@@ -22,8 +22,11 @@ export interface CatalogEntry {
   /** Primary first. */
   fragranceFamilies: FragranceFamily[];
   notes: string[];
-  /** Marked `(popular)` by the owner; kept in the data only, not stored (#66). */
-  popular: boolean;
+  /**
+   * Position on `/popular` (`products.popular_rank`, #67) for the perfumes the owner marked
+   * `(popular)`: 1, 2, … in the order of the list, women first; `null` for the rest.
+   */
+  popularRank: number | null;
 }
 
 /** An owner-approved correction to one line, found by its list, code and title as written. */
@@ -143,6 +146,7 @@ export function parseCatalogMarkdown(text: string, fixes: CatalogFixes): Catalog
   );
   const ids = new Set<string>();
   const entries: CatalogEntry[] = [];
+  let popularCount = 0;
   let list: CatalogList | undefined;
 
   for (const [index, rawLine] of text.split(/\r?\n/).entries()) {
@@ -170,7 +174,6 @@ export function parseCatalogMarkdown(text: string, fixes: CatalogFixes): Catalog
     if (!storeCode || !sourceTitle || !rawBrand) fail("missing code, title or brand");
 
     const unisex = UNISEX.test(sourceTitle);
-    const popular = POPULAR.test(rawNotes);
     const key = fixKey(list, storeCode, sourceTitle);
     const fix = pending.get(key);
     pending.delete(key);
@@ -191,6 +194,7 @@ export function parseCatalogMarkdown(text: string, fixes: CatalogFixes): Catalog
     const publicId = catalogPublicId(list, storeCode, sourceTitle);
     if (ids.has(publicId)) fail(`"${sourceTitle}" (${storeCode}) is listed twice`);
     ids.add(publicId);
+    const popularRank = POPULAR.test(rawNotes) ? ++popularCount : null;
     entries.push({
       publicId,
       list,
@@ -200,7 +204,7 @@ export function parseCatalogMarkdown(text: string, fixes: CatalogFixes): Catalog
       gender: unisex ? "unisex" : list,
       fragranceFamilies,
       notes,
-      popular,
+      popularRank,
     });
   }
 

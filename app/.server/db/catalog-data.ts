@@ -13,7 +13,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["чорна смородина", "груша", "ірис", "жасмин", "пачулі", "ваніль", "боби тонка"],
-    popular: true,
+    popularRank: 1,
   },
   {
     publicId: "4fdc96c1-fd30-8fbd-bde2-0646bdb9a8b0",
@@ -36,7 +36,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "праліне",
       "ветивер",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "87d2a746-1b93-87f2-9d35-9df20d6646c0",
@@ -63,7 +63,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "ваніль",
       "персик",
     ],
-    popular: true,
+    popularRank: 2,
   },
   {
     publicId: "505adbab-c55b-8fd5-b11e-02026e20fd2a",
@@ -85,7 +85,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "геліотроп",
       "сандал",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "761676cd-a4fd-8552-9611-2143e7fffc25",
@@ -106,7 +106,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "амбра",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "eccce470-8402-804c-be83-d08dedebf8d0",
@@ -117,7 +117,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["шипрові", "фруктові"],
     notes: ["мандарин", "полуниця", "жасмин", "роза", "карамель", "пачулі", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "d5516865-27a9-8ac1-907a-0969dd9445bc",
@@ -138,7 +138,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "сандал",
     ],
-    popular: true,
+    popularRank: 3,
   },
   {
     publicId: "b299c4bc-469f-86f9-9c8b-8bf60fb68f13",
@@ -160,7 +160,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "ваніль",
       "мускус",
     ],
-    popular: true,
+    popularRank: 4,
   },
   {
     publicId: "6b95f73c-79e4-8e66-aae3-ce452a2ce364",
@@ -171,7 +171,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "фруктові"],
     notes: ["горілка", "білий мускус", "ірис", "османтус", "півонія", "фіалка", "амбра", "дерево"],
-    popular: true,
+    popularRank: 5,
   },
   {
     publicId: "c82e4c9e-f5bf-8ceb-b8b7-41a2ba87bd06",
@@ -194,7 +194,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "деревина",
       "сандал",
     ],
-    popular: true,
+    popularRank: 6,
   },
   {
     publicId: "f42b7182-d76a-8b1b-94b6-8a59c4b641d8",
@@ -216,7 +216,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "сандал",
       "деревні ноти",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "95f80346-f714-8518-b4c6-d0a5e9d1c5cf",
@@ -237,7 +237,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "сандал",
     ],
-    popular: true,
+    popularRank: 7,
   },
   {
     publicId: "9a8b57f9-b077-8176-b304-308b193cc70d",
@@ -248,7 +248,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["слива", "карамель", "білий кедр", "мускус", "сандал"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "338a2e7d-b953-80ff-963e-5a871d32398d",
@@ -284,7 +284,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "бензоїн",
       "ветивер",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "d328f9e5-c4bf-84bf-b52b-98af9e6b0177",
@@ -305,7 +305,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "амбра",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "c2e424d7-f1c1-8979-ae79-559aa243609f",
@@ -329,7 +329,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "сандал",
       "малина",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "f3a57f4c-2936-823f-9c10-9d5391e0efc3",
@@ -352,7 +352,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "кашмеран",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "fdacb16e-ec45-805e-b2fd-19953e5cc753",
@@ -373,7 +373,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "бензоїн",
       "боби тонка",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "272b0008-bd13-898f-967b-7ca8b0cf46cb",
@@ -394,7 +394,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "пачулі",
       "амбра",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "7d531029-1360-8a22-9234-fe003dfaed3c",
@@ -415,7 +415,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "шкіра",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "ac8d5217-6a51-89dd-8c69-cd24bf66ed5e",
@@ -436,7 +436,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "пачулі",
       "мадагаскарська ваніль",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "90b13bda-eb4c-8e38-9390-2127afd4e5c8",
@@ -447,7 +447,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "східні"],
     notes: ["малина", "бергамот", "апельсин", "магнолія", "ветивер", "мускус", "амбра", "сандал"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "3805a370-ce93-84ff-beab-cd677bfbddf0",
@@ -458,7 +458,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "фруктові"],
     notes: ["диня", "яблуко", "персик", "дубовий мох", "сандал", "кедр"],
-    popular: true,
+    popularRank: 8,
   },
   {
     publicId: "56aa2769-36ba-890a-a4d4-89cc8723df63",
@@ -482,7 +482,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "ваніль",
       "мускус",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "db09263a-e42c-8654-b973-27c5d50d73d8",
@@ -502,7 +502,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "оливкове дерево",
       "сандал",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "9e8365d8-f018-8e4a-9865-6bc01e3ce6fa",
@@ -513,7 +513,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["персик", "альдегіди", "жасмин", "фіалка", "білі квіти", "мох", "сандал"],
-    popular: true,
+    popularRank: 9,
   },
   {
     publicId: "200c18c7-a15b-8a77-b514-995b3027ea70",
@@ -524,7 +524,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["яблуко", "апельсиновий цвіт", "білі квіти", "сандал", "оливкове дерево", "ваніль"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "4ce5a513-2b90-889c-8b47-bd30def6f0a8",
@@ -543,7 +543,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "сандал",
       "білий мускус",
     ],
-    popular: true,
+    popularRank: 10,
   },
   {
     publicId: "87fd9ab1-e114-875b-b018-d8faeb50ea2a",
@@ -554,7 +554,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["фруктові", "зелені"],
     notes: ["ожина", "лавровий лист", "квіткові ноти", "кедр", "ветивер"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "fec8781f-e866-8a59-9691-1a717bceb372",
@@ -581,7 +581,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "бензоїн",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "b14d4d77-71c1-866d-948a-55346d4a173b",
@@ -592,7 +592,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["східні", "гурманські"],
     notes: ["амбра", "ваніль", "мускус"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "fbe3c840-9a9a-89bd-b8ce-360fa8baff36",
@@ -617,7 +617,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "ваніль",
       "кедр",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "1c9299bf-9dcd-840a-92f0-8de81b832549",
@@ -638,7 +638,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "амбра",
       "кедр",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "85619d6d-b701-8d52-a464-39e1411635af",
@@ -649,7 +649,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["вишня", "спеції", "альдегідні ноти"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "f260c06f-9f38-8ca2-8838-b773b5806e8a",
@@ -660,7 +660,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["пасифлора", "жасмин", "гарденія", "ваніль", "ветивер"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "56f07946-8c2e-8d86-98ba-c331105e05f7",
@@ -671,7 +671,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["зелений чай", "білі квіти", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "9cfaac7f-702a-8a40-806a-9fdab75b4297",
@@ -682,7 +682,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "зелені"],
     notes: ["листя чаю", "півонія", "квітка персика", "амбра", "зелений бузок"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "0a051cc5-ac66-85cf-8a11-7726fa1ab845",
@@ -703,7 +703,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мускус",
       "кедр",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "75520cbe-0314-8e11-b569-f9617af72194",
@@ -714,7 +714,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["шипрові", "східні"],
     notes: ["троянда", "іланг-іланг", "спеції", "сандал", "пачулі", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "cbba8cb7-61f9-8870-826e-64a94433e2ef",
@@ -735,7 +735,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "біле дерево",
       "ваніль",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "5ea3d431-f21b-893c-8a75-9003e538e1b5",
@@ -746,7 +746,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "деревні"],
     notes: ["білий мускус", "білий піон", "кава", "коріандр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "67973fcc-144d-8953-8657-8a7cafed615d",
@@ -767,7 +767,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
       "мох",
       "деревні ноти",
     ],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "2cdccdfe-c920-88b8-99be-07b203b70582",
@@ -778,7 +778,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "пряні"],
     notes: ["апельсин", "квітка", "амбра", "ваніль", "ветивер", "мускус"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "b96b42fd-7f75-851b-912a-72490d10b76c",
@@ -789,7 +789,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["бергамот", "троянда", "жасмин", "аніс", "абрикос", "ваніль"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "753ca70e-4a73-8fe2-96c2-9260daefd2ba",
@@ -800,7 +800,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["цвіт апельсину", "груша", "перець", "жасмин", "кава", "ваніль"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "34218a73-8a98-88fe-aacd-0b911e2c6df5",
@@ -811,7 +811,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "водяні"],
     notes: ["мандарин", "шафран", "чай", "білий мускус"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "92f877bf-a5e9-820e-99ce-2f66cb3addb5",
@@ -822,7 +822,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "східні"],
     notes: ["троянда", "чорна фіалка", "квіти какао", "пачулі", "ваніль"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "38f4e3fb-a6c9-837a-8b43-95b779c46620",
@@ -833,7 +833,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["бергамот", "мімоза", "троянда", "фіалка", "ірис"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "63cc02c1-022c-86b8-b0a0-c4e5678ab21e",
@@ -844,7 +844,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["деревні", "квіткові"],
     notes: ["манго", "бергамот", "жасмин", "ваніль", "мускус", "пачулі"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "e043bf75-27f9-8dae-a38c-8864dccf1483",
@@ -855,7 +855,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "фруктові"],
     notes: ["апельсин", "малина", "жасмин", "гарденія", "пачулі", "мед"],
-    popular: true,
+    popularRank: 11,
   },
   {
     publicId: "78f26be6-2fa3-8c92-97af-01d51d23e1dc",
@@ -866,7 +866,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["цитрусові", "свіжі"],
     notes: ["мандарин", "цитруси", "квіти", "ваніль", "гарденія"],
-    popular: true,
+    popularRank: 12,
   },
   {
     publicId: "238d3f89-2b4d-8d3a-a23e-7c6979d44f10",
@@ -877,7 +877,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "східні"],
     notes: ["жасмин", "апельсин", "мандарин", "гарденія", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "79d20987-c138-8be1-b362-08a5fab511c8",
@@ -888,7 +888,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["східні", "квіткові"],
     notes: ["гліцинія", "перець", "жасмин", "ваніль", "пачулі", "сандал"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "16c4d836-6f51-8b90-a08a-edf451c287e6",
@@ -899,7 +899,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "фруктові"],
     notes: ["гарденія", "фрезія", "ваніль", "пачулі", "ветивер"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "9095fe37-75b1-8cd0-a404-a96b06f0d696",
@@ -910,7 +910,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["нарцис", "фрезія", "лілійник", "троянда", "гарденія", "мускус"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "a9772521-20f4-8750-9d26-dcfc22fb6fb3",
@@ -921,7 +921,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["цитрусові", "квіткові"],
     notes: ["яблуко", "вільха", "мандарин", "магнолія", "фрезія"],
-    popular: true,
+    popularRank: 13,
   },
   {
     publicId: "2fb31ddb-7085-8534-9892-d1623d673d9d",
@@ -932,7 +932,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "шипрові"],
     notes: ["мандарин", "апельсин", "жасмин", "персик", "мед", "гарденія"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "e625c058-fd99-8eba-b8dc-76b7f01ba3db",
@@ -943,7 +943,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["східні"],
     notes: ["апельсин", "бергамот", "лимон", "фруктові ноти", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "193552cb-02c6-8f90-8db1-dc3f8c8663bf",
@@ -954,7 +954,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "деревні"],
     notes: ["цитрус", "квіти", "сандал", "кедр", "мускатний горіх"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "74d7c289-3393-8a94-9ef4-77868e7cc641",
@@ -965,7 +965,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "свіжі"],
     notes: ["багато фруктів", "мускус", "ваніль", "фіалка"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "7a383909-1431-853a-9dbb-b4adc64fdf85",
@@ -976,7 +976,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["кокос", "морська сіль", "сонячні ноти"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
@@ -987,7 +987,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["шипрові", "фруктові"],
     notes: ["персик", "гірська смородина", "маракуйя", "груша", "півонія"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "981dd4f2-f595-8048-8d88-906cc61abefe",
@@ -998,7 +998,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["бергамот", "османтус", "чай", "жасмин", "орхідея", "роза"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "c9872320-524b-8eee-856c-8605faf46b44",
@@ -1009,7 +1009,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["малина", "слива", "півонія", "лотос", "магнолія", "амбра"],
-    popular: true,
+    popularRank: 14,
   },
   {
     publicId: "bd52e728-ddb9-8925-ae73-b8a779939def",
@@ -1020,7 +1020,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["мандарин", "ананас", "маракуйя", "полуниця", "жасмин"],
-    popular: true,
+    popularRank: 15,
   },
   {
     publicId: "7075fa6b-8eb9-8c82-ad84-50b7e72e3560",
@@ -1031,7 +1031,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "фруктові"],
     notes: ["зерно анісу", "троянда", "мускус"],
-    popular: true,
+    popularRank: 16,
   },
   {
     publicId: "fcb03800-34cb-84c5-9a60-ceb4ffbbec9f",
@@ -1042,7 +1042,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові"],
     notes: ["насіння гранату", "юдзу", "листочки магнолії", "півонія", "лотос"],
-    popular: true,
+    popularRank: 17,
   },
   {
     publicId: "1c8835f6-ddae-8d4e-9e47-c02ac8b94a71",
@@ -1053,7 +1053,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["деревні"],
     notes: ["бергамот", "цитрус", "мандарин", "інжир", "груша", "кедр", "лілія"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "4168cbc7-0093-8480-abc6-d749fdecd225",
@@ -1064,7 +1064,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["грейпфрут", "конвалія", "чорна смородина", "деревні ноти"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "6e289de2-6240-8524-89bb-1bbe59cc2b20",
@@ -1075,7 +1075,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["свіжі", "квіткові"],
     notes: ["повітря океану", "острівний кокос", "перлова півонія"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "f7193041-e75b-8dfd-a24f-62936adc8c5c",
@@ -1086,7 +1086,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["бергамот", "імбир", "кардамон", "мандарин", "конвалія"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "ffdadd65-d4e9-80d5-b351-5807fb241296",
@@ -1097,7 +1097,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["деревні", "квіткові"],
     notes: ["ківі", "кавун", "жасмин", "цикламен", "мускус", "сандал"],
-    popular: true,
+    popularRank: 18,
   },
   {
     publicId: "7fb46cd1-4d40-8d0e-9407-b34a0679aef0",
@@ -1108,7 +1108,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["квіткові", "мускусні"],
     notes: ["жасмин", "мускус", "роза з непалу"],
-    popular: true,
+    popularRank: 19,
   },
   {
     publicId: "6dda773e-42cd-8510-b9e1-7c88d6010d53",
@@ -1119,7 +1119,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "women",
     fragranceFamilies: ["східні", "гурманські"],
     notes: ["ваніль", "гвоздика", "кориця"],
-    popular: true,
+    popularRank: 20,
   },
   {
     publicId: "63ce05eb-4858-86a5-925e-b07a2c1913a7",
@@ -1130,7 +1130,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["деревні", "мускусні"],
     notes: ["ваніль", "пудрові солодкі ноти"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "83695080-2c78-885b-870d-d141b7616be3",
@@ -1141,7 +1141,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["м'ята", "лаванда", "кориця", "пачулі", "мускус", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "e162a3db-2e16-831d-9b41-4a3c3a798e43",
@@ -1152,7 +1152,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["водяні", "фужерні"],
     notes: ["бергамот", "лимон", "апельсин", "лайм", "морські ноти", "мускус"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "ffbaf9ae-36d2-8b98-86ff-43b57bf70380",
@@ -1163,7 +1163,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "фужерні"],
     notes: ["мандарин", "апельсин", "альдегіди", "білий кедр", "ваніль", "амбра"],
-    popular: true,
+    popularRank: 21,
   },
   {
     publicId: "e82c581f-eeb8-8d62-b074-b48e341f2f77",
@@ -1174,7 +1174,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["ананас", "малина", "чорна смородина", "мед", "мускус"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "41dfadb7-cd8c-80e0-a16b-37a610664743",
@@ -1185,7 +1185,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["бергамот", "м'ята", "диня", "капучіно", "зелене яблуко", "перець"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "f0482f3c-d633-823c-a2f0-f84e80922641",
@@ -1196,7 +1196,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "цитрусові"],
     notes: ["лимон", "імбир", "мускус", "дерево моху", "віскі"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "989a2355-4bfb-8716-a19f-44e5b2f95ea7",
@@ -1207,7 +1207,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["бергамот", "лимон", "аніс", "квіти оливкового дерева", "табак"],
-    popular: true,
+    popularRank: 22,
   },
   {
     publicId: "27f1fdfa-02cb-877e-aed2-131b480db33a",
@@ -1218,7 +1218,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "фужерні"],
     notes: ["лаванда", "мандарин", "тархун", "м'ята", "бергамот"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "a69ed314-ade2-8af4-838d-5806c0741750",
@@ -1229,7 +1229,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["східні", "деревні"],
     notes: ["гіркий мигдаль", "шафран", "білий кедр", "сіра амбра", "ялина мускус"],
-    popular: true,
+    popularRank: 23,
   },
   {
     publicId: "338452cf-8d5a-81b0-b66d-55bbf7f77880",
@@ -1240,7 +1240,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "пряні"],
     notes: ["яблуко", "кориця", "мускус", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "3ced83e8-724a-830e-9bad-6aafc909056e",
@@ -1251,7 +1251,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["зелені", "деревні"],
     notes: ["мандарин", "грейпфрут", "кардамон", "імбир", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "4ece67d1-32d0-8e72-be6b-bd64ae49eae0",
@@ -1262,7 +1262,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["фруктові", "шипрові"],
     notes: ["свіжоскошений перець", "бергамот", "мускус"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "6fee3f20-a688-89c7-a585-a3ca24b91680",
@@ -1273,7 +1273,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["фужерні", "пряні"],
     notes: ["аніс", "бергамот", "яблуко", "дубовий мох", "пачулі"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "7e792725-99f1-8e30-b628-8a0ed36c8f34",
@@ -1284,7 +1284,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["цитрусові", "деревні"],
     notes: ["бергамот", "лимон", "чорна смородина", "яблуко", "троянда", "жасмин"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "890868e1-41cd-87d4-86ec-a8df338fb584",
@@ -1295,7 +1295,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "водяні"],
     notes: ["юдзу", "морські ноти", "кедр", "амбра", "гурманські дерева"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "26d9421b-c5d3-8672-9699-2f146b51f51c",
@@ -1306,7 +1306,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "цитрусові"],
     notes: ["листя кедра", "чорна смородина", "пачулі", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "3c44268b-1b82-8ef1-84da-a78992ad9373",
@@ -1317,7 +1317,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "східні"],
     notes: ["імбир", "перець", "базилік", "шавлія", "білий кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "a39e2df5-e9e7-84c6-b509-4864cb46e815",
@@ -1328,7 +1328,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "східні"],
     notes: ["лайм", "імбир", "чорна ікра", "м'ята", "прянощі"],
-    popular: true,
+    popularRank: 24,
   },
   {
     publicId: "b160b334-df79-8926-a3dc-bdd7e822453f",
@@ -1339,7 +1339,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "водяні"],
     notes: ["альдегіди", "апельсин", "мандарин", "морські ноти", "перець", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "c7d14b31-b0bc-8ee6-ba7a-4190d3850a46",
@@ -1350,7 +1350,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "деревні"],
     notes: ["лимон", "мандарин", "кедр", "листя кориці", "ром", "чорне дерево"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "e0128797-9a84-82ed-9ae1-3095aecb29e3",
@@ -1361,7 +1361,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["водяні", "фужерні"],
     notes: ["лаванда", "м'ята", "коріандр", "розмарин", "мох", "мускус"],
-    popular: true,
+    popularRank: 25,
   },
   {
     publicId: "05083541-9890-829f-a30f-248b7e689b2c",
@@ -1372,7 +1372,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["мандарин", "ананас", "журавлина", "апельсиновий цвіт", "тютюн", "ваніль"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "13496011-5abe-88dc-9d2a-d0de6e0b99e5",
@@ -1383,7 +1383,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "пряні"],
     notes: ["мандарин", "лимон", "бергамот", "перець", "кунжут", "ветивер", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "8587bc6e-9218-809f-a3cf-d75b4b5ea1b8",
@@ -1394,7 +1394,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "пряні"],
     notes: ["грейпфрут", "коріандр", "базилік", "кардамон", "імбир", "тютюн"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "d3a64be9-dcf9-87de-ba98-bed9915238fb",
@@ -1405,7 +1405,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "фужерні"],
     notes: ["бергамот", "аніс", "малина", "гальбанум", "дубовий мох"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "23bb4d67-7a58-8723-a834-1441cee9d956",
@@ -1416,7 +1416,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["цитрусові", "свіжі"],
     notes: ["бергамот", "лимон", "шавлія", "кедр", "дубовий мох"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "d4aea1c3-6902-8abe-8eaa-18d5c5b277cf",
@@ -1427,7 +1427,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "фужерні"],
     notes: ["розмарин", "лаванда", "герань", "шавлія", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "403faf10-bc78-82ed-9690-64c54c7cf416",
@@ -1438,7 +1438,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "фужерні"],
     notes: ["рожевий перець", "фіалка", "шавлія", "ваніль", "каштан"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "90ed486e-94d1-8296-b203-9f6565a1e47a",
@@ -1449,7 +1449,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["деревні"],
     notes: ["базилік", "грейпфрут", "перець", "мегаланід", "ветивер", "кедр", "пачулі"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "b0f342aa-06ba-8554-87e2-397c58d61b29",
@@ -1460,7 +1460,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["зелені", "пряні"],
     notes: ["жимолость", "лимон", "бергамот", "сандал", "фіалка"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
@@ -1471,7 +1471,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["цитрусові", "фруктові"],
     notes: ["бергамот", "грейпфрут", "лаванда", "ветивер"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "bbae143e-6aa4-8523-9dd9-98c5dc44422c",
@@ -1482,7 +1482,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["пряні"],
     notes: ["мандарин", "шафран", "безсмертник", "фіалка", "каштан", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "cdd5dca0-b3b5-8227-90bc-c79fe2a28015",
@@ -1493,7 +1493,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["деревні"],
     notes: ["бергамот", "кіпарис", "фіалка", "тютюн", "мох", "пачулі"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
@@ -1504,7 +1504,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["цитрусові"],
     notes: ["бергамот", "лимон", "ірис", "мускус", "пачулі"],
-    popular: true,
+    popularRank: 26,
   },
   {
     publicId: "30de4a18-3265-801a-98f9-b26e148c0b4d",
@@ -1515,7 +1515,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["цитрусові", "пряні"],
     notes: ["лаванда", "лимон", "квітка апельсина", "пачулі", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "08de01fb-2be9-8cc3-9888-e354630bf137",
@@ -1526,7 +1526,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні"],
     notes: ["грейпфрут", "рожевий перець", "герань", "тикове дерево", "кедр"],
-    popular: true,
+    popularRank: 27,
   },
   {
     publicId: "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
@@ -1537,7 +1537,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "східні"],
     notes: ["мандарин", "перець", "шавлія", "мед", "ветивер"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "7074ebdd-10c0-88b2-b4fe-caa1d2838237",
@@ -1548,7 +1548,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні"],
     notes: ["бергамот", "полин", "холодний горошок", "мускус", "сандал"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "2a92d6b0-2c25-8f82-b8ce-70737c7473a3",
@@ -1559,7 +1559,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["цитрусові", "деревні"],
     notes: ["лимон", "квіти", "цитрус", "водяні квіти"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "5532d1c7-db4f-84d8-8572-741bc185fe91",
@@ -1570,7 +1570,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "деревні"],
     notes: ["юдзу", "коріандр", "боби тонка", "дуб", "горіх лісовий", "сандал"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "48740e2c-e7fd-8c65-a1f4-fd852da97540",
@@ -1581,7 +1581,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["східні", "квіткові"],
     notes: ["мигдаль", "кориця", "слива", "троянда", "магнолія", "дубовий мох"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "5d4163f1-a7b0-8be9-a228-e4249aeccaf2",
@@ -1592,7 +1592,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "unisex",
     fragranceFamilies: ["цитрусові", "пряні"],
     notes: ["мандарин", "ірис", "мускус", "бергамот", "кедр", "сандал"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "b4c5d12f-cc07-8c93-a6b1-43d318a16f37",
@@ -1603,7 +1603,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["цитрусові", "пряні"],
     notes: ["вітьки", "квіти", "жасмин", "кедр", "мускус", "ветивер"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "cefc58b4-bc22-84db-aae5-89d1b6aa381d",
@@ -1614,7 +1614,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні"],
     notes: ["лимон", "мандарин", "бергамот", "троянда", "перець", "кедр"],
-    popular: true,
+    popularRank: 28,
   },
   {
     publicId: "e9f1f3d4-54ab-8d3b-8842-bf20009a13a1",
@@ -1625,7 +1625,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "фужерні"],
     notes: ["абелит", "грейпфрут", "м'ята", "лаванда", "кіпарис", "кока"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "a3f8431f-2b2b-8556-89f2-0d16a54c6592",
@@ -1636,7 +1636,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "пряні"],
     notes: ["грейпфрут", "м'ята", "апельсин", "кориця", "мірра", "троянда", "пачулі", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "01a348b6-ba22-8808-aeb4-51d6e57fac9c",
@@ -1647,7 +1647,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["пряні", "деревні"],
     notes: ["грейпфрут", "м'ята", "червоні ноти", "кориця", "шкіра", "троянда", "пачулі", "амбра"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "d6e7d789-b3a1-8030-a64b-9601dd07827f",
@@ -1658,7 +1658,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "деревні"],
     notes: ["шавлія", "лимон", "толуанський бальзам", "кардамон", "кориця"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "e77f429a-7d31-86b0-8c95-f8385b5cdb42",
@@ -1669,7 +1669,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["східні", "пряні"],
     notes: ["апельсин", "спеції", "лаванда", "кедр", "чай"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "aa289f49-da0f-8d9f-8f9e-ee624ed8b45a",
@@ -1680,7 +1680,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні", "цитрусові"],
     notes: ["лимон", "бергамот", "м'ята", "ваніль", "кедр"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "3b27366a-53a4-8f77-ac45-1f456bad16c8",
@@ -1691,7 +1691,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["пряні", "деревні"],
     notes: ["бергамот", "елемі", "рожевий перець", "кориця", "табак"],
-    popular: false,
+    popularRank: null,
   },
   {
     publicId: "151ef555-8b04-8cce-a70b-e4fa224ff7ae",
@@ -1702,7 +1702,7 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["цитрусові", "фруктові"],
     notes: ["фрукти", "кедр", "червоний чилійський перець"],
-    popular: true,
+    popularRank: 29,
   },
   {
     publicId: "008b03e5-d106-8d91-ade5-8d3adb1256d1",
@@ -1713,6 +1713,6 @@ export const CATALOG_PRODUCTS: readonly CatalogEntry[] = [
     gender: "men",
     fragranceFamilies: ["деревні"],
     notes: ["мускус", "деревні ноти", "ірис", "амбра", "фіалка"],
-    popular: true,
+    popularRank: 30,
   },
 ];

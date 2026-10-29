@@ -124,7 +124,7 @@ the offers perks strip change from "1000 ₴" to "1500 ₴" in both locales.
 - [x] **7. Checkout route tests.** — In `app/routes/checkout.test.ts`, change the `remaining`
   values: 900 → `"600.00"` and 945 → `"555.00"`. Change the prefill case's subtotal from
   `"1000.00"` to `"1500.00"` so it stays `{ free: true }`.
-- [ ] **8. Docs and sweep.** — Change the threshold in `app/.server/AGENTS.md` (Orders) to 1500
+- [x] **8. Docs and sweep.** — Change the threshold in `app/.server/AGENTS.md` (Orders) to 1500
   UAH. Grep for leftovers: `rg -n "1000 ?(₴|UAH)|1 000|from 1000|від 1000" app cms/scripts
   README.md docs`. Only the gift-guide band and unrelated numbers (image widths, ms) should remain.
 - [ ] **9. Verify.** — `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.

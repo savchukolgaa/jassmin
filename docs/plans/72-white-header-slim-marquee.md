@@ -44,6 +44,10 @@ header turns white with `ink` text, the home marquee gets about half as tall and
   The panels (dropdown, mobile menu) stay without an underline. Implement as an `underline` option
   (e.g. `navItemClasses(active, "onLight", { underline: true })`) or a small
   `headerNavItemClasses(active)` helper in `nav.ts`; pick whichever reads cleaner.
+- **Bar underline as a helper (implemented):** `navItemClasses(active, tone, { underline })`
+  defaults `underline` to `tone === "onPrimary"`, and `headerNavItemClasses(active)` wraps the
+  white-bar case. The `onLight` icon button's active state is `bg-blush text-primary-dark` (was
+  `text-primary` only), so the active profile/menu icon isn't marked by colour alone.
 - **Header surface:** `bg-white text-ink` with a `border-b border-line` bottom border. The line is
   decorative (1.36:1): on the home page the deep-pink hero gives the real separation, on white pages
   the border is a hint. No shadow by default (see Q2).
@@ -128,7 +132,7 @@ header turns white with `ink` text, the home marquee gets about half as tall and
 
 ## Steps
 
-- [ ] **1. Nav helpers** — In `nav.ts`, change the `onLight` branch of `navItemClasses` to
+- [x] **1. Nav helpers** — In `nav.ts`, change the `onLight` branch of `navItemClasses` to
   `active ? "text-primary-dark" : "text-ink hover:text-primary-dark"` and add the bar underline
   option. Rewrite the `NavTone` doc: `onPrimary` = the deep-pink footer and hero bands, `onLight` =
   the white header and its panels. Keep `"onPrimary"` defaults for `Footer.tsx`. Check: footer tests

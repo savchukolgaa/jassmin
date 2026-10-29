@@ -148,6 +148,15 @@ describe("HomePage", () => {
     expect(html).toContain("small_hero.jpg 500w");
   });
 
+  it("shows the hero image in the larger frame, with sizes to match (#72)", () => {
+    const html = render();
+    const image = html.match(/<img[^>]*alt="Jassmin perfume testers"[^>]*>/)?.[0] ?? "";
+
+    expect(image).toContain('sizes="(min-width: 768px) 512px, 100vw"');
+    expect(image).toMatch(/class="[^"]*h-112[^"]*md:h-152/);
+    expect(html).toMatch(/class="relative mx-auto w-full max-w-lg min-w-0 flex-\[2_1_24rem\]"/);
+  });
+
   it("renders the hero eyebrow, subtitle, second CTA and floating chip", () => {
     const html = render();
 
@@ -265,6 +274,10 @@ describe("HomePage", () => {
       /<img[^>]*src="http:\/\/cms\.test\/uploads\/store\.jpg"[^>]*alt="Jassmin store"/,
     );
     expect(render()).not.toContain("store.jpg");
+    // The larger frame from #72, with sizes to match.
+    const photo = html.match(/<img[^>]*alt="Jassmin store"[^>]*>/)?.[0] ?? "";
+    expect(photo).toContain('sizes="(min-width: 768px) 640px, 100vw"');
+    expect(photo).toMatch(/class="[^"]*h-96[^"]*flex-\[1_1_28rem\][^"]*md:h-136/);
   });
 
   it("puts the address and hours on a deep-pink card with a directions link", () => {

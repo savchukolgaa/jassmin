@@ -157,10 +157,10 @@ header turns white with `ink` text, the home marquee gets about half as tall and
   offers page and cart, so it stays `aria-hidden`). Add `freeDelivery: "Безкоштовна доставка від
   {threshold}"` / `"Free delivery from {threshold}"` under `home.marquee` in `uk.ts` and `en.ts`.
   In `HomePage.tsx` render `<OfferMarquee trioOffer={view.trioOffer} />`.
-- [ ] **5. Hero image** — In `HeroSection.tsx`: wrapper `max-w-lg … flex-[2_1_24rem]`, `imageFrame`
+- [x] **5. Hero image** — In `HeroSection.tsx`: wrapper `max-w-lg … flex-[2_1_24rem]`, `imageFrame`
   `h-112 … md:h-152`, `sizes="(min-width: 768px) 512px, 100vw"`. Check the badge/chip positions and
   375px width.
-- [ ] **6. About photo** — In `AboutSection.tsx`: `photoFrame` `h-96 … flex-[1_1_28rem] … md:h-136`,
+- [x] **6. About photo** — In `AboutSection.tsx`: `photoFrame` `h-96 … flex-[1_1_28rem] … md:h-136`,
   `sizes="(min-width: 768px) 640px, 100vw"`. Check at 375px and desktop.
 - [ ] **7. Design doc** — In `docs/design.md`: `primary` row no longer lists "sticky header";
   replace "The header and footer are always deep pink." with "The header is white (`bg-white`,

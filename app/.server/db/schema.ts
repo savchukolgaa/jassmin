@@ -166,6 +166,23 @@ export const productVariants = pgTable(
   ],
 );
 
+/**
+ * A product's former URL slugs (#83), written by the CMS sync when staff rename a slug, so
+ * `/products/<old slug>` answers 301 to the current one. A slug is in here at most once, and never
+ * while it is some product's current slug.
+ */
+export const productSlugHistory = pgTable(
+  "product_slug_history",
+  {
+    slug: varchar({ length: 255 }).primaryKey(),
+    productId: integer()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("product_slug_history_product_id_idx").on(t.productId)],
+);
+
 // Analytics visitor sessions (#5), written by #18. Not the auth cookie session (session.ts).
 export const sessions = pgTable(
   "sessions",

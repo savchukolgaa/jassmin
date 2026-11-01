@@ -108,12 +108,12 @@ current slug URL, and unknown handles answer 404.
 | modify | `app/.server/AGENTS.md` | document slug URLs and `product_slug_history` |
 
 ## Steps
-- [ ] **1. Schema and migration** — Add `productSlugHistory` to `db/schema.ts` (columns and keys as
+- [x] **1. Schema and migration** — Add `productSlugHistory` to `db/schema.ts` (columns and keys as
   above, explicit constraint/index names, e.g. `product_slug_history_product_id_idx`). Run
   `pnpm db:generate --name product_slug_history`, write the rollback, and check with
   `pnpm db:migrate` + `pnpm db:rollback` + `pnpm db:migrate` on a dev DB. Mirror the row type in
   `~/lib/commerce` only if `schema.test.ts` requires it for this table (it covers commerce tables).
-- [ ] **2. Slug history queries** — `db/queries/product-slugs.ts`:
+- [x] **2. Slug history queries** — `db/queries/product-slugs.ts`:
   `recordOldSlug(tx, productId, slug)` (insert … `onConflictDoUpdate` on `slug`),
   `forgetSlug(tx, slug)` (delete by slug), `findProductIdBySlugHistory(db, slug)`. Integration test
   with `createTestDatabase()`.

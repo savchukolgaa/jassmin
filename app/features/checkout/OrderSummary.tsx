@@ -31,10 +31,7 @@ export function OrderSummary({
       aria-labelledby="order-summary-heading"
       className="flex flex-col gap-4 rounded-card-lg bg-blush p-6 lg:sticky lg:top-24"
     >
-      <h2
-        id="order-summary-heading"
-        className="text-2xl font-extrabold tracking-[-0.03em] text-ink"
-      >
+      <h2 id="order-summary-heading" className="text-2xl font-bold tracking-[-0.01em] text-ink">
         {t("checkout.summary")}
       </h2>
       <ul className="flex flex-col gap-3">
@@ -85,7 +82,7 @@ export function OrderSummary({
         </div>
         <div className="flex justify-between gap-4 text-lg font-extrabold text-ink">
           <dt>{t("checkout.total")}</dt>
-          <dd>{formatPrice(total)}</dd>
+          <dd className="font-serif font-bold">{formatPrice(total)}</dd>
         </div>
       </dl>
       {!freeShipping && remainingForFreeShipping && (

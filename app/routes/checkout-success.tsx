@@ -44,7 +44,7 @@ export default function CheckoutSuccess({ loaderData: order }: Route.ComponentPr
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+            <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
               {t("checkout.success.heading")}
             </h1>
             <p className="text-xl font-extrabold text-primary-dark">

@@ -54,7 +54,7 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
         <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">
           {product.brand}
         </p>
-        <Heading className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink">
+        <Heading className="text-xl font-bold leading-tight tracking-[-0.01em] text-ink">
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
             {product.title}
           </Link>
@@ -125,14 +125,14 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
         <p className="text-sm font-bold text-muted">
           {product.brand} · {defaultSize}
         </p>
-        <Heading className="text-lg leading-tight font-extrabold text-ink">
+        <Heading className="text-lg leading-tight font-bold text-ink">
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
             {product.title}
           </Link>
         </Heading>
       </div>
       <div className="mt-auto flex items-center justify-between gap-3 px-2 pb-2">
-        <p className="text-xl font-extrabold text-ink">
+        <p className="font-serif text-xl font-bold text-ink">
           {product.hasPriceRange ? t("product.fromPrice", { price }) : price}
         </p>
         <AddToCartForm

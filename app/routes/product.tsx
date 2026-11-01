@@ -81,7 +81,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">
             {product.brand}
           </p>
-          <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+          <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
             {product.title}
           </h1>
           <ProductFamilies families={product.fragranceFamilies} />
@@ -91,7 +91,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
             <section aria-labelledby="description-heading" className="mt-2">
               <h2
                 id="description-heading"
-                className="text-xl font-extrabold tracking-[-0.03em] text-ink"
+                className="text-xl font-bold tracking-[-0.01em] text-ink"
               >
                 {t("product.description")}
               </h2>

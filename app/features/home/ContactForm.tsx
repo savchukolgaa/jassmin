@@ -56,7 +56,7 @@ export function ContactForm({ actionData }: ContactFormProps) {
       aria-labelledby="contact-form-title"
       className="relative flex flex-col gap-5 rounded-card-lg bg-white p-6 text-ink sm:p-9"
     >
-      <h3 id="contact-form-title" className="text-2xl font-extrabold tracking-[-0.03em]">
+      <h3 id="contact-form-title" className="text-2xl font-bold tracking-[-0.01em]">
         {t("contact.title")}
       </h3>
 

@@ -18,7 +18,7 @@ export function OffersHero({ hero }: { hero: OfferView | null }) {
         <div className="container mx-auto px-4 py-14 md:py-20">
           <h1
             id="offers-title"
-            className="animate-fade-up text-4xl leading-tight font-extrabold tracking-[-0.04em] md:text-5xl"
+            className="animate-fade-up text-4xl leading-tight font-bold tracking-[-0.01em] md:text-5xl"
           >
             {t("offers.title")}
           </h1>
@@ -35,14 +35,14 @@ export function OffersHero({ hero }: { hero: OfferView | null }) {
         <div>
           <h1
             id="offers-title"
-            className="animate-fade-up text-sm font-bold tracking-widest uppercase"
+            className="animate-fade-up font-sans text-sm font-bold tracking-widest uppercase"
           >
             {t("offers.title")}
           </h1>
           <h2
             id="offers-hero-title"
             lang={lang}
-            className="mt-4 animate-fade-up anim-delay-1 text-5xl leading-none font-extrabold tracking-[-0.05em] text-balance md:text-7xl"
+            className="mt-4 animate-fade-up anim-delay-1 text-5xl leading-none font-bold tracking-[-0.01em] text-balance md:text-7xl"
           >
             {hero.title}
           </h2>

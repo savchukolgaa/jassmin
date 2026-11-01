@@ -24,7 +24,7 @@ export function ProductNotes({ notes }: { notes: ProductDetail["notes"] }) {
   if (notes.length === 0) return null;
   return (
     <section aria-labelledby="notes-heading" className="mt-2">
-      <h2 id="notes-heading" className="text-xl font-extrabold tracking-[-0.03em] text-ink">
+      <h2 id="notes-heading" className="text-xl font-bold tracking-[-0.01em] text-ink">
         {t("product.notes")}
       </h2>
       <ul lang={lang} className="mt-3 flex flex-wrap gap-2">

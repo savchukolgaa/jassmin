@@ -41,7 +41,7 @@ export function OfferCard({ offer }: { offer: OfferView }) {
           <h3
             id={titleId}
             lang={lang}
-            className="text-2xl leading-tight font-extrabold tracking-[-0.03em] text-ink md:text-3xl"
+            className="text-2xl leading-tight font-bold tracking-[-0.01em] text-ink md:text-3xl"
           >
             {offer.title}
           </h3>

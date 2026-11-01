@@ -19,7 +19,7 @@ export function CurrentOrderCard({ order }: { order: AccountOrder }) {
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h3 id={`order-${order.id}`} className="text-xl font-extrabold text-ink">
+          <h3 id={`order-${order.id}`} className="text-xl font-bold text-ink">
             {number}
           </h3>
           <p className="text-muted">

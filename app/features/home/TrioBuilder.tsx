@@ -55,7 +55,7 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
           >
             <h2
               id="trio-title"
-              className="text-4xl leading-none font-extrabold tracking-[-0.03em] md:text-5xl"
+              className="text-4xl leading-none font-bold tracking-[-0.01em] md:text-5xl"
             >
               {t("home.trio.title")}
             </h2>

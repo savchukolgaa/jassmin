@@ -45,7 +45,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
       </Link>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">{line.brand}</p>
-        <h2 className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink">
+        <h2 className="text-xl font-bold leading-tight tracking-[-0.01em] text-ink">
           <Link to={href} className={cn("rounded hover:underline", focusRing("onLight"))}>
             {line.title}
           </Link>
@@ -67,7 +67,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
           <p
             aria-busy={fetcher.state !== "idle" || undefined}
             className={cn(
-              "text-lg font-extrabold text-ink transition-opacity",
+              "font-serif text-lg font-bold text-ink transition-opacity",
               fetcher.state !== "idle" && "opacity-50",
             )}
           >

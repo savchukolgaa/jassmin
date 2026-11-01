@@ -68,7 +68,7 @@ export default function Blog({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
-      <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+      <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
         {t("blog.title")}
       </h1>
       <p className="mt-3 max-w-2xl text-lg text-body">{t("blog.intro")}</p>

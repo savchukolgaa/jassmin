@@ -39,7 +39,7 @@ export function CookieBanner() {
         <input type="hidden" name="redirectTo" value={pathname + search} />
         {referrer && <input type="hidden" name="referrer" value={referrer} />}
         <div className="flex-1">
-          <h2 id={titleId} className="text-lg font-extrabold">
+          <h2 id={titleId} className="text-lg font-bold">
             {t("consent.title")}
           </h2>
           <p className="mt-1 text-sm text-body">

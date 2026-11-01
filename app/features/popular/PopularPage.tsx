@@ -49,7 +49,7 @@ export function PopularPage({ view }: { view: PopularPageView }) {
               <div className="flex min-w-0 flex-[1_1_20rem] flex-col gap-2">
                 <h2
                   id="popular-more"
-                  className="text-3xl font-extrabold tracking-[-0.03em] text-ink md:text-4xl"
+                  className="text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl"
                 >
                   {t("popular.more.heading")}
                 </h2>

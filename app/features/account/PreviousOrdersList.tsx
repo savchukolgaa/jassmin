@@ -33,7 +33,7 @@ export function PreviousOrdersList({ orders }: { orders: AccountOrder[] }) {
                 <span className="min-w-28 flex-1 text-muted">
                   {formatDate(order.createdAt.toISOString())}
                 </span>
-                <span className="min-w-24 flex-1 font-extrabold text-ink">
+                <span className="min-w-24 flex-1 font-serif font-bold text-ink">
                   {formatPrice(order.totalAmount)}
                 </span>
                 <OrderStatusPill status={order.status} />

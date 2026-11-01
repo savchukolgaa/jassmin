@@ -22,6 +22,12 @@ describe("Header", () => {
     );
   });
 
+  it("sets the wordmark in the serif (#73)", () => {
+    expect(renderHeader()).toMatch(
+      /<a(?=[^>]*aria-label="Jassmin, home")[^>]*class="[^"]*font-serif text-2xl font-bold tracking-\[-0\.01em\]/,
+    );
+  });
+
   it("renders a sticky white bar with dark text and a bottom border (#72)", () => {
     expect(renderHeader()).toMatch(
       /^<header class="sticky top-0[^"]*border-line border-b bg-white text-ink"/,

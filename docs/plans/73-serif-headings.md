@@ -124,11 +124,19 @@ step numbers; Manrope stays for everything else.
 - [x] **5. Base heading style** — `@layer base { h1, h2, h3 { font-family: var(--font-serif); } }`
   beside the `html, body` rule; test it in `theme.test.ts`. Check in the browser that Ukrainian
   letters (є, ї, і, ґ, Щ) render in Playfair, not a fallback.
-- [ ] **6. Weight/tracking sweep** — For each `h1`–`h3` (and `RichText` `[&_h2]`), replace
+- [x] **6. Weight/tracking sweep** — For each `h1`–`h3` (and `RichText` `[&_h2]`), replace
   `font-extrabold tracking-[-0.0Xem]` with `font-bold tracking-[-0.01em]`; keep sizes and leading.
   Add `font-serif font-bold tracking-[-0.01em]` to the wordmarks, `HowItWorks` step numbers and
   the prominent prices. Update `consent-ui.test.ts:39`, `Header.test.ts` and any other test that
   pins those classes.
+  **Done:** 40 files swept (all `h1`–`h3`, the dynamic `<Heading>` in `ProductCard`, the account
+  `sectionHeading` constant, `RichText` `h2`). `font-serif font-bold tracking-[-0.01em]` on the
+  header and footer wordmarks, the `HowItWorks` numbers, the hero badge price, both product card
+  prices, the product page price, the cart line total, the cart/checkout total `<dd>`, account
+  order prices and the payment simulator amount. `CurrentOrderCard`'s price sits inside a
+  "date · items · price" sentence, so it stays Manrope. The `/offers` small uppercase `h1` eyebrow
+  gets `font-sans` so it stays a Manrope label. Tests: `Header.test.ts` pins the serif wordmark;
+  `cart-ui.test.ts` and `consent-ui.test.ts` follow the new classes.
 - [ ] **7. Focus-ring fix** — `TextField`/`PaymentMethodField`: `outline-primary-light` →
   `outline-primary`.
 - [ ] **8. Design doc** — `docs/design.md` "Typeface and scale": Playfair Display for headings,

@@ -23,7 +23,8 @@ export function localeButtonClasses(active: boolean, tone: NavTone = "onPrimary"
 
 /**
  * Flag buttons for Ukrainian and English. A plain form post to `/locale`, which stores the choice
- * in a cookie and comes back to this page, so it works without JS.
+ * in a cookie and comes back to this page (hash included), so it works without JS. With JS the
+ * redirect back keeps the scroll position, so only the text changes (#82).
  */
 export function LocaleSwitcher({
   tone = "onPrimary",
@@ -33,11 +34,11 @@ export function LocaleSwitcher({
   className?: string;
 }) {
   const { locale, t } = useT();
-  const { pathname, search } = useLocation();
+  const { pathname, search, hash } = useLocation();
 
   return (
-    <Form method="post" action="/locale" className={className}>
-      <input type="hidden" name="redirectTo" value={pathname + search} />
+    <Form method="post" action="/locale" preventScrollReset className={className}>
+      <input type="hidden" name="redirectTo" value={pathname + search + hash} />
       <fieldset className="flex items-center gap-1">
         <legend className="sr-only">{t("locale.label")}</legend>
         {LOCALES.map((option) => {

@@ -551,3 +551,25 @@ export async function backfillProductSlugs(
       ),
     );
 }
+
+/** A product's image columns as the Strapi sync stores them (#88). */
+export interface ProductImageWrite {
+  imageUrl: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  imageFormats: ImageFormat[] | null;
+}
+
+/** Overwrites the image of the product with this `public_id`; `false` when there is none. */
+export async function updateProductImage(
+  db: Executor,
+  publicId: string,
+  image: ProductImageWrite,
+): Promise<boolean> {
+  const rows = await db
+    .update(products)
+    .set(image)
+    .where(eq(products.publicId, publicId))
+    .returning({ id: products.id });
+  return rows.length > 0;
+}

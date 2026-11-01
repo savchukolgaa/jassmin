@@ -27,7 +27,8 @@
     "db:send-order-emails": "tsx app/.server/db/scripts/send-order-emails.ts",
     "db:sync-cms": "tsx app/.server/db/scripts/sync-cms.ts",
     "db:convert-catalog": "tsx app/.server/db/scripts/convert-catalog.ts",
-    "db:import-catalog": "tsx app/.server/db/scripts/import-catalog.ts"
+    "db:import-catalog": "tsx app/.server/db/scripts/import-catalog.ts",
+    "db:backfill-product-images": "tsx app/.server/db/scripts/backfill-product-images.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",

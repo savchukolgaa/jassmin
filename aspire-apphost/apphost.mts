@@ -130,6 +130,21 @@ await builder
   .withParentRelationship(db)
   .withExplicitStart();
 
+// Stores the size and resized formats of every product's Strapi image (`pnpm
+// db:backfill-product-images`, #88), for products synced before #88. Start it once from the
+// dashboard; Strapi edits keep them up to date afterwards.
+await builder
+  .addJavaScriptApp("db-backfill-product-images", "..", {
+    runScriptName: "db:backfill-product-images",
+  })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .withEnvironment("STRAPI_URL", cms.getEndpoint("http"))
+  .waitForCompletion(dbMigrate)
+  .waitFor(cms)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
 // `web` doesn't wait for `cms` or `smtp4dev`: the shop keeps working while either is down;
 // CMS-backed pages answer with a 503 and the contact form shows a "couldn't send" error instead.
 const web = builder

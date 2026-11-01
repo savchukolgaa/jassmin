@@ -194,7 +194,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   with `imageUrl`, max 8 formats); `routes/cms.products.ts` resolves each format URL against
   `STRAPI_URL`; `productWrite` in `services/cms-sync.ts` stores them. Tests in each layer
   (middleware payload, schema accept/reject, route resolves URLs, service writes columns).
-- [ ] **4. Backfill script** — `app/.server/db/scripts/backfill-product-images.ts`
+- [x] **4. Backfill script** — `app/.server/db/scripts/backfill-product-images.ts`
   (`pnpm db:backfill-product-images`): with `parseCmsSyncEnv`, page through Strapi `products`
   (`populate: ["image"]`, `fields: ["publicId"]`) using the existing `cmsSyncDeps` fetch, and
   update `image_url`/`image_width`/`image_height`/`image_formats` by `public_id` in batches.

@@ -100,6 +100,7 @@ export const uk = {
     account: "Мій кабінет",
     logIn: "Увійти",
     breadcrumb: "Навігаційний ланцюжок",
+    breadcrumbHome: "Головна",
     cart: {
       one: "Кошик, {count} товар",
       few: "Кошик, {count} товари",

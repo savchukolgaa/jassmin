@@ -3,12 +3,17 @@
   "info": {
     "displayName": "Location",
     "icon": "pinMap",
-    "description": "Store address and opening hours"
+    "description": "Store address and opening hours. Opening hours: one range per line, e.g. \"Пн–Пт 10:00–20:00\" or \"Mon–Fri 10:00–20:00\". Street, city, postcode and coordinates are optional and only used for Google search results."
   },
   "options": {},
   "attributes": {
     "address": { "type": "string", "required": true, "maxLength": 300 },
     "openingHours": { "type": "text" },
-    "mapEmbedUrl": { "type": "string", "required": true, "maxLength": 2000 }
+    "mapEmbedUrl": { "type": "string", "required": true, "maxLength": 2000 },
+    "streetAddress": { "type": "string", "maxLength": 200 },
+    "addressLocality": { "type": "string", "maxLength": 100 },
+    "postalCode": { "type": "string", "maxLength": 10 },
+    "latitude": { "type": "decimal", "min": -90, "max": 90 },
+    "longitude": { "type": "decimal", "min": -180, "max": 180 }
   }
 }

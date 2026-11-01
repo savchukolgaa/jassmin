@@ -99,6 +99,8 @@ interface HomePageCopy {
   aboutBody: string;
   address: string;
   openingHours: string;
+  streetAddress: string;
+  addressLocality: string;
 }
 
 const HOME_PAGE_COPY: Record<SeedLocale, HomePageCopy> = {
@@ -113,6 +115,8 @@ const HOME_PAGE_COPY: Record<SeedLocale, HomePageCopy> = {
       "Jassmin — невеликий парфумерний магазин в Україні. Ми допомагаємо знайти аромат до душі: кожен парфум можна спершу спробувати як тестер, перш ніж обрати повний флакон.",
     address: "вул. Хрещатик, 1, Київ, 01001",
     openingHours: "Пн–Пт 10:00–20:00\nСб–Нд 11:00–18:00",
+    streetAddress: "вул. Хрещатик, 1",
+    addressLocality: "Київ",
   },
   en: {
     headline: "Order 3 Testers only for 499₴",
@@ -125,6 +129,8 @@ const HOME_PAGE_COPY: Record<SeedLocale, HomePageCopy> = {
       "Jassmin is a small perfume store in Ukraine. We help you find a scent you love by trying it first: every fragrance is available as a tester before you commit to a full bottle.",
     address: "1 Khreshchatyk St, Kyiv, 01001",
     openingHours: "Mon–Fri 10:00–20:00\nSat–Sun 11:00–18:00",
+    streetAddress: "1 Khreshchatyk St",
+    addressLocality: "Kyiv",
   },
 };
 
@@ -164,6 +170,12 @@ async function seedHomePage(strapi: Core.Strapi, images: SeedImageIds): Promise<
         address: copy.address,
         openingHours: copy.openingHours,
         mapEmbedUrl: "https://www.google.com/maps?q=Khreshchatyk+1+Kyiv&output=embed",
+        // The structured address and coordinates only feed the store's JSON-LD (#86).
+        streetAddress: copy.streetAddress,
+        addressLocality: copy.addressLocality,
+        postalCode: "01001",
+        latitude: 50.4501,
+        longitude: 30.5234,
       },
     };
     const existing = await homePages.findFirst({ locale: "uk" });

@@ -39,6 +39,11 @@ const view: HomePageView = {
     openingHours: "Mon–Fri 10:00–20:00\nSat–Sun 11:00–18:00",
     mapEmbedUrl: "https://www.google.com/maps?q=Khreshchatyk&output=embed",
     directionsUrl: "https://www.google.com/maps/search/?api=1&query=x",
+    streetAddress: null,
+    addressLocality: null,
+    postalCode: null,
+    latitude: null,
+    longitude: null,
   },
   contacts: {
     locale: "en",

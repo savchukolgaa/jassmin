@@ -54,6 +54,8 @@ export interface ProductDetail extends ProductBase {
   fragranceFamilies: string[];
   /** Scent notes, Ukrainian only (#65). */
   notes: string[];
+  /** The shop's own code for the bottle, e.g. `3-D` (#65); `null` when staff left it blank. */
+  storeCode: string | null;
   /** Ascending by volume; empty when the product has no sizes for sale. */
   variants: ProductVariant[];
 }

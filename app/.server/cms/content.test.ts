@@ -209,6 +209,14 @@ describe("mappers", () => {
 
     expect(post).toMatchObject({ coverImage: null, authorName: null, excerpt: null, seo: null });
   });
+
+  it("maps a post's last edit time, or null without one", () => {
+    const [entry] = collectionResponse(blogPostEntry).parse(blogPostBySlug).data;
+    if (!entry) throw new Error("fixture has no post");
+
+    expect(toBlogPost(entry, BASE_URL).updatedAt).toBe("2026-10-24T11:46:35.374Z");
+    expect(toBlogPost({ ...entry, updatedAt: null }, BASE_URL).updatedAt).toBeNull();
+  });
 });
 
 describe("getHomePage", () => {
@@ -505,6 +513,50 @@ describe("toHomePage", () => {
     const { data } = singleResponse(homePageEntry).parse(homePageEn);
 
     expect(toHomePage(data, BASE_URL).locale).toBe("en");
+  });
+
+  it("maps the structured address and coordinates", () => {
+    const { data } = singleResponse(homePageEntry).parse(homePage);
+
+    expect(toHomePage(data, BASE_URL).location).toMatchObject({
+      streetAddress: "вул. Хрещатик, 1",
+      addressLocality: "Київ",
+      postalCode: "01001",
+      latitude: 50.4501,
+      longitude: 30.5234,
+    });
+  });
+
+  it("treats a missing, blank or invalid structured address as not set", () => {
+    const parse = (location: Record<string, unknown>) => {
+      const { data } = singleResponse(homePageEntry).parse({
+        ...homePage,
+        data: { ...homePage.data, location: { ...homePage.data.location, ...location } },
+      });
+      return toHomePage(data, BASE_URL).location;
+    };
+
+    expect(parse({ streetAddress: "  ", latitude: null, longitude: undefined })).toMatchObject({
+      streetAddress: null,
+      latitude: null,
+      longitude: null,
+    });
+    expect(parse({ latitude: 91, longitude: "abc" })).toMatchObject({
+      latitude: null,
+      longitude: null,
+    });
+    expect(parse({ latitude: "50.45", longitude: "-30.5" })).toMatchObject({
+      latitude: 50.45,
+      longitude: -30.5,
+    });
+    const { data } = singleResponse(homePageEntry).parse(homePageEn);
+    expect(toHomePage(data, BASE_URL).location).toMatchObject({
+      streetAddress: null,
+      addressLocality: null,
+      postalCode: null,
+      latitude: null,
+      longitude: null,
+    });
   });
 
   it("maps the optional hero fields and the about image", () => {

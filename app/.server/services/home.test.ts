@@ -28,6 +28,11 @@ const homePage: HomePage = {
     address: "вул. Хрещатик, 1, Київ",
     openingHours: "Mon–Fri 10:00–20:00",
     mapEmbedUrl: "https://www.google.com/maps?q=Khreshchatyk&output=embed",
+    streetAddress: "1 Khreshchatyk St",
+    addressLocality: "Kyiv",
+    postalCode: "01001",
+    latitude: 50.4501,
+    longitude: 30.5234,
   },
 };
 
@@ -83,6 +88,13 @@ describe("buildHomePageView", () => {
 
     expect(location.mapEmbedUrl).toBe(homePage.location.mapEmbedUrl);
     expect(location.directionsUrl).toMatch(/^https:\/\/www\.google\.com\/maps\/search\/\?api=1/);
+    expect(location).toMatchObject({
+      streetAddress: "1 Khreshchatyk St",
+      addressLocality: "Kyiv",
+      postalCode: "01001",
+      latitude: 50.4501,
+      longitude: 30.5234,
+    });
   });
 
   it("drops a map URL that isn't Google Maps", () => {

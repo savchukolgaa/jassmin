@@ -31,6 +31,15 @@ export interface Seo {
   ogImage: CmsImage | null;
 }
 
+/** The store's optional structured address (#86); `null` fields fall back to `address`. */
+export interface StructuredAddress {
+  streetAddress: string | null;
+  addressLocality: string | null;
+  postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export interface HomePage {
   /** The locale the content was served in: `uk` when an English translation was missing. */
   locale: Locale;
@@ -56,7 +65,7 @@ export interface HomePage {
     address: string;
     openingHours: string | null;
     mapEmbedUrl: string;
-  };
+  } & StructuredAddress;
 }
 
 /** Display names for social platforms, e.g. on the home page Contacts section. */
@@ -98,6 +107,8 @@ export interface BlogPostSummary {
 }
 
 export interface BlogPost extends BlogPostSummary {
+  /** ISO 8601 timestamp of the last edit; `null` when Strapi didn't send one. */
+  updatedAt: string | null;
   /** Markdown; render and sanitize it before showing it. */
   content: string;
   seo: Seo | null;

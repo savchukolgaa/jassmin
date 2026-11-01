@@ -38,6 +38,11 @@ const homePage: HomePage = {
     address: "вул. Хрещатик, 1, Київ",
     openingHours: null,
     mapEmbedUrl: "javascript:alert(1)",
+    streetAddress: null,
+    addressLocality: null,
+    postalCode: null,
+    latitude: null,
+    longitude: null,
   },
 };
 const siteSettings: SiteSettings = {

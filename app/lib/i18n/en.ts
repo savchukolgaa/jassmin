@@ -101,6 +101,7 @@ export const en = {
     account: "My account",
     logIn: "Log in",
     breadcrumb: "Breadcrumb",
+    breadcrumbHome: "Home",
     cart: {
       one: "Cart, {count} item",
       other: "Cart, {count} items",

@@ -114,6 +114,7 @@ describe("product meta", () => {
     description: "Свіжий східний аромат.",
     fragranceFamilies: [],
     notes: [],
+    storeCode: "3-D",
     variants: [variant("1250.00"), variant("3200.00", false)],
   };
   const run = (overrides: Partial<ProductDetail> = {}) =>

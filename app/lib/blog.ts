@@ -78,6 +78,8 @@ export interface BlogListView {
 }
 
 export interface BlogPostView extends BlogPostCardView {
+  /** ISO 8601 timestamp of the last edit; `publishedAt` when unknown (#86). */
+  updatedAt: string;
   authorName: string | null;
   /** Sanitized HTML rendered from the Strapi Markdown; safe for `dangerouslySetInnerHTML`. */
   contentHtml: string;

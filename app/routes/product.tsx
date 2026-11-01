@@ -1,18 +1,23 @@
 import { data, isRouteErrorResponse, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { resolveProductHandle } from "~/.server/services/products";
+import { JsonLd } from "~/components/JsonLd";
+import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
 import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
 import { shouldRevalidateView } from "~/lib/analytics";
+import { productBreadcrumbs } from "~/lib/breadcrumbs";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
 import { metaTranslator, useT } from "~/lib/i18n";
-import { productHref } from "~/lib/products";
+import { formatVolume, productHref } from "~/lib/products";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, priceAmount, seoMeta } from "~/lib/seo";
+import { breadcrumbListLd, productLd } from "~/lib/structured-data";
+import { useSiteUrl } from "~/lib/use-site-url";
 import type { Route } from "./+types/product";
 
 /** The catalog to link back to. Unisex perfumes are in both, so they go back to the women's. */
@@ -91,20 +96,25 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
 export const shouldRevalidate = shouldRevalidateView;
 
 export default function Product({ loaderData }: Route.ComponentProps) {
-  const { t } = useT();
+  const translator = useT();
+  const { t } = translator;
+  const siteUrl = useSiteUrl();
   const { product } = loaderData;
   const catalog = catalogOf(product.gender);
+  const breadcrumbs = productBreadcrumbs(t, catalog, product);
+  const productData = productLd({
+    origin: siteUrl,
+    product,
+    path: productHref(product),
+    variantName: ({ volumeMl }) =>
+      formatVolume({ volumeMl, packSize: product.packSize }, translator),
+  });
 
   return (
     <main className="container mx-auto px-4 pt-8 pb-16">
-      <nav aria-label={t("nav.breadcrumb")} className="text-sm">
-        <Link
-          to={`/catalog/${catalog}`}
-          className={`rounded-pill font-bold text-primary-dark hover:underline ${focusRing("onLight")}`}
-        >
-          ← {t(CATALOG_TITLE_KEYS[catalog])}
-        </Link>
-      </nav>
+      {productData && <JsonLd data={productData} />}
+      <JsonLd data={breadcrumbListLd(siteUrl, breadcrumbs)} />
+      <Breadcrumbs items={breadcrumbs} />
 
       <div className="mt-6 grid gap-8 md:grid-cols-2 md:gap-12">
         <ProductImage

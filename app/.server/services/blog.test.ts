@@ -55,6 +55,13 @@ describe("buildBlogListView", () => {
 });
 
 describe("buildBlogPostView", () => {
+  it("keeps the last edit time, falling back to the publish time", () => {
+    const post = fixturePost();
+
+    expect(buildBlogPostView(post, SITE).updatedAt).toBe(post.updatedAt);
+    expect(buildBlogPostView({ ...post, updatedAt: null }, SITE).updatedAt).toBe(post.publishedAt);
+  });
+
   it("renders sanitized article HTML with h2 headings", () => {
     const post = fixturePost();
     const view = buildBlogPostView(

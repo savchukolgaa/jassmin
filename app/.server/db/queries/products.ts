@@ -277,6 +277,7 @@ const detailColumns = {
   description: products.description,
   fragranceFamilies: products.fragranceFamilies,
   notes: products.notes,
+  storeCode: products.storeCode,
 };
 
 /** A listed product by `public_id`. */

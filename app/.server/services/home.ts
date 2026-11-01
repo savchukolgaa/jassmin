@@ -29,6 +29,11 @@ export function buildHomePageView(
       openingHours: location.openingHours,
       mapEmbedUrl: safeMapEmbedUrl(location.mapEmbedUrl),
       directionsUrl: directionsUrl(location.address),
+      streetAddress: location.streetAddress,
+      addressLocality: location.addressLocality,
+      postalCode: location.postalCode,
+      latitude: location.latitude,
+      longitude: location.longitude,
     },
     contacts: siteSettings,
     seo: {

@@ -33,6 +33,7 @@ const card: BlogPostCardView = {
 
 const post: BlogPostView = {
   ...card,
+  updatedAt: "2026-10-23T08:00:00.000Z",
   authorName: "Jassmin team",
   contentHtml: "<h2>Start with the notes</h2>\n<p>A perfume changes.</p>\n",
   seo: {
@@ -79,7 +80,11 @@ describe("BlogArticle", () => {
     expect(html).toContain("Jassmin team");
     expect(html).toContain('loading="eager"');
     expect(html).toContain("<h2>Start with the notes</h2>");
-    expect(html).toMatch(/href="\/blog"[^>]*>← Back to the blog/);
+    // Breadcrumbs (#86): Home > Blog > the post, which isn't a link.
+    expect(html).toContain('<nav aria-label="Breadcrumb"');
+    expect(html).toMatch(/href="\/"[^>]*>Home<\/a>/);
+    expect(html).toMatch(/href="\/blog"[^>]*>Blog<\/a>/);
+    expect(html).toMatch(/aria-current="page"[^>]*>How to choose a perfume<\/span>/);
     expect(html).not.toContain(" lang=");
   });
 

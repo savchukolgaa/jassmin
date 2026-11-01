@@ -176,7 +176,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
 
 ## Steps
 
-- [ ] **1. Image helper** — Create `app/lib/images.ts` with `ResponsiveImage`, `buildSrcSet`,
+- [x] **1. Image helper** — Create `app/lib/images.ts` with `ResponsiveImage`, `buildSrcSet`,
   `toResponsiveImage` and `PRODUCT_IMAGE_SIZES` (`card: "(min-width: 1024px) 280px, (min-width:
   640px) 45vw, 90vw"`, `compact`, `page: "(min-width: 768px) 50vw, 100vw"`, `thumb: "96px"`;
   tune against the real grid classes). Refactor `toSrcSet` in `app/.server/cms/content.ts` to

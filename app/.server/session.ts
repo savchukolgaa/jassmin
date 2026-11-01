@@ -1,4 +1,6 @@
 import { createCookieSessionStorage, redirect } from "react-router";
+import { DEFAULT_LOCALE, type Locale } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import { getEnv } from "./env";
 import { SESSION_COOKIE_NAME } from "./session-cookie";
 
@@ -69,8 +71,10 @@ export async function createUserSession({
   return redirect(redirectTo, { headers: { "Set-Cookie": await commitSession(session) } });
 }
 
-/** Logs the user out: destroys the session cookie and redirects home. */
-export async function logout(request: Request): Promise<Response> {
+/** Logs the user out: destroys the session cookie and redirects to the home page in `locale`. */
+export async function logout(request: Request, locale: Locale = DEFAULT_LOCALE): Promise<Response> {
   const session = await getSession(request.headers.get("Cookie"));
-  return redirect("/", { headers: { "Set-Cookie": await destroySession(session) } });
+  return redirect(pathFor(locale, "home"), {
+    headers: { "Set-Cookie": await destroySession(session) },
+  });
 }

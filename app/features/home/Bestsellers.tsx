@@ -1,12 +1,13 @@
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { ProductCard } from "~/features/catalog/ProductCard";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import type { ProductSummary } from "~/lib/products";
 
 /** The four best-selling perfumes with quick add, and a link to the catalog. */
 export function Bestsellers({ products }: { products: ProductSummary[] }) {
   const { t } = useT();
+  const path = usePathFor();
   if (products.length === 0) {
     return null;
   }
@@ -22,7 +23,7 @@ export function Bestsellers({ products }: { products: ProductSummary[] }) {
             {t("home.bestsellers.title")}
           </h2>
           <Link
-            to="/catalog/women"
+            to={path("catalog", { gender: "women" })}
             className={`inline-flex min-h-11 items-center rounded font-extrabold text-ink hover:text-primary-dark ${focusRing("onLight")}`}
           >
             {t("home.bestsellers.viewAll")}

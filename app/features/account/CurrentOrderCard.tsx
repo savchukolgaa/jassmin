@@ -1,6 +1,6 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import type { AccountOrder } from "~/lib/account";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import { OrderLineThumb } from "./OrderLineItem";
 import { OrderProgress } from "./OrderProgress";
 import { OrderStatusPill } from "./OrderStatusPill";
@@ -10,6 +10,7 @@ const MAX_THUMBS = 3;
 /** An order on its way: status, progress and a link to its details (C+ Account). */
 export function CurrentOrderCard({ order }: { order: AccountOrder }) {
   const { t, formatDate, formatPrice } = useT();
+  const path = usePathFor();
   const number = t("account.orders.number", { id: order.id });
 
   return (
@@ -47,7 +48,7 @@ export function CurrentOrderCard({ order }: { order: AccountOrder }) {
             <OrderLineThumb key={line.key} line={line} />
           ))}
         </div>
-        <ButtonLink to={`/account/orders/${order.id}`} variant="dark" size="sm">
+        <ButtonLink to={path("accountOrder", { id: String(order.id) })} variant="dark" size="sm">
           {t("account.orders.details")}
           <span className="sr-only">: {number}</span>
           <span aria-hidden="true">→</span>

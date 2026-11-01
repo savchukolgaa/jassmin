@@ -278,7 +278,7 @@ header, and `Accept-Language` the hint. Update its comment.
   (blog via step 7's content functions, mocked in tests). `locale-middleware.ts` exported from
   `root.tsx` `middleware`. Tests: cookie `en` on a uk page → 302 to the en URL; no cookie or
   `Accept-Language: en` only → no redirect; cookie `en` on an en page or a POST → no redirect.
-- [ ] **6. Replace hard-coded paths.** Add `usePathFor()`. Convert, in this order: `nav.ts` (nav
+- [x] **6. Replace hard-coded paths.** Add `usePathFor()`. Convert, in this order: `nav.ts` (nav
   items become `{ page, params?, hash? }` resolved in `Header`/`Footer`), lib path constants
   (`OFFERS_PATH`, `POPULAR_PATH`, `PRIVACY_POLICY_PATH`, `popularHref`, `blogHref`,
   `blogPostHref`, `trio` target, `FALLBACK_CTA_PATH` → take a `locale`), features, routes, and

@@ -14,19 +14,19 @@ describe("parsePopularPage", () => {
 });
 
 describe("popularHref", () => {
-  it("is /popular without families or a page", () => {
-    expect(popularHref([])).toBe("/popular");
-    expect(popularHref([], 1)).toBe("/popular");
+  it("is the plain page URL without families or a page", () => {
+    expect(popularHref("uk", [])).toBe("/populiarni");
+    expect(popularHref("en", [], 1)).toBe("/en/popular");
   });
 
   it("keeps the families in pick order and adds the page after the first", () => {
-    expect(popularHref(["квіткові", "свіжі"], 2)).toBe(
-      `/popular?${new URLSearchParams([
+    expect(popularHref("uk", ["квіткові", "свіжі"], 2)).toBe(
+      `/populiarni?${new URLSearchParams([
         ["family", "квіткові"],
         ["family", "свіжі"],
         ["page", "2"],
       ])}`,
     );
-    expect(popularHref([], 3)).toBe("/popular?page=3");
+    expect(popularHref("en", [], 3)).toBe("/en/popular?page=3");
   });
 });

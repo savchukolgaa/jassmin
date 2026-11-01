@@ -26,9 +26,6 @@ export const consentFormSchema = z.object({
 
 export type ConsentFormInput = z.infer<typeof consentFormSchema>;
 
-/** The privacy and cookie policy page, linked from the banner, the footer and registration. */
-export const PRIVACY_POLICY_PATH = "/privacy";
-
 /** When the privacy policy last changed (ISO date), shown on the page. */
 export const PRIVACY_POLICY_UPDATED_AT = "2026-10-24";
 

@@ -74,7 +74,7 @@ describe("register action", () => {
       9,
       "register",
     );
-    expect((result as Response).headers.get("Location")).toBe("/account");
+    expect((result as Response).headers.get("Location")).toBe("/kabinet");
   });
 
   it("reports a taken email and refills the form without the password", async () => {
@@ -132,6 +132,6 @@ describe("register loader", () => {
 
     const thrown = await loader(get("http://localhost/register")).catch((error: unknown) => error);
 
-    expect((thrown as Response).headers.get("Location")).toBe("/account");
+    expect((thrown as Response).headers.get("Location")).toBe("/kabinet");
   });
 });

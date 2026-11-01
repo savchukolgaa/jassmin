@@ -73,7 +73,8 @@ function CtaLink({
   style: ButtonStyleOptions;
   children: ReactNode;
 }) {
-  const cta = resolveCtaHref(href);
+  const { locale } = useT();
+  const cta = resolveCtaHref(href, locale);
   return cta.kind === "internal" ? (
     <ButtonLink to={cta.to} {...style}>
       {children}

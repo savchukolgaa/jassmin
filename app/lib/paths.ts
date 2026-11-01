@@ -201,6 +201,11 @@ export function matchPage(pathname: string): PageMatch | null {
   return match ? { ...match, locale } : null;
 }
 
+/** The page a link, form action or `formAction` (`/en?index`) points to, in either language. */
+export function pageOf(path: string | undefined): Page | null {
+  return path === undefined ? null : (matchPage(path.split(/[?#]/)[0] ?? "")?.page ?? null);
+}
+
 /** `pathFor` with the parameters of a match; they're already checked by `matchPage`. */
 function pathForMatch(
   locale: Locale,

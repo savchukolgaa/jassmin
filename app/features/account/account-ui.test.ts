@@ -17,8 +17,8 @@ const render = (element: ReactElement, locale: Locale = "uk") =>
       I18nProvider,
       { locale },
       createElement(RouterProvider, {
-        router: createMemoryRouter([{ path: "/account", element }], {
-          initialEntries: ["/account"],
+        router: createMemoryRouter([{ path: "/en/account", element }], {
+          initialEntries: ["/en/account"],
         }),
       }),
     ),
@@ -130,7 +130,7 @@ describe("CurrentOrderCard", () => {
     expect(html).toContain("Placed 21 October 2026");
     expect(html).toContain("3 items");
     expect(html).toContain(formatPrice("2430.00"));
-    expect(html).toContain('href="/account/orders/42"');
+    expect(html).toContain('href="/en/account/orders/42"');
     expect(html).toContain('src="https://example.com/coco.jpg"');
   });
 
@@ -167,6 +167,6 @@ describe("PreviousOrdersList", () => {
     expect(html).toContain(formatPrice("990.00"));
     expect(html).toContain("Chanel · 5 мл · 2 шт.");
     expect(html).toContain("Цей парфум більше не продається");
-    expect(html).toContain('href="/account/orders/7"');
+    expect(html).toContain('href="/kabinet/zamovlennia/7"');
   });
 });

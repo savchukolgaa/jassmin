@@ -32,13 +32,13 @@ describe("parseTrioSearch", () => {
 
 describe("trioHref", () => {
   it("links to the popular page with each family", () => {
-    expect(trioHref(["квіткові", "свіжі"])).toBe(
-      `/popular?family=${encodeURIComponent("квіткові")}&family=${encodeURIComponent("свіжі")}`,
+    expect(trioHref("uk", ["квіткові", "свіжі"])).toBe(
+      `/populiarni?family=${encodeURIComponent("квіткові")}&family=${encodeURIComponent("свіжі")}`,
     );
   });
 
   it("links to the popular page alone without families", () => {
-    expect(trioHref([])).toBe("/popular");
+    expect(trioHref("en", [])).toBe("/en/popular");
   });
 });
 

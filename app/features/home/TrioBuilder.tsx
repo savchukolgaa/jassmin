@@ -128,7 +128,11 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
               })}
             </ol>
             {full ? (
-              <ButtonLink to={trioHref(picked)} size="lg" className="animate-pop">
+              <ButtonLink
+                to={trioHref(translator.locale, picked)}
+                size="lg"
+                className="animate-pop"
+              >
                 {trioOffer
                   ? t("home.trio.cta", { price: formatPrice(trioOffer.price) })
                   : t("home.trio.ctaNoPrice")}

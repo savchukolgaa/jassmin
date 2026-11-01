@@ -1,10 +1,11 @@
 import { Form, Link, useLocation } from "react-router";
 import { useT } from "~/lib/i18n";
-import { FOOTER_LINKS, navItemClasses } from "./nav";
+import { navItemClasses, useNavLinks } from "./nav";
 
 /** Site footer shown on every public page, below the page content. */
 export function Footer() {
   const { t } = useT();
+  const links = useNavLinks();
   const { pathname, search } = useLocation();
 
   return (
@@ -12,7 +13,7 @@ export function Footer() {
       <div className="container mx-auto flex flex-col gap-6 px-4 pt-10 pb-4">
         <nav aria-label={t("nav.footer")}>
           <ul className="-mx-3 flex flex-wrap gap-x-2 gap-y-1">
-            {FOOTER_LINKS.map((link) => (
+            {links.footer.map((link) => (
               <li key={link.to}>
                 <Link to={link.to} className={navItemClasses()}>
                   {t(link.labelKey)}

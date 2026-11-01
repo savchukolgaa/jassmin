@@ -1,9 +1,10 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 
 /** Shown when no campaign is running: both catalogs and the blog instead. */
 export function OffersEmpty() {
   const { t } = useT();
+  const path = usePathFor();
 
   return (
     <section
@@ -15,11 +16,11 @@ export function OffersEmpty() {
       </h2>
       <p className="max-w-xl text-lg text-body">{t("offers.empty.text")}</p>
       <div className="flex flex-wrap gap-3">
-        <ButtonLink to="/catalog/women">{t("offers.empty.women")}</ButtonLink>
-        <ButtonLink to="/catalog/men" variant="dark">
+        <ButtonLink to={path("catalog", { gender: "women" })}>{t("offers.empty.women")}</ButtonLink>
+        <ButtonLink to={path("catalog", { gender: "men" })} variant="dark">
           {t("offers.empty.men")}
         </ButtonLink>
-        <ButtonLink to="/blog" variant="ghost">
+        <ButtonLink to={path("blog")} variant="ghost">
           {t("offers.empty.blog")}
         </ButtonLink>
       </div>

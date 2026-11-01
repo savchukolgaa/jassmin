@@ -226,7 +226,9 @@ describe("home shouldRevalidate", () => {
   });
 
   it("skips reloading after a bestseller's quick add", () => {
-    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/cart" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/koshyk" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/en/cart" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/en?index" }))).toBe(false);
   });
 
   it("follows the default otherwise", () => {

@@ -23,7 +23,8 @@ import {
   parseCheckout,
 } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
-import { type Locale, metaTranslator, useT } from "~/lib/i18n";
+import { type Locale, metaTranslator, usePathFor, useT } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/checkout";
 
@@ -41,7 +42,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const cart = await getCartView(owner);
   // The cart page explains sold-out and low-stock lines; checkout only starts without them.
   if (cart.lines.length === 0 || cart.lines.some((line) => line.quantity > line.stockQuantity)) {
-    throw redirect("/cart");
+    throw redirect(pathFor(await getLocale(request), "cart"));
   }
   // Not awaited: the page doesn't wait for tracking (#18). A failed submit (4xx) doesn't revalidate
   // this loader, so it records once per visit to the page.
@@ -83,10 +84,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const owner = await getCartOwner(request);
   const cartId = await getActiveCartId(owner);
-  if (cartId === undefined) {
-    return redirect("/cart");
-  }
   const locale = await getLocale(request);
+  if (cartId === undefined) {
+    return redirect(pathFor(locale, "cart"));
+  }
   const { expectedTotal, ...customer } = parsed.data;
   const result = await createOrder({
     cartId,
@@ -97,7 +98,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   });
   if (!result.ok) {
     if (result.error === "cart-empty") {
-      return redirect("/cart");
+      return redirect(pathFor(locale, "cart"));
     }
     return data<CheckoutFormErrors>(
       {
@@ -140,7 +141,9 @@ export async function action({ request, context }: Route.ActionArgs) {
       return redirect(redirectUrl, { headers });
     }
   }
-  return redirect(`/checkout/success/${result.orderId}`, { headers });
+  return redirect(pathFor(locale, "checkoutSuccess", { orderId: String(result.orderId) }), {
+    headers,
+  });
 }
 
 /**
@@ -163,6 +166,7 @@ async function paymentRedirect(
 
 export default function Checkout({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useT();
+  const path = usePathFor();
   const { cart, prefill, shipping, cardPaymentAvailable } = loaderData;
 
   return (
@@ -176,7 +180,7 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
           className="mt-4 rounded-card bg-blush px-4 py-3 font-bold text-primary-dark"
         >
           {t(actionData.formError)}{" "}
-          <Link to="/cart" className={cn("rounded underline", focusRing("onLight"))}>
+          <Link to={path("cart")} className={cn("rounded underline", focusRing("onLight"))}>
             {t("checkout.backToCart")}
           </Link>
         </p>
@@ -201,7 +205,7 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
       </div>
       <p className="mt-6">
         <Link
-          to="/cart"
+          to={path("cart")}
           className={cn("rounded font-bold text-primary-dark underline", focusRing("onLight"))}
         >
           {t("checkout.backToCart")}

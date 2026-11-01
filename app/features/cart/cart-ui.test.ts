@@ -18,7 +18,9 @@ import { PromoCodeForm } from "./PromoCodeForm";
 
 // Fetchers and `<Form>` need a data router.
 const render = (element: ReactElement) => {
-  const router = createMemoryRouter([{ path: "/cart", element }], { initialEntries: ["/cart"] });
+  const router = createMemoryRouter([{ path: "/en/cart", element }], {
+    initialEntries: ["/en/cart"],
+  });
   // In English, like the assertions.
   return renderToStaticMarkup(
     createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
@@ -95,7 +97,7 @@ describe("CartLineItem", () => {
   it("posts update and remove intents for its variant to the cart action", () => {
     const html = render(createElement(CartLineItem, { line }));
 
-    expect(html.match(/<form[^>]*action="\/cart"/g)).toHaveLength(2);
+    expect(html.match(/<form[^>]*action="\/en\/cart"/g)).toHaveLength(2);
     expect(html).toContain('name="intent" value="update"');
     expect(html).toContain('name="intent" value="remove"');
     expect(html.match(new RegExp(`name="variantId" value="${line.variantId}"`, "g"))).toHaveLength(
@@ -108,8 +110,8 @@ describe("CartLineItem", () => {
   it("links to the product's slug URL", () => {
     const html = render(createElement(CartLineItem, { line }));
 
-    expect(html).toContain('href="/products/coco-mademoiselle"');
-    expect(html).not.toContain(`/products/${line.productId}`);
+    expect(html).toContain('href="/en/perfumes/coco-mademoiselle"');
+    expect(html).not.toContain(`/en/perfumes/${line.productId}`);
   });
 
   it("steps the quantity by one within the stock", () => {
@@ -154,7 +156,7 @@ describe("CartSummary", () => {
 
     expect(html).toContain("2 items");
     expect(html).toContain("₴13,700");
-    expect(html).toMatch(/<a[^>]*href="\/checkout"[^>]*>Proceed to checkout<\/a>/);
+    expect(html).toMatch(/<a[^>]*href="\/en\/checkout"[^>]*>Proceed to checkout<\/a>/);
     expect(html).toContain("Free Nova Poshta delivery from ₴1,500.");
   });
 });
@@ -183,7 +185,7 @@ describe("CartSummary with a discount (#59)", () => {
     const router = createMemoryRouter(
       [
         {
-          path: "/cart",
+          path: "/en/cart",
           element: createElement(CartSummary, {
             cart: {
               ...trio,
@@ -194,7 +196,7 @@ describe("CartSummary with a discount (#59)", () => {
           }),
         },
       ],
-      { initialEntries: ["/cart"] },
+      { initialEntries: ["/en/cart"] },
     );
     const html = renderToStaticMarkup(
       createElement(I18nProvider, { locale: "uk" }, createElement(RouterProvider, { router })),
@@ -212,7 +214,7 @@ describe("PromoCodeForm", () => {
   it("offers a labelled code field that posts apply-promo to the cart", () => {
     const html = render(createElement(PromoCodeForm, { promo: null }));
 
-    expect(html).toMatch(/<form[^>]*action="\/cart" method="post"/);
+    expect(html).toMatch(/<form[^>]*action="\/en\/cart" method="post"/);
     expect(html).toContain('name="intent" value="apply-promo"');
     expect(html).toMatch(/<label for="cart-promo-code"[^>]*>Promo code<\/label>/);
     expect(html).toMatch(/<input[^>]*maxLength="40"[^>]*name="code"/);
@@ -242,6 +244,9 @@ describe("EmptyCart", () => {
   it("links to the women's and men's catalogs only", () => {
     const html = render(createElement(EmptyCart));
 
-    expect(html.match(/href="[^"]*"/g)).toEqual(['href="/catalog/women"', 'href="/catalog/men"']);
+    expect(html.match(/href="[^"]*"/g)).toEqual([
+      'href="/en/catalog/women"',
+      'href="/en/catalog/men"',
+    ]);
   });
 });

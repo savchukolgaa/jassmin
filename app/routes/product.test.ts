@@ -61,11 +61,11 @@ describe("product loader", () => {
 
     expect(await redirected(load(PUBLIC_ID, "?ref=offers&utm_source=x"))).toEqual({
       status: 301,
-      location: `/products/${SLUG}?ref=offers&utm_source=x`,
+      location: `/parfumy/${SLUG}?ref=offers&utm_source=x`,
     });
     expect(await redirected(load("coco-old"))).toEqual({
       status: 301,
-      location: `/products/${SLUG}`,
+      location: `/parfumy/${SLUG}`,
     });
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });

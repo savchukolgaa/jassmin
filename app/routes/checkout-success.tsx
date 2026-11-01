@@ -7,7 +7,7 @@ import { ButtonLink } from "~/components/ui/ButtonLink";
 import { OrderSummary } from "~/features/checkout/OrderSummary";
 import { PaymentStatus } from "~/features/checkout/PaymentStatus";
 import { PAYMENT_KEYS, parseOrderId } from "~/lib/checkout";
-import { metaTranslator, useT } from "~/lib/i18n";
+import { metaTranslator, usePathFor, useT } from "~/lib/i18n";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/checkout-success";
 
@@ -39,6 +39,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 export default function CheckoutSuccess({ loaderData: order }: Route.ComponentProps) {
   const { t } = useT();
+  const path = usePathFor();
   const payment = PAYMENT_KEYS[order.paymentMethod];
 
   return (
@@ -74,7 +75,7 @@ export default function CheckoutSuccess({ loaderData: order }: Route.ComponentPr
             </div>
           </dl>
           {order.payment && <PaymentStatus orderId={order.id} payment={order.payment} />}
-          <ButtonLink to="/" size="lg" className="self-start">
+          <ButtonLink to={path("home")} size="lg" className="self-start">
             {t("checkout.success.continue")}
           </ButtonLink>
         </section>

@@ -112,7 +112,7 @@ function SizePicker({
 function CatalogProductCard({ product, headingLevel }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
-  const href = productHref(product);
+  const href = productHref(translator.locale, product);
   const { selectedId, setSelectedId, hydrated } = useCardSize(product);
   const single = product.variants.length < 2;
 
@@ -167,7 +167,7 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
   const { t } = translator;
-  const href = productHref(product);
+  const href = productHref(translator.locale, product);
   const { selectedId, setSelectedId, hydrated } = useCardSize(product);
   const single = product.variants.length < 2;
 

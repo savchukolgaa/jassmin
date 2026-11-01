@@ -15,7 +15,7 @@ const view: HomePageView = {
   hero: {
     headline: "Order 3 Testers only for 499₴",
     ctaLabel: "Order Now",
-    ctaHref: "/popular",
+    ctaHref: "/en/popular",
     image: {
       url: "http://cms.test/uploads/hero.jpg",
       alt: "Jassmin perfume testers",
@@ -25,7 +25,7 @@ const view: HomePageView = {
     },
     eyebrow: "Tester set",
     subtitle: "Find the one worth a full bottle.",
-    secondaryCta: { label: "See all perfumes", href: "/catalog/women" },
+    secondaryCta: { label: "See all perfumes", href: "/en/catalog/women" },
   },
   about: { title: "About Jassmin", bodyHtml: "<p>Our <strong>story</strong>.</p>", image: null },
   trioOffer: { price: "499.00", setSize: 3, volumeMl: 10 },
@@ -153,7 +153,7 @@ describe("HomePage", () => {
 
     expect(html).toContain("<h1");
     expect(html).toContain("Order 3 Testers only for 499₴");
-    expect(html).toMatch(/<a[^>]*href="\/popular"[^>]*>Order Now<\/a>/);
+    expect(html).toMatch(/<a[^>]*href="\/en\/popular"[^>]*>Order Now<\/a>/);
     expect(html).toContain('alt="Jassmin perfume testers"');
     expect(html).toContain("small_hero.jpg 500w");
   });
@@ -172,7 +172,7 @@ describe("HomePage", () => {
 
     expect(html).toContain("Tester set");
     expect(html).toContain("Find the one worth a full bottle.");
-    expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>See all perfumes<\/a>/);
+    expect(html).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>See all perfumes<\/a>/);
     expect(html).toContain("Women · Men");
     expect(html).not.toMatch(/unisex/i);
   });
@@ -254,7 +254,10 @@ describe("HomePage", () => {
     const html = render();
     const nav = html.match(/<nav aria-label="Categories".*?<\/nav>/s)?.[0] ?? "";
 
-    expect(nav.match(/href="[^"]*"/g)).toEqual(['href="/catalog/women"', 'href="/catalog/men"']);
+    expect(nav.match(/href="[^"]*"/g)).toEqual([
+      'href="/en/catalog/women"',
+      'href="/en/catalog/men"',
+    ]);
     expect(nav).toContain(">Women<");
     expect(nav).toContain(">Men<");
   });
@@ -264,7 +267,7 @@ describe("HomePage", () => {
     const section = html.match(/<section aria-labelledby="bestsellers-title".*?<\/section>/s)?.[0];
 
     expect(section).toContain(">Bestsellers</h2>");
-    expect(section).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>View all →<\/a>/);
+    expect(section).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>View all →<\/a>/);
     expect(section).toMatch(/<h3[^>]*><a[^>]*>La Vie Est Belle<\/a><\/h3>/);
     expect(section).toContain("quick-add");
     expect(render()).not.toContain('id="bestsellers-title"');

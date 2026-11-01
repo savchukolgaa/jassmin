@@ -4,6 +4,7 @@ import { getUser } from "~/.server/services/auth";
 import { startPayment } from "~/.server/services/payments";
 import { getSessionOrderIds } from "~/.server/session";
 import { parseOrderId } from "~/lib/checkout";
+import { pathFor } from "~/lib/paths";
 import type { Route } from "./+types/checkout-pay";
 
 // POST only, from the success page's "Pay" / "Try again" button (#44): starts a new payment
@@ -36,10 +37,15 @@ export async function action({ request, params }: Route.ActionArgs) {
     throw data(null, { status: 404 });
   }
   // Paid meanwhile, no longer payable or no provider: the success page shows where it stands.
-  return redirect(`/checkout/success/${orderId}`);
+  return redirect(pathFor(locale, "checkoutSuccess", { orderId: String(orderId) }));
 }
 
-export function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
   const orderId = parseOrderId(params.orderId);
-  return redirect(orderId === null ? "/" : `/checkout/success/${orderId}`);
+  const locale = await getLocale(request);
+  return redirect(
+    orderId === null
+      ? pathFor(locale, "home")
+      : pathFor(locale, "checkoutSuccess", { orderId: String(orderId) }),
+  );
 }

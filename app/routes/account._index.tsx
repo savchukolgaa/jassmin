@@ -3,8 +3,7 @@ import { getAccountOrders } from "~/.server/services/orders";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { CurrentOrderCard } from "~/features/account/CurrentOrderCard";
 import { PreviousOrdersList } from "~/features/account/PreviousOrdersList";
-import { useT } from "~/lib/i18n";
-import { OFFERS_PATH } from "~/lib/offers";
+import { usePathFor, useT } from "~/lib/i18n";
 import type { Route } from "./+types/account._index";
 
 // The account layout's loader doesn't protect this one: loaders run in parallel.
@@ -17,6 +16,7 @@ const sectionHeading = "text-3xl font-bold tracking-[-0.01em] text-ink md:text-4
 
 export default function AccountOrders({ loaderData }: Route.ComponentProps) {
   const { t } = useT();
+  const path = usePathFor();
   const { current, previous } = loaderData;
 
   if (current.length === 0 && previous.length === 0) {
@@ -30,11 +30,11 @@ export default function AccountOrders({ loaderData }: Route.ComponentProps) {
         </h2>
         <p className="max-w-md text-lg text-body">{t("account.orders.empty.text")}</p>
         <div className="flex flex-wrap gap-3">
-          <ButtonLink to={OFFERS_PATH}>{t("account.orders.empty.offers")}</ButtonLink>
-          <ButtonLink to="/catalog/women" variant="dark">
+          <ButtonLink to={path("offers")}>{t("account.orders.empty.offers")}</ButtonLink>
+          <ButtonLink to={path("catalog", { gender: "women" })} variant="dark">
             {t("account.orders.empty.women")}
           </ButtonLink>
-          <ButtonLink to="/catalog/men" variant="dark">
+          <ButtonLink to={path("catalog", { gender: "men" })} variant="dark">
             {t("account.orders.empty.men")}
           </ButtonLink>
         </div>

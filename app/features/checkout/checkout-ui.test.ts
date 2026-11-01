@@ -13,13 +13,13 @@ const routerFor = (element: ReactElement) =>
   createMemoryRouter(
     [
       {
-        path: "/checkout",
+        path: "/en/checkout",
         element,
         // Never settles, so a submission stays in the `submitting` state.
         action: () => new Promise<never>(() => {}),
       },
     ],
-    { initialEntries: ["/checkout"] },
+    { initialEntries: ["/en/checkout"] },
   );
 
 const render = (router: ReturnType<typeof routerFor>, locale: Locale = "en") =>
@@ -121,7 +121,7 @@ describe("CheckoutForm", () => {
 
     const formData = new FormData();
     formData.set("fullName", "Olena");
-    void router.navigate("/checkout", { formMethod: "post", formData });
+    void router.navigate("/en/checkout", { formMethod: "post", formData });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(router.state.navigation.state).toBe("submitting");
@@ -227,21 +227,21 @@ describe("PaymentStatus", () => {
   it("says a paid order is paid, without a pay button", () => {
     const html = renderStatus("paid");
     expect(html).toContain("Paid. Thank you!");
-    expect(html).not.toContain("/checkout/pay/42");
+    expect(html).not.toContain("/en/checkout/pay/42");
   });
 
   it("lets a pending order pay or refresh the page", () => {
     const html = renderStatus("pending");
     expect(html).toContain("waiting for the payment to be confirmed");
-    expect(tag(html, 'action="/checkout/pay/42"', "form")).toContain('method="post"');
+    expect(tag(html, 'action="/en/checkout/pay/42"', "form")).toContain('method="post"');
     expect(html).toContain("Pay now");
-    expect(html).toContain('href="/checkout/success/42"');
+    expect(html).toContain('href="/en/checkout/success/42"');
   });
 
   it("offers a retry after a failed payment", () => {
     const html = renderStatus("failed");
     expect(html).toContain("didn&#x27;t go through");
-    expect(tag(html, 'action="/checkout/pay/42"', "form")).toContain('method="post"');
+    expect(tag(html, 'action="/en/checkout/pay/42"', "form")).toContain('method="post"');
     expect(html).toContain("Try again");
     expect(html).not.toContain("Refresh the page");
   });

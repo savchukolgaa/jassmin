@@ -12,6 +12,7 @@
 import type { PaymentView } from "~/lib/checkout";
 import type { Locale } from "~/lib/i18n";
 import { createTranslator } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { enqueueCmsSync } from "../db/queries/cms-outbox";
@@ -99,7 +100,10 @@ export async function startPayment(
       amount: order.totalAmount,
       currency: order.currency,
       description: createTranslator(locale).t("payments.description", { id: orderId }),
-      resultUrl: new URL(`/checkout/success/${orderId}`, origin).toString(),
+      resultUrl: new URL(
+        pathFor(locale, "checkoutSuccess", { orderId: String(orderId) }),
+        origin,
+      ).toString(),
       callbackUrl: new URL("/payments/callback", origin).toString(),
       locale,
     });

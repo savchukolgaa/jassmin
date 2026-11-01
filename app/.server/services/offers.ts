@@ -44,7 +44,7 @@ function toOfferView(
   productsById: ReadonlyMap<string, ProductSummary>,
   locale: Locale,
 ): OfferView {
-  const ctaPath = toInternalPath(offer.ctaUrl);
+  const ctaPath = toInternalPath(offer.ctaUrl, locale);
   return {
     slug: offer.slug,
     kind: offer.kind,

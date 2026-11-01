@@ -12,6 +12,7 @@ import { parseContactForm } from "~/features/home/contact-form";
 import { HomePage } from "~/features/home/HomePage";
 import type { ContactActionResult } from "~/lib/contact";
 import { metaTranslator, useT } from "~/lib/i18n";
+import { pageOf } from "~/lib/paths";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import { storeGraphLd } from "~/lib/structured-data";
 import { parseTrioSearch } from "~/lib/trio";
@@ -101,7 +102,7 @@ export function shouldRevalidate({
 }: ShouldRevalidateFunctionArgs) {
   if (
     formMethod?.toUpperCase() === "POST" &&
-    (formAction?.startsWith("/?index") || formAction === "/cart")
+    (pageOf(formAction) === "home" || pageOf(formAction) === "cart")
   ) {
     return false;
   }

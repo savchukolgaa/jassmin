@@ -3,7 +3,7 @@ import { focusRing } from "~/components/layout/nav";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { type CartActionResult, type CartLine, cartErrorMessage } from "~/lib/cart";
 import { cn } from "~/lib/cn";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import { formatVolume, productHref } from "~/lib/products";
 import {
   cartLineFetcherKey,
@@ -17,6 +17,7 @@ import { QuantityStepper } from "./QuantityStepper";
 /** One line of the cart page: quantity changes and removal show at once, before the server answers. */
 export function CartLineItem({ line }: { line: CartLine }) {
   const translator = useT();
+  const path = usePathFor();
   const { t, formatPrice } = translator;
   const fetcher = useFetcher<CartActionResult>({ key: cartLineFetcherKey(line.variantId) });
   if (isPendingRemove(fetcher.formData)) {
@@ -24,7 +25,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
   }
 
   const quantity = optimisticQuantity(fetcher.formData, line.quantity);
-  const href = productHref({ id: line.productId, slug: line.slug });
+  const href = productHref(translator.locale, { id: line.productId, slug: line.slug });
   const volume = formatVolume(line, translator);
   const error =
     fetcher.state === "idle" && fetcher.data?.ok === false
@@ -54,7 +55,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
         </p>
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-3">
-          <fetcher.Form method="post" action="/cart">
+          <fetcher.Form method="post" action={path("cart")}>
             <input type="hidden" name="intent" value="update" />
             <input type="hidden" name="variantId" value={line.variantId} />
             <QuantityStepper
@@ -78,7 +79,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
           <p aria-live="polite" className="min-h-5 text-sm font-bold text-primary-dark">
             {notice}
           </p>
-          <fetcher.Form method="post" action="/cart">
+          <fetcher.Form method="post" action={path("cart")}>
             <input type="hidden" name="intent" value="remove" />
             <input type="hidden" name="variantId" value={line.variantId} />
             <button

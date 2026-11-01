@@ -1,20 +1,12 @@
 import { Link, NavLink } from "react-router";
 import { cn } from "~/lib/cn";
 import { formatCartCount, type HeaderState } from "~/lib/header";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import { CatalogMenu } from "./CatalogMenu";
 import { CartIcon, UserIcon } from "./icons";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { MobileMenu } from "./MobileMenu";
-import {
-  ABOUT_LINK,
-  BESTSELLERS_LINK,
-  CONTACTS_LINK,
-  focusRing,
-  headerNavItemClasses,
-  iconButtonClasses,
-  OFFERS_LINK,
-} from "./nav";
+import { focusRing, headerNavItemClasses, iconButtonClasses, useNavLinks } from "./nav";
 
 export type HeaderProps = HeaderState;
 
@@ -24,13 +16,15 @@ export type HeaderProps = HeaderState;
  */
 export function Header({ user, cartCount }: HeaderProps) {
   const { t } = useT();
+  const path = usePathFor();
+  const links = useNavLinks();
   const badge = formatCartCount(cartCount);
 
   return (
     <header className="sticky top-0 z-40 border-line border-b bg-white text-ink">
       <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-4">
         <Link
-          to="/"
+          to={path("home")}
           aria-label={t("nav.home")}
           className={cn(
             "rounded-pill font-serif text-2xl font-bold tracking-[-0.01em] text-ink",
@@ -46,8 +40,8 @@ export function Header({ user, cartCount }: HeaderProps) {
         <nav aria-label={t("nav.main")} className="flex items-center gap-1">
           <ul className="hidden items-center gap-1 lg:flex">
             <li>
-              <Link to={ABOUT_LINK.to} className={headerNavItemClasses()}>
-                {t(ABOUT_LINK.labelKey)}
+              <Link to={links.about.to} className={headerNavItemClasses()}>
+                {t(links.about.labelKey)}
               </Link>
             </li>
             <li>
@@ -55,30 +49,30 @@ export function Header({ user, cartCount }: HeaderProps) {
             </li>
             <li>
               <NavLink
-                to={BESTSELLERS_LINK.to}
+                to={links.bestsellers.to}
                 className={({ isActive }) => headerNavItemClasses(isActive)}
               >
-                {t(BESTSELLERS_LINK.labelKey)}
+                {t(links.bestsellers.labelKey)}
               </NavLink>
             </li>
             <li>
               <NavLink
-                to={OFFERS_LINK.to}
+                to={links.offers.to}
                 className={({ isActive }) => headerNavItemClasses(isActive)}
               >
-                {t(OFFERS_LINK.labelKey)}
+                {t(links.offers.labelKey)}
               </NavLink>
             </li>
             <li>
-              <Link to={CONTACTS_LINK.to} className={headerNavItemClasses()}>
-                {t(CONTACTS_LINK.labelKey)}
+              <Link to={links.contacts.to} className={headerNavItemClasses()}>
+                {t(links.contacts.labelKey)}
               </Link>
             </li>
           </ul>
 
           <LocaleSwitcher tone="onLight" className="hidden lg:flex" />
           <NavLink
-            to={user ? "/account" : "/login"}
+            to={user ? path("account") : path("login")}
             aria-label={user ? t("nav.account") : t("nav.logIn")}
             className={({ isActive }) =>
               user
@@ -93,7 +87,7 @@ export function Header({ user, cartCount }: HeaderProps) {
             <UserIcon className="size-6" />
           </NavLink>
           <NavLink
-            to="/cart"
+            to={path("cart")}
             aria-label={t("nav.cart", { count: cartCount })}
             className={cn(
               "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-pill",

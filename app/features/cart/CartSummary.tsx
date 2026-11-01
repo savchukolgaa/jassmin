@@ -4,7 +4,7 @@ import type { CartView } from "~/lib/cart";
 import { FREE_SHIPPING_THRESHOLD } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
 import { discountLabel } from "~/lib/discounts";
-import { createTranslator, type Translator, useT } from "~/lib/i18n";
+import { createTranslator, type Translator, usePathFor, useT } from "~/lib/i18n";
 import { CART_LINE_FETCHER_PREFIX } from "./cart-line-state";
 import { PROMO_FETCHER_KEY, PromoCodeForm } from "./PromoCodeForm";
 
@@ -18,6 +18,7 @@ export function formatItemCount(count: number, { t }: Translator = createTransla
  */
 export function CartSummary({ cart }: { cart: CartView }) {
   const translator = useT();
+  const path = usePathFor();
   const { t, formatPrice } = translator;
   // The amounts come from the server, so they're dimmed until a line or code change is saved.
   const saving = useFetchers().some(
@@ -69,7 +70,7 @@ export function CartSummary({ cart }: { cart: CartView }) {
       <p className="text-sm text-muted">
         {t("cart.deliveryNote", { threshold: formatPrice(FREE_SHIPPING_THRESHOLD) })}
       </p>
-      <ButtonLink to="/checkout" size="lg" className="w-full">
+      <ButtonLink to={path("checkout")} size="lg" className="w-full">
         {t("cart.checkout")}
       </ButtonLink>
     </aside>

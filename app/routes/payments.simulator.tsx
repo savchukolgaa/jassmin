@@ -5,7 +5,8 @@ import { getSimulator } from "~/.server/payments/provider";
 import type { SimulatorCheckout, SimulatorOutcome } from "~/.server/payments/simulator";
 import { Button } from "~/components/ui/Button";
 import { safeRedirect } from "~/lib/auth";
-import { metaTranslator, useT } from "~/lib/i18n";
+import { DEFAULT_LOCALE, metaTranslator, useT } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/payments.simulator";
 
@@ -96,7 +97,7 @@ export async function action({ request }: Route.ActionArgs) {
   for (let i = 0; i < times; i++) {
     await sendCallback(checkout, body);
   }
-  return redirect(safeRedirect(resultUrl.pathname, "/"));
+  return redirect(safeRedirect(resultUrl.pathname, pathFor(DEFAULT_LOCALE, "home")));
 }
 
 export default function PaymentSimulator({ loaderData }: Route.ComponentProps) {

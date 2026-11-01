@@ -1,5 +1,6 @@
 import { data, Form, redirect, useNavigation } from "react-router";
 import { db } from "~/.server/db";
+import { getLocale } from "~/.server/locale";
 import { getClientIp, loginLimiters } from "~/.server/rate-limit";
 import { getUser, onUserAuthenticated, verifyLogin } from "~/.server/services/auth";
 import { createUserSession } from "~/.server/session";
@@ -14,6 +15,7 @@ import {
   toFieldErrors,
 } from "~/lib/auth";
 import { metaTranslator, useT } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/login";
 
@@ -31,7 +33,7 @@ export function meta({ matches, error }: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
   const redirectTo = new URL(request.url).searchParams.get("redirectTo") ?? undefined;
   if (await getUser(request)) {
-    throw redirect(safeRedirect(redirectTo));
+    throw redirect(safeRedirect(redirectTo, pathFor(await getLocale(request), "account")));
   }
   return { redirectTo };
 }
@@ -74,7 +76,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   return createUserSession({
     request,
     userId: result.userId,
-    redirectTo: safeRedirect(redirectTo),
+    redirectTo: safeRedirect(redirectTo, pathFor(await getLocale(request), "account")),
   });
 }
 

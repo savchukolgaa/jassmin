@@ -3,7 +3,7 @@ import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import type { PaymentView } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
-import { type TextKey, useT } from "~/lib/i18n";
+import { type TextKey, usePathFor, useT } from "~/lib/i18n";
 
 const STATES: Record<PaymentView, { message: TextKey; className: string }> = {
   paid: { message: "checkout.success.paymentPaid", className: "bg-success-bg text-success" },
@@ -23,8 +23,9 @@ export interface PaymentStatusProps {
  */
 export function PaymentStatus({ orderId, payment }: PaymentStatusProps) {
   const { t } = useT();
+  const path = usePathFor();
   const navigation = useNavigation();
-  const payAction = `/checkout/pay/${orderId}`;
+  const payAction = path("checkoutPay", { orderId: String(orderId) });
   const submitting = navigation.state !== "idle" && navigation.formAction === payAction;
   const state = STATES[payment];
 
@@ -40,7 +41,7 @@ export function PaymentStatus({ orderId, payment }: PaymentStatusProps) {
           </Form>
           {payment === "pending" && (
             <Link
-              to={`/checkout/success/${orderId}`}
+              to={path("checkoutSuccess", { orderId: String(orderId) })}
               className={cn("rounded font-bold underline", focusRing("onLight"))}
             >
               {t("checkout.success.refresh")}

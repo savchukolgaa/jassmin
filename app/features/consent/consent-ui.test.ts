@@ -6,7 +6,7 @@ import { I18nProvider, type Locale } from "~/lib/i18n";
 import { CookieBanner } from "./CookieBanner";
 
 // The banner's `<Form>` needs a data router. Without a locale, the default (Ukrainian).
-function renderBanner(locale: Locale | null = "en", path = "/catalog/women?sort=newest") {
+function renderBanner(locale: Locale | null = "en", path = "/en/catalog/women?sort=newest") {
   const router = createMemoryRouter([{ path: "*", element: createElement(CookieBanner) }], {
     initialEntries: [path],
   });
@@ -20,7 +20,7 @@ describe("CookieBanner", () => {
 
     expect(html).toMatch(/<form(?=[^>]*method="post")(?=[^>]*action="\/consent")/);
     expect(html).toContain(
-      '<input type="hidden" name="redirectTo" value="/catalog/women?sort=newest"/>',
+      '<input type="hidden" name="redirectTo" value="/en/catalog/women?sort=newest"/>',
     );
     expect(html).toMatch(
       /<button(?=[^>]*type="submit")(?=[^>]*name="consent")(?=[^>]*value="granted")[^>]*>Accept</,
@@ -36,7 +36,7 @@ describe("CookieBanner", () => {
 
     expect(labelledBy).toBeDefined();
     expect(html).toContain(`<h2 id="${labelledBy}" class="text-lg font-bold">We use cookies</h2>`);
-    expect(html).toMatch(/<a [^>]*href="\/privacy"[^>]*>Privacy policy<\/a>/);
+    expect(html).toMatch(/<a [^>]*href="\/en\/privacy"[^>]*>Privacy policy<\/a>/);
   });
 
   it("speaks Ukrainian by default", () => {

@@ -47,7 +47,7 @@ function offer(overrides: Partial<OfferView> = {}): OfferView {
     image: null,
     priceNote: "3 × 10 мл — 499 ₴",
     validUntil: null,
-    cta: { to: "/catalog/women", label: "Зібрати тріо" },
+    cta: { to: "/en/catalog/women", label: "Зібрати тріо" },
     products: [],
     ...overrides,
   };
@@ -68,18 +68,18 @@ describe("OfferCard", () => {
     expect(html).toContain("Три аромати по 10 мл.");
     expect(html).toContain("<strong>кілька днів</strong>");
     expect(html).toContain("3 × 10 мл — 499 ₴");
-    expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>Зібрати тріо<\/a>/);
+    expect(html).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>Зібрати тріо<\/a>/);
   });
 
   it("hides the CTA when there's no safe link, and uses a default label when there's no label", () => {
     expect(render(createElement(OfferCard, { offer: offer({ cta: null }) }))).not.toContain(
-      'href="/catalog/women"',
+      'href="/en/catalog/women"',
     );
     expect(
       render(
-        createElement(OfferCard, { offer: offer({ cta: { to: "/catalog/men", label: null } }) }),
+        createElement(OfferCard, { offer: offer({ cta: { to: "/en/catalog/men", label: null } }) }),
       ),
-    ).toMatch(/href="\/catalog\/men"[^>]*>Переглянути</);
+    ).toMatch(/href="\/en\/catalog\/men"[^>]*>Переглянути</);
   });
 
   it("says until when the offer is valid, with the time when it isn't midnight", () => {
@@ -101,7 +101,9 @@ describe("OfferCard", () => {
     const html = render(createElement(OfferCard, { offer: offer({ products: [sauvage] }) }), "en");
 
     expect(html).toContain('aria-label="Scents in this offer"');
-    expect(html).toMatch(/<h4[^>]*><a[^>]*href="\/products\/sauvage-eau-de-toilette"[^>]*>Sauvage/);
+    expect(html).toMatch(
+      /<h4[^>]*><a[^>]*href="\/en\/perfumes\/sauvage-eau-de-toilette"[^>]*>Sauvage/,
+    );
   });
 
   it("marks Ukrainian copy shown on the English page with lang=uk", () => {
@@ -157,7 +159,7 @@ describe("OffersPage", () => {
     expect(html).toMatch(/<h1[^>]*>Special offers<\/h1>/);
     expect(html).toContain("No offers right now");
     expect(html).toContain("Free delivery");
-    for (const href of ["/catalog/women", "/catalog/men", "/blog"]) {
+    for (const href of ["/en/catalog/women", "/en/catalog/men", "/en/blog"]) {
       expect(html).toContain(`href="${href}"`);
     }
   });

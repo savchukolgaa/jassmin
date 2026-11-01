@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { cn } from "~/lib/cn";
-import { type TextKey, useT } from "~/lib/i18n";
+import { type TextKey, usePathFor, useT } from "~/lib/i18n";
 
 export type AuthMode = "login" | "register";
 
@@ -35,6 +35,7 @@ export function AuthLayout({
   children: ReactNode;
 }) {
   const { t } = useT();
+  const path = usePathFor();
   const { headline, sub } = COPY[mode];
 
   return (
@@ -72,10 +73,10 @@ export function AuthLayout({
           aria-label={t("auth.tabs.label")}
           className="flex gap-1.5 self-start rounded-full bg-gray-100 p-1.5"
         >
-          <AuthTab to={withRedirect("/login", redirectTo)} active={mode === "login"}>
+          <AuthTab to={withRedirect(path("login"), redirectTo)} active={mode === "login"}>
             {t("auth.tabs.login")}
           </AuthTab>
-          <AuthTab to={withRedirect("/register", redirectTo)} active={mode === "register"}>
+          <AuthTab to={withRedirect(path("register"), redirectTo)} active={mode === "register"}>
             {t("auth.tabs.register")}
           </AuthTab>
         </nav>
@@ -84,7 +85,7 @@ export function AuthLayout({
 
         <p className="rounded-2xl bg-primary-light/10 px-5 py-4 leading-normal">
           {t("auth.guest.before")}
-          <Link to="/cart" className="font-extrabold text-primary-dark underline">
+          <Link to={path("cart")} className="font-extrabold text-primary-dark underline">
             {t("auth.guest.link")}
           </Link>
           {t("auth.guest.after")}

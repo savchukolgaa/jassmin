@@ -2,8 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { Form, Link, useLocation, useNavigation } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
-import { PRIVACY_POLICY_PATH } from "~/lib/consent";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 
 /**
  * Asks for analytics consent until the visitor answers (#18). A plain form post to `/consent`,
@@ -12,6 +11,7 @@ import { useT } from "~/lib/i18n";
  */
 export function CookieBanner() {
   const { t } = useT();
+  const path = usePathFor();
   const titleId = useId();
   const { pathname, search } = useLocation();
   const navigation = useNavigation();
@@ -45,7 +45,7 @@ export function CookieBanner() {
           <p className="mt-1 text-sm text-body">
             {t("consent.message")}{" "}
             <Link
-              to={PRIVACY_POLICY_PATH}
+              to={path("privacy")}
               className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
             >
               {t("consent.learnMore")}

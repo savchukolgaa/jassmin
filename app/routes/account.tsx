@@ -4,7 +4,8 @@ import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { firstName } from "~/lib/account";
 import { cn } from "~/lib/cn";
-import { metaTranslator, type TextKey, useT } from "~/lib/i18n";
+import { metaTranslator, type TextKey, usePathFor, useT } from "~/lib/i18n";
+import { type Page, pageOf } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/account";
 
@@ -30,25 +31,21 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 const NAV: {
-  to: string;
+  page: "account" | "accountProfile" | "home";
   labelKey: TextKey;
   end?: boolean;
-  /** Also highlighted on these paths (`aria-current` stays `NavLink`'s exact match). */
-  highlight?: (pathname: string) => boolean;
+  /** Also highlighted on these pages (`aria-current` stays `NavLink`'s exact match). */
+  highlight?: Page;
 }[] = [
   // `end`, so Orders isn't active on the profile; it's still highlighted on an order's page.
-  {
-    to: "/account",
-    labelKey: "account.nav.orders",
-    end: true,
-    highlight: (pathname) => pathname.startsWith("/account/orders/"),
-  },
-  { to: "/account/profile", labelKey: "account.nav.profile" },
-  { to: "/", labelKey: "account.nav.continueShopping", end: true },
+  { page: "account", labelKey: "account.nav.orders", end: true, highlight: "accountOrder" },
+  { page: "accountProfile", labelKey: "account.nav.profile" },
+  { page: "home", labelKey: "account.nav.continueShopping", end: true },
 ];
 
 export default function AccountLayout({ loaderData }: Route.ComponentProps) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const path = usePathFor();
   const { pathname } = useLocation();
 
   return (
@@ -66,6 +63,7 @@ export default function AccountLayout({ loaderData }: Route.ComponentProps) {
             <p className="break-all text-lg">{loaderData.email}</p>
           </div>
           <Form method="post" action="/logout">
+            <input type="hidden" name="locale" value={locale} />
             <Button type="submit" variant="outline-light">
               {t("account.logOut")}
             </Button>
@@ -76,15 +74,16 @@ export default function AccountLayout({ loaderData }: Route.ComponentProps) {
         <nav aria-label={t("account.nav.label")} className="lg:w-60 lg:shrink-0">
           <ul className="flex flex-wrap gap-2 lg:flex-col">
             {NAV.map((item) => (
-              <li key={item.to}>
+              <li key={item.page}>
                 <NavLink
-                  to={item.to}
+                  to={path(item.page)}
                   end={item.end}
                   className={({ isActive }) =>
                     cn(
                       "flex min-h-13 items-center rounded-pill px-5 font-extrabold transition-colors",
                       focusRing("onLight"),
-                      isActive || item.highlight?.(pathname)
+                      isActive ||
+                        (item.highlight !== undefined && pageOf(pathname) === item.highlight)
                         ? "bg-ink text-white"
                         : "text-ink hover:bg-blush",
                     )

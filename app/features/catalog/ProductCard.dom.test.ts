@@ -33,13 +33,13 @@ const PRODUCT: ProductSummary = {
   fragranceFamily: null,
 };
 
-/** Renders the card with a `/cart` action that records what it was posted. */
+/** Renders the card with a `/en/cart` action that records what it was posted. */
 function renderCard(variant: "default" | "compact" = "default") {
   const posted: FormData[] = [];
   const router = createMemoryRouter([
     { path: "/", element: createElement(ProductCard, { product: PRODUCT, variant }) },
     {
-      path: "/cart",
+      path: "/en/cart",
       action: async ({ request }): Promise<CartActionResult> => {
         posted.push(await request.formData());
         return { ok: true, intent: "add" };

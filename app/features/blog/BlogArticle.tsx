@@ -1,11 +1,13 @@
 import { Link } from "react-router";
+import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { focusRing } from "~/components/layout/nav";
 import { RichText } from "~/components/ui/RichText";
 import type { BlogPostView } from "~/lib/blog";
+import { blogPostBreadcrumbs } from "~/lib/breadcrumbs";
 import { useContentLang, useT } from "~/lib/i18n";
 import { BlogCover } from "./BlogCover";
 
-/** Link back to the article list, shown above an article and on its error page. */
+/** Link back to the article list, shown on an article's error page. */
 export function BackToBlogLink() {
   const { t } = useT();
 
@@ -21,12 +23,13 @@ export function BackToBlogLink() {
 
 /** The `/blog/:slug` page body: title, date and author, cover and the sanitized article. */
 export function BlogArticle({ post }: { post: BlogPostView }) {
+  const { t } = useT();
   const lang = useContentLang(post.locale);
 
   return (
     <main className="container mx-auto px-4 pt-6 pb-16">
       <article className="mx-auto max-w-3xl">
-        <BackToBlogLink />
+        <Breadcrumbs items={blogPostBreadcrumbs(t, post)} />
         <header className="mt-4">
           <h1
             className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl"

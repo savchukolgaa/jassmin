@@ -80,7 +80,11 @@ describe("BlogArticle", () => {
     expect(html).toContain("Jassmin team");
     expect(html).toContain('loading="eager"');
     expect(html).toContain("<h2>Start with the notes</h2>");
-    expect(html).toMatch(/href="\/blog"[^>]*>← Back to the blog/);
+    // Breadcrumbs (#86): Home > Blog > the post, which isn't a link.
+    expect(html).toContain('<nav aria-label="Breadcrumb"');
+    expect(html).toMatch(/href="\/"[^>]*>Home<\/a>/);
+    expect(html).toMatch(/href="\/blog"[^>]*>Blog<\/a>/);
+    expect(html).toMatch(/aria-current="page"[^>]*>How to choose a perfume<\/span>/);
     expect(html).not.toContain(" lang=");
   });
 

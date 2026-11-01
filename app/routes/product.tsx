@@ -1,12 +1,14 @@
 import { data, isRouteErrorResponse, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { resolveProductHandle } from "~/.server/services/products";
+import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
 import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
 import { shouldRevalidateView } from "~/lib/analytics";
+import { productBreadcrumbs } from "~/lib/breadcrumbs";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
 import { metaTranslator, useT } from "~/lib/i18n";
@@ -97,14 +99,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="container mx-auto px-4 pt-8 pb-16">
-      <nav aria-label={t("nav.breadcrumb")} className="text-sm">
-        <Link
-          to={`/catalog/${catalog}`}
-          className={`rounded-pill font-bold text-primary-dark hover:underline ${focusRing("onLight")}`}
-        >
-          ← {t(CATALOG_TITLE_KEYS[catalog])}
-        </Link>
-      </nav>
+      <Breadcrumbs items={productBreadcrumbs(t, catalog, product)} />
 
       <div className="mt-6 grid gap-8 md:grid-cols-2 md:gap-12">
         <ProductImage

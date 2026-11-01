@@ -1,12 +1,14 @@
 import { data, Link, useLocation, useNavigation } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { getCatalogPage } from "~/.server/services/products";
+import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { Pagination } from "~/components/ui/Pagination";
 import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { shouldRevalidateView } from "~/lib/analytics";
+import { catalogBreadcrumbs } from "~/lib/breadcrumbs";
 import {
   CATALOG_META_DESCRIPTION_KEYS,
   CATALOG_TITLE_KEYS,
@@ -68,8 +70,9 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
   const busy = navigation.state === "loading" && navigation.location.pathname === pathname;
 
   return (
-    <main className="container mx-auto px-4 pt-10 pb-16">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+    <main className="container mx-auto px-4 pt-8 pb-16">
+      <Breadcrumbs items={catalogBreadcrumbs(t, gender)} />
+      <div className="mt-4 flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
           {t(CATALOG_TITLE_KEYS[gender])}
         </h1>

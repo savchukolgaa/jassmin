@@ -117,6 +117,11 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
 - **Order of work (deviation)**: #85 wasn't merged when implementation started. Steps that don't
   need its origin (1, 3, 3b, 4, 5, 7) were done first. The builders take `origin` as a parameter,
   so they don't depend on where it comes from. The route wiring (steps 2, 6, 8–10) waits for #85.
+- **Shared trails**: `app/lib/breadcrumbs.ts` (`catalogBreadcrumbs`, `productBreadcrumbs`,
+  `blogPostBreadcrumbs`) builds each page's trail once. The visible `Breadcrumbs` and the
+  `BreadcrumbList` JSON-LD both use it, so they can't drift apart. Product links use #83's
+  `productHref({ id, slug })`. The visible breadcrumbs of steps 9–10 are done; their JSON-LD
+  waits for #85.
 - **Snapshot tests** use inline snapshots (`toMatchInlineSnapshot`) so the expected JSON is
   reviewable in the diff.
 

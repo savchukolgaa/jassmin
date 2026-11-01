@@ -327,6 +327,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
 
     expect(await resolve("handle-slugged")).toMatchObject({
       kind: "product",
+      available: true,
       id: slugged.id,
       product: { id: slugged.publicId, slug: "handle-slugged", title: "Slugged", variants: [] },
     });
@@ -346,13 +347,56 @@ describe.skipIf(!hasDatabase)("products service", () => {
       product: { slug: null, title: "Unslugged" },
     });
 
-    // Unknown, differently cased, and archived however it is named: a 404.
+    // Unknown or differently cased: a 404.
     expect(await resolve("handle-unknown")).toBeNull();
     expect(await resolve("HANDLE-SLUGGED")).toBeNull();
     expect(await resolve("01a1652b-6e25-7fff-8000-000000000000")).toBeNull();
-    expect(await resolve("handle-archived")).toBeNull();
-    expect(await resolve(archived.publicId)).toBeNull();
-    expect(await resolve("handle-archived-old")).toBeNull();
+
+    // Archived, however it is named: its page stays, unavailable (#88).
+    expect(await resolve("handle-archived")).toMatchObject({
+      kind: "product",
+      available: false,
+      id: archived.id,
+      product: { title: "Archived" },
+    });
+    const archivedTarget = {
+      kind: "redirect",
+      publicId: archived.publicId,
+      slug: "handle-archived",
+    };
+    expect(await resolve(archived.publicId)).toEqual(archivedTarget);
+    expect(await resolve("handle-archived-old")).toEqual(archivedTarget);
+  });
+
+  it("shows an archived product's page with nothing for sale (#88)", async () => {
+    const { resolveProductHandle } = await import("./products");
+    const { publicId } = await archived();
+
+    const found = await resolveProductHandle(publicId, testDb.db);
+
+    expect(found).toMatchObject({ kind: "product", available: false });
+    if (found?.kind !== "product") throw new Error("not a product");
+    expect(found.product.variants).toEqual([
+      expect.objectContaining({ volumeMl: 30, stockQuantity: 0, inStock: false }),
+    ]);
+  });
+
+  it("suggests listed perfumes like an archived one, sharing a family first (#88)", async () => {
+    const { getProduct, getProductWithId, getSimilarProducts, SIMILAR_PRODUCTS_LIMIT } =
+      await import("./products");
+    const sauvage = sampleNamed("Sauvage");
+    const found = await getProductWithId(sauvage.publicId, testDb.db);
+    if (!found) throw new Error("no Sauvage");
+    const { id, product } = found;
+
+    const similar = await getSimilarProducts(id, product, testDb.db);
+
+    expect(similar).toHaveLength(SIMILAR_PRODUCTS_LIMIT);
+    expect(similar.map((p) => p.id)).not.toContain(product.id);
+    expect(similar.every((p) => p.gender === "men" || p.gender === "unisex")).toBe(true);
+    const first = await getProduct(similar[0]?.id ?? "", testDb.db);
+    expect(first?.fragranceFamilies.some((f) => product.fragranceFamilies.includes(f))).toBe(true);
+    expect(similar.map((p) => p.brand)).not.toContain(ARCHIVED_BRAND);
   });
 
   it("looks up product cards by public id, skipping unknown and unsold products", async () => {

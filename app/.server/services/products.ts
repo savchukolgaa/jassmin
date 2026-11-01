@@ -26,6 +26,7 @@ import {
   listPopularProducts,
   listProductSummariesByPublicIds,
   listProducts,
+  listSimilarProducts,
   listVariantsByProductId,
   type ProductDetailRow,
   type ProductSummaryRow,
@@ -216,44 +217,80 @@ export async function getProductWithId(
 }
 
 export type ProductHandleResult =
-  /** Render the page; `id` is the serial id, for server-side use only. */
-  | { kind: "product"; id: number; product: ProductDetail }
+  /**
+   * Render the page; `id` is the serial id, for server-side use only. `available` is `false` for
+   * an archived product (#88): its page stays, without a way to buy it.
+   */
+  | { kind: "product"; id: number; product: ProductDetail; available: boolean }
   /** Answer 301 to `productHref({ id: publicId, slug })`, the product's current URL. */
   | { kind: "redirect"; publicId: string; slug: string };
 
 /**
  * What `/products/:handle` shows (#83). A UUID is a `public_id`: its product renders when it has
  * no slug yet, otherwise it redirects to the slug URL. Anything else is a slug: the current one
- * renders, a former one (`product_slug_history`) redirects to the current one. `null` (a 404) for
- * an unknown handle or an archived product, whichever way it is named.
+ * renders, a former one (`product_slug_history`) redirects to the current one. Archived products
+ * are found too, marked unavailable (#88). `null` (a 404) for an unknown handle.
  */
 export async function resolveProductHandle(
   handle: string,
   db: Db = defaultDb,
 ): Promise<ProductHandleResult | null> {
+  const options = { includeArchived: true };
   if (z.uuid().safeParse(handle).success) {
-    const row = await findProductByPublicId(db, handle);
+    const row = await findProductByPublicId(db, handle, options);
     if (!row) return null;
     if (row.slug !== null) {
       return { kind: "redirect", publicId: row.publicId, slug: row.slug };
     }
-    return { kind: "product", id: row.id, product: await detailOf(row, db) };
+    return productResult(row, db);
   }
 
-  const row = await findProductBySlug(db, handle);
+  const row = await findProductBySlug(db, handle, options);
   if (row) {
-    return { kind: "product", id: row.id, product: await detailOf(row, db) };
+    return productResult(row, db);
   }
 
   const formerOwner = await findProductIdBySlugHistory(db, handle);
   if (formerOwner === undefined) return null;
-  const current = await findListedProductSlug(db, formerOwner);
+  const current = await findListedProductSlug(db, formerOwner, options);
   if (!current?.slug) return null;
   return { kind: "redirect", publicId: current.publicId, slug: current.slug };
 }
 
+async function productResult(row: ProductDetailRow, db: Db): Promise<ProductHandleResult> {
+  const product = await detailOf(row, db);
+  if (row.active) {
+    return { kind: "product", id: row.id, product, available: true };
+  }
+  // Nothing of an archived product is for sale (#40), whatever its sizes' stock says.
+  const variants = product.variants.map((v) => ({ ...v, stockQuantity: 0, inStock: false }));
+  return { kind: "product", id: row.id, product: { ...product, variants }, available: false };
+}
+
 async function detailOf(row: ProductDetailRow, db: Db): Promise<ProductDetail> {
   return toDetail(row, await listVariantsByProductId(db, row.id));
+}
+
+/** How many similar perfumes an archived product's page suggests (#88). */
+export const SIMILAR_PRODUCTS_LIMIT = 4;
+
+/**
+ * Listed perfumes to suggest instead of an archived one (#88): from the catalog it was in, sharing
+ * a fragrance family first, then its brand, then the popular ones.
+ */
+export async function getSimilarProducts(
+  productId: number,
+  product: Pick<ProductDetail, "gender" | "fragranceFamilies" | "brand">,
+  db: Db = defaultDb,
+): Promise<ProductSummary[]> {
+  const rows = await listSimilarProducts(db, {
+    excludeId: productId,
+    genders: product.gender === "unisex" ? GENDERS : GENDER_SCOPE[product.gender],
+    fragranceFamilies: product.fragranceFamilies,
+    brand: product.brand,
+    limit: SIMILAR_PRODUCTS_LIMIT,
+  });
+  return rows.map(toSummary);
 }
 
 export type VariantCheck =

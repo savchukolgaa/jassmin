@@ -234,6 +234,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
 
     expect(await getProduct(sauvage.publicId, testDb.db)).toEqual({
       id: sauvage.publicId,
+      slug: null,
       title: "Sauvage Eau de Toilette",
       brand: "Dior",
       gender: "men",

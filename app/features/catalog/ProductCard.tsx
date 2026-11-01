@@ -5,14 +5,10 @@ import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
-import { cardPrice, formatVolume, type ProductSummary } from "~/lib/products";
+import { cardPrice, formatVolume, type ProductSummary, productHref } from "~/lib/products";
 import { CardVolumePicker } from "./CardVolumePicker";
 import { FamilyChip } from "./FamilyChip";
 import { ProductImage } from "./ProductImage";
-
-export function productHref(id: string): string {
-  return `/products/${id}`;
-}
 
 type ProductCardProps = {
   product: ProductSummary;
@@ -116,7 +112,7 @@ function SizePicker({
 function CatalogProductCard({ product, headingLevel }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
-  const href = productHref(product.id);
+  const href = productHref(product);
   const { selectedId, setSelectedId, hydrated } = useCardSize(product);
   const single = product.variants.length < 2;
 
@@ -171,7 +167,7 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
   const { t } = translator;
-  const href = productHref(product.id);
+  const href = productHref(product);
   const { selectedId, setSelectedId, hydrated } = useCardSize(product);
   const single = product.variants.length < 2;
 

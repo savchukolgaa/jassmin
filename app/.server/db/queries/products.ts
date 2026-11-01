@@ -89,6 +89,7 @@ export interface ListProductsOptions {
 function summaryColumns(stats: VariantStats) {
   return {
     publicId: products.publicId,
+    slug: products.slug,
     title: products.title,
     brand: products.brand,
     gender: products.gender,
@@ -268,6 +269,7 @@ export async function findProductByPublicId(db: Db, publicId: string) {
     .select({
       id: products.id,
       publicId: products.publicId,
+      slug: products.slug,
       title: products.title,
       brand: products.brand,
       gender: products.gender,

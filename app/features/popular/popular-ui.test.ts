@@ -10,6 +10,7 @@ import { PopularPage } from "./PopularPage";
 function product(n: number, overrides: Partial<ProductSummary> = {}): ProductSummary {
   return {
     id: `01a1652b-6e25-7c44-8d5b-${String(n).padStart(12, "0")}`,
+    slug: `perfume-${n}`,
     title: `Perfume ${n}`,
     brand: "House",
     gender: "women",

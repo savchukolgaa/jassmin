@@ -1,11 +1,10 @@
 import { Link, useFetcher } from "react-router";
 import { focusRing } from "~/components/layout/nav";
-import { productHref } from "~/features/catalog/ProductCard";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { type CartActionResult, type CartLine, cartErrorMessage } from "~/lib/cart";
 import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
-import { formatVolume } from "~/lib/products";
+import { formatVolume, productHref } from "~/lib/products";
 import {
   cartLineFetcherKey,
   isPendingRemove,
@@ -25,7 +24,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
   }
 
   const quantity = optimisticQuantity(fetcher.formData, line.quantity);
-  const href = productHref(line.productId);
+  const href = productHref({ id: line.productId, slug: line.slug });
   const volume = formatVolume(line, translator);
   const error =
     fetcher.state === "idle" && fetcher.data?.ok === false

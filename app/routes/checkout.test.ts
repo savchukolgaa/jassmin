@@ -34,6 +34,7 @@ const guest = { userId: null, anonymousId: "0b6f1b8e-3f7e-4a52-9a43-3c1f7f1f2c11
 const line: CartLine = {
   variantId: "01a1652b-6e25-7d00-8000-000000000050",
   productId: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+  slug: "coco-mademoiselle",
   title: "Coco Mademoiselle",
   brand: "Chanel",
   imageUrl: null,

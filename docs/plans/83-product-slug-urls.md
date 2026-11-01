@@ -117,11 +117,11 @@ current slug URL, and unknown handles answer 404.
   `recordOldSlug(tx, productId, slug)` (insert … `onConflictDoUpdate` on `slug`),
   `forgetSlug(tx, slug)` (delete by slug), `findProductIdBySlugHistory(db, slug)`. Integration test
   with `createTestDatabase()`.
-- [ ] **3. `productHref` and DTOs** — Add `slug: string | null` to `ProductBase` and `CartLine`.
+- [x] **3. `productHref` and DTOs** — Add `slug: string | null` to `ProductBase` and `CartLine`.
   Add `productHref` to `app/lib/products.ts` with unit tests (slug, `null` slug → UUID, encoding).
   Select `products.slug` in `summaryColumns`, `findProductByPublicId` and `listCartLines`; map it in
   `toSummary` / `toDetail` / the cart view. Fix fixtures so `pnpm typecheck` passes.
-- [ ] **4. Use the helper everywhere** — `ProductCard` (both variants) and `CartLineItem` call
+- [x] **4. Use the helper everywhere** — `ProductCard` (both variants) and `CartLineItem` call
   `productHref(...)`; delete the old helper. `grep -rn '/products/\${' app` must find only
   `productHref`. Update the UI tests to expect `/products/<slug>`.
 - [ ] **5. CMS sync writes history** — In `applyCmsProductChange`: on `update`, get the current slug

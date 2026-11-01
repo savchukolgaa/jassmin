@@ -33,8 +33,10 @@ export type CartIntent = CartActionInput["intent"];
 export interface CartLine {
   /** The variant's `public_id`; identifies the line in update and remove forms. */
   variantId: string;
-  /** The product's `public_id`, for the product link. */
+  /** The product's `public_id`. */
   productId: string;
+  /** The product's URL slug (#83); link with `productHref({ id: productId, slug })`. */
+  slug: string | null;
   title: string;
   brand: string;
   imageUrl: string | null;

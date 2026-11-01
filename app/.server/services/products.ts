@@ -43,6 +43,7 @@ function toSummary(row: ProductSummaryRow): ProductSummary {
   }
   return {
     id: row.publicId,
+    slug: row.slug,
     title: row.title,
     brand: row.brand,
     gender: row.gender,
@@ -71,6 +72,7 @@ function toVariant(row: ProductVariantRow): ProductVariant {
 function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): ProductDetail {
   return {
     id: row.publicId,
+    slug: row.slug,
     title: row.title,
     brand: row.brand,
     gender: row.gender,

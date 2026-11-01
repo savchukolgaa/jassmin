@@ -1,9 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "./i18n";
 import { formatPrice } from "./money";
-import { cardPrice, defaultVariant, formatVariantOption, formatVolume } from "./products";
+import {
+  cardPrice,
+  defaultVariant,
+  formatVariantOption,
+  formatVolume,
+  productHref,
+} from "./products";
 
 const en = createTranslator("en");
+
+describe("productHref", () => {
+  const id = "01a1652b-6e25-7c03-ae47-25b57131fb06";
+
+  it("links to the slug", () => {
+    expect(productHref({ id, slug: "bleu-de-chanel-eau-de-parfum" })).toBe(
+      "/products/bleu-de-chanel-eau-de-parfum",
+    );
+  });
+
+  it("falls back to the public id for a product without a slug", () => {
+    expect(productHref({ id, slug: null })).toBe(`/products/${id}`);
+  });
+
+  it("encodes the slug", () => {
+    expect(productHref({ id, slug: "a b/c" })).toBe("/products/a%20b%2Fc");
+  });
+});
 
 describe("formatVolume", () => {
   it("shows the volume of a single bottle", () => {

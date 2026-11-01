@@ -6,12 +6,22 @@ import { createTranslator, type Translator } from "./i18n";
 
 interface ProductBase {
   id: string;
+  /** The URL slug (#83); `null` until the product is synced from Strapi. Link with `productHref`. */
+  slug: string | null;
   title: string;
   brand: string;
   gender: Gender;
   /** Units per variant, e.g. 3 for a set of three testers. */
   packSize: number;
   imageUrl: string | null;
+}
+
+/**
+ * The product page's URL (#83): `/products/<slug>`, or `/products/<public id>` for a product
+ * without a slug yet. The only place product links are built.
+ */
+export function productHref(product: { id: string; slug: string | null }): string {
+  return `/products/${encodeURIComponent(product.slug ?? product.id)}`;
 }
 
 /** A size on a product card (#74). No exact stock, which the card doesn't show. */

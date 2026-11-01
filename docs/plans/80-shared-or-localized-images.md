@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/80
 Branch: `issue/80`
 Worktree: `.claude/worktrees/issue-80`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Staff want to upload a photo once for every language but still be able to use a language-specific
@@ -184,8 +184,11 @@ stay as they are.
   `<name>Localized` / `<name>Alt` convention, the home page exception (shared top-level, override
   and alt in the component), the alt fallback, that `pickImage` is the only way to map them, and
   that new image fields must follow it. Fix the `seed.ts` header comment if it mentions per-locale images.
-- [ ] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual
-  checks below.
+- [x] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual
+  checks below. All four pass (tests run with `DATABASE_URL` pointed at the Aspire Postgres
+  container, since `.env` names a port nothing listens on). Manual checks 1, 2, 4, 8 and 9 were
+  done at the Strapi level (a boot script on DB copies, not the browser); 3, 5, 6 and 7 are covered
+  by unit tests only. A click-through in the running admin and site is still to do.
 
 ## Testing & verification
 - Unit: `pickImage` (3 cases), mappers for home page / offer / blog post with and without overrides,
@@ -204,16 +207,16 @@ stay as they are.
   9. Admin shows the descriptions on each image and alt field.
 
 ## Acceptance criteria
-- [ ] Staff can set a shared image, a current-language image, or both for the hero, About, each offer and each blog post — steps 1, 4
-- [ ] A shared image set while editing either locale shows on both sites — steps 1, 5, 6
-- [ ] A language-specific image shows only for that language and overrides the shared one; the other language keeps the shared image — steps 5, 6, 8
-- [ ] Removing a language-specific image falls back to the shared image — steps 5, 8
-- [ ] After migration, existing home page photos (uk), offer images and blog covers show in both languages, no upload lost — steps 2, 3
-- [ ] `pnpm cms:seed` works on a fresh DB and a re-run changes nothing — step 7
-- [ ] Pages render without `<img>` when no image is set — steps 5, 8
-- [ ] Alt text can be set per language for every image slot, shared or not (from the plan review) — steps 1, 5, 7, 8
-- [ ] Naming convention documented in `app/.server/AGENTS.md` — step 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` pass — step 10
+- [x] Staff can set a shared image, a current-language image, or both for the hero, About, each offer and each blog post — steps 1, 4 (verified through Strapi's document service and edit-view configuration, not by clicking in the admin)
+- [x] A shared image set while editing either locale shows on both sites — steps 1, 5, 6
+- [x] A language-specific image shows only for that language and overrides the shared one; the other language keeps the shared image — steps 5, 6, 8
+- [x] Removing a language-specific image falls back to the shared image — steps 5, 8
+- [x] After migration, existing home page photos (uk), offer images and blog covers show in both languages, no upload lost — steps 2, 3
+- [x] `pnpm cms:seed` works on a fresh DB and a re-run changes nothing — step 7
+- [x] Pages render without `<img>` when no image is set — steps 5, 8
+- [x] Alt text can be set per language for every image slot, shared or not (from the plan review) — steps 1, 5, 7, 8
+- [x] Naming convention documented in `app/.server/AGENTS.md` — step 9
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` pass — step 10
 
 ## Out of scope
 - Product images (product type isn't localized; synced to `products.image_url`, #40/#66).

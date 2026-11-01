@@ -7,7 +7,8 @@
 
 import { createBuilder } from "./.aspire/modules/aspire.mjs";
 
-const builder = await createBuilder();
+// Without a name the dashboard is titled after the AppHost folder ("aspire-apphost").
+const builder = await createBuilder({ dashboardApplicationName: "Jassmin" });
 
 const postgres = builder.addPostgres("postgres").withDataVolume();
 

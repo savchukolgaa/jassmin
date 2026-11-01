@@ -2,7 +2,7 @@
 
 Aspire TypeScript AppHost, used for **local development only**. Production runs `pnpm build && pnpm start`.
 
-- `apphost.mts` declares the resources:
+- `apphost.mts` names the dashboard "Jassmin" (`createBuilder({ dashboardApplicationName })`) and declares the resources:
   - `postgres`: PostgreSQL container with a persistent data volume.
   - `jassmindb`: the app database on that server.
   - `db-migrate`: child of `jassmindb` that runs `pnpm db:migrate` on every run. `web` waits for it to complete (`waitForCompletion`). It owns the root `pnpm install` (`withPnpm()`), so every other JavaScript resource uses `withPnpm({ install: false })`.

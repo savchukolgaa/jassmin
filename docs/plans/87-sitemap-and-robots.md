@@ -175,7 +175,7 @@ everything outside production.
   the catalog's variant condition), and `slug is not null` (Q1: no UUID URLs). Order by `slug`. Integration test
   with the test DB: an archived product, a product without variants and a `null`-slug product are
   excluded.
-- [ ] **4. Blog query** — `blogPostSitemapEntry` zod schema (`documentId`, `slug`, `locale`,
+- [x] **4. Blog query** — `blogPostSitemapEntry` zod schema (`documentId`, `slug`, `locale`,
   `updatedAt`) and `listBlogPostsForSitemap()` in `cms/content.ts`. It loops over `LOCALES` and
   pages with `fields: ["slug", "updatedAt", "locale"]` and `pagination.pageSize = MAX_PAGE_SIZE`
   until `pageCount`. It returns `{ documentId, slugs: Partial<Record<Locale, string>>,

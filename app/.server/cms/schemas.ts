@@ -124,6 +124,14 @@ export const blogPostEntry = blogPostSummaryEntry.extend({
   seo: seoComponent.nullish(),
 });
 
+/** Just what `/sitemap.xml` needs of a published post (#87). */
+export const blogPostSitemapEntry = z.object({
+  documentId: z.string(),
+  slug: z.string(),
+  // A Strapi system field, set on every entry.
+  updatedAt: z.iso.datetime({ offset: true }),
+});
+
 export const offerProductRef = z.object({
   publicId: z.string(),
 });
@@ -173,5 +181,6 @@ export type HomePageEntry = z.infer<typeof homePageEntry>;
 export type SiteSettingEntry = z.infer<typeof siteSettingEntry>;
 export type BlogPostSummaryEntry = z.infer<typeof blogPostSummaryEntry>;
 export type BlogPostEntry = z.infer<typeof blogPostEntry>;
+export type BlogPostSitemapEntry = z.infer<typeof blogPostSitemapEntry>;
 export type OfferEntry = z.infer<typeof offerEntry>;
 export type PaginationMeta = z.infer<typeof paginationMeta>;

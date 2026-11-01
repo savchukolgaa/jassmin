@@ -182,7 +182,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   tune against the real grid classes). Refactor `toSrcSet` in `app/.server/cms/content.ts` to
   call `buildSrcSet`. Tests: ordering, de-duplication, original included, `null` with no widths,
   relative URLs rejected/handled. Existing `content.test.ts` must stay green.
-- [ ] **2. Schema + migration** — Add `imageWidth`, `imageHeight` (`integer`) and `imageFormats`
+- [x] **2. Schema + migration** — Add `imageWidth`, `imageHeight` (`integer`) and `imageFormats`
   (`jsonb().$type<{ url: string; width: number; height: number }[]>()`) to `products` in
   `schema.ts`; `pnpm db:generate --name product_image_meta`; write the rollback. Update
   `schema.test.ts` if it mirrors product columns. Check `pnpm db:migrate` + `pnpm db:rollback`

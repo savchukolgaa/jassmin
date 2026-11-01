@@ -48,6 +48,23 @@ describe("theme tokens", () => {
   it("puts Manrope first in the sans stack and keeps the system fallback", () => {
     expect(css).toMatch(/--font-sans:\s*"Manrope", ui-sans-serif, system-ui, sans-serif/);
   });
+
+  it("sets Playfair Display as the serif with a Georgia fallback", () => {
+    expect(css).toContain('--font-serif: "Playfair Display", Georgia, serif;');
+  });
+
+  it("sets h1 to h3 in the serif from the base layer", () => {
+    expect(css).toMatch(
+      /@layer base \{[^}]*h1,\s*h2,\s*h3 \{\s*font-family: var\(--font-serif\);\s*\}/,
+    );
+  });
+
+  it("loads Manrope and Playfair Display from Google Fonts with font-display swap", () => {
+    const root = readFileSync(new URL("./root.tsx", import.meta.url), "utf8");
+    expect(root).toContain(
+      "https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Playfair+Display:wght@600..700&display=swap",
+    );
+  });
 });
 
 describe("contrast (WCAG AA)", () => {

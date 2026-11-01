@@ -5,6 +5,8 @@
   --font-sans:
     "Manrope", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
+  /* Headings, the wordmark, prices and step numbers (#73). */
+  --font-serif: "Playfair Display", Georgia, serif;
 
   --color-primary: #c22f4b;
   --color-primary-dark: #a8233d;
@@ -54,6 +56,15 @@ html {
 html,
 body {
   @apply bg-white text-ink;
+}
+
+/* Page, section and card headings use the serif (#73); in the base layer so utilities still win. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+  }
 }
 
 /*

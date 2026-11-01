@@ -117,11 +117,11 @@ step numbers; Manrope stays for everything else.
   `c78ebec` (#72); all checks pass (121 test files, with the local `jassmin-pg` PostgreSQL
   started for the DB tests). Sweep results match the lists above; #72's header wordmark dot is now
   `text-primary` on white.
-- [ ] **4. Font token and loading** — `app/app.css` `@theme`: add
+- [x] **4. Font token and loading** — `app/app.css` `@theme`: add
   `--font-serif: "Playfair Display", Georgia, serif;` after `--font-sans`. `app/root.tsx`
   `links`: add `family=Playfair+Display:wght@600..700` to the existing Google Fonts URL (one
   stylesheet request). Add tests in `theme.test.ts` for the stack and the link.
-- [ ] **5. Base heading style** — `@layer base { h1, h2, h3 { font-family: var(--font-serif); } }`
+- [x] **5. Base heading style** — `@layer base { h1, h2, h3 { font-family: var(--font-serif); } }`
   beside the `html, body` rule; test it in `theme.test.ts`. Check in the browser that Ukrainian
   letters (є, ї, і, ґ, Щ) render in Playfair, not a fallback.
 - [ ] **6. Weight/tracking sweep** — For each `h1`–`h3` (and `RichText` `[&_h2]`), replace

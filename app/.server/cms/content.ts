@@ -47,6 +47,9 @@ const listBlogPostsInput = z.object({
 
 export type ListBlogPostsInput = z.input<typeof listBlogPostsInput>;
 
+/** Both cover image fields of a post (#80); `pickImage` chooses between them. */
+const BLOG_COVER_POPULATE = ["coverImage", "coverImageLocalized"];
+
 /**
  * Builds an `srcset` from Strapi's resized formats and the original image, smallest first.
  * Returns `null` when no candidate has a known width.
@@ -82,6 +85,30 @@ export function toImage(media: StrapiMedia | null | undefined, baseUrl: string):
   };
 }
 
+/**
+ * One image slot (#80): `shared` is the same in every locale, `localized` is the served
+ * locale's override and `alt` its alt text.
+ */
+export interface ImageSlot {
+  shared: StrapiMedia | null | undefined;
+  localized: StrapiMedia | null | undefined;
+  alt: string | null | undefined;
+}
+
+/**
+ * The image to show for a slot: the locale's override when set, else the shared image, else
+ * `null`. The entry's alt text describes whichever is shown; when it's blank, the file's own
+ * alternative text is used.
+ */
+export function pickImage(slot: ImageSlot, baseUrl: string): CmsImage | null {
+  const image = toImage(slot.localized ?? slot.shared, baseUrl);
+  if (!image) {
+    return null;
+  }
+  const alt = textOrNull(slot.alt);
+  return alt ? { ...image, alt } : image;
+}
+
 /** The locale Strapi says it served the entry in, else the one that was asked for. */
 function servedLocale(entry: { locale?: string | null }, requested: Locale): Locale {
   return isLocale(entry.locale) ? entry.locale : requested;
@@ -113,12 +140,22 @@ export function toHomePage(
       headline: hero.headline,
       ctaLabel: hero.ctaLabel,
       ctaHref: hero.ctaHref,
-      image: toImage(hero.image, baseUrl),
+      image: pickImage(
+        { shared: entry.heroImage, localized: hero.imageLocalized, alt: hero.imageAlt },
+        baseUrl,
+      ),
       eyebrow: textOrNull(hero.eyebrow),
       subtitle: textOrNull(hero.subtitle),
       secondaryCta: toSecondaryCta(hero.secondaryCtaLabel, hero.secondaryCtaHref),
     },
-    about: { title: about.title, body: about.body, image: toImage(about.image, baseUrl) },
+    about: {
+      title: about.title,
+      body: about.body,
+      image: pickImage(
+        { shared: entry.aboutImage, localized: about.imageLocalized, alt: about.imageAlt },
+        baseUrl,
+      ),
+    },
     location: {
       address: location.address,
       openingHours: location.openingHours ?? null,
@@ -151,7 +188,10 @@ export function toBlogPostSummary(
     slug: entry.slug,
     title: entry.title,
     excerpt: entry.excerpt ?? null,
-    coverImage: toImage(entry.coverImage, baseUrl),
+    coverImage: pickImage(
+      { shared: entry.coverImage, localized: entry.coverImageLocalized, alt: entry.coverImageAlt },
+      baseUrl,
+    ),
     authorName: entry.authorName ?? null,
     publishedAt: new Date(entry.publishedAt).toISOString(),
   };
@@ -222,7 +262,13 @@ export async function getHomePage(locale: Locale = DEFAULT_LOCALE): Promise<Home
     cmsFetch(
       "home-page",
       {
-        populate: { hero: { populate: ["image"] }, about: { populate: ["image"] }, location: true },
+        populate: {
+          heroImage: true,
+          aboutImage: true,
+          hero: { populate: ["imageLocalized"] },
+          about: { populate: ["imageLocalized"] },
+          location: true,
+        },
       },
       singleResponse(homePageEntry),
       { locale: l },
@@ -261,7 +307,7 @@ export async function listBlogPosts(
     {
       sort: ["publishedAt:desc"],
       pagination: { page, pageSize },
-      populate: ["coverImage"],
+      populate: BLOG_COVER_POPULATE,
     },
     collectionResponse(blogPostSummaryEntry),
     { locale: DEFAULT_LOCALE },
@@ -274,7 +320,7 @@ export async function listBlogPosts(
       {
         filters: { documentId: { $in: data.map((entry) => entry.documentId) } },
         pagination: { page: 1, pageSize: data.length },
-        populate: ["coverImage"],
+        populate: BLOG_COVER_POPULATE,
       },
       collectionResponse(blogPostSummaryEntry),
       { locale },
@@ -308,7 +354,11 @@ export async function getBlogPostBySlug(
       {
         filters: { slug: { $eq: slug } },
         pagination: { page: 1, pageSize: 1 },
-        populate: { coverImage: true, seo: { populate: ["ogImage"] } },
+        populate: {
+          coverImage: true,
+          coverImageLocalized: true,
+          seo: { populate: ["ogImage"] },
+        },
       },
       collectionResponse(blogPostEntry),
       { locale: l },
@@ -347,7 +397,10 @@ export function toOffer(
     title: entry.title,
     summary: optionalText(entry.summary),
     body: optionalText(entry.body),
-    image: toImage(entry.image, baseUrl),
+    image: pickImage(
+      { shared: entry.image, localized: entry.imageLocalized, alt: entry.imageAlt },
+      baseUrl,
+    ),
     startsAt: toUtcIso(entry.startsAt),
     endsAt: toUtcIso(entry.endsAt),
     priceNote: optionalText(entry.priceNote),
@@ -395,7 +448,7 @@ function activeWindowFilter(nowIso: string): StrapiQuery {
   };
 }
 
-const OFFER_POPULATE = { image: true, products: true };
+const OFFER_POPULATE = { image: true, imageLocalized: true, products: true };
 
 /**
  * Published offers whose window includes `now`, in editor order (`compareOffers`). The Ukrainian

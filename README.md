@@ -337,7 +337,7 @@ There is no admin area in the app any more (#40): staff manage the catalogue and
 The app serves two files for search engines (#87). Both are generated on each request and cached for an hour.
 
 - **`/sitemap.xml`** lists every public page in Ukrainian and English: home, the women's and men's catalogs, offers, popular, the blog and privacy, plus every product on sale and every published blog post. Each URL links its other language version (`hreflang` `uk`, `en` and `x-default`) and has a `lastmod`. For products that's the last time staff saved the product in Strapi, and for posts it's Strapi's `updatedAt`. Archived products, products without sizes or a slug, and private pages (cart, checkout, account, login, register) aren't listed. If Strapi is down, the sitemap still lists everything except the blog posts, and is cached for only 5 minutes.
-- **`/robots.txt`** blocks the cart, checkout, account, login and register pages in both languages, plus `/api/`, `/cms/`, `/payments/`, `/locale`, `/consent` and `/logout`, and points to the sitemap. Outside production (`NODE_ENV` isn't `production`), or with `ROBOTS_DISALLOW_ALL=true`, it answers `Disallow: /` so previews and staging servers aren't indexed.
+- **`/robots.txt`** blocks the cart, checkout, account, login and register pages in both languages and at their old addresses from before the translated URLs (`/cart`, …), plus `/api/`, `/cms/`, `/payments/`, `/locale`, `/consent` and `/logout`, and points to the sitemap. Outside production (`NODE_ENV` isn't `production`), or with `ROBOTS_DISALLOW_ALL=true`, it answers `Disallow: /` so previews and staging servers aren't indexed.
 
 Both use `PUBLIC_SITE_URL` for absolute URLs, so set it to the shop's public `https://` origin in production.
 

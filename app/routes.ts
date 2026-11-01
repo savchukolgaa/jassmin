@@ -84,6 +84,9 @@ export default [
   // Authenticated by `CMS_SYNC_SECRET`; no layout, session or consent.
   route("cms/products", "routes/cms.products.ts"),
   route("cms/orders/:id", "routes/cms.orders.$id.ts"),
+  // Files for search engines (#87), generated per request: resource routes outside the layout.
+  route("sitemap.xml", "routes/sitemap.xml.ts"),
+  route("robots.txt", "routes/robots.txt.ts"),
   // Every other URL: the 301s from old paths (`/catalog/women`, `/uk/…`, `/en/koshyk`), else a 404
   // (#84). Outside the layout, like unmatched URLs before.
   route("*", "routes/redirects.ts"),

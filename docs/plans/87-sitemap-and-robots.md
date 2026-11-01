@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/87
 Branch: `issue/87`
 Worktree: `.claude/worktrees/issue-87`
-Status: Planned
+Status: Implemented
 
 ## Goal
 The store owner wants search engines to find every product, catalog page and blog post in both
@@ -107,6 +107,22 @@ everything outside production.
 - **Migration number.** #83 also adds a migration (`0016_product_slug_history`). Whichever lands
   second renumbers its migration (regenerate the journal and snapshot with `pnpm db:generate`
   after rebasing) and updates the rollback chains in `migrator.test.ts`.
+- **Implementation notes (deviations).**
+  - The URL gathering lives in `app/.server/services/sitemap.ts` (`sitemapPages`, `getSitemap`),
+    as the issue asks for services; `app/.server/seo/` keeps only the pure builders.
+    `SITEMAP_PAGES` lists the indexable pages, and a test checks it against the `indexable` flag
+    of #84's path table.
+  - URLs are built with #84's `pathFor(locale, page, params)`. Product URLs use the slug directly,
+    because `listSitemapProducts` only returns products that have one.
+  - `lastmod` is optional in `SitemapPage`. The blog list has none when there are no posts or
+    Strapi is down, rather than a made-up date. Every product, post and other page has one.
+  - The robots.txt paths come from the path table: each private page's Ukrainian path, its
+    `/en/…` path and its path from before #84, which is the English pattern without `/en` (Q3).
+    `checkout` and `account` cover their sub-pages, and a test checks that every non-indexable
+    page is blocked and no indexable one is. No path is written by hand, so #84's
+    hard-coded-path guard passes.
+  - `GENDER_SCOPE` is exported from `services/products.ts`, so a catalog's `lastmod` counts the
+    same products the catalog shows (unisex in both).
 - **Sitemap outside production:** still served (useful for checking), but `robots.txt` blocks
   everything, so nothing gets indexed.
 
@@ -181,7 +197,7 @@ everything outside production.
   until `pageCount`. It returns `{ documentId, slugs: Partial<Record<Locale, string>>,
   updatedAt }[]`, where `updatedAt` is the newest across locales. Test with a fetch-mock fixture,
   following the existing `__fixtures__` pattern: a post in both locales, and a Ukrainian-only post.
-- [ ] **5. Sitemap builder** — `app/.server/seo/sitemap.ts`:
+- [x] **5. Sitemap builder** — `app/.server/seo/sitemap.ts`:
   - `type SitemapEntry = { alternates: Partial<Record<Locale, string>>; lastmod: string }`
     (relative paths).
   - `collectSitemapEntries({ products, posts, now })` builds the static pages, products and posts
@@ -197,7 +213,7 @@ everything outside production.
     - No inactive product appears.
     - No private page (cart, checkout, account, login, register) appears.
     - `lastmod` values are valid ISO strings.
-- [ ] **6. Robots builder** — `app/.server/seo/robots.ts`:
+- [x] **6. Robots builder** — `app/.server/seo/robots.ts`:
   - `ROBOTS_PRIVATE_PAGES` (page keys from #84's table), `ROBOTS_SYSTEM_PATHS` (`/api/`,
     `/cms/`, `/payments/`, `/locale`, `/consent`, `/logout`) and `ROBOTS_LEGACY_PATHS` (Q3: `/cart`, `/checkout`, `/account`, `/login`, `/register`).
   - `buildRobotsTxt({ siteUrl, disallowAll })`.
@@ -206,14 +222,14 @@ everything outside production.
       `/en/cart`), the system paths, and the `Sitemap:` line with the absolute URL.
     - `disallowAll` gives `Disallow: /` and no other `Disallow`.
     - No public page path (home, catalog, product, blog) is disallowed.
-- [ ] **7. Routes** — `app/routes/sitemap.xml.ts`: the loader reads `getEnv()`, runs
+- [x] **7. Routes** — `app/routes/sitemap.xml.ts`: the loader reads `getEnv()`, runs
   `listSitemapProducts()` and `listBlogPostsForSitemap()` in parallel (the CMS one with a `.catch`
   that logs and returns `null`), and returns a `Response` with XML headers. `max-age=3600`, or
   `300` when the CMS failed. `app/routes/robots.txt.ts`: `disallowAll = NODE_ENV !== "production"
   || ROBOTS_DISALLOW_ALL`. Register both at the top level of `app/routes.ts`, with a comment like
   the others. Route tests: content types, cache headers, and a CMS failure still giving 200 with
   product URLs (mock the services, as in `blog.test.ts`).
-- [ ] **8. Docs** — `README.md` "SEO" section:
+- [x] **8. Docs** — `README.md` "SEO" section:
   - Where the files are (`/sitemap.xml`, `/robots.txt`).
   - `PUBLIC_SITE_URL` must be the public `https://` origin.
   - `ROBOTS_DISALLOW_ALL` is for staging.
@@ -221,7 +237,7 @@ everything outside production.
     Webmaster Tools (Sitemaps → Submit, or import from Search Console).
   - Checking with the URL Inspection tool.
   - Add a short note to `app/.server/AGENTS.md`.
-- [ ] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the
+- [x] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the
   manual checks below.
 
 ## Testing & verification
@@ -240,12 +256,12 @@ everything outside production.
   - `pnpm build && NODE_ENV=production pnpm start` shows the full rule set.
 
 ## Acceptance criteria
-- [ ] `/sitemap.xml` is valid XML and lists all public pages, active products and published posts
+- [x] `/sitemap.xml` is valid XML and lists all public pages, active products and published posts
   in both languages with `hreflang` alternates and `lastmod` — steps 2, 3, 4, 5, 7.
-- [ ] Archived products and private pages aren't listed — steps 3, 5.
-- [ ] `/robots.txt` blocks private and action-only paths and links the sitemap. Non-production
+- [x] Archived products and private pages aren't listed — steps 3, 5.
+- [x] `/robots.txt` blocks private and action-only paths and links the sitemap. Non-production
   environments disallow everything — steps 1, 6, 7.
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9.
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9.
 
 ## Out of scope
 - Sitemap index, image or news sitemaps (`<image:image>`), and `changefreq`/`priority` (Google

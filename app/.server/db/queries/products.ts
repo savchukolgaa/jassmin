@@ -264,23 +264,47 @@ export async function listFilterOptions(db: Db, genders: readonly Gender[]) {
   };
 }
 
+/** The columns of a product page (`ProductDetail`), plus the serial id. */
+const detailColumns = {
+  id: products.id,
+  publicId: products.publicId,
+  slug: products.slug,
+  title: products.title,
+  brand: products.brand,
+  gender: products.gender,
+  packSize: products.packSize,
+  imageUrl: products.imageUrl,
+  description: products.description,
+  fragranceFamilies: products.fragranceFamilies,
+  notes: products.notes,
+};
+
+/** A listed product by `public_id`. */
 export async function findProductByPublicId(db: Db, publicId: string) {
   const [row] = await db
-    .select({
-      id: products.id,
-      publicId: products.publicId,
-      slug: products.slug,
-      title: products.title,
-      brand: products.brand,
-      gender: products.gender,
-      packSize: products.packSize,
-      imageUrl: products.imageUrl,
-      description: products.description,
-      fragranceFamilies: products.fragranceFamilies,
-      notes: products.notes,
-    })
+    .select(detailColumns)
     .from(products)
     .where(and(isListed, eq(products.publicId, publicId)))
+    .limit(1);
+  return row;
+}
+
+/** A listed product by its current URL slug (#83); case-sensitive. */
+export async function findProductBySlug(db: Db, slug: string) {
+  const [row] = await db
+    .select(detailColumns)
+    .from(products)
+    .where(and(isListed, eq(products.slug, slug)))
+    .limit(1);
+  return row;
+}
+
+/** A listed product's `public_id` and current slug by serial id (#83). */
+export async function findListedProductSlug(db: Db, productId: number) {
+  const [row] = await db
+    .select({ publicId: products.publicId, slug: products.slug })
+    .from(products)
+    .where(and(isListed, eq(products.id, productId)))
     .limit(1);
   return row;
 }

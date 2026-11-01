@@ -133,7 +133,7 @@ current slug URL, and unknown handles answer 404.
   `cms-sync.test.ts`: rename
   writes history; same slug writes nothing; renaming back removes the history row; another product
   taking a freed slug removes it; `slug-taken` writes nothing; archive writes nothing.
-- [ ] **6. Resolve handles** — `findProductBySlug(db, slug)` in `db/queries/products.ts` (same
+- [x] **6. Resolve handles** — `findProductBySlug(db, slug)` in `db/queries/products.ts` (same
   columns and `isListed` as `findProductByPublicId`; share the column object).
   `resolveProductHandle(handle, db)` in `services/products.ts` returns
   `{ kind: "product"; id; product } | { kind: "redirect"; slug } | null`, following the resolution

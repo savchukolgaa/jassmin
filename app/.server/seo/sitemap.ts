@@ -7,8 +7,8 @@ import { DEFAULT_LOCALE, LOCALES, type Locale } from "~/lib/i18n";
 export interface SitemapPage {
   /** The page's path in each locale it exists in, e.g. `{ uk: "/aktsii", en: "/en/offers" }`. */
   paths: Partial<Record<Locale, string>>;
-  /** When the page last changed: an ISO datetime or a `YYYY-MM-DD` date. */
-  lastmod: string;
+  /** When the page last changed: an ISO datetime or a `YYYY-MM-DD` date; unknown when absent. */
+  lastmod?: string;
 }
 
 const XML_ESCAPES: Record<string, string> = {
@@ -55,7 +55,7 @@ export function buildSitemapXml(pages: readonly SitemapPage[], siteUrl: string):
         [
           "  <url>",
           `    <loc>${escapeXml(absolute(siteUrl, path))}</loc>`,
-          `    <lastmod>${escapeXml(lastmod)}</lastmod>`,
+          ...(lastmod === undefined ? [] : [`    <lastmod>${escapeXml(lastmod)}</lastmod>`]),
           ...alternates,
           "  </url>",
         ].join("\n"),

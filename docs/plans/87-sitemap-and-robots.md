@@ -170,7 +170,7 @@ everything outside production.
   `UPDATE products SET updated_at = created_at`, so the first sitemap doesn't claim that every
   product changed today. Add the matching rollback (`DROP COLUMN updated_at`). Test: `updateProduct`
   moves `updated_at` forward. Don't touch any ML column.
-- [ ] **3. Product query** — `listSitemapProducts()` in `db/queries/products.ts`: select `slug`,
+- [x] **3. Product query** — `listSitemapProducts()` in `db/queries/products.ts`: select `slug`,
   `publicId`, `gender`, `updatedAt` where `isListed`, the product has at least one variant (reuse
   the catalog's variant condition), and `slug is not null` (Q1: no UUID URLs). Order by `slug`. Integration test
   with the test DB: an archived product, a product without variants and a `null`-slug product are

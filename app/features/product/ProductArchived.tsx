@@ -1,7 +1,7 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import type { ProductSummary } from "~/lib/products";
 
 /**
@@ -10,11 +10,12 @@ import type { ProductSummary } from "~/lib/products";
  */
 export function ProductUnavailable({ catalog }: { catalog: CatalogGender }) {
   const { t } = useT();
+  const path = usePathFor();
   return (
     <div role="status" className="flex flex-col items-start gap-3 rounded-card-lg bg-blush p-6">
       <p className="text-lg font-bold text-ink">{t("product.archived.heading")}</p>
       <p className="text-body">{t("product.archived.text")}</p>
-      <ButtonLink to={`/catalog/${catalog}`} size="sm">
+      <ButtonLink to={path("catalog", { gender: catalog })} size="sm">
         {t("product.archived.catalog")}
         <span className="sr-only">: {t(CATALOG_TITLE_KEYS[catalog])}</span>
       </ButtonLink>

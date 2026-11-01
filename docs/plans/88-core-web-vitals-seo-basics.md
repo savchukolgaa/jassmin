@@ -123,8 +123,14 @@ Success is measured with Lighthouse (mobile) on a local production build.
      subset files; each has a `unicode-range`, so browsers only download Cyrillic/Latin.
    - Similar perfumes come from one query over the product's catalog genders, ordered by shared
      family, same brand, popular rank, then bestsellers; no separate bestseller fallback needed.
-   - #85 landed first: the product `meta` uses its `seoMeta` with `noindex` for archived products,
-     and the 404 route uses its `errorMeta`.
+   - #85 landed first: the product `meta` uses its `seoMeta` with `noindex` for archived products.
+   - #84 landed first with a top-level catch-all (`routes/redirects.ts`) that 301s old paths and
+     404s the rest through the root boundary. A second catch-all inside the shop layout would have
+     shadowed those redirects, so the planned `routes/not-found.tsx` was dropped: unknown URLs are
+     #84's real 404, and `ErrorContent` (one `h1` plus `NotFoundLinks` in the page's language)
+     makes every 404 page helpful, with or without the header.
+   - #86 landed first: an archived product's page leaves out the `Product` JSON-LD (it isn't sold),
+     and the JSON-LD image comes from the responsive `image`.
 
 ## Resolved questions
 

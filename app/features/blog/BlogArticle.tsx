@@ -25,6 +25,7 @@ export function BackToBlogLink() {
 /** The `/blog/:slug` page body: title, date and author, cover and the sanitized article. */
 export function BlogArticle({ post }: { post: BlogPostView }) {
   const translator = useT();
+  const { t } = translator;
   const lang = useContentLang(post.locale);
 
   return (

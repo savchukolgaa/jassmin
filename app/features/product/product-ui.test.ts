@@ -174,7 +174,7 @@ describe("archived product (#88)", () => {
 
     expect(html).toContain('role="status"');
     expect(html).toContain("This perfume is no longer sold");
-    expect(html).toContain('href="/catalog/women"');
+    expect(html).toContain('href="/en/catalog/women"');
     expect(html).toContain("Browse the catalog");
   });
 

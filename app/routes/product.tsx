@@ -13,7 +13,7 @@ import { shouldRevalidateView } from "~/lib/analytics";
 import { productBreadcrumbs } from "~/lib/breadcrumbs";
 import type { CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
-import { metaTranslator, usePathFor, useT } from "~/lib/i18n";
+import { metaTranslator, useT } from "~/lib/i18n";
 import { formatVolume, productHref } from "~/lib/products";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, priceAmount, seoMeta } from "~/lib/seo";
@@ -174,7 +174,6 @@ export default function Product({ loaderData }: Route.ComponentProps) {
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const { t } = useT();
-  const path = usePathFor();
   if (isRouteErrorResponse(error) && error.status === 404) {
     return <ErrorContent message="404" details={t("product.notFound")} notFound />;
   }

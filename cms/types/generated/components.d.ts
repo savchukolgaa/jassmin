@@ -51,7 +51,7 @@ export interface CatalogNote extends Struct.ComponentSchema {
 export interface CatalogVariant extends Struct.ComponentSchema {
   collectionName: 'components_catalog_variants';
   info: {
-    description: 'One size of a perfume: volume (7, 10, 30, 50 or 100 ml), price in UAH and units in stock';
+    description: 'One size of a perfume: volume (5, 10, 30, 50 or 100 ml), price in UAH and units in stock';
     displayName: 'Size';
     icon: 'shoppingCart';
   };
@@ -93,7 +93,11 @@ export interface HomeAbout extends Struct.ComponentSchema {
   };
   attributes: {
     body: Schema.Attribute.RichText & Schema.Attribute.Required;
-    image: Schema.Attribute.Media<'images'>;
+    imageAlt: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    imageLocalized: Schema.Attribute.Media<'images'>;
     title: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{
@@ -129,7 +133,11 @@ export interface HomeHero extends Struct.ComponentSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 200;
       }>;
-    image: Schema.Attribute.Media<'images'>;
+    imageAlt: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    imageLocalized: Schema.Attribute.Media<'images'>;
     secondaryCtaHref: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;

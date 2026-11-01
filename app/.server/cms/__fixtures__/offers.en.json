@@ -15,6 +15,8 @@
       "ctaUrl": null,
       "sortOrder": 0,
       "image": null,
+      "imageLocalized": null,
+      "imageAlt": null,
       "products": [],
       "createdAt": "2026-10-25T09:00:00.000Z",
       "updatedAt": "2026-10-25T09:00:00.000Z",
@@ -106,6 +108,8 @@
         "updatedAt": "2026-10-24T11:46:34.962Z",
         "publishedAt": "2026-10-24T11:46:34.963Z"
       },
+      "imageLocalized": null,
+      "imageAlt": "Jassmin perfume testers",
       "products": [
         {
           "id": 210,
@@ -206,6 +210,8 @@
         "updatedAt": "2026-10-24T11:46:34.962Z",
         "publishedAt": "2026-10-24T11:46:34.963Z"
       },
+      "imageLocalized": null,
+      "imageAlt": "Jassmin perfume testers",
       "products": [
         {
           "id": 220,
@@ -240,6 +246,8 @@
       "ctaUrl": "/register",
       "sortOrder": 20,
       "image": null,
+      "imageLocalized": null,
+      "imageAlt": null,
       "products": [],
       "createdAt": "2026-10-25T09:00:00.000Z",
       "updatedAt": "2026-10-25T09:00:00.000Z",

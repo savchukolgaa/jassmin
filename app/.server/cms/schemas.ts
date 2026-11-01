@@ -30,7 +30,9 @@ export const heroComponent = z.object({
   headline: z.string(),
   ctaLabel: z.string(),
   ctaHref: z.string(),
-  image: strapiMedia.nullish(),
+  /** This language's photo; it replaces the home page's shared `heroImage` (#80). */
+  imageLocalized: strapiMedia.nullish(),
+  imageAlt: z.string().nullish(),
   eyebrow: z.string().nullish(),
   subtitle: z.string().nullish(),
   secondaryCtaLabel: z.string().nullish(),
@@ -40,7 +42,9 @@ export const heroComponent = z.object({
 export const aboutComponent = z.object({
   title: z.string(),
   body: z.string(),
-  image: strapiMedia.nullish(),
+  /** This language's photo; it replaces the home page's shared `aboutImage` (#80). */
+  imageLocalized: strapiMedia.nullish(),
+  imageAlt: z.string().nullish(),
 });
 
 export const locationComponent = z.object({
@@ -58,6 +62,9 @@ export const homePageEntry = z.object({
   documentId: z.string(),
   /** The locale Strapi served the entry in (`uk`, `en`). */
   locale: z.string().nullish(),
+  /** Shared by every locale (#80); the components hold the per-language overrides. */
+  heroImage: strapiMedia.nullish(),
+  aboutImage: strapiMedia.nullish(),
   hero: heroComponent,
   about: aboutComponent,
   location: locationComponent,
@@ -85,6 +92,8 @@ export const blogPostSummaryEntry = z.object({
   // Only published entries are requested, so `publishedAt` is always set.
   publishedAt: z.iso.datetime({ offset: true }),
   coverImage: strapiMedia.nullish(),
+  coverImageLocalized: strapiMedia.nullish(),
+  coverImageAlt: z.string().nullish(),
 });
 
 export const blogPostEntry = blogPostSummaryEntry.extend({
@@ -106,6 +115,8 @@ export const offerEntry = z.object({
   summary: z.string().nullish(),
   body: z.string().nullish(),
   image: strapiMedia.nullish(),
+  imageLocalized: strapiMedia.nullish(),
+  imageAlt: z.string().nullish(),
   // Strapi `datetime` fields; an offset is required so the instant is never ambiguous.
   startsAt: z.iso.datetime({ offset: true }).nullish(),
   endsAt: z.iso.datetime({ offset: true }).nullish(),

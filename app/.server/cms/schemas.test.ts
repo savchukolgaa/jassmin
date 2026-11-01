@@ -29,6 +29,21 @@ describe("Strapi response schemas", () => {
     expect(collectionResponse(offerEntry).safeParse(offersEmpty).success).toBe(true);
   });
 
+  it("keep the shared image, the per-language override and the alt text (#80)", () => {
+    const { data } = singleResponse(homePageEntry).parse(homePage);
+
+    expect(data.heroImage?.url).toMatch(/^\/uploads\//);
+    expect(data.aboutImage?.url).toMatch(/^\/uploads\//);
+    expect(data.hero).toMatchObject({ imageLocalized: null, imageAlt: "Тестери парфумів Jassmin" });
+    expect(data.hero).not.toHaveProperty("image");
+
+    const [offer] = collectionResponse(offerEntry).parse(offers).data;
+    expect(offer).toHaveProperty("imageLocalized");
+    expect(offer).toHaveProperty("imageAlt");
+    const [post] = collectionResponse(blogPostSummaryEntry).parse(blogPosts).data;
+    expect(post).toMatchObject({ coverImageLocalized: null, coverImageAlt: "Флакони парфумів" });
+  });
+
   it("strip unknown keys", () => {
     const parsed = singleResponse(siteSettingEntry).parse({
       data: { ...siteSetting.data, addedLater: "ignored" },

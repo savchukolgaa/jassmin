@@ -1,10 +1,10 @@
 // The popular perfumes page `/popular` (#67): staff-ranked perfumes, topped up from the
 // bestsellers, optionally narrowed to the trio builder's families. Isomorphic: no server imports.
 import { z } from "zod";
+import type { Locale } from "./i18n/locales";
+import { pathFor } from "./paths";
 import type { ProductSummary } from "./products";
 import type { TrioFamily } from "./trio";
-
-export const POPULAR_PATH = "/popular";
 
 /** One page of the popular perfumes. */
 export interface PopularPage {
@@ -28,10 +28,12 @@ export function parsePopularPage(params: URLSearchParams): number {
   return pageSchema.parse(params.get("page") ?? undefined);
 }
 
-/** `/popular` narrowed to `families` (stored values, in pick order), at `page`; 1 is omitted. */
-export function popularHref(families: readonly string[], page = 1): string {
+/**
+ * The popular perfumes in `locale`, narrowed to `families` (stored values, in pick order), at
+ * `page`; 1 is omitted.
+ */
+export function popularHref(locale: Locale, families: readonly string[], page = 1): string {
   const params = new URLSearchParams(families.map((family) => ["family", family]));
   if (page > 1) params.set("page", String(page));
-  const query = params.toString();
-  return query ? `${POPULAR_PATH}?${query}` : POPULAR_PATH;
+  return pathFor(locale, "popular", {}, { search: params });
 }

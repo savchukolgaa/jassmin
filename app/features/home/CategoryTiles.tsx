@@ -1,18 +1,18 @@
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { cn } from "~/lib/cn";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 
 // Only two catalogs: there is no Unisex one (unisex perfumes are in both).
 const TILES = [
   {
-    to: "/catalog/women",
+    gender: "women",
     label: "home.tiles.women",
     tile: "bg-blush text-ink",
     arrow: "text-primary-dark",
   },
   {
-    to: "/catalog/men",
+    gender: "men",
     label: "home.tiles.men",
     tile: "bg-ink text-white",
     arrow: "text-primary-light",
@@ -22,13 +22,14 @@ const TILES = [
 /** Big Women / Men tiles linking to the two catalogs. */
 export function CategoryTiles() {
   const { t } = useT();
+  const path = usePathFor();
   return (
     <nav aria-label={t("home.tiles.label")} className="reveal">
       <ul className="container mx-auto grid gap-5 px-4 pt-12 pb-10 sm:grid-cols-2">
         {TILES.map((tile) => (
-          <li key={tile.to}>
+          <li key={tile.gender}>
             <Link
-              to={tile.to}
+              to={path("catalog", { gender: tile.gender })}
               className={cn(
                 "tile-arrow flex min-h-50 items-end justify-between rounded-[1.75rem] p-8",
                 tile.tile,

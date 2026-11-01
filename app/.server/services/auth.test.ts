@@ -113,7 +113,7 @@ describe("requireUser", () => {
     expect(thrown).toBeInstanceOf(Response);
     const response = thrown as Response;
     expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe("/login?redirectTo=%2Faccount%3Ftab%3Dorders");
+    expect(response.headers.get("Location")).toBe("/vkhid?redirectTo=%2Faccount%3Ftab%3Dorders");
   });
 });
 
@@ -127,7 +127,7 @@ describe("requireAdmin", () => {
 
     expect(thrown).toBeInstanceOf(Response);
     expect((thrown as Response).headers.get("Location")).toBe(
-      "/login?redirectTo=%2Fadmin%2Forders%3Fx%3D1",
+      "/vkhid?redirectTo=%2Fadmin%2Forders%3Fx%3D1",
     );
   });
 });
@@ -292,6 +292,6 @@ describe.skipIf(!hasDatabase)("auth service", () => {
 
     const thrown = await requireAdmin(request, testDb.db).catch((error: unknown) => error);
 
-    expect((thrown as Response).headers.get("Location")).toBe("/login?redirectTo=%2Fadmin");
+    expect((thrown as Response).headers.get("Location")).toBe("/vkhid?redirectTo=%2Fadmin");
   });
 });

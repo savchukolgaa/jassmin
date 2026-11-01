@@ -59,7 +59,7 @@ describe("TrioBuilder", () => {
     expect(html).toContain(
       '<p role="status" class="font-bold text-on-dark-muted">3 more to pick</p>',
     );
-    expect(html).not.toContain('href="/popular');
+    expect(html).not.toContain('href="/en/popular');
   });
 
   it("fills a slot per picked family and counts down", () => {
@@ -72,7 +72,7 @@ describe("TrioBuilder", () => {
 
   it("leads to the popular perfumes with all three families and the trio price", () => {
     const html = render(["квіткові", "свіжі", "деревні"]);
-    const href = `/popular?${new URLSearchParams([
+    const href = `/en/popular?${new URLSearchParams([
       ["family", "квіткові"],
       ["family", "свіжі"],
       ["family", "деревні"],

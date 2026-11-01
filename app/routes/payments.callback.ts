@@ -1,6 +1,8 @@
 import { redirect } from "react-router";
 import { pushToCms } from "~/.server/services/cms-sync";
 import { handlePaymentCallback } from "~/.server/services/payments";
+import { DEFAULT_LOCALE } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import type { Route } from "./+types/payments.callback";
 
 // POST only, from the payment provider (#44), never from a browser: no session, cookies or
@@ -26,5 +28,5 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export function loader() {
-  return redirect("/");
+  return redirect(pathFor(DEFAULT_LOCALE, "home"));
 }

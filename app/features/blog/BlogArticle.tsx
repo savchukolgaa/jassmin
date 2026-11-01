@@ -4,16 +4,17 @@ import { focusRing } from "~/components/layout/nav";
 import { RichText } from "~/components/ui/RichText";
 import type { BlogPostView } from "~/lib/blog";
 import { blogPostBreadcrumbs } from "~/lib/breadcrumbs";
-import { useContentLang, useT } from "~/lib/i18n";
+import { useContentLang, usePathFor, useT } from "~/lib/i18n";
 import { BlogCover } from "./BlogCover";
 
 /** Link back to the article list, shown on an article's error page. */
 export function BackToBlogLink() {
   const { t } = useT();
+  const path = usePathFor();
 
   return (
     <Link
-      to="/blog"
+      to={path("blog")}
       className={`inline-flex min-h-11 items-center rounded-pill font-bold text-primary-dark underline-offset-2 hover:underline ${focusRing("onLight")}`}
     >
       {t("blog.back")}
@@ -23,13 +24,13 @@ export function BackToBlogLink() {
 
 /** The `/blog/:slug` page body: title, date and author, cover and the sanitized article. */
 export function BlogArticle({ post }: { post: BlogPostView }) {
-  const { t } = useT();
+  const translator = useT();
   const lang = useContentLang(post.locale);
 
   return (
     <main className="container mx-auto px-4 pt-6 pb-16">
       <article className="mx-auto max-w-3xl">
-        <Breadcrumbs items={blogPostBreadcrumbs(t, post)} />
+        <Breadcrumbs items={blogPostBreadcrumbs(translator, post)} />
         <header className="mt-4">
           <h1
             className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl"

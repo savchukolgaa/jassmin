@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/Button";
 import type { ButtonSize } from "~/components/ui/button-styles";
 import { type CartActionResult, cartErrorMessage } from "~/lib/cart";
 import { cn } from "~/lib/cn";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 
 export interface AddToCartFormProps {
   /** The product's public id. */
@@ -39,13 +39,14 @@ export function AddToCartForm({
   children,
 }: AddToCartFormProps) {
   const translator = useT();
+  const path = usePathFor();
   const { t } = translator;
   const fetcher = useFetcher<CartActionResult>({ key: `add-to-cart-${productId}` });
   const result = fetcher.state === "idle" ? fetcher.data : undefined;
   const icon = appearance === "icon";
 
   return (
-    <fetcher.Form method="post" action="/cart" className={cn(icon && "relative", className)}>
+    <fetcher.Form method="post" action={path("cart")} className={cn(icon && "relative", className)}>
       <input type="hidden" name="intent" value="add" />
       <input type="hidden" name="productId" value={productId} />
       {variantId && <input type="hidden" name="variantId" value={variantId} />}
@@ -82,7 +83,7 @@ export function AddToCartForm({
           >
             {t("cart.added")}
             <Link
-              to="/cart"
+              to={path("cart")}
               className={`rounded underline underline-offset-2 ${focusRing("onLight")}`}
             >
               {t("cart.view")}

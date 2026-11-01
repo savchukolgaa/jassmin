@@ -9,7 +9,7 @@ import { Pagination } from "~/components/ui/Pagination";
 import { BlogPostCard } from "~/features/blog/BlogPostCard";
 import { BLOG_PAGE_SIZE, blogHref, blogResponseHeaders, parseBlogSearch } from "~/lib/blog";
 import { cn } from "~/lib/cn";
-import { metaTranslator, useT } from "~/lib/i18n";
+import { metaTranslator, usePathFor, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/blog";
@@ -52,11 +52,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function Blog({ loaderData }: Route.ComponentProps) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const path = usePathFor();
   const { posts, page, pageCount } = loaderData;
   const navigation = useNavigation();
   // Dim the list while another page of it loads.
-  const busy = navigation.state === "loading" && navigation.location.pathname === "/blog";
+  const busy = navigation.state === "loading" && navigation.location.pathname === path("blog");
 
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
@@ -83,10 +84,10 @@ export default function Blog({ loaderData }: Route.ComponentProps) {
             <p className="text-lg font-bold text-ink">{t("blog.empty")}</p>
             <p className="mt-1 text-body">{t("blog.emptyHint")}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-3">
-              <ButtonLink to="/catalog/women" size="sm">
+              <ButtonLink to={path("catalog", { gender: "women" })} size="sm">
                 {t("blog.shopWomen")}
               </ButtonLink>
-              <ButtonLink to="/catalog/men" size="sm" variant="dark">
+              <ButtonLink to={path("catalog", { gender: "men" })} size="sm" variant="dark">
                 {t("blog.shopMen")}
               </ButtonLink>
             </div>
@@ -95,7 +96,7 @@ export default function Blog({ loaderData }: Route.ComponentProps) {
       </section>
 
       <div className="mt-10">
-        <Pagination page={page} pageCount={pageCount} hrefForPage={blogHref} />
+        <Pagination page={page} pageCount={pageCount} hrefForPage={(n) => blogHref(locale, n)} />
       </div>
     </main>
   );

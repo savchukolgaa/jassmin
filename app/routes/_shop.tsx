@@ -1,10 +1,12 @@
 import { Outlet, useRouteLoaderData } from "react-router";
 import { visitorMiddleware } from "~/.server/analytics-middleware";
 import { getConsent } from "~/.server/consent";
+import { shouldSuggestEnglish } from "~/.server/locale";
 import { getHeaderState } from "~/.server/services/header";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { Footer } from "~/components/layout/Footer";
 import { Header } from "~/components/layout/Header";
+import { LanguageHint } from "~/components/layout/LanguageHint";
 import { useClientPageViews } from "~/features/analytics/useClientPageViews";
 import { CookieBanner } from "~/features/consent/CookieBanner";
 import { LOGGED_OUT_HEADER } from "~/lib/header";
@@ -17,17 +19,23 @@ export const middleware: Route.MiddlewareFunction[] = [visitorMiddleware];
 
 // Runs on every navigation and after every action, so the header (e.g. the cart badge) and the
 // cookie banner stay fresh.
+// `suggestEnglish`: offer "View in English" to a browser that prefers it on a Ukrainian page (#84).
 export async function loader({ request }: Route.LoaderArgs) {
-  const [header, consent] = await Promise.all([getHeaderState(request), getConsent(request)]);
-  return { header, consent };
+  const [header, consent, suggestEnglish] = await Promise.all([
+    getHeaderState(request),
+    getConsent(request),
+    shouldSuggestEnglish(request),
+  ]);
+  return { header, consent, suggestEnglish };
 }
 
 /** Layout for every page. Products and orders are managed in the Strapi admin (#40). */
 export default function ShopLayout({ loaderData }: Route.ComponentProps) {
-  const { header, consent } = loaderData;
+  const { header, consent, suggestEnglish } = loaderData;
   useClientPageViews(consent === "granted");
   return (
     <div className="flex min-h-dvh flex-col">
+      {suggestEnglish && <LanguageHint />}
       <Header {...header} />
       <div className="flex-1">
         <Outlet />

@@ -3,8 +3,14 @@ import { directionsUrl, resolveCtaHref, safeMapEmbedUrl, telHref, toInternalPath
 
 describe("toInternalPath", () => {
   it("keeps app paths, trimmed", () => {
-    expect(toInternalPath("/catalog/women")).toBe("/catalog/women");
-    expect(toInternalPath(" /products/abc?ref=offers ")).toBe("/products/abc?ref=offers");
+    expect(toInternalPath("/katalog/zhinochi", "uk")).toBe("/katalog/zhinochi");
+    expect(toInternalPath(" /parfumy/abc?ref=offers ", "uk")).toBe("/parfumy/abc?ref=offers");
+  });
+
+  it("moves pages and old paths to the visitor's language (#84)", () => {
+    expect(toInternalPath("/catalog/women", "uk")).toBe("/katalog/zhinochi");
+    expect(toInternalPath("/katalog/zhinochi", "en")).toBe("/en/catalog/women");
+    expect(toInternalPath("/products/abc?ref=offers", "en")).toBe("/en/perfumes/abc?ref=offers");
   });
 
   it.each([
@@ -17,21 +23,22 @@ describe("toInternalPath", () => {
     null,
     undefined,
   ])("rejects %j", (href) => {
-    expect(toInternalPath(href)).toBeNull();
+    expect(toInternalPath(href, "uk")).toBeNull();
   });
 });
 
 describe("resolveCtaHref", () => {
   it("keeps app paths as router links", () => {
-    expect(resolveCtaHref("/popular")).toEqual({ kind: "internal", to: "/popular" });
-    expect(resolveCtaHref(" /catalog/women?sort=newest ")).toEqual({
+    expect(resolveCtaHref("/popular", "uk")).toEqual({ kind: "internal", to: "/populiarni" });
+    expect(resolveCtaHref("/popular", "en")).toEqual({ kind: "internal", to: "/en/popular" });
+    expect(resolveCtaHref(" /catalog/women?sort=newest ", "en")).toEqual({
       kind: "internal",
-      to: "/catalog/women?sort=newest",
+      to: "/en/catalog/women?sort=newest",
     });
   });
 
   it("allows https URLs as external links", () => {
-    expect(resolveCtaHref("https://t.me/jassmin")).toEqual({
+    expect(resolveCtaHref("https://t.me/jassmin", "uk")).toEqual({
       kind: "external",
       href: "https://t.me/jassmin",
     });
@@ -44,8 +51,9 @@ describe("resolveCtaHref", () => {
     "http://insecure.test",
     "",
     "popular",
-  ])("falls back to /popular for %j", (href) => {
-    expect(resolveCtaHref(href)).toEqual({ kind: "internal", to: "/popular" });
+  ])("falls back to the popular perfumes for %j", (href) => {
+    expect(resolveCtaHref(href, "uk")).toEqual({ kind: "internal", to: "/populiarni" });
+    expect(resolveCtaHref(href, "en")).toEqual({ kind: "internal", to: "/en/popular" });
   });
 });
 

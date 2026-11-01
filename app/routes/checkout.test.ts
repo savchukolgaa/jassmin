@@ -65,8 +65,12 @@ function get(): LoaderArgs {
   return { request, params: {}, context: {} } as unknown as LoaderArgs;
 }
 
-function post(fields: Record<string, string>, headers: HeadersInit = {}): ActionArgs {
-  const request = new Request("http://localhost/checkout", {
+function post(
+  fields: Record<string, string>,
+  headers: HeadersInit = {},
+  path = "/checkout",
+): ActionArgs {
+  const request = new Request(`http://localhost${path}`, {
     method: "POST",
     body: new URLSearchParams(fields),
     headers,
@@ -99,12 +103,12 @@ describe("checkout loader", () => {
     const { loader } = await import("./checkout");
 
     cart.getCartView.mockResolvedValueOnce(cartView({ lines: [], itemCount: 0, subtotal: "0.00" }));
-    expect(await redirectOf(loader(get()))).toBe("/cart");
+    expect(await redirectOf(loader(get()))).toBe("/koshyk");
 
     cart.getCartView.mockResolvedValueOnce(
       cartView({ lines: [{ ...line, quantity: 4 }], itemCount: 4, subtotal: "1800.00" }),
     );
-    expect(await redirectOf(loader(get()))).toBe("/cart");
+    expect(await redirectOf(loader(get()))).toBe("/koshyk");
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
@@ -229,7 +233,7 @@ describe("checkout action", () => {
 
     expect(response).toBeInstanceOf(Response);
     const redirect = response as Response;
-    expect(redirect.headers.get("Location")).toBe("/checkout/success/42");
+    expect(redirect.headers.get("Location")).toBe("/oformlennia/uspikh/42");
     expect(redirect.headers.get("Set-Cookie")).toContain("__jassmin_session=abc");
     expect(orders.createOrder).toHaveBeenCalledWith({
       cartId: 5,
@@ -292,13 +296,13 @@ describe("checkout action", () => {
       orders.createOrder.mockResolvedValueOnce(placed);
       payments.startPayment.mockResolvedValueOnce({ ok: false, error: "not-payable" });
       expect(((await action(post(card))) as Response).headers.get("Location")).toBe(
-        "/checkout/success/42",
+        "/oformlennia/uspikh/42",
       );
 
       orders.createOrder.mockResolvedValueOnce(placed);
       payments.startPayment.mockRejectedValueOnce(new Error("db down"));
       expect(((await action(post(card))) as Response).headers.get("Location")).toBe(
-        "/checkout/success/42",
+        "/oformlennia/uspikh/42",
       );
       expect(error).toHaveBeenCalled();
       error.mockRestore();
@@ -318,7 +322,6 @@ describe("checkout action", () => {
 
   it("queues the email in the shopper's language and doesn't wait for it to be sent", async () => {
     const { action } = await import("./checkout");
-    const { localeCookie } = await import("~/.server/locale");
     orders.createOrder.mockResolvedValueOnce({
       ok: true,
       orderId: 42,
@@ -328,10 +331,10 @@ describe("checkout action", () => {
     // An SMTP server that never answers.
     orders.deliverOrderConfirmation.mockReturnValueOnce(new Promise(() => {}));
 
-    const response = await action(post(valid, { Cookie: await localeCookie.serialize("en") }));
+    const response = await action(post(valid, {}, "/en/checkout"));
 
     expect(orders.createOrder).toHaveBeenCalledWith(expect.objectContaining({ locale: "en" }));
-    expect((response as Response).headers.get("Location")).toBe("/checkout/success/42");
+    expect((response as Response).headers.get("Location")).toBe("/en/checkout/success/42");
   });
 
   it("records purchase for the placed order", async () => {
@@ -375,7 +378,7 @@ describe("checkout action", () => {
 
     const response = await action(post(valid));
 
-    expect((response as Response).headers.get("Location")).toBe("/checkout/success/42");
+    expect((response as Response).headers.get("Location")).toBe("/oformlennia/uspikh/42");
     expect(analytics.trackEvent).not.toHaveBeenCalled();
     // The first submit already tried to send its email.
     expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
@@ -446,11 +449,11 @@ describe("checkout action", () => {
     const { action } = await import("./checkout");
 
     cart.getActiveCartId.mockResolvedValueOnce(undefined);
-    expect(await redirectOf(action(post(valid)))).toBe("/cart");
+    expect(await redirectOf(action(post(valid)))).toBe("/koshyk");
     expect(orders.createOrder).not.toHaveBeenCalled();
 
     orders.createOrder.mockResolvedValueOnce({ ok: false, error: "cart-empty" });
-    expect(await redirectOf(action(post(valid)))).toBe("/cart");
+    expect(await redirectOf(action(post(valid)))).toBe("/koshyk");
     expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
   });
 });

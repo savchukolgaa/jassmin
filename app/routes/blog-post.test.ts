@@ -29,6 +29,7 @@ const post: BlogPost = {
     srcSet: null,
   },
   authorName: "Jassmin team",
+  alternates: { uk: "how-to-choose-a-perfume" },
   publishedAt: "2026-10-22T19:06:58.498Z",
   updatedAt: "2026-10-23T08:00:00.000Z",
   content:
@@ -36,9 +37,9 @@ const post: BlogPost = {
   seo: null,
 };
 
-function load(slug: string | undefined, headers?: HeadersInit) {
+function load(slug: string | undefined, headers?: HeadersInit, prefix = "") {
   return loader({
-    request: new Request(`https://jassmin.ua/blog/${slug ?? ""}`, { headers }),
+    request: new Request(`https://jassmin.ua${prefix}/blog/${slug ?? ""}`, { headers }),
     params: { slug },
   } as unknown as LoaderArgs);
 }
@@ -62,10 +63,32 @@ describe("blog post loader", () => {
   it("asks for the post in the visitor's locale, at the same URL", async () => {
     content.getBlogPostBySlug.mockResolvedValue({ ...post, locale: "en" });
 
-    const { data } = await load(post.slug, { "Accept-Language": "en" });
+    const { data } = await load(post.slug, {}, "/en");
 
     expect(content.getBlogPostBySlug).toHaveBeenCalledExactlyOnceWith(post.slug, "en");
     expect(data.locale).toBe("en");
+  });
+
+  it("redirects an English URL with the Ukrainian slug to the English slug (#84)", async () => {
+    content.getBlogPostBySlug.mockResolvedValue({
+      ...post,
+      alternates: { uk: post.slug, en: "how-to-pick-a-perfume" },
+    });
+
+    const error: unknown = await load(post.slug, {}, "/en").catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Response);
+    expect((error as Response).status).toBe(301);
+    expect((error as Response).headers.get("Location")).toBe("/en/blog/how-to-pick-a-perfume");
+  });
+
+  it("shows an untranslated post in Ukrainian under its Ukrainian slug", async () => {
+    content.getBlogPostBySlug.mockResolvedValue(post);
+
+    const { data } = await load(post.slug, {}, "/en");
+
+    expect(data.locale).toBe("uk");
+    expect(data.alternates).toEqual({ uk: post.slug });
   });
 
   it("renders the published post with sanitized HTML and absolute image URLs", async () => {

@@ -71,14 +71,14 @@ describe("checkout pay action", () => {
 
   it("goes back to the success page when the order can't be paid now", async () => {
     payments.startPayment.mockResolvedValueOnce({ ok: false, error: "not-payable" });
-    expect((await pay("42")).headers.get("Location")).toBe("/checkout/success/42");
+    expect((await pay("42")).headers.get("Location")).toBe("/oformlennia/uspikh/42");
 
     payments.startPayment.mockResolvedValueOnce({ ok: false, error: "unavailable" });
-    expect((await pay("42")).headers.get("Location")).toBe("/checkout/success/42");
+    expect((await pay("42")).headers.get("Location")).toBe("/oformlennia/uspikh/42");
 
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     payments.startPayment.mockRejectedValueOnce(new Error("db down"));
-    expect((await pay("42")).headers.get("Location")).toBe("/checkout/success/42");
+    expect((await pay("42")).headers.get("Location")).toBe("/oformlennia/uspikh/42");
     expect(error).toHaveBeenCalled();
     error.mockRestore();
   });
@@ -87,11 +87,17 @@ describe("checkout pay action", () => {
 describe("checkout pay loader", () => {
   it("only redirects to the success page on GET", async () => {
     const { loader } = await import("./checkout-pay");
-    const load = (orderId: string) =>
-      loader({ params: { orderId } } as unknown as LoaderArgs).headers.get("Location");
+    const load = async (orderId: string, prefix = "") =>
+      (
+        await loader({
+          params: { orderId },
+          request: new Request(`http://localhost${prefix}/checkout/pay/${orderId}`),
+        } as unknown as LoaderArgs)
+      ).headers.get("Location");
 
-    expect(load("42")).toBe("/checkout/success/42");
-    expect(load("abc")).toBe("/");
+    expect(await load("42")).toBe("/oformlennia/uspikh/42");
+    expect(await load("42", "/en")).toBe("/en/checkout/success/42");
+    expect(await load("abc")).toBe("/");
     expect(payments.startPayment).not.toHaveBeenCalled();
   });
 });

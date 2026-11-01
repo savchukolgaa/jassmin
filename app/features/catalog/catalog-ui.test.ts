@@ -10,8 +10,8 @@ import { ProductCard } from "./ProductCard";
 
 // Fetchers and `<Form>` need a data router. Rendered in English, like the assertions.
 const render = (element: ReactElement, locale: Locale = "en") => {
-  const router = createMemoryRouter([{ path: "/catalog/:gender", element }], {
-    initialEntries: ["/catalog/women"],
+  const router = createMemoryRouter([{ path: "/en/catalog/:gender", element }], {
+    initialEntries: ["/en/catalog/women"],
   });
   return renderToStaticMarkup(
     createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })),
@@ -74,7 +74,7 @@ describe("ProductCard", () => {
     expect(html).toContain("Chanel");
     expect(html).toContain("Coco Mademoiselle Eau de Parfum");
     expect(html).toContain("from ₴990");
-    expect(html).toContain('href="/products/coco-mademoiselle-eau-de-parfum"');
+    expect(html).toContain('href="/en/perfumes/coco-mademoiselle-eau-de-parfum"');
   });
 
   it("shows the primary fragrance family in the UI's language, and none without one", () => {
@@ -146,7 +146,7 @@ describe("ProductCard", () => {
     expect(html).toContain("₴6,850");
     expect(html).not.toContain("from ");
     expect(html).not.toContain("data-price-skeleton");
-    expect(formTag(html)).toContain('action="/cart"');
+    expect(formTag(html)).toContain('action="/en/cart"');
     expect(html).toContain('name="intent" value="add"');
     expect(html).toContain(`name="productId" value="${PRODUCT.id}"`);
     expect(html).toContain(`type="hidden" name="variantId" value="${VARIANT_ID}"`);
@@ -216,7 +216,7 @@ describe("ProductCard, compact (home bestsellers)", () => {
   it("quick-adds the picked size with a round + button named after the product", () => {
     const html = compact(PRODUCT);
 
-    expect(formTag(html)).toContain('action="/cart"');
+    expect(formTag(html)).toContain('action="/en/cart"');
     expect(buttonTag(html)).toContain('aria-label="Add Coco Mademoiselle Eau de Parfum to cart"');
     expect(buttonTag(html)).toContain("quick-add");
     expect(html).toContain('<span aria-hidden="true">+</span>');
@@ -247,7 +247,7 @@ describe("CatalogFilters", () => {
 
   it("labels the families in the UI's language, alphabetically, keeping the Ukrainian value", () => {
     const element = createElement(CatalogFilters, {
-      pathname: "/catalog/women",
+      pathname: "/en/catalog/women",
       search: SEARCH,
       options,
     });
@@ -269,7 +269,7 @@ describe("CatalogFilters", () => {
   it("preselects the current family", () => {
     const html = render(
       createElement(CatalogFilters, {
-        pathname: "/catalog/women",
+        pathname: "/en/catalog/women",
         search: { ...SEARCH, fragranceFamily: "шипрові" },
         options,
       }),
@@ -279,11 +279,11 @@ describe("CatalogFilters", () => {
 
   it("is a GET form with the filter and sort fields", () => {
     const html = render(
-      createElement(CatalogFilters, { pathname: "/catalog/women", search: SEARCH, options }),
+      createElement(CatalogFilters, { pathname: "/en/catalog/women", search: SEARCH, options }),
     );
 
     expect(formTag(html)).toContain('method="get"');
-    expect(formTag(html)).toContain('action="/catalog/women"');
+    expect(formTag(html)).toContain('action="/en/catalog/women"');
     for (const name of ["fragrance_family", "brand", "sort"]) {
       expect(html).toContain(`name="${name}"`);
     }
@@ -294,7 +294,7 @@ describe("CatalogFilters", () => {
   it("preselects the current filters and offers a reset", () => {
     const html = render(
       createElement(CatalogFilters, {
-        pathname: "/catalog/women",
+        pathname: "/en/catalog/women",
         search: { ...SEARCH, brand: "Dior", sort: "price_asc" },
         options,
       }),
@@ -302,6 +302,6 @@ describe("CatalogFilters", () => {
 
     expect(html).toMatch(/<option value="Dior" selected="">/);
     expect(html).toMatch(/<option value="price_asc" selected="">/);
-    expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>Reset<\/a>/);
+    expect(html).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>Reset<\/a>/);
   });
 });

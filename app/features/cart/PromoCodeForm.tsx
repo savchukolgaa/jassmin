@@ -5,7 +5,7 @@ import { TextField } from "~/components/ui/TextField";
 import { type CartActionResult, cartErrorMessage } from "~/lib/cart";
 import { cn } from "~/lib/cn";
 import { type CartPromo, MAX_PROMO_CODE_LENGTH, PROMO_STATUS_KEYS } from "~/lib/discounts";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 
 /** Shared by the apply and remove forms, so the summary can tell when the code is saving. */
 export const PROMO_FETCHER_KEY = "cart-promo";
@@ -16,6 +16,7 @@ export const PROMO_FETCHER_KEY = "cart-promo";
  */
 export function PromoCodeForm({ promo }: { promo: CartPromo | null }) {
   const translator = useT();
+  const path = usePathFor();
   const { t } = translator;
   const fetcher = useFetcher<CartActionResult>({ key: PROMO_FETCHER_KEY });
   const busy = fetcher.state !== "idle";
@@ -24,7 +25,7 @@ export function PromoCodeForm({ promo }: { promo: CartPromo | null }) {
 
   if (promo) {
     return (
-      <fetcher.Form method="post" action="/cart" className="flex flex-col gap-2">
+      <fetcher.Form method="post" action={path("cart")} className="flex flex-col gap-2">
         <input type="hidden" name="intent" value="remove-promo" />
         <p
           aria-live="polite"
@@ -50,7 +51,7 @@ export function PromoCodeForm({ promo }: { promo: CartPromo | null }) {
   }
 
   return (
-    <fetcher.Form method="post" action="/cart" className="flex flex-col gap-2">
+    <fetcher.Form method="post" action={path("cart")} className="flex flex-col gap-2">
       <input type="hidden" name="intent" value="apply-promo" />
       <TextField
         name="code"

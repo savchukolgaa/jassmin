@@ -1,8 +1,6 @@
 import { cn } from "~/lib/cn";
-import { PRIVACY_POLICY_PATH } from "~/lib/consent";
-import type { TextKey } from "~/lib/i18n";
-import { OFFERS_PATH } from "~/lib/offers";
-import { POPULAR_PATH } from "~/lib/popular";
+import { type Locale, type TextKey, useT } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 
 /** A nav link; the label is a message key, translated where it's rendered. */
 export interface NavLinkItem {
@@ -10,42 +8,65 @@ export interface NavLinkItem {
   labelKey: TextKey;
 }
 
-export const ABOUT_LINK = { to: "/#about", labelKey: "nav.about" } as const satisfies NavLinkItem;
-export const CONTACTS_LINK = {
-  to: "/#contacts",
-  labelKey: "nav.contacts",
-} as const satisfies NavLinkItem;
-export const BLOG_LINK = { to: "/blog", labelKey: "nav.blog" } as const satisfies NavLinkItem;
-/** The popular perfumes (#67), labelled "Bestsellers" in the header. */
-export const BESTSELLERS_LINK = {
-  to: POPULAR_PATH,
-  labelKey: "nav.bestsellers",
-} as const satisfies NavLinkItem;
-export const OFFERS_LINK = {
-  to: OFFERS_PATH,
-  labelKey: "nav.offers",
-} as const satisfies NavLinkItem;
-export const PRIVACY_LINK = {
-  to: PRIVACY_POLICY_PATH,
-  labelKey: "consent.learnMore",
-} as const satisfies NavLinkItem;
-export const CATALOG_LINKS = [
-  { to: "/catalog/men", labelKey: "catalog.title.men", shortLabelKey: "catalog.short.men" },
-  { to: "/catalog/women", labelKey: "catalog.title.women", shortLabelKey: "catalog.short.women" },
-] as const satisfies (NavLinkItem & { shortLabelKey: TextKey })[];
+/** The site's nav links in `locale` (#84): header, mobile menu, catalog dropdown and footer. */
+export function navLinks(locale: Locale) {
+  const about = {
+    to: pathFor(locale, "home", {}, { hash: "about" }),
+    labelKey: "nav.about",
+  } as const satisfies NavLinkItem;
+  const contacts = {
+    to: pathFor(locale, "home", {}, { hash: "contacts" }),
+    labelKey: "nav.contacts",
+  } as const satisfies NavLinkItem;
+  const blog = { to: pathFor(locale, "blog"), labelKey: "nav.blog" } as const satisfies NavLinkItem;
+  /** The popular perfumes (#67), labelled "Bestsellers" in the header. */
+  const bestsellers = {
+    to: pathFor(locale, "popular"),
+    labelKey: "nav.bestsellers",
+  } as const satisfies NavLinkItem;
+  const offers = {
+    to: pathFor(locale, "offers"),
+    labelKey: "nav.offers",
+  } as const satisfies NavLinkItem;
+  const privacy = {
+    to: pathFor(locale, "privacy"),
+    labelKey: "consent.learnMore",
+  } as const satisfies NavLinkItem;
+  const men = {
+    to: pathFor(locale, "catalog", { gender: "men" }),
+    labelKey: "catalog.title.men",
+    shortLabelKey: "catalog.short.men",
+  } as const satisfies NavLinkItem & { shortLabelKey: TextKey };
+  const women = {
+    to: pathFor(locale, "catalog", { gender: "women" }),
+    labelKey: "catalog.title.women",
+    shortLabelKey: "catalog.short.women",
+  } as const satisfies NavLinkItem & { shortLabelKey: TextKey };
+  return {
+    about,
+    contacts,
+    blog,
+    bestsellers,
+    offers,
+    privacy,
+    catalog: [men, women],
+    /** Links row of the site footer (women first, as in the C+ design). */
+    footer: [
+      { to: women.to, labelKey: women.shortLabelKey },
+      { to: men.to, labelKey: men.shortLabelKey },
+      offers,
+      blog,
+      about,
+      contacts,
+      privacy,
+    ] satisfies NavLinkItem[],
+  };
+}
 
-const [MEN_CATALOG, WOMEN_CATALOG] = CATALOG_LINKS;
-
-/** Links row of the site footer (women first, as in the C+ design). */
-export const FOOTER_LINKS = [
-  { to: WOMEN_CATALOG.to, labelKey: WOMEN_CATALOG.shortLabelKey },
-  { to: MEN_CATALOG.to, labelKey: MEN_CATALOG.shortLabelKey },
-  OFFERS_LINK,
-  BLOG_LINK,
-  ABOUT_LINK,
-  CONTACTS_LINK,
-  PRIVACY_LINK,
-] as const;
+/** `navLinks` in the active locale. */
+export function useNavLinks(): ReturnType<typeof navLinks> {
+  return navLinks(useT().locale);
+}
 
 // On deep pink, hover and active states darken to `primary-dark`: a translucent white overlay
 // would drop white text below 4.5:1.

@@ -12,6 +12,12 @@ export const en = {
   },
   locale: {
     label: "Language",
+    hint: {
+      label: "Site language",
+      message: "This site is also available in English.",
+      view: "View in English",
+      dismiss: "Stay in Ukrainian",
+    },
   },
   consent: {
     label: "Cookies",

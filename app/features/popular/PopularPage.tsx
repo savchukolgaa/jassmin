@@ -1,7 +1,7 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { Pagination } from "~/components/ui/Pagination";
 import { ProductCard } from "~/features/catalog/ProductCard";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import { type PopularPageView, popularHref } from "~/lib/popular";
 import { PopularEmpty } from "./PopularEmpty";
 import { PopularHero } from "./PopularHero";
@@ -11,7 +11,8 @@ import { PopularHero } from "./PopularHero";
  * then a way into both catalogs. The empty state replaces the cards and that panel.
  */
 export function PopularPage({ view }: { view: PopularPageView }) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const path = usePathFor();
   const familyValues = view.families.map((family) => family.value);
 
   return (
@@ -40,7 +41,7 @@ export function PopularPage({ view }: { view: PopularPageView }) {
             <Pagination
               page={view.page}
               pageCount={view.pageCount}
-              hrefForPage={(page) => popularHref(familyValues, page)}
+              hrefForPage={(page) => popularHref(locale, familyValues, page)}
             />
             <section
               aria-labelledby="popular-more"
@@ -56,8 +57,10 @@ export function PopularPage({ view }: { view: PopularPageView }) {
                 <p className="text-lg text-body">{t("popular.more.text")}</p>
               </div>
               <div className="flex flex-wrap gap-3">
-                <ButtonLink to="/catalog/women">{t("popular.women")}</ButtonLink>
-                <ButtonLink to="/catalog/men" variant="dark">
+                <ButtonLink to={path("catalog", { gender: "women" })}>
+                  {t("popular.women")}
+                </ButtonLink>
+                <ButtonLink to={path("catalog", { gender: "men" })} variant="dark">
                   {t("popular.men")}
                 </ButtonLink>
               </div>

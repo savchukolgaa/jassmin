@@ -15,17 +15,18 @@ describe("productHref", () => {
   const id = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 
   it("links to the slug", () => {
-    expect(productHref({ id, slug: "bleu-de-chanel-eau-de-parfum" })).toBe(
-      "/products/bleu-de-chanel-eau-de-parfum",
+    expect(productHref("uk", { id, slug: "bleu-de-chanel-eau-de-parfum" })).toBe(
+      "/parfumy/bleu-de-chanel-eau-de-parfum",
     );
+    expect(productHref("en", { id, slug: "bleu" })).toBe("/en/perfumes/bleu");
   });
 
   it("falls back to the public id for a product without a slug", () => {
-    expect(productHref({ id, slug: null })).toBe(`/products/${id}`);
+    expect(productHref("uk", { id, slug: null })).toBe(`/parfumy/${id}`);
   });
 
   it("encodes the slug", () => {
-    expect(productHref({ id, slug: "a b/c" })).toBe("/products/a%20b%2Fc");
+    expect(productHref("uk", { id, slug: "a b/c" })).toBe("/parfumy/a%20b%2Fc");
   });
 });
 

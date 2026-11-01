@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CmsError } from "~/.server/cms/errors";
-import { localeCookie } from "~/.server/locale";
 import type { HomePage, SiteSettings } from "~/lib/cms";
 
 const content = vi.hoisted(() => ({ getHomePage: vi.fn(), getSiteSettings: vi.fn() }));
@@ -146,7 +145,7 @@ describe("home loader", () => {
     content.getHomePage.mockResolvedValue({ ...homePage, locale: "en" });
     content.getSiteSettings.mockResolvedValue({ ...siteSettings, locale: "en" });
 
-    const view = await load({ Cookie: await localeCookie.serialize("en") });
+    const view = await load({}, "/en");
 
     expect(content.getHomePage).toHaveBeenCalledExactlyOnceWith("en");
     expect(content.getSiteSettings).toHaveBeenCalledExactlyOnceWith("en");
@@ -227,7 +226,9 @@ describe("home shouldRevalidate", () => {
   });
 
   it("skips reloading after a bestseller's quick add", () => {
-    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/cart" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/koshyk" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/en/cart" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/en?index" }))).toBe(false);
   });
 
   it("follows the default otherwise", () => {

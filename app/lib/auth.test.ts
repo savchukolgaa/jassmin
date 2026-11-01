@@ -94,14 +94,14 @@ describe("safeRedirect", () => {
   it.each(["/account", "/products/1?x=1#y", "/", "/#location-title"])(
     "allows the same-site path %s",
     (path) => {
-      expect(safeRedirect(path)).toBe(path);
+      expect(safeRedirect(path, "/kabinet")).toBe(path);
     },
   );
 
   it.each(["//evil.com", "/\\evil.com", "https://evil.com", "account", "", undefined, null, 42])(
     "falls back for %s",
     (value) => {
-      expect(safeRedirect(value)).toBe("/account");
+      expect(safeRedirect(value, "/kabinet")).toBe("/kabinet");
     },
   );
 
@@ -113,7 +113,7 @@ describe("safeRedirect", () => {
 describe("loginRedirectPath", () => {
   it("encodes the current path and query", () => {
     expect(loginRedirectPath(new URL("http://localhost/account?tab=orders"))).toBe(
-      "/login?redirectTo=%2Faccount%3Ftab%3Dorders",
+      "/vkhid?redirectTo=%2Faccount%3Ftab%3Dorders",
     );
   });
 });

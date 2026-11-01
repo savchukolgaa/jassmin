@@ -1,5 +1,6 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { db } from "~/.server/db";
+import { getLocale } from "~/.server/locale";
 import { getUser, onUserAuthenticated, registerUser } from "~/.server/services/auth";
 import { createUserSession } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
@@ -14,8 +15,8 @@ import {
   safeRedirect,
   toFieldErrors,
 } from "~/lib/auth";
-import { PRIVACY_POLICY_PATH } from "~/lib/consent";
-import { metaTranslator, useT } from "~/lib/i18n";
+import { metaTranslator, usePathFor, useT } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/register";
 
@@ -34,7 +35,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get("redirectTo") ?? undefined;
   if (await getUser(request)) {
-    throw redirect(safeRedirect(redirectTo));
+    throw redirect(safeRedirect(redirectTo, pathFor(await getLocale(request), "account")));
   }
   // Worked out here, not in the action: when the form is posted, the referrer is this page.
   return {
@@ -73,12 +74,13 @@ export async function action({ request, context }: Route.ActionArgs) {
   return createUserSession({
     request,
     userId: result.userId,
-    redirectTo: safeRedirect(redirectTo),
+    redirectTo: safeRedirect(redirectTo, pathFor(await getLocale(request), "account")),
   });
 }
 
 export default function Register({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useT();
+  const path = usePathFor();
   const submitting = useNavigation().state === "submitting";
   const errors = actionData?.fieldErrors;
   const values = actionData?.values;
@@ -132,7 +134,7 @@ export default function Register({ loaderData, actionData }: Route.ComponentProp
         <p className="text-sm text-muted">
           {t("auth.register.privacyNotice")}{" "}
           <Link
-            to={PRIVACY_POLICY_PATH}
+            to={path("privacy")}
             className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
           >
             {t("auth.register.privacyLink")}

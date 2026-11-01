@@ -1,4 +1,4 @@
-import { data } from "react-router";
+import { data, redirect } from "react-router";
 import { getBlogPostBySlug } from "~/.server/cms/content";
 import { cmsUnavailable } from "~/.server/cms/errors";
 import { getEnv } from "~/.server/env";
@@ -38,9 +38,10 @@ export function headers({ loaderHeaders }: Route.HeadersArgs) {
   return blogResponseHeaders(loaderHeaders);
 }
 
-// A published Strapi post, in the visitor's language or else in Ukrainian (the slug is the same in
-// both). Drafts and unknown slugs are 404s (the CMS client only ever asks for
-// published content); an outage becomes a 503.
+// A published Strapi post in the URL's language, or else in Ukrainian. Slugs are per language
+// (#84): an English URL with the Ukrainian slug of a translated post redirects to its English slug,
+// and an untranslated post is shown in Ukrainian under its Ukrainian slug. Drafts and unknown
+// slugs are 404s (the CMS client only ever asks for published content); an outage becomes a 503.
 export async function loader({ params, request }: Route.LoaderArgs) {
   if (!isBlogSlug(params.slug)) {
     throw data(null, { status: 404 });
@@ -50,6 +51,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   if (!post) {
     throw data(null, { status: 404 });
   }
+  const translated = post.alternates[locale];
+  if (post.locale !== locale && translated) {
+    throw redirect(blogPostHref(locale, translated) + new URL(request.url).search, 301);
+  }
   const view = buildBlogPostView(post, {
     mediaBaseUrl: getEnv().STRAPI_URL,
     locale,
@@ -58,7 +63,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 }
 
 export default function BlogPost({ loaderData: post }: Route.ComponentProps) {
-  const { t } = useT();
+  const translator = useT();
   const siteUrl = useSiteUrl();
   return (
     <>
@@ -66,10 +71,10 @@ export default function BlogPost({ loaderData: post }: Route.ComponentProps) {
         data={blogPostingLd({
           origin: siteUrl,
           post,
-          url: absoluteUrl(blogPostHref(post.slug), siteUrl),
+          url: absoluteUrl(blogPostHref(translator.locale, post.slug), siteUrl),
         })}
       />
-      <JsonLd data={breadcrumbListLd(siteUrl, blogPostBreadcrumbs(t, post))} />
+      <JsonLd data={breadcrumbListLd(siteUrl, blogPostBreadcrumbs(translator, post))} />
       <BlogArticle post={post} />
     </>
   );

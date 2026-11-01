@@ -9,8 +9,8 @@ import { ProductFamilies, ProductNotes } from "./ProductScent";
 
 // Fetchers need a data router. Rendered in English, like the assertions.
 const render = (element: ReactElement, locale: Locale = "en") => {
-  const router = createMemoryRouter([{ path: "/products/:handle", element }], {
-    initialEntries: ["/products/coco-mademoiselle-eau-de-parfum"],
+  const router = createMemoryRouter([{ path: "/en/perfumes/:handle", element }], {
+    initialEntries: ["/en/perfumes/coco-mademoiselle-eau-de-parfum"],
   });
   return renderToStaticMarkup(
     createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })),
@@ -85,7 +85,7 @@ describe("ProductPurchase", () => {
     const html = purchase();
     const form = html.match(/<form[^>]*>.*<\/form>/)?.[0] ?? "";
 
-    expect(form).toContain('action="/cart"');
+    expect(form).toContain('action="/en/cart"');
     expect(form).toContain('name="variantId"');
     expect(form).toContain(`name="productId" value="${PRODUCT.id}"`);
     expect(form).toMatch(/<label[^>]*>Volume<select/);

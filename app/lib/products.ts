@@ -2,7 +2,8 @@
 // variant's) `public_id`; serial ids and `created_at` never leave the server. Prices are exact
 // decimal strings. Price, volume and stock belong to a product's variants (#26).
 import type { Gender } from "./enums";
-import { createTranslator, type Translator } from "./i18n";
+import { createTranslator, type Locale, type Translator } from "./i18n";
+import { pathFor } from "./paths";
 
 interface ProductBase {
   id: string;
@@ -17,11 +18,11 @@ interface ProductBase {
 }
 
 /**
- * The product page's URL (#83): `/products/<slug>`, or `/products/<public id>` for a product
- * without a slug yet. The only place product links are built.
+ * The product page's URL in `locale`: `/parfumy/<slug>` or `/en/perfumes/<slug>` (#83, #84), with
+ * the public id for a product without a slug yet. The only place product links are built.
  */
-export function productHref(product: { id: string; slug: string | null }): string {
-  return `/products/${encodeURIComponent(product.slug ?? product.id)}`;
+export function productHref(locale: Locale, product: { id: string; slug: string | null }): string {
+  return pathFor(locale, "product", { handle: product.slug ?? product.id });
 }
 
 /** A size on a product card (#74). No exact stock, which the card doesn't show. */

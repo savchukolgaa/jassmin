@@ -1,5 +1,5 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import { popularHref } from "~/lib/popular";
 
 /**
@@ -7,7 +7,8 @@ import { popularHref } from "~/lib/popular";
  * perfume; always both catalogs.
  */
 export function PopularEmpty({ filtered }: { filtered: boolean }) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const path = usePathFor();
 
   return (
     <section
@@ -21,11 +22,14 @@ export function PopularEmpty({ filtered }: { filtered: boolean }) {
         {t(filtered ? "popular.empty.filteredText" : "popular.empty.text")}
       </p>
       <div className="flex flex-wrap gap-3">
-        {filtered && <ButtonLink to={popularHref([])}>{t("popular.showAll")}</ButtonLink>}
-        <ButtonLink to="/catalog/women" variant={filtered ? "dark" : "primary"}>
+        {filtered && <ButtonLink to={popularHref(locale, [])}>{t("popular.showAll")}</ButtonLink>}
+        <ButtonLink
+          to={path("catalog", { gender: "women" })}
+          variant={filtered ? "dark" : "primary"}
+        >
           {t("popular.women")}
         </ButtonLink>
-        <ButtonLink to="/catalog/men" variant="dark">
+        <ButtonLink to={path("catalog", { gender: "men" })} variant="dark">
           {t("popular.men")}
         </ButtonLink>
       </div>

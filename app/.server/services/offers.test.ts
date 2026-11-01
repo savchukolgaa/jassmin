@@ -116,8 +116,8 @@ describe("buildOffersPageView", () => {
     const offers = [view.hero, ...(view.groups[0]?.offers ?? [])];
 
     expect(offers.map((o) => o?.cta)).toEqual([
-      { to: "/catalog/men", label: "For him" },
-      { to: "/catalog/women", label: null },
+      { to: "/katalog/cholovichi", label: "For him" },
+      { to: "/katalog/zhinochi", label: null },
       null,
       null,
     ]);

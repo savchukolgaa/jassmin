@@ -46,7 +46,7 @@ describe("blog loader", () => {
   it("asks for the posts in the visitor's locale", async () => {
     content.listBlogPosts.mockResolvedValue(page([]));
 
-    await load("http://localhost/blog", { headers: { "Accept-Language": "en-US,en;q=0.9" } });
+    await load("http://localhost/en/blog");
 
     expect(content.listBlogPosts).toHaveBeenCalledExactlyOnceWith({
       page: 1,
@@ -136,7 +136,7 @@ describe("blog loader locale", () => {
   it("formats dates in the visitor's language", async () => {
     content.listBlogPosts.mockResolvedValue(page([summary("a", "2026-10-22T10:00:00.000Z")]));
 
-    const result = await load("http://localhost/blog", { headers: { "Accept-Language": "en" } });
+    const result = await load("http://localhost/en/blog");
 
     expect(result.data.posts[0]?.publishedLabel).toBe("22 October 2026");
   });

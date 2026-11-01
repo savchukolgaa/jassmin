@@ -12,21 +12,50 @@ describe("route config", () => {
     expect(shop?.path).toBeUndefined();
     expect(paths(shop?.children ?? [])).toEqual([
       "/",
-      "/catalog/:gender",
-      "/products/:handle",
+      "/en",
+      "/katalog/:gender",
+      "/en/catalog/:gender",
+      "/parfumy/:handle",
+      "/en/perfumes/:handle",
       "/blog",
+      "/en/blog",
       "/blog/:slug",
-      "/offers",
-      "/popular",
-      "/login",
-      "/register",
-      "/cart",
-      "/checkout",
-      "/checkout/success/:orderId",
-      "/checkout/pay/:orderId",
-      "/account",
-      "/privacy",
+      "/en/blog/:slug",
+      "/aktsii",
+      "/en/offers",
+      "/populiarni",
+      "/en/popular",
+      "/vkhid",
+      "/en/login",
+      "/reiestratsiia",
+      "/en/register",
+      "/koshyk",
+      "/en/cart",
+      "/oformlennia",
+      "/en/checkout",
+      "/oformlennia/uspikh/:orderId",
+      "/en/checkout/success/:orderId",
+      "/oformlennia/oplata/:orderId",
+      "/en/checkout/pay/:orderId",
+      "/kabinet",
+      "/en/account",
+      "/konfidentsiinist",
+      "/en/privacy",
     ]);
+  });
+
+  it("registers each page once per locale, sharing the route module (#84)", () => {
+    const shop = routes.find((entry) => entry.file === "routes/_shop.tsx");
+    const catalog = (shop?.children ?? []).filter((entry) => entry.file === "routes/catalog.tsx");
+    expect(catalog.map((entry) => entry.id)).toEqual(["catalog.uk", "catalog.en"]);
+    const account = (shop?.children ?? []).find((entry) => entry.id === "account.en");
+    expect(paths(account?.children ?? [])).toEqual(["/", "/orders/:id", "/profile"]);
+    const ukAccount = (shop?.children ?? []).find((entry) => entry.id === "account.uk");
+    expect(paths(ukAccount?.children ?? [])).toEqual(["/", "/zamovlennia/:id", "/profil"]);
+  });
+
+  it("ends with a catch-all for old paths and 404s", () => {
+    expect(routes.at(-1)).toMatchObject({ path: "*", file: "routes/redirects.ts" });
   });
 
   it("keeps the POST-only logout route outside the shop layout", () => {

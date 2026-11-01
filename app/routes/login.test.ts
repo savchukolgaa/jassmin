@@ -72,7 +72,7 @@ describe("login action", () => {
       post({ email: "olena@example.com", password: "secret", redirectTo: "//evil.com" }),
     );
 
-    expect((result as Response).headers.get("Location")).toBe("/account");
+    expect((result as Response).headers.get("Location")).toBe("/kabinet");
   });
 
   it("returns a generic error without the password on bad credentials", async () => {

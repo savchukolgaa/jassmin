@@ -52,6 +52,7 @@ export function buildBlogPostView(
         createTranslator(locale).t("blog.defaultDescription"),
       image: seo?.ogImage?.url ?? post.coverImage?.url ?? null,
     },
+    alternates: post.alternates,
   };
 }
 

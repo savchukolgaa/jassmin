@@ -3,21 +3,13 @@ import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
 import { CloseIcon, MenuIcon } from "./icons";
 import { LocaleSwitcher } from "./LocaleSwitcher";
-import {
-  ABOUT_LINK,
-  BESTSELLERS_LINK,
-  CATALOG_LINKS,
-  CONTACTS_LINK,
-  iconButtonClasses,
-  navItemClasses,
-  OFFERS_LINK,
-  summaryReset,
-} from "./nav";
+import { iconButtonClasses, navItemClasses, summaryReset, useNavLinks } from "./nav";
 import { useDisclosure } from "./useDisclosure";
 
 /** Hamburger menu below `lg` with the same links and language switcher as the inline nav. */
 export function MobileMenu() {
   const { t } = useT();
+  const links = useNavLinks();
   const { detailsProps, summaryProps } = useDisclosure();
 
   return (
@@ -34,8 +26,8 @@ export function MobileMenu() {
       <div className="absolute inset-x-0 top-full rounded-b-card border-line border-t bg-white text-ink shadow-xl">
         <ul className="container mx-auto flex flex-col gap-1 p-4">
           <li>
-            <Link to={ABOUT_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
-              {t(ABOUT_LINK.labelKey)}
+            <Link to={links.about.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
+              {t(links.about.labelKey)}
             </Link>
           </li>
           <li>
@@ -43,7 +35,7 @@ export function MobileMenu() {
               {t("nav.catalog")}
             </span>
             <ul className="flex flex-col gap-1 pl-3">
-              {CATALOG_LINKS.map((link) => (
+              {links.catalog.map((link) => (
                 <li key={link.to}>
                   <NavLink
                     to={link.to}
@@ -57,23 +49,23 @@ export function MobileMenu() {
           </li>
           <li>
             <NavLink
-              to={BESTSELLERS_LINK.to}
+              to={links.bestsellers.to}
               className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
             >
-              {t(BESTSELLERS_LINK.labelKey)}
+              {t(links.bestsellers.labelKey)}
             </NavLink>
           </li>
           <li>
             <NavLink
-              to={OFFERS_LINK.to}
+              to={links.offers.to}
               className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
             >
-              {t(OFFERS_LINK.labelKey)}
+              {t(links.offers.labelKey)}
             </NavLink>
           </li>
           <li>
-            <Link to={CONTACTS_LINK.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
-              {t(CONTACTS_LINK.labelKey)}
+            <Link to={links.contacts.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
+              {t(links.contacts.labelKey)}
             </Link>
           </li>
           <li className="mt-2 border-line border-t pt-3">

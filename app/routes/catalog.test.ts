@@ -21,10 +21,31 @@ const page = {
   filterOptions: { brands: [], fragranceFamilies: [] },
 };
 
+/** The English catalog page, whose segments are the logical values (`women`). */
 function load(gender: string, query = "") {
-  const request = new Request(`http://localhost/catalog/${gender}${query}`);
+  const request = new Request(`http://localhost/en/catalog/${gender}${query}`);
   return loader({ request, params: { gender }, context } as unknown as LoaderArgs);
 }
+
+describe("catalog loader segments (#84)", () => {
+  it("reads the Ukrainian segment of the Ukrainian URL", async () => {
+    products.getCatalogPage.mockResolvedValue(page);
+    const request = new Request("http://localhost/katalog/cholovichi");
+    const result = await loader({
+      request,
+      params: { gender: "cholovichi" },
+      context,
+    } as unknown as LoaderArgs);
+    expect(result.gender).toBe("men");
+  });
+
+  it("is a 404 for the other language's segment", async () => {
+    const request = new Request("http://localhost/katalog/men");
+    await expect(
+      loader({ request, params: { gender: "men" }, context } as unknown as LoaderArgs),
+    ).rejects.toMatchObject({ init: { status: 404 } });
+  });
+});
 
 beforeEach(() => {
   vi.clearAllMocks();

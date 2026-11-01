@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext } from "react";
+import { type PathBuilder, pathFor } from "../paths";
 import { isLocale, type Locale } from "./locales";
 import { createTranslator, type Translator } from "./translator";
 
@@ -13,6 +14,15 @@ export function I18nProvider({ locale, children }: { locale: Locale; children?: 
 /** The active locale's `t()` and formatters. */
 export function useT(): Translator {
   return useContext(I18nContext);
+}
+
+/**
+ * `pathFor` in the active locale (#84): every internal link and form action in a component is
+ * built with it, e.g. `const path = usePathFor(); path("catalog", { gender: "women" })`.
+ */
+export function usePathFor(): PathBuilder {
+  const { locale } = useT();
+  return (page, ...args) => pathFor(locale, page, ...args);
 }
 
 /**

@@ -1,14 +1,11 @@
 // The home page's tester trio (#64): the offer it advertises and the "Build your trio" picker.
 // Isomorphic: no server imports.
 import { fragranceFamilyLabel } from "./catalog";
-import { INTL_LOCALES, type Translator } from "./i18n";
-import { POPULAR_PATH, popularHref } from "./popular";
+import { INTL_LOCALES, type Locale, type Translator } from "./i18n";
+import { popularHref } from "./popular";
 
 /** How many fragrance families the trio builder takes, one per tester. */
 export const TRIO_SIZE = 3;
-
-/** Where "Show my trio" leads: the popular perfumes (#67), narrowed to the chosen families. */
-export const TRIO_TARGET_PATH = POPULAR_PATH;
 
 /**
  * The live tester-trio discount rule, as the home page advertises it. `null` when the rule is
@@ -61,9 +58,9 @@ export function toggleTrioFamily(
   return picked.length < TRIO_SIZE && !picked.includes(family) ? [...picked, family] : [...picked];
 }
 
-/** "Show my trio": `/popular?family=…` with each chosen family. */
-export function trioHref(families: readonly string[]): string {
-  return popularHref(families);
+/** "Show my trio": the popular perfumes (#67) in `locale`, narrowed to each chosen family. */
+export function trioHref(locale: Locale, families: readonly string[]): string {
+  return popularHref(locale, families);
 }
 
 /** A family as the trio builder and the marquee show it: the URL value and its label. */

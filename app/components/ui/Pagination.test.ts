@@ -2,7 +2,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import { blogHref } from "~/lib/blog";
+import { blogHref as blogHrefIn } from "~/lib/blog";
+
+const blogHref = (page: number) => blogHrefIn("uk", page);
+
 import { catalogHref } from "~/lib/catalog";
 import { I18nProvider } from "~/lib/i18n";
 import { Pagination, type PaginationProps } from "./Pagination";

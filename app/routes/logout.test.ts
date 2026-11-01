@@ -15,7 +15,7 @@ describe("logout route", () => {
       typeof action
     >[0]);
 
-    expect(logout).toHaveBeenCalledWith(request);
+    expect(logout).toHaveBeenCalledWith(request, "uk");
     expect(response.headers.get("Location")).toBe("/");
   });
 

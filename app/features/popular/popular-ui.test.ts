@@ -55,7 +55,7 @@ const render = (pageView: PopularPageView, locale?: Locale) => {
   return renderToStaticMarkup(locale ? createElement(I18nProvider, { locale }, app) : app);
 };
 
-const href = (params: [string, string][]) => `/popular?${new URLSearchParams(params)}`;
+const href = (params: [string, string][]) => `/en/popular?${new URLSearchParams(params)}`;
 const html = (value: string) => value.replaceAll("&", "&amp;");
 
 describe("PopularPage", () => {
@@ -68,8 +68,8 @@ describe("PopularPage", () => {
     expect(page.indexOf("Perfume 1")).toBeLessThan(page.indexOf("Perfume 2"));
     expect(page.match(/name="intent" value="add"/g)).toHaveLength(2);
     expect(page).toContain("card-tilt");
-    expect(page).toContain('href="/catalog/women"');
-    expect(page).toContain('href="/catalog/men"');
+    expect(page).toContain('href="/katalog/zhinochi"');
+    expect(page).toContain('href="/katalog/cholovichi"');
   });
 
   it("renders in English", () => {
@@ -130,7 +130,7 @@ describe("PopularPage", () => {
     );
     const floral = page.match(/<a aria-label="Remove Floral"[^>]*>/)?.[0];
     expect(floral).toContain(`href="${withoutFloral}"`);
-    expect(page).toMatch(/href="\/popular"[^>]*>Show all popular</);
+    expect(page).toMatch(/href="\/en\/popular"[^>]*>Show all popular</);
   });
 
   it("shows no chips without families", () => {
@@ -143,7 +143,7 @@ describe("PopularPage", () => {
     expect(page).toContain("No popular perfumes yet");
     expect(page).not.toContain("Looking for something else?");
     expect(page).not.toContain("Show all popular");
-    expect(page).toContain('href="/catalog/women"');
+    expect(page).toContain('href="/en/catalog/women"');
   });
 
   it("offers every popular perfume when the trio's families match none", () => {
@@ -151,6 +151,6 @@ describe("PopularPage", () => {
     const page = render(view({ products: [], total: 0, families }), "en");
 
     expect(page).toContain("No popular perfumes with these families yet");
-    expect(page).toMatch(/<a[^>]*href="\/popular"[^>]*>Show all popular<\/a>/);
+    expect(page).toMatch(/<a[^>]*href="\/en\/popular"[^>]*>Show all popular<\/a>/);
   });
 });

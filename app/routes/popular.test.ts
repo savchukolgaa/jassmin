@@ -123,7 +123,8 @@ describe("popular shouldRevalidate", () => {
     ({ defaultShouldRevalidate: true, ...overrides }) as ShouldRevalidateFunctionArgs;
 
   it("doesn't re-rank after adding to the cart", () => {
-    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/cart" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/koshyk" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/en/cart" }))).toBe(false);
   });
 
   it("reloads otherwise", () => {

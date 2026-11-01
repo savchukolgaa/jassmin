@@ -114,6 +114,9 @@ export const blogPostSummaryEntry = z.object({
   coverImageAlt: z.string().nullish(),
 });
 
+/** A post's slug in one locale, for its URL in that language (#84). */
+export const blogPostSlugEntry = z.object({ slug: z.string() });
+
 export const blogPostEntry = blogPostSummaryEntry.extend({
   /** The last edit, for `BlogPosting.dateModified` (#86). */
   updatedAt: z.iso.datetime({ offset: true }).nullish(),

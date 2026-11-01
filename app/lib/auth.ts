@@ -2,6 +2,7 @@
 // server imports. Error messages are message keys, translated when the form renders them.
 import { z } from "zod";
 import { isTextKey, msg, type TextKey } from "./i18n";
+import { localeFromPath, pathFor } from "./paths";
 
 const PHONE = /^\+?[0-9 ()-]{7,20}$/;
 
@@ -143,16 +144,17 @@ export function toFieldErrors<Field extends string>(
  * A same-site path to redirect to after login, or `fallback`. Rejects absolute and
  * protocol-relative URLs (`//evil.com`, `/\evil.com`) so `redirectTo` can't send users away.
  */
-export function safeRedirect(to: unknown, fallback = "/account"): string {
+export function safeRedirect(to: unknown, fallback: string): string {
   if (typeof to !== "string" || !to.startsWith("/") || to.startsWith("//") || to.includes("\\")) {
     return fallback;
   }
   return to;
 }
 
-/** The login URL that returns to `url` (path and query) afterwards. */
+/** The login URL, in `url`'s language (#84), that returns to `url` (path and query) afterwards. */
 export function loginRedirectPath(url: URL): string {
-  return `/login?${new URLSearchParams({ redirectTo: url.pathname + url.search })}`;
+  const search = new URLSearchParams({ redirectTo: url.pathname + url.search });
+  return pathFor(localeFromPath(url.pathname), "login", {}, { search });
 }
 
 /**

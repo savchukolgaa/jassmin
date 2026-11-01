@@ -76,7 +76,7 @@ describe("offers loader", () => {
     content.listActiveOffers.mockResolvedValue([]);
     products.getProductSummaries.mockResolvedValue(new Map());
 
-    await load("http://localhost/offers", { headers: { "Accept-Language": "en-US,en;q=0.9" } });
+    await load("http://localhost/en/offers");
 
     expect(content.listActiveOffers).toHaveBeenCalledExactlyOnceWith("en");
   });

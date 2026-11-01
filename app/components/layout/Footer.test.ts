@@ -4,7 +4,9 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import { createTranslator, I18nProvider, type Locale } from "~/lib/i18n";
 import { Footer } from "./Footer";
-import { FOOTER_LINKS } from "./nav";
+import { navLinks } from "./nav";
+
+const FOOTER_LINKS = navLinks("en").footer;
 
 // The "Cookie settings" `<Form>` needs a data router. Without a locale, the default (Ukrainian).
 function renderFooter(locale: Locale | null = "en", path = "/") {
@@ -36,7 +38,8 @@ describe("Footer", () => {
       "Contacts",
       "Privacy policy",
     ]);
-    expect(FOOTER_LINKS.at(-1)?.to).toBe("/privacy");
+    expect(FOOTER_LINKS.at(-1)?.to).toBe("/en/privacy");
+    expect(FOOTER_LINKS[0]?.to).toBe("/en/catalog/women");
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
     expect(html).toContain('<nav aria-label="Footer">');

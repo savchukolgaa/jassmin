@@ -1,8 +1,18 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from "react-router";
+import {
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  type ShouldRevalidateFunctionArgs,
+  useRouteLoaderData,
+} from "react-router";
 import { getEnv, getSiteUrl } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
+import { localeRedirectMiddleware } from "~/.server/locale-middleware";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
+import { localeFromPath } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta } from "~/lib/seo";
 import type { Route } from "./+types/root";
@@ -17,9 +27,12 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-// Runs on every request and after every action, so switching language (`routes/locale.ts`)
-// re-renders the page in the new locale. `site.url` is the public origin for canonical and Open
-// Graph URLs (#85), read by `seoMeta` in every route's `meta`.
+// Sends visitors who chose English from Ukrainian pages to the English ones (#84).
+export const middleware: Route.MiddlewareFunction[] = [localeRedirectMiddleware];
+
+// The page's locale comes from its URL (#84). Runs on every request, after every action and
+// whenever a navigation crosses into the other language (`shouldRevalidate`). `site.url` is the
+// public origin for canonical and Open Graph URLs (#85), read by `seoMeta` in every route's `meta`.
 export async function loader({ request }: Route.LoaderArgs) {
   return { locale: await getLocale(request), site: { url: getSiteUrl(getEnv(), request) } };
 }
@@ -27,6 +40,17 @@ export async function loader({ request }: Route.LoaderArgs) {
 // Only unmatched URLs and failures above the shop layout end here: every page has its own `meta`.
 export function meta({ matches, error }: Route.MetaArgs) {
   return error ? errorMeta({ matches, error }) : [];
+}
+
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  return (
+    localeFromPath(currentUrl.pathname) !== localeFromPath(nextUrl.pathname) ||
+    defaultShouldRevalidate
+  );
 }
 
 const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';

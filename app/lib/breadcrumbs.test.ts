@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { blogPostBreadcrumbs, catalogBreadcrumbs, productBreadcrumbs } from "./breadcrumbs";
 import { createTranslator } from "./i18n";
 
-const { t } = createTranslator("en");
+const t = createTranslator("en");
 
 describe("breadcrumb trails", () => {
   it("leads from home to the catalog", () => {
     expect(catalogBreadcrumbs(t, "men")).toEqual([
-      { name: "Home", to: "/" },
-      { name: t("catalog.title.men"), to: "/catalog/men" },
+      { name: "Home", to: "/en" },
+      { name: t.t("catalog.title.men"), to: "/en/catalog/men" },
     ]);
   });
 
@@ -20,18 +20,26 @@ describe("breadcrumb trails", () => {
     });
 
     expect(trail.map((crumb) => crumb.to)).toEqual([
-      "/",
-      "/catalog/women",
-      "/products/coco-mademoiselle",
+      "/en",
+      "/en/catalog/women",
+      "/en/perfumes/coco-mademoiselle",
     ]);
     expect(trail[2]?.name).toBe("Coco Mademoiselle");
   });
 
   it("goes through the blog to the post", () => {
     expect(blogPostBreadcrumbs(t, { slug: "how-to-choose", title: "How to choose" })).toEqual([
-      { name: "Home", to: "/" },
-      { name: "Blog", to: "/blog" },
-      { name: "How to choose", to: "/blog/how-to-choose" },
+      { name: "Home", to: "/en" },
+      { name: "Blog", to: "/en/blog" },
+      { name: "How to choose", to: "/en/blog/how-to-choose" },
+    ]);
+  });
+
+  it("uses the Ukrainian paths in Ukrainian", () => {
+    const uk = createTranslator("uk");
+    expect(catalogBreadcrumbs(uk, "women").map((crumb) => crumb.to)).toEqual([
+      "/",
+      "/katalog/zhinochi",
     ]);
   });
 });

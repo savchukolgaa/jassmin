@@ -3,6 +3,8 @@ import { clearAnalyticsSession, getVisitor, trackEvents } from "~/.server/analyt
 import { clearConsent, serializeConsent } from "~/.server/consent";
 import { safeRedirect } from "~/lib/auth";
 import { consentFormSchema } from "~/lib/consent";
+import { DEFAULT_LOCALE } from "~/lib/i18n";
+import { pathFor } from "~/lib/paths";
 import type { Route } from "./+types/consent";
 
 export type ConsentActionResult = { ok: false; error: "invalid-consent" };
@@ -53,7 +55,7 @@ export async function action({ request }: Route.ActionArgs) {
     return data<ConsentActionResult>({ ok: false, error: "invalid-consent" }, { status: 400 });
   }
   const { consent, redirectTo, referrer } = parsed.data;
-  const path = safeRedirect(redirectTo, "/");
+  const path = safeRedirect(redirectTo, pathFor(DEFAULT_LOCALE, "home"));
   const headers = new Headers();
 
   if (consent === "reset") {
@@ -71,5 +73,5 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export function loader() {
-  return redirect("/");
+  return redirect(pathFor(DEFAULT_LOCALE, "home"));
 }

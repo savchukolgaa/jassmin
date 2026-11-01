@@ -3,6 +3,7 @@
 // `meta` functions run on the server and in the browser.
 import type { MetaDescriptor } from "react-router";
 import { LOCALES, type Locale, metaTranslator, type Translator } from "./i18n";
+import { matchPage, PAGES, pathFor, translatePath } from "./paths";
 import { describeRouteError } from "./route-error";
 
 /** `og:site_name`: the brand, the same in every language. */
@@ -113,11 +114,77 @@ export function canonicalUrl(
   return `${siteUrl}${path || "/"}${query ? `?${query}` : ""}`;
 }
 
-/** The `meta` descriptors for one page. */
+/** The `meta` descriptors for one page, with its `hreflang` alternates when it's indexable (#84). */
 export function seoMeta(context: SeoContext, options: SeoOptions): MetaDescriptor[] {
   const translator = metaTranslator(context.matches);
   const { url: siteUrl } = seoSite(context.matches);
-  return buildSeoMeta({ translator, siteUrl, location: context.location }, options);
+  return [
+    ...buildSeoMeta({ translator, siteUrl, location: context.location }, options),
+    ...(options.noindex
+      ? []
+      : hreflangMeta(
+          siteUrl,
+          context.location,
+          options.keepParams,
+          blogAlternates(context.matches),
+        )),
+  ];
+}
+
+/** A blog post's slug in each locale (`alternates` in its loader data), if a post is shown. */
+function blogAlternates(
+  matches: SeoContext["matches"],
+): Partial<Record<Locale, string>> | undefined {
+  for (const match of matches ?? []) {
+    const data = match?.loaderData;
+    if (typeof data === "object" && data !== null && "alternates" in data) {
+      const { alternates } = data;
+      if (typeof alternates === "object" && alternates !== null) {
+        return Object.fromEntries(
+          Object.entries(alternates).filter(
+            (entry): entry is [Locale, string] =>
+              (LOCALES as readonly string[]).includes(entry[0]) && typeof entry[1] === "string",
+          ),
+        );
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * `<link rel="alternate" hreflang>` for each language version of an indexable page, plus
+ * `x-default` (the Ukrainian URL), with the same query parameters as its canonical URL (#84). A
+ * blog post links only the languages it's published in (`alternates`, its slug per locale).
+ */
+export function hreflangMeta(
+  siteUrl: string,
+  location: SeoContext["location"],
+  keepParams: readonly string[] = [],
+  alternates?: Partial<Record<Locale, string>>,
+): MetaDescriptor[] {
+  const match = matchPage(location.pathname);
+  if (!match || !PAGES[match.page].indexable) {
+    return [];
+  }
+  const urls: Partial<Record<Locale, string>> = {};
+  for (const locale of LOCALES) {
+    const slug = alternates?.[locale];
+    const path =
+      match.page === "blogPost"
+        ? slug && pathFor(locale, "blogPost", { slug })
+        : translatePath(location.pathname, locale);
+    if (path) {
+      urls[locale] = canonicalUrl(siteUrl, { pathname: path, search: location.search }, keepParams);
+    }
+  }
+  const links = LOCALES.flatMap((locale) => {
+    const href = urls[locale];
+    return href ? [{ tagName: "link", rel: "alternate", hrefLang: locale, href }] : [];
+  });
+  return urls.uk
+    ? [...links, { tagName: "link", rel: "alternate", hrefLang: "x-default", href: urls.uk }]
+    : links;
 }
 
 /** `seoMeta` with the translator and origin given directly (for tests). */

@@ -9,7 +9,7 @@ import type { TrioFamily } from "~/lib/trio";
  * builder's families as removable chips when the list is narrowed to them.
  */
 export function PopularHero({ families }: { families: TrioFamily[] }) {
-  const { t } = useT();
+  const { t, locale } = useT();
 
   return (
     <section aria-labelledby="popular-title" className="overflow-hidden bg-primary text-white">
@@ -32,6 +32,7 @@ export function PopularHero({ families }: { families: TrioFamily[] }) {
                 <li key={family.value} className="animate-pop">
                   <Link
                     to={popularHref(
+                      locale,
                       families.filter((other) => other !== family).map((other) => other.value),
                     )}
                     aria-label={t("popular.removeFamily", { family: family.label })}
@@ -46,7 +47,7 @@ export function PopularHero({ families }: { families: TrioFamily[] }) {
               ))}
             </ul>
             <Link
-              to={popularHref([])}
+              to={popularHref(locale, [])}
               className={`inline-flex min-h-11 items-center rounded px-2 font-extrabold text-white underline ${focusRing("onPrimary")}`}
             >
               {t("popular.showAll")}

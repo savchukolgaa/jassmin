@@ -4,8 +4,6 @@ import type { CmsImage, OfferKind } from "./cms";
 import type { Locale } from "./i18n/locales";
 import type { ProductSummary } from "./products";
 
-export const OFFERS_PATH = "/offers";
-
 /** Order of the card groups on /offers. `perk` offers form the perks strip instead. */
 export const OFFER_GROUP_ORDER = [
   "discovery-set",

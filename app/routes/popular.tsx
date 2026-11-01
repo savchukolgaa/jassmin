@@ -5,6 +5,7 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { PopularPage } from "~/features/popular/PopularPage";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { createTranslator, metaTranslator, useT } from "~/lib/i18n";
+import { pageOf } from "~/lib/paths";
 import { type PopularPageView, parsePopularPage } from "~/lib/popular";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, seoMeta } from "~/lib/seo";
@@ -53,7 +54,7 @@ export function shouldRevalidate({
   formAction,
   defaultShouldRevalidate,
 }: ShouldRevalidateFunctionArgs) {
-  if (formMethod?.toUpperCase() === "POST" && formAction === "/cart") {
+  if (formMethod?.toUpperCase() === "POST" && pageOf(formAction) === "cart") {
     return false;
   }
   return defaultShouldRevalidate;

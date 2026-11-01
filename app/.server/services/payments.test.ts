@@ -122,7 +122,7 @@ describe.skipIf(!hasDatabase)("payments service", () => {
         amount: "2450.00",
         currency: "UAH",
         description: `Замовлення №${orderId} в Jassmin`,
-        result_url: `${ORIGIN}/checkout/success/${orderId}`,
+        result_url: `${ORIGIN}/oformlennia/uspikh/${orderId}`,
         callback_url: `${ORIGIN}/payments/callback`,
         locale: "uk",
       });

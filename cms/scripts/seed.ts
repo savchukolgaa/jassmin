@@ -227,9 +227,12 @@ interface PostCopy {
   excerpt: string;
   content: string;
   authorName: string;
+  /** The URL slug in this locale (#84); the post's `slug` when left out. */
+  slug?: string;
 }
 
 interface SeedPost {
+  /** The Ukrainian slug, which also finds the post's other localizations. */
   slug: string;
   published: boolean;
   /** `uk` is required; a post without `en` exercises the app's fallback to Ukrainian. */
@@ -250,6 +253,7 @@ const POSTS: SeedPost[] = [
         authorName: "Команда Jassmin",
       },
       en: {
+        slug: "choosing-a-perfume-you-wont-tire-of",
         title: "How to choose a perfume you won't get tired of",
         excerpt: "Top, heart and base notes, and why you should wait an hour before you decide.",
         content:
@@ -296,16 +300,17 @@ async function seedBlogPosts(strapi: Core.Strapi, coverImageId: number): Promise
       }
 
       // Every document has a draft version, so this finds both published and draft-only posts.
-      if (await posts.findFirst({ filters: { slug: post.slug }, locale, status: "draft" })) {
-        strapi.log.info(`Blog post "${post.slug}" (${locale}) already exists, skipping`);
+      const slug = copy.slug ?? post.slug;
+      if (await posts.findFirst({ filters: { slug }, locale, status: "draft" })) {
+        strapi.log.info(`Blog post "${slug}" (${locale}) already exists, skipping`);
         continue;
       }
 
-      // The slug and cover image aren't localized: Strapi keeps them the same in every locale,
-      // but a new localization still has to be given them. The cover's alt text is per locale.
+      // Slugs are per locale (#84). The cover image isn't localized: Strapi keeps it the same in
+      // every locale, but a new localization still has to be given it. The alt text is per locale.
       const data = {
         ...copy,
-        slug: post.slug,
+        slug,
         coverImage: coverImageId,
         coverImageAlt: IMAGE_ALT.cover[locale],
         seo: { metaTitle: copy.title.slice(0, 60), metaDescription: copy.excerpt.slice(0, 160) },
@@ -321,7 +326,7 @@ async function seedBlogPosts(strapi: Core.Strapi, coverImageId: number): Promise
         await posts.create({ locale, data, ...status });
       }
       strapi.log.info(
-        `Created ${post.published ? "published" : "draft"} blog post "${post.slug}" (${locale})`,
+        `Created ${post.published ? "published" : "draft"} blog post "${slug}" (${locale})`,
       );
     }
   }

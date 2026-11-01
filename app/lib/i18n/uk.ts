@@ -12,6 +12,12 @@ export const uk = {
   },
   locale: {
     label: "Мова",
+    hint: {
+      label: "Мова сайту",
+      message: "Цей сайт також доступний англійською.",
+      view: "Переглянути англійською",
+      dismiss: "Залишитися українською",
+    },
   },
   consent: {
     label: "Файли cookie",

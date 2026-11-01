@@ -18,7 +18,7 @@ const renderHeader = (props: Partial<HeaderProps> = {}, path = "/", locale: Loca
 describe("Header", () => {
   it("links the jassmin. wordmark to the home page", () => {
     expect(renderHeader()).toMatch(
-      /<a(?=[^>]*href="\/")(?=[^>]*aria-label="Jassmin, home")[^>]*>jassmin<span aria-hidden="true" class="text-primary">\.<\/span><\/a>/,
+      /<a(?=[^>]*href="\/en")(?=[^>]*aria-label="Jassmin, home")[^>]*>jassmin<span aria-hidden="true" class="text-primary">\.<\/span><\/a>/,
     );
   });
 
@@ -35,7 +35,7 @@ describe("Header", () => {
   });
 
   it("styles the white bar with tokens only, so a palette change recolours it (#73)", () => {
-    const html = renderHeader({ user: { id: 1 }, cartCount: 2 }, "/offers");
+    const html = renderHeader({ user: { id: 1 }, cartCount: 2 }, "/en/offers");
 
     // The flags' fills are the flags' own colours, so only class names are checked.
     const classes = [...html.matchAll(/class="([^"]*)"/g)].map(([, value = ""]) => value).join(" ");
@@ -63,13 +63,13 @@ describe("Header", () => {
     const html = renderHeader();
 
     for (const href of [
-      "/#about",
-      "/catalog/men",
-      "/catalog/women",
-      "/popular",
-      "/offers",
-      "/#contacts",
-      "/cart",
+      "/en#about",
+      "/en/catalog/men",
+      "/en/catalog/women",
+      "/en/popular",
+      "/en/offers",
+      "/en#contacts",
+      "/en/cart",
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
@@ -78,15 +78,20 @@ describe("Header", () => {
   });
 
   it("highlights Offers on the offers page", () => {
-    expect(renderHeader({}, "/offers")).toMatch(
-      /<a[^>]*class="[^"]*text-primary-dark[^"]*underline decoration-2[^"]*"[^>]*href="\/offers"[^>]*>Offers<\/a>/,
+    expect(renderHeader({}, "/en/offers")).toMatch(
+      /<a[^>]*class="[^"]*text-primary-dark[^"]*underline decoration-2[^"]*"[^>]*href="\/en\/offers"[^>]*>Offers<\/a>/,
     );
     expect(renderHeader()).not.toMatch(/class="[^"]*underline decoration-2[^"]*"[^>]*>Offers</);
   });
 
   it("highlights Bestsellers on the popular page, filtered or paged, in the bar and the menu", () => {
-    for (const path of ["/popular", "/popular?family=%D1%81%D0%B2%D1%96%D0%B6%D1%96&page=2"]) {
-      const links = renderHeader({}, path).match(/<a[^>]*href="\/popular"[^>]*>Bestsellers<\/a>/g);
+    for (const path of [
+      "/en/popular",
+      "/en/popular?family=%D1%81%D0%B2%D1%96%D0%B6%D1%96&page=2",
+    ]) {
+      const links = renderHeader({}, path).match(
+        /<a[^>]*href="\/en\/popular"[^>]*>Bestsellers<\/a>/g,
+      );
       expect(links).toHaveLength(2);
       for (const link of links ?? []) {
         expect(link).toContain('aria-current="page"');
@@ -109,7 +114,7 @@ describe("Header", () => {
   });
 
   it("highlights the catalog trigger on catalog pages", () => {
-    expect(renderHeader({}, "/catalog/women")).toMatch(
+    expect(renderHeader({}, "/en/catalog/women")).toMatch(
       /<summary[^>]*class="[^"]*underline decoration-2[^"]*"[^>]*>Catalog/,
     );
   });
@@ -118,17 +123,17 @@ describe("Header", () => {
     const html = renderHeader();
 
     expect(html).toMatch(
-      /<a[^>]*aria-label="Log in"[^>]*href="\/login"|href="\/login"[^>]*aria-label="Log in"/,
+      /<a[^>]*aria-label="Log in"[^>]*href="\/en\/login"|href="\/en\/login"[^>]*aria-label="Log in"/,
     );
-    expect(html).not.toContain('href="/account"');
+    expect(html).not.toContain('href="/en/account"');
   });
 
   it("links the profile icon to the account when logged in", () => {
     const html = renderHeader({ user: { id: 1 } });
 
-    expect(html).toContain('href="/account"');
+    expect(html).toContain('href="/en/account"');
     expect(html).toContain('aria-label="My account"');
-    expect(html).not.toContain('href="/login"');
+    expect(html).not.toContain('href="/en/login"');
   });
 
   it("shows the logged-in profile as a deep-pink circle and logged out as a dark icon", () => {
@@ -142,7 +147,7 @@ describe("Header", () => {
     expect(loggedOut).toContain("text-ink");
     expect(loggedOut).not.toContain("bg-primary");
     expect(loggedOut).toContain("hover:bg-blush");
-    expect(profileClass(renderHeader({}, "/login"))).toContain("bg-blush text-primary-dark");
+    expect(profileClass(renderHeader({}, "/en/login"))).toContain("bg-blush text-primary-dark");
   });
 
   it("renders the cart as a deep-pink pill with white text", () => {
@@ -203,14 +208,14 @@ describe("Header", () => {
   });
 
   it("has a no-JS language switcher with flags that returns to the current page", () => {
-    const html = renderHeader({}, "/catalog/men?sort=price_asc");
+    const html = renderHeader({}, "/en/catalog/men?sort=price_asc");
     const switchers = html.match(/<form[^>]*action="\/locale"/g) ?? [];
 
     // In the bar (from `md`) and in the mobile menu.
     expect(switchers).toHaveLength(2);
     expect(html).toMatch(/<form(?=[^>]*method="post")[^>]*action="\/locale"/);
     expect(html).toContain(
-      '<input type="hidden" name="redirectTo" value="/catalog/men?sort=price_asc"/>',
+      '<input type="hidden" name="redirectTo" value="/en/catalog/men?sort=price_asc"/>',
     );
     expect(html).toMatch(
       /<button type="submit" value="en" lang="en" aria-pressed="true"[^>]*name="locale"><svg[^>]*aria-hidden="true"[^>]*>.*?<\/svg>EN<\/button>/,

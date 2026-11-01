@@ -1,5 +1,6 @@
 import { createCookie } from "react-router";
-import { DEFAULT_LOCALE, isLocale, type Locale } from "~/lib/i18n";
+import { isLocale, type Locale } from "~/lib/i18n";
+import { localeFromPath } from "~/lib/paths";
 
 // Doesn't read the env, like `session-cookie.ts`, so any loader or test can resolve the locale.
 
@@ -37,11 +38,28 @@ export function parseAcceptLanguage(header: string | null): Locale | undefined {
   return ranked.map(({ language }) => language).find(isLocale);
 }
 
-/** The visitor's locale: the `locale` cookie, else `Accept-Language`, else Ukrainian. */
+/**
+ * The page's locale, from its URL alone (#84): `/en/…` is English, everything else Ukrainian. The
+ * cookie and `Accept-Language` never change it; they only redirect (`locale-middleware.ts`) or
+ * suggest the other language (`shouldSuggestEnglish`). Async, as when it read the cookie.
+ */
 export async function getLocale(request: Request): Promise<Locale> {
+  return localeFromPath(new URL(request.url).pathname);
+}
+
+/** The language the visitor explicitly chose with the switcher, if any. */
+export async function getChosenLocale(request: Request): Promise<Locale | undefined> {
   const cookie: unknown = await localeCookie.parse(request.headers.get("Cookie"));
-  if (isLocale(cookie)) {
-    return cookie;
+  return isLocale(cookie) ? cookie : undefined;
+}
+
+/**
+ * Whether to offer "View in English": a Ukrainian page, a visitor who never chose a language, and
+ * a browser that prefers English. Never a redirect, so crawlers reach both versions.
+ */
+export async function shouldSuggestEnglish(request: Request): Promise<boolean> {
+  if ((await getLocale(request)) !== "uk" || (await getChosenLocale(request)) !== undefined) {
+    return false;
   }
-  return parseAcceptLanguage(request.headers.get("Accept-Language")) ?? DEFAULT_LOCALE;
+  return parseAcceptLanguage(request.headers.get("Accept-Language")) === "en";
 }

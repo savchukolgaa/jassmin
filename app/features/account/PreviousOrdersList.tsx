@@ -3,7 +3,7 @@ import { focusRing, summaryReset } from "~/components/layout/nav";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import type { AccountOrder } from "~/lib/account";
 import { cn } from "~/lib/cn";
-import { useT } from "~/lib/i18n";
+import { usePathFor, useT } from "~/lib/i18n";
 import { OrderLineItem } from "./OrderLineItem";
 import { OrderStatusPill } from "./OrderStatusPill";
 
@@ -13,6 +13,7 @@ import { OrderStatusPill } from "./OrderStatusPill";
  */
 export function PreviousOrdersList({ orders }: { orders: AccountOrder[] }) {
   const { t, formatDate, formatPrice } = useT();
+  const path = usePathFor();
 
   return (
     <ul className="overflow-hidden rounded-card-lg border-2 border-ink">
@@ -50,7 +51,7 @@ export function PreviousOrdersList({ orders }: { orders: AccountOrder[] }) {
                   ))}
                 </ul>
                 <ButtonLink
-                  to={`/account/orders/${order.id}`}
+                  to={path("accountOrder", { id: String(order.id) })}
                   variant="ghost"
                   size="sm"
                   className="self-start"

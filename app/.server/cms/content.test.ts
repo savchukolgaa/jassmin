@@ -442,7 +442,8 @@ describe("locales and fallback to Ukrainian", () => {
 
     expect(post).toMatchObject({ locale: "en", slug: "how-to-choose-a-perfume" });
     expect(post?.content).toContain("## Start with the notes");
-    expect(localesRequested(fetchMock)).toEqual(["en"]);
+    // The post, then its Ukrainian slug for the alternates.
+    expect(localesRequested(fetchMock)).toEqual(["en", "uk"]);
   });
 
   it("falls back to the Ukrainian post with the same slug when it has no English version", async () => {
@@ -451,7 +452,24 @@ describe("locales and fallback to Ukrainian", () => {
     const post = await getBlogPostBySlug("how-to-choose-a-perfume", "en");
 
     expect(post).toMatchObject({ locale: "uk", slug: "how-to-choose-a-perfume" });
-    expect(localesRequested(fetchMock)).toEqual(["en", "uk"]);
+    expect(post?.alternates).toEqual({ uk: "how-to-choose-a-perfume" });
+    expect(localesRequested(fetchMock)).toEqual(["en", "uk", "en"]);
+  });
+
+  it("returns the post's slug in each locale it's published in (#84)", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      const url = new URL(String(input));
+      if (url.searchParams.get("fields[0]") === "slug") {
+        expect(url.searchParams.get("filters[documentId][$eq]")).toBeTruthy();
+        return Response.json({ ...blogPostsEmpty, data: [{ slug: "yak-obraty-parfum" }] });
+      }
+      return Response.json(blogPostBySlugEn);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const post = await getBlogPostBySlug("how-to-choose-a-perfume", "en");
+
+    expect(post?.alternates).toEqual({ en: "how-to-choose-a-perfume", uk: "yak-obraty-parfum" });
   });
 
   it("returns null for a slug that exists in no locale", async () => {

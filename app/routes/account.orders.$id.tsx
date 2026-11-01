@@ -8,7 +8,7 @@ import { OrderSummary } from "~/features/checkout/OrderSummary";
 import { isCurrentOrder } from "~/lib/account";
 import { PAYMENT_KEYS, parseOrderId } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
-import { metaTranslator, type TextKey, useT } from "~/lib/i18n";
+import { metaTranslator, type TextKey, usePathFor, useT } from "~/lib/i18n";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/account.orders.$id";
 
@@ -38,6 +38,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 export default function AccountOrder({ loaderData: order }: Route.ComponentProps) {
   const { t, formatDate } = useT();
+  const path = usePathFor();
   const payment = PAYMENT_KEYS[order.paymentMethod];
   const timeline: [TextKey, Date | null][] = [
     ["account.order.placedAt", order.createdAt],
@@ -52,7 +53,7 @@ export default function AccountOrder({ loaderData: order }: Route.ComponentProps
     <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
       <section aria-labelledby="order-heading" className="flex flex-col gap-6">
         <Link
-          to="/account"
+          to={path("account")}
           className={cn(
             "self-start rounded-pill font-extrabold text-primary-dark hover:underline",
             focusRing("onLight"),

@@ -420,13 +420,13 @@ const OFFERS: SeedOffer[] = [
       uk: {
         title: "Подарунки за бюджетом",
         summary: "Ідеї до 500, 1000 і 2000 ₴ — для неї та для нього.",
-        body: "- **До 500 ₴**: мініатюри 7 мл\n- **До 1000 ₴**: 10 мл улюбленого аромату\n- **До 2000 ₴**: 30 мл класики",
+        body: "- **До 500 ₴**: мініатюри 5 мл\n- **До 1000 ₴**: 10 мл улюбленого аромату\n- **До 2000 ₴**: 30 мл класики",
         ctaLabel: "Подарунки для нього",
       },
       en: {
         title: "Gifts by budget",
         summary: "Ideas up to 500, 1000 and 2000 ₴, for her and for him.",
-        body: "- **Up to 500 ₴**: 7 ml minis\n- **Up to 1000 ₴**: 10 ml of a favourite scent\n- **Up to 2000 ₴**: 30 ml of a classic",
+        body: "- **Up to 500 ₴**: 5 ml minis\n- **Up to 1000 ₴**: 10 ml of a favourite scent\n- **Up to 2000 ₴**: 30 ml of a classic",
         ctaLabel: "Gifts for him",
       },
     },
@@ -437,8 +437,8 @@ const OFFERS: SeedOffer[] = [
     productIds: [],
     sortOrder: 0,
     copy: {
-      uk: { title: "Безкоштовна доставка", summary: "Новою Поштою від 1000 ₴" },
-      en: { title: "Free delivery", summary: "With Nova Poshta from 1000 ₴" },
+      uk: { title: "Безкоштовна доставка", summary: "Новою Поштою від 1500 ₴" },
+      en: { title: "Free delivery", summary: "With Nova Poshta from 1500 ₴" },
     },
   },
   {
@@ -448,8 +448,8 @@ const OFFERS: SeedOffer[] = [
     ctaUrl: "/catalog/women",
     sortOrder: 10,
     copy: {
-      uk: { title: "Спершу спробуйте", summary: "Кожен аромат є в об’ємах від 7 мл" },
-      en: { title: "Try it first", summary: "Every scent comes in sizes from 7 ml" },
+      uk: { title: "Спершу спробуйте", summary: "Кожен аромат є в об’ємах від 5 мл" },
+      en: { title: "Try it first", summary: "Every scent comes in sizes from 5 ml" },
     },
   },
   {

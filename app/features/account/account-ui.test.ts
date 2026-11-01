@@ -41,7 +41,7 @@ const order = (status: OrderStatus, overrides: Partial<AccountOrder> = {}): Acco
       title: "Coco Mademoiselle",
       brand: "Chanel",
       imageUrl: "https://example.com/coco.jpg",
-      volumeMl: 7,
+      volumeMl: 5,
       packSize: 1,
       quantity: 2,
       unitPrice: "990.00",
@@ -165,7 +165,7 @@ describe("PreviousOrdersList", () => {
     expect(html).toContain("Отримано");
     expect(html).toContain("Скасовано");
     expect(html).toContain(formatPrice("990.00"));
-    expect(html).toContain("Chanel · 7 мл · 2 шт.");
+    expect(html).toContain("Chanel · 5 мл · 2 шт.");
     expect(html).toContain("Цей парфум більше не продається");
     expect(html).toContain('href="/account/orders/7"');
   });

@@ -39,7 +39,7 @@ describe("cardPrice", () => {
     minPrice: "990.00",
     defaultVariant: { id: "v10", volumeMl: 10 },
     variants: [
-      { id: "v7", volumeMl: 7, price: "990.00", inStock: false },
+      { id: "v5", volumeMl: 5, price: "990.00", inStock: false },
       { id: "v10", volumeMl: 10, price: "1350.00", inStock: true },
       { id: "v30", volumeMl: 30, price: "4450.00", inStock: true },
     ],

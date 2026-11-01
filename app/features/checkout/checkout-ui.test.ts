@@ -135,11 +135,11 @@ describe("OrderSummary", () => {
   const renderSummary = (props: Parameters<typeof OrderSummary>[0]) =>
     render(routerFor(createElement(OrderSummary, props)));
 
-  it("lists the lines and the total, with free delivery from 1000 UAH", () => {
+  it("lists the lines and the total, with free delivery from 1500 UAH", () => {
     const html = renderSummary({
       lines: [line],
-      subtotal: "1200.00",
-      total: "1200.00",
+      subtotal: "1500.00",
+      total: "1500.00",
       freeShipping: true,
     });
 
@@ -149,17 +149,24 @@ describe("OrderSummary", () => {
     expect(html).not.toContain("more for free delivery");
   });
 
-  it("says the recipient pays Nova Poshta below 1000 UAH and how much is missing", () => {
-    const html = renderSummary({
+  it("says the recipient pays Nova Poshta below 1500 UAH and how much is missing", () => {
+    const props = {
       lines: [line],
-      subtotal: "900.00",
-      total: "900.00",
+      subtotal: "1499.99",
+      total: "1499.99",
       freeShipping: false,
-      remainingForFreeShipping: "100.00",
-    });
+      remainingForFreeShipping: "0.01",
+    };
+    const html = renderSummary(props);
 
     expect(html).toContain("Nova Poshta rates, paid on delivery");
-    expect(html).toMatch(/Add ₴100 more for free delivery\./);
+    expect(html).toContain("Add ₴0.01 more for free delivery (from ₴1,500).");
+
+    const ukrainian = render(routerFor(createElement(OrderSummary, props)), "uk").replace(
+      /\s/gu,
+      " ",
+    );
+    expect(ukrainian).toContain("Додайте ще 0,01 ₴, щоб доставка була безкоштовною (від 1 500 ₴).");
   });
 
   it("shows the discount between the subtotal and delivery, in English and Ukrainian (#59)", () => {

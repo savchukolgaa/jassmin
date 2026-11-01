@@ -218,18 +218,24 @@ describe("priceCart", () => {
     expect(priced.total).toBe(0);
   });
 
+  it("gives free delivery from 1500 ₴", () => {
+    expect(priceCart([line({ unitPrice: 149_999 })], [], NOW).freeShipping).toBe(false);
+    expect(priceCart([line({ unitPrice: 150_000 })], [], NOW).freeShipping).toBe(true);
+  });
+
   it("decides free delivery on the discounted subtotal", () => {
-    // 1100 ₴ − 10% = 990 ₴, below the 1000 ₴ threshold.
-    const lines = [line({ unitPrice: 110_000 })];
+    // 1600 ₴ − 10% = 1440 ₴, below the 1500 ₴ threshold.
+    const lines = [line({ unitPrice: 160_000 })];
     expect(priceCart(lines, [], NOW).freeShipping).toBe(true);
     expect(priceCart(lines, [TEN_PERCENT_CODE], NOW)).toMatchObject({
-      total: 99_000,
+      total: 144_000,
       shipping: 0,
       freeShipping: false,
     });
-    // Exactly 1000 ₴ after the discount is free.
-    expect(priceCart([line({ unitPrice: 111_111 })], [TEN_PERCENT_CODE], NOW).freeShipping).toBe(
-      true,
-    );
+    // 1666.66 ₴ − 166.66 ₴ is exactly 1500 ₴ after the discount, which is free.
+    expect(priceCart([line({ unitPrice: 166_666 })], [TEN_PERCENT_CODE], NOW)).toMatchObject({
+      total: 150_000,
+      freeShipping: true,
+    });
   });
 });

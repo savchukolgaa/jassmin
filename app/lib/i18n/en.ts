@@ -265,7 +265,7 @@ export const en = {
     },
     subtotal: "Subtotal",
     total: "Total",
-    deliveryNote: "Delivery is calculated at checkout.",
+    deliveryNote: "Free Nova Poshta delivery from {threshold}.",
     promo: {
       label: "Promo code",
       apply: "Apply",
@@ -329,7 +329,7 @@ export const en = {
     shipping: "Delivery",
     shippingFree: "Free",
     shippingCarrierRate: "Nova Poshta rates, paid on delivery",
-    freeShippingHint: "Add {amount} more for free delivery.",
+    freeShippingHint: "Add {amount} more for free delivery (from {threshold}).",
     total: "Total",
     submit: "Place order",
     errors: {
@@ -513,6 +513,7 @@ export const en = {
         one: "Order {count} tester only for {price}",
         other: "Order {count} testers only for {price}",
       },
+      freeDelivery: "Free delivery from {threshold}",
     },
     howItWorks: {
       title: "How it works",
@@ -631,9 +632,9 @@ export const en = {
     title: "Popular perfumes",
     metaTitle: "Popular perfumes",
     metaDescription:
-      "The scents Jassmin customers come back for most, picked by our team, in sizes from 7 ml.",
+      "The scents Jassmin customers come back for most, picked by our team, in sizes from 5 ml.",
     intro:
-      "The scents our customers come back for, picked by the Jassmin team. Every one comes in sizes from 7 ml.",
+      "The scents our customers come back for, picked by the Jassmin team. Every one comes in sizes from 5 ml.",
     yourTrio: "Your trio:",
     chosenFamilies: "Chosen fragrance families",
     removeFamily: "Remove {family}",

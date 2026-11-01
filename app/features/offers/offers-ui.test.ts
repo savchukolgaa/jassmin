@@ -41,10 +41,10 @@ function offer(overrides: Partial<OfferView> = {}): OfferView {
     kind: "discovery-set",
     contentLocale: "uk",
     title: "Тестерне тріо",
-    summary: "Три аромати по 7 мл.",
+    summary: "Три аромати по 10 мл.",
     bodyHtml: "<p>Носіть кожен <strong>кілька днів</strong>.</p>",
     image: null,
-    priceNote: "3 × 7 мл — від 499 ₴",
+    priceNote: "3 × 10 мл — 499 ₴",
     validUntil: null,
     cta: { to: "/catalog/women", label: "Зібрати тріо" },
     products: [],
@@ -64,9 +64,9 @@ describe("OfferCard", () => {
     const html = render(createElement(OfferCard, { offer: offer() }));
 
     expect(html).toMatch(/<h3[^>]*>Тестерне тріо<\/h3>/);
-    expect(html).toContain("Три аромати по 7 мл.");
+    expect(html).toContain("Три аромати по 10 мл.");
     expect(html).toContain("<strong>кілька днів</strong>");
-    expect(html).toContain("3 × 7 мл — від 499 ₴");
+    expect(html).toContain("3 × 10 мл — 499 ₴");
     expect(html).toMatch(/<a[^>]*href="\/catalog\/women"[^>]*>Зібрати тріо<\/a>/);
   });
 
@@ -120,7 +120,7 @@ describe("OffersPage", () => {
               slug: "delivery",
               kind: "perk",
               title: "Free delivery",
-              summary: "With Nova Poshta from 1000 ₴",
+              summary: "With Nova Poshta from 1500 ₴",
               cta: null,
             }),
           ],
@@ -136,7 +136,7 @@ describe("OffersPage", () => {
     expect(html).toMatch(/<h1[^>]*>Special offers<\/h1>/);
     expect(html).toMatch(/<section[^>]*class="[^"]*bg-primary[^"]*"[^>]*>[\s\S]*Winter holidays/);
     expect(html).toContain("Free delivery");
-    expect(html).toContain("With Nova Poshta from 1000 ₴");
+    expect(html).toContain("With Nova Poshta from 1500 ₴");
     const positions = [">Discovery sets<", ">Tester trio<", ">Gift ideas<", ">Gifts<"].map(
       (marker) => html.indexOf(marker),
     );

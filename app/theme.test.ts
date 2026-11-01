@@ -80,6 +80,27 @@ describe("contrast (WCAG AA)", () => {
   ])("a %s focus ring or icon on %s is at least 3:1", (foreground, background) => {
     expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(3);
   });
+
+  // The white header (#72) and its dropdown and mobile menu, so a palette change that breaks it
+  // fails here: links, the current section, hovers on `blush`, the cart pill and profile circle.
+  describe("white header", () => {
+    it.each([
+      ["ink", "white"],
+      ["primary-dark", "white"],
+      ["primary-dark", "blush"],
+      ["white", "primary"],
+      ["white", "primary-dark"],
+    ])("%s text on %s is at least 4.5:1", (foreground, background) => {
+      expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it.each([
+      ["primary", "white"],
+      ["primary", "blush"],
+    ])("a %s focus ring or wordmark dot on %s is at least 3:1", (foreground, background) => {
+      expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(3);
+    });
+  });
 });
 
 describe("motion", () => {

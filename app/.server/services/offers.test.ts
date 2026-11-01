@@ -37,12 +37,12 @@ function product(id: string, title: string): ProductSummary {
     gender: "women",
     packSize: 1,
     imageUrl: null,
-    variants: [{ id: `${id}-v`, volumeMl: 7, price: "990.00", inStock: true }],
+    variants: [{ id: `${id}-v`, volumeMl: 5, price: "990.00", inStock: true }],
     minPrice: "990.00",
     hasPriceRange: false,
-    volumes: [7],
+    volumes: [5],
     inStock: true,
-    defaultVariant: { id: `${id}-v`, volumeMl: 7 },
+    defaultVariant: { id: `${id}-v`, volumeMl: 5 },
     fragranceFamily: null,
   };
 }

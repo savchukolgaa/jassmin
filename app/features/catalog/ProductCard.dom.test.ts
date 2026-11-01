@@ -19,7 +19,7 @@ const PRODUCT: ProductSummary = {
   packSize: 1,
   imageUrl: null,
   variants: [
-    { id: "v7", volumeMl: 7, price: "990.00", inStock: true },
+    { id: "v5", volumeMl: 5, price: "990.00", inStock: true },
     { id: "v10", volumeMl: 10, price: "1350.00", inStock: false },
     { id: "v30", volumeMl: 30, price: "4450.00", inStock: true },
     { id: "v50", volumeMl: 50, price: "6850.00", inStock: true },
@@ -28,7 +28,7 @@ const PRODUCT: ProductSummary = {
   hasPriceRange: true,
   volumes: [7, 10, 30, 50],
   inStock: true,
-  defaultVariant: { id: "v7", volumeMl: 7 },
+  defaultVariant: { id: "v5", volumeMl: 5 },
   fragranceFamily: null,
 };
 
@@ -62,7 +62,7 @@ describe.each(["default", "compact"] as const)("ProductCard (%s) in the browser"
     expect(container.querySelector("[data-price-skeleton]")).toBeNull();
     expect(container.textContent).toContain("₴990");
     expect(container.textContent).not.toContain("from");
-    expect(radio(/^7 ml/).checked).toBe(true);
+    expect(radio(/^5 ml/).checked).toBe(true);
   });
 
   it("shows the price of the size the shopper picks", async () => {
@@ -83,14 +83,14 @@ describe.each(["default", "compact"] as const)("ProductCard (%s) in the browser"
     await user.click(soldOut);
 
     expect(soldOut.checked).toBe(false);
-    expect(radio(/^7 ml/).checked).toBe(true);
+    expect(radio(/^5 ml/).checked).toBe(true);
     expect(container.textContent).toContain("₴990");
   });
 
   it("moves between sizes with the arrow keys, skipping sold-out ones", async () => {
     const { container, user } = renderCard(variant);
 
-    radio(/^7 ml/).focus();
+    radio(/^5 ml/).focus();
     await user.keyboard("{ArrowRight}");
 
     expect(radio(/^30 ml/).checked).toBe(true);

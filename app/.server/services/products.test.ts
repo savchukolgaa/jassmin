@@ -36,7 +36,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
     const { productVariants, products } = await import("../db/schema");
     testDb = await createTestDatabase("jassmin_products_test");
     await migrateLatest(testDb.db);
-    await seedProducts(testDb.db, SAMPLE_PRODUCTS);
+    await seedProducts(testDb.db);
     const paging = await testDb.db
       .insert(products)
       .values(
@@ -192,17 +192,17 @@ describe.skipIf(!hasDatabase)("products service", () => {
     });
 
     const coco = (await catalog("women", { brand: "Chanel" })).products[0];
-    // 7 ml is the smallest size in stock (10 ml is sold out).
+    // 5 ml is the smallest size in stock (10 ml is sold out).
     expect(coco).toMatchObject({
       minPrice: "990.00",
       hasPriceRange: true,
-      volumes: [7, 10, 30, 50, 100],
+      volumes: [5, 10, 30, 50, 100],
       inStock: true,
-      defaultVariant: { volumeMl: 7 },
+      defaultVariant: { volumeMl: 5 },
     });
     // Every size for the card's volume picker, smallest first, with exact prices (#74).
     expect(coco?.variants).toEqual([
-      { id: expect.any(String), volumeMl: 7, price: "990.00", inStock: true },
+      { id: expect.any(String), volumeMl: 5, price: "990.00", inStock: true },
       { id: expect.any(String), volumeMl: 10, price: "1350.00", inStock: false },
       { id: expect.any(String), volumeMl: 30, price: "4450.00", inStock: true },
       { id: expect.any(String), volumeMl: 50, price: "6850.00", inStock: true },
@@ -327,11 +327,11 @@ describe.skipIf(!hasDatabase)("products service", () => {
       brand: coco.brand,
       minPrice: "990.00",
       hasPriceRange: true,
-      volumes: [7, 10, 30, 50, 100],
+      volumes: [5, 10, 30, 50, 100],
       inStock: true,
-      defaultVariant: { volumeMl: 7 },
+      defaultVariant: { volumeMl: 5 },
     });
-    expect(found.get(coco.publicId)?.variants.map((v) => v.volumeMl)).toEqual([7, 10, 30, 50, 100]);
+    expect(found.get(coco.publicId)?.variants.map((v) => v.volumeMl)).toEqual([5, 10, 30, 50, 100]);
   });
 
   it("doesn't query for an empty list of ids", async () => {

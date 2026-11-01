@@ -2,7 +2,7 @@ import { NavLink, useMatch } from "react-router";
 import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
 import { ChevronDownIcon } from "./icons";
-import { CATALOG_LINKS, navItemClasses, summaryReset } from "./nav";
+import { CATALOG_LINKS, headerNavItemClasses, navItemClasses, summaryReset } from "./nav";
 import { useDisclosure } from "./useDisclosure";
 
 /** "Каталог ▾" / "Catalog ▾" dropdown with the men's and women's catalogs. */
@@ -13,11 +13,11 @@ export function CatalogMenu() {
 
   return (
     <details {...detailsProps} className="group relative">
-      <summary {...summaryProps} className={cn(navItemClasses(inCatalog), summaryReset)}>
+      <summary {...summaryProps} className={cn(headerNavItemClasses(inCatalog), summaryReset)}>
         {t("nav.catalog")}
         <ChevronDownIcon className="size-4 transition-transform group-open:rotate-180" />
       </summary>
-      <ul className="absolute top-full right-0 z-10 mt-2 w-56 rounded-card bg-white p-2 text-ink shadow-xl">
+      <ul className="absolute top-full right-0 z-10 mt-2 w-56 rounded-card border border-line bg-white p-2 text-ink shadow-xl">
         {CATALOG_LINKS.map((link) => (
           <li key={link.to}>
             <NavLink

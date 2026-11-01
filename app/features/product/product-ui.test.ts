@@ -36,7 +36,7 @@ const PRODUCT: ProductDetail = {
   fragranceFamilies: ["шипрові", "квіткові"],
   notes: ["апельсин", "троянда", "пачулі"],
   variants: [
-    variant(7, "990.00", 0),
+    variant(5, "990.00", 0),
     variant(10, "1350.00", 2),
     variant(50, "6850.00", 6),
     variant(100, "9900.00", 0),
@@ -56,7 +56,7 @@ const options = (html: string) =>
 describe("ProductPurchase", () => {
   it("lists every size in ascending order with its price", () => {
     expect(options(purchase()).map((o) => o.label)).toEqual([
-      "7 ml — ₴990 (out of stock)",
+      "5 ml — ₴990 (out of stock)",
       "10 ml — ₴1,350",
       "50 ml — ₴6,850",
       "100 ml — ₴9,900 (out of stock)",

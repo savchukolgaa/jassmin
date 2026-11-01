@@ -1,4 +1,4 @@
-import type { OrderSummaryLine } from "~/lib/checkout";
+import { FREE_SHIPPING_THRESHOLD, type OrderSummaryLine } from "~/lib/checkout";
 import { type DiscountLine, discountLabel } from "~/lib/discounts";
 import { useT } from "~/lib/i18n";
 import { formatVolume } from "~/lib/products";
@@ -90,7 +90,10 @@ export function OrderSummary({
       </dl>
       {!freeShipping && remainingForFreeShipping && (
         <p className="text-sm text-muted">
-          {t("checkout.freeShippingHint", { amount: formatPrice(remainingForFreeShipping) })}
+          {t("checkout.freeShippingHint", {
+            amount: formatPrice(remainingForFreeShipping),
+            threshold: formatPrice(FREE_SHIPPING_THRESHOLD),
+          })}
         </p>
       )}
     </aside>

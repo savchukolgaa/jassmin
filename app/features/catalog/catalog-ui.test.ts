@@ -36,15 +36,15 @@ const PRODUCT: ProductSummary = {
   packSize: 1,
   imageUrl: null,
   variants: [
-    { id: VARIANT_ID, volumeMl: 7, price: "990.00", inStock: true },
+    { id: VARIANT_ID, volumeMl: 5, price: "990.00", inStock: true },
     { id: "01a1652b-6e25-7d00-8000-000000000030", volumeMl: 30, price: "3490.00", inStock: true },
     { id: "01a1652b-6e25-7d00-8000-000000000050", volumeMl: 50, price: "4890.00", inStock: false },
   ],
   minPrice: "990.00",
   hasPriceRange: true,
-  volumes: [7, 30, 50],
+  volumes: [5, 30, 50],
   inStock: true,
-  defaultVariant: { id: VARIANT_ID, volumeMl: 7 },
+  defaultVariant: { id: VARIANT_ID, volumeMl: 5 },
   fragranceFamily: "шипрові",
 };
 
@@ -102,7 +102,7 @@ describe("ProductCard", () => {
     // 50 ml is sold out: shown, struck through and announced, but it can't be picked.
     expect(fifty).toContain('disabled=""');
     expect(form).toContain('50 ml<span class="sr-only">, out of stock</span>');
-    expect(form).toContain(">7 ml<");
+    expect(form).toContain(">5 ml<");
     expect(form).toContain(">30 ml<");
     // The radios post the size, so there's no hidden `variantId` next to them.
     expect(form).not.toContain('type="hidden" name="variantId"');
@@ -156,7 +156,7 @@ describe("ProductCard", () => {
       render(createElement(ProductCard, { product: { ...PRODUCT, packSize: 3 } })),
     );
 
-    expect(html).toContain(">3 × 7 ml<");
+    expect(html).toContain(">3 × 5 ml<");
     expect(html).toContain(">3 × 30 ml<");
   });
 

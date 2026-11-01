@@ -1,6 +1,5 @@
 import type { FragranceFamily, PerfumeVolumeMl } from "~/lib/enums";
 import type { discounts, products } from "./schema";
-import { OWNER_CATALOG } from "./seed-catalog";
 
 export interface SampleVariant {
   volumeMl: PerfumeVolumeMl;
@@ -37,7 +36,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 50,
     stockQuantity: 6,
     variants: [
-      { volumeMl: 7, price: "990.00", stockQuantity: 10 },
+      { volumeMl: 5, price: "990.00", stockQuantity: 10 },
       { volumeMl: 10, price: "1350.00", stockQuantity: 0 },
       { volumeMl: 30, price: "4450.00", stockQuantity: 3 },
       { volumeMl: 50, price: "6850.00", stockQuantity: 6 },
@@ -49,9 +48,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "La Vie Est Belle Eau de Parfum",
     brand: "Lancôme",
     gender: "women",
-    // The owner's 1-L (#67, seed-catalog.ts): their families and notes, first on /popular.
-    storeCode: "1-L",
-    popularRank: 1,
     fragranceFamilies: ["фруктові", "квіткові"],
     notes: ["чорна смородина", "груша", "ірис", "жасмин", "пачулі", "ваніль", "боби тонка"],
     description: "Солодкий аромат з ірисом, праліне та ваніллю.",
@@ -77,7 +73,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 50,
     stockQuantity: 4,
     variants: [
-      { volumeMl: 7, price: "890.00", stockQuantity: 6 },
+      { volumeMl: 5, price: "890.00", stockQuantity: 6 },
       { volumeMl: 50, price: "5990.00", stockQuantity: 4 },
       { volumeMl: 100, price: "8650.00", stockQuantity: 1 },
     ],
@@ -87,8 +83,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Sauvage Eau de Toilette",
     brand: "Dior",
     gender: "men",
-    // The owner's 2-C (#67, seed-catalog.ts).
-    storeCode: "2-C",
     fragranceFamilies: ["фужерні", "пряні"],
     notes: ["аніс", "бергамот", "яблуко", "дубовий мох", "пачулі"],
     description: "Свіжий пряний аромат з бергамотом, перцем і амброксаном.",
@@ -123,8 +117,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     title: "Acqua di Giò Eau de Toilette",
     brand: "Giorgio Armani",
     gender: "men",
-    // The owner's 2-A (#67, seed-catalog.ts).
-    storeCode: "2-A",
     fragranceFamilies: ["водяні", "фужерні"],
     notes: ["бергамот", "лимон", "апельсин", "лайм", "морські ноти", "мускус"],
     description: "Морська свіжість з нотами цитрусів, розмарину та пачулі.",
@@ -148,7 +140,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 100,
     stockQuantity: 3,
     variants: [
-      { volumeMl: 7, price: "690.00", stockQuantity: 12 },
+      { volumeMl: 5, price: "690.00", stockQuantity: 12 },
       { volumeMl: 30, price: "2690.00", stockQuantity: 2 },
       { volumeMl: 100, price: "5350.00", stockQuantity: 3 },
     ],
@@ -165,7 +157,7 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     volumeMl: 100,
     stockQuantity: 7,
     variants: [
-      { volumeMl: 7, price: "590.00", stockQuantity: 20 },
+      { volumeMl: 5, price: "590.00", stockQuantity: 20 },
       { volumeMl: 10, price: "790.00", stockQuantity: 15 },
       { volumeMl: 30, price: "1890.00", stockQuantity: 4 },
       { volumeMl: 50, price: "2890.00", stockQuantity: 0 },
@@ -187,12 +179,6 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     variants: [{ volumeMl: 10, price: "990.00", stockQuantity: 20 }],
   },
 ];
-
-/**
- * What `pnpm db:seed` inserts: the sample products above, then the owner's catalogue (#67, with
- * placeholder prices). Tests that need a small, known catalog seed `SAMPLE_PRODUCTS` only.
- */
-export const SEED_PRODUCTS: SampleProduct[] = [...SAMPLE_PRODUCTS, ...OWNER_CATALOG];
 
 export type SampleDiscount = typeof discounts.$inferInsert;
 

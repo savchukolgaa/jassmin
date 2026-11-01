@@ -97,24 +97,7 @@ error pages.
   `popular.tsx`, and `seo.canonicalUrl` in `app/.server/services/blog.ts`): one source of truth,
   and it no longer trusts `Host`. The `origin` parameter of `getBlogPost` goes away.
 - **Default share image:** `public/og-default.jpg`, 1200×630, ≤300 KB, the Jassmin wordmark on
-  the C+ background (`docs/design.md` tokens). **(unconfirmed, see Q1)**
-
-## Open questions
-
-- [ ] **Q1: What should the default share image (1200×630) show?** — Why it matters: it is the
-  preview for every page without its own image (catalog, cart-less pages, offers without a hero,
-  popular, privacy, blog list), so most shared links show it. Recommended default: a crop of the
-  store/hero photo used on the home page with the "Jassmin" wordmark, on the C+ palette; until a
-  final image is supplied, a generated wordmark-on-background placeholder. Affects steps: 3.
-- [ ] **Q2: Implement now on today's URLs, or wait until #83 and #84 merge?** — Why it matters:
-  #84 rewrites `app/routes.ts` and every route's path, so the two branches will conflict in the
-  route modules' `meta`/`loader`. Recommended default: implement now — the helper uses
-  `location.pathname`, so it needs no change for the new URLs; resolve conflicts in whichever lands
-  second (step 11). Affects steps: all, mainly 11.
-- [ ] **Q3: What is the production `PUBLIC_SITE_URL`?** — Why it matters: canonical and `og:url`
-  are absolute; a wrong origin points search engines to the wrong host. Recommended default:
-  `https://jassmin.ua` (the domain used by `CONTACT_INBOX`), set in the production env; the app
-  refuses to start in production without it. Affects steps: 1.
+  the C+ background (`docs/design.md` tokens): no photo.
 
 ## Resolved questions
 
@@ -133,6 +116,9 @@ error pages.
 - **Should `og:image` for blog posts and the home page stay CMS-driven?** — Yes, keep current
   behaviour, fall back to the default image when missing (issue: "blog list and post (keep
   current)"; `loaderData.seo.image` in `home.tsx`, `blog-post.tsx`).
+- **Default share image** — the "Jassmin" wordmark on the C+ background, no photo (answered by the user).
+- **Implement now or wait for #83 / #84?** — Start now on today's URLs; whichever of #83/#84 lands second resolves the conflicts (answered by the user; see step 11).
+- **Production `PUBLIC_SITE_URL` value** — not needed in the code: it's set per deployment in the environment, and the app refuses to start in production without it (step 1).
 - **Structured data and sitemap** — out of scope (issue #85 Context; sitemap/robots.txt is #87).
 
 ## Files
@@ -167,7 +153,7 @@ error pages.
   getSiteUrl(getEnv()) } }`. Add `seoSite(matches)` to `app/lib/seo.ts`, reading `site.url` from the
   `root` match (narrowing `unknown`, like `metaTranslator`), falling back to `""` (relative URLs)
   when the root loader failed.
-- [ ] **3. Default share image** — Add `public/og-default.jpg` (1200×630, see Q1) and
+- [ ] **3. Default share image** — Add `public/og-default.jpg` (1200×630): the Playfair Display "Jassmin" wordmark on the C+ background, generated once and committed as a static file and
   `DEFAULT_SHARE_IMAGE = { url: "/og-default.jpg", width: 1200, height: 630 }`. Add
   `meta.defaultImageAlt` to `uk.ts` / `en.ts`.
 - [ ] **4. The helper `app/lib/seo.ts`** — Implement `truncateDescription(text, max = 155)` (collapse

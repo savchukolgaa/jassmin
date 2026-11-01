@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { localeCookie } from "~/.server/locale";
-import { action, loader } from "./locale";
+
+const content = vi.hoisted(() => ({ getBlogPostBySlug: vi.fn(async () => null) }));
+vi.mock("~/.server/cms/content", () => content);
+
+const { action, loader } = await import("./locale");
 
 type ActionArgs = Parameters<typeof action>[0];
 
@@ -19,19 +23,32 @@ function unwrap(result: unknown): { status: number; body: unknown } {
 }
 
 describe("locale action", () => {
-  it("stores the locale in a cookie and redirects back", async () => {
-    const response = await action(post({ locale: "en", redirectTo: "/catalog/men?sort=newest" }));
+  it("stores the locale in a cookie and goes to the same page in that language (#84)", async () => {
+    const response = await action(
+      post({ locale: "en", redirectTo: "/katalog/cholovichi?sort=newest#grid" }),
+    );
 
     expect(response).toBeInstanceOf(Response);
     const { status, headers } = response as Response;
     expect(status).toBe(302);
-    expect(headers.get("Location")).toBe("/catalog/men?sort=newest");
+    expect(headers.get("Location")).toBe("/en/catalog/men?sort=newest#grid");
     const setCookie = headers.get("Set-Cookie") ?? "";
     expect(setCookie).toMatch(/^locale=/);
     expect(setCookie).toMatch(/Max-Age=31536000/);
     expect(setCookie).toMatch(/Path=\//);
     expect(setCookie).toMatch(/SameSite=Lax/);
     expect(await localeCookie.parse(setCookie.split(";")[0] ?? "")).toBe("en");
+  });
+
+  it("goes back to Ukrainian, and to the blog list for an untranslated post", async () => {
+    const back = (await action(
+      post({ locale: "uk", redirectTo: "/en/account/profile" }),
+    )) as Response;
+    expect(back.headers.get("Location")).toBe("/kabinet/profil");
+    const post_ = (await action(
+      post({ locale: "en", redirectTo: "/blog/tilky-ukrainskoiu" }),
+    )) as Response;
+    expect(post_.headers.get("Location")).toBe("/en/blog");
   });
 
   it("redirects home instead of to another site", async () => {

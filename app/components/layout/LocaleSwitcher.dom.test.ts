@@ -18,12 +18,15 @@ function renderSwitcher(path: string) {
     [
       { path: "/", element },
       { path: "/other", element },
+      { path: "/en", element },
       {
         path: "/locale",
         action: async ({ request }) => {
           const formData = await request.formData();
           posted.push(formData);
-          return redirect(String(formData.get("redirectTo")));
+          // Like `routes/locale.ts`: the same page in the chosen language (#84).
+          const target = String(formData.get("redirectTo"));
+          return redirect(formData.get("locale") === "en" ? `/en${target.slice(1)}` : target);
         },
       },
     ],
@@ -46,7 +49,7 @@ describe("LocaleSwitcher in the browser", () => {
     expect(posted[0]?.get("redirectTo")).toBe("/?page=2#location-title");
   });
 
-  it("comes back to the same URL without resetting the scroll position", async () => {
+  it("lands on the page's URL in the other language without resetting the scroll position", async () => {
     const { posted, router, user } = renderSwitcher("/?page=2#location-title");
 
     await user.click(screen.getByRole("button", { name: "EN" }));
@@ -56,7 +59,7 @@ describe("LocaleSwitcher in the browser", () => {
       expect(router.state.navigation.state).toBe("idle");
     });
     expect(router.state.location).toMatchObject({
-      pathname: "/",
+      pathname: "/en",
       search: "?page=2",
       hash: "#location-title",
     });

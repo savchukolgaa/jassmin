@@ -290,7 +290,7 @@ header, and `Accept-Language` the hint. Update its comment.
   seeds. `content.ts`: slug lookup per locale, the Ukrainian-slug-under-`/en` case
   (redirect / fallback), `alternates`. `blog-post.tsx` handles `redirectTo` with a 301. Update the
   `content.test.ts` fixtures.
-- [ ] **8. Switcher and hint.** `/locale` action redirects to `localizedUrl(redirectTo, locale)`.
+- [x] **8. Switcher and hint.** `/locale` action redirects to `localizedUrl(redirectTo, locale)`.
   Extend `LocaleSwitcher.dom.test.ts` so scroll is kept when the path changes (#82). Add
   `LanguageHint` with i18n keys in both dictionaries (dismiss sets `locale=uk`). Tests: the switch target for
   every page key, and a blog post with and without a translation.

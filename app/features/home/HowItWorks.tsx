@@ -19,7 +19,7 @@ export function HowItWorks({ trioOffer }: { trioOffer: TrioOffer }) {
       <div className="container mx-auto px-4 pt-16 pb-10 md:pt-22">
         <h2
           id="how-it-works-title"
-          className="mb-8 text-4xl leading-tight font-extrabold tracking-[-0.03em] text-ink md:text-5xl"
+          className="mb-8 text-4xl leading-tight font-bold tracking-[-0.01em] text-ink md:text-5xl"
         >
           {t("home.howItWorks.title")}
         </h2>
@@ -37,13 +37,13 @@ export function HowItWorks({ trioOffer }: { trioOffer: TrioOffer }) {
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "text-7xl leading-none font-extrabold tracking-[-0.05em]",
+                    "font-serif text-7xl leading-none font-bold tracking-[-0.01em]",
                     dark ? "text-primary-light" : "text-primary-dark",
                   )}
                 >
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                <h3 className="text-2xl font-extrabold">{step.title}</h3>
+                <h3 className="text-2xl font-bold">{step.title}</h3>
                 <p className={cn("leading-relaxed", dark ? "text-on-dark-muted" : "text-muted")}>
                   {step.body}
                 </p>

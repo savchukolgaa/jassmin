@@ -15,7 +15,7 @@ export interface PrivacyContacts {
 function Section({ heading, children }: { heading: string; children: ReactNode }) {
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-extrabold tracking-tight text-ink">{heading}</h2>
+      <h2 className="text-2xl font-bold tracking-[-0.01em] text-ink">{heading}</h2>
       <div className="mt-3 space-y-3 text-body">{children}</div>
     </section>
   );
@@ -40,7 +40,7 @@ export function PrivacyPolicy({ contacts }: { contacts: PrivacyContacts | null }
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
       <article className="mx-auto max-w-3xl">
-        <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+        <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
           {t("privacy.title")}
         </h1>
         <p className="mt-3 text-sm font-bold text-muted">

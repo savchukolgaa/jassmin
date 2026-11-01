@@ -141,7 +141,7 @@ export default function Cart({ loaderData: cart, actionData }: Route.ComponentPr
 
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
-      <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+      <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
         {t("cart.heading")}
       </h1>
       {error && (

@@ -25,7 +25,7 @@ export function ProductPurchase({ product }: { product: ProductDetail }) {
 
   return (
     <>
-      <p aria-live="polite" className="text-3xl font-extrabold text-ink">
+      <p aria-live="polite" className="font-serif text-3xl font-bold text-ink">
         {/* Re-keyed so the price animates in again when the size changes. */}
         <span key={selected.id} className="inline-block animate-spin-in">
           {formatPrice(selected.price)}

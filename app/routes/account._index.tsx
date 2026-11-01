@@ -13,7 +13,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return getAccountOrders(user.id);
 }
 
-const sectionHeading = "text-3xl font-extrabold tracking-[-0.03em] text-ink md:text-4xl";
+const sectionHeading = "text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl";
 
 export default function AccountOrders({ loaderData }: Route.ComponentProps) {
   const { t } = useT();

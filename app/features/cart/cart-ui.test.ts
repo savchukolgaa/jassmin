@@ -168,7 +168,7 @@ describe("CartSummary with a discount (#59)", () => {
     expect(html).toContain("₴2,370");
     expect(html).toContain("Tester trio 3 × 10 ml");
     expect(html).toContain("−₴1,871");
-    expect(html).toMatch(/Total<\/dt><dd>₴499<\/dd>/);
+    expect(html).toMatch(/Total<\/dt><dd class="font-serif font-bold">₴499<\/dd>/);
   });
 
   it("names the promo code and reads in Ukrainian by default", () => {

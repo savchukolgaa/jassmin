@@ -46,7 +46,7 @@ export function AuthLayout({
         <div className="flex flex-col gap-4">
           <h1
             id="auth-heading"
-            className="max-w-[8ch] text-5xl leading-[0.92] font-extrabold tracking-tighter sm:text-7xl"
+            className="max-w-[8ch] text-5xl leading-[0.92] font-bold tracking-[-0.01em] sm:text-7xl"
           >
             {t(headline)}
           </h1>

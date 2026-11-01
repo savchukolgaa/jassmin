@@ -48,6 +48,23 @@ describe("theme tokens", () => {
   it("puts Manrope first in the sans stack and keeps the system fallback", () => {
     expect(css).toMatch(/--font-sans:\s*"Manrope", ui-sans-serif, system-ui, sans-serif/);
   });
+
+  it("sets Playfair Display as the serif with a Georgia fallback", () => {
+    expect(css).toContain('--font-serif: "Playfair Display", Georgia, serif;');
+  });
+
+  it("sets h1 to h3 in the serif from the base layer", () => {
+    expect(css).toMatch(
+      /@layer base \{[^}]*h1,\s*h2,\s*h3 \{\s*font-family: var\(--font-serif\);\s*\}/,
+    );
+  });
+
+  it("loads Manrope and Playfair Display from Google Fonts with font-display swap", () => {
+    const root = readFileSync(new URL("./root.tsx", import.meta.url), "utf8");
+    expect(root).toContain(
+      "https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Playfair+Display:wght@600..700&display=swap",
+    );
+  });
 });
 
 describe("contrast (WCAG AA)", () => {
@@ -100,6 +117,22 @@ describe("contrast (WCAG AA)", () => {
     ])("a %s focus ring or wordmark dot on %s is at least 3:1", (foreground, background) => {
       expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(3);
     });
+  });
+
+  it("keeps primary-light focus rings off light surfaces, where they drop below 3:1", () => {
+    expect(contrastRatio(color("primary-light"), color("white"))).toBeLessThan(3);
+
+    // Only these sit on `ink`; form fields and payment options are white (#73).
+    const onInk = ["ContactsSection.tsx", "TrioBuilder.tsx"];
+    const appDir = new URL(".", import.meta.url);
+    const offenders = readdirSync(appDir, { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".tsx") && !onInk.some((name) => file.endsWith(name)))
+      .filter((file) =>
+        readFileSync(new URL(file.replaceAll("\\", "/"), appDir), "utf8").includes(
+          "outline-primary-light",
+        ),
+      );
+    expect(offenders).toEqual([]);
   });
 });
 

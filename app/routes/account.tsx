@@ -55,7 +55,7 @@ export default function AccountLayout({ loaderData }: Route.ComponentProps) {
         <div className="container mx-auto flex flex-wrap items-end justify-between gap-6 px-4 pt-10 pb-14">
           <div className="flex min-w-0 flex-col gap-2">
             <p className="text-sm font-extrabold uppercase tracking-widest">{t("account.title")}</p>
-            <h1 className="break-words text-5xl font-extrabold leading-none tracking-[-0.05em] md:text-7xl">
+            <h1 className="break-words text-5xl font-bold leading-none tracking-[-0.01em] md:text-7xl">
               {t("account.greeting", { name: loaderData.firstName })}
               <span aria-hidden="true" className="text-primary-light">
                 .

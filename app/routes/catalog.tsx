@@ -58,7 +58,7 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl">
+        <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
           {t(CATALOG_TITLE_KEYS[gender])}
         </h1>
         <p className="text-muted">{t("catalog.count", { count: total })}</p>

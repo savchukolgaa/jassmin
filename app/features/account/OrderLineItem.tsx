@@ -42,7 +42,7 @@ export function OrderLineItem({ line }: { line: AccountOrderLine }) {
         <p className="font-extrabold text-ink">{line.title ?? t("checkout.deletedProduct")}</p>
         <p className="text-sm text-muted">{details}</p>
       </div>
-      <p className="shrink-0 font-extrabold text-ink">{formatPrice(line.unitPrice)}</p>
+      <p className="shrink-0 font-serif font-bold text-ink">{formatPrice(line.unitPrice)}</p>
     </li>
   );
 }

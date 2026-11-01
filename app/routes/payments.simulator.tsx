@@ -115,7 +115,7 @@ export default function PaymentSimulator({ loaderData }: Route.ComponentProps) {
         </p>
         <section className="flex flex-col gap-5 rounded-card bg-white p-6 ring-1 ring-line">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-extrabold tracking-[-0.04em] text-ink">
+            <h1 className="text-3xl font-bold tracking-[-0.01em] text-ink">
               {t("payments.simulator.heading")}
             </h1>
             <p className="text-body">{description}</p>
@@ -123,7 +123,7 @@ export default function PaymentSimulator({ loaderData }: Route.ComponentProps) {
           </div>
           <div className="flex items-baseline justify-between border-t border-line pt-4">
             <span className="font-extrabold text-muted">{t("payments.simulator.amount")}</span>
-            <span className="text-2xl font-extrabold text-ink">{formatPrice(amount)}</span>
+            <span className="font-serif text-2xl font-bold text-ink">{formatPrice(amount)}</span>
           </div>
           <div className="flex flex-col gap-3">
             {buttons.map((button) => (

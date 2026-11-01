@@ -17,7 +17,7 @@ export function Bestsellers({ products }: { products: ProductSummary[] }) {
         <div className="mb-7 flex flex-wrap items-baseline justify-between gap-3">
           <h2
             id="bestsellers-title"
-            className="text-4xl leading-tight font-extrabold tracking-[-0.03em] text-ink md:text-5xl"
+            className="text-4xl leading-tight font-bold tracking-[-0.01em] text-ink md:text-5xl"
           >
             {t("home.bestsellers.title")}
           </h2>

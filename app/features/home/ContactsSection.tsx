@@ -40,7 +40,7 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
           <Eyebrow tone="onDark">{t("home.contacts.eyebrow")}</Eyebrow>
           <h2
             id="contacts-title"
-            className="mt-6 text-4xl leading-[1.02] font-extrabold tracking-[-0.04em] text-balance md:text-5xl"
+            className="mt-6 text-4xl leading-[1.02] font-bold tracking-[-0.01em] text-balance md:text-5xl"
           >
             {t("home.contacts.title")}
           </h2>

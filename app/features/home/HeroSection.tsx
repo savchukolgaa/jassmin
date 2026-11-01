@@ -30,7 +30,7 @@ export function HeroSection({ hero, trioOffer, contentLocale }: HeroSectionProps
           )}
           <h1
             id="hero-title"
-            className="animate-fade-up anim-delay-2 text-5xl leading-[0.92] font-extrabold tracking-[-0.05em] text-balance sm:text-6xl lg:text-8xl"
+            className="animate-fade-up anim-delay-2 text-5xl leading-[0.92] font-bold tracking-[-0.01em] text-balance sm:text-6xl lg:text-8xl"
           >
             {hero.headline}
           </h1>
@@ -119,7 +119,7 @@ function PriceBadge({ offer }: { offer: TrioOffer }) {
       </span>
       <span
         aria-hidden="true"
-        className="text-3xl font-extrabold tracking-[-0.03em] text-primary-dark md:text-4xl"
+        className="font-serif text-3xl font-bold tracking-[-0.01em] text-primary-dark md:text-4xl"
       >
         {price}
       </span>

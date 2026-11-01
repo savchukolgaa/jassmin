@@ -21,7 +21,7 @@ export function LocationSection({ location, contentLocale }: LocationSectionProp
           <Eyebrow tone="onPrimary">{t("home.location.eyebrow")}</Eyebrow>
           <h2
             id="location-title"
-            className="text-4xl leading-[1.05] font-extrabold tracking-[-0.03em] text-balance md:text-5xl"
+            className="text-4xl leading-[1.05] font-bold tracking-[-0.01em] text-balance md:text-5xl"
           >
             {t("home.location.title")}
           </h2>

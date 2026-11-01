@@ -19,7 +19,7 @@ export function AboutSection({ about, contentLocale }: AboutSectionProps) {
           <h2
             id="about-title"
             lang={lang}
-            className="text-4xl leading-[1.02] font-extrabold tracking-[-0.04em] text-balance text-ink md:text-5xl"
+            className="text-4xl leading-[1.02] font-bold tracking-[-0.01em] text-balance text-ink md:text-5xl"
           >
             {about.title}
           </h2>

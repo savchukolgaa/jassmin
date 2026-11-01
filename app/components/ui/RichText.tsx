@@ -16,8 +16,8 @@ type RichTextProps = {
 // Blog articles (#13): larger body text, `h2` section headings, images, rules and code.
 const ARTICLE_CLASSES = cn(
   "text-lg text-body [&_a]:text-primary-dark",
-  "[&_h2]:pt-4 [&_h2]:text-3xl [&_h2]:font-extrabold [&_h2]:leading-tight",
-  "[&_h2]:tracking-[-0.03em] [&_h2]:text-ink [&_h3]:pt-2 [&_h3]:text-ink [&_h4]:text-ink",
+  "[&_h2]:pt-4 [&_h2]:text-3xl [&_h2]:font-bold [&_h2]:leading-tight",
+  "[&_h2]:tracking-[-0.01em] [&_h2]:text-ink [&_h3]:pt-2 [&_h3]:text-ink [&_h4]:text-ink",
   "[&_img]:h-auto [&_img]:w-full [&_img]:rounded-card",
   "[&_hr]:my-8 [&_hr]:border-line",
   "[&_code]:rounded [&_code]:bg-card [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-base",

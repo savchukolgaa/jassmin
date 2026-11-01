@@ -54,13 +54,13 @@ everything outside production.
   query `listSitemapProducts()` → `{ slug, publicId, updatedAt }[]`. It uses the same filter as
   the catalog, so the sitemap and the catalog can't disagree.
 - **Product URLs:** `productHref` from #83 per locale (`/parfumy/<slug>`,
-  `/en/perfumes/<slug>`). Products whose `slug` is still `null` are **left out**
-  **(unconfirmed, Q1)**: their UUID URL is temporary and would 301 once a slug exists.
+  `/en/perfumes/<slug>`). Products whose `slug` is still `null` are left out
+  (Q1): their UUID URL is temporary and would 301 once a slug exists.
 - **`lastmod`:**
   - **Products:** the new `products.updated_at`. It uses the shared `updatedAt()` helper
     (`defaultNow()` plus `$onUpdate`), so it's refreshed by `updateProduct`, `setActive` and the
     CMS sync. Those all use the query builder. A raw-SQL update would have to set the column
-    itself. Variant price and stock changes don't touch it **(unconfirmed, Q2)**.
+    itself. Variant price and stock changes don't touch it (Q2).
   - **Blog posts:** Strapi `updatedAt`.
   - **Catalog pages:** the newest `updated_at` among listed products of that gender.
   - **Home, offers, popular:** the newest product `updated_at`.
@@ -90,7 +90,7 @@ everything outside production.
     `/reiestratsiia`, `/en/register`.
   - Plus the untranslated `/api/`, `/cms/`, `/payments/`, `/locale`, `/consent` and `/logout`.
     Also the legacy pre-#84 paths `/cart`, `/checkout`, `/account`, `/login` and `/register`, so
-    URLs that only 301 aren't crawled into private pages **(unconfirmed, Q3)**.
+    URLs that only 301 aren't crawled into private pages (Q3).
   - The private list is a typed constant: `ROBOTS_PRIVATE_PAGES` (page keys) in
     `app/.server/seo/robots.ts`, mapped through the path table. A test fails if a page key is
     missing from the path table.
@@ -103,22 +103,16 @@ everything outside production.
 - **Sitemap outside production:** still served (useful for checking), but `robots.txt` blocks
   everything, so nothing gets indexed.
 
-## Open questions
-- [ ] **Q1: Should products with a `null` slug be in the sitemap under their UUID URL?** — Why it
-  matters: AGENTS.md says the first Strapi sync backfills every slug, so `null` should be rare and
-  temporary. Listing the UUID URL would index a URL that later 301s. Recommended default: leave
-  them out. Affects steps: 3, 5.
-- [ ] **Q2: Should a variant price change (or restock) bump the product's `lastmod`?** — Why it
-  matters: prices show on the product page, so Google could re-crawl it. But checkout stock
-  decrements would bump it on every sale. Recommended default: no, only product row edits (every
-  Strapi save, which also rewrites variants, already calls `updateProduct`, so a staff price edit
-  does bump it). Affects steps: 2.
-- [ ] **Q3: Disallow the legacy English-segment Ukrainian paths (`/cart`, `/checkout`,
-  `/account`, `/login`, `/register`) too?** — Why it matters: they only 301 after #84. Disallowing
-  is harmless and avoids crawl budget on redirects to private pages. Recommended default: yes.
-  Affects steps: 6.
-
 ## Resolved questions
+- **Q1: Should products with a `null` slug be in the sitemap under their UUID URL?** — No. They
+  are left out: the first Strapi sync backfills every slug, and a UUID URL would 301 later
+  (source: owner's answer).
+- **Q2: Should a variant price change (or restock) bump the product's `lastmod`?** — No. Only
+  product row edits do. A staff price edit in Strapi still bumps it, because the sync calls
+  `updateProduct` on every save. Checkout stock decrements don't (source: owner's answer).
+- **Q3: Disallow the legacy English-segment Ukrainian paths (`/cart`, `/checkout`, `/account`,
+  `/login`, `/register`) too?** — Yes. They only 301 after #84, and blocking them saves crawl
+  budget on redirects to private pages (source: owner's answer).
 - **Does `products.updated_at` exist?** — No. `products` has only `created_at`, so a migration
   adds it with the shared `updatedAt()` helper (source: `app/.server/db/schema.ts`).
 - **Will product edits refresh it automatically?** — Yes. `insertProduct`, `updateProduct` and
@@ -171,7 +165,7 @@ everything outside production.
   moves `updated_at` forward. Don't touch any ML column.
 - [ ] **3. Product query** — `listSitemapProducts()` in `db/queries/products.ts`: select `slug`,
   `publicId`, `gender`, `updatedAt` where `isListed`, the product has at least one variant (reuse
-  the catalog's variant condition), and `slug is not null` (Q1). Order by `slug`. Integration test
+  the catalog's variant condition), and `slug is not null` (Q1: no UUID URLs). Order by `slug`. Integration test
   with the test DB: an archived product, a product without variants and a `null`-slug product are
   excluded.
 - [ ] **4. Blog query** — `blogPostSitemapEntry` zod schema (`documentId`, `slug`, `locale`,
@@ -198,7 +192,7 @@ everything outside production.
     - `lastmod` values are valid ISO strings.
 - [ ] **6. Robots builder** — `app/.server/seo/robots.ts`:
   - `ROBOTS_PRIVATE_PAGES` (page keys from #84's table), `ROBOTS_SYSTEM_PATHS` (`/api/`,
-    `/cms/`, `/payments/`, `/locale`, `/consent`, `/logout`) and `ROBOTS_LEGACY_PATHS` (Q3).
+    `/cms/`, `/payments/`, `/locale`, `/consent`, `/logout`) and `ROBOTS_LEGACY_PATHS` (Q3: `/cart`, `/checkout`, `/account`, `/login`, `/register`).
   - `buildRobotsTxt({ siteUrl, disallowAll })`.
   - Tests:
     - Production lists both locales' paths for every private page (e.g. `/koshyk` and

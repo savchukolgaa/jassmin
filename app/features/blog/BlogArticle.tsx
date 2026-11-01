@@ -24,13 +24,13 @@ export function BackToBlogLink() {
 
 /** The `/blog/:slug` page body: title, date and author, cover and the sanitized article. */
 export function BlogArticle({ post }: { post: BlogPostView }) {
-  const { t } = useT();
+  const translator = useT();
   const lang = useContentLang(post.locale);
 
   return (
     <main className="container mx-auto px-4 pt-6 pb-16">
       <article className="mx-auto max-w-3xl">
-        <Breadcrumbs items={blogPostBreadcrumbs(t, post)} />
+        <Breadcrumbs items={blogPostBreadcrumbs(translator, post)} />
         <header className="mt-4">
           <h1
             className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl"

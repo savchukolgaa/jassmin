@@ -66,7 +66,7 @@ describe("product page JSON-LD (#86)", () => {
 
     expect(productData).toMatchObject({
       "@type": "Product",
-      url: `${SITE}/products/coco-mademoiselle`,
+      url: `${SITE}/parfumy/coco-mademoiselle`,
       image: `${SITE}/images/coco.jpg`,
       sku: "3-D",
       offers: [
@@ -78,8 +78,8 @@ describe("product page JSON-LD (#86)", () => {
       "@type": "BreadcrumbList",
       itemListElement: [
         { position: 1, item: `${SITE}/` },
-        { position: 2, item: `${SITE}/catalog/women` },
-        { position: 3, item: `${SITE}/products/coco-mademoiselle` },
+        { position: 2, item: `${SITE}/katalog/zhinochi` },
+        { position: 3, item: `${SITE}/parfumy/coco-mademoiselle` },
       ],
     });
     // The description's `</script>` stays inside the JSON.

@@ -103,11 +103,11 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const siteUrl = useSiteUrl();
   const { product } = loaderData;
   const catalog = catalogOf(product.gender);
-  const breadcrumbs = productBreadcrumbs(t, catalog, product);
+  const breadcrumbs = productBreadcrumbs(translator, catalog, product);
   const productData = productLd({
     origin: siteUrl,
     product,
-    path: productHref(product),
+    path: productHref(translator.locale, product),
     variantName: ({ volumeMl }) =>
       formatVolume({ volumeMl, packSize: product.packSize }, translator),
   });

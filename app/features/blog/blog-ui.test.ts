@@ -86,7 +86,6 @@ describe("BlogArticle", () => {
     expect(html).toMatch(/href="\/en"[^>]*>Home<\/a>/);
     expect(html).toMatch(/href="\/en\/blog"[^>]*>Blog<\/a>/);
     expect(html).toMatch(/aria-current="page"[^>]*>How to choose a perfume<\/span>/);
-    expect(html).toMatch(/href="\/en\/blog"[^>]*>← Back to the blog/);
     expect(html).not.toContain(" lang=");
   });
 

@@ -63,7 +63,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 }
 
 export default function BlogPost({ loaderData: post }: Route.ComponentProps) {
-  const { t } = useT();
+  const translator = useT();
   const siteUrl = useSiteUrl();
   return (
     <>
@@ -71,10 +71,10 @@ export default function BlogPost({ loaderData: post }: Route.ComponentProps) {
         data={blogPostingLd({
           origin: siteUrl,
           post,
-          url: absoluteUrl(blogPostHref(post.slug), siteUrl),
+          url: absoluteUrl(blogPostHref(translator.locale, post.slug), siteUrl),
         })}
       />
-      <JsonLd data={breadcrumbListLd(siteUrl, blogPostBreadcrumbs(t, post))} />
+      <JsonLd data={breadcrumbListLd(siteUrl, blogPostBreadcrumbs(translator, post))} />
       <BlogArticle post={post} />
     </>
   );

@@ -65,11 +65,12 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
 export const shouldRevalidate = shouldRevalidateView;
 
 export default function Catalog({ loaderData }: Route.ComponentProps) {
-  const { t } = useT();
+  const translator = useT();
+  const { t } = translator;
   const { gender, search, products, total, page, pageCount, filterOptions } = loaderData;
   const { pathname } = useLocation();
   const siteUrl = useSiteUrl();
-  const breadcrumbs = catalogBreadcrumbs(t, gender);
+  const breadcrumbs = catalogBreadcrumbs(translator, gender);
   const navigation = useNavigation();
   // Dim the results while a filter, sort or page change of this catalog loads.
   const busy = navigation.state === "loading" && navigation.location.pathname === pathname;

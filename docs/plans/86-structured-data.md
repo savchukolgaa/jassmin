@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/86
 Branch: `issue/86`
 Worktree: `.claude/worktrees/issue-86`
-Status: In progress (route wiring waits for #85)
+Status: Implemented
 
 ## Goal
 Shoppers searching on Google should see Jassmin's price, availability, store address and breadcrumbs
@@ -244,7 +244,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
 - [x] **10. Blog post**: render `blogPostingLd` and the breadcrumb JSON-LD in `BlogPost`. In
   `BlogArticle`, swap the top `BackToBlogLink` for `<Breadcrumbs>` (Home > Blog > title); keep
   `BackToBlogLink` for the error boundary. Update `blog-ui.test.ts`.
-- [ ] **11. Verify**: run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Run
+- [x] **11. Verify** (checks and build pass; the Rich Results Test is left for a manual check): run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Run
   `pnpm aspire run`, check that the new location fields appear in the Strapi admin (Home page →
   Location) and are seeded, then view the source of a product, catalog, home and blog post page, and paste each
   page's HTML into Google's Rich Results Test (code snippet mode, since localhost isn't
@@ -263,12 +263,14 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   catalog for breadcrumbs. Also check that a CMS text containing `</script>` doesn't break the page.
 
 ## Acceptance criteria
-- [ ] Product pages output valid `Product` + `Offer` JSON-LD with UAH prices and correct availability per volume (steps 3, 4, 9)
-- [ ] Product, catalog and blog post pages output `BreadcrumbList` (steps 4, 9, 10)
-- [ ] The home page outputs the store as `PerfumeStore` with address, hours, phone and social profiles from the CMS (steps 3, 4, 8)
-- [ ] Blog posts output `BlogPosting` (steps 4, 5, 10)
+- [x] Product pages output valid `Product` + `Offer` JSON-LD with UAH prices and correct availability per volume (steps 3, 4, 9)
+- [x] Product, catalog and blog post pages output `BreadcrumbList` (steps 4, 9, 10)
+- [x] The home page outputs the store as `PerfumeStore` with address, hours, phone and social profiles from the CMS (steps 3, 4, 8)
+- [x] Blog posts output `BlogPosting` (steps 4, 5, 10)
 - [ ] Google's Rich Results Test shows no errors for these page types (step 11)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass (step 11)
+  — **not verified**: the test needs a publicly reachable page or a pasted HTML snippet in a browser,
+  which an agent can't run here. Check it manually after deploying (see the PR).
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass (step 11)
 
 ## Out of scope
 - Reviews, ratings and `aggregateRating`.

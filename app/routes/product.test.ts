@@ -2,7 +2,7 @@ import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProductDetail } from "~/lib/products";
 
-const products = vi.hoisted(() => ({ resolveProductHandle: vi.fn() }));
+const products = vi.hoisted(() => ({ resolveProductHandle: vi.fn(), getSimilarProducts: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 
 vi.mock("~/.server/services/products", () => products);
@@ -41,9 +41,15 @@ beforeEach(() => {
 describe("product loader", () => {
   it("renders the product by slug without its serial id and records product_view", async () => {
     const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco" };
-    products.resolveProductHandle.mockResolvedValueOnce({ kind: "product", id: 42, product });
+    products.resolveProductHandle.mockResolvedValueOnce({
+      kind: "product",
+      id: 42,
+      product,
+      available: true,
+    });
 
-    expect(await load(SLUG)).toEqual({ product });
+    expect(await load(SLUG)).toEqual({ product, available: true, similar: [] });
+    expect(products.getSimilarProducts).not.toHaveBeenCalled();
     expect(products.resolveProductHandle).toHaveBeenCalledWith(SLUG);
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ context }),
@@ -68,6 +74,21 @@ describe("product loader", () => {
       location: `/parfumy/${SLUG}`,
     });
     expect(analytics.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("keeps an archived product's page (200) with similar perfumes (#88)", async () => {
+    const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco", gender: "women" };
+    const similar = [{ id: "other" }];
+    products.resolveProductHandle.mockResolvedValueOnce({
+      kind: "product",
+      id: 42,
+      product,
+      available: false,
+    });
+    products.getSimilarProducts.mockResolvedValueOnce(similar);
+
+    expect(await load(SLUG)).toEqual({ product, available: false, similar });
+    expect(products.getSimilarProducts).toHaveBeenCalledWith(42, product);
   });
 
   it("is a 404 without an event for an unknown handle", async () => {
@@ -110,18 +131,18 @@ describe("product meta", () => {
     brand: "Chanel",
     gender: "women",
     packSize: 1,
-    imageUrl: "/images/coco.jpg",
+    image: { url: "/images/coco.jpg", srcSet: null, width: 800, height: 1000 },
     description: "Свіжий східний аромат.",
     fragranceFamilies: [],
     notes: [],
     storeCode: "3-D",
     variants: [variant("1250.00"), variant("3200.00", false)],
   };
-  const run = (overrides: Partial<ProductDetail> = {}) =>
+  const run = (overrides: Partial<ProductDetail> = {}, available = true) =>
     meta({
       matches,
       location,
-      loaderData: { product: { ...product, ...overrides } },
+      loaderData: { product: { ...product, ...overrides }, available, similar: [] },
     } as unknown as MetaArgs);
   const content = (tags: ReturnType<typeof run>, property: string) => {
     const tag = tags.find((tag) => "property" in tag && tag.property === property);
@@ -150,7 +171,7 @@ describe("product meta", () => {
   });
 
   it("shows a single price without 'from', and the default image without its own", () => {
-    const tags = run({ variants: [variant("990.00", false)], imageUrl: null, description: null });
+    const tags = run({ variants: [variant("990.00", false)], image: null, description: null });
 
     expect(String(content(tags, "og:description")).replace(/\s/gu, " ")).toBe(
       "Chanel Coco Mademoiselle — 990 ₴. Купуйте в магазині парфумів Jassmin.",
@@ -171,5 +192,13 @@ describe("product meta", () => {
       { title: "Сторінку не знайдено — Jassmin" },
       { name: "robots", content: "noindex, follow" },
     ]);
+  });
+
+  it("keeps an archived product's page out of the index, without a canonical URL (#88)", () => {
+    const tags = run({}, false);
+
+    expect(tags).toContainEqual({ name: "robots", content: "noindex, follow" });
+    expect(tags.some((tag) => "rel" in tag && tag.rel === "canonical")).toBe(false);
+    expect(run()).not.toContainEqual({ name: "robots", content: "noindex, follow" });
   });
 });

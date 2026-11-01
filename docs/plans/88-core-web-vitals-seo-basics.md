@@ -216,7 +216,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   fallbacks brand → bestsellers). Integration tests with `test-utils.ts`: archived product found
   with `available: false`; similar list excludes archived and self; `getProductWithId` and
   `checkVariantForCart` still reject archived.
-- [ ] **7. Archived product page** — `routes/product.tsx` loader uses `getProductPage`; when
+- [x] **7. Archived product page** — `routes/product.tsx` loader uses `getProductPage`; when
   `!available` it also loads similar products. Component renders `ProductUnavailable` (notice in
   the blush panel style, links to the catalog) instead of `ProductPurchase`, and
   `SimilarProducts` (`h2` "Similar perfumes", `ProductCard` grid with `headingLevel={3}`).

@@ -259,6 +259,12 @@ export const en = {
     families: "Fragrance families",
     notes: "Scent notes",
     notFound: "This perfume could not be found.",
+    archived: {
+      heading: "This perfume is no longer sold",
+      text: "It can't be ordered anymore. Have a look at the similar scents below or the whole catalog.",
+      catalog: "Browse the catalog",
+    },
+    similar: "Similar perfumes",
   },
   cart: {
     title: "Cart",

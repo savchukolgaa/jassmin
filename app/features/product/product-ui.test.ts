@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import { I18nProvider, type Locale } from "~/lib/i18n";
-import type { ProductDetail, ProductVariant } from "~/lib/products";
+import type { ProductDetail, ProductSummary, ProductVariant } from "~/lib/products";
+import { ProductUnavailable, SimilarProducts } from "./ProductArchived";
 import { ProductPurchase } from "./ProductPurchase";
 import { ProductFamilies, ProductNotes } from "./ProductScent";
 
@@ -147,5 +148,50 @@ describe("ProductNotes", () => {
 
   it("renders nothing without notes", () => {
     expect(render(createElement(ProductNotes, { notes: [] }))).not.toContain("<section");
+  });
+});
+
+describe("archived product (#88)", () => {
+  const SIMILAR: ProductSummary = {
+    id: "01a1652b-6e25-7c03-ae47-25b57131fb07",
+    slug: "gypsy-water",
+    title: "Gypsy Water",
+    brand: "Byredo",
+    gender: "unisex",
+    packSize: 1,
+    image: null,
+    variants: [{ id: "v50", volumeMl: 50, price: "7200.00", inStock: true }],
+    minPrice: "7200.00",
+    hasPriceRange: false,
+    volumes: [50],
+    inStock: true,
+    defaultVariant: { id: "v50", volumeMl: 50 },
+    fragranceFamily: null,
+  };
+
+  it("says the perfume is no longer sold and links to its catalog", () => {
+    const html = render(createElement(ProductUnavailable, { catalog: "women" }));
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain("This perfume is no longer sold");
+    expect(html).toContain('href="/catalog/women"');
+    expect(html).toContain("Browse the catalog");
+  });
+
+  it("is translated", () => {
+    expect(render(createElement(ProductUnavailable, { catalog: "men" }), "uk")).toContain(
+      "Цього парфуму більше немає в продажу",
+    );
+  });
+
+  it("lists similar perfumes under an h2, each card titled with an h3", () => {
+    const html = render(createElement(SimilarProducts, { products: [SIMILAR] }));
+
+    expect(html).toMatch(/<h2[^>]*>Similar perfumes<\/h2>/);
+    expect(html).toMatch(/<h3[^>]*><a[^>]*>Gypsy Water<\/a><\/h3>/);
+  });
+
+  it("renders nothing without similar perfumes", () => {
+    expect(render(createElement(SimilarProducts, { products: [] }))).toBe("");
   });
 });

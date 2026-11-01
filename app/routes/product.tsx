@@ -1,12 +1,13 @@
 import { data, isRouteErrorResponse, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { getLocale } from "~/.server/locale";
-import { resolveProductHandle } from "~/.server/services/products";
+import { getSimilarProducts, resolveProductHandle } from "~/.server/services/products";
 import { JsonLd } from "~/components/JsonLd";
 import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { ProductImage } from "~/features/catalog/ProductImage";
+import { ProductUnavailable, SimilarProducts } from "~/features/product/ProductArchived";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
 import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
 import { shouldRevalidateView } from "~/lib/analytics";
@@ -57,7 +58,16 @@ export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
       title: t("meta.title", { page: name }),
       description: `${intro} ${product.description ?? t("product.metaFallback")}`,
       type: "product",
-      image: product.imageUrl ? { url: product.imageUrl, alt: name } : null,
+      image: product.image
+        ? {
+            url: product.image.url,
+            alt: name,
+            width: product.image.width,
+            height: product.image.height,
+          }
+        : null,
+      // An archived product's page stays for old links, out of search results (#88).
+      noindex: !loaderData.available,
       extra:
         lowest === undefined
           ? []
@@ -86,12 +96,14 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
     const target = productHref(await getLocale(request), { id: found.publicId, slug: found.slug });
     throw redirect(`${target}${search}`, 301);
   }
-  const { product } = found;
+  const { product, available } = found;
   void trackEvent({ request, context }, "product_view", {
     productId: found.id,
     properties: { publicId: product.id },
   });
-  return { product };
+  // An archived product (#88) suggests listed perfumes like it instead.
+  const similar = available ? [] : await getSimilarProducts(found.id, product);
+  return { product, available, similar };
 }
 
 // Adding to the cart doesn't change the product, and reloading would record a second view.
@@ -101,7 +113,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const translator = useT();
   const { t } = translator;
   const siteUrl = useSiteUrl();
-  const { product } = loaderData;
+  const { product, available, similar } = loaderData;
   const catalog = catalogOf(product.gender);
   const breadcrumbs = productBreadcrumbs(translator, catalog, product);
   const productData = productLd({
@@ -114,7 +126,8 @@ export default function Product({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="container mx-auto px-4 pt-8 pb-16">
-      {productData && <JsonLd data={productData} />}
+      {/* No Product offers for an archived product, which isn't sold anymore (#88). */}
+      {available && productData && <JsonLd data={productData} />}
       <JsonLd data={breadcrumbListLd(siteUrl, breadcrumbs)} />
       <Breadcrumbs items={breadcrumbs} />
 
@@ -136,7 +149,11 @@ export default function Product({ loaderData }: Route.ComponentProps) {
             {product.title}
           </h1>
           <ProductFamilies families={product.fragranceFamilies} />
-          <ProductPurchase product={product} />
+          {available ? (
+            <ProductPurchase product={product} />
+          ) : (
+            <ProductUnavailable catalog={catalog} />
+          )}
           <ProductNotes notes={product.notes} />
           {product.description && (
             <section aria-labelledby="description-heading" className="mt-2">
@@ -151,6 +168,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           )}
         </div>
       </div>
+      <SimilarProducts products={similar} />
     </main>
   );
 }

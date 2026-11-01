@@ -36,9 +36,9 @@ const post: BlogPost = {
   seo: null,
 };
 
-function load(slug: string | undefined, headers?: HeadersInit) {
+function load(slug: string | undefined, headers?: HeadersInit, prefix = "") {
   return loader({
-    request: new Request(`https://jassmin.ua/blog/${slug ?? ""}`, { headers }),
+    request: new Request(`https://jassmin.ua${prefix}/blog/${slug ?? ""}`, { headers }),
     params: { slug },
   } as unknown as LoaderArgs);
 }
@@ -62,7 +62,7 @@ describe("blog post loader", () => {
   it("asks for the post in the visitor's locale, at the same URL", async () => {
     content.getBlogPostBySlug.mockResolvedValue({ ...post, locale: "en" });
 
-    const { data } = await load(post.slug, { "Accept-Language": "en" });
+    const { data } = await load(post.slug, {}, "/en");
 
     expect(content.getBlogPostBySlug).toHaveBeenCalledExactlyOnceWith(post.slug, "en");
     expect(data.locale).toBe("en");

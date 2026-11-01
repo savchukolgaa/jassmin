@@ -15,11 +15,9 @@ const { loader, meta } = await import("./privacy");
 type LoaderArgs = Parameters<typeof loader>[0];
 type MetaArgs = Parameters<typeof meta>[0];
 
-/** The loader for a visitor whose language is `locale` (from the `Accept-Language` header). */
+/** The loader for the page in `locale` (from its URL). */
 function load(locale = "uk") {
-  const request = new Request("http://localhost/privacy", {
-    headers: { "Accept-Language": locale },
-  });
+  const request = new Request(`http://localhost${locale === "en" ? "/en" : ""}/privacy`);
   return loader({ request, params: {}, context: {} } as unknown as LoaderArgs);
 }
 

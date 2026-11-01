@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { getLocale, localeCookie, parseAcceptLanguage } from "./locale";
+import {
+  getChosenLocale,
+  getLocale,
+  localeCookie,
+  parseAcceptLanguage,
+  shouldSuggestEnglish,
+} from "./locale";
 
 async function request({
+  path = "/",
   cookie,
   acceptLanguage,
 }: {
+  path?: string;
   cookie?: unknown;
   acceptLanguage?: string;
 } = {}): Promise<Request> {
@@ -17,7 +25,7 @@ async function request({
   if (acceptLanguage !== undefined) {
     headers.set("Accept-Language", acceptLanguage);
   }
-  return new Request("http://localhost/", { headers });
+  return new Request(`http://localhost${path}`, { headers });
 }
 
 describe("parseAcceptLanguage", () => {
@@ -41,22 +49,53 @@ describe("parseAcceptLanguage", () => {
 });
 
 describe("getLocale", () => {
-  it("prefers the cookie over Accept-Language", async () => {
-    expect(await getLocale(await request({ cookie: "en", acceptLanguage: "uk" }))).toBe("en");
-    expect(await getLocale(await request({ cookie: "uk", acceptLanguage: "en" }))).toBe("uk");
+  it("reads the locale from the URL alone", async () => {
+    expect(await getLocale(await request({ path: "/en/cart" }))).toBe("en");
+    expect(await getLocale(await request({ path: "/en" }))).toBe("en");
+    expect(await getLocale(await request({ path: "/koshyk" }))).toBe("uk");
   });
 
-  it("falls back to Accept-Language when the cookie is missing or invalid", async () => {
-    expect(await getLocale(await request({ acceptLanguage: "en-GB" }))).toBe("en");
-    expect(await getLocale(await request({ cookie: "de", acceptLanguage: "en" }))).toBe("en");
-    const garbage = new Request("http://localhost/", {
-      headers: { Cookie: "locale=%%%", "Accept-Language": "en" },
-    });
-    expect(await getLocale(garbage)).toBe("en");
+  it("ignores the cookie and Accept-Language", async () => {
+    expect(await getLocale(await request({ cookie: "en", acceptLanguage: "en" }))).toBe("uk");
+    expect(
+      await getLocale(await request({ path: "/en", cookie: "uk", acceptLanguage: "uk" })),
+    ).toBe("en");
   });
 
-  it("defaults to Ukrainian", async () => {
-    expect(await getLocale(await request())).toBe("uk");
-    expect(await getLocale(await request({ acceptLanguage: "ru, de" }))).toBe("uk");
+  it("resolves a single-fetch data request like its page", async () => {
+    // React Router strips `.data` before loaders see the request.
+    expect(await getLocale(await request({ path: "/en/catalog/women?_routes=x" }))).toBe("en");
+  });
+});
+
+describe("getChosenLocale", () => {
+  it("is the cookie when it holds a supported locale", async () => {
+    expect(await getChosenLocale(await request({ cookie: "en" }))).toBe("en");
+    expect(await getChosenLocale(await request({ cookie: "de" }))).toBeUndefined();
+    expect(await getChosenLocale(await request())).toBeUndefined();
+    const garbage = new Request("http://localhost/", { headers: { Cookie: "locale=%%%" } });
+    expect(await getChosenLocale(garbage)).toBeUndefined();
+  });
+});
+
+describe("shouldSuggestEnglish", () => {
+  it("suggests English on a Ukrainian page to a browser preferring it", async () => {
+    expect(await shouldSuggestEnglish(await request({ acceptLanguage: "en-GB,en" }))).toBe(true);
+  });
+
+  it("doesn't once a language was chosen, on English pages or for other browsers", async () => {
+    expect(await shouldSuggestEnglish(await request({ acceptLanguage: "en", cookie: "uk" }))).toBe(
+      false,
+    );
+    expect(await shouldSuggestEnglish(await request({ acceptLanguage: "en", cookie: "en" }))).toBe(
+      false,
+    );
+    expect(await shouldSuggestEnglish(await request({ path: "/en", acceptLanguage: "en" }))).toBe(
+      false,
+    );
+    expect(await shouldSuggestEnglish(await request({ acceptLanguage: "uk,en;q=0.5" }))).toBe(
+      false,
+    );
+    expect(await shouldSuggestEnglish(await request())).toBe(false);
   });
 });

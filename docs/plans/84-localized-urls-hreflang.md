@@ -265,13 +265,13 @@ header, and `Accept-Language` the hint. Update its comment.
   locales; segments match `^[a-z0-9-]+$` or `:param`; uk/en patterns are unique across pages; the
   `pathFor` ↔ `matchPage` round-trip for every page and locale; query/hash kept; legacy table
   cases.
-- [ ] **2. Register localized routes.** `localizedRoute` in `app/routes.ts`, explicit ids, two
+- [x] **2. Register localized routes.** `localizedRoute` in `app/routes.ts`, explicit ids, two
   account trees, `home.en`, localized `checkoutPay`, splat `redirects.tsx`. Run
   `pnpm typecheck` to confirm `+types` param unions compile. Old paths now 404 until step 4.
-- [ ] **3. URL-based locale.** `getLocale` → `localeFromPath`. `root.tsx`: `lang`/`I18nProvider`
+- [x] **3. URL-based locale.** `getLocale` → `localeFromPath`. `root.tsx`: `lang`/`I18nProvider`
   from `useLocation()`; the loader returns `origin` and `suggestEnglish`. Update `locale.test.ts`:
   URL beats cookie and `Accept-Language`, and a `.data` request URL resolves like its page.
-- [ ] **4. Legacy redirects and 404.** `routes/redirects.tsx` loader: `matchLegacyPath` → `301`
+- [x] **4. Legacy redirects and 404.** `routes/redirects.tsx` loader: `matchLegacyPath` → `301`
   with the query, else `throw data(null, { status: 404 })`. Tests per rule (old English paths,
   `/uk/…`, `/en/<uk segments>`, unknown `/en/x` → 404, query kept).
 - [ ] **5. Server-side localized URL and cookie redirect.** `app/.server/paths.ts` `localizedUrl`

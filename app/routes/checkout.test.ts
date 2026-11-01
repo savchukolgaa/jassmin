@@ -65,8 +65,12 @@ function get(): LoaderArgs {
   return { request, params: {}, context: {} } as unknown as LoaderArgs;
 }
 
-function post(fields: Record<string, string>, headers: HeadersInit = {}): ActionArgs {
-  const request = new Request("http://localhost/checkout", {
+function post(
+  fields: Record<string, string>,
+  headers: HeadersInit = {},
+  path = "/checkout",
+): ActionArgs {
+  const request = new Request(`http://localhost${path}`, {
     method: "POST",
     body: new URLSearchParams(fields),
     headers,
@@ -318,7 +322,6 @@ describe("checkout action", () => {
 
   it("queues the email in the shopper's language and doesn't wait for it to be sent", async () => {
     const { action } = await import("./checkout");
-    const { localeCookie } = await import("~/.server/locale");
     orders.createOrder.mockResolvedValueOnce({
       ok: true,
       orderId: 42,
@@ -328,7 +331,7 @@ describe("checkout action", () => {
     // An SMTP server that never answers.
     orders.deliverOrderConfirmation.mockReturnValueOnce(new Promise(() => {}));
 
-    const response = await action(post(valid, { Cookie: await localeCookie.serialize("en") }));
+    const response = await action(post(valid, {}, "/en/checkout"));
 
     expect(orders.createOrder).toHaveBeenCalledWith(expect.objectContaining({ locale: "en" }));
     expect((response as Response).headers.get("Location")).toBe("/checkout/success/42");

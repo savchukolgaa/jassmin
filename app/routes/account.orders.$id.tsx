@@ -9,12 +9,17 @@ import { isCurrentOrder } from "~/lib/account";
 import { PAYMENT_KEYS, parseOrderId } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
 import { metaTranslator, type TextKey, useT } from "~/lib/i18n";
+import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/account.orders.$id";
 
-export function meta({ matches, loaderData }: Route.MetaArgs) {
+// Private: kept out of search results (#85).
+export function meta({ matches, loaderData, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
   const page = loaderData ? t("account.order.title", { id: loaderData.id }) : t("account.title");
-  return [{ title: t("meta.title", { page }) }, { name: "robots", content: "noindex" }];
+  return noindexMeta(t("meta.title", { page }));
 }
 
 // Only the order's user may see it; anyone else gets a 404, so order ids can't be probed.

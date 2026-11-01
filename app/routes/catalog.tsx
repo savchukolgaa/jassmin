@@ -8,6 +8,7 @@ import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { shouldRevalidateView } from "~/lib/analytics";
 import {
+  CATALOG_META_DESCRIPTION_KEYS,
   CATALOG_TITLE_KEYS,
   catalogHref,
   hasActiveFilters,
@@ -17,17 +18,28 @@ import {
 import { cn } from "~/lib/cn";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
+import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/catalog";
 
-export function meta({ loaderData, matches }: Route.MetaArgs) {
+// Filtered and sorted views point to the unfiltered catalog; its pages are self-canonical (#85).
+export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
+  if (error || !loaderData) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [
+  const { gender, search, page } = loaderData;
+  const name = t(CATALOG_TITLE_KEYS[gender]);
+  const filtered = hasActiveFilters(search);
+  return seoMeta(
+    { matches, location },
     {
-      title: loaderData
-        ? t("meta.title", { page: t(CATALOG_TITLE_KEYS[loaderData.gender]) })
-        : "Jassmin",
+      title: t("meta.title", {
+        page: page > 1 && !filtered ? t("meta.paged", { title: name, page }) : name,
+      }),
+      description: t(CATALOG_META_DESCRIPTION_KEYS[gender]),
+      keepParams: filtered ? [] : ["page"],
     },
-  ];
+  );
 }
 
 export async function loader({ params, request, context }: Route.LoaderArgs) {

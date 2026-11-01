@@ -11,24 +11,25 @@ import { parseContactForm } from "~/features/home/contact-form";
 import { HomePage } from "~/features/home/HomePage";
 import type { ContactActionResult } from "~/lib/contact";
 import { metaTranslator } from "~/lib/i18n";
+import { errorMeta, seoMeta } from "~/lib/seo";
 import { parseTrioSearch } from "~/lib/trio";
 import type { Route } from "./+types/home";
 
-export function meta({ loaderData, matches }: Route.MetaArgs) {
-  const { t } = metaTranslator(matches);
-  if (!loaderData) {
-    return [{ title: "Jassmin" }, { name: "description", content: t("home.defaultDescription") }];
+export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
+  if (error || !loaderData) {
+    return errorMeta({ matches, error });
   }
+  const { t } = metaTranslator(matches);
+  // The CMS title is the whole `<title>`, brand included.
   const { title, image } = loaderData.seo;
-  const description = loaderData.seo.description || t("home.defaultDescription");
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:type", content: "website" },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    ...(image ? [{ property: "og:image", content: image }] : []),
-  ];
+  return seoMeta(
+    { matches, location },
+    {
+      title,
+      description: loaderData.seo.description || t("home.defaultDescription"),
+      image: image ? { url: image, alt: title } : null,
+    },
+  );
 }
 
 // Content is edited in Strapi (`home-page`, `site-settings`), in the visitor's language with a

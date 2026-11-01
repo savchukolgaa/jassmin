@@ -24,11 +24,16 @@ import {
 } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
 import { type Locale, metaTranslator, useT } from "~/lib/i18n";
+import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/checkout";
 
-export function meta({ matches }: Route.MetaArgs) {
+// Private or transactional: kept out of search results (#85).
+export function meta({ matches, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [{ title: t("meta.title", { page: t("checkout.title") }) }];
+  return noindexMeta(t("meta.title", { page: t("checkout.title") }));
 }
 
 export async function loader({ request, context }: Route.LoaderArgs) {

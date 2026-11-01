@@ -84,7 +84,7 @@ describe("account profile loader", () => {
 
     expect(meta({ matches } as unknown as MetaArgs)).toEqual([
       { title: "Profile details — Jassmin" },
-      { name: "robots", content: "noindex" },
+      { name: "robots", content: "noindex, follow" },
     ]);
     expect(headers()).toEqual({ "Cache-Control": "private, no-store" });
   });

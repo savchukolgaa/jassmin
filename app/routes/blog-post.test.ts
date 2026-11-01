@@ -11,7 +11,8 @@ type LoaderArgs = Parameters<typeof loader>[0];
 type MetaArgs = Parameters<typeof meta>[0];
 
 // `meta` reads the locale from the root match; the assertions are in English.
-const EN = [{ id: "root", loaderData: { locale: "en" } }];
+const EN = [{ id: "root", loaderData: { locale: "en", site: { url: "https://jassmin.ua" } } }];
+const LOCATION = { pathname: "/blog/how-to-choose-a-perfume", search: "?utm_source=telegram" };
 
 const CMS = "http://cms.test:1337";
 
@@ -64,7 +65,6 @@ describe("blog post loader", () => {
 
     expect(content.getBlogPostBySlug).toHaveBeenCalledExactlyOnceWith(post.slug, "en");
     expect(data.locale).toBe("en");
-    expect(data.seo.canonicalUrl).toBe("https://jassmin.ua/blog/how-to-choose-a-perfume");
   });
 
   it("renders the published post with sanitized HTML and absolute image URLs", async () => {
@@ -76,7 +76,6 @@ describe("blog post loader", () => {
     expect(data.contentHtml).toContain("<h2>Start with the notes</h2>");
     expect(data.contentHtml).toContain(`src="${CMS}/uploads/notes.jpg"`);
     expect(data.contentHtml).not.toMatch(/<script|onerror|src="x"/);
-    expect(data.seo.canonicalUrl).toBe("https://jassmin.ua/blog/how-to-choose-a-perfume");
   });
 
   it("answers 404 for unknown slugs and drafts", async () => {
@@ -113,14 +112,17 @@ describe("blog post meta", () => {
     content.getBlogPostBySlug.mockResolvedValue(post);
     const { data } = await load(post.slug);
 
-    const tags = meta({ loaderData: data, matches: EN } as unknown as MetaArgs);
+    const tags = meta({ loaderData: data, matches: EN, location: LOCATION } as unknown as MetaArgs);
 
     expect(tags).toEqual(
       expect.arrayContaining([
         { title: "How to choose a perfume — Jassmin" },
         { name: "description", content: "Top, heart and base notes." },
         { property: "og:type", content: "article" },
-        { property: "og:title", content: "How to choose a perfume" },
+        { property: "og:title", content: "How to choose a perfume — Jassmin" },
+        { property: "og:url", content: "https://jassmin.ua/blog/how-to-choose-a-perfume" },
+        { property: "og:image:alt", content: "How to choose a perfume" },
+        { name: "twitter:card", content: "summary_large_image" },
         { property: "og:description", content: "Top, heart and base notes." },
         { property: "og:image", content: `${CMS}/uploads/cover.jpg` },
         { property: "article:published_time", content: "2026-10-22T19:06:58.498Z" },
@@ -133,9 +135,18 @@ describe("blog post meta", () => {
     );
   });
 
-  it("has a title for the 404 page", () => {
-    expect(meta({ loaderData: undefined, matches: EN } as unknown as MetaArgs)).toEqual([
+  it("titles the 404 page and keeps it out of the index", () => {
+    const error = { status: 404, statusText: "", internal: false, data: null };
+    expect(
+      meta({
+        loaderData: undefined,
+        matches: EN,
+        location: LOCATION,
+        error,
+      } as unknown as MetaArgs),
+    ).toEqual([
       { title: "Article not found — Jassmin" },
+      { name: "robots", content: "noindex, follow" },
     ]);
   });
 });

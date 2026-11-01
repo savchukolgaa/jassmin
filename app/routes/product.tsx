@@ -9,30 +9,64 @@ import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
 import { shouldRevalidateView } from "~/lib/analytics";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
-import { useT } from "~/lib/i18n";
+import { metaTranslator, useT } from "~/lib/i18n";
 import { productHref } from "~/lib/products";
 import { describeRouteError } from "~/lib/route-error";
+import { errorMeta, priceAmount, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/product";
-
-const DESCRIPTION_LENGTH = 160;
 
 /** The catalog to link back to. Unisex perfumes are in both, so they go back to the women's. */
 function catalogOf(gender: Gender): CatalogGender {
   return gender === "men" ? "men" : "women";
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
-  if (!loaderData) {
-    return [{ title: "Jassmin" }];
+// A shared product link shows its name, image and price (#85): messengers read only `og:title`,
+// `og:description` and `og:image`, so the price leads the description too.
+export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
+  if (error || !loaderData) {
+    return errorMeta({ matches, error });
   }
+  const { t, formatPrice } = metaTranslator(matches);
   const { product } = loaderData;
-  return [
-    { title: `${product.title} — ${product.brand} — Jassmin` },
+  const name = `${product.title} — ${product.brand}`;
+  const prices = product.variants.map((variant) => variant.price);
+  const lowest = prices.reduce<string | undefined>(
+    (min, price) => (min === undefined || Number(price) < Number(min) ? price : min),
+    undefined,
+  );
+  const intro =
+    lowest === undefined
+      ? `${product.brand} ${product.title}.`
+      : t("product.metaDescription", {
+          brand: product.brand,
+          title: product.title,
+          price:
+            new Set(prices.map(Number)).size > 1
+              ? t("product.fromPrice", { price: formatPrice(lowest) })
+              : formatPrice(lowest),
+        });
+  return seoMeta(
+    { matches, location },
     {
-      name: "description",
-      content: (product.description ?? product.title).slice(0, DESCRIPTION_LENGTH),
+      title: t("meta.title", { page: name }),
+      description: `${intro} ${product.description ?? t("product.metaFallback")}`,
+      type: "product",
+      image: product.imageUrl ? { url: product.imageUrl, alt: name } : null,
+      extra:
+        lowest === undefined
+          ? []
+          : [
+              { property: "product:price:amount", content: priceAmount(lowest) },
+              { property: "product:price:currency", content: "UAH" },
+              {
+                property: "product:availability",
+                content: product.variants.some((variant) => variant.inStock)
+                  ? "in stock"
+                  : "out of stock",
+              },
+            ],
     },
-  ];
+  );
 }
 
 export async function loader({ params, request, context }: Route.LoaderArgs) {

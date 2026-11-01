@@ -45,7 +45,7 @@ describe("account layout", () => {
 
     expect(meta({ matches } as unknown as MetaArgs)).toEqual([
       { title: "My account — Jassmin" },
-      { name: "robots", content: "noindex" },
+      { name: "robots", content: "noindex, follow" },
     ]);
     expect(headers()).toEqual({ "Cache-Control": "private, no-store" });
   });

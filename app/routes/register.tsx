@@ -16,13 +16,18 @@ import {
 } from "~/lib/auth";
 import { PRIVACY_POLICY_PATH } from "~/lib/consent";
 import { metaTranslator, useT } from "~/lib/i18n";
+import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/register";
 
 const FIELDS = ["fullName", "email", "password", "phone"] as const satisfies RegisterField[];
 
-export function meta({ matches }: Route.MetaArgs) {
+// Private or transactional: kept out of search results (#85).
+export function meta({ matches, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [{ title: t("meta.title", { page: t("auth.register.title") }) }];
+  return noindexMeta(t("meta.title", { page: t("auth.register.title") }));
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

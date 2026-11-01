@@ -2,11 +2,18 @@ import { getSiteSettings } from "~/.server/cms/content";
 import { getLocale } from "~/.server/locale";
 import { type PrivacyContacts, PrivacyPolicy } from "~/features/privacy/PrivacyPolicy";
 import { metaTranslator } from "~/lib/i18n";
+import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/privacy";
 
-export function meta({ matches }: Route.MetaArgs) {
+export function meta({ matches, location, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [{ title: t("meta.title", { page: t("privacy.title") }) }];
+  return seoMeta(
+    { matches, location },
+    { title: t("meta.title", { page: t("privacy.title") }), description: t("privacy.intro") },
+  );
 }
 
 // The contacts and the ФОП's name come from the CMS. A legal page must stay readable when Strapi

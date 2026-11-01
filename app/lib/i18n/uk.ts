@@ -7,6 +7,8 @@ export const uk = {
   },
   meta: {
     title: "{page} — Jassmin",
+    paged: "{title} — сторінка {page}",
+    defaultImageAlt: "Jassmin — магазин парфумів",
   },
   locale: {
     label: "Мова",
@@ -106,6 +108,7 @@ export const uk = {
     },
   },
   errors: {
+    notFoundTitle: "Сторінку не знайдено",
     title: "Ой!",
     status: "Помилка",
     notFound: "Сторінку не знайдено.",
@@ -171,6 +174,11 @@ export const uk = {
     },
   },
   catalog: {
+    metaDescription: {
+      men: "Чоловічі парфуми в Jassmin: аромати відомих брендів у розмірах від 5 мл. Обирайте за брендом і сімейством аромату.",
+      women:
+        "Жіночі парфуми в Jassmin: аромати відомих брендів у розмірах від 5 мл. Обирайте за брендом і сімейством аромату.",
+    },
     title: {
       men: "Чоловічі парфуми",
       women: "Жіночі парфуми",
@@ -226,6 +234,8 @@ export const uk = {
     },
   },
   product: {
+    metaDescription: "{brand} {title} — {price}.",
+    metaFallback: "Купуйте в магазині парфумів Jassmin.",
     ml: "мл",
     fromPrice: "від {price}",
     quickAdd: "Додати {title} у кошик",
@@ -504,7 +514,8 @@ export const uk = {
     next: "Далі",
   },
   home: {
-    defaultDescription: "Магазин парфумів Jassmin",
+    defaultDescription:
+      "Магазин парфумів Jassmin: жіночі та чоловічі аромати відомих брендів у розмірах від 5 мл.",
     about: "Про нас",
     hero: {
       chip: "Жінкам · Чоловікам",

@@ -5,14 +5,16 @@ import { Button } from "~/components/ui/Button";
 import { firstName } from "~/lib/account";
 import { cn } from "~/lib/cn";
 import { metaTranslator, type TextKey, useT } from "~/lib/i18n";
+import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/account";
 
-export function meta({ matches }: Route.MetaArgs) {
+// Private or transactional: kept out of search results (#85).
+export function meta({ matches, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [
-    { title: t("meta.title", { page: t("account.title") }) },
-    { name: "robots", content: "noindex" },
-  ];
+  return noindexMeta(t("meta.title", { page: t("account.title") }));
 }
 
 // The account shows personal data, so no cache may keep it.

@@ -1,10 +1,4 @@
-import {
-  BLOG_VARY,
-  type BlogListView,
-  type BlogPostCardView,
-  type BlogPostView,
-  blogPostHref,
-} from "~/lib/blog";
+import { BLOG_VARY, type BlogListView, type BlogPostCardView, type BlogPostView } from "~/lib/blog";
 import type { BlogPost, BlogPostSummary, Paginated } from "~/lib/cms";
 import { createTranslator, DEFAULT_LOCALE, type Locale } from "~/lib/i18n";
 import { renderArticleMarkdown, toPlainText } from "../markdown";
@@ -41,11 +35,7 @@ export function buildBlogListView(
 
 export function buildBlogPostView(
   post: BlogPost,
-  {
-    origin,
-    mediaBaseUrl,
-    locale = DEFAULT_LOCALE,
-  }: { origin: string; mediaBaseUrl: string; locale?: Locale },
+  { mediaBaseUrl, locale = DEFAULT_LOCALE }: { mediaBaseUrl: string; locale?: Locale },
 ): BlogPostView {
   const seo = post.seo;
   return {
@@ -60,7 +50,6 @@ export function buildBlogPostView(
         toPlainText(post.content) ||
         createTranslator(locale).t("blog.defaultDescription"),
       image: seo?.ogImage?.url ?? post.coverImage?.url ?? null,
-      canonicalUrl: new URL(blogPostHref(post.slug), origin).toString(),
     },
   };
 }

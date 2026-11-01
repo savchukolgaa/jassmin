@@ -8,14 +8,16 @@ import { OrderSummary } from "~/features/checkout/OrderSummary";
 import { PaymentStatus } from "~/features/checkout/PaymentStatus";
 import { PAYMENT_KEYS, parseOrderId } from "~/lib/checkout";
 import { metaTranslator, useT } from "~/lib/i18n";
+import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/checkout-success";
 
-export function meta({ matches }: Route.MetaArgs) {
+// Private or transactional: kept out of search results (#85).
+export function meta({ matches, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [
-    { title: t("meta.title", { page: t("checkout.success.title") }) },
-    { name: "robots", content: "noindex" },
-  ];
+  return noindexMeta(t("meta.title", { page: t("checkout.success.title") }));
 }
 
 // Only the order's user, or the browser it was placed in (its id is in the session), may see it.

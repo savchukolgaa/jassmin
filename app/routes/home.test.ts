@@ -18,7 +18,9 @@ vi.mock("~/.server/services/products", () => ({
 }));
 vi.mock("~/.server/services/trio", () => ({ getTesterTrioOffer: shop.getTesterTrioOffer }));
 
-const { action, loader, shouldRevalidate } = await import("./home");
+const { action, loader, meta, shouldRevalidate } = await import("./home");
+
+type MetaArgs = Parameters<typeof meta>[0];
 
 const homePage: HomePage = {
   locale: "uk",
@@ -227,5 +229,42 @@ describe("home shouldRevalidate", () => {
     expect(shouldRevalidate(args({}))).toBe(true);
     expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/locale" }))).toBe(true);
     expect(shouldRevalidate(args({ formMethod: "GET", formAction: "/" }))).toBe(true);
+  });
+});
+
+describe("home meta", () => {
+  const matches = [
+    { id: "root", loaderData: { locale: "uk", site: { url: "https://jassmin.ua" } } },
+  ];
+  const location = { pathname: "/", search: "?utm_source=instagram" };
+
+  it("uses the CMS SEO title and image, with a clean canonical URL", () => {
+    const tags = meta({
+      matches,
+      location,
+      loaderData: {
+        seo: { title: "Jassmin — парфуми", description: "", image: "https://cms.test/og.jpg" },
+      },
+    } as unknown as MetaArgs);
+
+    expect(tags).toContainEqual({ title: "Jassmin — парфуми" });
+    expect(tags).toContainEqual({ tagName: "link", rel: "canonical", href: "https://jassmin.ua/" });
+    expect(tags).toContainEqual({ property: "og:image", content: "https://cms.test/og.jpg" });
+    expect(tags).toContainEqual(
+      expect.objectContaining({ name: "description", content: expect.stringContaining("Jassmin") }),
+    );
+  });
+
+  it("falls back to the default share image", () => {
+    const tags = meta({
+      matches,
+      location,
+      loaderData: { seo: { title: "Jassmin", description: "Опис", image: null } },
+    } as unknown as MetaArgs);
+
+    expect(tags).toContainEqual({
+      property: "og:image",
+      content: "https://jassmin.ua/og-default.jpg",
+    });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDatabaseUrl, parseCmsSyncEnv, parseEnv, parseMailEnv } from "./env";
+import { getDatabaseUrl, getSiteUrl, parseCmsSyncEnv, parseEnv, parseMailEnv } from "./env";
 
 const valid = {
   DATABASE_URL: "postgres://jassmin:jassmin@localhost:5432/jassmin",
@@ -8,12 +8,18 @@ const valid = {
 
 describe("parseEnv", () => {
   it("accepts a valid environment and coerces PORT", () => {
-    const env = parseEnv({ ...valid, PORT: "4000", NODE_ENV: "production" });
+    const env = parseEnv({
+      ...valid,
+      PORT: "4000",
+      NODE_ENV: "production",
+      PUBLIC_SITE_URL: "https://jassmin.ua",
+    });
 
     expect(env).toEqual({
       ...valid,
       PORT: 4000,
       NODE_ENV: "production",
+      PUBLIC_SITE_URL: "https://jassmin.ua",
       STRAPI_URL: "http://localhost:1337",
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
@@ -227,5 +233,41 @@ describe("parseCmsSyncEnv", () => {
 
   it("rejects an invalid STRAPI_URL", () => {
     expect(() => parseCmsSyncEnv({ STRAPI_URL: "nope" })).toThrow(/STRAPI_URL/);
+  });
+});
+
+describe("PUBLIC_SITE_URL", () => {
+  it("is required in production", () => {
+    expect(() => parseEnv({ ...valid, NODE_ENV: "production" })).toThrow(/PUBLIC_SITE_URL/);
+    expect(() => parseEnv({ ...valid, NODE_ENV: "production", PUBLIC_SITE_URL: "" })).toThrow(
+      /PUBLIC_SITE_URL/,
+    );
+  });
+
+  it("is optional outside production", () => {
+    expect(parseEnv(valid).PUBLIC_SITE_URL).toBeUndefined();
+  });
+
+  it("drops a trailing slash and refuses non-http URLs", () => {
+    expect(parseEnv({ ...valid, PUBLIC_SITE_URL: "https://jassmin.ua/" }).PUBLIC_SITE_URL).toBe(
+      "https://jassmin.ua",
+    );
+    expect(() => parseEnv({ ...valid, PUBLIC_SITE_URL: "ftp://jassmin.ua" })).toThrow(
+      /PUBLIC_SITE_URL/,
+    );
+  });
+});
+
+describe("getSiteUrl", () => {
+  const request = new Request("http://evil.example:5173/catalog/women?x=1");
+
+  it("uses PUBLIC_SITE_URL, not the request's host", () => {
+    expect(getSiteUrl({ PUBLIC_SITE_URL: "https://jassmin.ua" }, request)).toBe(
+      "https://jassmin.ua",
+    );
+  });
+
+  it("falls back to the request's origin when unset", () => {
+    expect(getSiteUrl({ PUBLIC_SITE_URL: undefined }, request)).toBe("http://evil.example:5173");
   });
 });

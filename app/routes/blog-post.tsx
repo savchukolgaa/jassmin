@@ -9,31 +9,25 @@ import { BackToBlogLink, BlogArticle } from "~/features/blog/BlogArticle";
 import { blogResponseHeaders, isBlogSlug } from "~/lib/blog";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
+import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/blog-post";
 
-export function meta({ loaderData, matches }: Route.MetaArgs) {
+export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
   const { t } = metaTranslator(matches);
-  if (!loaderData) {
-    return [{ title: t("meta.title", { page: t("blog.notFound") }) }];
+  if (error || !loaderData) {
+    return errorMeta({ matches, error, notFoundTitle: t("blog.notFound") });
   }
   const { seo, publishedAt } = loaderData;
-  const title = t("meta.title", { page: seo.title });
-  return [
-    { title },
-    { name: "description", content: seo.description },
-    { property: "og:type", content: "article" },
-    { property: "og:title", content: seo.title },
-    { property: "og:description", content: seo.description },
-    { property: "og:url", content: seo.canonicalUrl },
-    { property: "article:published_time", content: publishedAt },
-    ...(seo.image
-      ? [
-          { property: "og:image", content: seo.image },
-          { name: "twitter:card", content: "summary_large_image" },
-        ]
-      : []),
-    { tagName: "link", rel: "canonical", href: seo.canonicalUrl },
-  ];
+  return seoMeta(
+    { matches, location },
+    {
+      title: t("meta.title", { page: seo.title }),
+      description: seo.description,
+      type: "article",
+      image: seo.image ? { url: seo.image, alt: seo.title } : null,
+      extra: [{ property: "article:published_time", content: publishedAt }],
+    },
+  );
 }
 
 export function headers({ loaderHeaders }: Route.HeadersArgs) {
@@ -53,7 +47,6 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     throw data(null, { status: 404 });
   }
   const view = buildBlogPostView(post, {
-    origin: new URL(request.url).origin,
     mediaBaseUrl: getEnv().STRAPI_URL,
     locale,
   });

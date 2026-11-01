@@ -1,8 +1,10 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData } from "react-router";
+import { getEnv, getSiteUrl } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
+import { errorMeta } from "~/lib/seo";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -16,9 +18,15 @@ export const links: Route.LinksFunction = () => [
 ];
 
 // Runs on every request and after every action, so switching language (`routes/locale.ts`)
-// re-renders the page in the new locale.
+// re-renders the page in the new locale. `site.url` is the public origin for canonical and Open
+// Graph URLs (#85), read by `seoMeta` in every route's `meta`.
 export async function loader({ request }: Route.LoaderArgs) {
-  return { locale: await getLocale(request) };
+  return { locale: await getLocale(request), site: { url: getSiteUrl(getEnv(), request) } };
+}
+
+// Only unmatched URLs and failures above the shop layout end here: every page has its own `meta`.
+export function meta({ matches, error }: Route.MetaArgs) {
+  return error ? errorMeta({ matches, error }) : [];
 }
 
 const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';

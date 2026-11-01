@@ -27,6 +27,9 @@ export function Bestsellers({ products }: { products: ProductSummary[] }) {
             className={`inline-flex min-h-11 items-center rounded font-extrabold text-ink hover:text-primary-dark ${focusRing("onLight")}`}
           >
             {t("home.bestsellers.viewAll")}
+            {/* Named after where it goes, not just "View all" (#88). */}
+            <span className="sr-only">: {t("catalog.title.women")}</span>
+            <span aria-hidden="true">&nbsp;→</span>
           </Link>
         </div>
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

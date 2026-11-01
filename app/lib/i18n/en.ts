@@ -574,7 +574,7 @@ export const en = {
     },
     bestsellers: {
       title: "Bestsellers",
-      viewAll: "View all →",
+      viewAll: "View all",
     },
     location: {
       eyebrow: "Location",

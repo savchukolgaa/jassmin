@@ -258,7 +258,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   fixed-aspect frame), below-the-fold ones `loading="lazy"`, and exactly one
   `fetchPriority="high"` per page (home hero, offers hero, blog post cover, product photo). Update
   `HomePage.test.ts`, `offers-ui.test.ts`, `blog-ui.test.ts` to assert non-empty alt.
-- [ ] **11. Headings and link-text audit** — For each route (home, catalog, product, popular,
+- [x] **11. Headings and link-text audit** — For each route (home, catalog, product, popular,
   offers, blog, blog post, cart, checkout, success, login/register, account pages, privacy,
   404): exactly one `h1`, no skipped levels (fix `headingLevel` props and section headings as
   found). Replace "more"/"→"-only links with descriptive text or add the target's name (visually

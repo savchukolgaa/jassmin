@@ -591,7 +591,7 @@ export const uk = {
     },
     bestsellers: {
       title: "Бестселери",
-      viewAll: "Дивитися всі →",
+      viewAll: "Дивитися всі",
     },
     location: {
       eyebrow: "Розташування",

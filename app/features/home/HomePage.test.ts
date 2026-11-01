@@ -103,6 +103,15 @@ function marquee(html: string): string {
 }
 
 describe("HomePage", () => {
+  it("has exactly one h1 and never skips a heading level (#88)", () => {
+    const levels = [...render().matchAll(/<h([1-6])/g)].map((m) => Number(m[1]));
+
+    expect(levels.filter((level) => level === 1)).toHaveLength(1);
+    for (const [i, level] of levels.entries()) {
+      expect(level - (levels[i - 1] ?? 0)).toBeLessThanOrEqual(1);
+    }
+  });
+
   it("adds no lang attributes when the content is in the UI's language", () => {
     expect(render()).not.toContain(" lang=");
   });
@@ -267,7 +276,9 @@ describe("HomePage", () => {
     const section = html.match(/<section aria-labelledby="bestsellers-title".*?<\/section>/s)?.[0];
 
     expect(section).toContain(">Bestsellers</h2>");
-    expect(section).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>View all →<\/a>/);
+    expect(section).toMatch(
+      /<a[^>]*href="\/en\/catalog\/women"[^>]*>View all<span class="sr-only">: Women[^<]*<\/span><span aria-hidden="true"> →<\/span><\/a>/,
+    );
     expect(section).toMatch(/<h3[^>]*><a[^>]*>La Vie Est Belle<\/a><\/h3>/);
     expect(section).toContain("quick-add");
     expect(render()).not.toContain('id="bestsellers-title"');

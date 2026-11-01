@@ -64,16 +64,14 @@ current slug URL, and unknown handles answer 404.
   link to products, so nothing changes there; the issue's list is covered by those two call sites.
 - **Analytics:** `product_view` is recorded only when the page renders (not on a redirect), with the
   same `properties: { publicId }`.
-- **UUID-shaped slugs** are refused by the CMS sync schema **(unconfirmed, Q1)**, since step 1
-  would always shadow them.
-
-## Open questions
-- [ ] **Q1: Refuse a slug that looks like a UUID?** — Why it matters: such a slug could never be
-  reached (UUIDs resolve by `public_id` first). Recommended default: add a `.refine` to `slug` in
-  `~/lib/cms-sync` so Strapi shows a validation error; real slugs never look like that, so it's a
-  cheap guard. Affects steps: 5.
+- **UUID-shaped slugs** are refused by the CMS sync schema: a `.refine` on `slug` in
+  `~/lib/cms-sync` (any UUID, matched like `z.uuid()`, case-insensitive) fails validation, so the
+  sync route answers 422 and Strapi shows the error. Step 1 of the resolution order would always
+  shadow such a slug.
 
 ## Resolved questions
+- **Refuse a slug that looks like a UUID?** — Yes, with a validation error in Strapi (confirmed by
+  the owner while planning).
 - **Do products without a slug still exist?** — Yes until the first `pnpm db:sync-cms --all`;
   `importCatalog` inserts products with `slug = null`. They keep working by UUID (source:
   `app/.server/db/import-catalog.ts`, `backfillProductSlugs`, issue assumption).
@@ -100,7 +98,7 @@ current slug URL, and unknown handles answer 404.
 | modify | `app/.server/services/cms-sync.ts` (+ test) | write slug history on rename |
 | modify | `app/lib/products.ts` (+ test) | `slug` on `ProductBase`; `productHref` |
 | modify | `app/lib/cart.ts` | `slug` on `CartLine` |
-| modify | `app/lib/cms-sync.ts` (+ test) | refuse UUID-shaped slugs (Q1) |
+| modify | `app/lib/cms-sync.ts` (+ test) | refuse UUID-shaped slugs |
 | modify | `app/routes.ts`, `app/routes.test.ts` | `products/:handle` |
 | modify | `app/routes/product.tsx` (+ test) | resolve handle, 301s, 404 |
 | modify | `app/features/catalog/ProductCard.tsx` | use `productHref(product)`, drop local helper |
@@ -128,7 +126,11 @@ current slug URL, and unknown handles answer 404.
   `productHref`. Update the UI tests to expect `/products/<slug>`.
 - [ ] **5. CMS sync writes history** — In `applyCmsProductChange`: on `update`, get the current slug
   under the row lock, `recordOldSlug` when it changes; on `create`/`update`, `forgetSlug(newSlug)`.
-  Add the UUID-shaped-slug refine to `~/lib/cms-sync` (Q1). Tests in `cms-sync.test.ts`: rename
+  Add the UUID-shaped-slug refine to `~/lib/cms-sync`, with a test in `app/lib/cms-sync.test.ts`
+  (a UUID, upper- or lower-case, is refused; a slug ending in a UUID's last 8 hex digits, as
+  `backfillProductSlugs` makes, is accepted). Check how the route's 422 reaches Strapi's error
+  message and add the Ukrainian text there if validation errors are listed per field. Tests in
+  `cms-sync.test.ts`: rename
   writes history; same slug writes nothing; renaming back removes the history row; another product
   taking a freed slug removes it; `slug-taken` writes nothing; archive writes nothing.
 - [ ] **6. Resolve handles** — `findProductBySlug(db, slug)` in `db/queries/products.ts` (same

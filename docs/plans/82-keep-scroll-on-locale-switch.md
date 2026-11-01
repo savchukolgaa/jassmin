@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/82
 Branch: `issue/82`
 Worktree: `.claude/worktrees/issue-82`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -69,13 +69,13 @@ hash in `redirectTo`.
 
 ## Steps
 
-- [ ] **1. Keep the hash in `redirectTo`.** In `LocaleSwitcher`, destructure `hash` from
+- [x] **1. Keep the hash in `redirectTo`.** In `LocaleSwitcher`, destructure `hash` from
   `useLocation()` and set the hidden input to `pathname + search + hash`. Check in the dev app that
   `/?x=1#location-title` posts that value.
-- [ ] **2. Turn off scroll reset.** Add `preventScrollReset` to `<Form method="post" action="/locale">`.
+- [x] **2. Turn off scroll reset.** Add `preventScrollReset` to `<Form method="post" action="/locale">`.
   Update the component's doc comment to say that with JS the page keeps its scroll position and
   without JS it's a plain form post that returns to the same URL, hash included.
-- [ ] **3. Tests.**
+- [x] **3. Tests.**
   - `app/lib/auth.test.ts`: add `"/#location-title"` to the `it.each` list of allowed paths.
   - `app/components/layout/LocaleSwitcher.dom.test.ts` (`// @vitest-environment jsdom`): build a
     `createMemoryRouter` with `{ path: "/", element: LocaleSwitcher }` and a `/locale` route whose
@@ -98,9 +98,14 @@ hash in `redirectTo`.
   - Click a header link. The new page starts at the top.
   - Turn off JS in devtools and switch. The cookie is set, you're back on the same URL with the
     hash, and the page is in the new language.
-- [ ] **5. Checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- [x] **5. Checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ## Testing & verification
+
+> Implementation notes: the `LocaleSwitcher.dom.test.ts` scroll test fails without
+> `preventScrollReset` and passes with it. The DB integration tests (`app/.server/**`) couldn't run
+> locally, because the running Aspire Postgres uses different credentials from `.env`. They don't
+> touch the changed code. Step 4 (manual browser check, with and without JS) still needs doing.
 
 - New: `LocaleSwitcher.dom.test.ts` (hash posted, scroll reset off after the redirect, normal
   navigation unaffected), plus one `safeRedirect` case in `auth.test.ts`.
@@ -112,9 +117,9 @@ hash in `redirectTo`.
 - [ ] Switching the language halfway down a page (e.g. the home page's location section, a catalog
   page, a blog post) keeps the page at the same scroll position and shows it in the new language.
   Steps 2, 3, 4
-- [ ] Switching on a URL with a hash (e.g. `/#location`) comes back to the same URL including the
+- [x] Switching on a URL with a hash (e.g. `/#location`) comes back to the same URL including the
   hash. Steps 1, 3, 4
-- [ ] Ordinary link navigation still scrolls to the top as before. Steps 3 (control case), 4
+- [x] Ordinary link navigation still scrolls to the top as before. Steps 3 (control case), 4
 - [ ] The switcher still works without JS (form post, cookie set, back on the same page). Step 4
   (the markup is still a plain `<form method="post">`)
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. Step 5

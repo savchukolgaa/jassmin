@@ -91,9 +91,12 @@ describe("loginSchema", () => {
 });
 
 describe("safeRedirect", () => {
-  it.each(["/account", "/products/1?x=1#y", "/"])("allows the same-site path %s", (path) => {
-    expect(safeRedirect(path)).toBe(path);
-  });
+  it.each(["/account", "/products/1?x=1#y", "/", "/#location-title"])(
+    "allows the same-site path %s",
+    (path) => {
+      expect(safeRedirect(path)).toBe(path);
+    },
+  );
 
   it.each(["//evil.com", "/\\evil.com", "https://evil.com", "account", "", undefined, null, 42])(
     "falls back for %s",

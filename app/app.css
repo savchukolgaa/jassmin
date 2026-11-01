@@ -4,13 +4,35 @@
 @import "@fontsource-variable/manrope/wght.css";
 @import "@fontsource-variable/playfair-display/wght.css";
 
+/* Local fallbacks resized to the web fonts' metrics (#88), so text keeps its size and line breaks
+   when a font file arrives after first paint, and the page doesn't shift. Values from
+   @capsizecss/metrics: size-adjust is the ratio of average character widths, the overrides are
+   the web font's ascent, descent and line gap divided by it. */
+@font-face {
+  font-family: "Manrope Fallback";
+  src: local("Arial");
+  size-adjust: 103.19%;
+  ascent-override: 103.31%;
+  descent-override: 29.07%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Playfair Display Fallback";
+  src: local("Georgia");
+  size-adjust: 101.39%;
+  ascent-override: 106.72%;
+  descent-override: 24.76%;
+  line-gap-override: 0%;
+}
+
 /* Option C+ design tokens; see docs/design.md for usage and contrast ratios. */
 @theme {
   --font-sans:
-    "Manrope Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-    "Segoe UI Symbol", "Noto Color Emoji";
+    "Manrope Variable", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   /* Headings, the wordmark, prices and step numbers (#73). */
-  --font-serif: "Playfair Display Variable", Georgia, serif;
+  --font-serif: "Playfair Display Variable", "Playfair Display Fallback", Georgia, serif;
 
   --color-primary: #c22f4b;
   --color-primary-dark: #a8233d;

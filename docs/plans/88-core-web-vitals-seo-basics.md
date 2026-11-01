@@ -265,7 +265,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   hidden `<span className="sr-only">`). Add a small test helper (`app/test/headings.ts` or inline
   in existing UI tests) that renders a page component to static markup and counts `<h1`; use it
   in the main page tests.
-- [ ] **12. Measure and verify** — Lighthouse mobile before (on `main`) and after, on home,
+- [x] **12. Measure and verify** — Lighthouse mobile before (on `main`) and after, on home,
   `/catalog/women`, a product page and a blog post, against a local production build. Fix
   remaining findings that block SEO 100 / Performance ≥ 90 (e.g. missing `meta description` on
   pages owned by #85 are noted, not fixed, if they're the only SEO loss — see Out of scope).
@@ -290,14 +290,38 @@ Success is measured with Lighthouse (mobile) on a local production build.
   has `noindex`; `curl -I /nope` → 404 with header/footer; DevTools network shows no
   `fonts.googleapis.com`; Lighthouse mobile runs as in step 12.
 
+## Lighthouse results (step 12)
+
+Lighthouse 12.6.1, mobile preset (simulated slow 4G, 4× CPU), headless Edge, against
+`pnpm build` + `react-router-serve` on a throwaway seeded database. Strapi wasn't running, so
+the CMS-backed home page and blog answered 503 and couldn't be measured locally. #88 is the
+median of 3 runs; `main` (with #83, #85, #86) is one run.
+
+| Page | `main` Perf / SEO / CLS | #88 Perf / SEO / CLS |
+|------|-------------------------|----------------------|
+| `/catalog/women` | 78 / 100 / 0.001 | 87 / 100 / 0 |
+| `/products/:id` | 70 / 100 / 0.212 | 85 / 100 / 0 |
+
+- The product page's 0.21 CLS (already on `main`) came from the Latin font files arriving after
+  first paint. Fixed with metric-matched local fallbacks (`"Manrope Fallback"` on Arial,
+  `"Playfair Display Fallback"` on Georgia, values from `@capsizecss/metrics`) in `app/app.css`.
+- Preloading the Cyrillic files is worth keeping: without it the catalog's CLS went back to 0.26.
+- What keeps Performance below 90 is the simulated first paint (~3.1 s, observed ~0.5 s): the ~30
+  route modules React Router modulepreloads compete with the document and CSS on simulated slow
+  4G. Images and fonts no longer contribute. Getting to 90 needs JS work (fewer or merged route
+  chunks), outside this issue's image/font/status-code scope.
+- Accessibility is 96 on both, `main` too: the footer's decorative `primary-light` wordmark on
+  `primary` (2.55:1, `aria-hidden`, allowed by `docs/design.md`).
+
 ## Acceptance criteria
 
 - [ ] Lighthouse mobile SEO score is 100 and Performance ≥ 90 on home, catalog and product pages
-  (local production build). — steps 5, 9, 10, 11, 12
-- [ ] No image causes layout shift, and below-the-fold images are lazy-loaded with responsive
+  (local production build). — steps 5, 9, 10, 11, 12. **Not met:** SEO is 100, Performance is
+  87 / 85 on catalog / product (from 78 / 70), home unmeasured without Strapi; see above.
+- [x] No image causes layout shift, and below-the-fold images are lazy-loaded with responsive
   sizes. — steps 1–5, 10
-- [ ] Missing pages answer 404, and archived products follow the decided behaviour. — steps 6, 7, 8
-- [ ] Every page has one `<h1>`, and every content image has a meaningful translated `alt`. —
+- [x] Missing pages answer 404, and archived products follow the decided behaviour. — steps 6, 7, 8
+- [x] Every page has one `<h1>`, and every content image has a meaningful translated `alt`. —
   steps 5, 8, 10, 11
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. — step 12
 

@@ -46,11 +46,28 @@ describe("theme tokens", () => {
   });
 
   it("puts Manrope first in the sans stack and keeps the system fallback", () => {
-    expect(css).toMatch(/--font-sans:\s*"Manrope Variable", ui-sans-serif, system-ui, sans-serif/);
+    expect(css).toMatch(
+      /--font-sans:\s*"Manrope Variable", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif/,
+    );
   });
 
   it("sets Playfair Display as the serif with a Georgia fallback", () => {
-    expect(css).toContain('--font-serif: "Playfair Display Variable", Georgia, serif;');
+    expect(css).toContain(
+      '--font-serif: "Playfair Display Variable", "Playfair Display Fallback", Georgia, serif;',
+    );
+  });
+
+  it("sizes the local fallbacks like the web fonts, so a late font doesn't shift the page (#88)", () => {
+    for (const [family, local] of [
+      ["Manrope Fallback", "Arial"],
+      ["Playfair Display Fallback", "Georgia"],
+    ]) {
+      const face = css.match(new RegExp(`@font-face {[^}]*"${family}"[^}]*}`))?.[0] ?? "";
+      expect(face).toContain(`src: local("${local}")`);
+      expect(face).toMatch(/size-adjust: \d+\.\d+%/);
+      expect(face).toMatch(/ascent-override: \d+\.\d+%/);
+      expect(face).toMatch(/descent-override: \d+\.\d+%/);
+    }
   });
 
   it("sets h1 to h3 in the serif from the base layer", () => {

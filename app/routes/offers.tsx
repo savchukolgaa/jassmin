@@ -9,7 +9,6 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { OffersPage } from "~/features/offers/OffersPage";
 import { blogResponseHeaders } from "~/lib/blog";
 import { metaTranslator, useT } from "~/lib/i18n";
-import { pathFor } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/offers";

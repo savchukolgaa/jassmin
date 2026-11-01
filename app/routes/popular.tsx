@@ -6,7 +6,7 @@ import { PopularPage } from "~/features/popular/PopularPage";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { createTranslator, metaTranslator, useT } from "~/lib/i18n";
 import { pageOf } from "~/lib/paths";
-import { type PopularPageView, parsePopularPage, popularHref } from "~/lib/popular";
+import { type PopularPageView, parsePopularPage } from "~/lib/popular";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import { parseTrioSearch } from "~/lib/trio";

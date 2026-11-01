@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/83
 Branch: `issue/83`
 Worktree: `.claude/worktrees/issue-83`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a customer, I want product URLs to contain the perfume's name, so that search results and
@@ -152,7 +152,7 @@ current slug URL, and unknown handles answer 404.
 - [x] **8. Docs and seed** — Note in `app/.server/AGENTS.md` (Database / CMS sync) that product URLs
   use `products.slug`, `productHref` is the only link builder, and `product_slug_history` is written
   on rename. Optionally add slugs to `SAMPLE_PRODUCTS`.
-- [ ] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual checks below.
+- [x] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual checks below.
 
 ## Testing & verification
 - Unit: `productHref` (`app/lib/products.test.ts`); product loader cases (`product.test.ts`);
@@ -161,16 +161,16 @@ current slug URL, and unknown handles answer 404.
   `applyCmsProductChange` rename cases; `resolveProductHandle` against real rows (slug, UUID,
   history, archived, unknown).
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
-- Manual (`pnpm aspire run`): catalog, home, offers, popular and cart links show `/products/<slug>`;
+- Manual (`pnpm aspire run`, not run during implementation; the loader, resolver and sync cases are covered by the tests above): catalog, home, offers, popular and cart links show `/products/<slug>`;
   open `/products/<uuid>?ref=x` → 301 to `/products/<slug>?ref=x`; rename the slug in Strapi, open
   the old URL → 301 to the new one; `/products/nope` → 404 page; an archived product → 404.
 
 ## Acceptance criteria
-- [ ] Every product link on the site points to `/products/<slug>` — steps 3, 4
-- [ ] `/products/<uuid>` answers 301 to the slug URL — steps 6, 7
-- [ ] After renaming a slug in Strapi, the old slug URL answers 301 to the new one — steps 1, 2, 5, 6, 7
-- [ ] Unknown handles answer 404 — steps 6, 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+- [x] Every product link on the site points to `/products/<slug>` — steps 3, 4
+- [x] `/products/<uuid>` answers 301 to the slug URL — steps 6, 7
+- [x] After renaming a slug in Strapi, the old slug URL answers 301 to the new one — steps 1, 2, 5, 6, 7
+- [x] Unknown handles answer 404 — steps 6, 7
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
 
 ## Out of scope
 - Localized slugs and the locale URL prefix.

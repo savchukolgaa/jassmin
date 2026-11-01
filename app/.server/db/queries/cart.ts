@@ -104,6 +104,7 @@ export function listCartLines(db: Executor, cartId: number) {
     .select({
       variantId: productVariants.publicId,
       productId: products.publicId,
+      slug: products.slug,
       title: products.title,
       brand: products.brand,
       imageUrl: products.imageUrl,

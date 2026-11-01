@@ -19,6 +19,19 @@ const issues = (overrides: Record<string, unknown>) => {
   return result.success ? [] : result.error.issues.map((i) => [i.path.join("."), i.message]);
 };
 
+describe("cmsProductChangeSchema: slug (#83)", () => {
+  it("refuses a slug that is a UUID, whatever its case", () => {
+    const uuid = "01a1652b-6e25-7c03-ae47-25b57131fb06";
+    expect(issues({ slug: uuid })).toEqual([["slug", "uuid-slug"]]);
+    expect(issues({ slug: uuid.toUpperCase() })).toEqual([["slug", "uuid-slug"]]);
+  });
+
+  it("accepts a slug that only ends in part of a UUID, as backfilled slugs do", () => {
+    expect(issues({ slug: "sauvage-eau-de-toilette-31d4a20a" })).toEqual([]);
+    expect(issues({ slug: "light-blue-01a1652b-6e25-7c03-ae47-25b57131fb06" })).toEqual([]);
+  });
+});
+
 describe("cmsProductChangeSchema: families, notes and store code (#65)", () => {
   it("keeps the families in order and defaults notes and the store code", () => {
     expect(parse({}).data).toMatchObject({

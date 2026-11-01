@@ -234,6 +234,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
 
     expect(await getProduct(sauvage.publicId, testDb.db)).toEqual({
       id: sauvage.publicId,
+      slug: null,
       title: "Sauvage Eau de Toilette",
       brand: "Dior",
       gender: "men",
@@ -301,6 +302,55 @@ describe.skipIf(!hasDatabase)("products service", () => {
       id: row?.id,
       product: await getProduct(sauvage.publicId, testDb.db),
     });
+  });
+
+  it("resolves /products/:handle by slug, public id and former slug (#83)", async () => {
+    const { products } = await import("../db/schema");
+    const { recordOldSlug } = await import("../db/queries/product-slugs");
+    const { resolveProductHandle } = await import("./products");
+    // Products without sizes, so the catalog tests above don't see them.
+    const base = { brand: "Handle House", gender: "men" as const, price: "1.00", volumeMl: 30 };
+    const [slugged, unslugged, archived] = await testDb.db
+      .insert(products)
+      .values([
+        { ...base, title: "Slugged", slug: "handle-slugged" },
+        { ...base, title: "Unslugged" },
+        { ...base, title: "Archived", slug: "handle-archived", active: false },
+      ])
+      .returning({ id: products.id, publicId: products.publicId });
+    if (!slugged || !unslugged || !archived) throw new Error("insert failed");
+    await recordOldSlug(testDb.db, slugged.id, "handle-old");
+    await recordOldSlug(testDb.db, archived.id, "handle-archived-old");
+    const resolve = (handle: string) => resolveProductHandle(handle, testDb.db);
+
+    expect(await resolve("handle-slugged")).toMatchObject({
+      kind: "product",
+      id: slugged.id,
+      product: { id: slugged.publicId, slug: "handle-slugged", title: "Slugged", variants: [] },
+    });
+    expect(await resolve(slugged.publicId)).toEqual({
+      kind: "redirect",
+      publicId: slugged.publicId,
+      slug: "handle-slugged",
+    });
+    expect(await resolve("handle-old")).toEqual({
+      kind: "redirect",
+      publicId: slugged.publicId,
+      slug: "handle-slugged",
+    });
+    expect(await resolve(unslugged.publicId)).toMatchObject({
+      kind: "product",
+      id: unslugged.id,
+      product: { slug: null, title: "Unslugged" },
+    });
+
+    // Unknown, differently cased, and archived however it is named: a 404.
+    expect(await resolve("handle-unknown")).toBeNull();
+    expect(await resolve("HANDLE-SLUGGED")).toBeNull();
+    expect(await resolve("01a1652b-6e25-7fff-8000-000000000000")).toBeNull();
+    expect(await resolve("handle-archived")).toBeNull();
+    expect(await resolve(archived.publicId)).toBeNull();
+    expect(await resolve("handle-archived-old")).toBeNull();
   });
 
   it("looks up product cards by public id, skipping unknown and unsold products", async () => {

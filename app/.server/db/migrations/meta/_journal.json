@@ -113,6 +113,13 @@
       "when": 1793304155154,
       "tag": "0015_volume_5ml",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793557977777,
+      "tag": "0016_product_slug_history",
+      "breakpoints": true
     }
   ]
 }

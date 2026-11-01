@@ -13,6 +13,7 @@ import { ProductCard } from "./ProductCard";
 
 const PRODUCT: ProductSummary = {
   id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+  slug: "coco-mademoiselle-eau-de-parfum",
   title: "Coco Mademoiselle Eau de Parfum",
   brand: "Chanel",
   gender: "women",

@@ -17,6 +17,7 @@ const render = (element: ReactElement, locale?: Locale) => {
 
 const sauvage: ProductSummary = {
   id: "01a1652b-6e25-7c44-8d5b-bce46a20ad83",
+  slug: "sauvage-eau-de-toilette",
   title: "Sauvage Eau de Toilette",
   brand: "Dior",
   gender: "men",
@@ -100,7 +101,7 @@ describe("OfferCard", () => {
     const html = render(createElement(OfferCard, { offer: offer({ products: [sauvage] }) }), "en");
 
     expect(html).toContain('aria-label="Scents in this offer"');
-    expect(html).toMatch(/<h4[^>]*><a[^>]*href="\/products\/01a1652b[^"]*"[^>]*>Sauvage/);
+    expect(html).toMatch(/<h4[^>]*><a[^>]*href="\/products\/sauvage-eau-de-toilette"[^>]*>Sauvage/);
   });
 
   it("marks Ukrainian copy shown on the English page with lang=uk", () => {

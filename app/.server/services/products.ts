@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { CartActionError } from "~/lib/cart";
 import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib/catalog";
 import { GENDERS, type Gender } from "~/lib/enums";
@@ -11,10 +12,13 @@ import {
 } from "~/lib/products";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
+import { findProductIdBySlugHistory } from "../db/queries/product-slugs";
 import {
   countPopularProducts,
   countProducts,
+  findListedProductSlug,
   findProductByPublicId,
+  findProductBySlug,
   findVariantForProduct,
   listBestsellers,
   listFilterOptions,
@@ -43,6 +47,7 @@ function toSummary(row: ProductSummaryRow): ProductSummary {
   }
   return {
     id: row.publicId,
+    slug: row.slug,
     title: row.title,
     brand: row.brand,
     gender: row.gender,
@@ -71,6 +76,7 @@ function toVariant(row: ProductVariantRow): ProductVariant {
 function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): ProductDetail {
   return {
     id: row.publicId,
+    slug: row.slug,
     title: row.title,
     brand: row.brand,
     gender: row.gender,
@@ -192,6 +198,47 @@ export async function getProductWithId(
     return null;
   }
   return { id: row.id, product: toDetail(row, await listVariantsByProductId(db, row.id)) };
+}
+
+export type ProductHandleResult =
+  /** Render the page; `id` is the serial id, for server-side use only. */
+  | { kind: "product"; id: number; product: ProductDetail }
+  /** Answer 301 to `productHref({ id: publicId, slug })`, the product's current URL. */
+  | { kind: "redirect"; publicId: string; slug: string };
+
+/**
+ * What `/products/:handle` shows (#83). A UUID is a `public_id`: its product renders when it has
+ * no slug yet, otherwise it redirects to the slug URL. Anything else is a slug: the current one
+ * renders, a former one (`product_slug_history`) redirects to the current one. `null` (a 404) for
+ * an unknown handle or an archived product, whichever way it is named.
+ */
+export async function resolveProductHandle(
+  handle: string,
+  db: Db = defaultDb,
+): Promise<ProductHandleResult | null> {
+  if (z.uuid().safeParse(handle).success) {
+    const row = await findProductByPublicId(db, handle);
+    if (!row) return null;
+    if (row.slug !== null) {
+      return { kind: "redirect", publicId: row.publicId, slug: row.slug };
+    }
+    return { kind: "product", id: row.id, product: await detailOf(row, db) };
+  }
+
+  const row = await findProductBySlug(db, handle);
+  if (row) {
+    return { kind: "product", id: row.id, product: await detailOf(row, db) };
+  }
+
+  const formerOwner = await findProductIdBySlugHistory(db, handle);
+  if (formerOwner === undefined) return null;
+  const current = await findListedProductSlug(db, formerOwner);
+  if (!current?.slug) return null;
+  return { kind: "redirect", publicId: current.publicId, slug: current.slug };
+}
+
+async function detailOf(row: ProductDetailRow, db: Db): Promise<ProductDetail> {
+  return toDetail(row, await listVariantsByProductId(db, row.id));
 }
 
 export type VariantCheck =

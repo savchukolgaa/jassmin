@@ -34,6 +34,7 @@ const form = (fields: Record<string, string>) => {
 const line: CartLine = {
   variantId: "01a1652b-6e25-7d00-8000-000000000050",
   productId: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+  slug: "coco-mademoiselle",
   title: "Coco Mademoiselle",
   brand: "Chanel",
   imageUrl: null,
@@ -102,6 +103,13 @@ describe("CartLineItem", () => {
     );
     expect(html).toContain("50 ml");
     expect(html).toContain("₴6,850 each");
+  });
+
+  it("links to the product's slug URL", () => {
+    const html = render(createElement(CartLineItem, { line }));
+
+    expect(html).toContain('href="/products/coco-mademoiselle"');
+    expect(html).not.toContain(`/products/${line.productId}`);
   });
 
   it("steps the quantity by one within the stock", () => {

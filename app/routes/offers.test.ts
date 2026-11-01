@@ -45,6 +45,7 @@ function offer(slug: string, kind: OfferKind, productIds: string[] = []): Offer 
 function product(id: string): ProductSummary {
   return {
     id,
+    slug: null,
     title: id,
     brand: "Brand",
     gender: "women",

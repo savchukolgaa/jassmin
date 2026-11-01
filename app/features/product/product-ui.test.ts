@@ -9,8 +9,8 @@ import { ProductFamilies, ProductNotes } from "./ProductScent";
 
 // Fetchers need a data router. Rendered in English, like the assertions.
 const render = (element: ReactElement, locale: Locale = "en") => {
-  const router = createMemoryRouter([{ path: "/products/:id", element }], {
-    initialEntries: ["/products/01a1652b-6e25-7c03-ae47-25b57131fb06"],
+  const router = createMemoryRouter([{ path: "/products/:handle", element }], {
+    initialEntries: ["/products/coco-mademoiselle-eau-de-parfum"],
   });
   return renderToStaticMarkup(
     createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })),
@@ -27,6 +27,7 @@ const variant = (volumeMl: number, price: string, stockQuantity: number): Produc
 
 const PRODUCT: ProductDetail = {
   id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+  slug: "coco-mademoiselle-eau-de-parfum",
   title: "Coco Mademoiselle Eau de Parfum",
   brand: "Chanel",
   gender: "women",

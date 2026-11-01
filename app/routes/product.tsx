@@ -1,7 +1,6 @@
-import { data, isRouteErrorResponse, Link } from "react-router";
-import { z } from "zod";
+import { data, isRouteErrorResponse, Link, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
-import { getProductWithId } from "~/.server/services/products";
+import { resolveProductHandle } from "~/.server/services/products";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { ProductImage } from "~/features/catalog/ProductImage";
@@ -11,6 +10,7 @@ import { shouldRevalidateView } from "~/lib/analytics";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
 import { useT } from "~/lib/i18n";
+import { productHref } from "~/lib/products";
 import { describeRouteError } from "~/lib/route-error";
 import type { Route } from "./+types/product";
 
@@ -36,10 +36,14 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request, context }: Route.LoaderArgs) {
-  const id = z.uuid().safeParse(params.id);
-  const found = id.success ? await getProductWithId(id.data) : null;
+  const found = await resolveProductHandle(params.handle);
   if (!found) {
     throw data(null, { status: 404 });
+  }
+  if (found.kind === "redirect") {
+    // An old UUID link or a renamed slug (#83): permanently to the current URL, query kept.
+    const { search } = new URL(request.url);
+    throw redirect(`${productHref({ id: found.publicId, slug: found.slug })}${search}`, 301);
   }
   const { product } = found;
   void trackEvent({ request, context }, "product_view", {

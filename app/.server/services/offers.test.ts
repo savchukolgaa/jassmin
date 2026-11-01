@@ -32,6 +32,7 @@ function offer(slug: string, kind: OfferKind, overrides: Partial<Offer> = {}): O
 function product(id: string, title: string): ProductSummary {
   return {
     id,
+    slug: null,
     title,
     brand: "Brand",
     gender: "women",

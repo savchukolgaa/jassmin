@@ -30,6 +30,7 @@ const VARIANT_ID = "01a1652b-6e25-7d00-8000-000000000007";
 
 const PRODUCT: ProductSummary = {
   id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+  slug: "coco-mademoiselle-eau-de-parfum",
   title: "Coco Mademoiselle Eau de Parfum",
   brand: "Chanel",
   gender: "women",
@@ -73,7 +74,7 @@ describe("ProductCard", () => {
     expect(html).toContain("Chanel");
     expect(html).toContain("Coco Mademoiselle Eau de Parfum");
     expect(html).toContain("from ₴990");
-    expect(html).toContain(`href="/products/${PRODUCT.id}"`);
+    expect(html).toContain('href="/products/coco-mademoiselle-eau-de-parfum"');
   });
 
   it("shows the primary fragrance family in the UI's language, and none without one", () => {

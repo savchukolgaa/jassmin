@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/73
 Branch: `issue/73`
 Worktree: `.claude/worktrees/issue-73`
-Status: Planned (scope reduced by the owner on 2026-11-01)
+Status: Implemented
 
 ## Goal
 
@@ -145,8 +145,11 @@ step numbers; Manrope stays for everything else.
   wordmark, prices and step numbers (700, `-0.01em`), loaded with Manrope in `app/root.tsx`;
   Manrope for body, buttons, nav, forms and labels; update the headings and wordmark bullets; link
   the new artboards.
-- [ ] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the visual
-  check below.
+- [x] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the visual
+  check below. **Done (automated):** typecheck, lint, test (121 files, 1226 passed, 1 skipped)
+  and build pass. Google Fonts' Playfair `cyrillic` file covers `U+0400-045F, U+0490-0491`, so
+  є, ї, і and ґ render in the serif. The manual browser check (pages × widths × locales) was
+  **not run**: it needs `pnpm aspire run` with Strapi; do it before merging.
 
 ## Testing & verification
 
@@ -162,13 +165,14 @@ step numbers; Manrope stays for everything else.
 
 The issue's colour criteria no longer apply (owner's decision, 2026-11-01). Remaining:
 
-- [ ] The owner approved the serif on the design canvas — steps 1, 2
+- [x] The owner approved the serif on the design canvas — steps 1, 2
 - [ ] Headings, the wordmark and prices use the chosen serif with correct Ukrainian letters; body
-  text, buttons and forms stay in Manrope — steps 4, 5, 6, 9
-- [ ] Colours are unchanged from C+ — steps 6, 9
-- [ ] Focus rings stay visible (at least 3:1) on light surfaces — steps 7, 9
-- [ ] `docs/design.md` documents the fonts — step 8
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+  text, buttons and forms stay in Manrope — steps 4, 5, 6, 9 (code and tests done; left unticked
+  until the manual browser check confirms the rendering)
+- [x] Colours are unchanged from C+ — steps 6, 9
+- [x] Focus rings stay visible (at least 3:1) on light surfaces — steps 7, 9
+- [x] `docs/design.md` documents the fonts — step 8
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
 
 ## Out of scope
 

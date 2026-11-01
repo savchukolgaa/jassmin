@@ -1,5 +1,6 @@
 import { data, Link, useLocation, useNavigation } from "react-router";
 import { trackEvent } from "~/.server/analytics";
+import { getLocale } from "~/.server/locale";
 import { getCatalogPage } from "~/.server/services/products";
 import { JsonLd } from "~/components/JsonLd";
 import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
@@ -20,6 +21,7 @@ import {
 } from "~/lib/catalog";
 import { cn } from "~/lib/cn";
 import { metaTranslator, useT } from "~/lib/i18n";
+import { paramFromSegment } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import { breadcrumbListLd } from "~/lib/structured-data";
@@ -48,17 +50,19 @@ export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request, context }: Route.LoaderArgs) {
-  if (!isCatalogGender(params.gender)) {
+  // The segment is in the URL's language (#84): `zhinochi` or `women`.
+  const gender = paramFromSegment("catalog", "gender", params.gender, await getLocale(request));
+  if (gender === null || !isCatalogGender(gender)) {
     throw data(null, { status: 404 });
   }
   const search = parseCatalogSearch(new URL(request.url).searchParams);
-  const page = await getCatalogPage(params.gender, search);
+  const page = await getCatalogPage(gender, search);
   if (hasActiveFilters(search)) {
     void trackEvent({ request, context }, "search", {
-      properties: { gender: params.gender, ...search, total: page.total },
+      properties: { gender, ...search, total: page.total },
     });
   }
-  return { gender: params.gender, search, ...page };
+  return { gender, search, ...page };
 }
 
 // Adding to the cart doesn't change the catalog, and reloading would record a second search.

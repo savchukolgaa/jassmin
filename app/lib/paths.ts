@@ -91,6 +91,20 @@ function translateParam(page: Page, name: string, value: string, locale: Locale)
   return segments?.[value]?.[locale] ?? value;
 }
 
+/**
+ * A route parameter's logical value from its URL segment in `locale`, e.g. the catalog's
+ * `zhinochi` → `women`; `null` for a segment that isn't one of its values. Loaders get the raw
+ * segment in `params`.
+ */
+export function paramFromSegment(
+  page: Page,
+  name: string,
+  segment: string | undefined,
+  locale: Locale,
+): string | null {
+  return segment === undefined ? null : untranslateParam(page, name, segment, locale);
+}
+
 function untranslateParam(
   page: Page,
   name: string,

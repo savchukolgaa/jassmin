@@ -122,9 +122,10 @@ registered and when building URLs.
 - **Hint:** the root loader returns `suggestEnglish: boolean`. It's true on a Ukrainian URL with no
   `locale` cookie when `parseAcceptLanguage` gives `en`. `LanguageHint` (`app/components/layout/`)
   renders a small dismissible bar in English (`<I18nProvider locale="en">` around it, keys under
-  `locale.hint.*` in both dictionaries). **(unconfirmed, Q1)**: "View in English" posts to `/locale`
-  with `locale=en` (cookie + redirect), and dismiss posts `locale=uk` (cookie, same page), so the
-  bar never returns.
+  `locale.hint.*` in both dictionaries). "View in English" posts to `/locale` with `locale=en`
+  (cookie + redirect), and dismiss posts `locale=uk` (cookie, same page), so the bar never returns
+  (confirmed by the user). There is no matching hint on English URLs for browsers preferring
+  Ukrainian.
 
 ### Switching language
 
@@ -195,20 +196,15 @@ skipped by matching only after `=`, `(`, `:` or `,` tokens.
 `BLOG_VARY` stays `Cookie, Accept-Language`: the cookie still decides the 302 and the session
 header, and `Accept-Language` the hint. Update its comment.
 
-## Open questions
-
-- [ ] **Q1: What does dismissing the "View in English" hint do?** Why it matters: it decides
-  whether a cookie is written and whether the bar ever returns. Recommended default: dismiss sets
-  `locale=uk` via `/locale` (the visitor answered the question), and "View in English" sets
-  `locale=en` and goes to the English URL. Affects step 8.
-- [ ] **Q2: Should the hint also show on English URLs for browsers preferring Ukrainian?**
-  Why it matters: it's a symmetric UX. Recommended default: no, as the issue only describes the
-  English hint. Affects step 8.
-- [ ] **Q3: Is the localized `checkoutPay` path (`/oformlennia/oplata/:orderId`) OK?** Why it
-  matters: it's not in the issue's table. It's a POST-only URL, never shown. Recommended default:
-  yes, localize it so its redirect keeps the language. Affects steps 2, 6.
-
 ## Resolved questions
+
+- **What does dismissing the "View in English" hint do?** It sets `locale=uk` via `/locale`, so
+  the bar never returns. "View in English" sets `locale=en` and goes to the English URL (source:
+  the user, while reviewing the plan).
+- **Should a hint also show on English URLs for browsers preferring Ukrainian?** No (source: the
+  user, while reviewing the plan).
+- **Is the localized `checkoutPay` path OK?** Yes: `/oformlennia/oplata/:orderId` and
+  `/en/checkout/pay/:orderId` (source: the user, while reviewing the plan).
 
 - **Can one route module serve two route ids with usable `+types`?** Yes. RR 8 typegen maps a file
   to all its route ids and unions their params (source: `@react-router/dev` typegen,
@@ -294,7 +290,7 @@ header, and `Accept-Language` the hint. Update its comment.
   `content.test.ts` fixtures.
 - [ ] **8. Switcher and hint.** `/locale` action redirects to `localizedUrl(redirectTo, locale)`.
   Extend `LocaleSwitcher.dom.test.ts` so scroll is kept when the path changes (#82). Add
-  `LanguageHint` with i18n keys in both dictionaries (Q1 default). Tests: the switch target for
+  `LanguageHint` with i18n keys in both dictionaries (dismiss sets `locale=uk`). Tests: the switch target for
   every page key, and a blog post with and without a translation.
 - [ ] **9. hreflang.** `HreflangLinks` in the root `<head>`, with the canonicals moved to
   `pathFor`. Tests: an indexable page renders uk/en/x-default absolute URLs; a non-indexable page

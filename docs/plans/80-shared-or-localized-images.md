@@ -54,6 +54,18 @@ stay as they are.
 - **Field descriptions** in the admin are set at bootstrap via the content-manager configuration
   (`metadatas.<field>.edit.description`), the same mechanism `lockOrderFields` uses in
   `cms/src/index.ts`. For the components, use the content-manager `components` service.
+  Implemented as a shared `updateEditMetadata` helper that `lockOrderFields` now uses too; the
+  admin also gets Ukrainian labels ("… (усі мови)" / "… (ця мова)") besides the descriptions.
+- **Fixtures were transformed, not re-recorded (deviation from step 8).** The recorded fixtures
+  carry fixed upload hashes and a curated offer set that many tests rely on; re-recording would
+  churn unrelated assertions. Instead, a script moved `hero.image` / `about.image` to
+  `heroImage` / `aboutImage` (the `uk` file for both locales, as the migration does) and added
+  `*Localized: null` and the seed's per-locale `*Alt`. The shape was checked against a freshly
+  seeded Strapi with the new schema (`pnpm cms:seed` twice on an empty database, then reading the
+  documents): shared fields are copied to both locales, an `en` override stays on `en`.
+- **Verified against real data**: the migration ran inside a real Strapi boot on a copy of the
+  local `strapidb` (staff photos on `uk`, seed samples on `en`): both locales now show the `uk`
+  photos as shared, no override is set, no file is lost, and a second boot changes nothing.
 
 ## Resolved questions
 - **Q1: Alt text per language, even for a shared image?** — Yes: every slot gets a localized
@@ -137,7 +149,7 @@ stay as they are.
   admin copy is Ukrainian, like the sync middleware's messages), and labels such as "Hero image
   (all languages)". Only
   update when something changed; catch and warn like `lockOrderFields`. Call it in `bootstrap`.
-- [ ] **5. App schemas and picker** — `schemas.ts`: `homePageEntry` gets
+- [x] **5. App schemas and picker** — `schemas.ts`: `homePageEntry` gets
   `heroImage: strapiMedia.nullish()`, `aboutImage: strapiMedia.nullish()`; `heroComponent` /
   `aboutComponent` replace `image` with `imageLocalized: strapiMedia.nullish()` and add
   `imageAlt: z.string().nullish()`; `offerEntry` adds `imageLocalized`, `imageAlt`;
@@ -146,7 +158,7 @@ stay as they are.
   else `null`; `alt` = `textOrNull(alt)` ?? the file's `alternativeText` ?? `""`); use it in
   `toHomePage` (`pickImage({ localized: hero.imageLocalized, shared: entry.heroImage, alt:
   hero.imageAlt }, …)`, same for about), `toOffer`, `toBlogPostSummary`.
-- [ ] **6. Populate both fields** — `getHomePage`: `populate: { heroImage: true, aboutImage: true,
+- [x] **6. Populate both fields** — `getHomePage`: `populate: { heroImage: true, aboutImage: true,
   hero: { populate: ["imageLocalized"] }, about: { populate: ["imageLocalized"] }, location: true }`.
   `OFFER_POPULATE = { image: true, imageLocalized: true, products: true }`. `listBlogPosts`:
   `populate: ["coverImage", "coverImageLocalized"]` in both requests. `getBlogPostBySlug`:
@@ -158,7 +170,7 @@ stay as they are.
   and offers' per-locale copy. Offers and posts keep setting the shared `image` / `coverImage`;
   no overrides are seeded.
   Existing skip-if-present logic keeps it idempotent.
-- [ ] **8. Fixtures and tests** — Re-record `__fixtures__/home-page.json` / `.en.json`,
+- [x] **8. Fixtures and tests** — Re-record `__fixtures__/home-page.json` / `.en.json`,
   `offers*.json`, `blog-posts*.json`, `blog-post-by-slug*.json` from a freshly seeded Strapi (or
   edit them by hand to the new shape if Strapi isn't available). Add a `pickImage` describe
   block: override wins; falls back to shared; neither → `null`; URLs absolute; the entry's alt

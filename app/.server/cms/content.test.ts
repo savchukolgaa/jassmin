@@ -19,6 +19,7 @@ import {
   isOfferActive,
   listActiveOffers,
   listBlogPosts,
+  pickImage,
   toBlogPost,
   toHomePage,
   toImage,
@@ -124,6 +125,42 @@ describe("toImage", () => {
   });
 });
 
+describe("pickImage", () => {
+  const shared = { url: "/uploads/shared.jpg", alternativeText: "Shared file", width: 10 };
+  const localized = { url: "/uploads/uk.jpg", alternativeText: "Ukrainian file", width: 20 };
+
+  it("shows the locale's override when it is set", () => {
+    expect(pickImage({ shared, localized, alt: null }, BASE_URL)).toMatchObject({
+      url: "http://cms.test/uploads/uk.jpg",
+      alt: "Ukrainian file",
+      width: 20,
+    });
+  });
+
+  it("falls back to the shared image without an override", () => {
+    expect(pickImage({ shared, localized: null, alt: undefined }, BASE_URL)).toMatchObject({
+      url: "http://cms.test/uploads/shared.jpg",
+      alt: "Shared file",
+    });
+  });
+
+  it("is null when neither image is set, even with alt text", () => {
+    expect(pickImage({ shared: null, localized: undefined, alt: "Опис" }, BASE_URL)).toBeNull();
+  });
+
+  it("describes a shared or an override image with the entry's alt text", () => {
+    expect(pickImage({ shared, localized: null, alt: " Опис " }, BASE_URL)?.alt).toBe("Опис");
+    expect(pickImage({ shared, localized, alt: "Опис" }, BASE_URL)?.alt).toBe("Опис");
+  });
+
+  it("uses the file's alternative text for a blank alt, else an empty one", () => {
+    expect(pickImage({ shared, localized: null, alt: "  " }, BASE_URL)?.alt).toBe("Shared file");
+    expect(pickImage({ shared: { url: "/a.jpg" }, localized: null, alt: "" }, BASE_URL)?.alt).toBe(
+      "",
+    );
+  });
+});
+
 describe("mappers", () => {
   it("take the locale Strapi served, else the requested one", () => {
     const { data } = singleResponse(siteSettingEntry).parse(siteSettingEn);
@@ -159,7 +196,14 @@ describe("mappers", () => {
     if (!entry) throw new Error("fixture has no post");
 
     const post = toBlogPost(
-      { ...entry, coverImage: null, authorName: null, excerpt: null, seo: null },
+      {
+        ...entry,
+        coverImage: null,
+        coverImageLocalized: null,
+        authorName: null,
+        excerpt: null,
+        seo: null,
+      },
       BASE_URL,
     );
 
@@ -168,8 +212,8 @@ describe("mappers", () => {
 });
 
 describe("getHomePage", () => {
-  it("returns the home page DTO with an absolute hero image URL", async () => {
-    respondWith(homePage);
+  it("returns the home page DTO with the shared hero image and the locale's alt", async () => {
+    const fetchMock = respondWith(homePage);
 
     const page = await getHomePage();
 
@@ -179,8 +223,8 @@ describe("getHomePage", () => {
       ctaLabel: "Замовити",
       ctaHref: "/popular",
       image: {
-        url: `http://cms.test${homePage.data.hero.image.url}`,
-        alt: "Jassmin perfume testers",
+        url: `http://cms.test${homePage.data.heroImage.url}`,
+        alt: "Тестери парфумів Jassmin",
         width: 1200,
         height: 800,
         srcSet: [
@@ -196,8 +240,15 @@ describe("getHomePage", () => {
       secondaryCta: { label: "Усі парфуми", href: "/catalog/women" },
     });
     expect(page.about.title).toBe("Про Jassmin");
+    expect(page.about.image).toMatchObject({ alt: "Флакони парфумів" });
     expect(page.location.address).toContain("Хрещатик");
     expect(page).not.toHaveProperty("documentId");
+
+    const params = new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams;
+    expect(params.get("populate[heroImage]")).toBe("true");
+    expect(params.get("populate[aboutImage]")).toBe("true");
+    expect(params.get("populate[hero][populate][0]")).toBe("imageLocalized");
+    expect(params.get("populate[about][populate][0]")).toBe("imageLocalized");
   });
 });
 
@@ -239,6 +290,7 @@ describe("listBlogPosts", () => {
     expect(url.searchParams.get("pagination[page]")).toBe("3");
     expect(url.searchParams.get("pagination[pageSize]")).toBe("5");
     expect(url.searchParams.get("populate[0]")).toBe("coverImage");
+    expect(url.searchParams.get("populate[1]")).toBe("coverImageLocalized");
   });
 
   it("defaults to the first page of 12", async () => {
@@ -287,6 +339,8 @@ describe("getBlogPostBySlug", () => {
     expect(url.searchParams.get("filters[slug][$eq]")).toBe("a&b c");
     expect(url.searchParams.get("status")).toBe("published");
     expect(url.searchParams.get("populate[seo][populate][0]")).toBe("ogImage");
+    expect(url.searchParams.get("populate[coverImage]")).toBe("true");
+    expect(url.searchParams.get("populate[coverImageLocalized]")).toBe("true");
   });
 
   it("returns null when no published post has the slug (e.g. a draft)", async () => {
@@ -477,6 +531,7 @@ describe("toHomePage", () => {
           secondaryCtaLabel: "All perfumes",
           secondaryCtaHref: undefined,
         },
+        aboutImage: null,
         about: { title: data.about.title, body: data.about.body },
       },
       BASE_URL,
@@ -484,6 +539,26 @@ describe("toHomePage", () => {
 
     expect(page.hero).toMatchObject({ eyebrow: null, subtitle: null, secondaryCta: null });
     expect(page.about.image).toBeNull();
+  });
+
+  it("shows a locale's own photo instead of the shared one, only in that locale (#80)", () => {
+    const uk = singleResponse(homePageEntry).parse(homePage).data;
+    const en = singleResponse(homePageEntry).parse(homePageEn).data;
+    const banner = { url: "/uploads/banner_en.jpg", alternativeText: null, width: 800 };
+
+    const english = toHomePage(
+      { ...en, hero: { ...en.hero, imageLocalized: banner } },
+      BASE_URL,
+      "en",
+    );
+    const ukrainian = toHomePage(uk, BASE_URL);
+
+    expect(english.hero.image).toMatchObject({
+      url: "http://cms.test/uploads/banner_en.jpg",
+      alt: "Jassmin perfume testers",
+    });
+    expect(ukrainian.hero.image?.url).toBe(`http://cms.test${uk.heroImage?.url}`);
+    expect(toHomePage(en, BASE_URL).hero.image?.url).toBe(ukrainian.hero.image?.url);
   });
 });
 
@@ -515,6 +590,7 @@ describe("toOffer", () => {
     });
     expect(offer.image?.url).toMatch(/^http:\/\/cms\.test\/uploads\//);
     expect(offer.image?.srcSet).toContain("http://cms.test/uploads/small_");
+    expect(offer.image?.alt).toBe("Тестери парфумів Jassmin");
     expect(offer.productIds).toEqual([
       "01a1652b-6e25-7c03-ae47-25b57131fb06",
       "01a1652b-6e25-7c51-bcf8-0d0dd7accc0a",
@@ -562,6 +638,8 @@ describe("toOffer", () => {
         ctaLabel: "",
         sortOrder: null,
         products: null,
+        image: null,
+        imageLocalized: null,
       },
       BASE_URL,
     );
@@ -574,6 +652,32 @@ describe("toOffer", () => {
       productIds: [],
       image: null,
     });
+  });
+});
+
+describe("offer and blog images (#80)", () => {
+  const override = { url: "/uploads/uk_banner.jpg", alternativeText: "Банер" };
+
+  it("shows an offer's per-language image over the shared one", () => {
+    const entry = offerEntryFrom(2);
+
+    expect(toOffer({ ...entry, imageLocalized: override }, BASE_URL).image).toMatchObject({
+      url: "http://cms.test/uploads/uk_banner.jpg",
+      alt: "Тестери парфумів Jassmin",
+    });
+    expect(toOffer(entry, BASE_URL).image?.url).toBe(`http://cms.test${entry.image?.url}`);
+  });
+
+  it("shows a post's per-language cover over the shared one", () => {
+    const [entry] = collectionResponse(blogPostEntry).parse(blogPostBySlugEn).data;
+    if (!entry) throw new Error("fixture has no post");
+
+    expect(
+      toBlogPost({ ...entry, coverImageLocalized: override }, BASE_URL).coverImage,
+    ).toMatchObject({ url: "http://cms.test/uploads/uk_banner.jpg", alt: "Perfume bottles" });
+    expect(toBlogPost(entry, BASE_URL).coverImage?.url).toBe(
+      `http://cms.test${entry.coverImage?.url}`,
+    );
   });
 });
 
@@ -668,6 +772,7 @@ describe("listActiveOffers", () => {
     expect(params.get("sort[1]")).toBe("startsAt:desc");
     expect(params.get("pagination[pageSize]")).toBe("50");
     expect(params.get("populate[image]")).toBe("true");
+    expect(params.get("populate[imageLocalized]")).toBe("true");
     expect(params.get("populate[products]")).toBe("true");
   });
 

@@ -64,8 +64,8 @@ Success is measured with Lighthouse (mobile) on a local production build.
    - Alt text: `t("product.imageAlt", { brand, title })` → "<brand> <name>" in both locales.
    - In cards the image link is `aria-hidden` and `tabIndex={-1}` (the heading link is the one
      accessible link), so its image gets `alt=""` there to avoid double announcements. This is the
-     "decorative duplicate" case; the product page image keeps the descriptive alt. **(unconfirmed,
-     see Q2)**
+     "decorative duplicate" case; the product page image keeps the descriptive alt (confirmed by
+     the owner).
 4. **Hero / About / offers / blog images get a translated fallback alt** when the editor left the
    CMS alt blank: `home.hero.imageAlt`, `home.about.imageAlt`, `offers.imageAlt` (with the offer
    title), `blog.coverAlt` (with the post title). Purely decorative images (the empty
@@ -73,7 +73,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
 5. **Archived product = 200 + `noindex`, with an "unavailable" notice and similar perfumes**
    (instead of 410). Reasons: staff can un-archive a product in Strapi (`active` is a toggle), so
    the page may come back; old links and bookmarks still help shoppers find an alternative;
-   Google drops `noindex` pages from the index just like a 410. **(unconfirmed, see Q1)**
+   Google drops `noindex` pages from the index just like a 410 (confirmed by the owner).
    - New query `findProductPageByPublicId` (no `isListed` filter, returns `active`) and service
      `getProductPage(publicId)` → `{ id, product, available }`. `getProductWithId` and the cart
      checks keep `isListed`, so nothing archived can be bought.
@@ -115,23 +115,16 @@ Success is measured with Lighthouse (mobile) on a local production build.
    scores go in the PR description (`/open-pr` will pick them up from the plan's checklist). No
    Lighthouse CI is added.
 
-## Open questions
-
-- [ ] **Q1: Archived products: 200 + `noindex` (recommended) or `410 Gone`?** — Why it matters:
-  410 removes the page from Google slightly faster and is more "honest", but the page then renders
-  through an `ErrorBoundary` (no loader data, so similar perfumes need a second fetch or data in
-  the thrown response) and un-archiving in Strapi wouldn't bring the URL back quickly. Recommended
-  default: 200 + `noindex` with the notice and similar perfumes (decision 5). Affects steps: 6, 7.
-- [ ] **Q2: Product-card images: `alt=""` (recommended) or "<brand> <name>"?** — Why it matters:
-  the issue asks for "<brand> <name>" on product images, but on cards the image sits in an
-  `aria-hidden` duplicate link next to the heading link with the same name, so a descriptive alt
-  is never announced anyway and Lighthouse/axe treat both as valid. Recommended default: `alt=""`
-  on card images, "<brand> <name>" on the product page, cart and order lines. Affects steps: 4.
-- [ ] **Q3: Is adding the font packages (`@fontsource-variable/*`) fine, or should the woff2 files
-  be committed under `public/fonts/`?** — Why it matters: packages are easier to update; committed
-  files avoid a dependency. Recommended default: the fontsource packages. Affects steps: 9.
-
 ## Resolved questions
+
+- **Archived products: 200 + `noindex` or `410 Gone`?** — 200 + `noindex`, with the
+  "unavailable" notice and similar perfumes (decision 5; steps 6, 7). (source: owner, 2026-11-01)
+- **Product-card images: `alt=""` or "<brand> <name>"?** — `alt=""` on card images (the image
+  link is an `aria-hidden` duplicate of the heading link); "<brand> <name>" on the product page,
+  cart and order lines (decision 3; step 5). (source: owner, 2026-11-01)
+- **Font packages or committed woff2 files?** — Add the `@fontsource-variable/manrope` and
+  `@fontsource-variable/playfair-display` packages (decision 7; step 9). (source: owner,
+  2026-11-01)
 
 - **Does Strapi generate product image formats?** — Yes; the product `image` is a standard media
   field (`cms/src/api/product/content-types/product/schema.json`), but the sync only forwards
@@ -211,7 +204,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   `toDetail`); change DTOs in `app/lib/products.ts` to `image`. `ProductImage` takes `image`,
   `sizes`, `alt` and `priority`; renders `srcSet`/`sizes`/`width`/`height`/`decoding="async"`,
   lazy unless `priority` (`loading="eager"` + `fetchPriority="high"`). Update every caller:
-  catalog and compact cards (`alt=""`, see Q2), cart line (`thumb`, "<brand> <name>"), product
+  catalog and compact cards (`alt=""`), cart line (`thumb`, "<brand> <name>"), product
   page (`page`, `priority`, "<brand> <name>"). The brand-initial placeholder keeps
   `role="img"` + `aria-label` with the same translated alt. Add `product.imageAlt` to both locale
   files. Tests: `ProductCard.dom.test.ts` asserts `loading="lazy"`, `srcset`, `sizes`, `width`;

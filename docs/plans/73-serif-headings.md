@@ -47,8 +47,7 @@ step numbers; Manrope stays for everything else.
     hint, subtotal/discount rows) stay Manrope.
   - Buttons, nav, forms, labels and body copy stay Manrope.
 - **Heading weight/tracking:** serif elements drop `font-extrabold` + `tracking-[-0.03em…-0.05em]`
-  for `font-bold` (700) and `tracking-[-0.01em]`, as drawn on the canvas (**unconfirmed** until
-  approval). Sizes and leading stay. Body and button `font-extrabold` stay.
+  for `font-bold` (700) and `tracking-[-0.01em]`, as drawn on the canvas (approved in step 2). Sizes and leading stay. Body and button `font-extrabold` stay.
 - **Existing focus-ring bug fixed here:** `TextField.tsx:49` and `PaymentMethodField.tsx:38` use
   `outline-primary-light` (`#FF8FA1`) on white inputs, about 2.3:1, below the 3:1 rule in
   `docs/design.md`. Switch both to `outline-primary` (5.52:1). The canvas pages show this too.
@@ -108,11 +107,16 @@ step numbers; Manrope stays for everything else.
 
 - [x] **1. Canvas artboards** — Serif-only `HomeRebrand.dc.html` and `ProductRebrand.dc.html` at
   the end of the "Chosen direction" row (canvas version 36), as described in Decisions.
-- [ ] **2. Owner approval (gate)** — The owner approves the serif, its weight (700) and tracking
-  (`-0.01em`) on the canvas. Record the outcome here. Don't start step 3 before.
-- [ ] **3. Rebase on #72** — After #72 merges: `git fetch origin && git rebase origin/main` in the
+- [x] **2. Owner approval (gate)** — The owner approves the serif, its weight (700) and tracking
+  (`-0.01em`) on the canvas. Record the outcome here. Don't start step 3 before. **Approved
+  2026-11-01:** after the serif-only artboards, the owner ran `/implement 73` again (no canvas
+  comments); taken as approval of Playfair Display 700 / `-0.01em`.
+- [x] **3. Rebase on #72** — After #72 merges: `git fetch origin && git rebase origin/main` in the
   worktree. Re-run the `rg` sweeps (headings, prices, wordmark) against the rebased code and adjust
-  the file lists. `pnpm typecheck && pnpm lint && pnpm test` must pass.
+  the file lists. `pnpm typecheck && pnpm lint && pnpm test` must pass. **Done:** rebased on
+  `c78ebec` (#72); all checks pass (121 test files, with the local `jassmin-pg` PostgreSQL
+  started for the DB tests). Sweep results match the lists above; #72's header wordmark dot is now
+  `text-primary` on white.
 - [ ] **4. Font token and loading** — `app/app.css` `@theme`: add
   `--font-serif: "Playfair Display", Georgia, serif;` after `--font-sans`. `app/root.tsx`
   `links`: add `family=Playfair+Display:wght@600..700` to the existing Google Fonts URL (one

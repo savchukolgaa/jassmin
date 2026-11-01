@@ -35,7 +35,7 @@ export function PaymentMethodField({
             className={cn(
               "flex gap-3 rounded-2xl border-2 bg-white p-4",
               disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-              "has-checked:border-primary has-focus-visible:outline-3 has-focus-visible:outline-offset-1 has-focus-visible:outline-primary-light",
+              "has-checked:border-primary has-focus-visible:outline-3 has-focus-visible:outline-offset-1 has-focus-visible:outline-primary",
               error ? "border-red-700" : "border-gray-200",
             )}
           >

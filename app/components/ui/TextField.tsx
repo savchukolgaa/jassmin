@@ -46,7 +46,7 @@ export function TextField({
         aria-describedby={describedBy}
         className={cn(
           "min-h-14 rounded-2xl border-2 bg-white px-4 text-base text-gray-900",
-          "focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-primary-light",
+          "focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-primary",
           error ? "border-red-700" : "border-gray-200",
           className,
         )}

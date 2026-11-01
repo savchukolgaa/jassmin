@@ -137,8 +137,10 @@ step numbers; Manrope stays for everything else.
   "date · items · price" sentence, so it stays Manrope. The `/offers` small uppercase `h1` eyebrow
   gets `font-sans` so it stays a Manrope label. Tests: `Header.test.ts` pins the serif wordmark;
   `cart-ui.test.ts` and `consent-ui.test.ts` follow the new classes.
-- [ ] **7. Focus-ring fix** — `TextField`/`PaymentMethodField`: `outline-primary-light` →
+- [x] **7. Focus-ring fix** — `TextField`/`PaymentMethodField`: `outline-primary-light` →
   `outline-primary`.
+  **Done:** plus a `theme.test.ts` scan that allows `outline-primary-light` only in the two `ink`
+  sections (`ContactsSection`, `TrioBuilder`).
 - [ ] **8. Design doc** — `docs/design.md` "Typeface and scale": Playfair Display for headings,
   wordmark, prices and step numbers (700, `-0.01em`), loaded with Manrope in `app/root.tsx`;
   Manrope for body, buttons, nav, forms and labels; update the headings and wordmark bullets; link

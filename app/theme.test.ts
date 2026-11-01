@@ -118,6 +118,22 @@ describe("contrast (WCAG AA)", () => {
       expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(3);
     });
   });
+
+  it("keeps primary-light focus rings off light surfaces, where they drop below 3:1", () => {
+    expect(contrastRatio(color("primary-light"), color("white"))).toBeLessThan(3);
+
+    // Only these sit on `ink`; form fields and payment options are white (#73).
+    const onInk = ["ContactsSection.tsx", "TrioBuilder.tsx"];
+    const appDir = new URL(".", import.meta.url);
+    const offenders = readdirSync(appDir, { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".tsx") && !onInk.some((name) => file.endsWith(name)))
+      .filter((file) =>
+        readFileSync(new URL(file.replaceAll("\\", "/"), appDir), "utf8").includes(
+          "outline-primary-light",
+        ),
+      );
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe("motion", () => {

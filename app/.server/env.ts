@@ -47,6 +47,9 @@ const envSchema = z
       .url({ protocol: /^https?$/ })
       .transform((url) => url.replace(/\/+$/, ""))
       .optional(),
+    // `/robots.txt` answers `Disallow: /` when this is set, or whenever NODE_ENV isn't production
+    // (#87): for a staging or preview server that runs in production mode. `true`/`1`/`yes`/`on`.
+    ROBOTS_DISALLOW_ALL: z.stringbool().optional(),
     ...mailEnvSchema.shape,
   })
   .refine((env) => env.NODE_ENV !== "production" || env.PUBLIC_SITE_URL !== undefined, {
@@ -109,6 +112,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     ...cmsSyncSource(source),
     PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
     PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
+    ROBOTS_DISALLOW_ALL: source.ROBOTS_DISALLOW_ALL || undefined,
     ...mailSource(source),
   });
 

@@ -17,6 +17,7 @@ import {
   type BlogPostEntry,
   type BlogPostSummaryEntry,
   blogPostEntry,
+  blogPostSitemapEntry,
   blogPostSlugEntry,
   blogPostSummaryEntry,
   collectionResponse,
@@ -362,6 +363,54 @@ async function getBlogPostSlug(documentId: string, locale: Locale): Promise<stri
     { locale },
   );
   return data[0]?.slug ?? null;
+}
+
+/** A published post as `/sitemap.xml` lists it (#87). */
+export interface SitemapBlogPost {
+  documentId: string;
+  /** The post's slug in each locale it is published in; Ukrainian-only posts have just `uk`. */
+  slugs: Partial<Record<Locale, string>>;
+  /** The latest `updatedAt` of its published translations, as an ISO string. */
+  updatedAt: string;
+}
+
+/**
+ * Every published post in every locale, for `/sitemap.xml` (#87). Unlike the blog pages there is
+ * no Ukrainian fallback: a post appears in a locale only when it is published in it. Reads
+ * `MAX_PAGE_SIZE` posts per request, only the fields the sitemap needs.
+ */
+export async function listBlogPostsForSitemap(): Promise<SitemapBlogPost[]> {
+  const byDocumentId = new Map<string, SitemapBlogPost>();
+  for (const locale of LOCALES) {
+    for (let page = 1, pageCount = 1; page <= pageCount; page++) {
+      const { data, meta } = await cmsFetch(
+        "blog-posts",
+        {
+          fields: ["slug", "updatedAt"],
+          sort: ["publishedAt:desc"],
+          pagination: { page, pageSize: MAX_PAGE_SIZE },
+        },
+        collectionResponse(blogPostSitemapEntry),
+        { locale },
+      );
+      pageCount = meta.pagination.pageCount;
+      for (const entry of data) {
+        const updatedAt = new Date(entry.updatedAt).toISOString();
+        const post = byDocumentId.get(entry.documentId);
+        if (post) {
+          post.slugs[locale] = entry.slug;
+          if (updatedAt > post.updatedAt) post.updatedAt = updatedAt;
+        } else {
+          byDocumentId.set(entry.documentId, {
+            documentId: entry.documentId,
+            slugs: { [locale]: entry.slug },
+            updatedAt,
+          });
+        }
+      }
+    }
+  }
+  return [...byDocumentId.values()];
 }
 
 /**

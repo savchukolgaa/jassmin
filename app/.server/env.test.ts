@@ -145,6 +145,25 @@ describe("parseEnv: PAYMENT_PROVIDER", () => {
   });
 });
 
+describe("parseEnv: ROBOTS_DISALLOW_ALL", () => {
+  it("is unset by default and treats an empty value as unset", () => {
+    expect(parseEnv(valid).ROBOTS_DISALLOW_ALL).toBeUndefined();
+    expect(parseEnv({ ...valid, ROBOTS_DISALLOW_ALL: "" }).ROBOTS_DISALLOW_ALL).toBeUndefined();
+  });
+
+  it("parses boolean strings", () => {
+    expect(parseEnv({ ...valid, ROBOTS_DISALLOW_ALL: "true" }).ROBOTS_DISALLOW_ALL).toBe(true);
+    expect(parseEnv({ ...valid, ROBOTS_DISALLOW_ALL: "1" }).ROBOTS_DISALLOW_ALL).toBe(true);
+    expect(parseEnv({ ...valid, ROBOTS_DISALLOW_ALL: "false" }).ROBOTS_DISALLOW_ALL).toBe(false);
+  });
+
+  it("rejects anything else", () => {
+    expect(() => parseEnv({ ...valid, ROBOTS_DISALLOW_ALL: "maybe" })).toThrow(
+      /ROBOTS_DISALLOW_ALL/,
+    );
+  });
+});
+
 describe("getDatabaseUrl", () => {
   it("prefers JASSMINDB_URI over DATABASE_URL", () => {
     expect(

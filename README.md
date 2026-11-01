@@ -72,6 +72,7 @@ pnpm dev                    # http://localhost:5173
 | `STRAPI_SYNC_TOKEN` | no* | Strapi API token that may write products and orders (#40). *Without it, new orders and stock changes stay queued for Strapi (`pnpm db:sync-cms` pushes them later). |
 | `CMS_SYNC_SECRET` | no* | Shared secret (32+ characters) that Strapi sends to the app's `/cms/*` sync routes; the same value goes in `cms/.env`. *Without it, saving a product or an order in the Strapi admin fails. |
 | `PAYMENT_PROVIDER` | no* | Where card payments go. Only `simulator` for now, a local fake payment page that's refused when `NODE_ENV=production` (see [Card payments](#card-payments-simulator)). *Without it the app still starts, but card payment is unavailable at checkout. |
+| `ROBOTS_DISALLOW_ALL` | no | `true` makes `/robots.txt` answer `Disallow: /`, for a staging or preview server running with `NODE_ENV=production`. Outside production that is always the case (see [SEO](#seo)). |
 | `SMTP_URL` | no* | SMTP server for contact form and order emails (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container. *Without it, development logs contact messages instead of sending them, production shows a "couldn't send" error, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
@@ -182,6 +183,7 @@ app/
     db/                Drizzle client, schema, migrations + rollbacks, seed, queries
     services/          business logic (orders, auth, cart, …)
     cms/               Strapi client: content queries, zod schemas, CmsError, sync writer
+    seo/               sitemap.xml and robots.txt builders
 cms/                   Strapi v5 CMS (content types in src/api, components in src/components,
                        product and order write-through in src/sync)
 aspire-apphost/        Aspire TypeScript AppHost (local dev orchestration)
@@ -329,6 +331,23 @@ There is no admin area in the app any more (#40): staff manage the catalogue and
 2. Run `pnpm cms:seed -- --token` (or the `cms-seed` resource) and copy `STRAPI_SYNC_TOKEN=…` into the root `.env`.
 3. Copy the existing catalogue and orders into Strapi once: `pnpm db:sync-cms -- --all`. Products from before #40 get a slug from their title. It only upserts, so running it again is safe.
 4. Load the shop's perfume range with `pnpm db:import-catalog` (or the `db-import-catalog` resource), then push it with `pnpm db:sync-cms`. Staff add photos, descriptions and stock in Strapi; a re-run of the import only adds perfumes that aren't there yet.
+
+## SEO
+
+The app serves two files for search engines (#87). Both are generated on each request and cached for an hour.
+
+- **`/sitemap.xml`** lists every public page in Ukrainian and English: home, the women's and men's catalogs, offers, popular, the blog and privacy, plus every product on sale and every published blog post. Each URL links its other language version (`hreflang` `uk`, `en` and `x-default`) and has a `lastmod`. For products that's the last time staff saved the product in Strapi, and for posts it's Strapi's `updatedAt`. Archived products, products without sizes or a slug, and private pages (cart, checkout, account, login, register) aren't listed. If Strapi is down, the sitemap still lists everything except the blog posts, and is cached for only 5 minutes.
+- **`/robots.txt`** blocks the cart, checkout, account, login and register pages in both languages and at their old addresses from before the translated URLs (`/cart`, …), plus `/api/`, `/cms/`, `/payments/`, `/locale`, `/consent` and `/logout`, and points to the sitemap. Outside production (`NODE_ENV` isn't `production`), or with `ROBOTS_DISALLOW_ALL=true`, it answers `Disallow: /` so previews and staging servers aren't indexed.
+
+Both use `PUBLIC_SITE_URL` for absolute URLs, so set it to the shop's public `https://` origin in production.
+
+### Submitting the sitemap
+
+Do this once after the first production deploy; the search engines re-read the sitemap on their own after that.
+
+1. **Google Search Console** (https://search.google.com/search-console): add the site as a *Domain* property and verify it with the DNS record it shows. Open **Indexing → Sitemaps**, enter `sitemap.xml` and click **Submit**. The status should turn to *Success* with the number of discovered URLs.
+2. **Bing Webmaster Tools** (https://www.bing.com/webmasters): sign in and choose **Import** to copy the verified site from Google Search Console, which also imports its sitemaps. Otherwise, add the site, verify it, and submit `https://<domain>/sitemap.xml` under **Sitemaps**.
+3. To check a single page, paste its URL into **URL Inspection** in Search Console. It shows whether the page is indexed, and **Request indexing** queues a new product right away.
 
 ## Admin role
 

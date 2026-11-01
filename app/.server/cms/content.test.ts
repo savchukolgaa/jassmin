@@ -19,6 +19,7 @@ import {
   isOfferActive,
   listActiveOffers,
   listBlogPosts,
+  listBlogPostsForSitemap,
   pickImage,
   toBlogPost,
   toHomePage,
@@ -268,6 +269,81 @@ describe("getSiteSettings", () => {
       phone: "+380 44 123 45 67",
       email: "hello@jassmin.ua",
     });
+  });
+});
+
+describe("listBlogPostsForSitemap", () => {
+  const entry = (documentId: string, slug: string, updatedAt: string) => ({
+    documentId,
+    slug,
+    updatedAt,
+  });
+  const page = (data: unknown[], pageNumber: number, pageCount: number) => ({
+    data,
+    meta: { pagination: { page: pageNumber, pageSize: 50, pageCount, total: 51 } },
+  });
+
+  /** Answers by `locale` and `pagination[page]` from `pages[locale][page - 1]`. */
+  function respondByLocaleAndPage(pages: Record<string, unknown[]>) {
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      const params = new URL(String(input)).searchParams;
+      const index = Number(params.get("pagination[page]")) - 1;
+      return Response.json(pages[params.get("locale") ?? ""]?.[index]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("groups each post's slugs by locale, with its latest updatedAt", async () => {
+    respondByLocaleAndPage({
+      uk: [
+        page([entry("a", "yak-obraty", "2026-10-01T10:00:00.000Z")], 1, 2),
+        page([entry("b", "tilky-ukrainskoiu", "2026-10-02T10:00:00+03:00")], 2, 2),
+      ],
+      en: [page([entry("a", "how-to-choose", "2026-10-05T10:00:00.000Z")], 1, 1)],
+    });
+
+    expect(await listBlogPostsForSitemap()).toEqual([
+      {
+        documentId: "a",
+        slugs: { uk: "yak-obraty", en: "how-to-choose" },
+        updatedAt: "2026-10-05T10:00:00.000Z",
+      },
+      {
+        documentId: "b",
+        slugs: { uk: "tilky-ukrainskoiu" },
+        updatedAt: "2026-10-02T07:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("requests only the sitemap fields, 50 per page, in each locale", async () => {
+    const fetchMock = respondByLocaleAndPage({
+      uk: [page([], 1, 0)],
+      en: [page([], 1, 0)],
+    });
+
+    expect(await listBlogPostsForSitemap()).toEqual([]);
+
+    const urls = fetchMock.mock.calls.map(([input]) => new URL(String(input)));
+    expect(urls.map((url) => url.searchParams.get("locale"))).toEqual(["uk", "en"]);
+    const [first] = urls;
+    expect(first?.pathname).toBe("/api/blog-posts");
+    expect(first?.searchParams.get("status")).toBe("published");
+    expect(first?.searchParams.get("fields[0]")).toBe("slug");
+    expect(first?.searchParams.get("fields[1]")).toBe("updatedAt");
+    expect(first?.searchParams.get("pagination[pageSize]")).toBe("50");
+  });
+
+  it("throws a CmsError when Strapi is down", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async () => {
+        throw new TypeError("fetch failed");
+      }),
+    );
+
+    await expect(listBlogPostsForSitemap()).rejects.toBeInstanceOf(CmsError);
   });
 });
 

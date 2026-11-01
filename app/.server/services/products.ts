@@ -32,7 +32,7 @@ import {
 } from "../db/queries/products";
 
 /** Unisex perfumes appear in both the men's and the women's catalog. */
-const GENDER_SCOPE: Record<CatalogGender, readonly Gender[]> = {
+export const GENDER_SCOPE: Record<CatalogGender, readonly Gender[]> = {
   men: ["men", "unisex"],
   women: ["women", "unisex"],
 };

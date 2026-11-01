@@ -1,4 +1,16 @@
-import { and, arrayOverlaps, asc, count, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
+import {
+  and,
+  arrayOverlaps,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import type { CatalogSort } from "~/lib/catalog";
 import type { Gender, OrderStatus } from "~/lib/enums";
 import type { CardVariant } from "~/lib/products";
@@ -172,6 +184,32 @@ export function listBestsellers(db: Db, limit: number): Promise<ProductSummaryRo
     .orderBy(...bestsellerOrder(sold))
     .limit(limit);
 }
+
+/**
+ * Every product page for `/sitemap.xml` (#87): listed products with at least one size, like the
+ * catalog, and a slug. Products still without a slug are left out: their UUID URL would 301 once
+ * Strapi gives them one. Ordered by slug, so the sitemap is stable between requests.
+ */
+export function listSitemapProducts(db: Db) {
+  return db
+    .select({ slug: products.slug, gender: products.gender, updatedAt: products.updatedAt })
+    .from(products)
+    .where(
+      and(
+        isListed,
+        isNotNull(products.slug),
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(productVariants)
+            .where(eq(productVariants.productId, products.id)),
+        ),
+      ),
+    )
+    .orderBy(asc(products.slug));
+}
+
+export type SitemapProductRow = Awaited<ReturnType<typeof listSitemapProducts>>[number];
 
 export interface PopularFilters {
   /** Products with **any** of these families (the trio builder's picks); none means no filter. */

@@ -77,6 +77,14 @@ export const users = pgTable("users", {
   firstTouchCampaign: text(),
 });
 
+// Shared by the products, carts, orders and order_emails tables: refreshed by every query-builder
+// update. Raw SQL updates must set `updated_at` themselves.
+const updatedAt = () =>
+  timestamp({ withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date());
+
 export const products = pgTable(
   "products",
   {
@@ -120,6 +128,8 @@ export const products = pgTable(
      */
     active: boolean().notNull().default(true),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** Last edit of the product row (e.g. a Strapi save); the sitemap's `lastmod` (#87). */
+    updatedAt: updatedAt(),
   },
   (t) => [
     check("products_stock_quantity_check", sql`${t.stockQuantity} >= 0`),
@@ -246,14 +256,6 @@ export const userEvents = pgTable(
     index("user_events_session_id_idx").on(t.sessionId),
   ],
 );
-
-// Shared by the carts, orders and order_emails tables: refreshed by every query-builder update. Raw SQL
-// updates must set `updated_at` themselves.
-const updatedAt = () =>
-  timestamp({ withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date());
 
 export const carts = pgTable(
   "carts",

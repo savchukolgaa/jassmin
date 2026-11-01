@@ -29,6 +29,7 @@ import {
   toFieldErrors,
 } from "~/lib/auth";
 import { metaTranslator, useT } from "~/lib/i18n";
+import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/account.profile";
 
 const CONTACT_FIELDS = ["fullName", "phone"] as const satisfies ContactField[];
@@ -39,12 +40,13 @@ const PASSWORD_FIELDS = [
   "confirmNewPassword",
 ] as const satisfies ChangePasswordField[];
 
-export function meta({ matches }: Route.MetaArgs) {
+// Private or transactional: kept out of search results (#85).
+export function meta({ matches, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [
-    { title: t("meta.title", { page: t("account.profile.title") }) },
-    { name: "robots", content: "noindex" },
-  ];
+  return noindexMeta(t("meta.title", { page: t("account.profile.title") }));
 }
 
 export function headers() {

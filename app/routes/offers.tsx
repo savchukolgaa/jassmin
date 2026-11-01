@@ -9,30 +9,26 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { OffersPage } from "~/features/offers/OffersPage";
 import { blogResponseHeaders } from "~/lib/blog";
 import { metaTranslator, useT } from "~/lib/i18n";
-import { OFFERS_PATH } from "~/lib/offers";
 import { describeRouteError } from "~/lib/route-error";
+import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/offers";
 
-export function meta({ loaderData, matches }: Route.MetaArgs) {
+export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  const title = t("meta.title", { page: t("offers.metaTitle") });
-  const description = t("offers.metaDescription");
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:type", content: "website" },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    ...(loaderData?.hero?.image
-      ? [{ property: "og:image", content: loaderData.hero.image.url }]
-      : []),
-    ...(loaderData
-      ? [
-          { property: "og:url", content: loaderData.canonicalUrl },
-          { tagName: "link", rel: "canonical", href: loaderData.canonicalUrl },
-        ]
-      : []),
-  ];
+  const image = loaderData?.hero?.image;
+  return seoMeta(
+    { matches, location },
+    {
+      title: t("meta.title", { page: t("offers.metaTitle") }),
+      description: t("offers.metaDescription"),
+      image: image
+        ? { url: image.url, alt: image.alt, width: image.width, height: image.height }
+        : null,
+    },
+  );
 }
 
 // Cached like the blog (CMS content in the visitor's language); errors aren't cached.
@@ -47,13 +43,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const locale = await getLocale(request);
   const offers = await listActiveOffers(locale).catch(cmsUnavailable);
   const products = await getProductSummaries(offerProductIds(offers));
-  return data(
-    {
-      ...buildOffersPageView(offers, products, locale),
-      canonicalUrl: new URL(OFFERS_PATH, request.url).toString(),
-    },
-    { headers: blogCacheHeaders(request) },
-  );
+  return data(buildOffersPageView(offers, products, locale), {
+    headers: blogCacheHeaders(request),
+  });
 }
 
 export default function Offers({ loaderData }: Route.ComponentProps) {

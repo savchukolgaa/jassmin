@@ -39,7 +39,6 @@ const post: BlogPostView = {
     title: card.title,
     description: "Top, heart and base notes.",
     image: null,
-    canonicalUrl: "https://jassmin.ua/blog/how-to-choose-a-perfume",
   },
 };
 

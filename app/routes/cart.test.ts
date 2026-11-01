@@ -76,6 +76,20 @@ describe("cart loader", () => {
   });
 });
 
+describe("cart meta", () => {
+  it("keeps the cart out of search results", async () => {
+    const { meta } = await import("./cart");
+    const tags = meta({
+      matches: [{ id: "root", loaderData: { locale: "en" } }],
+    } as unknown as Parameters<typeof meta>[0]);
+
+    expect(tags).toEqual([
+      { title: "Cart — Jassmin" },
+      { name: "robots", content: "noindex, follow" },
+    ]);
+  });
+});
+
 describe("cart action", () => {
   it("rejects invalid submissions without touching the cart", async () => {
     const { action } = await import("./cart");

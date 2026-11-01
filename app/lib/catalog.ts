@@ -14,6 +14,12 @@ export const CATALOG_TITLE_KEYS = {
   women: "catalog.title.women",
 } as const satisfies Record<CatalogGender, TextKey>;
 
+/** Each catalog's `<meta name="description">` (#85). */
+export const CATALOG_META_DESCRIPTION_KEYS = {
+  men: "catalog.metaDescription.men",
+  women: "catalog.metaDescription.women",
+} as const satisfies Record<CatalogGender, TextKey>;
+
 export function isCatalogGender(value: string): value is CatalogGender {
   return (CATALOG_GENDERS as readonly string[]).includes(value);
 }

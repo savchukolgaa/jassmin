@@ -1,5 +1,6 @@
 import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ProductDetail } from "~/lib/products";
 
 const products = vi.hoisted(() => ({ resolveProductHandle: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
@@ -7,9 +8,10 @@ const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 vi.mock("~/.server/services/products", () => products);
 vi.mock("~/.server/analytics", () => analytics);
 
-const { loader, shouldRevalidate } = await import("./product");
+const { loader, meta, shouldRevalidate } = await import("./product");
 
 type LoaderArgs = Parameters<typeof loader>[0];
+type MetaArgs = Parameters<typeof meta>[0];
 
 const PUBLIC_ID = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 const SLUG = "coco-mademoiselle";
@@ -86,5 +88,86 @@ describe("product shouldRevalidate", () => {
 
   it("reloads on navigation", () => {
     expect(shouldRevalidate(args({}))).toBe(true);
+  });
+});
+
+describe("product meta", () => {
+  const matches = [
+    { id: "root", loaderData: { locale: "uk", site: { url: "https://jassmin.ua" } } },
+  ];
+  const location = { pathname: `/products/${PUBLIC_ID}`, search: "?utm_source=telegram" };
+  const variant = (price: string, inStock = true) => ({
+    id: `v-${price}`,
+    volumeMl: 50,
+    price,
+    stockQuantity: inStock ? 5 : 0,
+    inStock,
+  });
+  const product: ProductDetail = {
+    id: PUBLIC_ID,
+    title: "Coco Mademoiselle",
+    brand: "Chanel",
+    gender: "women",
+    packSize: 1,
+    imageUrl: "/images/coco.jpg",
+    description: "Свіжий східний аромат.",
+    fragranceFamilies: [],
+    notes: [],
+    variants: [variant("1250.00"), variant("3200.00", false)],
+  };
+  const run = (overrides: Partial<ProductDetail> = {}) =>
+    meta({
+      matches,
+      location,
+      loaderData: { product: { ...product, ...overrides } },
+    } as unknown as MetaArgs);
+  const content = (tags: ReturnType<typeof run>, property: string) => {
+    const tag = tags.find((tag) => "property" in tag && tag.property === property);
+    return tag && "content" in tag ? tag.content : undefined;
+  };
+
+  it("shows the name, image and price in link previews", () => {
+    const tags = run();
+
+    expect(tags).toContainEqual({ title: "Coco Mademoiselle — Chanel — Jassmin" });
+    expect(content(tags, "og:type")).toBe("product");
+    expect(content(tags, "og:title")).toBe("Coco Mademoiselle — Chanel — Jassmin");
+    expect(content(tags, "og:image")).toBe("https://jassmin.ua/images/coco.jpg");
+    expect(content(tags, "og:image:alt")).toBe("Coco Mademoiselle — Chanel");
+    expect(String(content(tags, "og:description")).replace(/\s/gu, " ")).toBe(
+      "Chanel Coco Mademoiselle — від 1 250 ₴. Свіжий східний аромат.",
+    );
+    expect(content(tags, "product:price:amount")).toBe("1250.00");
+    expect(content(tags, "product:price:currency")).toBe("UAH");
+    expect(content(tags, "product:availability")).toBe("in stock");
+    expect(tags).toContainEqual({
+      tagName: "link",
+      rel: "canonical",
+      href: `https://jassmin.ua/products/${PUBLIC_ID}`,
+    });
+  });
+
+  it("shows a single price without 'from', and the default image without its own", () => {
+    const tags = run({ variants: [variant("990.00", false)], imageUrl: null, description: null });
+
+    expect(String(content(tags, "og:description")).replace(/\s/gu, " ")).toBe(
+      "Chanel Coco Mademoiselle — 990 ₴. Купуйте в магазині парфумів Jassmin.",
+    );
+    expect(content(tags, "og:image")).toBe("https://jassmin.ua/og-default.jpg");
+    expect(content(tags, "product:availability")).toBe("out of stock");
+  });
+
+  it("has no price tags without sizes", () => {
+    const tags = run({ variants: [] });
+
+    expect(content(tags, "product:price:amount")).toBeUndefined();
+  });
+
+  it("keeps a missing product out of the index", () => {
+    const error = { status: 404, statusText: "", internal: false, data: null };
+    expect(meta({ matches, location, error } as unknown as MetaArgs)).toEqual([
+      { title: "Сторінку не знайдено — Jassmin" },
+      { name: "robots", content: "noindex, follow" },
+    ]);
   });
 });

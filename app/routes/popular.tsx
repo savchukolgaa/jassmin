@@ -5,33 +5,34 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { PopularPage } from "~/features/popular/PopularPage";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { createTranslator, metaTranslator, useT } from "~/lib/i18n";
-import { type PopularPageView, parsePopularPage, popularHref } from "~/lib/popular";
+import { type PopularPageView, parsePopularPage } from "~/lib/popular";
 import { describeRouteError } from "~/lib/route-error";
+import { errorMeta, seoMeta } from "~/lib/seo";
 import { parseTrioSearch } from "~/lib/trio";
 import type { Route } from "./+types/popular";
 
-export function meta({ loaderData, matches }: Route.MetaArgs) {
+// Family filters (from the trio builder) point to the unfiltered list; its pages are
+// self-canonical (#85).
+export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  const title = t("meta.title", { page: t("popular.metaTitle") });
-  const description = t("popular.metaDescription");
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:type", content: "website" },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    ...(loaderData
-      ? [
-          { property: "og:url", content: loaderData.canonicalUrl },
-          { tagName: "link", rel: "canonical", href: loaderData.canonicalUrl },
-        ]
-      : []),
-  ];
+  const name = t("popular.metaTitle");
+  const page = loaderData?.page ?? 1;
+  return seoMeta(
+    { matches, location },
+    {
+      title: t("meta.title", { page: page > 1 ? t("meta.paged", { title: name, page }) : name }),
+      description: t("popular.metaDescription"),
+      keepParams: ["page"],
+    },
+  );
 }
 
 // The staff-ranked perfumes topped up from the bestsellers (#67), from PostgreSQL only. `family`
 // params come from the trio builder's "Show my trio": known families only, at most three, in the
-// order they were picked. Family filters aren't canonical; pages after the first are.
+// order they were picked.
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const [locale, knownFamilies] = await Promise.all([getLocale(request), getTrioFamilies()]);
@@ -42,7 +43,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     ...page,
     families: families.map((value) => ({ value, label: fragranceFamilyLabel(value, translator) })),
   };
-  return { ...view, canonicalUrl: new URL(popularHref([], page.page), url).toString() };
+  return view;
 }
 
 // Adding a card to the cart doesn't change the list, so skip re-ranking (the layout still

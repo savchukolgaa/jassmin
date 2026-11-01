@@ -11,28 +11,26 @@ import { BLOG_PAGE_SIZE, blogHref, blogResponseHeaders, parseBlogSearch } from "
 import { cn } from "~/lib/cn";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
+import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/blog";
 
-export function meta({ loaderData, matches }: Route.MetaArgs) {
+// Paginated: each page is self-canonical (#85).
+export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
   const page = loaderData?.page ?? 1;
-  const title = t("meta.title", {
-    page: page > 1 ? t("blog.pageTitle", { page }) : t("blog.title"),
-  });
-  const description = t("blog.defaultDescription");
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:type", content: "website" },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    ...(loaderData
-      ? [
-          { property: "og:url", content: loaderData.canonicalUrl },
-          { tagName: "link", rel: "canonical", href: loaderData.canonicalUrl },
-        ]
-      : []),
-  ];
+  return seoMeta(
+    { matches, location },
+    {
+      title: t("meta.title", {
+        page: page > 1 ? t("blog.pageTitle", { page }) : t("blog.title"),
+      }),
+      description: t("blog.defaultDescription"),
+      keepParams: ["page"],
+    },
+  );
 }
 
 export function headers({ loaderHeaders }: Route.HeadersArgs) {
@@ -50,13 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (page > posts.pageCount && posts.total > 0) {
     throw data(null, { status: 404 });
   }
-  return data(
-    {
-      ...buildBlogListView(posts, locale),
-      canonicalUrl: new URL(blogHref(page), url.origin).toString(),
-    },
-    { headers: blogCacheHeaders(request) },
-  );
+  return data(buildBlogListView(posts, locale), { headers: blogCacheHeaders(request) });
 }
 
 export default function Blog({ loaderData }: Route.ComponentProps) {

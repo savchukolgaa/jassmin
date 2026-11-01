@@ -86,6 +86,5 @@ export interface BlogPostView extends BlogPostCardView {
     description: string;
     /** Absolute image URL for `og:image`, or `null`. */
     image: string | null;
-    canonicalUrl: string;
   };
 }

@@ -12,7 +12,8 @@ const { loader, meta, shouldRevalidate } = await import("./popular");
 type LoaderArgs = Parameters<typeof loader>[0];
 type MetaArgs = Parameters<typeof meta>[0];
 
-const EN = [{ id: "root", loaderData: { locale: "en" } }];
+const EN = [{ id: "root", loaderData: { locale: "en", site: { url: "https://jassmin.ua" } } }];
+const LOCATION = { pathname: "/popular", search: "" };
 const page = { products: [], total: 30, page: 2, pageCount: 3 };
 
 function load(query = "") {
@@ -53,11 +54,11 @@ describe("popular loader", () => {
     ]);
   });
 
-  it("reads the page and links the shown page canonically, without the families", async () => {
+  it("reads the page and the families", async () => {
     const result = await load(`?page=2&${new URLSearchParams([["family", "квіткові"]])}`);
 
     expect(products.getPopularPage).toHaveBeenCalledWith(["квіткові"], 2);
-    expect(result.canonicalUrl).toBe("http://localhost/popular?page=2");
+    expect(result.page).toBe(2);
   });
 
   it("treats an invalid page as the first", async () => {
@@ -66,13 +67,17 @@ describe("popular loader", () => {
     const result = await load("?page=abc");
 
     expect(products.getPopularPage).toHaveBeenCalledWith([], 1);
-    expect(result.canonicalUrl).toBe("http://localhost/popular");
+    expect(result.page).toBe(1);
   });
 });
 
 describe("popular meta", () => {
   it("has a title and description, with or without loader data", () => {
-    const tags = meta({ loaderData: undefined, matches: EN } as unknown as MetaArgs);
+    const tags = meta({
+      loaderData: undefined,
+      matches: EN,
+      location: LOCATION,
+    } as unknown as MetaArgs);
 
     expect(tags).toContainEqual({ title: "Popular perfumes — Jassmin" });
     expect(tags).toContainEqual({
@@ -82,21 +87,32 @@ describe("popular meta", () => {
     });
   });
 
-  it("sets the canonical URL", () => {
+  it("points filtered pages to the unfiltered list, keeping the page number", () => {
+    const search = `?${new URLSearchParams([
+      ["family", "квіткові"],
+      ["page", "2"],
+      ["utm_source", "instagram"],
+    ])}`;
     const tags = meta({
       matches: EN,
-      loaderData: { ...page, families: [], canonicalUrl: "http://x/popular?page=2" },
+      location: { pathname: "/popular", search },
+      loaderData: { ...page, families: [] },
     } as unknown as MetaArgs);
 
+    expect(tags).toContainEqual({ title: "Popular perfumes — Page 2 — Jassmin" });
     expect(tags).toContainEqual({
       tagName: "link",
       rel: "canonical",
-      href: "http://x/popular?page=2",
+      href: "https://jassmin.ua/popular?page=2",
     });
   });
 
   it("is in Ukrainian by default", () => {
-    const tags = meta({ loaderData: undefined, matches: [] } as unknown as MetaArgs);
+    const tags = meta({
+      loaderData: undefined,
+      matches: [],
+      location: LOCATION,
+    } as unknown as MetaArgs);
 
     expect(tags).toContainEqual({ title: "Популярні аромати — Jassmin" });
   });

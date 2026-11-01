@@ -11,7 +11,7 @@ type LoaderArgs = Parameters<typeof loader>[0];
 type MetaArgs = Parameters<typeof meta>[0];
 
 // `meta` reads the locale from the root match; the assertions are in English.
-const EN = [{ id: "root", loaderData: { locale: "en" } }];
+const EN = [{ id: "root", loaderData: { locale: "en", site: { url: "https://jassmin.ua" } } }];
 type HeadersArgs = Parameters<typeof headers>[0];
 
 function summary(slug: string, publishedAt: string): BlogPostSummary {
@@ -72,7 +72,6 @@ describe("blog loader", () => {
     });
     expect(result.data.posts.map((post) => post.slug)).toEqual(["newer", "older"]);
     expect(result.data.posts[0]?.publishedLabel.replace(/\s/gu, " ")).toBe("22 жовтня 2026 р.");
-    expect(result.data.canonicalUrl).toBe("http://localhost/blog");
   });
 
   it("asks for the requested page and falls back to page 1 for bad values", async () => {
@@ -80,9 +79,8 @@ describe("blog loader", () => {
       page([summary("a", "2026-10-22T10:00:00.000Z")], { page: 2, pageCount: 2, total: 13 }),
     );
 
-    const result = await load("http://localhost/blog?page=2");
+    await load("http://localhost/blog?page=2");
     expect(content.listBlogPosts).toHaveBeenLastCalledWith({ page: 2, pageSize: 12, locale: "uk" });
-    expect(result.data.canonicalUrl).toBe("http://localhost/blog?page=2");
 
     content.listBlogPosts.mockResolvedValue(page([]));
     await load("http://localhost/blog?page=abc");
@@ -145,29 +143,34 @@ describe("blog loader locale", () => {
 });
 
 describe("blog meta", () => {
-  it("numbers later pages and sets the canonical URL", () => {
+  it("numbers later pages, which are self-canonical without tracking parameters", () => {
     const tags = meta({
       matches: EN,
-      loaderData: {
-        posts: [],
-        page: 2,
-        pageCount: 2,
-        total: 13,
-        canonicalUrl: "http://x/blog?page=2",
-      },
+      location: { pathname: "/blog", search: "?utm_source=ig&page=2&fbclid=x" },
+      loaderData: { posts: [], page: 2, pageCount: 2, total: 13 },
     } as unknown as MetaArgs);
 
     expect(tags).toContainEqual({ title: "Blog — Page 2 — Jassmin" });
     expect(tags).toContainEqual({
       tagName: "link",
       rel: "canonical",
-      href: "http://x/blog?page=2",
+      href: "https://jassmin.ua/blog?page=2",
+    });
+    expect(tags).toContainEqual({
+      property: "og:image",
+      content: "https://jassmin.ua/og-default.jpg",
     });
   });
 
-  it("has a title without loader data", () => {
-    expect(meta({ loaderData: undefined, matches: EN } as unknown as MetaArgs)).toContainEqual({
-      title: "Blog — Jassmin",
-    });
+  it("keeps a failed page out of the index", () => {
+    const error = { status: 503, statusText: "", internal: false, data: null };
+    expect(
+      meta({
+        loaderData: undefined,
+        matches: EN,
+        location: { pathname: "/blog", search: "" },
+        error,
+      } as unknown as MetaArgs),
+    ).toContainEqual({ name: "robots", content: "noindex, follow" });
   });
 });

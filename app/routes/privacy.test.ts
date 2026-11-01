@@ -10,9 +10,10 @@ const content = vi.hoisted(() => ({ getSiteSettings: vi.fn() }));
 
 vi.mock("~/.server/cms/content", () => content);
 
-const { loader } = await import("./privacy");
+const { loader, meta } = await import("./privacy");
 
 type LoaderArgs = Parameters<typeof loader>[0];
+type MetaArgs = Parameters<typeof meta>[0];
 
 /** The loader for a visitor whose language is `locale` (from the `Accept-Language` header). */
 function load(locale = "uk") {
@@ -110,5 +111,23 @@ describe("PrivacyPolicy", () => {
     expect(html).toContain("Політика конфіденційності та cookie");
     expect(html).toContain("ФОП Іваненко Марія");
     expect(html).toContain("Закону України «Про захист персональних даних»");
+  });
+});
+
+describe("privacy meta", () => {
+  it("has a translated title, description and canonical URL", () => {
+    const tags = meta({
+      matches: [{ id: "root", loaderData: { locale: "en", site: { url: "https://jassmin.ua" } } }],
+      location: { pathname: "/privacy", search: "?fbclid=x" },
+    } as unknown as MetaArgs);
+
+    expect(tags).toContainEqual({ title: "Privacy and cookie policy — Jassmin" });
+    expect(tags).toContainEqual(expect.objectContaining({ name: "description" }));
+    expect(tags).toContainEqual({
+      tagName: "link",
+      rel: "canonical",
+      href: "https://jassmin.ua/privacy",
+    });
+    expect(tags).toContainEqual({ property: "og:locale", content: "en_US" });
   });
 });

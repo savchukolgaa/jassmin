@@ -6,6 +6,7 @@ import type { SimulatorCheckout, SimulatorOutcome } from "~/.server/payments/sim
 import { Button } from "~/components/ui/Button";
 import { safeRedirect } from "~/lib/auth";
 import { metaTranslator, useT } from "~/lib/i18n";
+import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/payments.simulator";
 
 // The local payment simulator's hosted page (#44), development only: every request is a 404
@@ -13,12 +14,13 @@ import type { Route } from "./+types/payments.simulator";
 // its buttons POST a signed callback over HTTP to `/payments/callback`, exactly as a real provider
 // would, then send the shopper back to the success page.
 
-export function meta({ matches }: Route.MetaArgs) {
+// Private or transactional: kept out of search results (#85).
+export function meta({ matches, error }: Route.MetaArgs) {
+  if (error) {
+    return errorMeta({ matches, error });
+  }
   const { t } = metaTranslator(matches);
-  return [
-    { title: t("meta.title", { page: t("payments.simulator.title") }) },
-    { name: "robots", content: "noindex" },
-  ];
+  return noindexMeta(t("meta.title", { page: t("payments.simulator.title") }));
 }
 
 function requireSimulator() {

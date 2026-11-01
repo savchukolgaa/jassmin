@@ -180,20 +180,31 @@ export function buildSeoMeta(
 }
 
 /**
+ * Private and transactional pages (cart, checkout, account, …): a title and `noindex, follow`.
+ * They're never shared, so no canonical URL or Open Graph tags.
+ */
+export function noindexMeta(title: string): MetaDescriptor[] {
+  return [{ title }, { name: "robots", content: NOINDEX }];
+}
+
+/**
  * The `meta` for a page that failed to render (404, 503, 500): a translated title and
  * `noindex, follow`, so error pages never end up in search results.
  */
 export function errorMeta({
   matches,
   error,
+  notFoundTitle,
 }: {
   matches: SeoContext["matches"];
   error: unknown;
+  /** The page part of a 404's title, e.g. "Article not found"; "Page not found" by default. */
+  notFoundTitle?: string;
 }): MetaDescriptor[] {
   const { t } = metaTranslator(matches);
   const { message } = describeRouteError(error, t, false);
-  const page = message === "404" ? t("errors.notFoundTitle") : t("errors.title");
-  return [{ title: t("meta.title", { page }) }, { name: "robots", content: NOINDEX }];
+  const page = message === "404" ? (notFoundTitle ?? t("errors.notFoundTitle")) : t("errors.title");
+  return noindexMeta(t("meta.title", { page }));
 }
 
 /** A `numeric(10, 2)` price as Open Graph's plain decimal amount, e.g. `"1250.00"`. */

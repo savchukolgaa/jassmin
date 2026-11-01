@@ -99,6 +99,21 @@ error pages.
 - Loaders stop computing `canonicalUrl` from `request.url` (`blog.tsx`, `offers.tsx`,
   `popular.tsx`, and `seo.canonicalUrl` in `app/.server/services/blog.ts`): one source of truth,
   and it no longer trusts `Host`. The `origin` parameter of `getBlogPost` goes away.
+- *Deviations made while implementing (steps 5–12):*
+  - **Private pages use `noindexMeta(title)`** (title + `robots: noindex, follow`) instead of the
+    full `seoMeta({ noindex: true })`: they're never shared, so canonical, Open Graph and Twitter
+    tags would only be noise. `errorMeta` is built on it, and takes an optional `notFoundTitle`
+    so a missing blog post keeps its "Article not found" title.
+  - **Catalog pages keep `page` in the canonical** (self-canonical like the blog and `/popular`)
+    unless a filter or sort is active; then the canonical is the unfiltered catalog. Later pages of
+    the catalog and `/popular` get numbered titles through a new `meta.paged` key, so titles stay
+    unique.
+  - **`checkout/pay/:orderId` gets no `X-Robots-Tag`:** its loader and action only ever redirect,
+    and redirects aren't indexed.
+  - **Privacy uses the existing `privacy.intro`** as its description instead of a new key.
+  - **Route `meta` tests live in each route's existing `*.test.ts`** (plus a new
+    `app/root.test.ts`) instead of one `app/routes/meta.test.ts`, next to the code as `AGENTS.md`
+    asks.
 - **Default share image:** `public/og-default.jpg`, 1200×630, ≤300 KB, the Jassmin wordmark on
   the C+ background (`docs/design.md` tokens): no photo.
 
@@ -131,13 +146,14 @@ error pages.
 | create | `app/lib/seo.ts` | `seoMeta`, `truncateDescription`, `canonicalUrl`, `absoluteUrl`, `seoSite`, `errorMeta`, `OG_LOCALES`, `SITE_NAME`, `DEFAULT_SHARE_IMAGE` |
 | create | `app/lib/seo.test.ts` | Helper tests |
 | create | `public/og-default.jpg` | Default 1200×630 share image |
-| create | `app/routes/meta.test.ts` | One `meta` test per route type |
+| create | `app/root.test.ts` | Root `meta` for unmatched URLs |
+| modify | `app/routes/*.test.ts` | `meta` tests per route type |
+| modify | `app/lib/catalog.ts` | `CATALOG_META_DESCRIPTION_KEYS` |
 | modify | `app/.server/env.ts`, `app/.server/env.test.ts` | `PUBLIC_SITE_URL` (required in production) + `getSiteUrl()` |
 | modify | `.env.example`, `README.md` | Document `PUBLIC_SITE_URL` |
 | modify | `app/root.tsx` | Return `site` from the loader; root `meta` for unmatched URLs |
 | modify | `app/routes/home.tsx`, `catalog.tsx`, `product.tsx`, `blog.tsx`, `blog-post.tsx`, `offers.tsx`, `popular.tsx`, `privacy.tsx` | Indexable pages through `seoMeta` |
 | modify | `app/routes/cart.tsx`, `checkout.tsx`, `checkout-success.tsx`, `login.tsx`, `register.tsx`, `account.tsx`, `account.profile.tsx`, `account.orders.$id.tsx`, `payments.simulator.tsx` | `noindex, follow` through `seoMeta` |
-| modify | `app/routes/checkout-pay.ts` | `X-Robots-Tag: noindex` |
 | modify | `app/.server/services/blog.ts`, `app/.server/services/blog.test.ts`, `app/lib/blog.ts` | Drop `canonicalUrl` / `origin` |
 | modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | New copy (descriptions, alt text) |
 
@@ -168,30 +184,30 @@ error pages.
   params dropped (`utm_source`, `fbclid`, `gclid`), `page` kept only when listed and >1, `noindex`
   output (robots present, canonical and `og:url` absent), `og:locale` / `og:locale:alternate` per
   locale, default image + alt when no image, Twitter tags.
-- [ ] **5. Indexable static pages** — `privacy.tsx` (new `privacy.metaDescription`), `offers.tsx`
+- [x] **5. Indexable static pages** — `privacy.tsx` (new `privacy.metaDescription`), `offers.tsx`
   (hero image or default; drop `canonicalUrl` from the loader), `popular.tsx` (`keepParams:
   ["page"]`; drop `canonicalUrl` from the loader), `blog.tsx` (`keepParams: ["page"]`; drop
   `canonicalUrl` from the loader). Each returns `errorMeta` when `error` is set.
-- [ ] **6. Home and catalog** — `home.tsx`: CMS `seo.title` as the raw title, CMS description or
+- [x] **6. Home and catalog** — `home.tsx`: CMS `seo.title` as the raw title, CMS description or
   `home.defaultDescription`, CMS image or default. Improve `home.defaultDescription` in both
   languages to a full sentence (it is currently "Магазин парфумів Jassmin"). `catalog.tsx`: title as
   today, new `catalog.metaDescription.women` / `.men` keys, default image, no query params in the
   canonical (catalog filters and sort are not canonical).
-- [ ] **7. Blog post** — `blog-post.tsx` uses `seoMeta({ type: "article", image: seo.image, extra:
+- [x] **7. Blog post** — `blog-post.tsx` uses `seoMeta({ type: "article", image: seo.image, extra:
   [article:published_time] })`; keep the current title/description. Remove `canonicalUrl` and the
   `origin` argument from `getBlogPost` in `app/.server/services/blog.ts` and its type in
   `app/lib/blog.ts`; update `services/blog.test.ts`.
-- [ ] **8. Product** — `product.tsx`: title `t("meta.title", { page: "<title> — <brand>" })`,
+- [x] **8. Product** — `product.tsx`: title `t("meta.title", { page: "<title> — <brand>" })`,
   description with the price (see Decisions; new `product.metaDescription` key, prices via a plain
   decimal helper `priceAmount()` in `app/lib/seo.ts` and `formatPrice` for the human text),
   `type: "product"`, product image (absolute) or default, `image:alt` = `"<title> — <brand>"`,
   `extra`: `product:price:amount`, `product:price:currency=UAH`, `product:availability`. Remove
   `DESCRIPTION_LENGTH` (the helper truncates). Uses `metaTranslator` (it doesn't today).
-- [ ] **9. noindex pages** — cart, checkout, checkout success, login, register, account layout,
+- [x] **9. noindex pages** — cart, checkout, checkout success, login, register, account layout,
   account index (if it has meta; else the layout's applies), profile, order, payments simulator:
   `seoMeta({ ..., noindex: true })`, keeping their current titles. `checkout-pay.ts`: add
   `X-Robots-Tag: noindex` to its responses.
-- [ ] **10. Error pages** — Add `meta` to `app/root.tsx` that returns `errorMeta` when `error` is
+- [x] **10. Error pages** — Add `meta` to `app/root.tsx` that returns `errorMeta` when `error` is
   set (unmatched URLs) and `[]` otherwise. Every route from steps 5–9 returns `errorMeta` when
   `error` is set (product/blog-post 404, CMS 503). Check in the running app: `/products/<random
   uuid>`, `/nope`, `/blog/missing` render `noindex, follow`.
@@ -200,7 +216,7 @@ error pages.
   `meta`; translated route ids and `/en/...` paths (#84) don't affect `seoMeta` because it reads
   `location.pathname`. Re-run the route meta tests against the new paths. If #84 adds `hreflang`
   links, keep them in its helper; `seoMeta` must not duplicate them.
-- [ ] **12. Route meta tests** — `app/routes/meta.test.ts` calls each `meta` export with
+- [x] **12. Route meta tests** — `app/routes/meta.test.ts` calls each `meta` export with
   hand-built `matches` (root data `{ locale, site: { url: "https://jassmin.test" } }`), `location`
   and `loaderData`: home, catalog (women/men, uk/en descriptions differ), product (price tags,
   absolute image, `og:type=product`), blog list (page 2 self-canonical), blog post, offers, popular

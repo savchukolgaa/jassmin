@@ -57,7 +57,7 @@ describe("account order loader", () => {
 
     expect(meta({ matches, loaderData: detail } as unknown as MetaArgs)).toEqual([
       { title: "Order #42 — Jassmin" },
-      { name: "robots", content: "noindex" },
+      { name: "robots", content: "noindex, follow" },
     ]);
   });
 });

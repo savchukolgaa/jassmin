@@ -13,7 +13,7 @@ import {
 } from "./blog";
 
 const CMS = "http://cms.test";
-const SITE = { origin: "https://jassmin.ua", mediaBaseUrl: CMS, locale: "en" } as const;
+const SITE = { mediaBaseUrl: CMS, locale: "en" } as const;
 
 function fixturePost(): BlogPost {
   const [entry] = collectionResponse(blogPostEntry).parse(blogPostBySlug).data;
@@ -90,7 +90,6 @@ describe("buildBlogPostView", () => {
       title: "Choosing a perfume",
       description: "A short guide.",
       image: `${CMS}/uploads/og.jpg`,
-      canonicalUrl: "https://jassmin.ua/blog/how-to-choose-a-perfume",
     });
   });
 

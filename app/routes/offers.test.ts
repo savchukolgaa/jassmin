@@ -16,7 +16,8 @@ type MetaArgs = Parameters<typeof meta>[0];
 type HeadersArgs = Parameters<typeof headers>[0];
 
 // `meta` reads the locale from the root match; the assertions are in English.
-const EN = [{ id: "root", loaderData: { locale: "en" } }];
+const EN = [{ id: "root", loaderData: { locale: "en", site: { url: "https://jassmin.ua" } } }];
+const LOCATION = { pathname: "/offers", search: "?utm_source=viber&gclid=abc" };
 
 const COCO = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 const SAUVAGE = "01a1652b-6e25-7c44-8d5b-bce46a20ad83";
@@ -107,7 +108,6 @@ describe("offers loader", () => {
         ],
       },
     ]);
-    expect(result.data.canonicalUrl).toBe("http://localhost/offers");
   });
 
   it("returns an empty page when no offer is active", async () => {
@@ -152,7 +152,11 @@ describe("offers headers", () => {
 
 describe("offers meta", () => {
   it("has a title and description, with or without loader data", () => {
-    const tags = meta({ loaderData: undefined, matches: EN } as unknown as MetaArgs);
+    const tags = meta({
+      loaderData: undefined,
+      matches: EN,
+      location: LOCATION,
+    } as unknown as MetaArgs);
 
     expect(tags).toContainEqual({ title: "Special offers — Jassmin" });
     expect(tags).toContainEqual({
@@ -161,18 +165,31 @@ describe("offers meta", () => {
     });
   });
 
-  it("sets the canonical URL and the hero's image", () => {
+  it("sets the clean canonical URL and the hero's image", () => {
     const tags = meta({
       matches: EN,
+      location: LOCATION,
       loaderData: {
-        hero: { image: { url: "http://cms.test/uploads/hero.jpg" } },
+        hero: {
+          image: {
+            url: "http://cms.test/uploads/hero.jpg",
+            alt: "Gift box",
+            width: 1600,
+            height: 900,
+          },
+        },
         perks: [],
         groups: [],
-        canonicalUrl: "http://x/offers",
       },
     } as unknown as MetaArgs);
 
-    expect(tags).toContainEqual({ tagName: "link", rel: "canonical", href: "http://x/offers" });
+    expect(tags).toContainEqual({
+      tagName: "link",
+      rel: "canonical",
+      href: "https://jassmin.ua/offers",
+    });
+    expect(tags).toContainEqual({ property: "og:image:alt", content: "Gift box" });
+    expect(tags).toContainEqual({ property: "og:image:width", content: "1600" });
     expect(tags).toContainEqual({
       property: "og:image",
       content: "http://cms.test/uploads/hero.jpg",

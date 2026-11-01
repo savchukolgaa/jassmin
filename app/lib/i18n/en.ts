@@ -7,6 +7,7 @@ export const en = {
   },
   meta: {
     title: "{page} — Jassmin",
+    paged: "{title} — Page {page}",
     defaultImageAlt: "Jassmin — perfume shop",
   },
   locale: {
@@ -172,6 +173,11 @@ export const en = {
     },
   },
   catalog: {
+    metaDescription: {
+      men: "Men's perfumes at Jassmin: fragrances from well-known brands in sizes from 5 ml. Choose by brand and fragrance family.",
+      women:
+        "Women's perfumes at Jassmin: fragrances from well-known brands in sizes from 5 ml. Choose by brand and fragrance family.",
+    },
     title: {
       men: "Men Perfumes",
       women: "Women Perfumes",
@@ -225,6 +231,8 @@ export const en = {
     },
   },
   product: {
+    metaDescription: "{brand} {title} — {price}.",
+    metaFallback: "Shop it at the Jassmin perfume store.",
     ml: "ml",
     fromPrice: "from {price}",
     quickAdd: "Add {title} to cart",
@@ -499,7 +507,8 @@ export const en = {
     next: "Next",
   },
   home: {
-    defaultDescription: "Jassmin perfume store",
+    defaultDescription:
+      "Jassmin perfume store: women's and men's fragrances from well-known brands in sizes from 5 ml.",
     about: "About us",
     hero: {
       chip: "Women · Men",

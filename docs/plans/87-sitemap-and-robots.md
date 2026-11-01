@@ -100,10 +100,10 @@ everything outside production.
   optional boolean (`"true"`/`"1"`), with empty values counting as unset, like the other optional
   vars. It's for production-mode staging or preview servers. The output is then
   `User-agent: *\nDisallow: /` plus the `Sitemap:` line.
-- **`PUBLIC_SITE_URL` comes from #85 (deviation).** #85 is being implemented in parallel and adds
-  `PUBLIC_SITE_URL` plus `getSiteUrl(env)` (no trailing slash, `http://localhost:${PORT}`
-  outside production). Step 1 therefore only adds `ROBOTS_DISALLOW_ALL`; the builders take
-  `siteUrl` as a parameter, and the routes call `getSiteUrl` once #85 is on `main`.
+- **`PUBLIC_SITE_URL` comes from #85 (deviation, merged).** #85 added `PUBLIC_SITE_URL`
+  (required in production) and `getSiteUrl(env, request)`, which falls back to the request's origin
+  outside production. Step 1 therefore only adds `ROBOTS_DISALLOW_ALL`; the builders take `siteUrl`
+  as a parameter, and the routes pass `getSiteUrl(getEnv(), request)`.
 - **Migration number.** #83 also adds a migration (`0016_product_slug_history`). Whichever lands
   second renumbers its migration (regenerate the journal and snapshot with `pnpm db:generate`
   after rebasing) and updates the rollback chains in `migrator.test.ts`.

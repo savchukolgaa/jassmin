@@ -3,6 +3,7 @@
 import { z } from "zod";
 import type { CmsImage } from "./cms";
 import type { Locale } from "./i18n";
+import { pathFor } from "./paths";
 
 export const BLOG_PAGE_SIZE = 12;
 
@@ -19,13 +20,14 @@ export function parseBlogSearch(params: URLSearchParams): BlogSearch {
   return blogSearchSchema.parse({ page: params.get("page") ?? undefined });
 }
 
-/** Link to `page` of the blog list, without `?page=` for the first page. */
-export function blogHref(page: number): string {
-  return page > 1 ? `/blog?page=${page}` : "/blog";
+/** Link to `page` of the blog list in `locale`, without `?page=` for the first page. */
+export function blogHref(locale: Locale, page = 1): string {
+  return pathFor(locale, "blog", {}, { search: page > 1 ? `page=${page}` : "" });
 }
 
-export function blogPostHref(slug: string): string {
-  return `/blog/${encodeURIComponent(slug)}`;
+/** A post's URL in `locale`, with its slug in that locale (#84). */
+export function blogPostHref(locale: Locale, slug: string): string {
+  return pathFor(locale, "blogPost", { slug });
 }
 
 // Strapi UIDs only use these characters, so anything else can't be a post.
@@ -36,8 +38,9 @@ export function isBlogSlug(value: string | undefined): value is string {
 }
 
 /**
- * What blog HTML depends on besides the URL: the session (header) and the locale, which comes from
- * the `locale` cookie or, without one, `Accept-Language`.
+ * What blog HTML depends on besides the URL (which decides the locale, #84): the session (header),
+ * and the `locale` cookie and `Accept-Language`, which decide the redirect to English and the
+ * "View in English" hint.
  */
 export const BLOG_VARY = "Cookie, Accept-Language";
 
@@ -89,4 +92,6 @@ export interface BlogPostView extends BlogPostCardView {
     /** Absolute image URL for `og:image`, or `null`. */
     image: string | null;
   };
+  /** The post's slug in each locale it's published in, for `hreflang` and the switcher. */
+  alternates: Partial<Record<Locale, string>>;
 }

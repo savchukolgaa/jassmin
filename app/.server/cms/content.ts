@@ -17,6 +17,7 @@ import {
   type BlogPostEntry,
   type BlogPostSummaryEntry,
   blogPostEntry,
+  blogPostSlugEntry,
   blogPostSummaryEntry,
   collectionResponse,
   type HomePageEntry,
@@ -214,11 +215,13 @@ export function toBlogPost(
         ogImage: toImage(entry.seo.ogImage, baseUrl),
       }
     : null;
+  const summary = toBlogPostSummary(entry, baseUrl, requested);
   return {
-    ...toBlogPostSummary(entry, baseUrl, requested),
+    ...summary,
     updatedAt: entry.updatedAt ? new Date(entry.updatedAt).toISOString() : null,
     content: entry.content,
     seo,
+    alternates: { [summary.locale]: entry.slug },
   };
 }
 
@@ -346,9 +349,27 @@ export async function listBlogPosts(
   );
 }
 
+/** The slug of a post (`documentId`) in `locale`, or `null` when it has no published version there. */
+async function getBlogPostSlug(documentId: string, locale: Locale): Promise<string | null> {
+  const { data } = await cmsFetch(
+    "blog-posts",
+    {
+      filters: { documentId: { $eq: documentId } },
+      fields: ["slug"],
+      pagination: { page: 1, pageSize: 1 },
+    },
+    collectionResponse(blogPostSlugEntry),
+    { locale },
+  );
+  return data[0]?.slug ?? null;
+}
+
 /**
- * The published post with this slug, in `locale` or else in Ukrainian, or `null` when there is
- * none (a 404 for the route). Slugs are shared by all locales, so the URL is the same in each.
+ * The published post with this slug in `locale`, or else the Ukrainian post with this slug, or
+ * `null` when there is none (a 404 for the route). Slugs are per locale (#84): `alternates` holds
+ * the post's slug in each locale it's published in, for the language switcher and `hreflang`. An
+ * English URL with a Ukrainian slug gets the Ukrainian post; the route redirects to the English
+ * slug when `alternates.en` is set, and otherwise shows the Ukrainian post as a fallback.
  */
 export async function getBlogPostBySlug(
   slug: string,
@@ -376,7 +397,19 @@ export async function getBlogPostBySlug(
     const [entry] = data;
     return entry ? { entry, locale: l } : null;
   });
-  return found ? toBlogPost(found.entry, getEnv().STRAPI_URL, found.locale) : null;
+  if (!found) {
+    return null;
+  }
+  const post = toBlogPost(found.entry, getEnv().STRAPI_URL, found.locale);
+  const others = LOCALES.filter((l) => l !== post.locale);
+  const slugs = await Promise.all(others.map((l) => getBlogPostSlug(found.entry.documentId, l)));
+  others.forEach((l, i) => {
+    const other = slugs[i];
+    if (other) {
+      post.alternates[l] = other;
+    }
+  });
+  return post;
 }
 
 /** A UUID in any version: the shape of `products.public_id`. PostgreSQL rejects anything else. */

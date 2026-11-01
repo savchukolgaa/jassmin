@@ -4,16 +4,17 @@ import { focusRing } from "~/components/layout/nav";
 import { RichText } from "~/components/ui/RichText";
 import type { BlogPostView } from "~/lib/blog";
 import { blogPostBreadcrumbs } from "~/lib/breadcrumbs";
-import { useContentLang, useT } from "~/lib/i18n";
+import { useContentLang, usePathFor, useT } from "~/lib/i18n";
 import { BlogCover } from "./BlogCover";
 
 /** Link back to the article list, shown on an article's error page. */
 export function BackToBlogLink() {
   const { t } = useT();
+  const path = usePathFor();
 
   return (
     <Link
-      to="/blog"
+      to={path("blog")}
       className={`inline-flex min-h-11 items-center rounded-pill font-bold text-primary-dark underline-offset-2 hover:underline ${focusRing("onLight")}`}
     >
       {t("blog.back")}

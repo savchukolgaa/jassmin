@@ -34,14 +34,17 @@ describe("parseBlogSearch", () => {
 
 describe("blogHref", () => {
   it("omits the page param on the first page", () => {
-    expect(blogHref(1)).toBe("/blog");
-    expect(blogHref(2)).toBe("/blog?page=2");
+    expect(blogHref("uk", 1)).toBe("/blog");
+    expect(blogHref("en", 1)).toBe("/en/blog");
+    expect(blogHref("uk", 2)).toBe("/blog?page=2");
+    expect(blogHref("en", 3)).toBe("/en/blog?page=3");
   });
 });
 
 describe("blogPostHref", () => {
   it("links to the article by slug", () => {
-    expect(blogPostHref("how-to-choose-a-perfume")).toBe("/blog/how-to-choose-a-perfume");
+    expect(blogPostHref("uk", "how-to-choose-a-perfume")).toBe("/blog/how-to-choose-a-perfume");
+    expect(blogPostHref("en", "how-to-pick")).toBe("/en/blog/how-to-pick");
   });
 });
 

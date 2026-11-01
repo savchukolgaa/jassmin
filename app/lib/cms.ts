@@ -112,6 +112,8 @@ export interface BlogPost extends BlogPostSummary {
   /** Markdown; render and sanitize it before showing it. */
   content: string;
   seo: Seo | null;
+  /** The post's slug in each locale it's published in (#84), including `locale`'s own. */
+  alternates: Partial<Record<Locale, string>>;
 }
 
 export interface Paginated<T> {

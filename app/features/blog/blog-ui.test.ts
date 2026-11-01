@@ -35,6 +35,7 @@ const post: BlogPostView = {
   ...card,
   updatedAt: "2026-10-23T08:00:00.000Z",
   authorName: "Jassmin team",
+  alternates: {},
   contentHtml: "<h2>Start with the notes</h2>\n<p>A perfume changes.</p>\n",
   seo: {
     title: card.title,
@@ -47,7 +48,7 @@ describe("BlogPostCard", () => {
   it("links the title to the article and shows the date and excerpt", () => {
     const html = render(createElement(BlogPostCard, { post: card }));
 
-    expect(html).toMatch(/<a[^>]*href="\/blog\/how-to-choose-a-perfume"[^>]*>How to choose/);
+    expect(html).toMatch(/<a[^>]*href="\/en\/blog\/how-to-choose-a-perfume"[^>]*>How to choose/);
     expect(html).toContain('<time dateTime="2026-10-22T19:06:58.498Z">22 October 2026</time>');
     expect(html).toContain("Top, heart and base notes.");
     expect(html).toContain('loading="lazy"');
@@ -82,9 +83,10 @@ describe("BlogArticle", () => {
     expect(html).toContain("<h2>Start with the notes</h2>");
     // Breadcrumbs (#86): Home > Blog > the post, which isn't a link.
     expect(html).toContain('<nav aria-label="Breadcrumb"');
-    expect(html).toMatch(/href="\/"[^>]*>Home<\/a>/);
-    expect(html).toMatch(/href="\/blog"[^>]*>Blog<\/a>/);
+    expect(html).toMatch(/href="\/en"[^>]*>Home<\/a>/);
+    expect(html).toMatch(/href="\/en\/blog"[^>]*>Blog<\/a>/);
     expect(html).toMatch(/aria-current="page"[^>]*>How to choose a perfume<\/span>/);
+    expect(html).toMatch(/href="\/en\/blog"[^>]*>← Back to the blog/);
     expect(html).not.toContain(" lang=");
   });
 

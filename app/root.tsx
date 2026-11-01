@@ -9,6 +9,7 @@ import {
 } from "react-router";
 import { getEnv, getSiteUrl } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
+import { localeRedirectMiddleware } from "~/.server/locale-middleware";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
 import { localeFromPath } from "~/lib/paths";
@@ -25,6 +26,9 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Playfair+Display:wght@600..700&display=swap",
   },
 ];
+
+// Sends visitors who chose English from Ukrainian pages to the English ones (#84).
+export const middleware: Route.MiddlewareFunction[] = [localeRedirectMiddleware];
 
 // The page's locale comes from its URL (#84). Runs on every request, after every action and
 // whenever a navigation crosses into the other language (`shouldRevalidate`). `site.url` is the

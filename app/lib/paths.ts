@@ -80,7 +80,7 @@ export interface PathOptions {
   hash?: string;
 }
 
-type PathArgs<P extends Page> = [ParamNames<(typeof PAGES)[P]["uk"]>] extends [never]
+export type PathArgs<P extends Page> = [ParamNames<(typeof PAGES)[P]["uk"]>] extends [never]
   ? [params?: Record<string, never>, options?: PathOptions]
   : [params: PageParams<P>, options?: PathOptions];
 
@@ -140,6 +140,9 @@ export function pathFor<P extends Page>(
   });
   return appendSearchAndHash(withLocalePrefix(path, locale), options);
 }
+
+/** `pathFor` with the locale already chosen, as `usePathFor()` returns it. */
+export type PathBuilder = <P extends Page>(page: P, ...args: PathArgs<P>) => string;
 
 /** The language of a URL path: English under `/en`, Ukrainian everywhere else. */
 export function localeFromPath(pathname: string): Locale {

@@ -24,7 +24,7 @@
       "type": "uid",
       "targetField": "title",
       "required": true,
-      "pluginOptions": { "i18n": { "localized": false } }
+      "pluginOptions": { "i18n": { "localized": true } }
     },
     "excerpt": {
       "type": "text",

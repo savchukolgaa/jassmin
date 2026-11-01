@@ -274,7 +274,7 @@ header, and `Accept-Language` the hint. Update its comment.
 - [x] **4. Legacy redirects and 404.** `routes/redirects.tsx` loader: `matchLegacyPath` → `301`
   with the query, else `throw data(null, { status: 404 })`. Tests per rule (old English paths,
   `/uk/…`, `/en/<uk segments>`, unknown `/en/x` → 404, query kept).
-- [ ] **5. Server-side localized URL and cookie redirect.** `app/.server/paths.ts` `localizedUrl`
+- [x] **5. Server-side localized URL and cookie redirect.** `app/.server/paths.ts` `localizedUrl`
   (blog via step 7's content functions, mocked in tests). `locale-middleware.ts` exported from
   `root.tsx` `middleware`. Tests: cookie `en` on a uk page → 302 to the en URL; no cookie or
   `Accept-Language: en` only → no redirect; cookie `en` on an en page or a POST → no redirect.
@@ -286,7 +286,7 @@ header, and `Accept-Language` the hint. Update its comment.
   fallback, `session.ts`, `payments.ts` `resultUrl`, `logout` with its hidden `locale`). CMS CTA
   links go through `localizeInternalPath`. Product links use #83's `productHref`, which now
   calls `pathFor("product", { handle }, locale)`. Update the affected tests.
-- [ ] **7. Localized blog slugs.** Strapi schema + migration + `cms/types/generated` regen +
+- [x] **7. Localized blog slugs.** Strapi schema + migration + `cms/types/generated` regen +
   seeds. `content.ts`: slug lookup per locale, the Ukrainian-slug-under-`/en` case
   (redirect / fallback), `alternates`. `blog-post.tsx` handles `redirectTo` with a 301. Update the
   `content.test.ts` fixtures.

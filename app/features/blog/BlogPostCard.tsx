@@ -1,12 +1,14 @@
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { type BlogPostCardView, blogPostHref } from "~/lib/blog";
-import { useContentLang } from "~/lib/i18n";
+import { useContentLang, useT } from "~/lib/i18n";
 import { BlogCover } from "./BlogCover";
 
 /** One article in the `/blog` list: cover, date, title and excerpt. */
 export function BlogPostCard({ post }: { post: BlogPostCardView }) {
-  const href = blogPostHref(post.slug);
+  const { locale } = useT();
+  // The card's slug is the one of the locale its text is in: Ukrainian for an untranslated post.
+  const href = blogPostHref(locale, post.slug);
   const lang = useContentLang(post.locale);
 
   return (

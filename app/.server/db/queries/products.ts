@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm";
 import type { CatalogSort } from "~/lib/catalog";
 import type { Gender, OrderStatus } from "~/lib/enums";
+import type { ImageFormat } from "~/lib/images";
 import type { CardVariant } from "~/lib/products";
 import type { Db } from "../client";
 import { orderItems, orders, products, productVariants } from "../schema";
@@ -409,6 +410,10 @@ export interface ProductWrite {
   /** Position on `/popular` (#67); `null` when not on the list. */
   popularRank: number | null;
   imageUrl: string | null;
+  /** The image's size and Strapi's resized versions (#88); `null` when unknown. */
+  imageWidth: number | null;
+  imageHeight: number | null;
+  imageFormats: ImageFormat[] | null;
   packSize: number;
   active: boolean;
   /** @deprecated columns (#26), still NOT NULL: copied from the smallest size. */

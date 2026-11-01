@@ -72,6 +72,10 @@ function productWrite(
     storeCode: fields.storeCode,
     popularRank: fields.popularRank,
     imageUrl: fields.imageUrl,
+    // Without an image, its size and formats describe nothing (#88).
+    imageWidth: fields.imageUrl ? fields.imageWidth : null,
+    imageHeight: fields.imageUrl ? fields.imageHeight : null,
+    imageFormats: fields.imageUrl ? fields.imageFormats : null,
     packSize: fields.packSize,
     active: fields.active,
     price: main.price,

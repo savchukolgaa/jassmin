@@ -87,3 +87,48 @@ describe("applyProductAnswer (#65)", () => {
     });
   });
 });
+
+describe("productPayload: image (#88)", () => {
+  const file = {
+    id: 7,
+    url: "/uploads/coco_1a2b.jpg",
+    width: 1200,
+    height: 1500,
+    formats: {
+      thumbnail: { url: "/uploads/thumbnail_coco_1a2b.jpg", width: 125, height: 156 },
+      small: { url: "/uploads/small_coco_1a2b.jpg", width: 400, height: 500 },
+      broken: { url: "/uploads/x.jpg" },
+    },
+  };
+  const withUploads = {
+    db: { query: () => ({ findOne: async () => file }) },
+  } as unknown as Core.Strapi;
+
+  it("sends the image's URL, size and resized formats, read by its id", async () => {
+    expect(await productPayload(withUploads, { ...stored, image: 7 }, stored)).toMatchObject({
+      imageUrl: "/uploads/coco_1a2b.jpg",
+      imageWidth: 1200,
+      imageHeight: 1500,
+      imageFormats: [
+        { url: "/uploads/thumbnail_coco_1a2b.jpg", width: 125, height: 156 },
+        { url: "/uploads/small_coco_1a2b.jpg", width: 400, height: 500 },
+      ],
+    });
+  });
+
+  it("reads a media object without an id directly", async () => {
+    const { id: _id, ...media } = file;
+    const payload = await productPayload(strapi, { ...stored, image: media }, stored);
+    expect(payload).toMatchObject({ imageUrl: file.url, imageWidth: 1200, imageHeight: 1500 });
+    expect(payload.imageFormats).toHaveLength(2);
+  });
+
+  it("sends no image data without an image", async () => {
+    expect(await productPayload(strapi, { ...stored, image: null }, stored)).toMatchObject({
+      imageUrl: null,
+      imageWidth: null,
+      imageHeight: null,
+      imageFormats: null,
+    });
+  });
+});

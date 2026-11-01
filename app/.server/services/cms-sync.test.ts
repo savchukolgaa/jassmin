@@ -22,6 +22,9 @@ const fields: CmsProductFields = {
   storeCode: "7-B",
   popularRank: null,
   imageUrl: null,
+  imageWidth: null,
+  imageHeight: null,
+  imageFormats: null,
   packSize: 1,
   active: true,
   variants: [
@@ -159,6 +162,38 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect(await productRow(product.publicId)).toMatchObject({ popularRank: 1 });
     expect(await update(null)).toMatchObject({ ok: true, product: { popularRank: null } });
     expect(await productRow(product.publicId)).toMatchObject({ popularRank: null });
+  });
+
+  it("stores the image's size and formats, and clears them with the image (#88)", async () => {
+    const { applyCmsProductChange } = await import("./cms-sync");
+    const product = await created();
+    const formats = [{ url: "http://cms.test/uploads/small_p.jpg", width: 400, height: 500 }];
+    const update = (image: Partial<typeof fields>) =>
+      applyCmsProductChange(
+        { action: "update", ...fields, ...image, publicId: product.publicId, slug: product.slug },
+        testDb.db,
+      );
+
+    await update({
+      imageUrl: "http://cms.test/uploads/p.jpg",
+      imageWidth: 800,
+      imageHeight: 1000,
+      imageFormats: formats,
+    });
+    expect(await productRow(product.publicId)).toMatchObject({
+      imageUrl: "http://cms.test/uploads/p.jpg",
+      imageWidth: 800,
+      imageHeight: 1000,
+      imageFormats: formats,
+    });
+
+    await update({ imageUrl: null, imageWidth: 800, imageHeight: 1000, imageFormats: formats });
+    expect(await productRow(product.publicId)).toMatchObject({
+      imageUrl: null,
+      imageWidth: null,
+      imageHeight: null,
+      imageFormats: null,
+    });
   });
 
   it("stores families, notes and the store code and keeps fragrance_family the first family", async () => {

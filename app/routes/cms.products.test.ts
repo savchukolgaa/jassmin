@@ -76,6 +76,9 @@ describe("cms products sync route", () => {
       notes: ["жасмин", "мускус"],
       storeCode: "3-D",
       imageUrl: null,
+      imageWidth: null,
+      imageHeight: null,
+      imageFormats: null,
       packSize: 1,
       active: true,
       variants: [{ volumeMl: 50, price: "6850.00", stock: 5, expectedStock: 6 }],
@@ -89,6 +92,28 @@ describe("cms products sync route", () => {
 
     expect(applyCmsProductChange.mock.calls[0]?.[0]).toMatchObject({
       imageUrl: "http://cms.test/uploads/coco.jpg",
+    });
+  });
+
+  it("resolves the image formats' URLs too (#88)", async () => {
+    const { action } = await import("./cms.products");
+
+    await action(
+      post(
+        JSON.stringify({
+          ...update,
+          imageUrl: "/uploads/coco.jpg",
+          imageWidth: 800,
+          imageHeight: 1000,
+          imageFormats: [{ url: "/uploads/small_coco.jpg", width: 400, height: 500 }],
+        }),
+      ),
+    );
+
+    expect(applyCmsProductChange.mock.calls[0]?.[0]).toMatchObject({
+      imageWidth: 800,
+      imageHeight: 1000,
+      imageFormats: [{ url: "http://cms.test/uploads/small_coco.jpg", width: 400, height: 500 }],
     });
   });
 

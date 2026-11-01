@@ -25,10 +25,16 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const change = parsed.data;
-  if (change.action !== "delete" && change.imageUrl) {
+  if (change.action !== "delete") {
     // Strapi's uploads are relative to the CMS origin, like the images `cms/content.ts` serves.
     const base = getEnv().STRAPI_URL;
-    change.imageUrl = new URL(change.imageUrl, base.endsWith("/") ? base : `${base}/`).toString();
+    const resolve = (url: string) =>
+      new URL(url, base.endsWith("/") ? base : `${base}/`).toString();
+    if (change.imageUrl) {
+      change.imageUrl = resolve(change.imageUrl);
+    }
+    change.imageFormats =
+      change.imageFormats?.map((format) => ({ ...format, url: resolve(format.url) })) ?? null;
   }
   const result = await applyCmsProductChange(change);
   if (!result.ok) {

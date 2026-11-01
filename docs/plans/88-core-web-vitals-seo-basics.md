@@ -187,7 +187,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   `schema.ts`; `pnpm db:generate --name product_image_meta`; write the rollback. Update
   `schema.test.ts` if it mirrors product columns. Check `pnpm db:migrate` + `pnpm db:rollback`
   locally.
-- [ ] **3. Sync image meta from Strapi** — `cms/src/sync/middleware.ts`: `imageData()` returns
+- [x] **3. Sync image meta from Strapi** — `cms/src/sync/middleware.ts`: `imageData()` returns
   `{ url, width, height, formats }` from the media object or `plugin::upload.file`; payload gets
   `imageWidth`, `imageHeight`, `imageFormats` (array of `{ url, width, height }` from
   `file.formats`). App: extend `cmsProductChangeSchema` (zod, optional/nullish, URL refine shared

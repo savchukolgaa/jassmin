@@ -96,3 +96,36 @@ describe("cmsProductChangeSchema: popular position (#67)", () => {
     }
   });
 });
+
+describe("cmsProductChangeSchema: image size and formats (#88)", () => {
+  const formats = [{ url: "/uploads/small_p.jpg", width: 400, height: 500 }];
+
+  it("is optional, so a Strapi from before #88 still syncs", () => {
+    expect(parse({}).data).toMatchObject({
+      imageWidth: null,
+      imageHeight: null,
+      imageFormats: null,
+    });
+  });
+
+  it("accepts the size and the resized formats", () => {
+    expect(parse({ imageWidth: 800, imageHeight: 1000, imageFormats: formats }).data).toMatchObject(
+      { imageWidth: 800, imageHeight: 1000, imageFormats: formats },
+    );
+    expect(parse({ imageFormats: [] }).data).toMatchObject({ imageFormats: [] });
+  });
+
+  it("refuses odd sizes, unsafe URLs and too many formats", () => {
+    for (const imageWidth of [0, -1, 1.5, "800"]) {
+      expect(issues({ imageWidth })[0]?.[0]).toBe("imageWidth");
+    }
+    expect(issues({ imageFormats: [{ ...formats[0], url: "javascript:x" }] })[0]).toEqual([
+      "imageFormats.0.url",
+      "image-url",
+    ]);
+    expect(issues({ imageFormats: [{ url: "/uploads/a.jpg", width: 400 }] })[0]?.[0]).toBe(
+      "imageFormats.0.height",
+    );
+    expect(issues({ imageFormats: Array(9).fill(formats[0]) })[0]?.[0]).toBe("imageFormats");
+  });
+});

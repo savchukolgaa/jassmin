@@ -297,7 +297,7 @@ header, and `Accept-Language` the hint. Update its comment.
 - [x] **9. hreflang.** `HreflangLinks` in the root `<head>`, with the canonicals moved to
   `pathFor`. Tests: an indexable page renders uk/en/x-default absolute URLs; a non-indexable page
   renders none; a uk-only blog post omits `en`.
-- [ ] **10. Guard test.** `paths.guard.test.ts`, then fix anything it finds.
+- [x] **10. Guard test.** `paths.guard.test.ts`, then fix anything it finds.
 - [ ] **11. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the manual
   checks below.
 

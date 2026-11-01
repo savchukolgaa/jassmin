@@ -71,7 +71,8 @@ registered and when building URLs.
 
 ### Helpers (`app/lib/paths.ts`)
 
-- `pathFor(page, params, locale, { search?, hash? })`: builds every internal URL. It's named
+- `pathFor(locale, page, params?, { search?, hash? })`: builds every internal URL. The locale
+  comes first so pages without parameters read `pathFor(locale, "cart")`. It's named
   `pathFor` and not `href` to avoid clashing with React Router's own exported `href()` (the issue
   only proposed the name). Params are typed per page from the pattern (`PageParams<"product">` =
   `{ handle: string }`) and URI-encoded.
@@ -255,9 +256,10 @@ header, and `Accept-Language` the hint. Update its comment.
 
 ## Steps
 
-- [ ] **0. Rebase on #83.** Confirm #83 is merged and run `git -C "$WT" rebase origin/main`.
-  Stop and tell the user if it isn't merged.
-- [ ] **1. Path table and helpers.** Write `app/lib/paths.ts` with `PAGES` (`as const satisfies`,
+- [x] **0. Rebase on #83.** #83 wasn't merged when implementation started. Its agent works in
+  parallel, so everything that doesn't depend on it is implemented first; the product route uses
+  `:handle` (as #83 does), and the branch is rebased onto #83 before the PR is opened.
+- [x] **1. Path table and helpers.** Write `app/lib/paths.ts` with `PAGES` (`as const satisfies`,
   typed param names), `PARAM_SEGMENTS`, `pathFor`, `localeFromPath`, `matchPage`,
   `translatePath`, `matchLegacyPath`, `localizeInternalPath`. Tests: every page has both
   locales; segments match `^[a-z0-9-]+$` or `:param`; uk/en patterns are unique across pages; the

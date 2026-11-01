@@ -121,13 +121,13 @@ stay as they are.
      (idempotent: re-running inserts nothing).
   5. Delete the old `field = 'image'` morph rows for `home.hero` / `home.about`.
   Log what was moved via `console.info` (no Strapi logger in migrations).
-- [ ] **3. Verify the migration on a copy of real data** — Before trusting step 2's table names,
+- [x] **3. Verify the migration on a copy of real data** — Before trusting step 2's table names,
   inspect the local DB (`\d files_related_mph`, `\d home_pages_cmps`, and the rows for the current
   home page). Then boot Strapi (`pnpm cms:dev`) on a database that has the 26 Oct uploads: both
   locales of the home page show the former `uk` photos in **Hero image / About image**, the
   override fields are empty, and nothing in the media library is lost. Restart once more: no
   changes (idempotent). Commit the regenerated `cms/types/generated/*`.
-- [ ] **4. Admin descriptions** — In `cms/src/index.ts`, add `describeImageFields(strapi)` next to
+- [x] **4. Admin descriptions** — In `cms/src/index.ts`, add `describeImageFields(strapi)` next to
   `lockOrderFields`: for each `{ uid, kind: "content-types" | "components", shared?, localized? }`
   (`api::home-page.home-page` → `heroImage`, `aboutImage`; `home.hero` / `home.about` →
   `imageLocalized`; `api::offer.offer` → `image`, `imageLocalized`; `api::blog-post.blog-post` →
@@ -151,7 +151,7 @@ stay as they are.
   `OFFER_POPULATE = { image: true, imageLocalized: true, products: true }`. `listBlogPosts`:
   `populate: ["coverImage", "coverImageLocalized"]` in both requests. `getBlogPostBySlug`:
   add `coverImageLocalized: true`.
-- [ ] **7. Seed** — `seedHomePage`: set `heroImage` / `aboutImage` at the top level of `data`, drop
+- [x] **7. Seed** — `seedHomePage`: set `heroImage` / `aboutImage` at the top level of `data`, drop
   `image` from the `hero` / `about` components, and update the comment (images are now shared).
   Seed `imageAlt` per locale in `HOME_PAGE_COPY` (uk: "Тестери парфумів Jassmin", en: "Jassmin
   perfume testers", and the About photo likewise), and `coverImageAlt` / `imageAlt` in the posts'

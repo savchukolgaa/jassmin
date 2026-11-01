@@ -76,6 +76,19 @@ type SeedLocale = "uk" | "en";
 /** Ukrainian is the default locale and the source of truth, so it's always created first. */
 const SEED_LOCALES: SeedLocale[] = ["uk", "en"];
 
+/** The two sample photos in `seed-data/`. */
+type SeedImage = "hero" | "cover";
+type SeedImageIds = Record<SeedImage, number>;
+
+/**
+ * Alt text is copy, so each locale's entry has its own (`<name>Alt`, #80), while the photo
+ * itself is shared by every locale.
+ */
+const IMAGE_ALT: Record<SeedImage, Record<SeedLocale, string>> = {
+  hero: { uk: "Тестери парфумів Jassmin", en: "Jassmin perfume testers" },
+  cover: { uk: "Флакони парфумів", en: "Perfume bottles" },
+};
+
 interface HomePageCopy {
   headline: string;
   ctaLabel: string;
@@ -115,11 +128,7 @@ const HOME_PAGE_COPY: Record<SeedLocale, HomePageCopy> = {
   },
 };
 
-async function seedHomePage(
-  strapi: Core.Strapi,
-  heroImageId: number,
-  aboutImageId: number,
-): Promise<void> {
+async function seedHomePage(strapi: Core.Strapi, images: SeedImageIds): Promise<void> {
   const homePages = strapi.documents("api::home-page.home-page");
 
   for (const locale of SEED_LOCALES) {
@@ -129,20 +138,28 @@ async function seedHomePage(
     }
 
     const copy = HOME_PAGE_COPY[locale];
-    // The hero and location components are localized as a whole, so every locale gets its own
-    // copy of the image, link and map URL.
+    // The photos are shared by every locale (#80): Strapi keeps them the same in each, but a new
+    // localization still has to be given them. The hero and location components are localized as
+    // a whole, so every locale gets its own copy of the link, the alt text and the map URL. No
+    // per-language photo (`imageLocalized`) is seeded.
     const data = {
+      heroImage: images.hero,
+      aboutImage: images.cover,
       hero: {
         headline: copy.headline,
         ctaLabel: copy.ctaLabel,
         ctaHref: "/popular",
-        image: heroImageId,
+        imageAlt: IMAGE_ALT.hero[locale],
         eyebrow: copy.eyebrow,
         subtitle: copy.subtitle,
         secondaryCtaLabel: copy.secondaryCtaLabel,
         secondaryCtaHref: "/catalog/women",
       },
-      about: { title: copy.aboutTitle, body: copy.aboutBody, image: aboutImageId },
+      about: {
+        title: copy.aboutTitle,
+        body: copy.aboutBody,
+        imageAlt: IMAGE_ALT.cover[locale],
+      },
       location: {
         address: copy.address,
         openingHours: copy.openingHours,
@@ -273,11 +290,12 @@ async function seedBlogPosts(strapi: Core.Strapi, coverImageId: number): Promise
       }
 
       // The slug and cover image aren't localized: Strapi keeps them the same in every locale,
-      // but a new localization still has to be given them.
+      // but a new localization still has to be given them. The cover's alt text is per locale.
       const data = {
         ...copy,
         slug: post.slug,
         coverImage: coverImageId,
+        coverImageAlt: IMAGE_ALT.cover[locale],
         seo: { metaTitle: copy.title.slice(0, 60), metaDescription: copy.excerpt.slice(0, 160) },
       };
       const status = post.published ? { status: "published" as const } : {};
@@ -317,7 +335,7 @@ interface OfferCopy {
 interface SeedOffer {
   slug: string;
   kind: OfferKind;
-  image?: "hero" | "cover";
+  image?: SeedImage;
   /** ISO 8601 with an offset; left out, there is no limit on that side. */
   startsAt?: string;
   endsAt?: string;
@@ -490,10 +508,7 @@ const OFFERS: SeedOffer[] = [
   },
 ];
 
-async function seedOffers(
-  strapi: Core.Strapi,
-  images: { hero: number; cover: number },
-): Promise<void> {
+async function seedOffers(strapi: Core.Strapi, images: SeedImageIds): Promise<void> {
   const offers = strapi.documents("api::offer.offer");
 
   for (const offer of OFFERS) {
@@ -508,13 +523,14 @@ async function seedOffers(
         continue;
       }
 
-      // Kind, dates, image, products, link and order aren't localized: Strapi keeps them the same
+      // Kind, dates, image, products, link and order aren't localized (the image's alt text is): Strapi keeps them the same
       // in every locale, but a new localization still has to be given them.
       const data = {
         ...copy,
         slug: offer.slug,
         kind: offer.kind,
         image: offer.image ? images[offer.image] : null,
+        imageAlt: offer.image ? IMAGE_ALT[offer.image][locale] : undefined,
         startsAt: offer.startsAt,
         endsAt: offer.endsAt,
         products: offer.productIds.map((publicId) => ({ publicId })),
@@ -608,7 +624,7 @@ async function main(): Promise<void> {
     const heroImageId = await uploadImage(strapi, "hero.jpg", "Jassmin perfume testers");
     const coverImageId = await uploadImage(strapi, "blog-cover.jpg", "Perfume bottles");
 
-    await seedHomePage(strapi, heroImageId, coverImageId);
+    await seedHomePage(strapi, { hero: heroImageId, cover: coverImageId });
     await seedSiteSettings(strapi);
     await seedBlogPosts(strapi, coverImageId);
     await seedOffers(strapi, { hero: heroImageId, cover: coverImageId });

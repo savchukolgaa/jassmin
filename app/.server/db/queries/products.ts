@@ -368,17 +368,17 @@ export async function insertProduct(
   return row;
 }
 
-/** The product's id, locking its row until the transaction ends. */
+/** The product's id and current slug, locking its row until the transaction ends. */
 export async function lockProductByPublicId(
   db: Executor,
   publicId: string,
-): Promise<number | undefined> {
+): Promise<{ id: number; slug: string | null } | undefined> {
   const [row] = await db
-    .select({ id: products.id })
+    .select({ id: products.id, slug: products.slug })
     .from(products)
     .where(eq(products.publicId, publicId))
     .for("update");
-  return row?.id;
+  return row;
 }
 
 export async function updateProduct(

@@ -124,7 +124,7 @@ current slug URL, and unknown handles answer 404.
 - [x] **4. Use the helper everywhere** — `ProductCard` (both variants) and `CartLineItem` call
   `productHref(...)`; delete the old helper. `grep -rn '/products/\${' app` must find only
   `productHref`. Update the UI tests to expect `/products/<slug>`.
-- [ ] **5. CMS sync writes history** — In `applyCmsProductChange`: on `update`, get the current slug
+- [x] **5. CMS sync writes history** — In `applyCmsProductChange`: on `update`, get the current slug
   under the row lock, `recordOldSlug` when it changes; on `create`/`update`, `forgetSlug(newSlug)`.
   Add the UUID-shaped-slug refine to `~/lib/cms-sync`, with a test in `app/lib/cms-sync.test.ts`
   (a UUID, upper- or lower-case, is refused; a slug ending in a UUID's last 8 hex digits, as

@@ -357,6 +357,76 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     ).toEqual({ ok: false, error: "unknown-product" });
   });
 
+  describe("slug history (#83)", () => {
+    async function history() {
+      const { productSlugHistory } = await import("../db/schema");
+      const rows = await testDb.db
+        .select({ slug: productSlugHistory.slug, productId: productSlugHistory.productId })
+        .from(productSlugHistory);
+      return rows.sort((a, b) => a.slug.localeCompare(b.slug));
+    }
+
+    async function rename(publicId: string, slug: string) {
+      const { applyCmsProductChange } = await import("./cms-sync");
+      return applyCmsProductChange({ action: "update", ...fields, publicId, slug }, testDb.db);
+    }
+
+    beforeEach(async () => {
+      const { productSlugHistory } = await import("../db/schema");
+      await testDb.db.delete(productSlugHistory);
+    });
+
+    it("keeps the old slug when staff rename one, and nothing when the slug stays", async () => {
+      const product = await created();
+      const { id } = await productRow(product.publicId);
+
+      expect(await rename(product.publicId, product.slug)).toMatchObject({ ok: true });
+      expect(await history()).toEqual([]);
+
+      expect(await rename(product.publicId, `${product.slug}-new`)).toMatchObject({
+        ok: true,
+        product: { slug: `${product.slug}-new` },
+      });
+      expect(await history()).toEqual([{ slug: product.slug, productId: id }]);
+    });
+
+    it("forgets an old slug once a product takes it again", async () => {
+      const product = await created();
+      const { id } = await productRow(product.publicId);
+      await rename(product.publicId, `${product.slug}-new`);
+
+      await rename(product.publicId, product.slug);
+
+      expect(await history()).toEqual([{ slug: `${product.slug}-new`, productId: id }]);
+    });
+
+    it("forgets an old slug that another product takes or a new product gets", async () => {
+      const { applyCmsProductChange } = await import("./cms-sync");
+      const first = await created();
+      await rename(first.publicId, `${first.slug}-renamed`);
+      const second = await created();
+
+      expect(await rename(second.publicId, first.slug)).toMatchObject({ ok: true });
+      expect((await history()).map((row) => row.slug)).toEqual([second.slug]);
+
+      // A new product can take an old slug too.
+      await applyCmsProductChange({ action: "create", ...fields, slug: second.slug }, testDb.db);
+      expect(await history()).toEqual([]);
+    });
+
+    it("writes nothing for a taken slug or an archive", async () => {
+      const { applyCmsProductChange } = await import("./cms-sync");
+      const first = await created();
+      const second = await created();
+
+      expect(await rename(second.publicId, first.slug)).toMatchObject({ error: "slug-taken" });
+      await applyCmsProductChange({ action: "delete", publicId: second.publicId }, testDb.db);
+
+      expect(await history()).toEqual([]);
+      expect((await productRow(second.publicId)).slug).toBe(second.slug);
+    });
+  });
+
   /** A product whose 10 ml size has 6 in stock, and an order for `quantity` of it. */
   async function placed(options: { quantity?: number; paymentMethod?: "cod" | "card" } = {}) {
     const product = await created();

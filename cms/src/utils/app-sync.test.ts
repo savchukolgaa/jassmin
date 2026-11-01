@@ -22,6 +22,7 @@ describe("describeAppSyncError", () => {
     });
 
     expect(message).toContain("variants.0.volumeMl, slug");
+    expect(message).toContain("не у вигляді UUID");
     expect(message).toMatch(/\[invalid-input\]$/);
   });
 

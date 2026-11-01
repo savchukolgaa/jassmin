@@ -75,7 +75,10 @@ const productFields = {
     .trim()
     .min(1)
     .max(255)
-    .regex(/^[A-Za-z0-9._~-]+$/),
+    .regex(/^[A-Za-z0-9._~-]+$/)
+    // `/products/<uuid>` resolves by `public_id` first (#83), so such a slug could never be
+    // reached.
+    .refine((slug) => !z.uuid().safeParse(slug).success, "uuid-slug"),
   brand: z.string().trim().min(1).max(255),
   description: optionalText,
   gender: z.enum(GENDERS),

@@ -48,10 +48,14 @@ export function describeAppSyncError(status: number, body: unknown): string {
           typeof issue === "object" && issue !== null && "path" in issue ? String(issue.path) : "",
         )
         .filter(Boolean);
+      const slugHint = fields.includes("slug")
+        ? " Slug — латинські літери, цифри та «-», «.», «_», «~», і не у вигляді UUID."
+        : "";
       return withCode(
         `Магазин не прийняв дані. Перевірте поля: ${fields.join(", ") || "—"}. ` +
           "Об’єм — 7, 10, 30, 50 або 100 мл, кожен лише раз; ціна більша за 0; залишок не від’ємний. " +
-          "Парфум має хоча б одне сімейство аромату, кожне лише раз; нота — до 100 символів.",
+          "Парфум має хоча б одне сімейство аромату, кожне лише раз; нота — до 100 символів." +
+          slugHint,
       );
     }
     case "unknown-product":

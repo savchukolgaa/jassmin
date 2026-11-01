@@ -22,6 +22,7 @@ import {
   restockOrder,
   updateOrderLifecycle,
 } from "../db/queries/orders";
+import { forgetSlug, recordOldSlug } from "../db/queries/product-slugs";
 import {
   deleteVariants,
   findProductSyncState,
@@ -87,6 +88,9 @@ function productWrite(
  *   existing one gets the new price and its stock changed by `stock - expectedStock`, so units
  *   sold while staff had the form open stay sold. Stock never goes below 0.
  * - `delete` only archives (`active = false`): order history keeps the product's title.
+ *
+ * A changed slug goes to `product_slug_history`, so `/products/<old slug>` redirects (#83), and
+ * the slug a product takes is removed from it, so history never shadows a current slug.
  */
 export async function applyCmsProductChange(
   change: CmsProductChange,
@@ -103,12 +107,13 @@ export async function applyCmsProductChange(
         }));
         ({ id: productId } = await insertProduct(tx, productWrite(change, sizes)));
         await insertVariants(tx, productId, sizes);
+        await forgetSlug(tx, change.slug);
       } else {
-        const id = await lockProductByPublicId(tx, change.publicId);
-        if (id === undefined) {
+        const locked = await lockProductByPublicId(tx, change.publicId);
+        if (locked === undefined) {
           return { ok: false, error: "unknown-product" };
         }
-        productId = id;
+        productId = locked.id;
         if (change.action === "delete") {
           await updateProduct(tx, productId, { active: false });
         } else {
@@ -140,6 +145,11 @@ export async function applyCmsProductChange(
           );
           await insertVariants(tx, productId, added);
           await updateProduct(tx, productId, productWrite(change, sizes));
+          // The old URL keeps working with a 301 to the new one (#83).
+          if (locked.slug !== null && locked.slug !== change.slug) {
+            await recordOldSlug(tx, productId, locked.slug);
+          }
+          await forgetSlug(tx, change.slug);
         }
       }
 

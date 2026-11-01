@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  absoluteUrl,
   blogPostingLd,
   breadcrumbListLd,
   type ProductLdInput,
@@ -32,17 +31,6 @@ describe("serializeJsonLd", () => {
 
     expect(json).not.toMatch(/[\u2028\u2029]/);
     expect(JSON.parse(json)).toEqual(data);
-  });
-});
-
-describe("absoluteUrl", () => {
-  it("resolves site paths against the origin and keeps absolute URLs", () => {
-    expect(absoluteUrl(ORIGIN, "/catalog/women")).toBe("https://jassmin.ua/catalog/women");
-    expect(absoluteUrl(`${ORIGIN}/`, "/")).toBe("https://jassmin.ua/");
-    expect(absoluteUrl(ORIGIN, "images/a.jpg")).toBe("https://jassmin.ua/images/a.jpg");
-    expect(absoluteUrl(ORIGIN, "https://cms.jassmin.ua/uploads/a.jpg")).toBe(
-      "https://cms.jassmin.ua/uploads/a.jpg",
-    );
   });
 });
 

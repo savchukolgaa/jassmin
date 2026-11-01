@@ -1,6 +1,7 @@
 import { data, Link, useLocation, useNavigation } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { getCatalogPage } from "~/.server/services/products";
+import { JsonLd } from "~/components/JsonLd";
 import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
@@ -21,6 +22,8 @@ import { cn } from "~/lib/cn";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, seoMeta } from "~/lib/seo";
+import { breadcrumbListLd } from "~/lib/structured-data";
+import { useSiteUrl } from "~/lib/use-site-url";
 import type { Route } from "./+types/catalog";
 
 // Filtered and sorted views point to the unfiltered catalog; its pages are self-canonical (#85).
@@ -65,13 +68,16 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
   const { t } = useT();
   const { gender, search, products, total, page, pageCount, filterOptions } = loaderData;
   const { pathname } = useLocation();
+  const siteUrl = useSiteUrl();
+  const breadcrumbs = catalogBreadcrumbs(t, gender);
   const navigation = useNavigation();
   // Dim the results while a filter, sort or page change of this catalog loads.
   const busy = navigation.state === "loading" && navigation.location.pathname === pathname;
 
   return (
     <main className="container mx-auto px-4 pt-8 pb-16">
-      <Breadcrumbs items={catalogBreadcrumbs(t, gender)} />
+      <JsonLd data={breadcrumbListLd(siteUrl, breadcrumbs)} />
+      <Breadcrumbs items={breadcrumbs} />
       <div className="mt-4 flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
           {t(CATALOG_TITLE_KEYS[gender])}

@@ -5,9 +5,10 @@ import type { BlogPostView } from "./blog";
 import type { SocialLink } from "./cms";
 import type { Locale } from "./i18n";
 import type { ProductDetail, ProductVariant } from "./products";
+import { absoluteUrl, SITE_NAME } from "./seo";
 
 export const SCHEMA_CONTEXT = "https://schema.org";
-export const STORE_NAME = "Jassmin";
+export const STORE_NAME = SITE_NAME;
 export const PRICE_CURRENCY = "UAH";
 /** Google shows at most this many characters of a `BlogPosting` headline. */
 export const HEADLINE_MAX_LENGTH = 110;
@@ -122,7 +123,7 @@ export type StructuredData = ProductLd | BreadcrumbListLd | StoreGraphLd | BlogP
 // --- serialization ---
 
 /**
- * JSON for a `<script type="application/ld+json">`. Every `<` becomes `<`, so CMS text such
+ * JSON for a `<script type="application/ld+json">`. Every `<` becomes `\u003c`, so CMS text such
  * as `</script>` can't close the script tag; U+2028/U+2029 are escaped too. `JSON.parse` of the
  * result still gives back the input.
  */
@@ -133,21 +134,8 @@ export function serializeJsonLd(data: StructuredData): string {
     .replaceAll(String.fromCharCode(0x2029), String.raw`\u2029`);
 }
 
-// --- URLs ---
-
-/**
- * An absolute URL for `pathOrUrl` on the public site `origin`. Absolute `http(s)` URLs (Strapi
- * media) are kept as they are.
- */
-export function absoluteUrl(origin: string, pathOrUrl: string): string {
-  if (/^https?:\/\//i.test(pathOrUrl)) {
-    return pathOrUrl;
-  }
-  return new URL(pathOrUrl, `${origin.replace(/\/+$/, "")}/`).href;
-}
-
 function sellerLd(origin: string): OrganizationRefLd {
-  return { "@type": "Organization", name: STORE_NAME, url: absoluteUrl(origin, "/") };
+  return { "@type": "Organization", name: STORE_NAME, url: absoluteUrl("/", origin) };
 }
 
 // --- Product ---
@@ -177,7 +165,7 @@ export function productLd({
   if (product.variants.length === 0) {
     return null;
   }
-  const url = absoluteUrl(origin, path);
+  const url = absoluteUrl(path, origin);
   const seller = sellerLd(origin);
   const description = product.description?.trim();
   return {
@@ -187,7 +175,7 @@ export function productLd({
     brand: { "@type": "Brand", name: product.brand },
     url,
     ...(product.storeCode ? { sku: product.storeCode } : {}),
-    ...(product.imageUrl ? { image: absoluteUrl(origin, product.imageUrl) } : {}),
+    ...(product.imageUrl ? { image: absoluteUrl(product.imageUrl, origin) } : {}),
     ...(description ? { description } : {}),
     offers: product.variants.map((variant) => ({
       "@type": "Offer",
@@ -221,7 +209,7 @@ export function breadcrumbListLd(origin: string, items: readonly Breadcrumb[]): 
       "@type": "ListItem",
       position: index + 1,
       name: crumb.name,
-      item: absoluteUrl(origin, crumb.to),
+      item: absoluteUrl(crumb.to, origin),
     })),
   };
 }
@@ -369,7 +357,7 @@ function geoLd({ latitude, longitude }: StoreLocationInput): GeoCoordinatesLd | 
 
 /** The store's `@id`, which other nodes (website, blog publisher) can point to. */
 export function storeId(origin: string): string {
-  return `${absoluteUrl(origin, "/")}#store`;
+  return `${absoluteUrl("/", origin)}#store`;
 }
 
 /** The home page's `@graph`: the shop as a `PerfumeStore` (an Organization) and the `WebSite`. */
@@ -380,7 +368,7 @@ export function storeGraphLd({
   contacts,
   image,
 }: StoreGraphLdInput): StoreGraphLd {
-  const home = absoluteUrl(origin, "/");
+  const home = absoluteUrl("/", origin);
   const openingHours = parseOpeningHours(location.openingHours);
   const geo = geoLd(location);
   const sameAs = contacts.socialLinks.map((link) => link.url);
@@ -392,7 +380,7 @@ export function storeGraphLd({
         "@id": storeId(origin),
         name: STORE_NAME,
         url: home,
-        ...(image ? { image: absoluteUrl(origin, image) } : {}),
+        ...(image ? { image: absoluteUrl(image, origin) } : {}),
         telephone: contacts.phone,
         email: contacts.email,
         address: postalAddressLd(location),
@@ -432,7 +420,7 @@ export interface BlogPostingLdInput {
     BlogPostView,
     "title" | "locale" | "authorName" | "coverImage" | "publishedAt" | "updatedAt" | "seo"
   >;
-  /** The post's absolute canonical URL. */
+  /** The post's absolute URL. */
   url: string;
 }
 
@@ -445,7 +433,7 @@ export function blogPostingLd({ origin, post, url }: BlogPostingLdInput): BlogPo
     "@type": "BlogPosting",
     headline: truncateWords(post.title, HEADLINE_MAX_LENGTH),
     ...(description ? { description } : {}),
-    ...(image ? { image: absoluteUrl(origin, image) } : {}),
+    ...(image ? { image: absoluteUrl(image, origin) } : {}),
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
     author: author ? { "@type": "Person", name: author } : sellerLd(origin),

@@ -122,6 +122,11 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   `BreadcrumbList` JSON-LD both use it, so they can't drift apart. Product links use #83's
   `productHref({ id, slug })`. The visible breadcrumbs of steps 9–10 are done; their JSON-LD
   waits for #85.
+- **After #85 (implemented)**: the builders use #85's `absoluteUrl(url, siteUrl)` and
+  `SITE_NAME` from `app/lib/seo.ts`; the local URL helper was removed. Components read the origin
+  with `useSiteUrl()` (`app/lib/use-site-url.ts`, `seoSite(useMatches())`), so loaders don't
+  change. The blog post's `mainEntityOfPage` is `absoluteUrl(blogPostHref(slug), siteUrl)`,
+  because #85 removed `seo.canonicalUrl` from the view.
 - **Snapshot tests** use inline snapshots (`toMatchInlineSnapshot`) so the expected JSON is
   reviewable in the diff.
 
@@ -174,7 +179,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
 
 ## Steps
 
-- [ ] **0. Wait for #85, then rebase**: check that #85 is merged
+- [x] **0. Wait for #85, then rebase**: check that #85 is merged
   (`gh issue view 85 --json state`), then run `git -C "$WT" fetch origin && git -C "$WT" rebase
   origin/main`. Read how #85 exposes the public origin (`PUBLIC_SITE_URL`, the root loader data,
   any helper in `app/lib/seo.ts`) and use that everywhere below. If #85 isn't merged, stop.
@@ -183,7 +188,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   `app/components/JsonLd.tsx`. Tests: a `description` containing `</script><script>alert(1)` comes
   out with no `<` and still `JSON.parse`s back to the input; rendering `<JsonLd>` with
   `renderToStaticMarkup` produces a single `<script type="application/ld+json">`.
-- [ ] **2. URL helpers**: reuse #85's absolute-URL helper if there is one. Otherwise add
+- [x] **2. URL helpers**: reuse #85's absolute-URL helper if there is one. Otherwise add
   `absoluteUrl(origin, pathOrUrl)`, which keeps `http(s):` URLs, resolves `/x` against the origin
   and strips a trailing slash from the origin. Add a site-origin hook for components that reads
   #85's value from the root loader data. Add `productHref(id)` to `app/lib/products.ts` (unless
@@ -219,7 +224,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   `BlogPost` (`app/lib/cms.ts`) and pass it through `buildBlogPostView` into `BlogPostView`
   (falling back to `publishedAt`). Update `blog.test.ts` and the content tests; the fixtures
   already contain `updatedAt`.
-- [ ] **6. Site origin in components**: product, catalog, home and blog post components get the
+- [x] **6. Site origin in components**: product, catalog, home and blog post components get the
   origin from #85's root loader data (step 2 hook), not from `request.url`. Make sure the blog
   view's `seo.canonicalUrl` already uses that origin after #85; if not, switch
   `buildBlogPostView`'s `origin` to it. Update the tests that render these routes so they provide
@@ -227,16 +232,16 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
 - [x] **7. `Breadcrumbs` component + `nav.home`**: create `app/components/layout/Breadcrumbs.tsx`
   taking `items: { name: string; to: string }[]`. Add `nav.home` to `uk.ts`/`en.ts`. Component
   test: an `<ol>` trail, the last item has `aria-current="page"` and is not a link.
-- [ ] **8. Home page**: render `<JsonLd data={storeGraphLd(...)} />` in the home route
+- [x] **8. Home page**: render `<JsonLd data={storeGraphLd(...)} />` in the home route
   component from `loaderData.location` (structured address + geo), `contacts`, the `hero` image and
   the site origin, with `inLanguage` from `useT().locale`. Test: the home route renders a JSON-LD
   script with `"@type":"PerfumeStore"`, the CMS phone, the postal address, `geo` and the social
   links.
-- [ ] **9. Product and catalog pages**: on the product page, render `productLd` (skipped when
+- [x] **9. Product and catalog pages**: on the product page, render `productLd` (skipped when
   `null`) and the breadcrumb JSON-LD, and replace the `← catalog` nav with `<Breadcrumbs>`. On the
   catalog page, render the breadcrumb JSON-LD and `<Breadcrumbs>` above the `h1`. Variant names
   use `formatVolume(..., translator)`. Update `product-ui.test.ts` / `catalog-ui.test.ts`.
-- [ ] **10. Blog post**: render `blogPostingLd` and the breadcrumb JSON-LD in `BlogPost`. In
+- [x] **10. Blog post**: render `blogPostingLd` and the breadcrumb JSON-LD in `BlogPost`. In
   `BlogArticle`, swap the top `BackToBlogLink` for `<Breadcrumbs>` (Home > Blog > title); keep
   `BackToBlogLink` for the error boundary. Update `blog-ui.test.ts`.
 - [ ] **11. Verify**: run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Run

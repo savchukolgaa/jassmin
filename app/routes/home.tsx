@@ -7,12 +7,15 @@ import { submitContactMessage } from "~/.server/services/contact";
 import { buildHomePageView } from "~/.server/services/home";
 import { getBestsellers, getTrioFamilies } from "~/.server/services/products";
 import { getTesterTrioOffer } from "~/.server/services/trio";
+import { JsonLd } from "~/components/JsonLd";
 import { parseContactForm } from "~/features/home/contact-form";
 import { HomePage } from "~/features/home/HomePage";
 import type { ContactActionResult } from "~/lib/contact";
-import { metaTranslator } from "~/lib/i18n";
+import { metaTranslator, useT } from "~/lib/i18n";
 import { errorMeta, seoMeta } from "~/lib/seo";
+import { storeGraphLd } from "~/lib/structured-data";
 import { parseTrioSearch } from "~/lib/trio";
+import { useSiteUrl } from "~/lib/use-site-url";
 import type { Route } from "./+types/home";
 
 export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
@@ -106,5 +109,20 @@ export function shouldRevalidate({
 }
 
 export default function Home({ loaderData, actionData }: Route.ComponentProps) {
-  return <HomePage view={loaderData} actionData={actionData} />;
+  const { locale } = useT();
+  const siteUrl = useSiteUrl();
+  return (
+    <>
+      <JsonLd
+        data={storeGraphLd({
+          origin: siteUrl,
+          locale,
+          location: loaderData.location,
+          contacts: loaderData.contacts,
+          image: loaderData.hero.image?.url ?? null,
+        })}
+      />
+      <HomePage view={loaderData} actionData={actionData} />
+    </>
+  );
 }

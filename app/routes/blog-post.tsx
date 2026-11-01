@@ -4,12 +4,16 @@ import { cmsUnavailable } from "~/.server/cms/errors";
 import { getEnv } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
 import { blogCacheHeaders, buildBlogPostView } from "~/.server/services/blog";
+import { JsonLd } from "~/components/JsonLd";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { BackToBlogLink, BlogArticle } from "~/features/blog/BlogArticle";
-import { blogResponseHeaders, isBlogSlug } from "~/lib/blog";
+import { blogPostHref, blogResponseHeaders, isBlogSlug } from "~/lib/blog";
+import { blogPostBreadcrumbs } from "~/lib/breadcrumbs";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
-import { errorMeta, seoMeta } from "~/lib/seo";
+import { absoluteUrl, errorMeta, seoMeta } from "~/lib/seo";
+import { blogPostingLd, breadcrumbListLd } from "~/lib/structured-data";
+import { useSiteUrl } from "~/lib/use-site-url";
 import type { Route } from "./+types/blog-post";
 
 export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
@@ -53,8 +57,22 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   return data(view, { headers: blogCacheHeaders(request) });
 }
 
-export default function BlogPost({ loaderData }: Route.ComponentProps) {
-  return <BlogArticle post={loaderData} />;
+export default function BlogPost({ loaderData: post }: Route.ComponentProps) {
+  const { t } = useT();
+  const siteUrl = useSiteUrl();
+  return (
+    <>
+      <JsonLd
+        data={blogPostingLd({
+          origin: siteUrl,
+          post,
+          url: absoluteUrl(blogPostHref(post.slug), siteUrl),
+        })}
+      />
+      <JsonLd data={breadcrumbListLd(siteUrl, blogPostBreadcrumbs(t, post))} />
+      <BlogArticle post={post} />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

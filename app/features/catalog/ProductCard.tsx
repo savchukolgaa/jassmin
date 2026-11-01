@@ -1,10 +1,12 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
-import { ButtonLink } from "~/components/ui/ButtonLink";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { fragranceFamilyLabel } from "~/lib/catalog";
+import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
-import { formatVolume, formatVolumes, type ProductSummary } from "~/lib/products";
+import { cardPrice, formatVolume, type ProductSummary } from "~/lib/products";
+import { CardVolumePicker } from "./CardVolumePicker";
 import { FamilyChip } from "./FamilyChip";
 import { ProductImage } from "./ProductImage";
 
@@ -33,17 +35,90 @@ export function ProductCard({ product, headingLevel = 2, variant = "default" }: 
 
 type CardProps = Required<Pick<ProductCardProps, "product" | "headingLevel">>;
 
+/** The size picked on a card, and whether the page has hydrated so its price can follow it. */
+function useCardSize(product: ProductSummary) {
+  const [selectedId, setSelectedId] = useState(product.defaultVariant.id);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  return { selectedId, setSelectedId, hydrated };
+}
+
+/**
+ * The picked size's price. Before hydration the server can't know the pick, so when the sizes
+ * cost different amounts it renders a skeleton for pages where JS runs (the `js` class from
+ * `root.tsx`) and "from {lowest price}" for the rest.
+ */
+function CardPrice({
+  product,
+  selectedId,
+  hydrated,
+  className,
+}: {
+  product: ProductSummary;
+  selectedId: string;
+  hydrated: boolean;
+  className?: string;
+}) {
+  const { t, formatPrice } = useT();
+  const slot = cn("min-h-7 text-xl text-ink", className);
+
+  if (!product.hasPriceRange) {
+    return <p className={slot}>{formatPrice(product.minPrice)}</p>;
+  }
+  if (!hydrated) {
+    return (
+      <p className={slot}>
+        <span
+          aria-hidden="true"
+          data-price-skeleton
+          className="hidden h-7 w-24 rounded-pill bg-line align-middle in-[.js]:inline-block motion-safe:animate-pulse"
+        />
+        <span className="in-[.js]:hidden">
+          {t("product.fromPrice", { price: formatPrice(product.minPrice) })}
+        </span>
+      </p>
+    );
+  }
+  return (
+    <p className={slot}>
+      {/* Re-keyed so the price animates in again when the size changes. */}
+      <span key={selectedId} className="inline-block animate-spin-in">
+        {formatPrice(cardPrice(product, selectedId))}
+      </span>
+    </p>
+  );
+}
+
+/** The size picker for several sizes; `null` for one, which the card shows as text. */
+function SizePicker({
+  product,
+  onChange,
+  className,
+}: {
+  product: ProductSummary;
+  onChange: (variantId: string) => void;
+  className?: string;
+}) {
+  if (product.variants.length < 2) {
+    return null;
+  }
+  return (
+    <CardVolumePicker
+      variants={product.variants}
+      packSize={product.packSize}
+      defaultId={product.defaultVariant.id}
+      onChange={onChange}
+      className={className}
+    />
+  );
+}
+
 function CatalogProductCard({ product, headingLevel }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
-  const { t } = translator;
   const href = productHref(product.id);
-  const price = translator.formatPrice(product.minPrice);
-  // The card can't show a size picker, so its button says which size it adds.
-  const defaultSize = formatVolume(
-    { volumeMl: product.defaultVariant.volumeMl, packSize: product.packSize },
-    translator,
-  );
+  const { selectedId, setSelectedId, hydrated } = useCardSize(product);
+  const single = product.variants.length < 2;
 
   return (
     <article className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line">
@@ -64,26 +139,30 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
             <FamilyChip family={product.fragranceFamily} size="sm" />
           </p>
         )}
-        <p className="text-sm text-muted">{formatVolumes(product, translator)}</p>
-        <p className="mt-auto pt-3 text-xl font-extrabold text-ink">
-          {product.hasPriceRange ? t("product.fromPrice", { price }) : price}
-        </p>
-      </div>
-      <div className="flex flex-wrap items-start gap-2 px-2 pt-3">
-        <AddToCartForm
-          productId={product.id}
-          variantId={product.defaultVariant.id}
-          inStock={product.inStock}
-          label={t("product.addSize", { size: defaultSize })}
-          size="sm"
-          className="min-w-32 flex-1"
-        />
-        {product.volumes.length > 1 && (
-          <ButtonLink to={href} variant="ghost" size="sm" className="min-w-32 flex-1">
-            {t("product.chooseVolume")}
-          </ButtonLink>
+        {single && (
+          <p className="text-sm text-muted">
+            {formatVolume(
+              { volumeMl: product.defaultVariant.volumeMl, packSize: product.packSize },
+              translator,
+            )}
+          </p>
         )}
+        <CardPrice
+          product={product}
+          selectedId={selectedId}
+          hydrated={hydrated}
+          className="mt-auto pt-3 font-extrabold"
+        />
       </div>
+      <AddToCartForm
+        productId={product.id}
+        variantId={single ? product.defaultVariant.id : undefined}
+        inStock={product.inStock}
+        size="sm"
+        className="flex flex-col gap-3 px-2 pt-3"
+      >
+        <SizePicker product={product} onChange={setSelectedId} />
+      </AddToCartForm>
     </article>
   );
 }
@@ -93,11 +172,8 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
   const translator = useT();
   const { t } = translator;
   const href = productHref(product.id);
-  const price = translator.formatPrice(product.minPrice);
-  const defaultSize = formatVolume(
-    { volumeMl: product.defaultVariant.volumeMl, packSize: product.packSize },
-    translator,
-  );
+  const { selectedId, setSelectedId, hydrated } = useCardSize(product);
+  const single = product.variants.length < 2;
 
   return (
     <article className="card-tilt flex w-full flex-col gap-3 rounded-card bg-card p-3">
@@ -123,7 +199,9 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
       </Link>
       <div className="flex flex-col gap-1 px-2">
         <p className="text-sm font-bold text-muted">
-          {product.brand} · {defaultSize}
+          {product.brand}
+          {single &&
+            ` · ${formatVolume({ volumeMl: product.defaultVariant.volumeMl, packSize: product.packSize }, translator)}`}
         </p>
         <Heading className="text-lg leading-tight font-bold text-ink">
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
@@ -131,18 +209,23 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
           </Link>
         </Heading>
       </div>
-      <div className="mt-auto flex items-center justify-between gap-3 px-2 pb-2">
-        <p className="font-serif text-xl font-bold text-ink">
-          {product.hasPriceRange ? t("product.fromPrice", { price }) : price}
-        </p>
-        <AddToCartForm
-          productId={product.id}
-          variantId={product.defaultVariant.id}
-          inStock={product.inStock}
-          label={t("product.quickAdd", { title: product.title, size: defaultSize })}
-          appearance="icon"
+      {/* One grid so the price sits beside the round "+", which the form renders last. */}
+      <AddToCartForm
+        productId={product.id}
+        variantId={single ? product.defaultVariant.id : undefined}
+        inStock={product.inStock}
+        label={t("product.quickAdd", { title: product.title })}
+        appearance="icon"
+        className="mt-auto grid grid-cols-[1fr_auto] items-center gap-3 px-2 pb-2"
+      >
+        <SizePicker product={product} onChange={setSelectedId} className="col-span-2" />
+        <CardPrice
+          product={product}
+          selectedId={selectedId}
+          hydrated={hydrated}
+          className="font-serif font-bold"
         />
-      </div>
+      </AddToCartForm>
     </article>
   );
 }

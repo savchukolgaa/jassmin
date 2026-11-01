@@ -21,16 +21,25 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { locale: await getLocale(request) };
 }
 
+const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';
+
 export function Layout({ children }: { children: React.ReactNode }) {
   // `undefined` when the root loader failed; the error page then renders in the default locale.
   const locale = useRouteLoaderData<typeof loader>("root")?.locale ?? DEFAULT_LOCALE;
 
   return (
-    <html lang={locale}>
+    // The inline script changes the class before React hydrates.
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light" />
+        {/* Marks pages where JS runs, before first paint: product cards show a price skeleton
+            until hydration there, and their "from" price without JS (#74). */}
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: a constant, no user input; a text child would be HTML-escaped.
+          dangerouslySetInnerHTML={{ __html: JS_CLASS_SCRIPT }}
+        />
         <Meta />
         <Links />
       </head>

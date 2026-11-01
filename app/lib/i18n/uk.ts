@@ -228,10 +228,10 @@ export const uk = {
   product: {
     ml: "мл",
     fromPrice: "від {price}",
-    addSize: "Додати {size}",
-    quickAdd: "Додати {title}, {size}, у кошик",
-    chooseVolume: "Обрати об’єм",
+    quickAdd: "Додати {title} у кошик",
     volume: "Об’єм",
+    volumeLegend: "Об’єм",
+    outOfStockSize: "немає в наявності",
     soldOutOption: "{option} (немає в наявності)",
     inStock: "У наявності",
     outOfStock: "Немає в наявності",

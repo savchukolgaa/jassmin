@@ -14,8 +14,16 @@ interface ProductBase {
   imageUrl: string | null;
 }
 
-/** A catalog card. Only products with at least one variant are listed. */
+/** A size on a product card (#74). No exact stock, which the card doesn't show. */
+export type CardVariant = Pick<ProductVariant, "id" | "volumeMl" | "price" | "inStock">;
+
+/**
+ * A catalog card. Only products with at least one variant are listed. The price, stock and size
+ * fields are derived from `variants`.
+ */
 export interface ProductSummary extends ProductBase {
+  /** Every size, ascending by volume; never empty. The card's volume picker lists them (#74). */
+  variants: CardVariant[];
   /** The lowest variant price. */
   minPrice: string;
   /** Whether the variants have different prices, so the card says "from". */
@@ -87,22 +95,18 @@ export function defaultVariant<T extends Pick<ProductVariant, "volumeMl" | "inSt
   return sorted.find((v) => v.inStock) ?? sorted[0];
 }
 
-/** The sizes on a card, e.g. `10 · 30 · 50 мл`, or `3 × 10 мл` for a pack. */
-export function formatVolumes(
-  {
-    volumes,
-    packSize,
-  }: {
-    volumes: readonly number[];
-    packSize: number;
-  },
-  { t }: Translator = createTranslator(),
-) {
-  if (volumes.length === 0) {
-    return "";
-  }
-  const units = volumes.map((v) => (packSize > 1 ? `${packSize} × ${v}` : String(v)));
-  return `${units.join(" · ")} ${t("product.ml")}`;
+/**
+ * The price a card shows for the size picked in its volume picker (#74), or for its default size
+ * when `selectedId` matches none of its sizes.
+ */
+export function cardPrice(
+  product: Pick<ProductSummary, "variants" | "defaultVariant" | "minPrice">,
+  selectedId: string,
+): string {
+  const { variants, defaultVariant } = product;
+  const selected =
+    variants.find((v) => v.id === selectedId) ?? variants.find((v) => v.id === defaultVariant.id);
+  return selected?.price ?? product.minPrice;
 }
 
 /** A volume dropdown option, e.g. `30 мл — 1 450 ₴`, marked when that size is sold out. */

@@ -59,6 +59,10 @@ const BESTSELLER: ProductSummary = {
   packSize: 1,
   imageUrl: null,
   fragranceFamily: "гурманські",
+  variants: [
+    { id: "01a1652b-6e25-7d00-8000-000000000001", volumeMl: 10, price: "450.00", inStock: true },
+    { id: "01a1652b-6e25-7d00-8000-000000000002", volumeMl: 50, price: "1890.00", inStock: true },
+  ],
   minPrice: "450.00",
   hasPriceRange: true,
   volumes: [10, 50],

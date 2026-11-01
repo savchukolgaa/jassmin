@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/84
 Branch: `issue/84`
 Worktree: `.claude/worktrees/issue-84`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -197,6 +197,24 @@ skipped by matching only after `=`, `(`, `:` or `,` tokens.
 `BLOG_VARY` stays `Cookie, Accept-Language`: the cookie still decides the 302 and the session
 header, and `Accept-Language` the hint. Update its comment.
 
+## Implementation notes
+
+- **hreflang lives in `seoMeta`** (`app/lib/seo.ts`, from #85, merged meanwhile) rather than a separate
+  `HreflangLinks` component: every indexable page already calls it with its location, it skips
+  `noindex` pages and keeps the same query parameters as the canonical URL. A blog post's
+  `alternates` come from its loader data in `matches`.
+- **Canonical URLs** are built by #85's `seoMeta` from the location, so the loaders no longer return
+  `canonicalUrl`; #84 only changed the paths they're built from.
+- **Breadcrumbs and JSON-LD** (#86, merged meanwhile) take the translator, so their URLs follow the
+  page's language.
+- **The catalog loader** turns its `:gender` segment back into `women`/`men` with
+  `paramFromSegment` (found by the manual check: `/katalog/zhinochi` was a 404).
+- **Manual check** on a production build (`pnpm build && pnpm start`): page URLs in both languages,
+  the 301s from old paths and `/uk`, `/en/koshyk` → `/en/cart`, `/en/nope` → 404, the `locale=en`
+  cookie's 302, `<html lang>` and the hreflang links. Strapi wasn't running, so CMS pages (home,
+  blog, offers) answered 503 and the blog switch was only checked by tests; the local database had
+  no products, so product pages were only checked by tests.
+
 ## Resolved questions
 
 - **What does dismissing the "View in English" hint do?** It sets `locale=uk` via `/locale`, so
@@ -298,7 +316,7 @@ header, and `Accept-Language` the hint. Update its comment.
   `pathFor`. Tests: an indexable page renders uk/en/x-default absolute URLs; a non-indexable page
   renders none; a uk-only blog post omits `en`.
 - [x] **10. Guard test.** `paths.guard.test.ts`, then fix anything it finds.
-- [ ] **11. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the manual
+- [x] **11. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the manual
   checks below.
 
 ## Testing & verification
@@ -321,14 +339,14 @@ header, and `Accept-Language` the hint. Update its comment.
 
 ## Acceptance criteria
 
-- [ ] Every page has a Ukrainian URL with transliterated Ukrainian segments and an English `/en/...` URL with English segments, as in the finalized path table: steps 1, 2
-- [ ] The URL alone decides the language, regardless of `Accept-Language`: step 3
-- [ ] Switching language navigates to the same page's URL in the other language (blog posts use their translated slug, or fall back to the blog list), and the scroll position is kept (#82): steps 5, 7, 8
-- [ ] A visitor with the `locale=en` cookie who opens a Ukrainian URL is redirected (302) to its English URL. Without the cookie there is no redirect: step 5
-- [ ] Old URLs (`/catalog/women`, `/products/...`, `/cart`, …) and `/uk/...` redirect 301 to the new Ukrainian URLs, and unknown `/en/...` paths give 404: steps 2, 4
-- [ ] Every internal link, form and server redirect keeps the current language. No hard-coded internal paths remain outside `app/lib/paths.ts`: steps 6, 10
-- [ ] Every indexable page has `hreflang` links for `uk`, `en` and `x-default`: step 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 11
+- [x] Every page has a Ukrainian URL with transliterated Ukrainian segments and an English `/en/...` URL with English segments, as in the finalized path table: steps 1, 2
+- [x] The URL alone decides the language, regardless of `Accept-Language`: step 3
+- [x] Switching language navigates to the same page's URL in the other language (blog posts use their translated slug, or fall back to the blog list), and the scroll position is kept (#82): steps 5, 7, 8
+- [x] A visitor with the `locale=en` cookie who opens a Ukrainian URL is redirected (302) to its English URL. Without the cookie there is no redirect: step 5
+- [x] Old URLs (`/catalog/women`, `/products/...`, `/cart`, …) and `/uk/...` redirect 301 to the new Ukrainian URLs, and unknown `/en/...` paths give 404: steps 2, 4
+- [x] Every internal link, form and server redirect keeps the current language. No hard-coded internal paths remain outside `app/lib/paths.ts`: steps 6, 10
+- [x] Every indexable page has `hreflang` links for `uk`, `en` and `x-default`: step 9
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 11
 
 ## Out of scope
 

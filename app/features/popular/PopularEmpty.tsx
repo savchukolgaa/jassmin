@@ -14,10 +14,7 @@ export function PopularEmpty({ filtered }: { filtered: boolean }) {
       aria-labelledby="popular-empty"
       className="flex animate-fade-up flex-col items-start gap-4 rounded-card-lg bg-blush p-8 md:p-14"
     >
-      <h2
-        id="popular-empty"
-        className="text-3xl font-extrabold tracking-[-0.03em] text-ink md:text-4xl"
-      >
+      <h2 id="popular-empty" className="text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl">
         {t(filtered ? "popular.empty.filteredHeading" : "popular.empty.heading")}
       </h2>
       <p className="max-w-xl text-lg text-body">

@@ -35,9 +35,7 @@ describe("CookieBanner", () => {
     const labelledBy = /<section aria-labelledby="([^"]+)"/.exec(html)?.[1];
 
     expect(labelledBy).toBeDefined();
-    expect(html).toContain(
-      `<h2 id="${labelledBy}" class="text-lg font-extrabold">We use cookies</h2>`,
-    );
+    expect(html).toContain(`<h2 id="${labelledBy}" class="text-lg font-bold">We use cookies</h2>`);
     expect(html).toMatch(/<a [^>]*href="\/privacy"[^>]*>Privacy policy<\/a>/);
   });
 

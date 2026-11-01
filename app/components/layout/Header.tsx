@@ -33,7 +33,7 @@ export function Header({ user, cartCount }: HeaderProps) {
           to="/"
           aria-label={t("nav.home")}
           className={cn(
-            "rounded-pill text-2xl font-extrabold tracking-[-0.05em] text-ink",
+            "rounded-pill font-serif text-2xl font-bold tracking-[-0.01em] text-ink",
             focusRing("onLight"),
           )}
         >

@@ -32,7 +32,7 @@ export function CartSummary({ cart }: { cart: CartView }) {
       aria-labelledby="cart-summary-heading"
       className="flex flex-col gap-4 rounded-card-lg bg-blush p-6 lg:sticky lg:top-24"
     >
-      <h2 id="cart-summary-heading" className="text-2xl font-extrabold tracking-[-0.03em] text-ink">
+      <h2 id="cart-summary-heading" className="text-2xl font-bold tracking-[-0.01em] text-ink">
         {t("cart.summary")}
       </h2>
       <dl
@@ -55,13 +55,13 @@ export function CartSummary({ cart }: { cart: CartView }) {
             </div>
             <div className="flex justify-between gap-4 text-lg font-extrabold text-ink">
               <dt>{t("cart.total")}</dt>
-              <dd>{formatPrice(cart.total)}</dd>
+              <dd className="font-serif font-bold">{formatPrice(cart.total)}</dd>
             </div>
           </>
         ) : (
           <div className="flex justify-between gap-4 text-lg font-extrabold text-ink">
             <dt>{t("cart.subtotal")}</dt>
-            <dd>{formatPrice(cart.subtotal)}</dd>
+            <dd className="font-serif font-bold">{formatPrice(cart.subtotal)}</dd>
           </div>
         )}
       </dl>

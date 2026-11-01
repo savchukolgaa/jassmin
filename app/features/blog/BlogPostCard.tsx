@@ -22,10 +22,7 @@ export function BlogPostCard({ post }: { post: BlogPostCardView }) {
         <p className="text-sm font-bold text-muted">
           <time dateTime={post.publishedAt}>{post.publishedLabel}</time>
         </p>
-        <h2
-          className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink"
-          lang={lang}
-        >
+        <h2 className="text-xl font-bold leading-tight tracking-[-0.01em] text-ink" lang={lang}>
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
             {post.title}
           </Link>

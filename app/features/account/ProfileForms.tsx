@@ -52,7 +52,7 @@ function Panel({
       className="flex flex-col gap-5 rounded-card border-2 border-line bg-white p-6 md:p-7"
     >
       <div className="flex flex-col gap-1">
-        <h3 id={headingId} className="text-2xl font-extrabold tracking-[-0.02em] text-ink">
+        <h3 id={headingId} className="text-2xl font-bold tracking-[-0.01em] text-ink">
           {heading}
         </h3>
         {description && <p className="break-words text-muted">{description}</p>}

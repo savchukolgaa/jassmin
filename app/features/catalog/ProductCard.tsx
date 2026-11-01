@@ -60,7 +60,7 @@ function CardPrice({
   className?: string;
 }) {
   const { t, formatPrice } = useT();
-  const slot = cn("min-h-7 text-xl font-extrabold text-ink", className);
+  const slot = cn("min-h-7 text-xl text-ink", className);
 
   if (!product.hasPriceRange) {
     return <p className={slot}>{formatPrice(product.minPrice)}</p>;
@@ -129,7 +129,7 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
         <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">
           {product.brand}
         </p>
-        <Heading className="text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink">
+        <Heading className="text-xl font-bold leading-tight tracking-[-0.01em] text-ink">
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
             {product.title}
           </Link>
@@ -151,7 +151,7 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
           product={product}
           selectedId={selectedId}
           hydrated={hydrated}
-          className="mt-auto pt-3"
+          className="mt-auto pt-3 font-extrabold"
         />
       </div>
       <AddToCartForm
@@ -203,7 +203,7 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
           {single &&
             ` · ${formatVolume({ volumeMl: product.defaultVariant.volumeMl, packSize: product.packSize }, translator)}`}
         </p>
-        <Heading className="text-lg leading-tight font-extrabold text-ink">
+        <Heading className="text-lg leading-tight font-bold text-ink">
           <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
             {product.title}
           </Link>
@@ -219,7 +219,12 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
         className="mt-auto grid grid-cols-[1fr_auto] items-center gap-3 px-2 pb-2"
       >
         <SizePicker product={product} onChange={setSelectedId} className="col-span-2" />
-        <CardPrice product={product} selectedId={selectedId} hydrated={hydrated} />
+        <CardPrice
+          product={product}
+          selectedId={selectedId}
+          hydrated={hydrated}
+          className="font-serif font-bold"
+        />
       </AddToCartForm>
     </article>
   );

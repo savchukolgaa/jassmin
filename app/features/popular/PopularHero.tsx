@@ -19,7 +19,7 @@ export function PopularHero({ families }: { families: TrioFamily[] }) {
         </p>
         <h1
           id="popular-title"
-          className="animate-fade-up anim-delay-1 text-5xl leading-none font-extrabold tracking-[-0.05em] text-balance md:text-7xl"
+          className="animate-fade-up anim-delay-1 text-5xl leading-none font-bold tracking-[-0.01em] text-balance md:text-7xl"
         >
           {t("popular.title")}
         </h1>

@@ -29,7 +29,7 @@ export function BlogArticle({ post }: { post: BlogPostView }) {
         <BackToBlogLink />
         <header className="mt-4">
           <h1
-            className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-ink md:text-5xl"
+            className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl"
             lang={lang}
           >
             {post.title}

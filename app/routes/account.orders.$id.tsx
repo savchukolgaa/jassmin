@@ -59,7 +59,7 @@ export default function AccountOrder({ loaderData: order }: Route.ComponentProps
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2
             id="order-heading"
-            className="text-3xl font-extrabold tracking-[-0.03em] text-ink md:text-4xl"
+            className="text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl"
           >
             {t("account.order.title", { id: order.id })}
           </h2>

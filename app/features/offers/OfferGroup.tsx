@@ -9,10 +9,7 @@ export function OfferGroup({ group }: { group: OfferGroupView }) {
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-6">
-      <h2
-        id={headingId}
-        className="text-3xl font-extrabold tracking-[-0.03em] text-ink md:text-4xl"
-      >
+      <h2 id={headingId} className="text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl">
         {t(`offers.kinds.${group.kind}`)}
       </h2>
       <ul className="flex flex-col gap-6">

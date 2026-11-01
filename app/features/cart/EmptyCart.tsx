@@ -8,7 +8,7 @@ export function EmptyCart() {
 
   return (
     <section className="mt-8 flex flex-col items-start gap-4 rounded-card-lg bg-blush p-6 md:p-10">
-      <h2 className="text-2xl font-extrabold tracking-[-0.03em] text-ink">{t("cart.empty")}</h2>
+      <h2 className="text-2xl font-bold tracking-[-0.01em] text-ink">{t("cart.empty")}</h2>
       <p className="text-body">{t("cart.emptyHint")}</p>
       <div className="flex flex-wrap gap-3">
         <ButtonLink to="/catalog/women">{t(CATALOG_TITLE_KEYS.women)}</ButtonLink>

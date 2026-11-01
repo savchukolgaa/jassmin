@@ -213,7 +213,7 @@ export default function AccountProfile({ loaderData, actionData }: Route.Compone
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-1.5">
-        <h2 className="text-3xl font-extrabold tracking-[-0.03em] text-ink md:text-4xl">
+        <h2 className="text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl">
           {t("account.profile.title")}
         </h2>
         <p className="text-muted">

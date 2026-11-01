@@ -5,7 +5,9 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 - **Design canvas:** https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW (private; ask the owner for
   access). Use the row titled **"Chosen direction: Option C+"**. Options A–G stay on the canvas only
   for reference and must not be implemented. Until the owner updates it, the canvas still shows the
-  old deep-pink header: follow the white header described below (#72).
+  old deep-pink header: follow the white header described below (#72). The C+ artboards also still
+  show headings in Manrope; follow the serif headings below (#73), drawn on the `Serif headings
+  (#73)` artboards.
 - **Shared foundation** (#27): theme tokens in `app/app.css`, `Button` / `ButtonLink` in
   `app/components/ui/`, and `Header` / `Footer` in `app/components/layout/`. Page issues reuse
   these instead of adding new colours, fonts or button styles.
@@ -24,6 +26,7 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 | `C+ Account profile`, `C+ Account profile, phone width (errors)` | `/account/profile` | #54 |
 | `C+ Offers`, `C+ Offers, phone width` | `/offers` | #55 |
 | `C+ Popular`, `C+ Popular, phone width` | `/popular` | #67 |
+| `Serif headings (#73) — home`, `Serif headings (#73) — product` | `/`, `/products/:id` (heading font only) | #73 |
 
 Cart and checkout aren't designed yet. Build them from the tokens and components below. There is
 no Unisex catalog page: catalogs are `/catalog/women` and `/catalog/men` only.
@@ -96,12 +99,23 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
 
 ## Typeface and scale
 
-- **Manrope** 400–800 from Google Fonts (loaded in `app/root.tsx` `links`, with Cyrillic support).
-  It's first in `--font-sans`, followed by the system stack, so every Tailwind `font-sans` text uses
-  it.
-- **Headings:** `font-extrabold` (800) with tight negative tracking: `tracking-[-0.03em]` to
-  `tracking-[-0.05em]`. Larger headings get tighter tracking, and use `leading-tight` or
-  `leading-none`.
+Two families from Google Fonts, loaded in one request in `app/root.tsx` `links` with
+`display=swap`; Google serves the Cyrillic and Latin subsets as separate files automatically.
+
+- **Playfair Display** 600–700 (`--font-serif: "Playfair Display", Georgia, serif`, #73) for
+  headings, the wordmark, prices and the big step numbers. A base rule in `app/app.css` sets every
+  `h1`–`h3` in it, so a new heading gets the serif without a class; use `font-serif` on anything
+  else in that list. Small uppercase labels that happen to be headings (the `/offers` eyebrow
+  `h1`) add `font-sans` to stay Manrope.
+- **Manrope** 400–800 (`--font-sans`, followed by the system stack) for everything else: body
+  text, buttons, nav, forms, labels, chips and badges.
+- **Headings:** `font-bold` (700) with `tracking-[-0.01em]`, and `leading-tight` or `leading-none`
+  on large sizes. Don't use `font-extrabold` or the old tight tracking (`-0.03em` to `-0.05em`) on
+  serif text: Playfair is already high-contrast and its weights stop at 900.
+- **Prices in the serif:** the product page and product card prices, the cart line total, the
+  cart/checkout total, account order prices, the hero badge and the payment simulator amount.
+  Prices inside a sentence (CTA labels, the marquee, "each …", the free-delivery hint, the
+  "date · items · price" order line) and the subtotal/discount rows stay Manrope.
 - **Suggested scale:**
 
   | Role | Mobile → desktop |
@@ -113,7 +127,7 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
   | Body | `text-base`, weight 400–500, `text-body` or `text-ink` |
   | Labels, nav | `text-sm`, weight 700 |
 
-- **Wordmark:** "jassmin." in lower case, weight 800, `tracking-[-0.05em]`. In the white header it's
+- **Wordmark:** "jassmin." in lower case, `font-serif font-bold tracking-[-0.01em]`. In the white header it's
   `ink` with a `primary` dot; on dark or deep-pink surfaces the dot is `primary-light`. The dot is
   marked `aria-hidden`.
 
@@ -137,9 +151,10 @@ keeps at least 3:1 against its surface:
 |---|---|---|
 | Deep pink (`primary`: footer, hero bands) | white | 5.52:1 |
 | Dark (`ink`) | `primary-light` | 7.93:1 |
-| White, `blush` or `card` (header, its dropdown and mobile menu, page content) | `primary` | 5.52:1 on white, 5.13:1 on `blush` |
+| White, `blush` or `card` (header, its dropdown and mobile menu, page content, form fields) | `primary` | 5.52:1 on white, 5.13:1 on `blush` |
 
-`primary-light` isn't used on deep pink, because it's only 2.55:1 there. In layout code, use
+`primary-light` isn't used on deep pink (2.55:1) or on white (2.3:1); `app/theme.test.ts` fails if
+`outline-primary-light` appears outside the two `ink` sections. In layout code, use
 `focusRing("onPrimary" | "onLight")` from `app/components/layout/nav.ts`; the white header and its
 panels use `"onLight"`, the footer `"onPrimary"`.
 

@@ -243,6 +243,8 @@ export const uk = {
   product: {
     metaDescription: "{brand} {title} — {price}.",
     metaFallback: "Купуйте в магазині парфумів Jassmin.",
+    /** The product photo's alt text (#88). */
+    imageAlt: "{brand} {title}",
     ml: "мл",
     fromPrice: "від {price}",
     quickAdd: "Додати {title} у кошик",

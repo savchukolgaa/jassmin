@@ -239,7 +239,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
       brand: "Dior",
       gender: "men",
       packSize: 1,
-      imageUrl: null,
+      image: null,
       description: sauvage.description,
       fragranceFamilies: sauvage.fragranceFamilies,
       notes: sauvage.notes,

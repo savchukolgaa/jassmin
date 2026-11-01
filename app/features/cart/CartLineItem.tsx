@@ -36,10 +36,12 @@ export function CartLineItem({ line }: { line: CartLine }) {
   return (
     <li className="flex gap-4 rounded-card bg-white p-3 ring-1 ring-line sm:p-4">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="w-24 shrink-0 sm:w-28">
+        {/* Hidden duplicate of the title link, so its photo needs no alt text (#88). */}
         <ProductImage
-          imageUrl={line.imageUrl}
-          title={line.title}
+          image={line.image}
           brand={line.brand}
+          alt=""
+          layout="thumb"
           className="rounded-t-full"
         />
       </Link>

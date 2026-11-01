@@ -63,7 +63,7 @@ const BESTSELLER: ProductSummary = {
   brand: "Lancôme",
   gender: "women",
   packSize: 1,
-  imageUrl: null,
+  image: null,
   fragranceFamily: "гурманські",
   variants: [
     { id: "01a1652b-6e25-7d00-8000-000000000001", volumeMl: 10, price: "450.00", inStock: true },

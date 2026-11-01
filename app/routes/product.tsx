@@ -120,10 +120,11 @@ export default function Product({ loaderData }: Route.ComponentProps) {
 
       <div className="mt-6 grid gap-8 md:grid-cols-2 md:gap-12">
         <ProductImage
-          imageUrl={product.imageUrl}
-          title={product.title}
+          image={product.image}
           brand={product.brand}
-          eager
+          alt={t("product.imageAlt", { brand: product.brand, title: product.title })}
+          layout="page"
+          priority
           className="md:rounded-t-full"
         />
 

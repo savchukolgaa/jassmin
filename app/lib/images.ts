@@ -75,7 +75,7 @@ export const PRODUCT_IMAGE_SIZES = {
   /** The product page photo: full width, half from `md`. */
   page: "(min-width: 1536px) 720px, (min-width: 768px) 46vw, 92vw",
   /** Cart and order line thumbnails. */
-  thumb: "96px",
+  thumb: "(min-width: 640px) 112px, 96px",
 } as const;
 
 export type ProductImageLayout = keyof typeof PRODUCT_IMAGE_SIZES;

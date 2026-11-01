@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { type CartPromo, type DiscountLine, promoCodeSchema } from "./discounts";
 import { createTranslator, type TextKey, type Translator } from "./i18n";
+import type { ResponsiveImage } from "./images";
 
 /** Most of one size a single cart line may hold, whatever the stock. */
 export const MAX_LINE_QUANTITY = 99;
@@ -39,7 +40,8 @@ export interface CartLine {
   slug: string | null;
   title: string;
   brand: string;
-  imageUrl: string | null;
+  /** The product photo (#88); `null` without one. */
+  image: ResponsiveImage | null;
   packSize: number;
   volumeMl: number;
   /** The variant's current price. */

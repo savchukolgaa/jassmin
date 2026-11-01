@@ -32,7 +32,7 @@ const PRODUCT: ProductDetail = {
   brand: "Chanel",
   gender: "women",
   packSize: 1,
-  imageUrl: null,
+  image: null,
   description: null,
   fragranceFamilies: ["шипрові", "квіткові"],
   notes: ["апельсин", "троянда", "пачулі"],

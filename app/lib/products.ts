@@ -3,6 +3,7 @@
 // decimal strings. Price, volume and stock belong to a product's variants (#26).
 import type { Gender } from "./enums";
 import { createTranslator, type Locale, type Translator } from "./i18n";
+import type { ResponsiveImage } from "./images";
 import { pathFor } from "./paths";
 
 interface ProductBase {
@@ -14,7 +15,8 @@ interface ProductBase {
   gender: Gender;
   /** Units per variant, e.g. 3 for a set of three testers. */
   packSize: number;
-  imageUrl: string | null;
+  /** The photo with Strapi's resized versions (#88); `null` without one. */
+  image: ResponsiveImage | null;
 }
 
 /**

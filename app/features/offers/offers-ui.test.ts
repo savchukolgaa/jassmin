@@ -22,7 +22,7 @@ const sauvage: ProductSummary = {
   brand: "Dior",
   gender: "men",
   packSize: 1,
-  imageUrl: null,
+  image: null,
   variants: [
     { id: "01a1652b-6e25-7c44-8d5b-000000000010", volumeMl: 10, price: "790.00", inStock: true },
     { id: "01a1652b-6e25-7c44-8d5b-000000000050", volumeMl: 50, price: "3290.00", inStock: true },

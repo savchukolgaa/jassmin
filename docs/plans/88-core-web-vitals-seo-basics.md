@@ -199,7 +199,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   (`populate: ["image"]`, `fields: ["publicId"]`) using the existing `cmsSyncDeps` fetch, and
   update `image_url`/`image_width`/`image_height`/`image_formats` by `public_id` in batches.
   Pure mapping function unit-tested; document in `app/.server/AGENTS.md` and README's CMS section.
-- [ ] **5. Product DTOs and `ProductImage`** — Select the new columns in the card, detail, cart and
+- [x] **5. Product DTOs and `ProductImage`** — Select the new columns in the card, detail, cart and
   summary queries; map with `toResponsiveImage` in `services/products.ts` (`toSummary`,
   `toDetail`); change DTOs in `app/lib/products.ts` to `image`. `ProductImage` takes `image`,
   `sizes`, `alt` and `priority`; renders `srcSet`/`sizes`/`width`/`height`/`decoding="async"`,

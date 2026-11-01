@@ -240,6 +240,7 @@ export const en = {
   product: {
     metaDescription: "{brand} {title} — {price}.",
     metaFallback: "Shop it at the Jassmin perfume store.",
+    imageAlt: "{brand} {title}",
     ml: "ml",
     fromPrice: "from {price}",
     quickAdd: "Add {title} to cart",

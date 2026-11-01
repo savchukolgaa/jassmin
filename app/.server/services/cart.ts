@@ -41,6 +41,7 @@ import { findUserById } from "../db/queries/users";
 import { cartItems, carts } from "../db/schema";
 import { getUserId } from "../session";
 import { type PricingLine, priceCart, toDiscountLine } from "./pricing";
+import { productImage } from "./products";
 
 /** Whose cart to read: the logged-in user's, else the guest's (by their visitor cookies). */
 export interface CartOwner extends VisitorCookies {
@@ -98,7 +99,9 @@ export async function getOrCreateActiveCart(
 }
 
 /** A cart line as `priceCart` takes it. */
-export function pricingLine(line: CartLine): PricingLine {
+export function pricingLine(
+  line: Pick<CartLine, "productId" | "volumeMl" | "packSize" | "unitPrice" | "quantity">,
+): PricingLine {
   return {
     productPublicId: line.productId,
     volumeMl: line.volumeMl,
@@ -106,6 +109,17 @@ export function pricingLine(line: CartLine): PricingLine {
     unitPrice: toKopiyky(line.unitPrice),
     quantity: line.quantity,
   };
+}
+
+/** A cart line for the page: the product photo as a responsive image (#88). */
+function toCartLine({
+  imageUrl,
+  imageWidth,
+  imageHeight,
+  imageFormats,
+  ...line
+}: Awaited<ReturnType<typeof listCartLines>>[number]): CartLine {
+  return { ...line, image: productImage({ imageUrl, imageWidth, imageHeight, imageFormats }) };
 }
 
 /** The owner's cart lines, totals and discount; empty when they have no cart. */
@@ -126,7 +140,7 @@ export async function getCartView(
   const candidates = await listCandidateDiscounts(db, cartDiscountId);
   const priced = priceCart(lines.map(pricingLine), candidates, now);
   return {
-    lines,
+    lines: lines.map(toCartLine),
     ...totals,
     discount: toDiscountLine(priced.applied),
     total: fromKopiyky(priced.total),

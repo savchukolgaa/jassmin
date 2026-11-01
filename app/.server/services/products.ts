@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { CartActionError } from "~/lib/cart";
 import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib/catalog";
 import { GENDERS, type Gender } from "~/lib/enums";
+import { type ImageFormat, type ResponsiveImage, toResponsiveImage } from "~/lib/images";
 import type { PopularPage } from "~/lib/popular";
 import {
   type CatalogPage,
@@ -37,6 +38,19 @@ export const GENDER_SCOPE: Record<CatalogGender, readonly Gender[]> = {
   women: ["women", "unisex"],
 };
 
+/** A row's image columns (#88). */
+export interface ProductImageColumns {
+  imageUrl: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  imageFormats: ImageFormat[] | null;
+}
+
+/** The product photo's responsive image from its columns (#88). */
+export function productImage(row: ProductImageColumns): ResponsiveImage | null {
+  return toResponsiveImage(row.imageUrl, row.imageWidth, row.imageHeight, row.imageFormats);
+}
+
 // The only place rows become DTOs.
 function toSummary(row: ProductSummaryRow): ProductSummary {
   const { variants } = row;
@@ -52,7 +66,7 @@ function toSummary(row: ProductSummaryRow): ProductSummary {
     brand: row.brand,
     gender: row.gender,
     packSize: row.packSize,
-    imageUrl: row.imageUrl,
+    image: productImage(row),
     fragranceFamily: row.fragranceFamily,
     minPrice: row.minPrice,
     hasPriceRange: row.minPrice !== row.maxPrice,
@@ -81,7 +95,7 @@ function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): Product
     brand: row.brand,
     gender: row.gender,
     packSize: row.packSize,
-    imageUrl: row.imageUrl,
+    image: productImage(row),
     description: row.description,
     fragranceFamilies: row.fragranceFamilies,
     notes: row.notes,

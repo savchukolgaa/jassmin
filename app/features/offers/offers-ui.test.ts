@@ -106,6 +106,22 @@ describe("OfferCard", () => {
     );
   });
 
+  it("describes the offer photo with its title when Strapi's alt is blank (#88)", () => {
+    const image = {
+      url: "http://cms.test/uploads/o.jpg",
+      alt: "",
+      width: 1,
+      height: 1,
+      srcSet: null,
+    };
+    const html = render(createElement(OfferCard, { offer: offer({ image }) }), "en");
+
+    expect(html).toContain('alt="Offer: Тестерне тріо"');
+    expect(html).toContain('loading="lazy"');
+    const own = offer({ image: { ...image, alt: "Три тестери" } });
+    expect(render(createElement(OfferCard, { offer: own }))).toContain('alt="Три тестери"');
+  });
+
   it("marks Ukrainian copy shown on the English page with lang=uk", () => {
     expect(render(createElement(OfferCard, { offer: offer() }), "en")).toMatch(/<h3[^>]*lang="uk"/);
     expect(render(createElement(OfferCard, { offer: offer() }))).not.toMatch(/<h3[^>]*lang=/);

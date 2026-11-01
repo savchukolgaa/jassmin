@@ -535,7 +535,10 @@ export const uk = {
     defaultDescription:
       "Магазин парфумів Jassmin: жіночі та чоловічі аромати відомих брендів у розмірах від 5 мл.",
     about: "Про нас",
+    /** Alt text for the home photos when the editor left it blank in Strapi (#88). */
+    aboutImageAlt: "Вітрина магазину парфумів Jassmin",
     hero: {
+      imageAlt: "Флакони парфумів Jassmin",
       chip: "Жінкам · Чоловікам",
       badgeOnly: "лише",
       badgeFor: "за {count}",
@@ -639,10 +642,14 @@ export const uk = {
     shopMen: "Чоловічі парфуми",
     back: "← Назад до блогу",
     notFound: "Статтю не знайдено",
+    /** A cover's alt text when the editor left it blank in Strapi (#88). */
+    coverAlt: "Обкладинка статті «{title}»",
     defaultDescription:
       "Статті про парфуми й путівники ароматами від Jassmin: як обрати, носити та зберігати парфуми.",
   },
   offers: {
+    /** An offer photo's alt text when the editor left it blank in Strapi (#88). */
+    imageAlt: "Пропозиція «{title}»",
     title: "Акції та пропозиції",
     metaTitle: "Акції та пропозиції",
     metaDescription:

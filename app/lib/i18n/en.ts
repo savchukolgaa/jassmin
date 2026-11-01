@@ -525,7 +525,9 @@ export const en = {
     defaultDescription:
       "Jassmin perfume store: women's and men's fragrances from well-known brands in sizes from 5 ml.",
     about: "About us",
+    aboutImageAlt: "The Jassmin perfume store",
     hero: {
+      imageAlt: "Perfume bottles at Jassmin",
       chip: "Women · Men",
       badgeOnly: "only",
       badgeFor: "for {count}",
@@ -622,10 +624,12 @@ export const en = {
     shopMen: "Shop men",
     back: "← Back to the blog",
     notFound: "Article not found",
+    coverAlt: "Cover of the article “{title}”",
     defaultDescription:
       "Fragrance articles and scent guides from Jassmin: how to choose, wear and care for perfume.",
   },
   offers: {
+    imageAlt: "Offer: {title}",
     title: "Special offers",
     metaTitle: "Special offers",
     metaDescription: "Tester sets, seasonal picks, gift ideas and last bottles at Jassmin.",

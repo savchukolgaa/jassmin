@@ -31,7 +31,7 @@ export function OfferCard({ offer }: { offer: OfferView }) {
             sizes="(min-width: 768px) 40vw, 100vw"
             width={offer.image.width ?? undefined}
             height={offer.image.height ?? undefined}
-            alt={offer.image.alt}
+            alt={offer.image.alt || t("offers.imageAlt", { title: offer.title })}
             loading="lazy"
             decoding="async"
             className="aspect-[4/3] w-full rounded-card object-cover"

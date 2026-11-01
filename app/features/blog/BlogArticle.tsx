@@ -51,6 +51,7 @@ export function BlogArticle({ post }: { post: BlogPostView }) {
         {post.coverImage && (
           <BlogCover
             image={post.coverImage}
+            alt={post.coverImage.alt || t("blog.coverAlt", { title: post.title })}
             sizes="(min-width: 768px) 768px, 100vw"
             eager
             className="mt-8 rounded-card-lg"

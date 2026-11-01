@@ -99,3 +99,23 @@ describe("BlogArticle", () => {
     expect(html).not.toMatch(/lang="uk"[^>]*>← Back/);
   });
 });
+
+describe("blog cover alt text (#88)", () => {
+  it("hides a card's cover, which repeats the title link next to it", () => {
+    const withAlt = {
+      ...card,
+      coverImage: card.coverImage && { ...card.coverImage, alt: "Notes" },
+    };
+    expect(render(createElement(BlogPostCard, { post: withAlt }))).toMatch(/<img[^>]*alt=""/);
+  });
+
+  it("describes the article's cover, falling back to its title, and loads it first", () => {
+    const html = render(createElement(BlogArticle, { post }));
+    const img = html.match(/<img[^>]*>/)?.[0] ?? "";
+
+    expect(img).toContain('alt="Cover of the article “How to choose a perfume”"');
+    expect(img).toContain('fetchPriority="high"');
+    const own = { ...post, coverImage: post.coverImage && { ...post.coverImage, alt: "Notes" } };
+    expect(render(createElement(BlogArticle, { post: own }))).toContain('alt="Notes"');
+  });
+});

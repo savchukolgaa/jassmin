@@ -251,7 +251,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   via `?url` imports (`rel: "preload", as: "font", type: "font/woff2", crossOrigin:
   "anonymous"`). Verify in the built `build/client/assets` that only the 4 subset files ship and
   that `font-display: swap` is present. Update `docs/design.md` → Typeface.
-- [ ] **10. CMS images: alt fallbacks and loading audit** — Hero, About, offer, offers-hero and
+- [x] **10. CMS images: alt fallbacks and loading audit** — Hero, About, offer, offers-hero and
   blog cover/card images: when `image.alt` is empty, use a translated fallback
   (`home.hero.imageAlt`, `home.about.imageAlt`, `offers.imageAlt` with `{title}`,
   `blog.coverAlt` with `{title}`). Ensure every `<img>` has `width`/`height` (or sits in a

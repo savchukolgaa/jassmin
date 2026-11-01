@@ -273,6 +273,24 @@ describe("HomePage", () => {
     expect(render()).not.toContain('id="bestsellers-title"');
   });
 
+  it("describes the hero and store photos in the visitor's language when Strapi's alt is blank (#88)", () => {
+    const image = {
+      url: "http://cms.test/uploads/a.jpg",
+      alt: "",
+      width: 1,
+      height: 1,
+      srcSet: null,
+    };
+    const html = render({
+      hero: { ...view.hero, image },
+      about: { ...view.about, image },
+    });
+
+    expect(html).toContain('alt="Perfume bottles at Jassmin"');
+    expect(html).toContain('alt="The Jassmin perfume store"');
+    expect(html).not.toContain('alt=""');
+  });
+
   it("shows the about store photo, or a decorative frame without one", () => {
     const image = {
       url: "http://cms.test/uploads/store.jpg",

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/86
 Branch: `issue/86`
 Worktree: `.claude/worktrees/issue-86`
-Status: Planned (blocked on #85)
+Status: In progress (route wiring waits for #85)
 
 ## Goal
 Shoppers searching on Google should see Jassmin's price, availability, store address and breadcrumbs
@@ -37,7 +37,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   `PerfumeStoreLd`, `WebSiteLd`, `BlogPostingLd`; no `any`, no `schema-dts` dependency) and pure
   builders that return plain objects, with `@context: "https://schema.org"` on the root. The
   module also exports `serializeJsonLd(data)`: `JSON.stringify` with every `<` replaced by
-  `<` (plus U+2028/U+2029 escaped for safety).
+  `\u003c` (plus U+2028/U+2029 escaped for safety).
 - **Rendering**: `app/components/JsonLd.tsx` exports `<JsonLd data={…} />`, which renders
   `<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}>`
   with a `biome-ignore` comment like the one in `root.tsx`. It is rendered in the route
@@ -77,9 +77,9 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
 
   They're optional, so the existing content stays valid. The existing `address` string stays as
   the visible text and the source of the directions link. The component is localized, so the
-  street and city come in the page's language. Staff enter the coordinates in each locale, and
-  the uk values are the fallback for an English entry missing them (the home view already falls
-  back to `uk` content).
+  street and city come in the page's language. Staff enter the coordinates in each locale too
+  (the seed does). *Deviation:* there is no per-field fallback to the uk coordinates, because that
+  would need a second CMS request. An English entry without coordinates just has no `geo`.
 
   The builder emits a `PostalAddress` with `addressCountry: "UA"` and the structured fields when
   set. When they are empty it falls back to the whole `address` string in `streetAddress`, which
@@ -91,15 +91,17 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   `Пн–Пт 10:00–20:00` / `Mon–Fri 10:00–20:00` / `Сб 11:00–18:00` into schema.org strings
   (`Mo-Fr 10:00-20:00`). It accepts uk and en day abbreviations and `-`, `–`, `—` as dashes. Lines
   it can't parse are dropped, and if none parse the property is omitted (it's only recommended).
-  The `openingHours` field description in Strapi documents the expected format, one line per
-  range: `Пн–Пт 10:00–20:00`.
+  *Deviation:* Strapi component schemas have no per-field descriptions, so the expected format
+  (one range per line, `Пн–Пт 10:00–20:00`) is documented in the `home.location` component's
+  description in the admin.
 - **Breadcrumbs**: `breadcrumbList(origin, items: { name, path }[])`; the last item keeps its
   `item` URL. The trails are:
   - Product: Home > Women's/Men's catalog (via the existing `catalogOf(gender)`) > product title.
   - Catalog: Home > catalog title. The URL has no query string, so filters/pages don't leak.
   - Blog post: Home > Blog > post title.
 
-  "Home" needs a new key `nav.home` (uk `Головна`, en `Home`).
+  "Home" uses a new key `nav.breadcrumbHome` (uk `Головна`, en `Home`). *Deviation:* `nav.home`
+  already exists ("Jassmin, головна", the logo link's label).
 - **Visible breadcrumbs (Q4: confirmed)**: a shared `app/components/layout/Breadcrumbs.tsx`
   renders the same items as `<nav aria-label={t("nav.breadcrumb")}><ol>…</ol></nav>` in the
   current product back-link style (`text-sm`, `font-bold text-primary-dark`, `focusRing("onLight")`,
@@ -112,6 +114,9 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   (`Person` with `authorName`, else the store `Organization`), `publisher` (Organization `Jassmin`),
   `inLanguage` (`post.locale`) and `mainEntityOfPage` (`seo.canonicalUrl`). `dateModified` needs
   Strapi's `updatedAt`, which the schemas don't read yet (step 5). It falls back to `publishedAt`.
+- **Order of work (deviation)**: #85 wasn't merged when implementation started. Steps that don't
+  need its origin (1, 3, 3b, 4, 5, 7) were done first. The builders take `origin` as a parameter,
+  so they don't depend on where it comes from. The route wiring (steps 2, 6, 8–10) waits for #85.
 - **Snapshot tests** use inline snapshots (`toMatchInlineSnapshot`) so the expected JSON is
   reviewable in the diff.
 
@@ -168,7 +173,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   (`gh issue view 85 --json state`), then run `git -C "$WT" fetch origin && git -C "$WT" rebase
   origin/main`. Read how #85 exposes the public origin (`PUBLIC_SITE_URL`, the root loader data,
   any helper in `app/lib/seo.ts`) and use that everywhere below. If #85 isn't merged, stop.
-- [ ] **1. Serializer and `<JsonLd>`**: in `app/lib/structured-data.ts`, add the base type
+- [x] **1. Serializer and `<JsonLd>`**: in `app/lib/structured-data.ts`, add the base type
   `JsonLdThing` and `serializeJsonLd(data)` (escape `<`, U+2028, U+2029). Add
   `app/components/JsonLd.tsx`. Tests: a `description` containing `</script><script>alert(1)` comes
   out with no `<` and still `JSON.parse`s back to the input; rendering `<JsonLd>` with
@@ -179,7 +184,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   #85's value from the root loader data. Add `productHref(id)` to `app/lib/products.ts` (unless
   #83 already added one) and use it in the existing product links (`ProductCard` etc.). Unit
   tests.
-- [ ] **3. Structured location fields in Strapi**: add the optional `streetAddress`,
+- [x] **3. Structured location fields in Strapi**: add the optional `streetAddress`,
   `addressLocality`, `postalCode`, `latitude` and `longitude` attributes to
   `cms/src/components/home/location.json`, and extend the `openingHours` description with the
   format. Regenerate `cms/types/generated/components.d.ts` with the Strapi typegen. Extend
@@ -191,10 +196,10 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   numbers within range, `.catch(null)` so bad data never 503s). Then carry the fields through
   `app/lib/cms.ts` → `HomePageView.location` (`buildHomePageView`). Update the fixtures and
   `content.test.ts` / the home service tests (fields present, missing, out of range).
-- [ ] **3b. Store code in the product DTO**: add `storeCode: string | null` to `ProductDetail` and
+- [x] **3b. Store code in the product DTO**: add `storeCode: string | null` to `ProductDetail` and
   map it in `toDetail` (`app/.server/services/products.ts`). Check that `findProductByPublicId`
   selects it, and update fixtures/tests that build `ProductDetail`.
-- [ ] **4. Builders**: implement `productLd`, `breadcrumbListLd`, `perfumeStoreGraphLd` (store +
+- [x] **4. Builders**: implement `productLd`, `breadcrumbListLd`, `storeGraphLd` (store +
   website `@graph`), `blogPostingLd` and `parseOpeningHours` per the
   decisions. Inputs are the existing DTOs (`ProductDetail`, `HomePageView`, `BlogPostView`) plus
   `origin` and already-translated strings. Builders never call `t` themselves, so they stay pure.
@@ -205,7 +210,7 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   uk and en input, `–` and `-`, single days, and unparseable lines. Test the address with
   structured fields + `geo`, without them (whole-string fallback, no `geo`), and with only one
   coordinate (no `geo`).
-- [ ] **5. Blog `updatedAt`**: read `updatedAt` (nullish) in the blog post schema, expose it on
+- [x] **5. Blog `updatedAt`**: read `updatedAt` (nullish) in the blog post schema, expose it on
   `BlogPost` (`app/lib/cms.ts`) and pass it through `buildBlogPostView` into `BlogPostView`
   (falling back to `publishedAt`). Update `blog.test.ts` and the content tests; the fixtures
   already contain `updatedAt`.
@@ -214,10 +219,10 @@ page, and `BlogPosting` on blog posts. All builders live in one isomorphic modul
   view's `seo.canonicalUrl` already uses that origin after #85; if not, switch
   `buildBlogPostView`'s `origin` to it. Update the tests that render these routes so they provide
   the root data.
-- [ ] **7. `Breadcrumbs` component + `nav.home`**: create `app/components/layout/Breadcrumbs.tsx`
+- [x] **7. `Breadcrumbs` component + `nav.home`**: create `app/components/layout/Breadcrumbs.tsx`
   taking `items: { name: string; to: string }[]`. Add `nav.home` to `uk.ts`/`en.ts`. Component
   test: an `<ol>` trail, the last item has `aria-current="page"` and is not a link.
-- [ ] **8. Home page**: render `<JsonLd data={perfumeStoreGraphLd(...)} />` in the home route
+- [ ] **8. Home page**: render `<JsonLd data={storeGraphLd(...)} />` in the home route
   component from `loaderData.location` (structured address + geo), `contacts`, the `hero` image and
   the site origin, with `inLanguage` from `useT().locale`. Test: the home route renders a JSON-LD
   script with `"@type":"PerfumeStore"`, the CMS phone, the postal address, `geo` and the social

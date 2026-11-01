@@ -95,7 +95,7 @@ describe("product meta", () => {
   const matches = [
     { id: "root", loaderData: { locale: "uk", site: { url: "https://jassmin.ua" } } },
   ];
-  const location = { pathname: `/products/${PUBLIC_ID}`, search: "?utm_source=telegram" };
+  const location = { pathname: "/products/coco-mademoiselle", search: "?utm_source=telegram" };
   const variant = (price: string, inStock = true) => ({
     id: `v-${price}`,
     volumeMl: 50,
@@ -105,6 +105,7 @@ describe("product meta", () => {
   });
   const product: ProductDetail = {
     id: PUBLIC_ID,
+    slug: "coco-mademoiselle",
     title: "Coco Mademoiselle",
     brand: "Chanel",
     gender: "women",
@@ -143,7 +144,7 @@ describe("product meta", () => {
     expect(tags).toContainEqual({
       tagName: "link",
       rel: "canonical",
-      href: `https://jassmin.ua/products/${PUBLIC_ID}`,
+      href: "https://jassmin.ua/products/coco-mademoiselle",
     });
   });
 

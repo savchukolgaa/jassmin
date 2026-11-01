@@ -7,6 +7,7 @@ import {
   canonicalUrl,
   DESCRIPTION_MAX_LENGTH,
   errorMeta,
+  hreflangMeta,
   priceAmount,
   seoMeta,
   seoSite,
@@ -240,5 +241,72 @@ describe("priceAmount", () => {
   it("formats a decimal price for Open Graph", () => {
     expect(priceAmount("1250")).toBe("1250.00");
     expect(priceAmount("899.5")).toBe("899.50");
+  });
+});
+
+describe("hreflangMeta (#84)", () => {
+  const SITE = "https://jassmin.ua";
+  const hrefs = (descriptors: ReturnType<typeof hreflangMeta>) =>
+    Object.fromEntries(
+      descriptors.map((d) => [(d as { hrefLang: string }).hrefLang, (d as { href: string }).href]),
+    );
+
+  it("links uk, en and x-default for an indexable page, from either language", () => {
+    const expected = {
+      uk: `${SITE}/katalog/zhinochi?page=2`,
+      en: `${SITE}/en/catalog/women?page=2`,
+      "x-default": `${SITE}/katalog/zhinochi?page=2`,
+    };
+    const search = "?page=2&brand=Dior&utm_source=x";
+    expect(hrefs(hreflangMeta(SITE, { pathname: "/katalog/zhinochi", search }, ["page"]))).toEqual(
+      expected,
+    );
+    expect(hrefs(hreflangMeta(SITE, { pathname: "/en/catalog/women", search }, ["page"]))).toEqual(
+      expected,
+    );
+    expect(hreflangMeta(SITE, { pathname: "/en", search: "" })).toContainEqual({
+      tagName: "link",
+      rel: "alternate",
+      hrefLang: "en",
+      href: `${SITE}/en`,
+    });
+  });
+
+  it("links nothing for pages that aren't indexable or aren't pages", () => {
+    expect(hreflangMeta(SITE, { pathname: "/koshyk", search: "" })).toEqual([]);
+    expect(hreflangMeta(SITE, { pathname: "/en/account", search: "" })).toEqual([]);
+    expect(hreflangMeta(SITE, { pathname: "/nope", search: "" })).toEqual([]);
+  });
+
+  it("links a blog post's translated slug, and only the languages it exists in", () => {
+    const location = { pathname: "/blog/yak-obraty", search: "" };
+    expect(
+      hrefs(hreflangMeta(SITE, location, [], { uk: "yak-obraty", en: "how-to-choose" })),
+    ).toEqual({
+      uk: `${SITE}/blog/yak-obraty`,
+      en: `${SITE}/en/blog/how-to-choose`,
+      "x-default": `${SITE}/blog/yak-obraty`,
+    });
+    expect(hrefs(hreflangMeta(SITE, location, [], { uk: "yak-obraty" }))).toEqual({
+      uk: `${SITE}/blog/yak-obraty`,
+      "x-default": `${SITE}/blog/yak-obraty`,
+    });
+  });
+
+  it("is part of seoMeta, but not for noindex pages", () => {
+    const context = {
+      matches: [{ id: "root", loaderData: { locale: "en", site: { url: SITE } } }],
+      location: { pathname: "/en/offers", search: "" },
+    };
+    const meta = seoMeta(context, { title: "Offers", description: "Deals" });
+    expect(meta).toContainEqual({
+      tagName: "link",
+      rel: "alternate",
+      hrefLang: "uk",
+      href: `${SITE}/aktsii`,
+    });
+    expect(seoMeta(context, { title: "x", description: "y", noindex: true })).not.toContainEqual(
+      expect.objectContaining({ rel: "alternate" }),
+    );
   });
 });

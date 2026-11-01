@@ -294,7 +294,7 @@ header, and `Accept-Language` the hint. Update its comment.
   Extend `LocaleSwitcher.dom.test.ts` so scroll is kept when the path changes (#82). Add
   `LanguageHint` with i18n keys in both dictionaries (dismiss sets `locale=uk`). Tests: the switch target for
   every page key, and a blog post with and without a translation.
-- [ ] **9. hreflang.** `HreflangLinks` in the root `<head>`, with the canonicals moved to
+- [x] **9. hreflang.** `HreflangLinks` in the root `<head>`, with the canonicals moved to
   `pathFor`. Tests: an indexable page renders uk/en/x-default absolute URLs; a non-indexable page
   renders none; a uk-only blog post omits `en`.
 - [ ] **10. Guard test.** `paths.guard.test.ts`, then fix anything it finds.

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/88
 Branch: `issue/88`
 Worktree: `.claude/worktrees/issue-88`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -329,7 +329,7 @@ median of 3 runs; `main` (with #83, #85, #86) is one run.
 - [x] Missing pages answer 404, and archived products follow the decided behaviour. — steps 6, 7, 8
 - [x] Every page has one `<h1>`, and every content image has a meaningful translated `alt`. —
   steps 5, 8, 10, 11
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. — step 12
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. — step 12
 
 ## Out of scope
 

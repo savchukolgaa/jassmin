@@ -85,6 +85,7 @@ function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): Product
     description: row.description,
     fragranceFamilies: row.fragranceFamilies,
     notes: row.notes,
+    storeCode: row.storeCode,
     variants: variants.map(toVariant),
   };
 }

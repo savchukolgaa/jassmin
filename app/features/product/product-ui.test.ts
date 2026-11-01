@@ -36,6 +36,7 @@ const PRODUCT: ProductDetail = {
   description: null,
   fragranceFamilies: ["шипрові", "квіткові"],
   notes: ["апельсин", "троянда", "пачулі"],
+  storeCode: "3-D",
   variants: [
     variant(5, "990.00", 0),
     variant(10, "1350.00", 2),

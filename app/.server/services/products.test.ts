@@ -243,6 +243,8 @@ describe.skipIf(!hasDatabase)("products service", () => {
       description: sauvage.description,
       fragranceFamilies: sauvage.fragranceFamilies,
       notes: sauvage.notes,
+      // The sample catalog has no store codes; the imported range does (#66).
+      storeCode: null,
       variants: [
         { id: expect.any(String), volumeMl: 10, price: "790.00", stockQuantity: 15, inStock: true },
         { id: expect.any(String), volumeMl: 50, price: "3290.00", stockQuantity: 6, inStock: true },

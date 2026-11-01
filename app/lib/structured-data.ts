@@ -144,7 +144,7 @@ export interface ProductLdInput {
   origin: string;
   product: Pick<
     ProductDetail,
-    "title" | "brand" | "imageUrl" | "description" | "storeCode" | "packSize"
+    "title" | "brand" | "image" | "description" | "storeCode" | "packSize"
   > & { variants: Pick<ProductVariant, "volumeMl" | "price" | "inStock">[] };
   /** The product page's path, e.g. `/products/<id>`. */
   path: string;
@@ -175,7 +175,7 @@ export function productLd({
     brand: { "@type": "Brand", name: product.brand },
     url,
     ...(product.storeCode ? { sku: product.storeCode } : {}),
-    ...(product.imageUrl ? { image: absoluteUrl(product.imageUrl, origin) } : {}),
+    ...(product.image ? { image: absoluteUrl(product.image.url, origin) } : {}),
     ...(description ? { description } : {}),
     offers: product.variants.map((variant) => ({
       "@type": "Offer",

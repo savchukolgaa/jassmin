@@ -42,7 +42,7 @@ const productInput = (overrides: Partial<ProductLdInput["product"]> = {}): Produ
     title: "Coco Mademoiselle Eau de Parfum",
     brand: "Chanel",
     packSize: 1,
-    imageUrl: "/images/coco.jpg",
+    image: { url: "/images/coco.jpg", srcSet: null, width: null, height: null },
     description: "Свіжий шипровий аромат.",
     storeCode: "3-D",
     variants: [
@@ -103,7 +103,7 @@ describe("productLd", () => {
   });
 
   it("leaves out a missing image, description and store code", () => {
-    const ld = productLd(productInput({ imageUrl: null, description: "  ", storeCode: null }));
+    const ld = productLd(productInput({ image: null, description: "  ", storeCode: null }));
 
     expect(ld).not.toHaveProperty("image");
     expect(ld).not.toHaveProperty("description");

@@ -180,7 +180,7 @@ stay as they are.
   `toBlogPostSummary` tests, the populate assertions (`populate[imageLocalized]`), and
   `schemas.test.ts`. Update `HomePage.test.ts` only if its fixtures use Strapi shapes (it uses
   view models, so likely no change).
-- [ ] **9. Docs** — `app/.server/AGENTS.md` → CMS: a bullet stating the `<name>` /
+- [x] **9. Docs** — `app/.server/AGENTS.md` → CMS: a bullet stating the `<name>` /
   `<name>Localized` / `<name>Alt` convention, the home page exception (shared top-level, override
   and alt in the component), the alt fallback, that `pickImage` is the only way to map them, and
   that new image fields must follow it. Fix the `seed.ts` header comment if it mentions per-locale images.

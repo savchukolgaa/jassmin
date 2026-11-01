@@ -47,6 +47,17 @@
       "allowedTypes": ["images"],
       "pluginOptions": { "i18n": { "localized": false } }
     },
+    "imageLocalized": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "imageAlt": {
+      "type": "string",
+      "maxLength": 200,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
     "startsAt": {
       "type": "datetime",
       "pluginOptions": { "i18n": { "localized": false } }

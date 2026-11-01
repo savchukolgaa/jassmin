@@ -42,6 +42,17 @@
       "allowedTypes": ["images"],
       "pluginOptions": { "i18n": { "localized": false } }
     },
+    "coverImageLocalized": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "coverImageAlt": {
+      "type": "string",
+      "maxLength": 200,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
     "authorName": {
       "type": "string",
       "maxLength": 120,

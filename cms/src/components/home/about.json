@@ -5,6 +5,7 @@
   "attributes": {
     "title": { "type": "string", "required": true, "maxLength": 200 },
     "body": { "type": "richtext", "required": true },
-    "image": { "type": "media", "multiple": false, "allowedTypes": ["images"] }
+    "imageLocalized": { "type": "media", "multiple": false, "allowedTypes": ["images"] },
+    "imageAlt": { "type": "string", "maxLength": 200 }
   }
 }

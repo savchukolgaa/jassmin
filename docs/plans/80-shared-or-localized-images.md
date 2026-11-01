@@ -98,7 +98,7 @@ stay as they are.
 | modify | `app/.server/AGENTS.md` | Document the naming convention |
 
 ## Steps
-- [ ] **1. Strapi schemas** — Home page: add top-level
+- [x] **1. Strapi schemas** — Home page: add top-level
   `heroImage` / `aboutImage` (`type: media`, `multiple: false`, `allowedTypes: ["images"]`,
   `pluginOptions.i18n.localized: false`). `hero.json` / `about.json`: remove `image`, add
   `imageLocalized` (same media options) and `imageAlt` (`type: string`, `maxLength: 200`);
@@ -106,7 +106,7 @@ stay as they are.
   and `imageAlt`, both `localized: true`. Blog post: add `coverImageLocalized` and
   `coverImageAlt`, both `localized: true`. Don't start Strapi yet (the migration must exist
   before the first boot on a database with data).
-- [ ] **2. Data migration** — `cms/database/migrations/2026.11.01T00.00.00.shared-home-images.js`,
+- [x] **2. Data migration** — `cms/database/migrations/2026.11.01T00.00.00.shared-home-images.js`,
   CommonJS like the existing one, in one `knex.transaction`:
   1. Return early unless `home_pages`, `home_pages_cmps` and `files_related_mph` exist (fresh DB).
   2. For each slot (`hero` → `heroImage`, component `home.hero`; `about` → `aboutImage`,

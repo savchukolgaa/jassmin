@@ -82,16 +82,51 @@ async function ensureLocales(strapi: Core.Strapi): Promise<void> {
 const EDITABLE_ORDER_FIELDS = new Set(["orderStatus", "paymentStatus"]);
 
 interface EditMetadata {
-  edit?: { editable?: boolean };
+  edit?: { editable?: boolean; label?: string; description?: string };
 }
 
-interface ContentTypesService {
-  findConfiguration(contentType: unknown): Promise<{
+/** The content-manager's `content-types` and `components` services share these two methods. */
+interface ConfigurationService {
+  findConfiguration(model: unknown): Promise<{
     settings?: unknown;
     layouts?: unknown;
     metadatas?: Record<string, EditMetadata>;
   }>;
-  updateConfiguration(contentType: unknown, configuration: unknown): Promise<unknown>;
+  updateConfiguration(model: unknown, configuration: unknown): Promise<unknown>;
+}
+
+type ModelKind = "content-types" | "components";
+
+/**
+ * Lets `change` adjust each field's edit-view metadata of a content type or component, and saves
+ * the configuration only when it reports a change. `change` returns whether it changed anything.
+ */
+async function updateEditMetadata(
+  strapi: Core.Strapi,
+  kind: ModelKind,
+  uid: string,
+  change: (field: string, edit: NonNullable<EditMetadata["edit"]>) => boolean,
+): Promise<void> {
+  const service = strapi.plugin("content-manager").service(kind) as ConfigurationService;
+  const model =
+    kind === "components"
+      ? strapi.components[uid as keyof typeof strapi.components]
+      : strapi.contentType(uid as Parameters<typeof strapi.contentType>[0]);
+  const configuration = await service.findConfiguration(model);
+  const metadatas = configuration.metadatas ?? {};
+  let changed = false;
+  for (const [field, metadata] of Object.entries(metadatas)) {
+    if (metadata.edit && change(field, metadata.edit)) {
+      changed = true;
+    }
+  }
+  if (changed) {
+    await service.updateConfiguration(model, {
+      settings: configuration.settings,
+      layouts: configuration.layouts,
+      metadatas,
+    });
+  }
 }
 
 /**
@@ -100,29 +135,95 @@ interface ContentTypesService {
  */
 async function lockOrderFields(strapi: Core.Strapi): Promise<void> {
   try {
-    const service = strapi
-      .plugin("content-manager")
-      .service("content-types") as ContentTypesService;
-    const contentType = strapi.contentType(ORDER_UID);
-    const configuration = await service.findConfiguration(contentType);
-    const metadatas = configuration.metadatas ?? {};
-    let changed = false;
-    for (const [field, metadata] of Object.entries(metadatas)) {
+    await updateEditMetadata(strapi, "content-types", ORDER_UID, (field, edit) => {
       const editable = EDITABLE_ORDER_FIELDS.has(field);
-      if (metadata.edit && metadata.edit.editable !== editable) {
-        metadata.edit.editable = editable;
-        changed = true;
+      if (edit.editable === editable) {
+        return false;
       }
-    }
-    if (changed) {
-      await service.updateConfiguration(contentType, {
-        settings: configuration.settings,
-        layouts: configuration.layouts,
-        metadatas,
-      });
-    }
+      edit.editable = editable;
+      return true;
+    });
   } catch (error) {
     strapi.log.warn(`Could not make the order fields read-only: ${String(error)}`);
+  }
+}
+
+interface FieldHint {
+  label: string;
+  description: string;
+}
+
+const SHARED_IMAGE = "Спільне для всіх мов. Його замінює зображення для цієї мови, якщо воно є.";
+const LOCALIZED_IMAGE =
+  "Лише для цієї мови: замінює спільне зображення. Порожнє — показуємо спільне.";
+const IMAGE_ALT =
+  "Опис зображення для цієї мови (для незрячих і пошуковиків), і для спільного, і для власного.";
+
+/**
+ * Image slots follow the `<name>` (shared) / `<name>Localized` (this language) / `<name>Alt`
+ * convention (#80, `app/.server/AGENTS.md`). These hints tell staff which is which.
+ */
+const IMAGE_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string, FieldHint> }[] = [
+  {
+    kind: "content-types",
+    uid: "api::home-page.home-page",
+    fields: {
+      heroImage: { label: "Головне фото (усі мови)", description: SHARED_IMAGE },
+      aboutImage: { label: "Фото «Про нас» (усі мови)", description: SHARED_IMAGE },
+    },
+  },
+  {
+    kind: "components",
+    uid: "home.hero",
+    fields: {
+      imageLocalized: { label: "Головне фото (ця мова)", description: LOCALIZED_IMAGE },
+      imageAlt: { label: "Опис головного фото", description: IMAGE_ALT },
+    },
+  },
+  {
+    kind: "components",
+    uid: "home.about",
+    fields: {
+      imageLocalized: { label: "Фото «Про нас» (ця мова)", description: LOCALIZED_IMAGE },
+      imageAlt: { label: "Опис фото «Про нас»", description: IMAGE_ALT },
+    },
+  },
+  {
+    kind: "content-types",
+    uid: "api::offer.offer",
+    fields: {
+      image: { label: "Зображення (усі мови)", description: SHARED_IMAGE },
+      imageLocalized: { label: "Зображення (ця мова)", description: LOCALIZED_IMAGE },
+      imageAlt: { label: "Опис зображення", description: IMAGE_ALT },
+    },
+  },
+  {
+    kind: "content-types",
+    uid: "api::blog-post.blog-post",
+    fields: {
+      coverImage: { label: "Обкладинка (усі мови)", description: SHARED_IMAGE },
+      coverImageLocalized: { label: "Обкладинка (ця мова)", description: LOCALIZED_IMAGE },
+      coverImageAlt: { label: "Опис обкладинки", description: IMAGE_ALT },
+    },
+  },
+];
+
+/** Labels and describes the shared, per-language and alt image fields in the edit views. */
+async function describeImageFields(strapi: Core.Strapi): Promise<void> {
+  for (const { kind, uid, fields } of IMAGE_FIELD_HINTS) {
+    try {
+      await updateEditMetadata(strapi, kind, uid, (field, edit) => {
+        const hint = fields[field];
+        if (!hint || (edit.label === hint.label && edit.description === hint.description)) {
+          return false;
+        }
+        edit.label = hint.label;
+        edit.description = hint.description;
+        return true;
+      });
+    } catch (error) {
+      strapi.log.warn(`Could not describe the image fields of ${uid}: ${String(error)}`);
+    }
   }
 }
 
@@ -136,5 +237,6 @@ export default {
     await ensureLocales(strapi);
     await warnAboutPublicAccess(strapi);
     await lockOrderFields(strapi);
+    await describeImageFields(strapi);
   },
 };

@@ -46,11 +46,11 @@ describe("theme tokens", () => {
   });
 
   it("puts Manrope first in the sans stack and keeps the system fallback", () => {
-    expect(css).toMatch(/--font-sans:\s*"Manrope", ui-sans-serif, system-ui, sans-serif/);
+    expect(css).toMatch(/--font-sans:\s*"Manrope Variable", ui-sans-serif, system-ui, sans-serif/);
   });
 
   it("sets Playfair Display as the serif with a Georgia fallback", () => {
-    expect(css).toContain('--font-serif: "Playfair Display", Georgia, serif;');
+    expect(css).toContain('--font-serif: "Playfair Display Variable", Georgia, serif;');
   });
 
   it("sets h1 to h3 in the serif from the base layer", () => {
@@ -59,11 +59,27 @@ describe("theme tokens", () => {
     );
   });
 
-  it("loads Manrope and Playfair Display from Google Fonts with font-display swap", () => {
+  it("self-hosts Manrope and Playfair Display with font-display swap (#88)", () => {
+    expect(css).toContain('@import "@fontsource-variable/manrope/wght.css";');
+    expect(css).toContain('@import "@fontsource-variable/playfair-display/wght.css";');
+    for (const pkg of ["manrope", "playfair-display"]) {
+      const fontCss = readFileSync(
+        new URL(`../node_modules/@fontsource-variable/${pkg}/wght.css`, import.meta.url),
+        "utf8",
+      );
+      const faces = fontCss.match(/@font-face/g) ?? [];
+      expect(fontCss.match(/font-display: swap/g)).toHaveLength(faces.length);
+      expect(fontCss).toMatch(/-cyrillic-wght-normal\.woff2/);
+      expect(fontCss).toMatch(/-latin-wght-normal\.woff2/);
+    }
+  });
+
+  it("preloads the Cyrillic fonts and no longer calls Google Fonts", () => {
     const root = readFileSync(new URL("./root.tsx", import.meta.url), "utf8");
-    expect(root).toContain(
-      "https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Playfair+Display:wght@600..700&display=swap",
-    );
+    expect(root).not.toContain("fonts.googleapis.com");
+    expect(root).toContain("manrope-cyrillic-wght-normal.woff2?url");
+    expect(root).toContain("playfair-display-cyrillic-wght-normal.woff2?url");
+    expect(root).toContain('rel: "preload"');
   });
 });
 

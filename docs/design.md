@@ -99,8 +99,12 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
 
 ## Typeface and scale
 
-Two families from Google Fonts, loaded in one request in `app/root.tsx` `links` with
-`display=swap`; Google serves the Cyrillic and Latin subsets as separate files automatically.
+Two variable families, self-hosted from the `@fontsource-variable/manrope` and
+`@fontsource-variable/playfair-display` packages (#88): `app/app.css` imports their `wght.css`,
+whose `@font-face` rules use `font-display: swap` and a `unicode-range` per subset, so a page
+downloads only the subsets its text uses (Cyrillic, Latin). `app/root.tsx` preloads the two
+Cyrillic files, the default language's above-the-fold text. The families are named
+`"Manrope Variable"` and `"Playfair Display Variable"` in the font stacks.
 
 - **Playfair Display** 600–700 (`--font-serif: "Playfair Display", Georgia, serif`, #73) for
   headings, the wordmark, prices and the big step numbers. A base rule in `app/app.css` sets every

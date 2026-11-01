@@ -1,12 +1,16 @@
 @import "tailwindcss";
+/* Self-hosted variable fonts (#88), `font-display: swap`. Each subset is its own file with a
+   `unicode-range`, so a page downloads only the subsets its text uses (Cyrillic, Latin). */
+@import "@fontsource-variable/manrope/wght.css";
+@import "@fontsource-variable/playfair-display/wght.css";
 
 /* Option C+ design tokens; see docs/design.md for usage and contrast ratios. */
 @theme {
   --font-sans:
-    "Manrope", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Manrope Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
   /* Headings, the wordmark, prices and step numbers (#73). */
-  --font-serif: "Playfair Display", Georgia, serif;
+  --font-serif: "Playfair Display Variable", Georgia, serif;
 
   --color-primary: #c22f4b;
   --color-primary-dark: #a8233d;

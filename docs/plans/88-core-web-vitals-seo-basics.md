@@ -115,6 +115,17 @@ Success is measured with Lighthouse (mobile) on a local production build.
    scores go in the PR description (`/open-pr` will pick them up from the plan's checklist). No
    Lighthouse CI is added.
 
+10. **Implementation notes (deviations found while implementing).**
+   - Migration is `0017_product_image_meta`: #83 took `0016`.
+   - Cart line images, like card images, sit in an `aria-hidden` duplicate link next to the
+     product's name, so they get `alt=""` too; only the product page photo is "<brand> <name>".
+   - fontsource ships one `wght.css` with every subset (no per-subset CSS), so the build emits all
+     subset files; each has a `unicode-range`, so browsers only download Cyrillic/Latin.
+   - Similar perfumes come from one query over the product's catalog genders, ordered by shared
+     family, same brand, popular rank, then bestsellers; no separate bestseller fallback needed.
+   - #85 landed first: the product `meta` uses its `seoMeta` with `noindex` for archived products,
+     and the 404 route uses its `errorMeta`.
+
 ## Resolved questions
 
 - **Archived products: 200 + `noindex` or `410 Gone`?** — 200 + `noindex`, with the
@@ -232,7 +243,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   (404 status), `blog-post.test.ts` (unknown/removed slug → 404), `catalog.test.ts` (unknown
   gender → 404). Check that `/api/events`, `/cms/*`, `/logout` etc. still match their own routes
   (they are declared outside the layout and are more specific than `*`).
-- [ ] **9. Self-hosted fonts** — `pnpm add @fontsource-variable/manrope
+- [x] **9. Self-hosted fonts** — `pnpm add @fontsource-variable/manrope
   @fontsource-variable/playfair-display`; in `app/app.css` import only the `latin` and
   `cyrillic` subset files (wght axis) and keep `--font-sans`/`--font-serif` family names in sync
   with fontsource's (`"Manrope Variable"`, `"Playfair Display Variable"`), keeping the fallbacks.

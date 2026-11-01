@@ -10,8 +10,9 @@ Staff want to upload a photo once for every language but still be able to use a 
 picture (e.g. a banner with Ukrainian text) where needed. Every CMS image slot (home hero, home
 About, offer image, blog cover) gets a **shared** field (`<name>`, `i18n.localized: false`) and an
 optional **per-language override** (`<name>Localized`, `localized: true`). The app shows the
-override for the served locale when set, else the shared image; DTOs and UI components stay as
-they are.
+override for the served locale when set, else the shared image. Alt text is configured per
+language for every slot (`<name>Alt`, localized), whichever image is shown. DTOs and UI components
+stay as they are.
 
 ## Dependencies & prerequisites
 - Builds on #43 (i18n), #64 (home page fields), #55 (offers), #13 (blog) — all merged on `main`.
@@ -21,17 +22,24 @@ they are.
 - Run `pnpm install` in the worktree before working (it has no `node_modules` yet).
 
 ## Decisions & assumptions
-- **Naming convention**: `<name>` = shared (`localized: false`), `<name>Localized` = override
-  (`localized: true`). Documented in `app/.server/AGENTS.md` → CMS.
+- **Naming convention**: `<name>` = shared media (`localized: false`), `<name>Localized` =
+  override media (`localized: true`), `<name>Alt` = alt text (`type: string`, `maxLength: 200`,
+  `localized: true`). Documented in `app/.server/AGENTS.md` → CMS.
 - **Home page**: Strapi can't make a field inside a localized component non-localized, so the
   shared images are top-level on the single type (`heroImage`, `aboutImage`) and the overrides
-  live inside the components (`hero.imageLocalized`, `about.imageLocalized`). `hero.image` and
-  `about.image` are removed after migration.
+  and alt texts live inside the components (`hero.imageLocalized`, `hero.imageAlt`,
+  `about.imageLocalized`, `about.imageAlt`). `hero.image` and `about.image` are removed in the
+  same change, right after the migration moves their data (Q2 answered: remove).
 - **Offers / blog posts**: keep `image` / `coverImage` (already shared), add `imageLocalized` /
-  `coverImageLocalized`. No data change.
-- **One picker**: `pickImage(localized, shared, baseUrl)` in `app/.server/cms/content.ts` returns
-  `toImage(localized ?? shared, baseUrl)`. Used by `toHomePage`, `toOffer`, `toBlogPostSummary`
-  (and so `toBlogPost`). `seo.ogImage` is out of scope (not in the issue's list).
+  `coverImageLocalized` and `imageAlt` / `coverImageAlt`. No data change.
+- **Alt text per language (Q1 answered)**: alt is copy, so each locale's entry has its own
+  `<name>Alt`, used for whichever image is shown (shared or override). When it's blank, the alt
+  falls back to the picked file's media-library `alternativeText`, then `""`, so today's alts keep
+  working without a data migration.
+- **One picker**: `pickImage({ localized, shared, alt }, baseUrl)` in `app/.server/cms/content.ts`
+  returns `toImage(localized ?? shared, baseUrl)` with `alt` replaced by `textOrNull(alt)` when
+  set. Used by `toHomePage`, `toOffer`, `toBlogPostSummary` (and so `toBlogPost`). `seo.ogImage`
+  is out of scope (not in the issue's list).
 - **Locale fallback**: when a translation is missing and the Ukrainian entry is served instead,
   that entry's Ukrainian override is shown. That's consistent: the text served is Ukrainian too,
   and `dto.locale` already says `uk`.
@@ -47,21 +55,13 @@ they are.
   (`metadatas.<field>.edit.description`), the same mechanism `lockOrderFields` uses in
   `cms/src/index.ts`. For the components, use the content-manager `components` service.
 
-## Open questions
-- [ ] **Q1: Should alt text come from the app's translations instead of the media library?** —
-  Why it matters: the issue assumes alt text is localized copy, but today `CmsImage.alt` is the
-  Strapi media file's `alternativeText`, which is per file, not per locale. With an override, each
-  language's file can already carry its own alt; a shared file has one alt for both languages.
-  Recommended default: keep `alternativeText` (no behaviour change, no new i18n keys); a
-  localized alt field can be a follow-up. Affects steps: 5.
-- [ ] **Q2: Keep the old `hero.image` / `about.image` for one release as a safety net?** —
-  Why it matters: removing them in the same deploy as the migration means a failed migration
-  can't simply be re-run from the old fields (the morph rows are deleted). Recommended default:
-  remove them now as the issue says, but have the migration delete the old morph rows **only after**
-  it has inserted the new ones, all in one knex transaction, and take a DB backup
-  (`pg_dump`) before deploying. Affects steps: 2, 3.
-
 ## Resolved questions
+- **Q1: Alt text per language, even for a shared image?** — Yes: every slot gets a localized
+  `<name>Alt` text field; blank falls back to the file's `alternativeText` (source: user, on the
+  plan review).
+- **Q2: Keep the old `hero.image` / `about.image` for a release?** — No, remove them in this
+  change. The migration deletes the old morph rows only after inserting the new ones, in one knex
+  transaction (source: user, on the plan review).
 - **Where do image URLs get resolved?** — `toImage()` in `app/.server/cms/content.ts`, against
   `STRAPI_URL`; the picker reuses it (source: `app/.server/cms/content.ts`).
 - **Are the offer and blog images already shared?** — Yes, `pluginOptions.i18n.localized: false`
@@ -82,10 +82,10 @@ they are.
 | Action | Path | Purpose |
 |--------|------|---------|
 | modify | `cms/src/api/home-page/content-types/home-page/schema.json` | Add shared `heroImage`, `aboutImage` (`localized: false`) |
-| modify | `cms/src/components/home/hero.json` | Replace `image` with `imageLocalized` |
-| modify | `cms/src/components/home/about.json` | Replace `image` with `imageLocalized` |
-| modify | `cms/src/api/offer/content-types/offer/schema.json` | Add `imageLocalized` (`localized: true`) |
-| modify | `cms/src/api/blog-post/content-types/blog-post/schema.json` | Add `coverImageLocalized` (`localized: true`) |
+| modify | `cms/src/components/home/hero.json` | Replace `image` with `imageLocalized`; add `imageAlt` |
+| modify | `cms/src/components/home/about.json` | Replace `image` with `imageLocalized`; add `imageAlt` |
+| modify | `cms/src/api/offer/content-types/offer/schema.json` | Add `imageLocalized`, `imageAlt` (`localized: true`) |
+| modify | `cms/src/api/blog-post/content-types/blog-post/schema.json` | Add `coverImageLocalized`, `coverImageAlt` (`localized: true`) |
 | create | `cms/database/migrations/2026.11.01T00.00.00.shared-home-images.js` | Move home page component images to the shared fields |
 | modify | `cms/src/index.ts` | Bootstrap: admin field descriptions for shared/override images |
 | modify | `cms/scripts/seed.ts` | Seed shared images only |
@@ -101,9 +101,10 @@ they are.
 - [ ] **1. Strapi schemas** — Home page: add top-level
   `heroImage` / `aboutImage` (`type: media`, `multiple: false`, `allowedTypes: ["images"]`,
   `pluginOptions.i18n.localized: false`). `hero.json` / `about.json`: remove `image`, add
-  `imageLocalized` (same media options; components inherit localization from the localized parent
-  field). Offer: add `imageLocalized` with `localized: true`. Blog post: add
-  `coverImageLocalized` with `localized: true`. Don't start Strapi yet (the migration must exist
+  `imageLocalized` (same media options) and `imageAlt` (`type: string`, `maxLength: 200`);
+  components inherit localization from the localized parent field. Offer: add `imageLocalized`
+  and `imageAlt`, both `localized: true`. Blog post: add `coverImageLocalized` and
+  `coverImageAlt`, both `localized: true`. Don't start Strapi yet (the migration must exist
   before the first boot on a database with data).
 - [ ] **2. Data migration** — `cms/database/migrations/2026.11.01T00.00.00.shared-home-images.js`,
   CommonJS like the existing one, in one `knex.transaction`:
@@ -130,17 +131,21 @@ they are.
   `lockOrderFields`: for each `{ uid, kind: "content-types" | "components", shared?, localized? }`
   (`api::home-page.home-page` → `heroImage`, `aboutImage`; `home.hero` / `home.about` →
   `imageLocalized`; `api::offer.offer` → `image`, `imageLocalized`; `api::blog-post.blog-post` →
-  `coverImage`, `coverImageLocalized`), set `metadatas[field].edit.description` to
-  "Спільне для всіх мов" / "Лише для цієї мови (замінює спільне)" (Strapi admin copy is Ukrainian,
-  like the sync middleware's messages), and labels such as "Hero image (all languages)". Only
+  `coverImage`, `coverImageLocalized`, plus every `<name>Alt`), set
+  `metadatas[field].edit.description` to "Спільне для всіх мов" / "Лише для цієї мови (замінює
+  спільне)" / "Альтернативний текст для цієї мови (для спільного чи власного зображення)" (Strapi
+  admin copy is Ukrainian, like the sync middleware's messages), and labels such as "Hero image
+  (all languages)". Only
   update when something changed; catch and warn like `lockOrderFields`. Call it in `bootstrap`.
 - [ ] **5. App schemas and picker** — `schemas.ts`: `homePageEntry` gets
   `heroImage: strapiMedia.nullish()`, `aboutImage: strapiMedia.nullish()`; `heroComponent` /
-  `aboutComponent` replace `image` with `imageLocalized: strapiMedia.nullish()`; `offerEntry` adds
-  `imageLocalized`; `blogPostSummaryEntry` adds `coverImageLocalized`. `content.ts`: export
-  `pickImage(localized, shared, baseUrl): CmsImage | null` (override wins, else shared, else
-  `null`); use it in `toHomePage` (`pickImage(hero.imageLocalized, entry.heroImage, …)`,
-  same for about), `toOffer`, `toBlogPostSummary`.
+  `aboutComponent` replace `image` with `imageLocalized: strapiMedia.nullish()` and add
+  `imageAlt: z.string().nullish()`; `offerEntry` adds `imageLocalized`, `imageAlt`;
+  `blogPostSummaryEntry` adds `coverImageLocalized`, `coverImageAlt`. `content.ts`: export
+  `pickImage({ localized, shared, alt }, baseUrl): CmsImage | null` (override wins, else shared,
+  else `null`; `alt` = `textOrNull(alt)` ?? the file's `alternativeText` ?? `""`); use it in
+  `toHomePage` (`pickImage({ localized: hero.imageLocalized, shared: entry.heroImage, alt:
+  hero.imageAlt }, …)`, same for about), `toOffer`, `toBlogPostSummary`.
 - [ ] **6. Populate both fields** — `getHomePage`: `populate: { heroImage: true, aboutImage: true,
   hero: { populate: ["imageLocalized"] }, about: { populate: ["imageLocalized"] }, location: true }`.
   `OFFER_POPULATE = { image: true, imageLocalized: true, products: true }`. `listBlogPosts`:
@@ -148,20 +153,25 @@ they are.
   add `coverImageLocalized: true`.
 - [ ] **7. Seed** — `seedHomePage`: set `heroImage` / `aboutImage` at the top level of `data`, drop
   `image` from the `hero` / `about` components, and update the comment (images are now shared).
-  Offers and posts keep setting the shared `image` / `coverImage`; no overrides are seeded.
+  Seed `imageAlt` per locale in `HOME_PAGE_COPY` (uk: "Тестери парфумів Jassmin", en: "Jassmin
+  perfume testers", and the About photo likewise), and `coverImageAlt` / `imageAlt` in the posts'
+  and offers' per-locale copy. Offers and posts keep setting the shared `image` / `coverImage`;
+  no overrides are seeded.
   Existing skip-if-present logic keeps it idempotent.
 - [ ] **8. Fixtures and tests** — Re-record `__fixtures__/home-page.json` / `.en.json`,
   `offers*.json`, `blog-posts*.json`, `blog-post-by-slug*.json` from a freshly seeded Strapi (or
   edit them by hand to the new shape if Strapi isn't available). Add a `pickImage` describe
-  block: override wins; falls back to shared; neither → `null`; URLs absolute. Update `toHomePage`
+  block: override wins; falls back to shared; neither → `null`; URLs absolute; the entry's alt
+  wins over the file's `alternativeText` for both a shared and an override image; a blank alt
+  falls back to `alternativeText`, then `""`. Update `toHomePage`
   tests (hero/about from shared, override wins for one locale, `null` when neither), `toOffer` and
   `toBlogPostSummary` tests, the populate assertions (`populate[imageLocalized]`), and
   `schemas.test.ts`. Update `HomePage.test.ts` only if its fixtures use Strapi shapes (it uses
   view models, so likely no change).
 - [ ] **9. Docs** — `app/.server/AGENTS.md` → CMS: a bullet stating the `<name>` /
-  `<name>Localized` convention, the home page exception (shared top-level, override in the
-  component), that `pickImage` is the only way to map them, and that new image fields must follow
-  it. Fix the `seed.ts` header comment if it mentions per-locale images.
+  `<name>Localized` / `<name>Alt` convention, the home page exception (shared top-level, override
+  and alt in the component), the alt fallback, that `pickImage` is the only way to map them, and
+  that new image fields must follow it. Fix the `seed.ts` header comment if it mentions per-locale images.
 - [ ] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual
   checks below.
 
@@ -175,9 +185,11 @@ they are.
   3. Remove that override → `en` falls back to the shared photo.
   4. Set a shared offer image while editing the `en` locale → visible in `uk` too.
   5. Blog cover override on one locale only.
-  6. Clear every image → pages render without `<img>` (placeholders), no errors.
-  7. Fresh DB: `pnpm cms:seed` works; second run logs "already exists, skipping" and changes nothing.
-  8. Admin shows the descriptions on each image field.
+  6. Set a different alt on each locale for a shared hero image → each site's `<img alt>` is its
+     own; clear the `en` alt → `en` uses the file's alternative text.
+  7. Clear every image → pages render without `<img>` (placeholders), no errors.
+  8. Fresh DB: `pnpm cms:seed` works; second run logs "already exists, skipping" and changes nothing.
+  9. Admin shows the descriptions on each image and alt field.
 
 ## Acceptance criteria
 - [ ] Staff can set a shared image, a current-language image, or both for the hero, About, each offer and each blog post — steps 1, 4
@@ -187,11 +199,11 @@ they are.
 - [ ] After migration, existing home page photos (uk), offer images and blog covers show in both languages, no upload lost — steps 2, 3
 - [ ] `pnpm cms:seed` works on a fresh DB and a re-run changes nothing — step 7
 - [ ] Pages render without `<img>` when no image is set — steps 5, 8
+- [ ] Alt text can be set per language for every image slot, shared or not (from the plan review) — steps 1, 5, 7, 8
 - [ ] Naming convention documented in `app/.server/AGENTS.md` — step 9
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` pass — step 10
 
 ## Out of scope
 - Product images (product type isn't localized; synced to `products.image_url`, #40/#66).
 - Site settings (no images) and `seo.ogImage` on blog posts.
-- Localized alt text fields (see Q1).
 - Any UI/component change: DTOs keep a single `image` / `coverImage`.

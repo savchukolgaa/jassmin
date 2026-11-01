@@ -64,6 +64,11 @@ current slug URL, and unknown handles answer 404.
   link to products, so nothing changes there; the issue's list is covered by those two call sites.
 - **Analytics:** `product_view` is recorded only when the page renders (not on a redirect), with the
   same `properties: { publicId }`.
+- **Seed slugs skipped (deviation from step 8's optional part):** `SAMPLE_PRODUCTS` keep
+  `slug = null`. Seed-based integration tests assert on those rows, and `pnpm db:sync-cms --all`
+  backfills slugs in a real database anyway; until then the sample products link by UUID.
+- **Strapi message:** the `invalid-input` message (`cms/src/utils/app-sync.ts`) adds a slug hint
+  when `slug` is among the refused fields, so staff see why a UUID-shaped slug was refused.
 - **UUID-shaped slugs** are refused by the CMS sync schema: a `.refine` on `slug` in
   `~/lib/cms-sync` (any UUID, matched like `z.uuid()`, case-insensitive) fails validation, so the
   sync route answers 422 and Strapi shows the error. Step 1 of the resolution order would always
@@ -144,7 +149,7 @@ current slug URL, and unknown handles answer 404.
   `product_view` and return as today. Rewrite `product.test.ts` (mocking `resolveProductHandle`):
   slug renders + event; UUID with slug → 301 keeping `?ref=offers`; old slug → 301; UUID without
   slug renders; unknown / malformed → 404 without an event.
-- [ ] **8. Docs and seed** — Note in `app/.server/AGENTS.md` (Database / CMS sync) that product URLs
+- [x] **8. Docs and seed** — Note in `app/.server/AGENTS.md` (Database / CMS sync) that product URLs
   use `products.slug`, `productHref` is the only link builder, and `product_slug_history` is written
   on rename. Optionally add slugs to `SAMPLE_PRODUCTS`.
 - [ ] **9. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual checks below.

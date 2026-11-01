@@ -58,12 +58,15 @@ error pages.
   tracking or filter parameter in one rule. Only `page` is kept, on the blog list and `/popular`
   (paginated pages are self-canonical), and `page=1` is dropped. `/popular?family=…` therefore
   canonicalizes to `/popular` (or `/popular?page=n`). Trailing slashes are stripped except on `/`.
-- **The public origin comes from `PUBLIC_SITE_URL`, never from the `Host` header.** In
-  `app/.server/env.ts`: `PUBLIC_SITE_URL: z.url({ protocol: /^https?$/ })`, optional in
-  development/test, required when `NODE_ENV === "production"` (a `.refine`, like the payment
-  simulator rule). Outside production it falls back to `http://localhost:${PORT}` — a constant,
-  still not the `Host` header. The root loader returns `site: { url }` next to `locale`; a
-  `seoSite(matches)` helper reads it in `meta`, like `metaTranslator` reads the locale.
+- **The public origin comes from `PUBLIC_SITE_URL`, never from the `Host` header in production.**
+  In `app/.server/env.ts`: `PUBLIC_SITE_URL: z.url({ protocol: /^https?$/ })`, optional outside
+  production and required when `NODE_ENV === "production"` (a `.refine`, like the payment
+  simulator rule). The root loader returns `site: { url: getSiteUrl(env, request) }` next to
+  `locale`; a `seoSite(matches)` helper reads it in `meta`, like `metaTranslator` reads the locale.
+  *Deviation (implementation):* outside production `getSiteUrl` falls back to the request's
+  origin rather than `http://localhost:${PORT}`, because the Vite dev server (and Aspire) don't
+  listen on `PORT`; production never uses the request. For the same reason Aspire doesn't need to
+  pass `PUBLIC_SITE_URL` to `web`, so `aspire-apphost/` is unchanged.
 - **`og:locale`** is `uk_UA` / `en_US` from the active locale (root loader), and
   `og:locale:alternate` is the other one. Today that is the cookie locale; after #84 it is the URL
   locale with no change here. `hreflang` stays in #84.
@@ -131,7 +134,6 @@ error pages.
 | create | `app/routes/meta.test.ts` | One `meta` test per route type |
 | modify | `app/.server/env.ts`, `app/.server/env.test.ts` | `PUBLIC_SITE_URL` (required in production) + `getSiteUrl()` |
 | modify | `.env.example`, `README.md` | Document `PUBLIC_SITE_URL` |
-| modify | `aspire-apphost/apphost.mts`, `aspire-apphost/AGENTS.md` | Pass `PUBLIC_SITE_URL` to `web` (the dev endpoint) |
 | modify | `app/root.tsx` | Return `site` from the loader; root `meta` for unmatched URLs |
 | modify | `app/routes/home.tsx`, `catalog.tsx`, `product.tsx`, `blog.tsx`, `blog-post.tsx`, `offers.tsx`, `popular.tsx`, `privacy.tsx` | Indexable pages through `seoMeta` |
 | modify | `app/routes/cart.tsx`, `checkout.tsx`, `checkout-success.tsx`, `login.tsx`, `register.tsx`, `account.tsx`, `account.profile.tsx`, `account.orders.$id.tsx`, `payments.simulator.tsx` | `noindex, follow` through `seoMeta` |
@@ -141,22 +143,21 @@ error pages.
 
 ## Steps
 
-- [ ] **1. `PUBLIC_SITE_URL`** — In `app/.server/env.ts` add `PUBLIC_SITE_URL: z.url({ protocol:
+- [x] **1. `PUBLIC_SITE_URL`** — In `app/.server/env.ts` add `PUBLIC_SITE_URL: z.url({ protocol:
   /^https?$/ }).optional()` (empty counts as unset) and a `.refine` that requires it when
-  `NODE_ENV === "production"`. Add `getSiteUrl(env)` returning the value without a trailing slash,
-  or `http://localhost:${PORT}` outside production. Tests in `env.test.ts`: required in production,
+  `NODE_ENV === "production"`. Add `getSiteUrl(env, request)` returning the value without a trailing slash,
+  or the request's origin outside production. Tests in `env.test.ts`: required in production,
   fallback in development, trailing slash stripped, non-http rejected. Document it in
-  `.env.example` and `README.md`; in `aspire-apphost/apphost.mts` pass the `web` endpoint URL as
-  `PUBLIC_SITE_URL` and note it in `aspire-apphost/AGENTS.md`. Check: `pnpm typecheck`, `pnpm
+  `.env.example` and `README.md`. Check: `pnpm typecheck`, `pnpm
   test app/.server/env.test.ts`.
-- [ ] **2. Root loader + site context** — `app/root.tsx` loader returns `{ locale, site: { url:
-  getSiteUrl(getEnv()) } }`. Add `seoSite(matches)` to `app/lib/seo.ts`, reading `site.url` from the
+- [x] **2. Root loader + site context** — `app/root.tsx` loader returns `{ locale, site: { url:
+  getSiteUrl(getEnv(), request) } }`. Add `seoSite(matches)` to `app/lib/seo.ts`, reading `site.url` from the
   `root` match (narrowing `unknown`, like `metaTranslator`), falling back to `""` (relative URLs)
   when the root loader failed.
-- [ ] **3. Default share image** — Add `public/og-default.jpg` (1200×630): the Playfair Display "Jassmin" wordmark on the C+ background, generated once and committed as a static file and
+- [x] **3. Default share image** — Add `public/og-default.jpg` (1200×630): the Playfair Display "Jassmin" wordmark on the C+ background, generated once and committed as a static file and
   `DEFAULT_SHARE_IMAGE = { url: "/og-default.jpg", width: 1200, height: 630 }`. Add
   `meta.defaultImageAlt` to `uk.ts` / `en.ts`.
-- [ ] **4. The helper `app/lib/seo.ts`** — Implement `truncateDescription(text, max = 155)` (collapse
+- [x] **4. The helper `app/lib/seo.ts`** — Implement `truncateDescription(text, max = 155)` (collapse
   whitespace, cut at the last space before `max - 1`, append `…`; never cut a word; short text
   unchanged), `absoluteUrl(pathOrUrl, siteUrl)`, `canonicalUrl(location, siteUrl, keepParams)`
   (drop all params except `keepParams`, drop `page=1`, sort kept params, strip trailing slash),

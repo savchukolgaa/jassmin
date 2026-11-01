@@ -40,7 +40,18 @@ const envSchema = z
     // Where card payments go (#44). Optional: without it the app still starts and card payment is
     // unavailable at checkout. `simulator` is the local fake payment page, never for production.
     PAYMENT_PROVIDER: z.enum(PAYMENT_PROVIDERS).optional(),
+    // The site's public origin, e.g. https://jassmin.ua (#85): canonical and Open Graph URLs are
+    // built from it, never from the `Host` header. Required in production; elsewhere the request's
+    // origin stands in.
+    PUBLIC_SITE_URL: z
+      .url({ protocol: /^https?$/ })
+      .transform((url) => url.replace(/\/+$/, ""))
+      .optional(),
     ...mailEnvSchema.shape,
+  })
+  .refine((env) => env.NODE_ENV !== "production" || env.PUBLIC_SITE_URL !== undefined, {
+    path: ["PUBLIC_SITE_URL"],
+    message: "PUBLIC_SITE_URL is required in production",
   })
   .refine((env) => !(env.PAYMENT_PROVIDER === "simulator" && env.NODE_ENV === "production"), {
     path: ["PAYMENT_PROVIDER"],
@@ -97,6 +108,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     CMS_SYNC_SECRET: source.CMS_SYNC_SECRET || undefined,
     ...cmsSyncSource(source),
     PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
+    PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
     ...mailSource(source),
   });
 
@@ -123,6 +135,14 @@ export function parseCmsSyncEnv(source: NodeJS.ProcessEnv): CmsSyncEnv {
     throw invalid(result.error);
   }
   return result.data;
+}
+
+/**
+ * The site's public origin without a trailing slash: `PUBLIC_SITE_URL`, or outside production
+ * (where it is optional) the request's origin.
+ */
+export function getSiteUrl(env: Pick<Env, "PUBLIC_SITE_URL">, request: Request): string {
+  return env.PUBLIC_SITE_URL ?? new URL(request.url).origin;
 }
 
 let cached: Env | undefined;

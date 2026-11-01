@@ -7,6 +7,7 @@ export const uk = {
   },
   meta: {
     title: "{page} — Jassmin",
+    defaultImageAlt: "Jassmin — магазин парфумів",
   },
   locale: {
     label: "Мова",
@@ -106,6 +107,7 @@ export const uk = {
     },
   },
   errors: {
+    notFoundTitle: "Сторінку не знайдено",
     title: "Ой!",
     status: "Помилка",
     notFound: "Сторінку не знайдено.",

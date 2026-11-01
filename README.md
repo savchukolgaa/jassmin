@@ -66,6 +66,7 @@ pnpm dev                    # http://localhost:5173
 | `DATABASE_URL` | yes* | PostgreSQL connection string. *Under Aspire, the injected `JASSMINDB_URI` takes precedence, so a `DATABASE_URL` in `.env` is ignored there. |
 | `SESSION_SECRET` | yes | Secret for signing the session and analytics visitor cookies, at least 32 characters. |
 | `PORT` | no | Port for `pnpm start` (default `3000`). |
+| `PUBLIC_SITE_URL` | prod | The site's public origin (e.g. `https://jassmin.ua`) for canonical and Open Graph URLs (#85); never taken from the `Host` header. Required when `NODE_ENV=production`; in development the request's origin is used when it's unset. |
 | `STRAPI_URL` | no | Strapi base URL (default `http://localhost:1337`). Under Aspire it's set to the `cms` endpoint. |
 | `STRAPI_API_TOKEN` | no* | Read-only Strapi API token. *Without it the app still starts, but CMS-backed pages answer with a 503. |
 | `STRAPI_SYNC_TOKEN` | no* | Strapi API token that may write products and orders (#40). *Without it, new orders and stock changes stay queued for Strapi (`pnpm db:sync-cms` pushes them later). |

@@ -7,6 +7,7 @@ export const en = {
   },
   meta: {
     title: "{page} — Jassmin",
+    defaultImageAlt: "Jassmin — perfume shop",
   },
   locale: {
     label: "Language",
@@ -105,6 +106,7 @@ export const en = {
     },
   },
   errors: {
+    notFoundTitle: "Page not found",
     title: "Oops!",
     status: "Error",
     notFound: "The requested page could not be found.",

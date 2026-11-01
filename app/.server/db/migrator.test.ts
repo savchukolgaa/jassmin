@@ -485,9 +485,21 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   });
 
   it("refreshes updated_at on query-builder updates", async () => {
-    const { carts, orders } = await import("./schema");
+    const { carts, orders, products } = await import("./schema");
     const { db } = testDb;
     const past = new Date("2020-01-01T00:00:00Z");
+
+    const [product] = await db
+      .insert(products)
+      .values({ ...sampleProduct, updatedAt: past })
+      .returning();
+    const [updatedProduct] = await db
+      .update(products)
+      .set({ title: "Renamed" })
+      .where(eq(products.id, product?.id ?? 0))
+      .returning();
+    expect(updatedProduct?.updatedAt.getTime()).toBeGreaterThan(past.getTime());
+    await db.delete(products).where(eq(products.id, product?.id ?? 0));
 
     const [cart] = await db.insert(carts).values({ updatedAt: past }).returning();
     const [order] = await db
@@ -681,7 +693,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0016 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0017 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
     expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
     expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
@@ -717,7 +730,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0016 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0017 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
     expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
     expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
@@ -826,6 +840,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
     expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
     expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
@@ -843,7 +858,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
+
     expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
     expect(await rollbackLatest(db)).toBe("0014_product_popular_rank");
     expect(await rollbackLatest(db)).toBe("0013_product_families_notes_code");
@@ -903,7 +920,9 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
+
     expect(await rollbackLatest(db)).toBe("0015_volume_5ml");
     // Before #66: a product sold in 7 and 30 ml (legacy columns on 7 ml) and one only in 7 ml.
     const legacy = await db.execute<{ id: number }>(
@@ -975,10 +994,38 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db.insert(productVariants).values({ ...size, volumeMl: 5 });
   });
 
+  it("backfills products.updated_at from created_at and rolls it back", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
+    const columns = await db.execute(
+      sql`select 1 from information_schema.columns where table_name = 'products'
+          and column_name = 'updated_at'`,
+    );
+    expect(columns.rows).toEqual([]);
+    const inserted = await db.execute<{ id: number }>(
+      sql`insert into products (title, brand, gender, price, volume_ml, created_at)
+          values ('Before 0017', 'Test', 'women', '100.00', 50, '2026-01-02T03:04:05Z')
+          returning id`,
+    );
+    const id = inserted.rows[0]?.id;
+
+    await migrateLatest(db);
+
+    const rows = await db.execute<{ updated_at: string }>(
+      sql`select updated_at from products where id = ${id}`,
+    );
+    expect(new Date(rows.rows[0]?.updated_at ?? "")).toEqual(new Date("2026-01-02T03:04:05Z"));
+    await db.execute(sql`delete from products where id = ${id}`);
+  });
+
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(testDb.db)).toBe("0016_product_slug_history");
+
     expect(await rollbackLatest(testDb.db)).toBe("0015_volume_5ml");
     expect(await rollbackLatest(testDb.db)).toBe("0014_product_popular_rank");
     expect(await rollbackLatest(testDb.db)).toBe("0013_product_families_notes_code");

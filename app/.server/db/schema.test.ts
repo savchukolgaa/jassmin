@@ -127,6 +127,7 @@ describe("products", () => {
       slug: ["varchar(255)", false, false],
       active: ["boolean", true, true],
       createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
     });
   });
 

@@ -100,6 +100,13 @@ everything outside production.
   optional boolean (`"true"`/`"1"`), with empty values counting as unset, like the other optional
   vars. It's for production-mode staging or preview servers. The output is then
   `User-agent: *\nDisallow: /` plus the `Sitemap:` line.
+- **`PUBLIC_SITE_URL` comes from #85 (deviation).** #85 is being implemented in parallel and adds
+  `PUBLIC_SITE_URL` plus `getSiteUrl(env)` (no trailing slash, `http://localhost:${PORT}`
+  outside production). Step 1 therefore only adds `ROBOTS_DISALLOW_ALL`; the builders take
+  `siteUrl` as a parameter, and the routes call `getSiteUrl` once #85 is on `main`.
+- **Migration number.** #83 also adds a migration (`0016_product_slug_history`). Whichever lands
+  second renumbers its migration (regenerate the journal and snapshot with `pnpm db:generate`
+  after rebasing) and updates the rollback chains in `migrator.test.ts`.
 - **Sitemap outside production:** still served (useful for checking), but `robots.txt` blocks
   everything, so nothing gets indexed.
 
@@ -137,8 +144,8 @@ everything outside production.
 |--------|------|---------|
 | modify | `app/.server/env.ts` (+ `env.test.ts`) | `ROBOTS_DISALLOW_ALL`; `PUBLIC_SITE_URL` only if #85 hasn't added it |
 | modify | `app/.server/db/schema.ts` | `products.updatedAt` |
-| create | `app/.server/db/migrations/0016_product_updated_at.sql` (+ meta snapshot/journal via drizzle-kit) | add column, backfill from `created_at` |
-| create | `app/.server/db/rollbacks/0016_product_updated_at.sql` | drop column |
+| create | `app/.server/db/migrations/0017_product_updated_at.sql` (+ meta snapshot/journal via drizzle-kit) | add column, backfill from `created_at` |
+| create | `app/.server/db/rollbacks/0017_product_updated_at.sql` | drop column |
 | modify | `app/.server/db/migrator.test.ts` / `schema.test.ts` | column exists and refreshes on update |
 | modify | `app/.server/db/queries/products.ts` | `listSitemapProducts()` |
 | modify | `app/.server/cms/schemas.ts`, `app/.server/cms/content.ts` (+ tests, fixture) | `listBlogPostsForSitemap()` |
@@ -151,12 +158,12 @@ everything outside production.
 | modify | `app/.server/AGENTS.md` | short note: sitemap and robots sources, `products.updated_at` |
 
 ## Steps
-- [ ] **1. Env** — Add `ROBOTS_DISALLOW_ALL` (optional, `z.stringbool()` or an enum of
+- [x] **1. Env** — Add `ROBOTS_DISALLOW_ALL` (optional, `z.stringbool()` or an enum of
   `"true"`/`"1"`; empty means unset) to `envSchema` in `app/.server/env.ts`. If `PUBLIC_SITE_URL`
   isn't there yet (#85 not merged), add it as `z.url()`, required when `NODE_ENV === "production"`
   (via `.refine`), defaulting to `http://localhost:${PORT}` in development and test. Tests in
   `env.test.ts`. Document both under "Environment variables" in `README.md`.
-- [ ] **2. `products.updated_at`** — In `schema.ts`, add `updatedAt: updatedAt()` to `products`.
+- [x] **2. `products.updated_at`** — In `schema.ts`, add `updatedAt: updatedAt()` to `products`.
   Update the helper's comment to name products too. Generate the migration
   (`pnpm db:generate` or the repo's drizzle-kit script). Hand-edit it to
   `ADD COLUMN updated_at timestamptz NOT NULL DEFAULT now()`, then

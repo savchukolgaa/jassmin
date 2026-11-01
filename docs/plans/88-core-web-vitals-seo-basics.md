@@ -223,7 +223,7 @@ Success is measured with Lighthouse (mobile) on a local production build.
   `meta` adds `robots: noindex` when unavailable. New i18n keys `product.unavailable.*`,
   `product.similar.*`. Tests (`routes/product.test.ts`): archived → 200 + `noindex` meta +
   similar products; unknown UUID / malformed id → 404; active product has no `noindex`.
-- [ ] **8. 404 pages** — `NotFoundLinks` (catalogs, bestsellers, blog; descriptive link text);
+- [x] **8. 404 pages** — `NotFoundLinks` (catalogs, bestsellers, blog; descriptive link text);
   `ErrorContent` styled as a page (`h1` with the page-heading scale, body text tokens) and shows
   `NotFoundLinks` for 404s; use it in `_shop`, root, product and blog-post boundaries (the
   product boundary's custom links collapse into it). Add `route("*", "routes/not-found.tsx")` as

@@ -118,6 +118,7 @@ export const en = {
     title: "Oops!",
     status: "Error",
     notFound: "The requested page could not be found.",
+    notFoundLinks: "Where to go next",
     forbidden: "You don't have access to this page.",
     unavailable: "This content is temporarily unavailable. Please try again in a few minutes.",
     unexpected: "An unexpected error occurred.",

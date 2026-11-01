@@ -177,24 +177,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const { t } = useT();
   const path = usePathFor();
   if (isRouteErrorResponse(error) && error.status === 404) {
-    return (
-      <ErrorContent message="404" details={t("product.notFound")}>
-        <p className="mt-4 flex gap-4">
-          <Link
-            to={path("catalog", { gender: "women" })}
-            className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
-          >
-            {t(CATALOG_TITLE_KEYS.women)}
-          </Link>
-          <Link
-            to={path("catalog", { gender: "men" })}
-            className={`rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
-          >
-            {t(CATALOG_TITLE_KEYS.men)}
-          </Link>
-        </p>
-      </ErrorContent>
-    );
+    return <ErrorContent message="404" details={t("product.notFound")} notFound />;
   }
   return <ErrorContent {...describeRouteError(error, t)} />;
 }

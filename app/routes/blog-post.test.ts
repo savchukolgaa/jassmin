@@ -30,6 +30,7 @@ const post: BlogPost = {
   },
   authorName: "Jassmin team",
   publishedAt: "2026-10-22T19:06:58.498Z",
+  updatedAt: "2026-10-23T08:00:00.000Z",
   content:
     "## Start with the notes\n\n![Notes](/uploads/notes.jpg)\n\n<script>alert(1)</script><img src=x onerror=alert(1)>",
   seo: null,

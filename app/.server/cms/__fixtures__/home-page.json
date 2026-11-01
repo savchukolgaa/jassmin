@@ -171,7 +171,12 @@
       "id": 1,
       "address": "вул. Хрещатик, 1, Київ, 01001",
       "openingHours": "Пн–Пт 10:00–20:00\nСб–Нд 11:00–18:00",
-      "mapEmbedUrl": "https://www.google.com/maps?q=Khreshchatyk+1+Kyiv&output=embed"
+      "mapEmbedUrl": "https://www.google.com/maps?q=Khreshchatyk+1+Kyiv&output=embed",
+      "streetAddress": "вул. Хрещатик, 1",
+      "addressLocality": "Київ",
+      "postalCode": "01001",
+      "latitude": 50.4501,
+      "longitude": 30.5234
     }
   },
   "meta": {}

@@ -156,7 +156,7 @@ export interface HomeHero extends Struct.ComponentSchema {
 export interface HomeLocation extends Struct.ComponentSchema {
   collectionName: 'components_home_locations';
   info: {
-    description: 'Store address and opening hours';
+    description: 'Store address and opening hours. Opening hours: one range per line, e.g. "\u041F\u043D\u2013\u041F\u0442 10:00\u201320:00" or "Mon\u2013Fri 10:00\u201320:00". Street, city, postcode and coordinates are optional and only used for Google search results.';
     displayName: 'Location';
     icon: 'pinMap';
   };
@@ -166,12 +166,40 @@ export interface HomeLocation extends Struct.ComponentSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 300;
       }>;
+    addressLocality: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    latitude: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 90;
+          min: -90;
+        },
+        number
+      >;
+    longitude: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 180;
+          min: -180;
+        },
+        number
+      >;
     mapEmbedUrl: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 2000;
       }>;
     openingHours: Schema.Attribute.Text;
+    postalCode: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    streetAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
   };
 }
 

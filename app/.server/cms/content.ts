@@ -160,6 +160,11 @@ export function toHomePage(
       address: location.address,
       openingHours: location.openingHours ?? null,
       mapEmbedUrl: location.mapEmbedUrl,
+      streetAddress: textOrNull(location.streetAddress),
+      addressLocality: textOrNull(location.addressLocality),
+      postalCode: textOrNull(location.postalCode),
+      latitude: location.latitude ?? null,
+      longitude: location.longitude ?? null,
     },
   };
 }
@@ -209,7 +214,12 @@ export function toBlogPost(
         ogImage: toImage(entry.seo.ogImage, baseUrl),
       }
     : null;
-  return { ...toBlogPostSummary(entry, baseUrl, requested), content: entry.content, seo };
+  return {
+    ...toBlogPostSummary(entry, baseUrl, requested),
+    updatedAt: entry.updatedAt ? new Date(entry.updatedAt).toISOString() : null,
+    content: entry.content,
+    seo,
+  };
 }
 
 export function toPaginated<T>(items: T[], { page, pageSize, pageCount, total }: PaginationMeta) {

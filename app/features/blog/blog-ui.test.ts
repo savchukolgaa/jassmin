@@ -33,6 +33,7 @@ const card: BlogPostCardView = {
 
 const post: BlogPostView = {
   ...card,
+  updatedAt: "2026-10-23T08:00:00.000Z",
   authorName: "Jassmin team",
   contentHtml: "<h2>Start with the notes</h2>\n<p>A perfume changes.</p>\n",
   seo: {

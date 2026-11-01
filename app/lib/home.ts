@@ -1,4 +1,4 @@
-import type { CmsImage, HomePage, SiteSettings } from "./cms";
+import type { CmsImage, HomePage, SiteSettings, StructuredAddress } from "./cms";
 import type { Locale } from "./i18n";
 import type { ProductSummary } from "./products";
 import type { TrioOffer } from "./trio";
@@ -36,7 +36,7 @@ export interface HomePageView {
     /** Google Maps embed URL, or `null` when Strapi holds anything else (no map is shown). */
     mapEmbedUrl: string | null;
     directionsUrl: string;
-  };
+  } & StructuredAddress;
   contacts: SiteSettings;
   seo: {
     title: string;

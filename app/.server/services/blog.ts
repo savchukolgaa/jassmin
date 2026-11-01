@@ -40,6 +40,7 @@ export function buildBlogPostView(
   const seo = post.seo;
   return {
     ...toCardView(post, locale),
+    updatedAt: post.updatedAt ?? post.publishedAt,
     authorName: post.authorName,
     contentHtml: renderArticleMarkdown(post.content, { mediaBaseUrl }),
     seo: {

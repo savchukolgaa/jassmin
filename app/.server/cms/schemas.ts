@@ -47,10 +47,28 @@ export const aboutComponent = z.object({
   imageAlt: z.string().nullish(),
 });
 
+/**
+ * A coordinate within `[-limit, limit]`. Strapi may send decimals as numbers or strings; anything
+ * else, or a value out of range, becomes `null` rather than failing the page (#86).
+ */
+const coordinate = (limit: number) =>
+  z
+    .preprocess(
+      (value) => (typeof value === "string" && value.trim() !== "" ? Number(value) : value),
+      z.number().min(-limit).max(limit).nullish(),
+    )
+    .catch(null);
+
 export const locationComponent = z.object({
   address: z.string(),
   openingHours: z.string().nullish(),
   mapEmbedUrl: z.string(),
+  /** Optional structured address and coordinates, used only in the store's JSON-LD (#86). */
+  streetAddress: z.string().nullish(),
+  addressLocality: z.string().nullish(),
+  postalCode: z.string().nullish(),
+  latitude: coordinate(90),
+  longitude: coordinate(180),
 });
 
 export const socialLinkComponent = z.object({
@@ -97,6 +115,8 @@ export const blogPostSummaryEntry = z.object({
 });
 
 export const blogPostEntry = blogPostSummaryEntry.extend({
+  /** The last edit, for `BlogPosting.dateModified` (#86). */
+  updatedAt: z.iso.datetime({ offset: true }).nullish(),
   content: z.string(),
   seo: seoComponent.nullish(),
 });

@@ -4,7 +4,8 @@ export default [
   layout("routes/_shop.tsx", [
     index("routes/home.tsx"),
     route("catalog/:gender", "routes/catalog.tsx"),
-    route("products/:id", "routes/product.tsx"),
+    // `:handle` is the slug, or an old UUID / former slug that answers 301 to it (#83).
+    route("products/:handle", "routes/product.tsx"),
     route("blog", "routes/blog.tsx"),
     route("blog/:slug", "routes/blog-post.tsx"),
     route("offers", "routes/offers.tsx"),

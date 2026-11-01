@@ -138,7 +138,7 @@ current slug URL, and unknown handles answer 404.
   `resolveProductHandle(handle, db)` in `services/products.ts` returns
   `{ kind: "product"; id; product } | { kind: "redirect"; slug } | null`, following the resolution
   order above.
-- [ ] **7. Route** — `app/routes.ts`: `products/:handle`; update `routes.test.ts`. In
+- [x] **7. Route** — `app/routes.ts`: `products/:handle`; update `routes.test.ts`. In
   `routes/product.tsx` the loader calls `resolveProductHandle(params.handle)`: `redirect` →
   `throw redirect(productHref({ id, slug }) + search, 301)`; `null` → 404; `product` → record
   `product_view` and return as today. Rewrite `product.test.ts` (mocking `resolveProductHandle`):

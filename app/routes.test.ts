@@ -13,7 +13,7 @@ describe("route config", () => {
     expect(paths(shop?.children ?? [])).toEqual([
       "/",
       "/catalog/:gender",
-      "/products/:id",
+      "/products/:handle",
       "/blog",
       "/blog/:slug",
       "/offers",

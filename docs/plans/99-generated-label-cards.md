@@ -194,7 +194,7 @@ Answered from the codebase:
   present without a photo → `ProductLabelArt` (`minimal`, sliced to the square) in the same box; deleted
   → neutral tile. Fix the fixtures in `cart`/`account`/`orders` tests that type-check against these
   DTOs.
-- [ ] **7. Document the palette.** Add a "Label card palette" section to `docs/design.md` after
+- [x] **7. Document the palette.** Add a "Label card palette" section to `docs/design.md` after
   "Colour tokens": the table of groups → families → `bg`/`accent`/`ink`/`panel` hex values with
   their measured contrast ratios, the variation rule (FNV-1a of `public_id`) and the "a photo
   always wins" rule. Mention that new families must be added to `FAMILY_PALETTE`.

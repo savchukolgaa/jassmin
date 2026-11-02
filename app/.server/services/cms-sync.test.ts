@@ -28,8 +28,8 @@ const fields: CmsProductFields = {
   packSize: 1,
   active: true,
   variants: [
-    { volumeMl: 50, price: "7200.00", stock: 3 },
-    { volumeMl: 10, price: "1900.00", stock: 6 },
+    { volumeMl: 50, price: "7200.00", trackStock: true, stock: 3 },
+    { volumeMl: 10, price: "1900.00", trackStock: true, stock: 6 },
   ],
 };
 
@@ -126,8 +126,8 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       brand: "Byredo",
       active: true,
       variants: [
-        { volumeMl: 10, price: "1900.00", stock: 6 },
-        { volumeMl: 50, price: "7200.00", stock: 3 },
+        { volumeMl: 10, price: "1900.00", trackStock: true, stock: 6 },
+        { volumeMl: 50, price: "7200.00", trackStock: true, stock: 3 },
       ],
     });
     expect(product.publicId).toMatch(/^[0-9a-f-]{36}$/);
@@ -271,8 +271,8 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
         publicId: product.publicId,
         slug: product.slug,
         variants: [
-          { volumeMl: 10, price: "1950.00", stock: 10, expectedStock: 6 },
-          { volumeMl: 50, price: "7200.00", stock: 0, expectedStock: 3 },
+          { volumeMl: 10, price: "1950.00", trackStock: true, stock: 10, expectedStock: 6 },
+          { volumeMl: 50, price: "7200.00", trackStock: true, stock: 0, expectedStock: 3 },
         ],
       },
       testDb.db,
@@ -282,12 +282,58 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       ok: true,
       product: {
         variants: [
-          { volumeMl: 10, price: "1950.00", stock: 8 },
-          { volumeMl: 50, price: "7200.00", stock: 0 },
+          { volumeMl: 10, price: "1950.00", trackStock: true, stock: 8 },
+          { volumeMl: 50, price: "7200.00", trackStock: true, stock: 0 },
         ],
       },
     });
     expect((await variantRow(id, 10))?.id).toBe(small?.id);
+  });
+
+  it("stores the typed stock of a size that doesn't track it, and switches tracking (#98)", async () => {
+    const { applyCmsProductChange } = await import("./cms-sync");
+    const product = await created();
+    const { id } = await productRow(product.publicId);
+    const update = (variants: (typeof fields)["variants"]) =>
+      applyCmsProductChange(
+        { action: "update", ...fields, publicId: product.publicId, slug: product.slug, variants },
+        testDb.db,
+      );
+
+    // Untracked: no delta, whatever Strapi showed before.
+    const untracked = await update([
+      { volumeMl: 10, price: "1900.00", trackStock: false, stock: 0, expectedStock: 6 },
+      { volumeMl: 50, price: "7200.00", trackStock: false, stock: 9, expectedStock: 1 },
+    ]);
+    expect(untracked).toMatchObject({
+      ok: true,
+      product: {
+        variants: [
+          { volumeMl: 10, trackStock: false, stock: 0 },
+          { volumeMl: 50, trackStock: false, stock: 9 },
+        ],
+      },
+    });
+    expect(await variantRow(id, 50)).toMatchObject({ trackStock: false, stockQuantity: 9 });
+
+    // Switched on: the typed stock is the starting point.
+    const tracked = await update([
+      { volumeMl: 10, price: "1900.00", trackStock: false, stock: 0, expectedStock: 0 },
+      { volumeMl: 50, price: "7200.00", trackStock: true, stock: 2, expectedStock: 9 },
+    ]);
+    expect(tracked).toMatchObject({
+      ok: true,
+      product: { variants: [{ volumeMl: 10 }, { volumeMl: 50, trackStock: true, stock: 2 }] },
+    });
+
+    // A new size comes with its own tracking.
+    const added = await update([
+      { volumeMl: 10, price: "1900.00", trackStock: false, stock: 0, expectedStock: 0 },
+      { volumeMl: 50, price: "7200.00", trackStock: true, stock: 2, expectedStock: 2 },
+      { volumeMl: 100, price: "9690.00", trackStock: false, stock: 0 },
+    ]);
+    expect(added).toMatchObject({ ok: true });
+    expect(await variantRow(id, 100)).toMatchObject({ trackStock: false });
   });
 
   it("never takes stock below zero", async () => {
@@ -301,8 +347,8 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
         publicId: product.publicId,
         slug: product.slug,
         variants: [
-          { volumeMl: 10, price: "1900.00", stock: 0, expectedStock: 20 },
-          { volumeMl: 50, price: "7200.00", stock: 3 },
+          { volumeMl: 10, price: "1900.00", trackStock: true, stock: 0, expectedStock: 20 },
+          { volumeMl: 50, price: "7200.00", trackStock: true, stock: 3 },
         ],
       },
       testDb.db,
@@ -334,8 +380,8 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
         publicId: product.publicId,
         slug: product.slug,
         variants: [
-          { volumeMl: 50, price: "7200.00", stock: 3, expectedStock: 3 },
-          { volumeMl: 100, price: "9900.00", stock: 2 },
+          { volumeMl: 50, price: "7200.00", trackStock: true, stock: 3, expectedStock: 3 },
+          { volumeMl: 100, price: "9900.00", trackStock: true, stock: 2 },
         ],
       },
       testDb.db,

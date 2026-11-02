@@ -21,7 +21,7 @@ const applyCmsProductChange = vi.hoisted(() =>
         popularRank: null,
         packSize: 1,
         active: true,
-        variants: [{ volumeMl: 50, price: "6850.00", stock: 4 }],
+        variants: [{ volumeMl: 50, price: "6850.00", trackStock: true, stock: 4 }],
       },
     }),
   ),
@@ -81,7 +81,8 @@ describe("cms products sync route", () => {
       imageFormats: null,
       packSize: 1,
       active: true,
-      variants: [{ volumeMl: 50, price: "6850.00", stock: 5, expectedStock: 6 }],
+      // Strapi sent no `trackStock`: the size stays untracked (#98).
+      variants: [{ volumeMl: 50, price: "6850.00", trackStock: false, stock: 5, expectedStock: 6 }],
     });
   });
 

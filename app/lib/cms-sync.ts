@@ -36,7 +36,9 @@ export const cmsVariantSchema = z.object({
       (PERFUME_VOLUMES_ML as readonly number[]).includes(value),
     ),
   price: priceSchema,
-  /** The stock staff typed. */
+  /** Whether stock limits sales (#98); a size without it is always available. */
+  trackStock: z.boolean().default(false),
+  /** The stock staff typed (the stored one while the admin hides it for an untracked size). */
   stock: z.number().int().min(0),
   /**
    * The stock Strapi showed before this edit, if the size existed. The app applies the
@@ -184,8 +186,8 @@ export interface CmsProductState {
   popularRank: number | null;
   packSize: number;
   active: boolean;
-  /** Smallest first, with the real stock. */
-  variants: { volumeMl: number; price: string; stock: number }[];
+  /** Smallest first, with the real stock and whether it limits sales (#98). */
+  variants: { volumeMl: number; price: string; stock: number; trackStock: boolean }[];
 }
 
 export const cmsOrderChangeSchema = z.object({

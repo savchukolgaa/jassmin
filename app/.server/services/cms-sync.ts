@@ -10,6 +10,7 @@ import type {
   CmsProductFields,
   CmsProductState,
   CmsSyncError,
+  CmsVariantInput,
 } from "~/lib/cms-sync";
 import { nextOrderState } from "~/lib/order-status";
 import { db as defaultDb } from "../db";
@@ -33,6 +34,7 @@ import {
   type ProductWrite,
   updateProduct,
   updateVariant,
+  type VariantWrite,
 } from "../db/queries/products";
 import { getEnv } from "../env";
 import {
@@ -50,10 +52,7 @@ export type CmsProductResult =
   | Failure<"unknown-product" | "slug-taken">;
 
 /** The product columns for Strapi's fields; the deprecated ones come from the smallest size. */
-function productWrite(
-  fields: CmsProductFields,
-  sizes: readonly { volumeMl: number; price: string; stockQuantity: number }[],
-): ProductWrite {
+function productWrite(fields: CmsProductFields, sizes: readonly VariantWrite[]): ProductWrite {
   const [main] = [...sizes].sort((a, b) => a.volumeMl - b.volumeMl);
   if (!main) {
     // The schema requires at least one size.
@@ -85,12 +84,27 @@ function productWrite(
 }
 
 /**
+ * The stock a size gets from a staff edit. A size that tracks stock before and after the edit
+ * changes by `stock - expectedStock`, so units sold while staff had the form open stay sold, and
+ * never goes below 0. Otherwise nothing sold it in between (#98), so the typed stock is stored.
+ */
+function editedStock(
+  current: { stockQuantity: number; trackStock: boolean },
+  variant: CmsVariantInput,
+): number {
+  if (!(current.trackStock && variant.trackStock)) {
+    return variant.stock;
+  }
+  const expected = variant.expectedStock ?? current.stockQuantity;
+  return Math.max(0, current.stockQuantity + variant.stock - expected);
+}
+
+/**
  * Applies a product edit from the Strapi admin:
  * - `create` inserts the product and its sizes; the answer carries the new `publicId`.
  * - `update` rewrites the fields and matches sizes by volume: a new volume is inserted, a
  *   missing one deleted (its cart lines go, order lines keep their size snapshot), and an
- *   existing one gets the new price and its stock changed by `stock - expectedStock`, so units
- *   sold while staff had the form open stay sold. Stock never goes below 0.
+ *   existing one gets the new price, tracking and stock (`editedStock`).
  * - `delete` only archives (`active = false`): order history keeps the product's title.
  *
  * A changed slug goes to `product_slug_history`, so `/products/<old slug>` redirects (#83), and
@@ -104,11 +118,14 @@ export async function applyCmsProductChange(
     return await db.transaction(async (tx): Promise<CmsProductResult> => {
       let productId: number;
       if (change.action === "create") {
-        const sizes = change.variants.map((v) => ({
-          volumeMl: v.volumeMl,
-          price: v.price,
-          stockQuantity: v.stock,
-        }));
+        const sizes = change.variants.map(
+          (v): VariantWrite => ({
+            volumeMl: v.volumeMl,
+            price: v.price,
+            stockQuantity: v.stock,
+            trackStock: v.trackStock,
+          }),
+        );
         ({ id: productId } = await insertProduct(tx, productWrite(change, sizes)));
         await insertVariants(tx, productId, sizes);
         await forgetSlug(tx, change.slug);
@@ -123,25 +140,35 @@ export async function applyCmsProductChange(
         } else {
           const existing = await lockVariantsByProductId(tx, productId);
           const byVolume = new Map(existing.map((v) => [v.volumeMl, v]));
-          const sizes: { volumeMl: number; price: string; stockQuantity: number }[] = [];
-          const added: typeof sizes = [];
+          const sizes: VariantWrite[] = [];
+          const added: VariantWrite[] = [];
           for (const variant of change.variants) {
             const current = byVolume.get(variant.volumeMl);
+            const { trackStock } = variant;
             if (!current) {
               const size = {
                 volumeMl: variant.volumeMl,
                 price: variant.price,
                 stockQuantity: variant.stock,
+                trackStock,
               };
               added.push(size);
               sizes.push(size);
               continue;
             }
             byVolume.delete(variant.volumeMl);
-            const expected = variant.expectedStock ?? current.stockQuantity;
-            const stockQuantity = Math.max(0, current.stockQuantity + variant.stock - expected);
-            await updateVariant(tx, current.id, { price: variant.price, stockQuantity });
-            sizes.push({ volumeMl: variant.volumeMl, price: variant.price, stockQuantity });
+            const stockQuantity = editedStock(current, variant);
+            await updateVariant(tx, current.id, {
+              price: variant.price,
+              stockQuantity,
+              trackStock,
+            });
+            sizes.push({
+              volumeMl: variant.volumeMl,
+              price: variant.price,
+              stockQuantity,
+              trackStock,
+            });
           }
           await deleteVariants(
             tx,

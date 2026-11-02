@@ -51,7 +51,7 @@ export interface CatalogNote extends Struct.ComponentSchema {
 export interface CatalogVariant extends Struct.ComponentSchema {
   collectionName: 'components_catalog_variants';
   info: {
-    description: 'One size of a perfume: volume (5, 10, 30, 50 or 100 ml), price in UAH and units in stock';
+    description: 'One size of a perfume: volume (5, 10, 30, 50 or 100 ml) and price in UAH. Always available unless Track stock is on; then units in stock limit sales';
     displayName: 'Size';
     icon: 'shoppingCart';
   };
@@ -65,7 +65,6 @@ export interface CatalogVariant extends Struct.ComponentSchema {
         number
       >;
     stock: Schema.Attribute.Integer &
-      Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
         {
           min: 0;
@@ -73,6 +72,9 @@ export interface CatalogVariant extends Struct.ComponentSchema {
         number
       > &
       Schema.Attribute.DefaultTo<0>;
+    trackStock: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<false>;
     volumeMl: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<

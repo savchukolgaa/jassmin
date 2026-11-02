@@ -19,6 +19,25 @@ const issues = (overrides: Record<string, unknown>) => {
   return result.success ? [] : result.error.issues.map((i) => [i.path.join("."), i.message]);
 };
 
+describe("cmsProductChangeSchema: tracked stock (#98)", () => {
+  it("leaves a size untracked unless Strapi says otherwise, and refuses a non-boolean", () => {
+    const sizes = (variants: unknown[]) => {
+      const result = parse({ variants });
+      return result.success && result.data.action !== "delete" ? result.data.variants : null;
+    };
+
+    expect(sizes([{ volumeMl: 50, price: 3200, stock: 1 }])).toEqual([
+      { volumeMl: 50, price: "3200.00", trackStock: false, stock: 1 },
+    ]);
+    expect(
+      sizes([{ volumeMl: 50, price: 3200, stock: 1, trackStock: true }])?.[0]?.trackStock,
+    ).toBe(true);
+    expect(
+      issues({ variants: [{ volumeMl: 50, price: 3200, stock: 1, trackStock: "yes" }] }),
+    ).toEqual([["variants.0.trackStock", expect.any(String)]]);
+  });
+});
+
 describe("cmsProductChangeSchema: slug (#83)", () => {
   it("refuses a slug that is a UUID, whatever its case", () => {
     const uuid = "01a1652b-6e25-7c03-ae47-25b57131fb06";

@@ -143,11 +143,17 @@ export async function productPayload(strapi: Core.Strapi, merged: Data, stored: 
     active: merged.active !== false,
     variants: records(merged.variants).map((variant) => {
       const volumeMl = toNumber(variant.volumeMl);
+      const expectedStock = storedStock.get(volumeMl) ?? null;
       return {
         volumeMl,
         price: toNumber(variant.price),
-        stock: toNumber(variant.stock),
-        expectedStock: storedStock.get(volumeMl) ?? null,
+        trackStock: variant.trackStock === true,
+        // The admin leaves out the stock it hides while Track stock is off (#98): keep the stored one.
+        stock:
+          variant.stock === undefined || variant.stock === null || variant.stock === ""
+            ? (expectedStock ?? 0)
+            : toNumber(variant.stock),
+        expectedStock,
       };
     }),
   };
@@ -173,7 +179,14 @@ export function applyProductAnswer(data: Data, answer: unknown): Data {
     popularRank: typeof answer.popularRank === "number" ? answer.popularRank : null,
     variants: records(data.variants).map((variant) => {
       const stored = byVolume.get(toNumber(variant.volumeMl));
-      return stored ? { ...variant, price: toNumber(stored.price), stock: stored.stock } : variant;
+      return stored
+        ? {
+            ...variant,
+            price: toNumber(stored.price),
+            stock: stored.stock,
+            trackStock: stored.trackStock === true,
+          }
+        : variant;
     }),
   };
 }

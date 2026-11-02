@@ -545,6 +545,7 @@ export function lockVariantsByProductId(db: Executor, productId: number) {
       id: productVariants.id,
       volumeMl: productVariants.volumeMl,
       stockQuantity: productVariants.stockQuantity,
+      trackStock: productVariants.trackStock,
     })
     .from(productVariants)
     .where(eq(productVariants.productId, productId))
@@ -552,10 +553,19 @@ export function lockVariantsByProductId(db: Executor, productId: number) {
     .for("update");
 }
 
+/** A size as the CMS sync writes it. */
+export interface VariantWrite {
+  volumeMl: number;
+  price: string;
+  stockQuantity: number;
+  /** `false`: always available, stock not counted (#98). */
+  trackStock: boolean;
+}
+
 export async function insertVariants(
   db: Executor,
   productId: number,
-  variants: readonly { volumeMl: number; price: string; stockQuantity: number }[],
+  variants: readonly VariantWrite[],
 ): Promise<void> {
   if (variants.length === 0) return;
   await db.insert(productVariants).values(variants.map((v) => ({ productId, ...v })));
@@ -564,7 +574,7 @@ export async function insertVariants(
 export async function updateVariant(
   db: Executor,
   variantId: number,
-  variant: { price: string; stockQuantity: number },
+  variant: Omit<VariantWrite, "volumeMl">,
 ): Promise<void> {
   await db.update(productVariants).set(variant).where(eq(productVariants.id, variantId));
 }
@@ -602,6 +612,7 @@ export async function findProductSyncState(db: Executor, productId: number) {
       volumeMl: productVariants.volumeMl,
       price: productVariants.price,
       stock: productVariants.stockQuantity,
+      trackStock: productVariants.trackStock,
     })
     .from(productVariants)
     .where(eq(productVariants.productId, productId))

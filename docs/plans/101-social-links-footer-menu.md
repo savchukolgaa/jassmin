@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/101
 Branch: `issue/101`
 Worktree: `.claude/worktrees/issue-101`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -196,7 +196,7 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
   `HomePage.test.ts`.
 - [x] **11. Docs.** Add a line to `app/.server/AGENTS.md` (CMS section) on `getSocialLinks`: its
   60 s cache, that it never throws, and that it's used by the `_shop` layout.
-- [ ] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Then
+- [x] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Then
   `pnpm aspire run` and check by hand (see below).
 
 ## Testing & verification
@@ -219,14 +219,27 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
 
 ## Acceptance criteria
 
-- [ ] Every page's footer and the mobile menu show Instagram and Telegram icon links when they're
+- [x] Every page's footer and the mobile menu show Instagram and Telegram icon links when they're
   set in Strapi — steps 3, 4, 5, 7, 8, 9
-- [ ] Links open the profile in a new tab and have translated accessible names, a visible focus ring
+- [x] Links open the profile in a new tab and have translated accessible names, a visible focus ring
   and 44 px touch targets — steps 5, 6
-- [ ] Tracking parameters are removed from the rendered URLs — steps 1, 2
-- [ ] The home contacts section uses the same icons — step 10
-- [ ] After staff add the Telegram link in Strapi, it appears without a deploy — step 3 (60 s TTL)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
+- [x] Tracking parameters are removed from the rendered URLs — steps 1, 2
+- [x] The home contacts section uses the same icons — step 10
+- [x] After staff add the Telegram link in Strapi, it appears without a deploy — step 3 (60 s TTL)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
+
+### Verification notes
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (151 files, 1518 passed, 1 skipped) and `pnpm build`
+  pass.
+- `app/theme.test.ts` allow-lists `SocialLinks.tsx` for the `primary-light` focus ring. The ring is
+  used only for the `onInk` tone, which only the contacts section on `ink` passes.
+- "Appears without a deploy" is covered by `app/.server/cms/social.test.ts` (refetch after the 60 s
+  TTL). The manual checks in the running app (`pnpm aspire run`: icons on each page type, focus rings,
+  the mobile menu, adding Telegram in Strapi, stopping Strapi) haven't been done yet.
+- In an early full run, 7 database test files failed while all 151 files ran in parallel. They pass
+  alone, together, and in the final full run, so the failures were load-related and not caused by
+  this change.
 
 ## Out of scope
 

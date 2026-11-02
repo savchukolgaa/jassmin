@@ -205,7 +205,7 @@ only descriptions that are empty.
     - A product with both filled is untouched, with `updated_at` unchanged and not queued.
     - A second run reports 0 filled and queues nothing.
     - Blank `''` counts as empty.
-- [ ] **9. Docs.** Update `app/.server/AGENTS.md` (Database: `description_en`, `description` is
+- [x] **9. Docs.** Update `app/.server/AGENTS.md` (Database: `description_en`, `description` is
   Ukrainian, the import's fill rule; CMS sync: `descriptionEn`) and the `db:import-catalog` row
   and setup step 4 in `README.md`.
 - [ ] **10. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Then in

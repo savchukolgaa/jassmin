@@ -16,18 +16,20 @@ import {
   PasswordPanel,
 } from "~/features/account/ProfileForms";
 import { FormAlert } from "~/features/auth/AuthLayout";
+import type {
+  ChangeEmailField,
+  ChangePasswordField,
+  ContactField,
+  ProfileActionData,
+  ProfileIntent,
+} from "~/lib/auth";
 import {
-  type ChangeEmailField,
-  type ChangePasswordField,
-  type ContactField,
   changeEmailSchema,
   changePasswordSchema,
   contactSchema,
-  type ProfileActionData,
-  type ProfileIntent,
   profileIntentSchema,
   toFieldErrors,
-} from "~/lib/auth";
+} from "~/lib/auth.schema";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/account.profile";

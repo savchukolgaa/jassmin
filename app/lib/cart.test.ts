@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { cartErrorMessage as cartErrorMessage_, parseCartAction } from "./cart";
+import { cartErrorMessage as cartErrorMessage_ } from "./cart";
+import { parseCartAction } from "./cart.schema";
 import { createTranslator } from "./i18n";
 
 const en = createTranslator("en");

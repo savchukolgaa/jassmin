@@ -1,23 +1,13 @@
 // Blog URL contract and the view objects the blog routes render (#13). Built on the server by
 // `app/.server/services/blog.ts` from the Strapi DTOs in `./cms`.
-import { z } from "zod";
 import type { CmsImage } from "./cms";
 import type { Locale } from "./i18n";
 import { pathFor } from "./paths";
 
 export const BLOG_PAGE_SIZE = 12;
 
-const blogSearchSchema = z.object({
-  page: z.coerce.number().int().min(1).max(10_000).catch(1),
-});
-
 export interface BlogSearch {
   page: number;
-}
-
-/** Reads `?page=` from the blog list URL; bad values fall back to page 1. */
-export function parseBlogSearch(params: URLSearchParams): BlogSearch {
-  return blogSearchSchema.parse({ page: params.get("page") ?? undefined });
 }
 
 /** Link to `page` of the blog list in `locale`, without `?page=` for the first page. */

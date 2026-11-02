@@ -41,6 +41,7 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 - `noUncheckedIndexedAccess` is on, so handle `arr[0]` being `undefined`.
 - Use `import type` for type-only imports (Biome `useImportType`).
 - Validate **every** `action` input with zod, and return typed errors instead of throwing for user mistakes.
+- zod schemas live in `*.schema.ts` modules (e.g. `app/lib/cart.schema.ts`), imported only by route `loader`s/`action`s, server code and tests. Components and the rest of `app/lib/` never import zod, so it stays out of the browser bundle (#96); `app/lib/client-bundle.guard.test.ts` enforces this.
 - Use a DB transaction (`db.transaction(async (tx) => …)`) wherever several writes must succeed together, especially at checkout: decrementing stock, creating the order and order items, and marking the cart `converted`.
 - Add or update Vitest tests next to the code (`*.test.ts`) for the behaviour you add.
 - Match the surrounding code's style. Biome formats the code: 2 spaces, double quotes, LF, width 100.

@@ -13,15 +13,15 @@ import { rememberOrder } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
 import { CheckoutForm } from "~/features/checkout/CheckoutForm";
 import { OrderSummary } from "~/features/checkout/OrderSummary";
-import { toFieldErrors } from "~/lib/auth";
+import { toFieldErrors } from "~/lib/auth.schema";
 import {
   CHECKOUT_FIELDS,
   type CheckoutFormErrors,
   cartSummaryLine,
   checkoutValues,
   freeShippingInfo,
-  parseCheckout,
 } from "~/lib/checkout";
+import { parseCheckout } from "~/lib/checkout.schema";
 import { cn } from "~/lib/cn";
 import { type Locale, metaTranslator, usePathFor, useT } from "~/lib/i18n";
 import { pathFor } from "~/lib/paths";

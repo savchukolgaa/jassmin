@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { blogHref, blogPostHref, blogResponseHeaders, isBlogSlug, parseBlogSearch } from "./blog";
+import { blogHref, blogPostHref, blogResponseHeaders, isBlogSlug } from "./blog";
+import { parseBlogSearch } from "./blog.schema";
 
 describe("blogResponseHeaders", () => {
   it("forwards the loader's cache headers", () => {

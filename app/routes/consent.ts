@@ -2,7 +2,7 @@ import { data, redirect } from "react-router";
 import { clearAnalyticsSession, getVisitor, trackEvents } from "~/.server/analytics";
 import { clearConsent, serializeConsent } from "~/.server/consent";
 import { safeRedirect } from "~/lib/auth";
-import { consentFormSchema } from "~/lib/consent";
+import { consentFormSchema } from "~/lib/consent.schema";
 import { DEFAULT_LOCALE } from "~/lib/i18n";
 import { pathFor } from "~/lib/paths";
 import type { Route } from "./+types/consent";

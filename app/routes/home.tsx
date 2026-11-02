@@ -8,7 +8,7 @@ import { buildHomePageView } from "~/.server/services/home";
 import { getBestsellers, getTrioFamilies } from "~/.server/services/products";
 import { getTesterTrioOffer } from "~/.server/services/trio";
 import { JsonLd } from "~/components/JsonLd";
-import { parseContactForm } from "~/features/home/contact-form";
+import { parseContactForm } from "~/features/home/contact-form.schema";
 import { HomePage } from "~/features/home/HomePage";
 import type { ContactActionResult } from "~/lib/contact";
 import { metaTranslator, useT } from "~/lib/i18n";

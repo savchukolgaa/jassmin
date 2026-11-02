@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseContactForm } from "./contact-form";
+import { parseContactForm } from "./contact-form.schema";
 
 function form(fields: Record<string, string | Blob>): FormData {
   const formData = new FormData();

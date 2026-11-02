@@ -6,8 +6,8 @@ import {
   fragranceFamilyLabel,
   hasActiveFilters,
   isCatalogGender,
-  parseCatalogSearch,
 } from "./catalog";
+import { parseCatalogSearch } from "./catalog.schema";
 
 import { FRAGRANCE_FAMILIES } from "./enums";
 import { createTranslator } from "./i18n";

@@ -1,5 +1,5 @@
 import type Mail from "nodemailer/lib/mailer";
-import type { ContactMessage } from "~/features/home/contact-form";
+import type { ContactMessage } from "~/features/home/contact-form.schema";
 import { type Env, getEnv } from "../env";
 import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
 import { createRateLimiter, type RateLimiter } from "../rate-limit";

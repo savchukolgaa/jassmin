@@ -7,13 +7,8 @@ import { createUserSession } from "~/.server/session";
 import { Button } from "~/components/ui/Button";
 import { TextField } from "~/components/ui/TextField";
 import { AuthLayout, FormAlert } from "~/features/auth/AuthLayout";
-import {
-  type AuthFormErrors,
-  type LoginField,
-  loginSchema,
-  safeRedirect,
-  toFieldErrors,
-} from "~/lib/auth";
+import { type AuthFormErrors, type LoginField, safeRedirect } from "~/lib/auth";
+import { loginSchema, toFieldErrors } from "~/lib/auth.schema";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";

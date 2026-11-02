@@ -35,6 +35,8 @@ export interface ProductVariant {
   volumeMl: number;
   price: string;
   stockQuantity: number;
+  /** `false`: always available, stock isn't counted (#98). */
+  trackStock: boolean;
   createdAt: Date;
 }
 

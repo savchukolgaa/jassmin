@@ -693,7 +693,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0018 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0019 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
@@ -731,7 +732,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0018 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0019 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
@@ -842,6 +844,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
+
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     expect(await rollbackLatest(db)).toBe("0016_product_slug_history");
@@ -880,6 +884,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     expect(updated.rows[0]?.image_formats).toEqual(formats);
 
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
+
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     const columns = await db.execute(
       sql`select 1 from information_schema.columns where table_name = 'products'
@@ -890,10 +896,43 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db.execute(sql`delete from products where id = ${row?.id}`);
   });
 
+  it("adds track_stock, off for existing sizes, and rolls it back", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { db } = testDb;
+
+    const product = await db.execute<{ id: number }>(
+      sql`insert into products (title, brand, gender, price, volume_ml)
+          values ('Poured', 'Test', 'women', '119.00', 5) returning id`,
+    );
+    const productId = product.rows[0]?.id;
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
+    await db.execute(
+      sql`insert into product_variants (product_id, volume_ml, price, stock_quantity)
+          values (${productId}, 5, '119.00', 0)`,
+    );
+
+    await migrateLatest(db);
+    const variants = await db.execute<{ track_stock: boolean }>(
+      sql`select track_stock from product_variants where product_id = ${productId}`,
+    );
+    expect(variants.rows).toEqual([{ track_stock: false }]);
+
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
+    const columns = await db.execute(
+      sql`select 1 from information_schema.columns where table_name = 'product_variants'
+          and column_name = 'track_stock'`,
+    );
+    expect(columns.rows).toEqual([]);
+    await migrateLatest(db);
+    await db.execute(sql`delete from products where id = ${productId}`);
+  });
+
   it("backfills fragrance_families from fragrance_family and keeps the primary in sync", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
 
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
@@ -957,6 +996,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
 
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
@@ -1037,6 +1078,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
+
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
     const columns = await db.execute(
@@ -1062,6 +1105,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
 
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
+
+    expect(await rollbackLatest(testDb.db)).toBe("0019_variant_track_stock");
 
     expect(await rollbackLatest(testDb.db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(testDb.db)).toBe("0017_product_updated_at");

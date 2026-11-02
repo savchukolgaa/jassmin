@@ -161,6 +161,7 @@ describe("product_variants", () => {
       volumeMl: ["integer", true, false],
       price: ["numeric(10, 2)", true, false],
       stockQuantity: ["integer", true, true],
+      trackStock: ["boolean", true, true],
       createdAt: ["timestamp with time zone", true, true],
     });
   });

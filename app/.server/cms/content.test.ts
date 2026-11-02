@@ -181,6 +181,20 @@ describe("mappers", () => {
     expect(toSiteSettings({ ...data, socialLinks: null }).socialLinks).toEqual([]);
   });
 
+  it("clean, filter and order social links (#101)", () => {
+    const { data } = singleResponse(siteSettingEntry).parse(siteSetting);
+    const socialLinks = [
+      { platform: "telegram" as const, url: "https://t.me/jassmin" },
+      { platform: "facebook" as const, url: "http://facebook.com/jassmin" },
+      { platform: "instagram" as const, url: "https://www.instagram.com/jassminperfume?xtok=abc" },
+    ];
+
+    expect(toSiteSettings({ ...data, socialLinks }).socialLinks).toEqual([
+      { platform: "instagram", url: "https://www.instagram.com/jassminperfume" },
+      { platform: "telegram", url: "https://t.me/jassmin" },
+    ]);
+  });
+
   it("map the data controller's legal name, treating a blank one as missing", () => {
     const { data } = singleResponse(siteSettingEntry).parse(siteSetting);
 

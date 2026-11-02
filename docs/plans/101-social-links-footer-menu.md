@@ -137,7 +137,7 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
 
 ## Steps
 
-- [ ] **1. URL hygiene helper.** Create `app/lib/social.ts` with:
+- [x] **1. URL hygiene helper.** Create `app/lib/social.ts` with:
   - `cleanSocialUrl(raw: string): string | null`, which uses `new URL()` in a try/catch, rejects
     anything that isn't `https:`, deletes the tracking params listed above plus every `utm_*` key,
     and returns `url.toString()` with an empty `?` removed.
@@ -149,7 +149,7 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
   - `http:`, `javascript:`, `t.me/x` (no scheme) and the empty string are rejected.
   - Other query params are kept.
   - A Telegram link given first is ordered after Instagram.
-- [ ] **2. Apply in the DTO.** `toSiteSettings` returns
+- [x] **2. Apply in the DTO.** `toSiteSettings` returns
   `socialLinks: normalizeSocialLinks(entry.socialLinks ?? [])`. Extend `content.test.ts`. Run the
   `structured-data` tests to confirm `sameAs` still works; it now gets cleaned URLs.
 - [ ] **3. Cached layout data.** Create `app/.server/cms/social.ts` with

@@ -62,10 +62,12 @@ bottle shape varies by product id. An uploaded Strapi photo always replaces the 
 - **Fitting the text without measuring it.** The server can't measure text, so `layoutLabelText`
   works by character count. It wraps the name on spaces into at most 3 lines of ≈14 characters and
   hard-breaks a single word that's longer than that. It picks the font size from the longest line
-  (for example 34 → 22 px in viewBox units), and adds an ellipsis after the 3rd line. As a safety
-  net, every line gets `textLength` with `lengthAdjust="spacingAndGlyphs"` when its estimated
-  width is near the label's width, so a wide Cyrillic line squeezes instead of overflowing. The
+  (for example 30 → 19 px in viewBox units), and adds an ellipsis after the 3rd line. The
   brand goes on one line in small caps (`letter-spacing`, uppercase) and is truncated the same way.
+  - *Deviation (step 2):* the planned `textLength` squeeze was dropped. Because wrapping already
+    keeps every estimated line within the width, the flag never fired. `textLength` would also
+    *stretch* lines that are narrower than estimated. Instead, the estimate uses a deliberately
+    wide average glyph (0.58 × font size), so wide Cyrillic and capital letters still fit.
 - **SVG geometry:** `viewBox="0 0 400 500"` (4:5) with `width`/`height` 100% inside the existing
   `aspect-[4/5]` frame, so the layout is the same as before (CLS 0). The background fills the frame
   and the bottle is centred. The text sits on a light label panel on the bottle, or directly on the
@@ -150,15 +152,15 @@ Answered from the codebase:
 
 ## Steps
 
-- [ ] **1. Palette and variation logic.** Create `app/lib/label-art.ts` with
+- [x] **1. Palette and variation logic.** Create `app/lib/label-art.ts` with
   `LABEL_PALETTES: Record<LabelPaletteKey, { bg; accent; ink; panel }>`,
   `FAMILY_PALETTE: Record<FragranceFamily, LabelPaletteKey>`,
   `labelPalette(family: string | null)`, `labelVariant(id: string)` and `contrastRatio(a, b)`
   (WCAG 2.x relative luminance). Write `label-art.test.ts`: every `FRAGRANCE_FAMILIES` entry maps
   to a palette; `null`/`"unknown"` → `neutral`; the same id → the same variant; a set of ~200
   random uuids hits every bottle shape; each palette's `ink` on its text surface is ≥ 4.5:1.
-- [ ] **2. Text layout.** Add `layoutLabelText(text, { maxChars, maxLines, sizes })` →
-  `{ lines: string[]; fontSize: number; squeeze: boolean[] }`. Test short Latin ("Coco"), long
+- [x] **2. Text layout.** Add `layoutLabelText(text, { width, maxLines, sizes })` →
+  `{ lines: string[]; fontSize: number }`. Test short Latin ("Coco"), long
   Latin ("Eau de Parfum Intense Pour Homme"), Cyrillic ("Квітковий сад"), a single word longer
   than a line, the ellipsis after `maxLines`, and that the font size gets smaller as the text gets
   longer.

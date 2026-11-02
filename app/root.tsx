@@ -1,6 +1,7 @@
 import manropeCyrillic from "@fontsource-variable/manrope/files/manrope-cyrillic-wght-normal.woff2?url";
 import playfairCyrillic from "@fontsource-variable/playfair-display/files/playfair-display-cyrillic-wght-normal.woff2?url";
 import {
+  type LinkDescriptor,
   Links,
   Meta,
   Outlet,
@@ -19,7 +20,7 @@ import { localeFromPath } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta } from "~/lib/seo";
 import type { Route } from "./+types/root";
-import "./app.css";
+import stylesheet from "./app.css?url";
 
 /**
  * The font files above the fold in Ukrainian, the default language (#88): preloaded so text
@@ -27,14 +28,23 @@ import "./app.css";
  */
 const PRELOADED_FONTS = [manropeCyrillic, playfairCyrillic];
 
-export const links: Route.LinksFunction = () =>
-  PRELOADED_FONTS.map((href) => ({
-    rel: "preload",
-    href,
-    as: "font",
-    type: "font/woff2",
-    crossOrigin: "anonymous",
-  }));
+/**
+ * The stylesheet has a `precedence`, so React 19 puts it in the `<head>` before the route modules'
+ * `modulepreload` links (#96). Without one it comes after all of them, and the only
+ * render-blocking request of the page starts last, competing with the JS for bandwidth.
+ */
+export const links: Route.LinksFunction = () => [
+  ...PRELOADED_FONTS.map(
+    (href): LinkDescriptor => ({
+      rel: "preload",
+      href,
+      as: "font",
+      type: "font/woff2",
+      crossOrigin: "anonymous",
+    }),
+  ),
+  { rel: "stylesheet", href: stylesheet, precedence: "default" },
+];
 
 // Sends visitors who chose English from Ukrainian pages to the English ones (#84).
 export const middleware: Route.MiddlewareFunction[] = [localeRedirectMiddleware];

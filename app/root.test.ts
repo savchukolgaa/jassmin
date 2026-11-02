@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-const { loader, meta, shouldRevalidate } = await import("./root");
+const { links, loader, meta, shouldRevalidate } = await import("./root");
 
 type MetaArgs = Parameters<typeof meta>[0];
 
@@ -53,5 +53,13 @@ describe("root shouldRevalidate", () => {
   it("keeps them after actions and navigations in the same language", () => {
     expect(revalidates("/koshyk", "/koshyk", { formMethod: "POST" })).toBe(false);
     expect(revalidates("/katalog/zhinochi", "/katalog/cholovichi")).toBe(false);
+  });
+});
+
+describe("root links", () => {
+  it("gives the stylesheet a precedence, so React puts it before the modulepreloads (#96)", () => {
+    const stylesheets = links().filter((link) => "rel" in link && link.rel === "stylesheet");
+    // Vitest resolves `app.css?url` to "", so only the attributes are checked.
+    expect(stylesheets).toEqual([expect.objectContaining({ precedence: "default" })]);
   });
 });

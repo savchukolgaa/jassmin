@@ -46,6 +46,10 @@ export function firstName(fullName: string): string {
 /** An order line with its product's picture (`null` without one or once deleted). */
 export interface AccountOrderLine extends OrderSummaryLine {
   imageUrl: string | null;
+  /** The product's `public_id`, for its label card (#99); `null` once deleted. */
+  productId: string | null;
+  /** The primary fragrance family (stored Ukrainian value); `null` without one or once deleted. */
+  fragranceFamily: string | null;
 }
 
 /** An order on the account dashboard. `unitPrice` is `order_items.price_at_purchase`. */

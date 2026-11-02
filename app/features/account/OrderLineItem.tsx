@@ -1,8 +1,12 @@
+import { ProductLabelArt } from "~/features/catalog/ProductLabelArt";
 import type { AccountOrderLine } from "~/lib/account";
 import { useT } from "~/lib/i18n";
 import { formatVolume } from "~/lib/products";
 
-/** The product’s picture, or a neutral tile without one. */
+/**
+ * The product’s photo, its label card without text when it has none (#99), or a neutral tile once
+ * the product has been deleted.
+ */
 export function OrderLineThumb({
   line,
   size = "md",
@@ -11,16 +15,36 @@ export function OrderLineThumb({
   size?: "sm" | "md";
 }) {
   const box = size === "sm" ? "size-12 rounded-xl" : "size-13 rounded-2xl";
-  return line.imageUrl ? (
-    <img
-      src={line.imageUrl}
-      alt=""
-      loading="lazy"
-      className={`${box} shrink-0 border-2 border-white bg-white object-cover`}
-    />
-  ) : (
-    <span aria-hidden="true" className={`${box} shrink-0 border-2 border-white bg-card`} />
-  );
+  if (line.imageUrl) {
+    return (
+      <img
+        src={line.imageUrl}
+        alt=""
+        loading="lazy"
+        className={`${box} shrink-0 border-2 border-white bg-white object-cover`}
+      />
+    );
+  }
+  if (line.productId && line.title !== null && line.brand !== null) {
+    return (
+      <span
+        aria-hidden="true"
+        className={`${box} block shrink-0 overflow-hidden border-2 border-white bg-card`}
+      >
+        <ProductLabelArt
+          label={{
+            id: line.productId,
+            brand: line.brand,
+            title: line.title,
+            family: line.fragranceFamily,
+          }}
+          detail="minimal"
+          className="block size-full"
+        />
+      </span>
+    );
+  }
+  return <span aria-hidden="true" className={`${box} shrink-0 border-2 border-white bg-card`} />;
 }
 
 /** One bought line, at its `price_at_purchase`. */

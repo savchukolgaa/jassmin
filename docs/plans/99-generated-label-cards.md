@@ -186,7 +186,7 @@ Answered from the codebase:
   `label={{ id: product.id, brand: product.brand, title: product.title, family: product.fragranceFamily }}`.
   `routes/product.tsx`: `family: product.fragranceFamilies[0] ?? null`, keeping `priority`.
   Update `ProductCard.dom.test.ts` / `catalog-ui.test.ts` fixtures if they assert the initial.
-- [ ] **6. Cart and account.** Add `fragranceFamily` to `CartLine`, select it in
+- [x] **6. Cart and account.** Add `fragranceFamily` to `CartLine`, select it in
   `queries/cart.ts` (next to the image columns) and pass it through `toCartLine`. In
   `CartLineItem.tsx`, pass `label` and `labelDetail="minimal"`. Add `productId` (from
   `products.publicId`, `null` once deleted) and `fragranceFamily` to `AccountOrderLine`, and

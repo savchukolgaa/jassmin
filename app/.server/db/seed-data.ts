@@ -190,7 +190,8 @@ export type SampleDiscount = typeof discounts.$inferInsert;
 export const SAMPLE_DISCOUNTS: SampleDiscount[] = [
   {
     // Any three single 10 ml sizes for 499 ₴, up to three sets per order. `pack_size 1` keeps
-    // the 3 × 10 ml tester set product out of it.
+    // the 3 × 10 ml tester set product out of it. Migration 0020 creates the same rule in every
+    // database (#98), so the seed skips it there; keep the two equal.
     slug: "tester-trio",
     kind: "fixed_price_set",
     value: "499.00",

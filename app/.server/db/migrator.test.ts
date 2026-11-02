@@ -693,7 +693,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0019 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0020 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
@@ -732,7 +733,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0019 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0020 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
     expect(await rollbackLatest(db)).toBe("0017_product_updated_at");
@@ -844,6 +846,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
+
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
 
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
@@ -884,6 +888,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     expect(updated.rows[0]?.image_formats).toEqual(formats);
 
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
+
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
 
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
@@ -896,6 +902,35 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db.execute(sql`delete from products where id = ${row?.id}`);
   });
 
+  it("creates the tester trio once, keeps an existing one, and rolls it back (#98)", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { db } = testDb;
+    const trio = async () =>
+      (
+        await db.execute<{ value: string; redemption_count: number }>(
+          sql`select value, redemption_count from discounts where slug = 'tester-trio'`,
+        )
+      ).rows;
+
+    expect(await trio()).toEqual([{ value: "499.00", redemption_count: 0 }]);
+
+    // A rule that was there already (e.g. seeded) keeps its values and redemptions.
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
+    expect(await trio()).toEqual([]);
+    await db.execute(
+      sql`insert into discounts (slug, kind, value, scope_volumes_ml, scope_pack_size, min_quantity,
+          max_sets, redemption_count)
+          values ('tester-trio', 'fixed_price_set', '450.00', '{10}', 1, 3, 3, 7)`,
+    );
+    await migrateLatest(db);
+    expect(await trio()).toEqual([{ value: "450.00", redemption_count: 7 }]);
+
+    await db.execute(sql`delete from discounts where slug = 'tester-trio'`);
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
+    await migrateLatest(db);
+    expect(await trio()).toEqual([{ value: "499.00", redemption_count: 0 }]);
+  });
+
   it("adds track_stock, off for existing sizes, and rolls it back", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
@@ -905,6 +940,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
           values ('Poured', 'Test', 'women', '119.00', 5) returning id`,
     );
     const productId = product.rows[0]?.id;
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
     await db.execute(
       sql`insert into product_variants (product_id, volume_ml, price, stock_quantity)
@@ -916,6 +952,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       sql`select track_stock from product_variants where product_id = ${productId}`,
     );
     expect(variants.rows).toEqual([{ track_stock: false }]);
+
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
 
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
     const columns = await db.execute(
@@ -931,6 +969,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
 
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
 
@@ -996,6 +1036,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
 
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
 
@@ -1078,6 +1120,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0020_tester_trio_rule");
+
     expect(await rollbackLatest(db)).toBe("0019_variant_track_stock");
 
     expect(await rollbackLatest(db)).toBe("0018_product_image_meta");
@@ -1105,6 +1149,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
 
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
+
+    expect(await rollbackLatest(testDb.db)).toBe("0020_tester_trio_rule");
 
     expect(await rollbackLatest(testDb.db)).toBe("0019_variant_track_stock");
 

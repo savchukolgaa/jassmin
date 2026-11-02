@@ -46,6 +46,10 @@ function familyFilter(families: readonly string[] | undefined): SQL | undefined 
   return families?.length ? arrayOverlaps(products.fragranceFamilies, [...families]) : undefined;
 }
 
+function genderFilter(genders: readonly Gender[] | undefined): SQL | undefined {
+  return genders?.length ? inArray(products.gender, [...genders]) : undefined;
+}
+
 // Shared by the list and the count, so the total always matches the listed products.
 function whereFilters({ genders, fragranceFamilies, brand }: ProductFilters): SQL | undefined {
   return and(
@@ -219,16 +223,18 @@ export type SitemapProductRow = Awaited<ReturnType<typeof listSitemapProducts>>[
 export interface PopularFilters {
   /** Products with **any** of these families (the trio builder's picks); none means no filter. */
   fragranceFamilies?: readonly string[];
+  /** Products of these genders (the trio builder's gender scope, #102); none means every gender. */
+  genders?: readonly Gender[];
 }
 
 /**
- * The listed products of every gender for `/popular` (#67): the ones staff ranked, by
+ * The listed products for `/popular` (#67): the ones staff ranked, by
  * `popular_rank`, then the rest in the bestseller order. The caller decides how far into the
  * unranked ones to go (see `getPopularPage`).
  */
 export function listPopularProducts(
   db: Db,
-  { fragranceFamilies }: PopularFilters,
+  { fragranceFamilies, genders }: PopularFilters,
   options: { limit: number; offset: number },
 ): Promise<ProductSummaryRow[]> {
   const stats = variantStats(db);
@@ -238,7 +244,7 @@ export function listPopularProducts(
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
     .leftJoin(sold, eq(sold.productId, products.id))
-    .where(and(isListed, familyFilter(fragranceFamilies)))
+    .where(and(isListed, familyFilter(fragranceFamilies), genderFilter(genders)))
     .orderBy(
       sql`${products.popularRank} is null`,
       asc(products.popularRank),
@@ -251,7 +257,7 @@ export function listPopularProducts(
 /** How many products `listPopularProducts` can return, and how many of them staff ranked. */
 export async function countPopularProducts(
   db: Db,
-  { fragranceFamilies }: PopularFilters,
+  { fragranceFamilies, genders }: PopularFilters,
 ): Promise<{ ranked: number; listed: number }> {
   const stats = variantStats(db);
   const [row] = await db
@@ -263,7 +269,7 @@ export async function countPopularProducts(
     })
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
-    .where(and(isListed, familyFilter(fragranceFamilies)));
+    .where(and(isListed, familyFilter(fragranceFamilies), genderFilter(genders)));
   return { ranked: row?.ranked ?? 0, listed: row?.listed ?? 0 };
 }
 

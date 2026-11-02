@@ -1,5 +1,8 @@
 // The popular perfumes page `/popular` (#67): staff-ranked perfumes, topped up from the
-// bestsellers, optionally narrowed to the trio builder's families. Isomorphic: no server imports.
+// bestsellers, optionally narrowed to the trio builder's gender and families. Isomorphic: no server
+// imports.
+import type { CatalogGender } from "./catalog";
+import type { TextKey } from "./i18n";
 import type { Locale } from "./i18n/locales";
 import { pathFor } from "./paths";
 import type { ProductSummary } from "./products";
@@ -15,17 +18,38 @@ export interface PopularPage {
   pageCount: number;
 }
 
-/** What the page renders: a page of perfumes and the families it is narrowed to, in pick order. */
+/**
+ * What `/popular` is narrowed to (#102): the trio builder's families (stored values, in pick
+ * order; none means every family) and its gender (`null` means every gender).
+ */
+export interface PopularFilter {
+  families: readonly string[];
+  gender: CatalogGender | null;
+}
+
+/** The active gender filter's chip and the switch to the other one (#102): "Жінки" / "Women". */
+export const POPULAR_GENDER_KEYS = {
+  men: "popular.gender.men",
+  women: "popular.gender.women",
+} as const satisfies Record<CatalogGender, TextKey>;
+
+/**
+ * What the page renders: a page of perfumes, the families it is narrowed to (in pick order) and
+ * the gender, if any.
+ */
 export interface PopularPageView extends PopularPage {
   families: TrioFamily[];
+  gender: CatalogGender | null;
 }
 
 /**
- * The popular perfumes in `locale`, narrowed to `families` (stored values, in pick order), at
- * `page`; 1 is omitted.
+ * The popular perfumes in `locale` narrowed to `filter`, at `page`; 1 is omitted. The params go
+ * `gender`, then each `family`, then `page`.
  */
-export function popularHref(locale: Locale, families: readonly string[], page = 1): string {
-  const params = new URLSearchParams(families.map((family) => ["family", family]));
+export function popularHref(locale: Locale, filter: PopularFilter, page = 1): string {
+  const params = new URLSearchParams();
+  if (filter.gender) params.set("gender", filter.gender);
+  for (const family of filter.families) params.append("family", family);
   if (page > 1) params.set("page", String(page));
   return pathFor(locale, "popular", {}, { search: params });
 }

@@ -42,6 +42,7 @@ function view(overrides: Partial<PopularPageView> = {}): PopularPageView {
     page: 1,
     pageCount: 1,
     families: [],
+    gender: null,
     ...overrides,
   };
 }
@@ -133,6 +134,46 @@ describe("PopularPage", () => {
     expect(page).toMatch(/href="\/en\/popular"[^>]*>Show all popular</);
   });
 
+  it("shows the gender as a chip that clears it and a switch to the other one (#102)", () => {
+    const families = [{ value: "свіжі", label: "Fresh" }];
+    const page = render(view({ total: 30, pageCount: 3, families, gender: "women" }), "en");
+
+    expect(page).toContain("Your trio:");
+    expect(page).toContain('<ul aria-label="Who it&#x27;s for"');
+    const chip = page.match(/<a[^>]*aria-label="Remove filter: Women"[^>]*>/)?.[0];
+    expect(chip).toContain(`href="${html(href([["family", "свіжі"]]))}"`);
+    const men = page.match(/<a[^>]*>Men<\/a>/)?.[0];
+    expect(men).toContain(
+      `href="${html(
+        href([
+          ["gender", "men"],
+          ["family", "свіжі"],
+        ]),
+      )}"`,
+    );
+    // Removing a family and paging keep the gender; "Show all" clears everything.
+    const fresh = page.match(/<a[^>]*aria-label="Remove Fresh"[^>]*>/)?.[0];
+    expect(fresh).toContain('href="/en/popular?gender=women"');
+    expect(page).toContain(
+      `href="${html(
+        href([
+          ["gender", "women"],
+          ["family", "свіжі"],
+          ["page", "2"],
+        ]),
+      )}"`,
+    );
+    expect(page).toMatch(/href="\/en\/popular"[^>]*>Show all popular</);
+  });
+
+  it("shows the gender alone in Ukrainian, without family chips (#102)", () => {
+    const page = render(view({ gender: "men" }));
+
+    expect(page).toMatch(/aria-label="Прибрати фільтр «Чоловіки»"[^>]*>Чоловіки/);
+    expect(page).toMatch(/href="\/populiarni\?gender=women"[^>]*>Жінки<\/a>/);
+    expect(page).not.toContain('<ul aria-label="Обрані родини ароматів"');
+  });
+
   it("shows no chips without families", () => {
     expect(render(view(), "en")).not.toContain("Your trio:");
   });
@@ -144,6 +185,13 @@ describe("PopularPage", () => {
     expect(page).not.toContain("Looking for something else?");
     expect(page).not.toContain("Show all popular");
     expect(page).toContain('href="/en/catalog/women"');
+  });
+
+  it("offers every popular perfume when nothing matches the gender (#102)", () => {
+    const page = render(view({ products: [], total: 0, gender: "men" }), "en");
+
+    expect(page).toContain("No popular perfumes with these families yet");
+    expect(page).toMatch(/<a[^>]*href="\/en\/popular"[^>]*>Show all popular<\/a>/);
   });
 
   it("offers every popular perfume when the trio's families match none", () => {

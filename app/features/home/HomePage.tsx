@@ -27,6 +27,7 @@ export function HomePage({ view, actionData }: HomePageProps) {
       <TrioBuilder
         families={view.trio.families}
         selected={view.trio.selected}
+        gender={view.trio.gender}
         trioOffer={view.trioOffer}
       />
       <CategoryTiles />

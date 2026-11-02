@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/102
 Branch: `issue/102`
 Worktree: `.claude/worktrees/issue-102`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -71,6 +71,19 @@ lets the shopper switch or clear it. This works with and without JavaScript.
   `app/lib/analytics.ts`; the builder records nothing), so nothing is added. The `page_view` of
   `/popular?gender=…` already records the URL.
 
+- **Implementation deviations.**
+  - The popular page groups the gender chip and the switch link in a `<ul>` labelled
+    `popular.gender.label` ("Для кого" / "Who it's for") instead of `role="group"`. Biome's
+    `useSemanticElements` rejects the role, and this matches the families `<ul>`. As a result,
+    `popular.chosenFilters` wasn't needed.
+  - The label maps `TRIO_GENDERS` / `TRIO_GENDER_KEYS` (`app/lib/trio.ts`) and
+    `POPULAR_GENDER_KEYS` (`app/lib/popular.ts`) follow the `CATALOG_TITLE_KEYS` pattern.
+  - The home view is built in `app/.server/services/home.ts` (plus `home.test.ts`), so it carries
+    `selectedGender` too. `app/routes/popular.test.ts` and `HomePage.test.ts` fixtures were
+    updated for the new argument and field.
+  - The steps were committed as one change, because the `popularHref` signature change touches
+    every step's files.
+
 ## Resolved questions
 
 - **Does the builder already record an analytics event?** No. The only client event is
@@ -115,14 +128,14 @@ lets the shopper switch or clear it. This works with and without JavaScript.
 
 ## Steps
 
-- [ ] **1. Popular URL filter (lib).** In `app/lib/popular.ts`, add
+- [x] **1. Popular URL filter (lib).** In `app/lib/popular.ts`, add
   `export interface PopularFilter { families: readonly string[]; gender: CatalogGender | null }`
   and change `popularHref(locale, filter, page = 1)` to set `gender` (if any), then each
   `family`, then `page > 1`. Add `gender: CatalogGender | null` to `PopularPageView`. Update the
   callers (`PopularHero`, `PopularPage`, `PopularEmpty`, `trio.ts`) to pass a filter, without
   behaviour changes yet (`gender: null`). Update `popular.test.ts`. Run `pnpm typecheck` and
   `pnpm test app/lib`.
-- [ ] **2. Translations.** Add to both `uk.ts` (source of truth) and `en.ts`:
+- [x] **2. Translations.** Add to both `uk.ts` (source of truth) and `en.ts`:
   - `home.trio.gender.legend` ("Для кого тріо" / "Who's it for"), `.women` ("Жінки" /
     "Women"), `.men` ("Чоловіки" / "Men").
   - `popular.gender.women` ("Жінки" / "Women"), `popular.gender.men` ("Чоловіки" / "Men"),
@@ -132,12 +145,12 @@ lets the shopper switch or clear it. This works with and without JavaScript.
     There is no separate "switch to" key: the link is just the other gender's label.
 
   Check that the `uk`/`en` shapes match with `pnpm typecheck`.
-- [ ] **3. Trio lib.** In `app/lib/trio.ts`, add `parseTrioGender(params)` (see Decisions). Change
+- [x] **3. Trio lib.** In `app/lib/trio.ts`, add `parseTrioGender(params)` (see Decisions). Change
   `trioHref(locale, families, gender: CatalogGender)` to call
   `popularHref(locale, { families, gender })`. In `trio.test.ts`, test `women`/`men`, `" men "`
   trimmed, `unisex`/`WOMEN`/`toString`/empty/missing → `null`, and `trioHref` in `uk` and `en`
   (`/populiarni?gender=women&family=…`, `/en/popular?gender=men&family=…`).
-- [ ] **4. Query + service gender filter.** In `app/.server/db/queries/products.ts`, add
+- [x] **4. Query + service gender filter.** In `app/.server/db/queries/products.ts`, add
   `genders?: readonly Gender[]` to `PopularFilters` and a
   `genderFilter(genders)` (`inArray(products.gender, [...genders])` when non-empty) to the `where`
   of both `listPopularProducts` and `countPopularProducts`. In `services/products.ts`,
@@ -146,24 +159,24 @@ lets the shopper switch or clear it. This works with and without JavaScript.
   Update the `popular.test.ts` helper. Add these tests: `women` lists women + unisex and excludes
   men; `men` the reverse; gender combined with families narrows to both; the top-up from
   unranked bestsellers respects the gender; `null` keeps every gender.
-- [ ] **5. Popular route.** In `app/routes/popular.tsx` `loader`, call
+- [x] **5. Popular route.** In `app/routes/popular.tsx` `loader`, call
   `parseTrioGender(url.searchParams)`, pass `{ families, gender }` to `getPopularPage`, and
   return `gender` in the view. Update the loader/meta comments to mention `gender`. Keep
   `keepParams: ["page"]`.
-- [ ] **6. Popular UI.** In `PopularHero` (props `families`, `gender`), render the filter row
+- [x] **6. Popular UI.** In `PopularHero` (props `families`, `gender`), render the filter row
   when either is set: the gender chip (clears the gender, keeps the families) and the switch link
   to the other gender (keeps the families), styled like the family chips with
   `focusRing("onPrimary")`. Family chips keep `gender`, and "Show all popular" clears both. In
   `PopularPage`, the pagination uses `popularHref(locale, { families, gender }, page)`. In
   `PopularEmpty`, use `filtered = families.length > 0 || gender !== null`. Extend
   `popular-ui.test.ts`.
-- [ ] **7. Home loader + view.** In `app/lib/home.ts`, add the `selectedGender: CatalogGender`
+- [x] **7. Home loader + view.** In `app/lib/home.ts`, add the `selectedGender: CatalogGender`
   option and `trio.gender`. In `app/routes/home.tsx`, use
   `selectedGender: parseTrioGender(searchParams) ?? "women"` and update the loader comment
   (`?family=` / `?gender=`). Pass `gender={view.trio.gender}` in `HomePage.tsx`. Extend
   `home.test.ts`: `?gender=men&family=…` gives `trio.gender === "men"`, and a missing or invalid
   gender gives `"women"`.
-- [ ] **8. TrioBuilder switch.** Add the `gender: CatalogGender` prop, a `useState` seeded from it,
+- [x] **8. TrioBuilder switch.** Add the `gender: CatalogGender` prop, a `useState` seeded from it,
   and a `useEffect` re-sync on prop change. Above the family fieldset, add the gender
   `<fieldset>`/`<legend className="sr-only">` with two `CATALOG_GENDERS` radios (`name="gender"`,
   `checked={gender === value}`, `onChange` sets state). The labels are a two-segment pill: the
@@ -175,10 +188,10 @@ lets the shopper switch or clear it. This works with and without JavaScript.
   with the translated legend, `women` is checked by default, `gender="men"` checks men, the full
   trio's link contains `gender=men` (en: `/en/popular?gender=men&family=…`), and the radios sit
   inside the GET form so the no-JS submit sends them.
-- [ ] **9. Docs.** Update the popular-perfumes bullet in `app/.server/AGENTS.md`:
+- [x] **9. Docs.** Update the popular-perfumes bullet in `app/.server/AGENTS.md`:
   `listPopularProducts`/`countPopularProducts` take `genders`, and `getPopularPage` maps
   `gender` through `GENDER_SCOPE`.
-- [ ] **10. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the
+- [x] **10. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the
   manual checks below.
 
 ## Testing & verification
@@ -203,12 +216,12 @@ lets the shopper switch or clear it. This works with and without JavaScript.
 
 ## Acceptance criteria
 
-- [ ] The trio builder has a Women / Men switch, with Women selected by default — steps 2, 7, 8
-- [ ] "Show my trio" opens results with only perfumes of the chosen gender in the picked families, in both languages — steps 1, 3, 4, 5, 8
-- [ ] The choice survives the no-JavaScript reload, and the switch is keyboard and screen-reader accessible — steps 7, 8
-- [ ] The popular page shows the active gender and lets the visitor change it — steps 2, 6
-- [ ] An invalid `gender` value is ignored without an error — steps 3, 5, 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] The trio builder has a Women / Men switch, with Women selected by default — steps 2, 7, 8
+- [x] "Show my trio" opens results with only perfumes of the chosen gender in the picked families, in both languages — steps 1, 3, 4, 5, 8
+- [x] The choice survives the no-JavaScript reload, and the switch is keyboard and screen-reader accessible — steps 7, 8
+- [x] The popular page shows the active gender and lets the visitor change it — steps 2, 6
+- [x] An invalid `gender` value is ignored without an error — steps 3, 5, 7
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
 
 ## Out of scope
 

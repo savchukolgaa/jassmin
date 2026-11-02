@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/99
 Branch: `issue/99`
 Worktree: `.claude/worktrees/issue-99`
-Status: Planned
+Status: Planned (questions answered)
 
 ## Goal
 
@@ -35,7 +35,7 @@ bottle shape varies by product id. An uploaded Strapi photo always replaces the 
   values directly as `fill`. These are the design tokens, and `docs/design.md` documents them as a
   "Label card palette" table. They are not added to Tailwind's `@theme`, because v4 drops theme
   variables that no class uses, so `fill="var(--color-…)"` built at runtime would break. Hex values
-  also work in a rasterised OG image and in emails. **(unconfirmed, see Q2)**
+  also work in a rasterised OG image and in emails. (Q2)
 - **Families map to palette groups.** Similar families share a group, so 16 families need only 9
   palettes (`bg` / `accent` / `ink`):
   | Group | Families | Look |
@@ -85,32 +85,29 @@ bottle shape varies by product id. An uploaded Strapi photo always replaces the 
   (`title === null`) keep the neutral tile.
 - **Checkout and emails:** `OrderSummary` shows no images today, and the order emails
   (`app/.server/services/order-email.ts`) contain no `<img>`. Since there's nothing to replace,
-  both stay unchanged. **(unconfirmed, see Q3)**
-- **OG image:** split into a follow-up issue **(unconfirmed, see Q1)**. A correct PNG needs a
+  both stay unchanged. (Q3)
+- **OG image:** split into a follow-up issue (Q1). A correct PNG needs a
   rasteriser with real fonts: Playfair is loaded from `@fontsource`, and librsvg/`sharp` would fall
   back to system fonts and draw the label differently. `satori` + `@resvg/resvg-js` adds about
   10 MB of native/WASM dependencies and a caching strategy. That is too much for this UI issue. Until
   then, products without a photo keep sharing `/og-default.jpg`, as they do today.
 
-## Open questions
-
-- [ ] **Q1: Should the OG PNG route (`/og/products/<slug>.png`) be part of this issue or a
-  follow-up?** Why it matters: it adds a dependency (`satori` + `@resvg/resvg-js`, or `sharp`
-  with bundled fonts), a resource route and caching. Recommended default: a follow-up issue,
-  created with `/create-issue` during step 9 and linked from the PR, which satisfies the "or a
-  follow-up issue exists" criterion. Affects steps: 9.
-- [ ] **Q2: Should the palette hex values live in TS (documented in `docs/design.md`) instead of
-  as CSS `@theme` tokens?** Why it matters: CSS variables would make the colours themeable, but
-  they need `@theme static` and wouldn't work in emails or rasterised images. Recommended default:
-  TS constants plus the design.md table. Affects steps: 1, 7.
-- [ ] **Q3: Should account order thumbnails and the checkout summary get the card?** Why it
-  matters: today checkout shows no images, and the account shows a blank tile. Recommended default:
-  the minimal card (no text) in account thumbnails, and checkout unchanged. Affects steps: 6.
-- [ ] **Q4: Is the final palette approved?** The store owner may want to see the colours before
-  merging. Recommended default: implement the table above, then show a screenshot of
-  `/katalog/zhinochi` in the PR for sign-off. Affects steps: 1.
-
 ## Resolved questions
+
+Answered by the user on 2026-11-02:
+
+- **Q1: Should the OG PNG route (`/og/products/<slug>.png`) be part of this issue?** No. It
+  becomes a follow-up issue, created with `/create-issue` in step 9 and linked from the PR, which
+  satisfies the "or a follow-up issue exists" criterion. Until then, products without a photo keep
+  sharing `/og-default.jpg`.
+- **Q2: Where does the palette live?** As hex constants in `app/lib/label-art.ts`, documented in
+  `docs/design.md`. They are not added as CSS `@theme` tokens.
+- **Q3: Which other places get the card?** Account order thumbnails get the minimal card (no
+  text). The checkout summary stays as it is, with no images.
+- **Q4: Is the palette approved?** Build the table above, and put a screenshot of
+  `/katalog/zhinochi` in the PR so the store owner can approve it before merging (step 8).
+
+Answered from the codebase:
 
 - **Which family picks the colour?** The primary one: `ProductSummary.fragranceFamily`
   (= `products.fragrance_family`, kept equal to `fragrance_families[1]` by the CHECK
@@ -202,13 +199,13 @@ bottle shape varies by product id. An uploaded Strapi photo always replaces the 
   desktop width: long Cyrillic names wrap without overflowing, and same-family
   neighbours differ. Run Lighthouse (mobile) on the catalog and a product page: Performance ≥
   #96's results, CLS 0, and no new network requests in DevTools. Check the HTML size of the
-  catalog page (it should grow by no more than ~30 KB uncompressed for 24 cards).
-- [ ] **9. Share image follow-up.** Per Q1's default, file a follow-up issue with `/create-issue`
+  catalog page (it should grow by no more than ~30 KB uncompressed for 24 cards). Save a
+  screenshot of `/katalog/zhinochi` for the PR so the store owner can approve the palette (Q4).
+- [ ] **9. Share image follow-up.** File a follow-up issue with `/create-issue`
   ("Rasterise the label card as the product's og:image"). It covers a resource route
   `/og/products/<slug>.png` at 1200×630, `satori` + `@resvg/resvg-js` with embedded Playfair and
   Manrope, `Cache-Control: public, max-age=86400, immutable`-style caching keyed on `updated_at`,
-  and `product.tsx` `meta` falling back to it. Reference it in the PR. If Q1 is answered "in
-  scope", replace this step with that work and its tests.
+  and `product.tsx` `meta` falling back to it. Reference it in the PR.
 - [ ] **10. Checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ## Testing & verification
@@ -238,6 +235,6 @@ bottle shape varies by product id. An uploaded Strapi photo always replaces the 
 ## Out of scope
 
 - Product photography, descriptions and availability (separate issues).
-- The OG PNG route itself, unless Q1 says otherwise.
+- The OG PNG route itself (follow-up issue, Q1).
 - Images in checkout and order emails, which have none today.
 - A Unisex palette or catalog (there is no Unisex catalog).

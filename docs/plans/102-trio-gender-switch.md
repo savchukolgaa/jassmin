@@ -57,9 +57,10 @@ lets the shopper switch or clear it. This works with and without JavaScript.
   change uses only `transition-colors`, which is turned off by the global
   `prefers-reduced-motion: reduce` block (`docs/design.md` → motion).
 - **Popular page UI.** `PopularHero` shows the filter row when there are families **or** a gender:
-  - a gender chip "For women ×" that clears the gender, keeping the families (`aria-label`
-    "Remove filter: for women"),
-  - a "For men" switch link next to it (to the other gender, keeping the families),
+  - a gender chip "Women ×" that clears the gender, keeping the families (`aria-label`
+    "Remove filter: Women"),
+  - a plain "Men" switch link next to it (to the other gender, keeping the families). The labels
+    are simply "Women" / "Men", with no "Show …"/"For …" wording (user decision),
   - the family chips as today (removing one keeps the gender),
   - "Show all popular" clears both.
 
@@ -81,6 +82,9 @@ lets the shopper switch or clear it. This works with and without JavaScript.
   women/men-only (memory: no Unisex catalog; issue Context).
 - **Should the family chips depend on the gender?** No. Families stay selectable, and an empty
   result uses `PopularEmpty` (source: #102 Context).
+- **Should "Women" include unisex perfumes?** Yes. Keep the current `GENDER_SCOPE` behaviour
+  (source: user, 2026-11-02).
+- **Popular-page switch wording?** Simply "Women" / "Men" (source: user, 2026-11-02).
 - **Canonical/noindex of filtered URLs?** The filtered URLs are canonical to the unfiltered
   page, the same as for `family` (source: `app/routes/popular.tsx` `meta`, #85).
 
@@ -119,13 +123,13 @@ lets the shopper switch or clear it. This works with and without JavaScript.
   behaviour changes yet (`gender: null`). Update `popular.test.ts`. Run `pnpm typecheck` and
   `pnpm test app/lib`.
 - [ ] **2. Translations.** Add to both `uk.ts` (source of truth) and `en.ts`:
-  - `home.trio.gender.legend` ("Для кого тріо" / "Who's it for"), `.women` ("Жіноче" /
-    "For women"), `.men` ("Чоловіче" / "For men").
-  - `popular.gender.women` ("Для жінок" / "For women"), `popular.gender.men` ("Для чоловіків" /
-    "For men"), `popular.gender.remove` ("Прибрати фільтр: {gender}" /
-    "Remove filter: {gender}"), `popular.gender.switchTo` ("Показати {gender}" /
-    "Show {gender}"; the copy can be refined at implementation), and `popular.chosenFilters`
-    for the list's `aria-label` if the row now mixes gender and families.
+  - `home.trio.gender.legend` ("Для кого тріо" / "Who's it for"), `.women` ("Жінки" /
+    "Women"), `.men` ("Чоловіки" / "Men").
+  - `popular.gender.women` ("Жінки" / "Women"), `popular.gender.men` ("Чоловіки" / "Men"),
+    used for both the active chip and the switch link, plus `popular.gender.remove`
+    ("Прибрати фільтр: {gender}" / "Remove filter: {gender}") for the chip's `aria-label`, and
+    `popular.chosenFilters` for the list's `aria-label` if the row now mixes gender and families.
+    There is no separate "switch to" key: the link is just the other gender's label.
 
   Check that the `uk`/`en` shapes match with `pnpm typecheck`.
 - [ ] **3. Trio lib.** In `app/lib/trio.ts`, add `parseTrioGender(params)` (see Decisions). Change

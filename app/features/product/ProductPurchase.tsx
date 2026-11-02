@@ -33,7 +33,8 @@ export function ProductPurchase({ product }: { product: ProductDetail }) {
       </p>
       <StockStatus
         inStock={selected.inStock}
-        stockQuantity={selected.stockQuantity}
+        // A size that doesn't track stock (#98) never runs low, so it only says "In stock".
+        stockQuantity={selected.trackStock ? selected.stockQuantity : undefined}
         className="self-start"
       />
       <AddToCartForm

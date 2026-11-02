@@ -83,6 +83,26 @@ describe("ProductPurchase", () => {
     expect(html).toContain("Only 2 left");
   });
 
+  it("never says a size that doesn't track stock is running low or sold out (#98)", () => {
+    const poured = (volumeMl: number, price: string): ProductVariant => ({
+      ...variant(volumeMl, price, 2),
+      trackStock: false,
+    });
+    const html = purchase({
+      ...PRODUCT,
+      variants: [poured(5, "119.00"), poured(10, "240.00"), poured(100, "969.00")],
+    });
+
+    expect(options(html).map((o) => o.label)).toEqual([
+      "5 ml — ₴119",
+      "10 ml — ₴240",
+      "100 ml — ₴969",
+    ]);
+    expect(options(html).some((o) => o.tag.includes('disabled=""'))).toBe(false);
+    expect(html).toContain(">In stock<");
+    expect(html).not.toContain("Only");
+  });
+
   it("puts the volume select inside the add-to-cart form", () => {
     const html = purchase();
     const form = html.match(/<form[^>]*>.*<\/form>/)?.[0] ?? "";

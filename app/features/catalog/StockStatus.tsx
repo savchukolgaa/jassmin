@@ -4,7 +4,10 @@ import { LOW_STOCK_THRESHOLD } from "~/lib/products";
 
 export interface StockStatusProps {
   inStock: boolean;
-  /** When known, low stock shows "Залишилося лише N" / "Only N left". */
+  /**
+   * When known, low stock shows "Залишилося лише N" / "Only N left". Leave it out for a size that
+   * doesn't track stock (#98).
+   */
   stockQuantity?: number;
   className?: string;
 }

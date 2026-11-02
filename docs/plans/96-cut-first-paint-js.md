@@ -61,7 +61,7 @@ Schemas are only used in loaders and actions, and React Router strips those from
    the active dictionary** (`messages`), and `I18nProvider` builds the translator from it. It is
    inlined in the hydration data (one request less, no waterfall), and with the existing
    `shouldRevalidate` the root loader only re-runs when the language changes, so the dictionary is
-   sent once per language. **(unconfirmed, see Q1)**
+   sent once per language. (Confirmed by the user: root loader data, not a dynamic `import()`.)
    - `translator.ts` gets a core `createTranslatorFrom(locale, dictionary)` without dictionary
      imports. `createTranslator(locale)`, which imports both dictionaries, moves to a module that
      only server code, tests and the server render use (`app/lib/i18n/dictionaries.ts`).
@@ -97,20 +97,13 @@ Schemas are only used in loaders and actions, and React Router strips those from
    preloaded.
 7. Fonts, images, metadata, structured data and the sitemap stay untouched (#83–#88).
 
-## Open questions
-
-- [ ] **Q1: Dictionary delivery: root loader data, or a dynamic `import()` per locale?** Why it
-  matters: loader data adds ~10 KB gzip of inline JSON to every HTML document but needs no extra
-  request. A dynamic import is cacheable across pages, but adds a request that hydration has to
-  wait for. Recommended default: root loader data. Fall back to a per-locale chunk preloaded via
-  root `links` if Lighthouse prefers it. Affects steps: 4.
-- [ ] **Q2: If the target isn't reached after steps 2–6, is a lower score acceptable, or should we
-  look at bigger changes?** Why it matters: `entry.client` + `jsx-runtime` (~109 KB gzip, React +
-  React Router) can't be cut without architecture changes such as partial hydration or dropping
-  hydration on static pages. Recommended default: record the result honestly in the PR and open a
-  follow-up issue, without deeper architecture changes here. Affects steps: 7.
-
 ## Resolved questions
+
+- **Q1: Dictionary delivery: root loader data, or a dynamic `import()` per locale?** Root loader
+  data (decided by the user). No per-locale chunk fallback.
+- **Q2: What if ≥ 90 isn't reached after steps 2–6?** Record the measured result in the PR and
+  open a follow-up issue for deeper changes (e.g. the ~109 KB gzip React + React Router runtime,
+  partial hydration). No architecture changes in this issue (decided by the user).
 
 - **Is the "consent ~25 KB" chunk the cookie banner?** No. It is zod, shared by every route that
   imports a schema-bearing `lib` module (source: `build/client/assets/schemas-*.js` contains
@@ -182,7 +175,8 @@ Schemas are only used in loaders and actions, and React Router strips those from
 - [ ] **7. Final measurement and docs.** Run the full measurement matrix again (5 pages × 3 runs)
   and write the before/after table for the PR. Update `AGENTS.md` (i18n: provider gets `messages`,
   server uses `createTranslator`; code rules: zod schemas live in `*.schema.ts` and are imported
-  only from loaders/actions/server). If ≥ 90 isn't reached, see Q2.
+  only from loaders/actions/server). If ≥ 90 isn't reached, record the result in the PR and open a
+  follow-up issue (`/create-issue`) describing the remaining bottleneck and the measurements.
 - [ ] **8. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and do the
   no-JS manual checks below.
 
@@ -218,5 +212,5 @@ Schemas are only used in loaders and actions, and React Router strips those from
 ## Out of scope
 
 - Images, fonts, metadata, structured data and the sitemap (#83–#88).
-- Replacing React/React Router, partial hydration or turning off hydration on static pages (see Q2).
+- Replacing React/React Router, partial hydration or turning off hydration on static pages (follow-up issue if the target isn't met).
 - Server-side performance (TTFB, DB query tuning) beyond what measurement reveals as blocking.

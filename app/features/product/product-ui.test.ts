@@ -35,6 +35,7 @@ const PRODUCT: ProductDetail = {
   packSize: 1,
   image: null,
   description: null,
+  descriptionLocale: "uk",
   fragranceFamilies: ["шипрові", "квіткові"],
   notes: ["апельсин", "троянда", "пачулі"],
   storeCode: "3-D",

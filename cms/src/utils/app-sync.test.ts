@@ -24,6 +24,17 @@ describe("describeAppSyncError", () => {
     expect(message).toContain("variants.0.volumeMl, slug");
     expect(message).toContain("не у вигляді UUID");
     expect(message).toMatch(/\[invalid-input\]$/);
+    expect(message).not.toContain("Опис");
+  });
+
+  it("explains the description limit when a description is refused (#100)", () => {
+    const message = describeAppSyncError(422, {
+      error: "invalid-input",
+      issues: [{ path: "descriptionEn", message: "Too big" }],
+    });
+
+    expect(message).toContain("descriptionEn");
+    expect(message).toContain("Опис — до 5000 символів.");
   });
 
   it("explains a secret mismatch and an unexpected status", () => {

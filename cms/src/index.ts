@@ -208,9 +208,35 @@ const IMAGE_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string, 
   },
 ];
 
-/** Labels and describes the shared, per-language and alt image fields in the edit views. */
-async function describeImageFields(strapi: Core.Strapi): Promise<void> {
-  for (const { kind, uid, fields } of IMAGE_FIELD_HINTS) {
+/**
+ * Products aren't localized (#40), so each language of the description has its own field (#100).
+ * These hints tell staff which is which.
+ */
+const PRODUCT_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string, FieldHint> }[] = [
+  {
+    kind: "content-types",
+    uid: "api::product.product",
+    fields: {
+      description: {
+        label: "Опис (українською)",
+        description:
+          "Звичайний текст до 5000 символів; порожній рядок починає новий абзац. Показуємо на українській сторінці товару.",
+      },
+      descriptionEn: {
+        label: "Опис (англійською)",
+        description:
+          "Звичайний текст до 5000 символів; порожній рядок починає новий абзац. Показуємо на англійській сторінці; порожній — показуємо український.",
+      },
+    },
+  },
+];
+
+/**
+ * Labels and describes the shared, per-language and alt image fields and the product
+ * descriptions in the edit views.
+ */
+async function describeFields(strapi: Core.Strapi): Promise<void> {
+  for (const { kind, uid, fields } of [...IMAGE_FIELD_HINTS, ...PRODUCT_FIELD_HINTS]) {
     try {
       await updateEditMetadata(strapi, kind, uid, (field, edit) => {
         const hint = fields[field];
@@ -222,7 +248,7 @@ async function describeImageFields(strapi: Core.Strapi): Promise<void> {
         return true;
       });
     } catch (error) {
-      strapi.log.warn(`Could not describe the image fields of ${uid}: ${String(error)}`);
+      strapi.log.warn(`Could not describe the fields of ${uid}: ${String(error)}`);
     }
   }
 }
@@ -237,6 +263,6 @@ export default {
     await ensureLocales(strapi);
     await warnAboutPublicAccess(strapi);
     await lockOrderFields(strapi);
-    await describeImageFields(strapi);
+    await describeFields(strapi);
   },
 };

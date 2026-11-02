@@ -3,6 +3,7 @@ import { DEFAULT_CATALOG_SORT } from "~/lib/catalog";
 import { PERFUME_VOLUMES_ML } from "~/lib/enums";
 import { type CatalogEntry, catalogPublicId } from "./catalog/parse";
 import { CATALOG_PRODUCTS } from "./catalog-data";
+import { CATALOG_DESCRIPTIONS } from "./catalog-descriptions";
 import { CATALOG_PRICES } from "./catalog-prices";
 import { hasDatabase, type TestDatabase } from "./test-utils";
 
@@ -87,6 +88,7 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
     expect(await importCatalog(testDb.db, SMALL_LIST, TEST_PRICES)).toEqual({
       inserted: 3,
       variantsInserted: 6,
+      descriptionsFilled: 0,
       queued: 3,
     });
 
@@ -164,6 +166,7 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
     expect(await importCatalog(testDb.db, SMALL_LIST, TEST_PRICES)).toEqual({
       inserted: 0,
       variantsInserted: 0,
+      descriptionsFilled: 0,
       queued: 0,
     });
 
@@ -180,14 +183,102 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
     expect(await testDb.db.$count(cmsOutbox, isNull(cmsOutbox.syncedAt))).toBe(0);
   });
 
+  it("adds new perfumes with both descriptions (#100)", async () => {
+    const { importCatalog } = await import("./import-catalog");
+    const fresh = entry("women", "99-T", "Test Described");
+
+    expect(
+      await importCatalog(testDb.db, [fresh], TEST_PRICES, {
+        [fresh.publicId]: { uk: "Опис українською.", en: "An English description." },
+      }),
+    ).toMatchObject({ inserted: 1, descriptionsFilled: 0, queued: 1 });
+    expect(await stored(fresh.publicId)).toMatchObject({
+      description: "Опис українською.",
+      descriptionEn: "An English description.",
+    });
+  });
+
+  it("fills only empty descriptions, one language at a time, and never staff's text (#100)", async () => {
+    const { importCatalog } = await import("./import-catalog");
+    const { cmsOutbox, products } = await import("./schema");
+    const { eq, isNull } = await import("drizzle-orm");
+    const descriptions = Object.fromEntries(
+      SMALL_LIST.map((e) => [e.publicId, { uk: `Опис ${e.title}.`, en: `About ${e.title}.` }]),
+    );
+    const [lift, lolita, baccarat] = await Promise.all(
+      [LIFT, LOLITA, BACCARAT].map((e) => stored(e.publicId)),
+    );
+    if (!lift || !lolita || !baccarat) throw new Error("missing product");
+
+    // Staff wrote Lift's Ukrainian only, left Lolita's English blank, and wrote both for Baccarat.
+    const staffTime = new Date("2026-01-02T03:04:05Z");
+    await testDb.db
+      .update(products)
+      .set({ description: "  Текст персоналу.  ", descriptionEn: null })
+      .where(eq(products.id, lift.id));
+    await testDb.db
+      .update(products)
+      .set({ description: null, descriptionEn: "   " })
+      .where(eq(products.id, lolita.id));
+    await testDb.db
+      .update(products)
+      .set({ description: "Свій опис.", descriptionEn: "Our own.", updatedAt: staffTime })
+      .where(eq(products.id, baccarat.id));
+    await testDb.db.update(cmsOutbox).set({ syncedAt: new Date() });
+
+    expect(await importCatalog(testDb.db, SMALL_LIST, TEST_PRICES, descriptions)).toEqual({
+      inserted: 0,
+      variantsInserted: 0,
+      descriptionsFilled: 2,
+      queued: 2,
+    });
+
+    expect(await stored(LIFT.publicId)).toMatchObject({
+      description: "  Текст персоналу.  ",
+      descriptionEn: "About Test Lift.",
+    });
+    expect(await stored(LOLITA.publicId)).toMatchObject({
+      description: "Опис Test Lolita.",
+      descriptionEn: "About Test Lolita.",
+    });
+    expect(await stored(BACCARAT.publicId)).toMatchObject({
+      description: "Свій опис.",
+      descriptionEn: "Our own.",
+      updatedAt: staffTime,
+    });
+    expect((await stored(LIFT.publicId)).updatedAt.getTime()).toBeGreaterThan(
+      lift.updatedAt.getTime(),
+    );
+    const due = await testDb.db
+      .select({ entityId: cmsOutbox.entityId })
+      .from(cmsOutbox)
+      .where(isNull(cmsOutbox.syncedAt));
+    expect(due.map((row) => row.entityId).sort()).toEqual([lift.id, lolita.id].sort());
+
+    await testDb.db.update(cmsOutbox).set({ syncedAt: new Date() });
+    expect(await importCatalog(testDb.db, SMALL_LIST, TEST_PRICES, descriptions)).toEqual({
+      inserted: 0,
+      variantsInserted: 0,
+      descriptionsFilled: 0,
+      queued: 0,
+    });
+    expect(await testDb.db.$count(cmsOutbox, isNull(cmsOutbox.syncedAt))).toBe(0);
+  });
+
   it("imports the owner's whole range at the owner's prices", async () => {
     const { importCatalog } = await import("./import-catalog");
     const count = CATALOG_PRODUCTS.length;
 
-    const result = await importCatalog(testDb.db, CATALOG_PRODUCTS, CATALOG_PRICES);
+    const result = await importCatalog(
+      testDb.db,
+      CATALOG_PRODUCTS,
+      CATALOG_PRICES,
+      CATALOG_DESCRIPTIONS,
+    );
     expect(result).toEqual({
       inserted: count,
       variantsInserted: count * PERFUME_VOLUMES_ML.length,
+      descriptionsFilled: 0,
       queued: count,
     });
 
@@ -202,6 +293,8 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
         fragranceFamilies: entry.fragranceFamilies,
         notes: entry.notes,
         popularRank: entry.popularRank,
+        description: CATALOG_DESCRIPTIONS[entry.publicId]?.uk,
+        descriptionEn: CATALOG_DESCRIPTIONS[entry.publicId]?.en,
       });
       expect(row.sizes).toEqual([
         [5, "119.00", 0],
@@ -212,9 +305,12 @@ describe.skipIf(!hasDatabase)("importCatalog", () => {
       ]);
     }
 
-    expect(await importCatalog(testDb.db, CATALOG_PRODUCTS, CATALOG_PRICES)).toEqual({
+    expect(
+      await importCatalog(testDb.db, CATALOG_PRODUCTS, CATALOG_PRICES, CATALOG_DESCRIPTIONS),
+    ).toEqual({
       inserted: 0,
       variantsInserted: 0,
+      descriptionsFilled: 0,
       queued: 0,
     });
   });

@@ -13,8 +13,8 @@ import { shouldRevalidateView } from "~/lib/analytics";
 import { productBreadcrumbs } from "~/lib/breadcrumbs";
 import type { CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
-import { metaTranslator, useT } from "~/lib/i18n";
-import { formatVolume, productHref } from "~/lib/products";
+import { metaTranslator, useContentLang, useT } from "~/lib/i18n";
+import { descriptionParagraphs, formatVolume, productHref } from "~/lib/products";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, priceAmount, seoMeta } from "~/lib/seo";
 import { breadcrumbListLd, productLd } from "~/lib/structured-data";
@@ -85,14 +85,16 @@ export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
 }
 
 export async function loader({ params, request, context }: Route.LoaderArgs) {
-  const found = await resolveProductHandle(params.handle);
+  const locale = await getLocale(request);
+  // The description comes in the page's language, or in Ukrainian while it has no English (#100).
+  const found = await resolveProductHandle(params.handle, locale);
   if (!found) {
     throw data(null, { status: 404 });
   }
   if (found.kind === "redirect") {
     // An old UUID link or a renamed slug (#83): permanently to the current URL, query kept.
     const { search } = new URL(request.url);
-    const target = productHref(await getLocale(request), { id: found.publicId, slug: found.slug });
+    const target = productHref(locale, { id: found.publicId, slug: found.slug });
     throw redirect(`${target}${search}`, 301);
   }
   const { product, available } = found;
@@ -115,6 +117,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const { product, available, similar } = loaderData;
   const catalog = catalogOf(product.gender);
   const breadcrumbs = productBreadcrumbs(translator, catalog, product);
+  const descriptionLang = useContentLang(product.descriptionLocale);
   const productData = productLd({
     origin: siteUrl,
     product,
@@ -155,14 +158,19 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           )}
           <ProductNotes notes={product.notes} />
           {product.description && (
-            <section aria-labelledby="description-heading" className="mt-2">
+            <section aria-labelledby="description-heading" className="mt-2" lang={descriptionLang}>
               <h2
                 id="description-heading"
                 className="text-xl font-bold tracking-[-0.01em] text-ink"
               >
                 {t("product.description")}
               </h2>
-              <p className="mt-2 leading-relaxed text-body">{product.description}</p>
+              {descriptionParagraphs(product.description).map((paragraph, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static text, never reordered
+                <p key={index} className="mt-2 leading-relaxed text-body">
+                  {paragraph}
+                </p>
+              ))}
             </section>
           )}
         </div>

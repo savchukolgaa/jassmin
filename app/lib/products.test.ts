@@ -4,12 +4,52 @@ import { formatPrice } from "./money";
 import {
   cardPrice,
   defaultVariant,
+  descriptionParagraphs,
   formatVariantOption,
   formatVolume,
+  pickDescription,
   productHref,
 } from "./products";
 
 const en = createTranslator("en");
+
+describe("pickDescription (#100)", () => {
+  const both = { description: "Квітковий аромат.", descriptionEn: "A floral scent." };
+
+  it("picks the page's language", () => {
+    expect(pickDescription(both, "uk")).toEqual({ text: "Квітковий аромат.", locale: "uk" });
+    expect(pickDescription(both, "en")).toEqual({ text: "A floral scent.", locale: "en" });
+  });
+
+  it("falls back to the other language when one is missing or blank", () => {
+    expect(pickDescription({ ...both, descriptionEn: null }, "en")).toEqual({
+      text: "Квітковий аромат.",
+      locale: "uk",
+    });
+    expect(pickDescription({ ...both, descriptionEn: "  " }, "en")?.locale).toBe("uk");
+    expect(pickDescription({ ...both, description: "" }, "uk")).toEqual({
+      text: "A floral scent.",
+      locale: "en",
+    });
+  });
+
+  it("trims the text, and is null without any", () => {
+    expect(pickDescription({ description: " Опис. ", descriptionEn: null }, "uk")?.text).toBe(
+      "Опис.",
+    );
+    expect(pickDescription({ description: null, descriptionEn: " " }, "en")).toBeNull();
+  });
+});
+
+describe("descriptionParagraphs (#100)", () => {
+  it("splits on blank lines and drops empty paragraphs", () => {
+    expect(descriptionParagraphs("Один.")).toEqual(["Один."]);
+    expect(descriptionParagraphs("Один.\nТой самий.\n \n\nДва.\n\n")).toEqual([
+      "Один.\nТой самий.",
+      "Два.",
+    ]);
+  });
+});
 
 describe("productHref", () => {
   const id = "01a1652b-6e25-7c03-ae47-25b57131fb06";

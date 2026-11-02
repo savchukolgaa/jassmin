@@ -336,8 +336,10 @@ export async function listOrderLinesByOrderIds(
     .select({
       id: orderItems.id,
       orderId: orderItems.orderId,
+      productId: products.publicId,
       title: products.title,
       brand: products.brand,
+      fragranceFamily: products.fragranceFamily,
       imageUrl: products.imageUrl,
       volumeMl: orderItems.volumeMl,
       packSize: products.packSize,

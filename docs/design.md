@@ -97,6 +97,46 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
   dropdown and mobile menu are white panels in the same style. It uses tokens only, so a palette
   change in `app/app.css` recolours it. **The footer stays deep pink.**
 
+## Label card palette
+
+A product without a photo gets a generated label card instead (#99): an inline SVG
+(`app/features/catalog/ProductLabelArt.tsx`) in the 4:5 `rounded-card` frame. It shows a bottle and
+cap, the brand in small caps (Manrope 800), the name in Playfair Display and the "jassmin."
+wordmark. **An uploaded photo always wins**: the card only stands in where `products.image_url` is
+empty.
+
+The colours come from the product's **primary** fragrance family (`products.fragrance_family`).
+Similar families share a palette. The hex values live in `LABEL_PALETTES` / `FAMILY_PALETTE` in
+`app/lib/label-art.ts`, not in `@theme`, because the SVG uses them as `fill` and a later rasterised
+share image needs them too. A new entry in `FRAGRANCE_FAMILIES` must get a palette in
+`FAMILY_PALETTE` (`pnpm typecheck` fails otherwise). A missing or pre-#65 family is `neutral`.
+
+| Palette | Families | `bg` | `accent` (bottle) | `cap` | `panel` (label) | `ink` on `panel` | `mark` on `bg` |
+|---|---|---|---|---|---|---|---|
+| `floral` | квіткові, альдегідні | `#FFE3E8` | `#E86A82` | `#A8233D` | `#FFF8F9` | `#7A1A2E` 9.95:1 | `#A8233D` 5.85:1 |
+| `fruity` | фруктові | `#FFE6D6` | `#F08A5D` | `#B54A1F` | `#FFF9F4` | `#6E2A10` 10.05:1 | `#8F3714` 6.44:1 |
+| `oriental` | східні, пряні | `#4A1F3D` | `#8E3B6E` | `#D9A84E` | `#FBF1F6` | `#3D1632` 13.99:1 | `#F4DDE9` 10.53:1 |
+| `gourmand` | гурманські, ванільні | `#F6E3CC` | `#C98B4E` | `#7A4A22` | `#FFF9F1` | `#5A3415` 10.36:1 | `#6E431E` 6.75:1 |
+| `woody` | деревні, шипрові | `#5B4030` | `#9A6B4B` | `#2E1F16` | `#FAF3EC` | `#3E2A1E` 12.28:1 | `#F1E3D6` 7.52:1 |
+| `fresh` | свіжі, водяні | `#DCEEF8` | `#6FB3D9` | `#2D6F96` | `#F7FCFF` | `#17445E` 10.04:1 | `#1F5A7A` 6.29:1 |
+| `green` | зелені, цитрусові | `#E1F2DC` | `#7DBF6A` | `#3E7A2E` | `#F9FFF6` | `#23471A` 10.40:1 | `#2F6123` 6.28:1 |
+| `aromatic` | ароматичні, фужерні | `#DCEDE8` | `#5E9E8C` | `#2F6457` | `#F6FCFA` | `#1D4239` 10.70:1 | `#2A5A4E` 6.49:1 |
+| `musky` | мускусні | `#ECE4EE` | `#A893AE` | `#5E4B66` | `#FCF9FD` | `#3F3146` 11.56:1 | `#5E4B66` 6.32:1 |
+| `neutral` | none, or an unknown value | `#F7F3F4` (`card`) | `#D9CDD1` | `#5F5558` (`muted`) | `#FFFFFF` | `#1F1A1C` (`ink`) 17.17:1 | `#5F5558` 6.52:1 |
+
+- All text sits on `panel` (brand, name) or `bg` (wordmark) and passes AA for normal text;
+  `app/lib/label-art.test.ts` checks every palette. `accent` and `cap` are decorative and never sit
+  behind text.
+- **Variation:** the 32-bit FNV-1a hash of the product's `public_id` picks one of 4 bottles (tall,
+  rounded flask, faceted, round-shouldered) and one of 3 caps, so neighbours from the same family
+  still differ. It's deterministic, so the server and client render the same markup.
+- **Text fitting:** `layoutLabelText` wraps the name on spaces into at most 3 lines, at the largest
+  of 30/26/22/19 (viewBox units) that fits by character count. It breaks an over-long word and adds
+  "…" if the name still doesn't fit.
+- **Thumbnails** (the cart, account orders) use `detail="minimal"`: the bottle without text. The
+  card is decorative (`aria-hidden`) where the name is next to it. On the product page, the frame is
+  `role="img"` labelled "<brand> <name>", the same as a photo.
+
 ## Typeface and scale
 
 Two variable families, self-hosted from the `@fontsource-variable/manrope` and

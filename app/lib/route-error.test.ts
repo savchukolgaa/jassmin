@@ -18,6 +18,7 @@ describe("describeRouteError", () => {
     expect(describeRouteError(routeError(404))).toEqual({
       message: "404",
       details: "The requested page could not be found.",
+      notFound: true,
     });
   });
 
@@ -54,6 +55,7 @@ describe("describeRouteError", () => {
     expect(describe_(routeError(404), uk.t)).toEqual({
       message: "404",
       details: "Сторінку не знайдено.",
+      notFound: true,
     });
     expect(describe_(new Error("boom"), uk.t, false)).toEqual({
       message: "Ой!",

@@ -77,7 +77,7 @@ export function OffersHero({ hero }: { hero: OfferView | null }) {
             </div>
           )}
         </div>
-        <HeroImage image={hero.image} />
+        <HeroImage image={hero.image} title={hero.title} />
       </div>
     </section>
   );
@@ -86,7 +86,8 @@ export function OffersHero({ hero }: { hero: OfferView | null }) {
 const imageFrame =
   "aspect-[4/5] w-full max-w-md justify-self-center rounded-t-full bg-primary-dark animate-fade-up anim-delay-3";
 
-function HeroImage({ image }: { image: OfferView["image"] }) {
+function HeroImage({ image, title }: { image: OfferView["image"]; title: string }) {
+  const { t } = useT();
   if (!image) {
     return <div aria-hidden="true" className={imageFrame} />;
   }
@@ -97,7 +98,7 @@ function HeroImage({ image }: { image: OfferView["image"] }) {
       sizes="(min-width: 768px) 448px, 100vw"
       width={image.width ?? undefined}
       height={image.height ?? undefined}
-      alt={image.alt}
+      alt={image.alt || t("offers.imageAlt", { title })}
       fetchPriority="high"
       decoding="async"
       className={`${imageFrame} object-cover shadow-xl`}

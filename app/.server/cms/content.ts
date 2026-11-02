@@ -10,6 +10,7 @@ import type {
   SiteSettings,
 } from "~/lib/cms";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "~/lib/i18n";
+import { buildSrcSet, type ImageCandidate } from "~/lib/images";
 import { getEnv } from "../env";
 import { cmsFetch, type StrapiQuery } from "./client";
 import { isCmsError } from "./errors";
@@ -57,20 +58,14 @@ const BLOG_COVER_POPULATE = ["coverImage", "coverImageLocalized"];
  * Returns `null` when no candidate has a known width.
  */
 export function toSrcSet(media: StrapiMedia, baseUrl: string): string | null {
-  const candidates = new Map<number, string>();
-  for (const format of Object.values(media.formats ?? {})) {
-    candidates.set(format.width, format.url);
-  }
+  const candidates: ImageCandidate[] = Object.values(media.formats ?? {}).map((format) => ({
+    url: new URL(format.url, baseUrl).toString(),
+    width: format.width,
+  }));
   if (media.width) {
-    candidates.set(media.width, media.url);
+    candidates.push({ url: new URL(media.url, baseUrl).toString(), width: media.width });
   }
-  if (candidates.size === 0) {
-    return null;
-  }
-  return [...candidates]
-    .sort(([a], [b]) => a - b)
-    .map(([width, url]) => `${new URL(url, baseUrl).toString()} ${width}w`)
-    .join(", ");
+  return buildSrcSet(candidates);
 }
 
 /** Resolves Strapi's relative `/uploads/…` URLs against the CMS origin. */

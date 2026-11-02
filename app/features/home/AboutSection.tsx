@@ -39,6 +39,7 @@ const photoFrame =
   "h-96 w-full min-w-0 flex-[1_1_28rem] rounded-[1.75rem_13.75rem_1.75rem_1.75rem] bg-primary-light object-cover md:h-136";
 
 function StorePhoto({ image }: { image: HomePageView["about"]["image"] }) {
+  const { t } = useT();
   if (!image) {
     return <div aria-hidden="true" className={photoFrame} />;
   }
@@ -49,7 +50,7 @@ function StorePhoto({ image }: { image: HomePageView["about"]["image"] }) {
       sizes="(min-width: 768px) 640px, 100vw"
       width={image.width ?? undefined}
       height={image.height ?? undefined}
-      alt={image.alt}
+      alt={image.alt || t("home.aboutImageAlt")}
       loading="lazy"
       decoding="async"
       className={photoFrame}

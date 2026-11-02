@@ -15,7 +15,7 @@ function product(n: number, overrides: Partial<ProductSummary> = {}): ProductSum
     brand: "House",
     gender: "women",
     packSize: 1,
-    imageUrl: null,
+    image: null,
     variants: [10, 30, 50].map((volumeMl, i) => ({
       id: `01a1652b-6e25-7c44-8d5b-${String(n + 500 + i * 100).padStart(12, "0")}`,
       volumeMl,

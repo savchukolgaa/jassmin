@@ -66,17 +66,49 @@ export function isStaffEdit(strapi: Core.Strapi): boolean {
   return typeof name === "string" && name.startsWith("admin");
 }
 
-/** The image's URL (`/uploads/…`) from a media id, a media object or nothing. */
-async function imageUrl(strapi: Core.Strapi, image: unknown): Promise<string | null> {
-  if (isRecord(image) && typeof image.url === "string") {
-    return image.url;
-  }
-  const id = typeof image === "number" ? image : isRecord(image) ? image.id : undefined;
-  if (typeof id !== "number") {
+/** The image as the app stores it (#88): its URL (`/uploads/…`), size and resized formats. */
+export interface ImageData {
+  url: string;
+  width: number | null;
+  height: number | null;
+  formats: { url: string; width: number; height: number }[];
+}
+
+const positiveInt = (value: unknown): number | null =>
+  typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+
+/** An upload file's data, or `null` when it has no URL. */
+export function toImageData(file: unknown): ImageData | null {
+  if (!isRecord(file) || typeof file.url !== "string") {
     return null;
   }
+  const formats = isRecord(file.formats) ? Object.values(file.formats) : [];
+  return {
+    url: file.url,
+    width: positiveInt(file.width),
+    height: positiveInt(file.height),
+    formats: formats.flatMap((format) => {
+      if (!isRecord(format) || typeof format.url !== "string") {
+        return [];
+      }
+      const width = positiveInt(format.width);
+      const height = positiveInt(format.height);
+      return width && height ? [{ url: format.url, width, height }] : [];
+    }),
+  };
+}
+
+/**
+ * The image from a media id or a media object, read from the upload table when there is an id
+ * (the admin's media object may lack the formats), or nothing.
+ */
+async function imageData(strapi: Core.Strapi, image: unknown): Promise<ImageData | null> {
+  const id = typeof image === "number" ? image : isRecord(image) ? image.id : undefined;
+  if (typeof id !== "number") {
+    return toImageData(image);
+  }
   const file: unknown = await strapi.db.query("plugin::upload.file").findOne({ where: { id } });
-  return isRecord(file) && typeof file.url === "string" ? file.url : null;
+  return toImageData(file) ?? toImageData(image);
 }
 
 /** The product as the app's `cmsProductChangeSchema` expects it (without `action`). */
@@ -87,6 +119,7 @@ export async function productPayload(strapi: Core.Strapi, merged: Data, stored: 
       toNumber(variant.stock),
     ]),
   );
+  const image = await imageData(strapi, merged.image);
   return {
     name: merged.name,
     slug: merged.slug,
@@ -101,7 +134,10 @@ export async function productPayload(strapi: Core.Strapi, merged: Data, stored: 
       merged.popularRank === undefined || merged.popularRank === null || merged.popularRank === ""
         ? null
         : toNumber(merged.popularRank),
-    imageUrl: await imageUrl(strapi, merged.image),
+    imageUrl: image?.url ?? null,
+    imageWidth: image?.width ?? null,
+    imageHeight: image?.height ?? null,
+    imageFormats: image?.formats ?? null,
     packSize:
       merged.packSize === undefined || merged.packSize === null ? 1 : toNumber(merged.packSize),
     active: merged.active !== false,

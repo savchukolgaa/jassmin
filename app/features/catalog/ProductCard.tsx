@@ -118,8 +118,9 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
 
   return (
     <article className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line">
+      {/* Hidden duplicate of the title link, so its photo needs no alt text (#88). */}
       <Link to={href} tabIndex={-1} aria-hidden="true">
-        <ProductImage imageUrl={product.imageUrl} title={product.title} brand={product.brand} />
+        <ProductImage image={product.image} brand={product.brand} alt="" layout="card" />
       </Link>
       <div className="flex flex-1 flex-col gap-1 px-2 pt-4">
         <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">
@@ -181,9 +182,10 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
       >
         <div data-zoom>
           <ProductImage
-            imageUrl={product.imageUrl}
-            title={product.title}
+            image={product.image}
             brand={product.brand}
+            alt=""
+            layout="compact"
             className="rounded-2xl"
           />
         </div>

@@ -8,11 +8,13 @@ import {
   exists,
   inArray,
   isNotNull,
+  ne,
   type SQL,
   sql,
 } from "drizzle-orm";
 import type { CatalogSort } from "~/lib/catalog";
 import type { Gender, OrderStatus } from "~/lib/enums";
+import type { ImageFormat } from "~/lib/images";
 import type { CardVariant } from "~/lib/products";
 import type { Db } from "../client";
 import { orderItems, orders, products, productVariants } from "../schema";
@@ -107,6 +109,9 @@ function summaryColumns(stats: VariantStats) {
     gender: products.gender,
     packSize: products.packSize,
     imageUrl: products.imageUrl,
+    imageWidth: products.imageWidth,
+    imageHeight: products.imageHeight,
+    imageFormats: products.imageFormats,
     fragranceFamily: products.fragranceFamily,
     minPrice: stats.minPrice,
     maxPrice: stats.maxPrice,
@@ -312,40 +317,102 @@ const detailColumns = {
   gender: products.gender,
   packSize: products.packSize,
   imageUrl: products.imageUrl,
+  imageWidth: products.imageWidth,
+  imageHeight: products.imageHeight,
+  imageFormats: products.imageFormats,
   description: products.description,
   fragranceFamilies: products.fragranceFamilies,
   notes: products.notes,
   storeCode: products.storeCode,
+  active: products.active,
 };
 
-/** A listed product by `public_id`. */
-export async function findProductByPublicId(db: Db, publicId: string) {
+export interface ProductLookupOptions {
+  /**
+   * Also find archived products (#88): their page stays, marked unavailable. Everything that
+   * sells (the cart, checkout) leaves this off.
+   */
+  includeArchived?: boolean;
+}
+
+const listedUnless = ({ includeArchived = false }: ProductLookupOptions) =>
+  includeArchived ? undefined : isListed;
+
+/** A listed product by `public_id`; an archived one too with `includeArchived`. */
+export async function findProductByPublicId(
+  db: Db,
+  publicId: string,
+  options: ProductLookupOptions = {},
+) {
   const [row] = await db
     .select(detailColumns)
     .from(products)
-    .where(and(isListed, eq(products.publicId, publicId)))
+    .where(and(listedUnless(options), eq(products.publicId, publicId)))
     .limit(1);
   return row;
 }
 
 /** A listed product by its current URL slug (#83); case-sensitive. */
-export async function findProductBySlug(db: Db, slug: string) {
+export async function findProductBySlug(db: Db, slug: string, options: ProductLookupOptions = {}) {
   const [row] = await db
     .select(detailColumns)
     .from(products)
-    .where(and(isListed, eq(products.slug, slug)))
+    .where(and(listedUnless(options), eq(products.slug, slug)))
     .limit(1);
   return row;
 }
 
 /** A listed product's `public_id` and current slug by serial id (#83). */
-export async function findListedProductSlug(db: Db, productId: number) {
+export async function findListedProductSlug(
+  db: Db,
+  productId: number,
+  options: ProductLookupOptions = {},
+) {
   const [row] = await db
     .select({ publicId: products.publicId, slug: products.slug })
     .from(products)
-    .where(and(isListed, eq(products.id, productId)))
+    .where(and(listedUnless(options), eq(products.id, productId)))
     .limit(1);
   return row;
+}
+
+export interface SimilarProductsQuery {
+  /** The product itself, left out. */
+  excludeId: number;
+  genders: readonly Gender[];
+  fragranceFamilies: readonly string[];
+  brand: string;
+  limit: number;
+}
+
+/**
+ * Listed products like an archived one (#88), from the same catalog: those sharing a fragrance
+ * family first, then the same brand, then staff's popular order and the bestsellers, so the list
+ * is full whenever the catalog has enough products.
+ */
+export function listSimilarProducts(
+  db: Db,
+  { excludeId, genders, fragranceFamilies, brand, limit }: SimilarProductsQuery,
+): Promise<ProductSummaryRow[]> {
+  const stats = variantStats(db);
+  const sold = soldUnits(db);
+  const sharesFamily = fragranceFamilies.length
+    ? sql`${arrayOverlaps(products.fragranceFamilies, [...fragranceFamilies])}`
+    : sql`false`;
+  return db
+    .select(summaryColumns(stats))
+    .from(products)
+    .innerJoin(stats, eq(stats.productId, products.id))
+    .leftJoin(sold, eq(sold.productId, products.id))
+    .where(and(isListed, ne(products.id, excludeId), inArray(products.gender, [...genders])))
+    .orderBy(
+      sql`${sharesFamily} desc`,
+      sql`${products.brand} = ${brand} desc`,
+      sql`${products.popularRank} is null`,
+      asc(products.popularRank),
+      ...bestsellerOrder(sold),
+    )
+    .limit(limit);
 }
 
 export type ProductDetailRow = NonNullable<Awaited<ReturnType<typeof findProductByPublicId>>>;
@@ -409,6 +476,10 @@ export interface ProductWrite {
   /** Position on `/popular` (#67); `null` when not on the list. */
   popularRank: number | null;
   imageUrl: string | null;
+  /** The image's size and Strapi's resized versions (#88); `null` when unknown. */
+  imageWidth: number | null;
+  imageHeight: number | null;
+  imageFormats: ImageFormat[] | null;
   packSize: number;
   active: boolean;
   /** @deprecated columns (#26), still NOT NULL: copied from the smallest size. */
@@ -545,4 +616,26 @@ export async function backfillProductSlugs(
         productIds ? inArray(products.id, [...productIds]) : undefined,
       ),
     );
+}
+
+/** A product's image columns as the Strapi sync stores them (#88). */
+export interface ProductImageWrite {
+  imageUrl: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  imageFormats: ImageFormat[] | null;
+}
+
+/** Overwrites the image of the product with this `public_id`; `false` when there is none. */
+export async function updateProductImage(
+  db: Executor,
+  publicId: string,
+  image: ProductImageWrite,
+): Promise<boolean> {
+  const rows = await db
+    .update(products)
+    .set(image)
+    .where(eq(products.publicId, publicId))
+    .returning({ id: products.id });
+  return rows.length > 0;
 }

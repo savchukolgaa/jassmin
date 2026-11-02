@@ -68,6 +68,25 @@ const notesSchema = z
   })
   .pipe(z.array(z.string()).max(MAX_PRODUCT_NOTES));
 
+/** Strapi makes up to four formats (thumbnail, small, medium, large); room for custom ones. */
+export const MAX_IMAGE_FORMATS = 8;
+
+/** Strapi's relative `/uploads/…` URL or an absolute `http(s)` one. */
+const imageUrlSchema = z
+  .string()
+  .trim()
+  .max(2000)
+  .refine(
+    (value) =>
+      (value.startsWith("/") && !value.startsWith("//")) ||
+      (URL.canParse(value) && /^https?:$/.test(new URL(value).protocol)),
+    "image-url",
+  );
+
+const pixels = z.number().int().min(1).max(100_000);
+
+const imagePixels = pixels.nullish().transform((value) => value ?? null);
+
 const productFields = {
   name: z.string().trim().min(1).max(255),
   slug: z
@@ -104,16 +123,17 @@ const productFields = {
     .nullish()
     .transform((value) => value ?? null),
   /** Strapi's relative `/uploads/…` URL or an absolute `http(s)` one; the route resolves it. */
-  imageUrl: z
-    .string()
-    .trim()
-    .max(2000)
-    .refine(
-      (value) =>
-        (value.startsWith("/") && !value.startsWith("//")) ||
-        (URL.canParse(value) && /^https?:$/.test(new URL(value).protocol)),
-      "image-url",
-    )
+  imageUrl: imageUrlSchema.nullish().transform((value) => value ?? null),
+  /** The original image's size (#88); `null` when Strapi doesn't know it. */
+  imageWidth: imagePixels,
+  imageHeight: imagePixels,
+  /**
+   * Strapi's resized versions of the image (#88), URLs like `imageUrl`. `null` when the sender
+   * doesn't send them (a Strapi from before #88).
+   */
+  imageFormats: z
+    .array(z.object({ url: imageUrlSchema, width: pixels, height: pixels }))
+    .max(MAX_IMAGE_FORMATS)
     .nullish()
     .transform((value) => value ?? null),
   packSize: z.number().int().min(1).default(1),

@@ -4,6 +4,8 @@ import type { TranslateFunction } from "./i18n";
 export interface RouteErrorDescription {
   message: string;
   details: string;
+  /** A 404: the page offers links to the rest of the shop (#88). */
+  notFound?: true;
   /** Only in development, for unexpected errors. */
   stack?: string;
 }
@@ -28,7 +30,7 @@ export function describeRouteError(
   if (isRouteErrorResponse(error)) {
     // `statusText` comes from our own code, not from users, so it isn't translated.
     return error.status === 404
-      ? { message: "404", details: t("errors.notFound") }
+      ? { message: "404", details: t("errors.notFound"), notFound: true }
       : { message: t("errors.status"), details: error.statusText || t("errors.unexpected") };
   }
   if (dev && error instanceof Error) {

@@ -1,3 +1,5 @@
+import manropeCyrillic from "@fontsource-variable/manrope/files/manrope-cyrillic-wght-normal.woff2?url";
+import playfairCyrillic from "@fontsource-variable/playfair-display/files/playfair-display-cyrillic-wght-normal.woff2?url";
 import {
   Links,
   Meta,
@@ -18,14 +20,20 @@ import { errorMeta } from "~/lib/seo";
 import type { Route } from "./+types/root";
 import "./app.css";
 
-export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Playfair+Display:wght@600..700&display=swap",
-  },
-];
+/**
+ * The font files above the fold in Ukrainian, the default language (#88): preloaded so text
+ * doesn't wait for the stylesheet to find them. The fonts themselves come from `app.css`.
+ */
+const PRELOADED_FONTS = [manropeCyrillic, playfairCyrillic];
+
+export const links: Route.LinksFunction = () =>
+  PRELOADED_FONTS.map((href) => ({
+    rel: "preload",
+    href,
+    as: "font",
+    type: "font/woff2",
+    crossOrigin: "anonymous",
+  }));
 
 // Sends visitors who chose English from Ukrainian pages to the English ones (#84).
 export const middleware: Route.MiddlewareFunction[] = [localeRedirectMiddleware];

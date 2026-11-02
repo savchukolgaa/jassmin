@@ -39,7 +39,7 @@ const line: CartLine = {
   slug: "coco-mademoiselle",
   title: "Coco Mademoiselle",
   brand: "Chanel",
-  imageUrl: null,
+  image: null,
   packSize: 1,
   volumeMl: 50,
   unitPrice: "6850.00",

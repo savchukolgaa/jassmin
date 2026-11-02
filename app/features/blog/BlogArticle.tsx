@@ -25,6 +25,7 @@ export function BackToBlogLink() {
 /** The `/blog/:slug` page body: title, date and author, cover and the sanitized article. */
 export function BlogArticle({ post }: { post: BlogPostView }) {
   const translator = useT();
+  const { t } = translator;
   const lang = useContentLang(post.locale);
 
   return (
@@ -51,6 +52,7 @@ export function BlogArticle({ post }: { post: BlogPostView }) {
         {post.coverImage && (
           <BlogCover
             image={post.coverImage}
+            alt={post.coverImage.alt || t("blog.coverAlt", { title: post.title })}
             sizes="(min-width: 768px) 768px, 100vw"
             eager
             className="mt-8 rounded-card-lg"

@@ -18,7 +18,7 @@ const PRODUCT: ProductSummary = {
   brand: "Chanel",
   gender: "women",
   packSize: 1,
-  imageUrl: null,
+  image: null,
   variants: [
     { id: "v5", volumeMl: 5, price: "990.00", inStock: true },
     { id: "v10", volumeMl: 10, price: "1350.00", inStock: false },
@@ -57,6 +57,14 @@ const radio = (name: RegExp) => screen.getByRole<HTMLInputElement>("radio", { na
 afterEach(cleanup);
 
 describe.each(["default", "compact"] as const)("ProductCard (%s) in the browser", (variant) => {
+  it("is one link named after the product, its photo a decorative duplicate (#88)", () => {
+    const { container } = renderCard(variant);
+
+    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual([PRODUCT.title]);
+    // Without a photo the placeholder is hidden with its link.
+    expect(container.querySelector('[role="img"]')).toBeNull();
+  });
+
   it("shows the default size's price once hydrated, without the skeleton", () => {
     const { container } = renderCard(variant);
 

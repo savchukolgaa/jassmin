@@ -119,6 +119,8 @@ export const uk = {
     title: "Ой!",
     status: "Помилка",
     notFound: "Сторінку не знайдено.",
+    /** The links on a 404 page (#88). */
+    notFoundLinks: "Куди перейти",
     forbidden: "У вас немає доступу до цієї сторінки.",
     unavailable: "Цей вміст тимчасово недоступний. Спробуйте ще раз за кілька хвилин.",
     unexpected: "Сталася неочікувана помилка.",
@@ -243,6 +245,8 @@ export const uk = {
   product: {
     metaDescription: "{brand} {title} — {price}.",
     metaFallback: "Купуйте в магазині парфумів Jassmin.",
+    /** The product photo's alt text (#88). */
+    imageAlt: "{brand} {title}",
     ml: "мл",
     fromPrice: "від {price}",
     quickAdd: "Додати {title} у кошик",
@@ -263,6 +267,13 @@ export const uk = {
     families: "Сімейства аромату",
     notes: "Ноти аромату",
     notFound: "Цей парфум не знайдено.",
+    /** An archived product's page (#88). */
+    archived: {
+      heading: "Цього парфуму більше немає в продажу",
+      text: "Його вже не можна замовити. Подивіться схожі аромати нижче або весь каталог.",
+      catalog: "Перейти до каталогу",
+    },
+    similar: "Схожі парфуми",
   },
   cart: {
     title: "Кошик",
@@ -524,7 +535,10 @@ export const uk = {
     defaultDescription:
       "Магазин парфумів Jassmin: жіночі та чоловічі аромати відомих брендів у розмірах від 5 мл.",
     about: "Про нас",
+    /** Alt text for the home photos when the editor left it blank in Strapi (#88). */
+    aboutImageAlt: "Вітрина магазину парфумів Jassmin",
     hero: {
+      imageAlt: "Флакони парфумів Jassmin",
       chip: "Жінкам · Чоловікам",
       badgeOnly: "лише",
       badgeFor: "за {count}",
@@ -577,7 +591,7 @@ export const uk = {
     },
     bestsellers: {
       title: "Бестселери",
-      viewAll: "Дивитися всі →",
+      viewAll: "Дивитися всі",
     },
     location: {
       eyebrow: "Розташування",
@@ -628,10 +642,14 @@ export const uk = {
     shopMen: "Чоловічі парфуми",
     back: "← Назад до блогу",
     notFound: "Статтю не знайдено",
+    /** A cover's alt text when the editor left it blank in Strapi (#88). */
+    coverAlt: "Обкладинка статті «{title}»",
     defaultDescription:
       "Статті про парфуми й путівники ароматами від Jassmin: як обрати, носити та зберігати парфуми.",
   },
   offers: {
+    /** An offer photo's alt text when the editor left it blank in Strapi (#88). */
+    imageAlt: "Пропозиція «{title}»",
     title: "Акції та пропозиції",
     metaTitle: "Акції та пропозиції",
     metaDescription:

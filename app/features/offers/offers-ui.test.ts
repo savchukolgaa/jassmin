@@ -22,7 +22,7 @@ const sauvage: ProductSummary = {
   brand: "Dior",
   gender: "men",
   packSize: 1,
-  imageUrl: null,
+  image: null,
   variants: [
     { id: "01a1652b-6e25-7c44-8d5b-000000000010", volumeMl: 10, price: "790.00", inStock: true },
     { id: "01a1652b-6e25-7c44-8d5b-000000000050", volumeMl: 50, price: "3290.00", inStock: true },
@@ -104,6 +104,22 @@ describe("OfferCard", () => {
     expect(html).toMatch(
       /<h4[^>]*><a[^>]*href="\/en\/perfumes\/sauvage-eau-de-toilette"[^>]*>Sauvage/,
     );
+  });
+
+  it("describes the offer photo with its title when Strapi's alt is blank (#88)", () => {
+    const image = {
+      url: "http://cms.test/uploads/o.jpg",
+      alt: "",
+      width: 1,
+      height: 1,
+      srcSet: null,
+    };
+    const html = render(createElement(OfferCard, { offer: offer({ image }) }), "en");
+
+    expect(html).toContain('alt="Offer: Тестерне тріо"');
+    expect(html).toContain('loading="lazy"');
+    const own = offer({ image: { ...image, alt: "Три тестери" } });
+    expect(render(createElement(OfferCard, { offer: own }))).toContain('alt="Три тестери"');
   });
 
   it("marks Ukrainian copy shown on the English page with lang=uk", () => {

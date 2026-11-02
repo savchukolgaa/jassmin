@@ -52,6 +52,7 @@ import {
   USER_ROLES,
 } from "~/lib/enums";
 import { LOCALES, type Locale } from "~/lib/i18n/locales";
+import type { ImageFormat } from "~/lib/images";
 
 export const genderType = pgEnum("gender_type", GENDERS);
 export const orderStatusType = pgEnum("order_status_type", ORDER_STATUSES);
@@ -120,6 +121,14 @@ export const products = pgTable(
     /** @deprecated Use `product_variants.stock_quantity` (#26). */
     stockQuantity: integer().notNull().default(0),
     imageUrl: text(),
+    /** The original image's size in pixels, synced from Strapi (#88); `null` when unknown. */
+    imageWidth: integer(),
+    imageHeight: integer(),
+    /**
+     * Strapi's resized versions of the image (#88), absolute URLs, for the `srcset`. `null` when
+     * unknown (a product not synced since #88); an empty array when Strapi made none.
+     */
+    imageFormats: jsonb().$type<ImageFormat[]>(),
     /** URL slug edited in Strapi (#40); `null` for products not yet synced from it. */
     slug: varchar({ length: 255 }).unique("products_slug_unique"),
     /**

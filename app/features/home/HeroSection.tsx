@@ -91,6 +91,7 @@ const imageFrame =
   "animate-rise block h-112 w-full rounded-t-full bg-primary-light object-cover md:h-152";
 
 function HeroImage({ image }: { image: HomePageView["hero"]["image"] }) {
+  const { t } = useT();
   if (!image) {
     return <div aria-hidden="true" className={imageFrame} />;
   }
@@ -101,7 +102,7 @@ function HeroImage({ image }: { image: HomePageView["hero"]["image"] }) {
       sizes="(min-width: 768px) 512px, 100vw"
       width={image.width ?? undefined}
       height={image.height ?? undefined}
-      alt={image.alt}
+      alt={image.alt || t("home.hero.imageAlt")}
       fetchPriority="high"
       decoding="async"
       className={imageFrame}

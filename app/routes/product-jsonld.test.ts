@@ -18,7 +18,7 @@ const product: ProductDetail = {
   brand: "Chanel",
   gender: "women",
   packSize: 1,
-  imageUrl: "/images/coco.jpg",
+  image: { url: "/images/coco.jpg", srcSet: null, width: null, height: null },
   description: "</script><script>alert(1)</script>",
   fragranceFamilies: [],
   notes: [],
@@ -30,8 +30,10 @@ const product: ProductDetail = {
 };
 
 /** Renders the product page under a root route whose loader data holds the site URL (#85). */
-function render(detail: ProductDetail) {
-  const Page = Product as unknown as ComponentType<{ loaderData: { product: ProductDetail } }>;
+function render(detail: ProductDetail, available = true) {
+  const Page = Product as unknown as ComponentType<{
+    loaderData: { product: ProductDetail; available: boolean; similar: [] };
+  }>;
   const router = createMemoryRouter(
     [
       {
@@ -40,7 +42,9 @@ function render(detail: ProductDetail) {
         children: [
           {
             path: "products/:handle",
-            element: createElement(Page, { loaderData: { product: detail } }),
+            element: createElement(Page, {
+              loaderData: { product: detail, available, similar: [] },
+            }),
           },
         ],
       },
@@ -90,5 +94,32 @@ describe("product page JSON-LD (#86)", () => {
     const types = jsonLd(render({ ...product, variants: [] })).map((data) => data["@type"]);
 
     expect(types).toEqual(["BreadcrumbList"]);
+  });
+
+  it("leaves out the Product of an archived perfume, which isn't sold anymore (#88)", () => {
+    const types = jsonLd(render(product, false)).map((data) => data["@type"]);
+    expect(types).not.toContain("Product");
+    expect(types).toContain("BreadcrumbList");
+  });
+});
+
+describe("product page headings (#88)", () => {
+  const headings = (html: string) => [...html.matchAll(/<h([1-6])/g)].map((m) => Number(m[1]));
+
+  it("has exactly one h1, the perfume's name, and no skipped levels", () => {
+    const html = render(product);
+    const levels = headings(html);
+
+    expect(levels.filter((level) => level === 1)).toHaveLength(1);
+    expect(html).toMatch(/<h1[^>]*>Coco Mademoiselle<\/h1>/);
+    for (const [i, level] of levels.entries()) {
+      expect(level - (levels[i - 1] ?? 0)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("gives the main photo a translated alt and loads it first", () => {
+    const img = render(product).match(/<img[^>]*>/)?.[0] ?? "";
+    expect(img).toContain('alt="Chanel Coco Mademoiselle"');
+    expect(img).toContain('fetchPriority="high"');
   });
 });

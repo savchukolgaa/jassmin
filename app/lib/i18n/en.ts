@@ -118,6 +118,7 @@ export const en = {
     title: "Oops!",
     status: "Error",
     notFound: "The requested page could not be found.",
+    notFoundLinks: "Where to go next",
     forbidden: "You don't have access to this page.",
     unavailable: "This content is temporarily unavailable. Please try again in a few minutes.",
     unexpected: "An unexpected error occurred.",
@@ -240,6 +241,7 @@ export const en = {
   product: {
     metaDescription: "{brand} {title} — {price}.",
     metaFallback: "Shop it at the Jassmin perfume store.",
+    imageAlt: "{brand} {title}",
     ml: "ml",
     fromPrice: "from {price}",
     quickAdd: "Add {title} to cart",
@@ -258,6 +260,12 @@ export const en = {
     families: "Fragrance families",
     notes: "Scent notes",
     notFound: "This perfume could not be found.",
+    archived: {
+      heading: "This perfume is no longer sold",
+      text: "It can't be ordered anymore. Have a look at the similar scents below or the whole catalog.",
+      catalog: "Browse the catalog",
+    },
+    similar: "Similar perfumes",
   },
   cart: {
     title: "Cart",
@@ -517,7 +525,9 @@ export const en = {
     defaultDescription:
       "Jassmin perfume store: women's and men's fragrances from well-known brands in sizes from 5 ml.",
     about: "About us",
+    aboutImageAlt: "The Jassmin perfume store",
     hero: {
+      imageAlt: "Perfume bottles at Jassmin",
       chip: "Women · Men",
       badgeOnly: "only",
       badgeFor: "for {count}",
@@ -564,7 +574,7 @@ export const en = {
     },
     bestsellers: {
       title: "Bestsellers",
-      viewAll: "View all →",
+      viewAll: "View all",
     },
     location: {
       eyebrow: "Location",
@@ -614,10 +624,12 @@ export const en = {
     shopMen: "Shop men",
     back: "← Back to the blog",
     notFound: "Article not found",
+    coverAlt: "Cover of the article “{title}”",
     defaultDescription:
       "Fragrance articles and scent guides from Jassmin: how to choose, wear and care for perfume.",
   },
   offers: {
+    imageAlt: "Offer: {title}",
     title: "Special offers",
     metaTitle: "Special offers",
     metaDescription: "Tester sets, seasonal picks, gift ideas and last bottles at Jassmin.",

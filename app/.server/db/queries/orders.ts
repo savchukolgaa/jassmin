@@ -53,8 +53,10 @@ export function lockCartLinesForOrder(db: Executor, cartId: number) {
       packSize: products.packSize,
       volumeMl: productVariants.volumeMl,
       price: productVariants.price,
-      // 0 for an archived product (#40), so checkout answers `insufficient-stock` for its lines.
+      // 0 for an archived product (#40), so checkout answers `insufficient-stock` for its lines;
+      // `UNTRACKED_STOCK` for a size that doesn't count stock (#98).
       stockQuantity: availableStock,
+      trackStock: productVariants.trackStock,
       quantity: cartItems.quantity,
     })
     .from(cartItems)
@@ -136,7 +138,10 @@ export async function insertOrderItems(
   );
 }
 
-/** Takes the bought units off the variant's stock (the CHECK keeps it from going negative). */
+/**
+ * Takes the bought units off the variant's stock (the CHECK keeps it from going negative). A size
+ * that doesn't track stock (#98) is left alone.
+ */
 export async function decrementVariantStock(
   db: Executor,
   variantId: number,
@@ -145,7 +150,7 @@ export async function decrementVariantStock(
   await db
     .update(productVariants)
     .set({ stockQuantity: sql`${productVariants.stockQuantity} - ${quantity}` })
-    .where(eq(productVariants.id, variantId));
+    .where(and(eq(productVariants.id, variantId), eq(productVariants.trackStock, true)));
 }
 
 /** Marks the cart `converted`; `$onUpdate` bumps its `updated_at`. */
@@ -386,7 +391,8 @@ export async function updateOrderLifecycle(
 
 /**
  * Puts the order's units back on their sizes' stock, locking those rows in id order like
- * checkout does. Lines whose size was deleted are skipped. Returns the touched products' ids.
+ * checkout does. Lines whose size was deleted, or doesn't track stock (#98), are skipped.
+ * Returns the touched products' ids.
  */
 export async function restockOrder(db: Executor, orderId: number): Promise<number[]> {
   const lines = await db
@@ -397,7 +403,7 @@ export async function restockOrder(db: Executor, orderId: number): Promise<numbe
     })
     .from(orderItems)
     .innerJoin(productVariants, eq(productVariants.id, orderItems.variantId))
-    .where(eq(orderItems.orderId, orderId))
+    .where(and(eq(orderItems.orderId, orderId), eq(productVariants.trackStock, true)))
     .orderBy(asc(productVariants.id))
     .for("update", { of: productVariants });
   for (const line of lines) {

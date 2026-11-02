@@ -462,11 +462,27 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     });
   });
 
-  /** A product whose 10 ml size has 6 in stock, and an order for `quantity` of it. */
-  async function placed(options: { quantity?: number; paymentMethod?: "cod" | "card" } = {}) {
+  /**
+   * A product whose 10 ml size has 6 in stock (tracked unless `trackStock` is false, #98), and an
+   * order for `quantity` of it.
+   */
+  async function placed({
+    trackStock = true,
+    ...options
+  }: {
+    quantity?: number;
+    paymentMethod?: "cod" | "card";
+    trackStock?: boolean;
+  } = {}) {
+    const { eq } = await import("drizzle-orm");
+    const { productVariants } = await import("../db/schema");
     const product = await created();
     const { id } = await productRow(product.publicId);
     const small = await variantRow(id, 10);
+    await testDb.db
+      .update(productVariants)
+      .set({ trackStock })
+      .where(eq(productVariants.id, small?.id ?? 0));
     const orderId = await orderWith(id, small?.id ?? 0, options);
     return { productId: id, variantId: small?.id ?? 0, orderId };
   }
@@ -495,6 +511,19 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
         items: [{ productName: "Gypsy Water", volumeMl: 10, quantity: 1, unitPrice: "1900.00" }],
       },
     });
+  });
+
+  it("cancels an order without changing the stock of a size that doesn't track it (#98)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { cmsOutbox } = await import("../db/schema");
+    await testDb.db.delete(cmsOutbox);
+    const { productId, orderId } = await placed({ quantity: 2, trackStock: false });
+
+    const result = await applyCmsOrderChange(orderId, { status: "cancelled" }, testDb.db);
+
+    expect(result).toMatchObject({ ok: true, order: { status: "cancelled" } });
+    expect((await variantRow(productId, 10))?.stockQuantity).toBe(6);
+    expect((await outbox()).filter((row) => row.entity === "product")).toEqual([]);
   });
 
   it("cancels an order and puts its units back in stock exactly once", async () => {

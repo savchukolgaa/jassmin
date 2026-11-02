@@ -189,7 +189,7 @@ only descriptions that are empty.
   - The `uk` text mentions at least one of the product's notes (a case-insensitive match on the
     note's first 5 letters, so Ukrainian inflection still matches).
   - The `uk` text has Cyrillic, and the `en` text has none.
-- [ ] **8. Import fills descriptions.** Change `importCatalog(db, entries, prices,
+- [x] **8. Import fills descriptions.** Change `importCatalog(db, entries, prices,
   descriptions)`:
   - Inserts set `description` / `descriptionEn` from the map.
   - After the insert, `fillEmptyDescriptions(tx, rows)` (in `db/queries/products.ts`): a single

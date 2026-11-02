@@ -164,12 +164,14 @@ Answered from the codebase:
   Latin ("Eau de Parfum Intense Pour Homme"), Cyrillic ("Квітковий сад"), a single word longer
   than a line, the ellipsis after `maxLines`, and that the font size gets smaller as the text gets
   longer.
-- [ ] **3. `ProductLabelArt` component.** Create `app/features/catalog/ProductLabelArt.tsx`:
+- [x] **3. `ProductLabelArt` component.** Create `app/features/catalog/ProductLabelArt.tsx`:
   `<svg viewBox="0 0 400 500" preserveAspectRatio=… aria-hidden="true" focusable="false">`, the
   background `rect`, one of 4 bottle `path`s and 3 caps chosen by `labelVariant`, a label panel,
   the brand (Manrope, uppercase, `letter-spacing`), the name (`font-family="var(--font-serif)"`,
   `<tspan>` per line, centred with `text-anchor="middle"`) and "jassmin." at the bottom. Props:
-  `{ id, brand, title, family, detail?: "full" | "minimal", crop?: "portrait" | "square" }`.
+  `{ label: { id, brand, title, family }, detail?: "full" | "minimal", className? }`. The SVG always
+  uses `preserveAspectRatio="xMidYMid slice"`, so it fills a 4:5 frame exactly and crops evenly in a
+  square one; no `crop` prop is needed.
   `minimal` leaves out all text. No `useId` is needed (no gradients/defs), so the markup is
   identical on server and client. Test with `renderToStaticMarkup`: the colours of the family's
   palette appear, the name lines and the brand appear, `minimal` has no `<text>`, and there are no
@@ -189,7 +191,7 @@ Answered from the codebase:
   `CartLineItem.tsx`, pass `label` and `labelDetail="minimal"`. Add `productId` (from
   `products.publicId`, `null` once deleted) and `fragranceFamily` to `AccountOrderLine`, and
   select both in `listOrderLinesByOrderIds`. `OrderLineThumb`: photo → `<img>` as today; product
-  present without a photo → `ProductLabelArt` (`minimal`, `crop="square"`) in the same box; deleted
+  present without a photo → `ProductLabelArt` (`minimal`, sliced to the square) in the same box; deleted
   → neutral tile. Fix the fixtures in `cart`/`account`/`orders` tests that type-check against these
   DTOs.
 - [ ] **7. Document the palette.** Add a "Label card palette" section to `docs/design.md` after

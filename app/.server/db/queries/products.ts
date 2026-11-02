@@ -327,6 +327,7 @@ const detailColumns = {
   imageHeight: products.imageHeight,
   imageFormats: products.imageFormats,
   description: products.description,
+  descriptionEn: products.descriptionEn,
   fragranceFamilies: products.fragranceFamilies,
   notes: products.notes,
   storeCode: products.storeCode,
@@ -472,7 +473,10 @@ export interface ProductWrite {
   title: string;
   slug: string;
   brand: string;
+  /** In Ukrainian. */
   description: string | null;
+  /** In English (#100). */
+  descriptionEn: string | null;
   gender: Gender;
   /** Always `fragranceFamilies[0] ?? null`: a CHECK enforces it (#65). */
   fragranceFamily: string | null;
@@ -576,6 +580,7 @@ export async function findProductSyncState(db: Executor, productId: number) {
       slug: products.slug,
       brand: products.brand,
       description: products.description,
+      descriptionEn: products.descriptionEn,
       gender: products.gender,
       fragranceFamilies: products.fragranceFamilies,
       notes: products.notes,
@@ -601,6 +606,42 @@ export async function findProductSyncState(db: Executor, productId: number) {
 }
 
 export type ProductSyncRow = NonNullable<Awaited<ReturnType<typeof findProductSyncState>>>;
+
+/** A product's descriptions to fill in, by `public_id` (#100). */
+export interface DescriptionFill {
+  publicId: string;
+  uk: string;
+  en: string;
+}
+
+/**
+ * Gives these products the descriptions they lack (#100), each language on its own: a `null` or
+ * blank `description` gets `uk` and a `null` or blank `description_en` gets `en`, while any text
+ * that's there, staff's included, stays exactly as it is. One `UPDATE` for all of them, which sets
+ * `updated_at` itself (raw SQL skips `$onUpdate`). Returns the ids of the products it changed.
+ */
+export async function fillEmptyDescriptions(
+  db: Pick<Db, "execute">,
+  fills: readonly DescriptionFill[],
+): Promise<number[]> {
+  if (fills.length === 0) return [];
+  const values = sql.join(
+    fills.map(({ publicId, uk, en }) => sql`(${publicId}::uuid, ${uk}::text, ${en}::text)`),
+    sql`, `,
+  );
+  const result = await db.execute<{ id: number }>(sql`
+    update products p set
+      description = case when nullif(btrim(p.description), '') is null
+        then v.uk else p.description end,
+      description_en = case when nullif(btrim(p.description_en), '') is null
+        then v.en else p.description_en end,
+      updated_at = now()
+    from (values ${values}) as v(public_id, uk, en)
+    where p.public_id = v.public_id
+      and (nullif(btrim(p.description), '') is null or nullif(btrim(p.description_en), '') is null)
+    returning p.id`);
+  return result.rows.map((row) => Number(row.id));
+}
 
 /**
  * Gives products without a slug (created before #40) one from their title and `public_id`,

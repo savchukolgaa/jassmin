@@ -27,7 +27,12 @@
       "maxLength": 255
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "maxLength": 5000
+    },
+    "descriptionEn": {
+      "type": "text",
+      "maxLength": 5000
     },
     "gender": {
       "type": "enumeration",

@@ -1,29 +1,37 @@
 import type { PerfumeVolumeMl } from "~/lib/enums";
 import type { CatalogEntry } from "./catalog/parse";
+import type { CatalogDescription } from "./catalog-descriptions";
 import type { CatalogPrices } from "./catalog-prices";
 import type { Db } from "./client";
 import { enqueueCmsSync } from "./queries/cms-outbox";
+import { fillEmptyDescriptions } from "./queries/products";
 import { products, productVariants } from "./schema";
 
 export interface CatalogImportResult {
   /** Perfumes added by this run. */
   inserted: number;
   variantsInserted: number;
+  /** Perfumes already there that got a missing description, in either language (#100). */
+  descriptionsFilled: number;
   /** Products queued for the Strapi push (`pnpm db:sync-cms`). */
   queued: number;
 }
 
 /**
  * Loads the owner's perfume range (#66) in one transaction: inserts each entry that isn't in the
- * database yet (matched by `public_id`) with every size of the price table at stock 0, and queues
- * the new products for Strapi. New products get the owner's popular position (#67). A product
- * that exists is never touched, so whatever staff changed in Strapi (fields, prices, stock, sizes,
- * archiving, the popular position) survives a re-run, and running it twice adds nothing.
+ * database yet (matched by `public_id`) with every size of the price table at stock 0 and its
+ * descriptions (#100), and queues the new products for Strapi. New products get the owner's
+ * popular position (#67).
+ *
+ * A product that exists keeps every field, size, price, stock level and popular position staff
+ * gave it in Strapi; the import only fills a description that is empty, one language at a time,
+ * and queues those products too. Running it twice changes nothing the second time.
  */
 export async function importCatalog(
   db: Db,
   entries: readonly CatalogEntry[],
   prices: CatalogPrices,
+  descriptions: Readonly<Record<string, CatalogDescription>> = {},
 ): Promise<CatalogImportResult> {
   const sizes = Object.entries(prices)
     .map(([volume, price]) => ({ volumeMl: Number(volume) as PerfumeVolumeMl, price }))
@@ -34,7 +42,7 @@ export async function importCatalog(
     throw new Error("The catalog price table has no sizes");
   }
   if (entries.length === 0) {
-    return { inserted: 0, variantsInserted: 0, queued: 0 };
+    return { inserted: 0, variantsInserted: 0, descriptionsFilled: 0, queued: 0 };
   }
 
   return db.transaction(async (tx) => {
@@ -46,6 +54,8 @@ export async function importCatalog(
           title: entry.title,
           brand: entry.brand,
           gender: entry.gender,
+          description: descriptions[entry.publicId]?.uk ?? null,
+          descriptionEn: descriptions[entry.publicId]?.en ?? null,
           // The ML column keeps the primary family; a CHECK holds it to the first one (#65).
           fragranceFamily: entry.fragranceFamilies[0] ?? null,
           fragranceFamilies: entry.fragranceFamilies,
@@ -61,19 +71,36 @@ export async function importCatalog(
       .onConflictDoNothing({ target: products.publicId })
       .returning({ id: products.id });
     const ids = inserted.map((row) => row.id);
-    if (ids.length === 0) {
-      return { inserted: 0, variantsInserted: 0, queued: 0 };
-    }
 
-    const variants = await tx
-      .insert(productVariants)
-      .values(
-        ids.flatMap((productId) => sizes.map((size) => ({ ...size, productId, stockQuantity: 0 }))),
-      )
-      .onConflictDoNothing({ target: [productVariants.productId, productVariants.volumeMl] })
-      .returning({ id: productVariants.id });
+    const variants =
+      ids.length === 0
+        ? []
+        : await tx
+            .insert(productVariants)
+            .values(
+              ids.flatMap((productId) =>
+                sizes.map((size) => ({ ...size, productId, stockQuantity: 0 })),
+              ),
+            )
+            .onConflictDoNothing({ target: [productVariants.productId, productVariants.volumeMl] })
+            .returning({ id: productVariants.id });
 
-    await enqueueCmsSync(tx, "product", ids);
-    return { inserted: ids.length, variantsInserted: variants.length, queued: ids.length };
+    // Products inserted just now already have theirs, so this only reaches existing ones.
+    const filled = await fillEmptyDescriptions(
+      tx,
+      entries.flatMap((entry) => {
+        const description = descriptions[entry.publicId];
+        return description ? [{ publicId: entry.publicId, ...description }] : [];
+      }),
+    );
+
+    const queued = [...new Set([...ids, ...filled])];
+    await enqueueCmsSync(tx, "product", queued);
+    return {
+      inserted: ids.length,
+      variantsInserted: variants.length,
+      descriptionsFilled: filled.length,
+      queued: queued.length,
+    };
   });
 }

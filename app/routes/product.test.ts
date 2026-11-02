@@ -50,7 +50,7 @@ describe("product loader", () => {
 
     expect(await load(SLUG)).toEqual({ product, available: true, similar: [] });
     expect(products.getSimilarProducts).not.toHaveBeenCalled();
-    expect(products.resolveProductHandle).toHaveBeenCalledWith(SLUG);
+    expect(products.resolveProductHandle).toHaveBeenCalledWith(SLUG, "uk");
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ context }),
       "product_view",
@@ -89,6 +89,19 @@ describe("product loader", () => {
 
     expect(await load(SLUG)).toEqual({ product, available: false, similar });
     expect(products.getSimilarProducts).toHaveBeenCalledWith(42, product);
+  });
+
+  it("asks for the description in the URL's language (#100)", async () => {
+    products.resolveProductHandle.mockResolvedValueOnce(null);
+    await expect(load("x")).rejects.toMatchObject({ init: { status: 404 } });
+    expect(products.resolveProductHandle).toHaveBeenLastCalledWith("x", "uk");
+
+    products.resolveProductHandle.mockResolvedValueOnce(null);
+    const request = new Request(`http://localhost/en/perfumes/${SLUG}`);
+    await expect(
+      loader({ request, params: { handle: SLUG }, context } as unknown as LoaderArgs),
+    ).rejects.toMatchObject({ init: { status: 404 } });
+    expect(products.resolveProductHandle).toHaveBeenLastCalledWith(SLUG, "en");
   });
 
   it("is a 404 without an event for an unknown handle", async () => {
@@ -133,6 +146,7 @@ describe("product meta", () => {
     packSize: 1,
     image: { url: "/images/coco.jpg", srcSet: null, width: 800, height: 1000 },
     description: "Свіжий східний аромат.",
+    descriptionLocale: "uk",
     fragranceFamilies: [],
     notes: [],
     storeCode: "3-D",
@@ -178,6 +192,24 @@ describe("product meta", () => {
     );
     expect(content(tags, "og:image")).toBe("https://jassmin.ua/og-default.jpg");
     expect(content(tags, "product:availability")).toBe("out of stock");
+  });
+
+  it("describes the English page with the English description (#100)", () => {
+    const tags = meta({
+      matches: [{ id: "root", loaderData: { locale: "en", site: { url: "https://jassmin.ua" } } }],
+      location: { pathname: "/en/perfumes/coco-mademoiselle", search: "" },
+      loaderData: {
+        product: { ...product, description: "A fresh oriental scent.", descriptionLocale: "en" },
+        available: true,
+        similar: [],
+      },
+    } as unknown as MetaArgs);
+
+    expect(String(content(tags, "og:description"))).toMatch(/A fresh oriental scent\.$/);
+    const description = tags.find((tag) => "name" in tag && tag.name === "description");
+    expect(description && "content" in description ? description.content : "").toMatch(
+      /A fresh oriental scent\.$/,
+    );
   });
 
   it("has no price tags without sizes", () => {

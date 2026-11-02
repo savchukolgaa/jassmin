@@ -65,6 +65,7 @@ export function toCmsProductState(row: ProductSyncRow): CmsProductState {
     slug: row.slug,
     brand: row.brand,
     description: row.description,
+    descriptionEn: row.descriptionEn,
     gender: row.gender,
     fragranceFamilies: row.fragranceFamilies,
     notes: row.notes,

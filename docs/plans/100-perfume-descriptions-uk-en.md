@@ -76,22 +76,15 @@ only descriptions that are empty.
   `await getLocale(request)`), and `toDetail` applies `pickDescription`. `meta` and `productLd`
   keep reading `product.description`, so they get the localized text without changes.
 - zod: `descriptionEn: optionalText` in `productFields`. Both description fields also get
-  `.max(5000)`, a sanity cap so a mistaken paste can't land in the page and meta. **(unconfirmed,
-  see Q2)**
-
-## Open questions
-
-- [ ] **Q1: Does the owner want to review the 256 texts before they're imported?** Why it matters:
-  the import fills empty descriptions on the live database, and staff then only see the result
-  in Strapi. Recommended default: the owner reviews the data file in the PR (grouped women/men,
-  with the perfume name above each entry), and fixes after the merge are made in Strapi. Affects
-  steps: 6–7.
-- [ ] **Q2: Should description length be capped in the sync schema?** Why it matters: today
-  `description` is unlimited. A cap could refuse an existing long description on the next Strapi
-  save. Recommended default: `.max(5000)` on both fields (far above any real text), with a
-  Ukrainian error message in the middleware's refusal. Affects steps: 3.
+  `.max(5000)`, a sanity cap so a mistaken paste can't land in the page and meta.
 
 ## Resolved questions
+
+- **Does the owner review the 256 texts before they're imported?** Yes, in the PR: the data
+  file is grouped women/men with the perfume name above each entry. Fixes after the merge are
+  made in Strapi (owner, answering Q1).
+- **Is description length capped in the sync schema?** Yes, `.max(5000)` on both fields, with a
+  Ukrainian error message in the middleware's refusal (owner, answering Q2).
 
 - **Which language does `products.description` hold?** Ukrainian. The seed's descriptions are
   Ukrainian, and `products.notes` is Ukrainian only (source: `app/.server/db/seed-data.ts`,
@@ -152,7 +145,7 @@ only descriptions that are empty.
   `toCmsProductState` (`services/cms-push.ts`). Update fixtures and tests (`cms-sync.test.ts`,
   `cms-push.test.ts`, `routes/cms.products.test.ts`) so a create/update with both languages
   stores both and answers both, and a push sends `descriptionEn`.
-- [ ] **3. Length cap (Q2).** Add `.max(5000)` to the description schema used by both fields
+- [ ] **3. Length cap.** Add `.max(5000)` to the description schema used by both fields
   (a separate `descriptionText` so `optionalText`'s other users don't change), with a test. Make
   sure the middleware's 422 shows a Ukrainian message for it.
 - [ ] **4. Strapi.** Add `"descriptionEn": { "type": "text" }` after `description` in the
@@ -232,7 +225,7 @@ only descriptions that are empty.
   `/en/` pages — steps 1, 5, 6, 7, 8
 - [ ] Descriptions are unique per product, based only on its families and notes, and read
   naturally in both languages — steps 6, 7 (enforced by `catalog-descriptions.test.ts`;
-  readability by review, Q1)
+  readability by the owner's review in the PR)
 - [ ] Staff can edit both languages in Strapi, and edits reach the site — steps 2, 4, 10
 - [ ] Re-running the import never overwrites a description staff have edited — step 8
 - [ ] The product page's meta description uses the description — step 5 (already wired through

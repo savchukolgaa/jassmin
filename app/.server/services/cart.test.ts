@@ -240,6 +240,57 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     expect(await cart.getCartCount({ ...visitor, userId: null }, testDb.db)).toBe(0);
   });
 
+  /** Runs `body` with Coco's sold-out 10 ml size switched to not tracking stock (#98). */
+  async function withUntrackedTen(
+    body: (ten: Awaited<ReturnType<typeof variant>>) => Promise<void>,
+  ) {
+    const { eq } = await import("drizzle-orm");
+    const { productVariants } = await import("../db/schema");
+    const ten = await variant(10);
+    expect(ten.stockQuantity).toBe(0);
+    await testDb.db
+      .update(productVariants)
+      .set({ trackStock: false })
+      .where(eq(productVariants.id, ten.id));
+    try {
+      await body(ten);
+    } finally {
+      await testDb.db
+        .update(productVariants)
+        .set({ trackStock: true })
+        .where(eq(productVariants.id, ten.id));
+    }
+  }
+
+  it("sells a size that doesn't track stock at stock 0, up to the line limit (#98)", async () => {
+    const cart = await import("./cart");
+    const { checkVariantForCart } = await import("./products");
+    const { MAX_LINE_QUANTITY } = await import("~/lib/cart");
+    const visitor = await guest();
+
+    await withUntrackedTen(async (ten) => {
+      const checked = await checkVariantForCart(COCO, ten.publicId, testDb.db);
+      if (!checked.ok) throw new Error(checked.error);
+
+      expect(await cart.addItem(visitor, checked.variant, 2, testDb.db)).toMatchObject({
+        ok: true,
+      });
+      expect(
+        await cart.updateQuantity(visitor, ten.publicId, MAX_LINE_QUANTITY, testDb.db),
+      ).toMatchObject({ ok: true });
+      const view = await cart.getCartView(visitor, testDb.db);
+      expect(view.lines).toEqual([
+        expect.objectContaining({ volumeMl: 10, quantity: MAX_LINE_QUANTITY }),
+      ]);
+      expect(view.lines[0]?.stockQuantity).toBeGreaterThanOrEqual(MAX_LINE_QUANTITY);
+    });
+    // Tracked again, the sold-out size can't be added.
+    expect(await checkVariantForCart(COCO, (await variant(10)).publicId, testDb.db)).toEqual({
+      ok: false,
+      error: "out-of-stock",
+    });
+  });
+
   describe("mergeGuestCart", () => {
     it("adopts the guest cart when the user has none", async () => {
       const cart = await import("./cart");
@@ -303,6 +354,28 @@ describe.skipIf(!hasDatabase)("cart service", () => {
           .set({ stockQuantity: big.stockQuantity })
           .where(eq(productVariants.id, big.id));
       }
+    });
+
+    it("keeps guest lines of a size that doesn't track stock (#98)", async () => {
+      const cart = await import("./cart");
+      const { checkVariantForCart } = await import("./products");
+      const visitor = await guest();
+      const userId = await user();
+      await cart.addItem({ ...(await guest()), userId }, await variant(5), 1, testDb.db);
+
+      await withUntrackedTen(async (ten) => {
+        const checked = await checkVariantForCart(COCO, ten.publicId, testDb.db);
+        if (!checked.ok) throw new Error(checked.error);
+        await cart.addItem(visitor, checked.variant, 3, testDb.db);
+
+        await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
+
+        const view = await cart.getCartView({ userId }, testDb.db);
+        expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([
+          [5, 1],
+          [10, 3],
+        ]);
+      });
     });
 
     it("does nothing without a guest cart", async () => {

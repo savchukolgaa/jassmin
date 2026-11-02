@@ -62,6 +62,13 @@ Schemas are only used in loaders and actions, and React Router strips those from
    inlined in the hydration data (one request less, no waterfall), and with the existing
    `shouldRevalidate` the root loader only re-runs when the language changes, so the dictionary is
    sent once per language. (Confirmed by the user: root loader data, not a dynamic `import()`.)
+   **Outcome: implemented, measured, then reverted** (b744b4f, reverted in e3ff947). The
+   dictionary left the bundle (the shared chunk went from 21.5 to 6.3 KB gzip), but it added ~10 KB
+   (brotli) of hydration data to every HTML response, which is on the render-critical path and
+   isn't cached. With the stylesheet and chunk changes in place, an A/B showed both dictionaries in
+   the cached `app` chunk scoring **1 point higher on all five pages** (and FCP ~0.15 s earlier on
+   catalog and product). The acceptance criterion makes this change conditional on profiling
+   showing it helps, so it was dropped. The plan below keeps the original description for the record.
    - `translator.ts` gets a core `createTranslatorFrom(locale, dictionary)` without dictionary
      imports. `createTranslator(locale)`, which imports both dictionaries, moves to a module that
      only server code, tests and the server render use (`app/lib/i18n/dictionaries.ts`).
@@ -96,6 +103,15 @@ Schemas are only used in loaders and actions, and React Router strips those from
    `<Scripts>` output once more after the steps above, and only act if something unexpected is
    preloaded.
 7. Fonts, images, metadata, structured data and the sitemap stay untouched (#83–#88).
+8. **Deviation: stylesheet before the modulepreloads** (found while measuring step 4). React 19
+   hoists `<link rel="modulepreload">` above a plain `<link rel="stylesheet">`, so the page's only
+   render-blocking request started after ~24 scripts. `app.css` is now imported with `?url` and
+   declared in the root `links` with `precedence: "default"`, which React emits with the other
+   stylesheets before the preloads. Dev mode still serves the Tailwind-processed CSS (checked).
+9. **Chunk merging, as built:** Rolldown 1.2.15's `output.codeSplitting.groups` with one `app` group
+   for `app/(components|features|lib)/`, `minShareCount: 2` (code used by one route only stays in
+   that route's chunk), client build only (`isSsrBuild`). The group pulls in React's shared chunk
+   (`includeDependenciesRecursively`), so a page now preloads 6 scripts instead of 24.
 
 ## Resolved questions
 
@@ -130,20 +146,18 @@ Schemas are only used in loaders and actions, and React Router strips those from
 | create | `app/features/home/contact-form.schema.ts` (or keep the file, see step 2) | contact schema used only by the `home` action |
 | modify | route modules and `app/.server/**` that import schemas | import from `*.schema.ts` |
 | modify | `app/lib/*.test.ts` | follow the moved exports |
-| create | `app/lib/client-bundle.guard.test.ts` | guard: no module imported by client code imports `zod` or both dictionaries (like `paths.guard.test.ts`) |
-| modify | `app/lib/i18n/translator.ts` | `createTranslatorFrom(locale, dictionary)`, no dictionary imports |
-| create | `app/lib/i18n/dictionaries.ts` | `DICTIONARIES`, `createTranslator(locale)` for server, tests and `isTextKey` |
-| modify | `app/lib/i18n/react.tsx`, `index.ts` | provider takes `messages`; `metaTranslator` reads them from root data |
-| modify | `app/root.tsx` | root loader returns `messages` for the active locale |
-| modify | `app/lib/cart.ts`, `app/lib/discounts.ts`, `app/features/cart/CartSummary.tsx`, `app/features/cart/cart-line-state.ts` | translator argument required, no `createTranslator()` default |
-| modify | `app/lib/i18n/*.test.ts`, component tests | follow the new API; Ukrainian default kept |
-| modify | `vite.config.ts` | (only if step 6 helps) Rolldown chunk grouping |
-| modify | `app/routes/_shop.tsx`, `app/features/consent/*` | (only if step 5 helps) lazy banner / tracker |
-| modify | `AGENTS.md` (i18n section) | describe the new translator setup and the schema-module rule |
+| create | `app/lib/client-bundle.guard.test.ts` | guard: nothing the UI imports reaches `zod`, a `*.schema.ts` module or server code |
+| modify | `app/root.tsx`, `app/root.test.ts` | stylesheet via `app.css?url` in `links` with `precedence` (decision 8) |
+| modify | `vite.config.ts` | Rolldown chunk grouping, client build only (decision 9) |
+| modify | `AGENTS.md` (code rules) | the schema-module rule |
+
+The i18n files listed in the original plan (`translator.ts`, `dictionaries.ts`, `react.tsx`, the
+root loader's `messages`, required translator arguments) were changed in b744b4f and restored by
+its revert (decision 2). Step 5 changed nothing.
 
 ## Steps
 
-- [ ] **1. Baseline.** Seed a throwaway DB, run Strapi, `pnpm build && pnpm start`, then run Lighthouse
+- [x] **1. Baseline.** Seed a throwaway DB, run Strapi, `pnpm build && pnpm start`, then run Lighthouse
   mobile 3× on home, `/katalog/zhinochi`, a product page, `/blog` and one blog post. Record the
   median Performance, FCP, LCP, TBT, CLS, SEO and Accessibility, the list of modulepreloaded
   chunks per page (from the HTML `<link rel="modulepreload">`) and their gzip sizes. A small node
@@ -153,26 +167,27 @@ Schemas are only used in loaders and actions, and React Router strips those from
   `z.*` declarations and the parse helpers that use them to `<m>.schema.ts`. Update the imports in
   routes (`loader`/`action` only), `.server/` services and tests. Keep types from `z.infer`
   available via `import type`. Run `pnpm typecheck && pnpm test`.
-- [ ] **3. Check zod is gone and add a guard.** Rebuild and confirm that no client chunk contains
+- [x] **3. Check zod is gone and add a guard.** Rebuild and confirm that no client chunk contains
   `ZodError` and that `_shop`'s manifest imports no longer include the zod chunk. Add
   `client-bundle.guard.test.ts`, which walks the static imports of the modules components use
   (`app/lib/*.ts` minus `*.schema.ts`, `app/features/**`, `app/components/**`) and fails on `zod`.
   Model it on `paths.guard.test.ts`. Measure (Lighthouse, 3 runs).
-- [ ] **4. Ship only the active dictionary.** Implement decision 2: split `translator.ts`, return
+- [x] **4. Ship only the active dictionary.** (Done, measured, reverted: see decision 2.) Implement decision 2: split `translator.ts`, return
   `messages` from the root loader, give `I18nProvider` / `metaTranslator` the dictionary, and remove
   the client-side `createTranslator()` defaults. Make sure an error page whose root loader failed
   still renders (in `uk`, with server-render fallback). Extend the guard test so `uk.ts`/`en.ts`
   are imported only from `dictionaries.ts`. Rebuild, confirm the client chunks contain only the
   active locale's strings (switch to `/en/…` and check the second language arrives on a language
   switch), then measure.
-- [ ] **5. Consent / tracker (conditional).** Re-check what `CookieBanner` and
+- [x] **5. Consent / tracker (conditional).** Skipped: `CookieBanner` + `client-events` +
+  `useClientPageViews` are ~6 KB of source, ~1.5 KB gzip, under the threshold. Re-check what `CookieBanner` and
   `useClientPageViews`/`client-events` add to `_shop`. If it is significant (> ~5 KB gzip), load
   them only when needed (banner when `consent === null`, tracker when `granted`), keeping SSR markup
   and the no-JS form post. Otherwise skip and note it in the PR.
-- [ ] **6. Merge tiny chunks (conditional).** Try Rolldown's chunk grouping in `vite.config.ts` to
+- [x] **6. Merge tiny chunks (conditional).** Kept (decision 9), together with the stylesheet order (decision 8). Try Rolldown's chunk grouping in `vite.config.ts` to
   fold the 1–5 KB shared chunks. Keep it only if the preload count drops and the Lighthouse median
   doesn't get worse.
-- [ ] **7. Final measurement and docs.** Run the full measurement matrix again (5 pages × 3 runs)
+- [x] **7. Final measurement and docs.** Run the full measurement matrix again (5 pages × 3 runs)
   and write the before/after table for the PR. Update `AGENTS.md` (i18n: provider gets `messages`,
   server uses `createTranslator`; code rules: zod schemas live in `*.schema.ts` and are imported
   only from loaders/actions/server). If ≥ 90 isn't reached, record the result in the PR and open a
@@ -182,12 +197,10 @@ Schemas are only used in loaders and actions, and React Router strips those from
 
 ## Testing & verification
 
-- **Unit:** update `translator.test.ts`/`dictionaries.test.ts` for `createTranslatorFrom`, and add
-  a test that `metaTranslator` uses `messages` from root data (and falls back to `uk`). The existing
-  component tests must keep rendering Ukrainian by default and English under
-  `<I18nProvider locale="en">` (adapted to the new props).
-- **Guard:** `client-bundle.guard.test.ts` (no `zod` and no dictionary imports in the client graph).
-- **Root:** `root.test.ts`, where the loader returns the dictionary for the URL's locale.
+- **Unit:** the schema tests moved with their schemas (`*.test.ts` import from `*.schema.ts`).
+- **Guard:** `client-bundle.guard.test.ts` (no `zod`, schema or server imports in the client
+  graph); checked that it fails when a client module imports a schema module.
+- **Root:** `root.test.ts` checks the stylesheet link keeps its `precedence`.
 - **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 - **Manual, no JS (browser with JS off):** add to cart, update/remove a line, apply a promo code,
   check out, log in, register, edit profile, the contact form on home, the cookie banner
@@ -198,15 +211,37 @@ Schemas are only used in loaders and actions, and React Router strips those from
 - **Lighthouse:** same setup as #88 (production build, mobile preset, 3 runs, median). SEO stays
   100, CLS ≤ 0.1, and Accessibility doesn't drop.
 
+## Results
+
+Lighthouse 12.6.1, mobile preset, local production build (`react-router-serve`, HTTP/1.1) with a
+throwaway seeded database and Strapi (`cms:dev`) on throwaway databases, median of 3 runs.
+Performance (FCP / LCP in seconds; scripts = JS requests on the page):
+
+| Page | Baseline (`main`) | Zod out | + dictionary via root loader | + stylesheet first | + chunks merged | **Final** (dictionary reverted) |
+|------|------|------|------|------|------|------|
+| home `/` | 80 (3.38 / 3.84) | 80 | 82 | 84 | 87 | **90** (2.46 / 3.02) |
+| `/katalog/zhinochi` | 85 (3.07 / 3.53) | 88 | 86 | 88 | 93 | **94** (2.16 / 2.76) |
+| product page | 85 (3.22 / 3.38) | 86 | 86 | 86 | 91 | **92** (2.45 / 2.87) |
+| `/blog` | 87 (2.79 / 3.24) | 90 | 90 | 90 | 93 | **94** (2.27 / 2.72) |
+| blog post | 88 (2.92 / 3.23) | 89 | 88 | 88 | 93 | **94** (2.31 / 2.72) |
+| scripts per page | 21–28 | 18–24 | 18–24 | 18–24 | 6 | **6** |
+
+SEO is 100 and CLS 0 on every page in every run. Accessibility is unchanged from the baseline
+(home 90, the others 95–96). TBT is 0–6 ms throughout. Home is right at the threshold; what's left
+there is fonts (its LCP element is the Playfair "jassmin." logo, which needs the late-discovered
+Latin subsets) and the hero image preload from Strapi's origin, both out of scope here.
+
 ## Acceptance criteria
 
-- [ ] Lighthouse mobile Performance ≥ 90 on home, `/katalog/zhinochi` and a product page (median of
+- [x] Lighthouse mobile Performance ≥ 90 on home, `/katalog/zhinochi` and a product page (median of
   3 runs, local production build with Strapi running), with SEO still 100 and CLS ≤ 0.1 (steps
-  2–7)
-- [ ] Blog list and a blog post measured and recorded too (steps 1, 7)
-- [ ] Only the active locale's messages are sent to the client, if profiling shows it helps
-  (step 4; profiling already shows 21.5 KB gzip for both dictionaries)
-- [ ] No page loses functionality without JavaScript (steps 5, 8)
+  2–7): home 90, catalog 94, product 92
+- [x] Blog list and a blog post measured and recorded too (steps 1, 7): 94 and 94
+- [x] Only the active locale's messages are sent to the client, if profiling shows it helps
+  (step 4): profiling showed it doesn't help, so both stay in the bundle (decision 2)
+- [x] No page loses functionality without JavaScript (steps 5, 8): checked with plain form posts
+  (cart add/update/remove, promo, checkout, login, contact form, cookie banner accept/reset,
+  language switch), each with translated errors
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass (step 8)
 
 ## Out of scope

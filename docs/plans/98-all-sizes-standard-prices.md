@@ -101,6 +101,13 @@ all five sizes at the price table and queues the products for Strapi.
   updates an existing size.
 - `variantColumns.stockQuantity` is `variantStock` (99 for untracked sizes), so the detail DTO and
   `checkVariantForCart` need no branch. `trackStock` comes alongside it.
+- **Deviation (step 9): `vitest.config.ts` gets `hookTimeout: 30_000`.** Two more DB test files
+  (`apply-catalog-prices`, `tester-trio`) made `afterAll` → `drop database … with (force)` wait
+  past Vitest's 10s default in the full run. PostgreSQL serialises `CREATE`/`DROP DATABASE`, and
+  a different file failed each run while every file passed on its own. Many `beforeAll`s already
+  pass 30s by hand.
+- `CardVolumePicker` needed no code change (only its doc comment). Its untracked sizes come in as
+  `inStock: true` from `variantStats`, and the service test in step 2 covers that.
 - **Tester trio stays cheaper than buying normally.** Today the trio is an automatic
   `fixed_price_set` rule (`slug = 'tester-trio'`): any three single 10 ml sizes for 499 ₴, up to 3
   trios per order, for every shopper. It exists only where `pnpm db:seed` created it
@@ -184,7 +191,7 @@ all five sizes at the price table and queues the products for Strapi.
 - [x] **6. `importCatalog`.** Set `trackStock: false` on inserted sizes and update its doc comment and CLI message. Extend `import-catalog.test.ts`: imported sizes are untracked and `inStock`.
 - [x] **7. Strapi field + sync.** Add `trackStock` to `variant.json` (boolean, default false; component description explains it) and the `stock` visibility condition or hint (Q2). Regenerate `cms/types/generated`. In `~/lib/cms-sync`, add `trackStock` to `cmsVariantSchema` and `CmsProductState`. The middleware's `productPayload` sends `trackStock` and `applyProductAnswer` writes it back. In `applyCmsProductChange`, `create`/new sizes store `trackStock` and typed stock, and existing sizes use the delta only when tracked after the edit (otherwise the typed stock). `insertVariants` / `updateVariant` accept `trackStock`. `findProductSyncState` selects it, and `toStrapiProductData` passes it. Tests (`cms-sync.test.ts`, `lib/cms-sync.test.ts`, `cms-push.test.ts`): a missing `trackStock` defaults to false, the delta applies only to tracked sizes, and the answer and the push carry `trackStock`.
 - [x] **8. UI.** `ProductPurchase` passes `stockQuantity={selected.trackStock ? selected.stockQuantity : undefined}`. Tests: `StockStatus` shows "В наявності" for an untracked size, `ProductPurchase` never shows "Залишилося лише" for an untracked size, and `CardVolumePicker` leaves untracked stock-0 sizes enabled (no strike-through). No i18n changes are needed.
-- [ ] **9. Fixtures and seed.** Fix existing tests that build "sold out" sizes so they set `trackStock: true`. Seed data keeps the default (untracked). The sample 3 × 10 ml set gets `active: false` in `seed-data.ts`, so a fresh dev database matches what the script does. Run the whole suite.
+- [x] **9. Fixtures and seed.** Fix existing tests that build "sold out" sizes so they set `trackStock: true`. Seed data keeps the default (untracked). The sample 3 × 10 ml set gets `active: false` in `seed-data.ts`, so a fresh dev database matches what the script does. Run the whole suite.
 - [ ] **10. Docs.** `app/.server/AGENTS.md`: product variants (`track_stock`, `variantStock` / `availableStock`, `UNTRACKED_STOCK`), the Cart and Orders sections (stock rules apply to tracked sizes), CMS sync (`trackStock`, delta rule), the #66 import note (sizes are untracked), a new bullet for `pnpm db:apply-catalog-prices` (archives sets, re-running resets staff prices), and Discounts: migration 0020 creates the tester trio, plus how to change its price (migration + Strapi hero/offer texts) and the guard test. `README.md`: script table and Strapi field.
 - [ ] **11. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and `pnpm aspire:build`. Then the manual run (below).
 

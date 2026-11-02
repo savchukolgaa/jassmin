@@ -175,6 +175,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "990.00",
     volumeMl: 10,
     packSize: 3,
+    // Sets are archived (#98): the tester trio discount is the way to buy three testers.
+    active: false,
     stockQuantity: 20,
     variants: [{ volumeMl: 10, price: "990.00", stockQuantity: 20 }],
   },

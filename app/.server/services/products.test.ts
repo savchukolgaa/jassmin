@@ -6,8 +6,11 @@ import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
 const DEFAULTS: CatalogSearch = { sort: "newest", page: 1 };
 
+// The listed samples: the 3 × 10 ml tester set is seeded archived (#98).
+const listedSamples = SAMPLE_PRODUCTS.filter((p) => p.active !== false);
+
 const titlesOf = (genders: string[]) =>
-  SAMPLE_PRODUCTS.filter((p) => genders.includes(p.gender)).map((p) => p.title);
+  listedSamples.filter((p) => genders.includes(p.gender)).map((p) => p.title);
 
 // Extra women's products, so the women's catalog has more than one page.
 const PAGING_BRAND = "Paging House";
@@ -145,7 +148,8 @@ describe.skipIf(!hasDatabase)("products service", () => {
       "Sauvage Eau de Toilette",
     ]);
     const withFamily = (family: string) =>
-      SAMPLE_PRODUCTS.filter((p) => p.fragranceFamilies.includes(family as FragranceFamily))
+      listedSamples
+        .filter((p) => p.fragranceFamilies.includes(family as FragranceFamily))
         .filter((p) => p.gender !== "women")
         .map((p) => p.title)
         .sort();
@@ -190,7 +194,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
 
   it("offers the brands and families of the catalog's genders", async () => {
     const { filterOptions } = await catalog("men");
-    const scoped = SAMPLE_PRODUCTS.filter((p) => p.gender !== "women");
+    const scoped = listedSamples.filter((p) => p.gender !== "women");
 
     expect(filterOptions.brands).toEqual([...new Set(scoped.map((p) => p.brand))].sort());
     // Every family of a product, not only the primary (#65).
@@ -240,8 +244,8 @@ describe.skipIf(!hasDatabase)("products service", () => {
     ]);
     expect(acqua?.variants[0]?.id).toBe(acqua?.defaultVariant.id);
 
-    const testers = (await catalog("women", { brand: "Jassmin" })).products[0];
-    expect(testers).toMatchObject({ hasPriceRange: false, volumes: [10], packSize: 3 });
+    // The tester set is archived (#98): the trio discount sells three testers instead.
+    expect((await catalog("women", { brand: "Jassmin" })).products).toEqual([]);
   });
 
   it("doesn't list products without variants", async () => {

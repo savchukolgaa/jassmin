@@ -7,7 +7,8 @@ import type { OrderConfirmation } from "~/lib/checkout";
 import { PAYMENT_KEYS } from "~/lib/checkout";
 import { discountLabel } from "~/lib/discounts";
 import type { OrderEmailType } from "~/lib/enums";
-import { createTranslator, type Translator } from "~/lib/i18n";
+import type { Translator } from "~/lib/i18n";
+import { createTranslator } from "~/lib/i18n/dictionaries";
 import { formatVolume } from "~/lib/products";
 import type { Db } from "../db/client";
 import {

@@ -1,5 +1,6 @@
 import type { Offer } from "~/lib/cms";
-import { createTranslator, DEFAULT_LOCALE, INTL_LOCALES, type Locale } from "~/lib/i18n";
+import { DEFAULT_LOCALE, INTL_LOCALES, type Locale } from "~/lib/i18n";
+import { createTranslator } from "~/lib/i18n/dictionaries";
 import { toInternalPath } from "~/lib/links";
 import {
   OFFER_GROUP_ORDER,

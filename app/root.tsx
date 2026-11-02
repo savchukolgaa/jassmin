@@ -14,6 +14,7 @@ import { getLocale } from "~/.server/locale";
 import { localeRedirectMiddleware } from "~/.server/locale-middleware";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
+import { messagesFor } from "~/lib/i18n/dictionaries";
 import { localeFromPath } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta } from "~/lib/seo";
@@ -38,11 +39,12 @@ export const links: Route.LinksFunction = () =>
 // Sends visitors who chose English from Ukrainian pages to the English ones (#84).
 export const middleware: Route.MiddlewareFunction[] = [localeRedirectMiddleware];
 
-// The page's locale comes from its URL (#84). Runs on every request, after every action and
-// whenever a navigation crosses into the other language (`shouldRevalidate`). `site.url` is the
-// public origin for canonical and Open Graph URLs (#85), read by `seoMeta` in every route's `meta`.
+// The page's locale comes from its URL (#84). `messages` is that locale's dictionary, the only one
+// the browser gets (#96): the client bundle has no dictionaries. `site.url` is the public origin
+// for canonical and Open Graph URLs (#85), read by `seoMeta` in every route's `meta`.
 export async function loader({ request }: Route.LoaderArgs) {
-  return { locale: await getLocale(request), site: { url: getSiteUrl(getEnv(), request) } };
+  const locale = await getLocale(request);
+  return { locale, messages: messagesFor(locale), site: { url: getSiteUrl(getEnv(), request) } };
 }
 
 // Only unmatched URLs and failures above the shop layout end here: every page has its own `meta`.
@@ -50,22 +52,19 @@ export function meta({ matches, error }: Route.MetaArgs) {
   return error ? errorMeta({ matches, error }) : [];
 }
 
-export function shouldRevalidate({
-  currentUrl,
-  nextUrl,
-  defaultShouldRevalidate,
-}: ShouldRevalidateFunctionArgs) {
-  return (
-    localeFromPath(currentUrl.pathname) !== localeFromPath(nextUrl.pathname) ||
-    defaultShouldRevalidate
-  );
+// Everything the root loader returns depends only on the URL's language, so it runs again only
+// when a navigation crosses into the other one: not after every action, which would send the whole
+// dictionary again with each cart change (#96).
+export function shouldRevalidate({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+  return localeFromPath(currentUrl.pathname) !== localeFromPath(nextUrl.pathname);
 }
 
 const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   // `undefined` when the root loader failed; the error page then renders in the default locale.
-  const locale = useRouteLoaderData<typeof loader>("root")?.locale ?? DEFAULT_LOCALE;
+  const root = useRouteLoaderData<typeof loader>("root");
+  const locale = root?.locale ?? DEFAULT_LOCALE;
 
   return (
     // The inline script changes the class before React hydrates.
@@ -84,7 +83,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <I18nProvider locale={locale}>{children}</I18nProvider>
+        <I18nProvider locale={locale} messages={root?.messages}>
+          {children}
+        </I18nProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

@@ -11,7 +11,7 @@
 // The provider and the database are injectable for tests.
 import type { PaymentView } from "~/lib/checkout";
 import type { Locale } from "~/lib/i18n";
-import { createTranslator } from "~/lib/i18n";
+import { createTranslator } from "~/lib/i18n/dictionaries";
 import { pathFor } from "~/lib/paths";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createTranslator, isTextKey, msg } from "./translator";
+import { createTranslator, isTextKey, messagesFor } from "./dictionaries";
+import { en as enMessages } from "./en";
+import { createTranslatorFrom, msg } from "./translator";
 
 // ICU separates thousands and the currency sign with (narrow) no-break spaces.
 const normalize = (text: string) => text.replace(/\s/gu, " ");
@@ -75,5 +77,24 @@ describe("message keys", () => {
   it("returns the same translator for a locale", () => {
     expect(createTranslator("en")).toBe(en);
     expect(createTranslator()).toBe(uk);
+  });
+});
+
+describe("createTranslatorFrom", () => {
+  it("translates with the messages it is given, as the browser does (#96)", () => {
+    const translator = createTranslatorFrom("en", messagesFor("en"));
+    expect(translator).toBe(en);
+    expect(translator.t("nav.about")).toBe("About us");
+  });
+
+  it("sends only the requested locale's messages", () => {
+    expect(messagesFor("en")).toBe(enMessages);
+    expect(messagesFor("uk").nav.about).toBe("Про нас");
+  });
+
+  it("shows keys without messages, but still formats for the locale", () => {
+    const translator = createTranslatorFrom("en", undefined);
+    expect(translator.t("nav.about")).toBe("nav.about");
+    expect(translator.formatPrice("6850.00")).toBe("₴6,850");
   });
 });

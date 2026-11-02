@@ -1,7 +1,7 @@
 // Promo codes and discount DTOs (#59), shared by the cart route, its forms and the order pages.
 // Isomorphic: no server imports. Error messages are message keys, translated when rendered.
 import type { DiscountKind } from "./enums";
-import { createTranslator, type TextKey, type Translator } from "./i18n";
+import type { TextKey, Translator } from "./i18n";
 
 /** `discounts.slug` of the automatic tester-trio rule, the price the home page advertises. */
 export const TESTER_TRIO_DISCOUNT_SLUG = "tester-trio";
@@ -47,7 +47,7 @@ export interface CartPromo {
  */
 export function discountLabel(
   discount: Pick<DiscountLine, "code" | "kind">,
-  { t }: Translator = createTranslator(),
+  { t }: Pick<Translator, "t">,
 ): string {
   if (discount.code !== null) {
     return t("checkout.discountWithCode", { code: discount.code });

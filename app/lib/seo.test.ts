@@ -1,6 +1,6 @@
 import type { MetaDescriptor } from "react-router";
 import { describe, expect, it } from "vitest";
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18n/dictionaries";
 import {
   absoluteUrl,
   buildSeoMeta,

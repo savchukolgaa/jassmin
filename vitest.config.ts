@@ -7,6 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    setupFiles: ["app/lib/i18n/test-setup.ts"],
     include: ["app/**/*.test.ts", "cms/src/**/*.test.ts", "scripts/**/*.test.mjs"],
     // Tests import server modules (react-router, drizzle, pg) dynamically, and the first import
     // can take several seconds on a cold, busy machine; 5s made them time out.

@@ -2,7 +2,7 @@
 // cart DTOs its `loader` returns.
 import type { CartIntent } from "./cart.schema";
 import type { CartPromo, DiscountLine } from "./discounts";
-import { createTranslator, type TextKey, type Translator } from "./i18n";
+import type { TextKey, Translator } from "./i18n";
 import type { ResponsiveImage } from "./images";
 
 /** Most of one size a single cart line may hold, whatever the stock. */
@@ -96,7 +96,7 @@ export const CART_ERROR_KEYS: Record<CartActionError, TextKey> = {
  */
 export function cartErrorMessage(
   result: { error: CartActionError; available?: number },
-  { t }: Translator = createTranslator(),
+  { t }: Pick<Translator, "t">,
 ): string {
   if (result.error === "exceeds-stock" && result.available !== undefined) {
     return result.available > 0

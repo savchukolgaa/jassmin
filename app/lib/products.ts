@@ -2,7 +2,7 @@
 // variant's) `public_id`; serial ids and `created_at` never leave the server. Prices are exact
 // decimal strings. Price, volume and stock belong to a product's variants (#26).
 import type { Gender } from "./enums";
-import { createTranslator, type Locale, type Translator } from "./i18n";
+import type { Locale, Translator } from "./i18n";
 import type { ResponsiveImage } from "./images";
 import { pathFor } from "./paths";
 
@@ -84,7 +84,7 @@ export const LOW_STOCK_THRESHOLD = 3;
 /** `50 мл` / `50 ml`, or `3 × 10 мл` for a pack of several units. */
 export function formatVolume(
   { volumeMl, packSize }: { volumeMl: number; packSize: number },
-  { t }: Translator = createTranslator(),
+  { t }: Pick<Translator, "t">,
 ) {
   const ml = t("product.ml");
   return packSize > 1 ? `${packSize} × ${volumeMl} ${ml}` : `${volumeMl} ${ml}`;
@@ -128,7 +128,7 @@ export function cardPrice(
 export function formatVariantOption(
   variant: Pick<ProductVariant, "volumeMl" | "price" | "inStock">,
   packSize: number,
-  translator: Translator = createTranslator(),
+  translator: Translator,
 ) {
   const volume = formatVolume({ volumeMl: variant.volumeMl, packSize }, translator);
   const option = `${volume} — ${translator.formatPrice(variant.price)}`;

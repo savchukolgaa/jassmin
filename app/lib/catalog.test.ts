@@ -10,7 +10,7 @@ import {
 import { parseCatalogSearch } from "./catalog.schema";
 
 import { FRAGRANCE_FAMILIES } from "./enums";
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18n/dictionaries";
 
 const parse = (query: string) => parseCatalogSearch(new URLSearchParams(query));
 

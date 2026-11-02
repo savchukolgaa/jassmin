@@ -2,7 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import { createTranslator, I18nProvider, type Locale } from "~/lib/i18n";
+import { I18nProvider, type Locale } from "~/lib/i18n";
+import { createTranslator } from "~/lib/i18n/dictionaries";
 import { describeRouteError } from "~/lib/route-error";
 import { ErrorContent } from "./ErrorContent";
 

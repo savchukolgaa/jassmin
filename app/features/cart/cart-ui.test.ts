@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import { type CartLine, EMPTY_CART } from "~/lib/cart";
-import { createTranslator, I18nProvider } from "~/lib/i18n";
+import { I18nProvider } from "~/lib/i18n";
+import { createTranslator } from "~/lib/i18n/dictionaries";
 import { CartLineItem } from "./CartLineItem";
 import { CartSummary, formatItemCount } from "./CartSummary";
 import {
@@ -75,7 +76,7 @@ describe("cart line state", () => {
       "Only 3 left. Lower the quantity to check out.",
     );
     expect(stockNotice({ quantity: 1, stockQuantity: 0 }, en)).toMatch(/out of stock/);
-    expect(stockNotice({ quantity: 4, stockQuantity: 3 })).toBe(
+    expect(stockNotice({ quantity: 4, stockQuantity: 3 }, createTranslator())).toBe(
       "Залишилося лише 3 шт. Зменште кількість, щоб оформити замовлення.",
     );
   });
@@ -88,8 +89,8 @@ describe("cart line state", () => {
     const en = createTranslator("en");
     expect(formatItemCount(1, en)).toBe("1 item");
     expect(formatItemCount(3, en)).toBe("3 items");
-    expect(formatItemCount(3)).toBe("3 товари");
-    expect(formatItemCount(5)).toBe("5 товарів");
+    expect(formatItemCount(3, createTranslator())).toBe("3 товари");
+    expect(formatItemCount(5, createTranslator())).toBe("5 товарів");
   });
 });
 

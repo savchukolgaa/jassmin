@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18n/dictionaries";
 import { formatPrice } from "./money";
 import {
   cardPrice,
@@ -33,7 +33,7 @@ describe("productHref", () => {
 describe("formatVolume", () => {
   it("shows the volume of a single bottle", () => {
     expect(formatVolume({ volumeMl: 50, packSize: 1 }, en)).toBe("50 ml");
-    expect(formatVolume({ volumeMl: 50, packSize: 1 })).toBe("50 мл");
+    expect(formatVolume({ volumeMl: 50, packSize: 1 }, createTranslator())).toBe("50 мл");
   });
 
   it("shows the unit count and volume of a pack", () => {
@@ -91,8 +91,8 @@ describe("formatVariantOption", () => {
     expect(formatVariantOption({ volumeMl: 10, price: "900.00", inStock: false }, 3, en)).toBe(
       `3 × 10 ml — ${formatPrice("900.00", "en")} (out of stock)`,
     );
-    expect(formatVariantOption({ volumeMl: 10, price: "900.00", inStock: false }, 1)).toBe(
-      `10 мл — ${formatPrice("900.00")} (немає в наявності)`,
-    );
+    expect(
+      formatVariantOption({ volumeMl: 10, price: "900.00", inStock: false }, 1, createTranslator()),
+    ).toBe(`10 мл — ${formatPrice("900.00")} (немає в наявності)`);
   });
 });

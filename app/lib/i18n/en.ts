@@ -113,6 +113,11 @@ export const en = {
       other: "Cart, {count} items",
     },
   },
+  social: {
+    title: "Social media",
+    followUs: "Follow us",
+    linkLabel: "Jassmin on {platform}",
+  },
   errors: {
     notFoundTitle: "Page not found",
     title: "Oops!",

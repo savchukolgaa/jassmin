@@ -72,6 +72,12 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
   `stroke="none"`, `aria-hidden`) that keep the official shapes. A small `GlyphIcon` wrapper sits
   beside the outline `Icon`. `SOCIAL_ICONS: Record<SocialPlatform, ComponentType<IconProps>>` lives
   next to them, so the type checker catches a missing platform.
+- **Icons, as implemented:** the glyphs use the existing outline `Icon` wrapper (24×24 viewBox,
+  1.75 px `currentColor` stroke) and not filled shapes. The marks stay recognisable (camera for
+  Instagram, paper plane for Telegram, and so on) and match the header's icon set. No separate
+  `GlyphIcon` was needed.
+- **Ukrainian accessible name, as implemented:** "Jassmin у {platform}" (the euphonic «у» after a
+  consonant) instead of «в». The list label reuses the existing wording "Соціальні мережі".
 - **Footer placement:** a row above the nav. It has an optional visible "Follow us" label
   (`social.followUs`) and the icons, and is shown only when there are links.
 - **Mobile menu placement:** a new `<li>` after the locale switcher, separated by the same
@@ -161,9 +167,9 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
   - after the TTL it refetches, so new links show without a deploy;
   - `CmsError` with no previous value gives `[]`;
   - `CmsError` after a success gives the stale value.
-- [ ] **4. Icons.** Add `GlyphIcon` and six brand glyphs to `icons.tsx` (24×24 viewBox,
+- [x] **4. Icons.** Add `GlyphIcon` and six brand glyphs to `icons.tsx` (24×24 viewBox,
   `fill="currentColor"`, `aria-hidden="true"`), plus `SOCIAL_ICONS`.
-- [ ] **5. `SocialLinks` component.** Implement as described in Decisions. Use
+- [x] **5. `SocialLinks` component.** Implement as described in Decisions. Use
   `renderToStaticMarkup` tests in the style of `Footer.test.ts`:
   - An empty list renders `""`.
   - Instagram and Telegram render in order with English labels "Jassmin on Instagram" / "Jassmin on
@@ -171,7 +177,7 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
   - Each link has `target="_blank"`, `rel="noopener noreferrer"` and `size-11`.
   - Tone switches the focus ring class (`outline-white` / `outline-primary` /
     `outline-primary-light`).
-- [ ] **6. i18n keys.** Add the `social` namespace to `uk.ts` and `en.ts`. `pnpm typecheck` catches
+- [x] **6. i18n keys.** Add the `social` namespace to `uk.ts` and `en.ts`. `pnpm typecheck` catches
   any mismatch.
 - [ ] **7. Footer.** `Footer({ socialLinks = [] }: { socialLinks?: readonly SocialLink[] })` renders
   the "Follow us" row with `<SocialLinks tone="onPrimary">` when the list isn't empty. Update

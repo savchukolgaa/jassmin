@@ -114,6 +114,11 @@ export const uk = {
       other: "Кошик, {count} товару",
     },
   },
+  social: {
+    title: "Соціальні мережі",
+    followUs: "Стежте за нами",
+    linkLabel: "Jassmin у {platform}",
+  },
   errors: {
     notFoundTitle: "Сторінку не знайдено",
     title: "Ой!",

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/100
 Branch: `issue/100`
 Worktree: `.claude/worktrees/issue-100`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -233,16 +233,27 @@ only descriptions that are empty.
 
 ## Acceptance criteria
 
-- [ ] Every catalog product shows a description in Ukrainian on Ukrainian pages and in English on
+- [x] Every catalog product shows a description in Ukrainian on Ukrainian pages and in English on
   `/en/` pages — steps 1, 5, 6, 7, 8
 - [ ] Descriptions are unique per product, based only on its families and notes, and read
   naturally in both languages — steps 6, 7 (enforced by `catalog-descriptions.test.ts`;
   readability by the owner's review in the PR)
 - [ ] Staff can edit both languages in Strapi, and edits reach the site — steps 2, 4, 10
-- [ ] Re-running the import never overwrites a description staff have edited — step 8
-- [ ] The product page's meta description uses the description — step 5 (already wired through
+- [x] Re-running the import never overwrites a description staff have edited — step 8
+- [x] The product page's meta description uses the description — step 5 (already wired through
   `product.description`; tested for both locales)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+
+### Verification status
+
+- Automated: `pnpm typecheck`, `pnpm lint`, `pnpm test` (148 files, 1516 tests, DB integration
+  tests included) and `pnpm build` pass.
+- Not yet done: the manual walkthrough in step 10 (migrate and import into the dev database under
+  Aspire, push to Strapi, edit in the admin). It changes the dev database and Strapi, so it's left
+  for the reviewer. Step 10 stays unticked until then.
+- Unverified criteria: "read naturally in both languages" waits for the owner's review of
+  `catalog-descriptions.ts` in the PR. "Staff can edit both languages in Strapi" is covered by the
+  middleware, sync and route tests, but hasn't been clicked through in a running admin.
 
 ## Out of scope
 

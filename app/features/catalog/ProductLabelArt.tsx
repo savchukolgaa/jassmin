@@ -16,6 +16,9 @@ const BRAND_Y = 280;
 /** The middle of the name's lines, between the brand and the panel's bottom. */
 const NAME_MIDDLE = 352;
 const NAME_SIZES = [30, 26, 22, 19] as const;
+const BRAND_LINE_HEIGHT = 12;
+/** Capitals in Manrope 800 plus the 1.5-unit letter-spacing, as a share of the font size. */
+const BRAND_GLYPH_WIDTH = 0.8;
 
 const BOTTLES: readonly ((fill: string) => ReactElement)[] = [
   (fill) => <rect x="95" y="150" width="210" height="290" rx="18" fill={fill} />,
@@ -62,13 +65,22 @@ export function ProductLabelArt({ label, detail = "full", className }: ProductLa
 }
 
 function LabelText({ label, ink, mark }: { label: ProductLabel; ink: string; mark: string }) {
-  const brand = layoutLabelText(label.brand, {
+  // One line if the brand fits at any size, else two smaller ones (e.g. "Maison Francis Kurkdjian").
+  const oneLine = layoutLabelText(label.brand, {
     width: TEXT_WIDTH,
     maxLines: 1,
-    sizes: [13, 11],
-    // Capitals with letter-spacing are wider than the default estimate.
-    glyphWidth: 0.85,
+    sizes: [13, 11, 10],
+    glyphWidth: BRAND_GLYPH_WIDTH,
   });
+  const brand = oneLine.lines[0]?.endsWith("…")
+    ? layoutLabelText(label.brand, {
+        width: TEXT_WIDTH,
+        maxLines: 2,
+        sizes: [11, 10],
+        glyphWidth: BRAND_GLYPH_WIDTH,
+      })
+    : oneLine;
+  const brandExtra = (brand.lines.length - 1) * BRAND_LINE_HEIGHT;
   const name = layoutLabelText(label.title, {
     width: TEXT_WIDTH,
     maxLines: 3,
@@ -76,22 +88,28 @@ function LabelText({ label, ink, mark }: { label: ProductLabel; ink: string; mar
   });
   const lineHeight = Math.round(name.fontSize * 1.15);
   const firstBaseline =
-    NAME_MIDDLE - ((name.lines.length - 1) * lineHeight) / 2 + Math.round(name.fontSize * 0.35);
+    NAME_MIDDLE +
+    brandExtra / 2 -
+    ((name.lines.length - 1) * lineHeight) / 2 +
+    Math.round(name.fontSize * 0.35);
 
   return (
     <g textAnchor="middle">
-      <text
-        x={CENTER}
-        y={BRAND_Y}
+      <g
         fill={ink}
         fontSize={brand.fontSize}
         fontWeight="800"
-        letterSpacing="2"
+        letterSpacing="1.5"
         style={{ fontFamily: "var(--font-sans)" }}
       >
-        {brand.lines[0]?.toLocaleUpperCase()}
-      </text>
-      <rect x="180" y="292" width="40" height="2" fill={ink} opacity="0.35" />
+        {brand.lines.map((line, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the lines never reorder.
+          <text key={index} x={CENTER} y={BRAND_Y + index * BRAND_LINE_HEIGHT}>
+            {line.toLocaleUpperCase()}
+          </text>
+        ))}
+      </g>
+      <rect x="180" y={292 + brandExtra} width="40" height="2" fill={ink} opacity="0.35" />
       <g
         fill={ink}
         fontSize={name.fontSize}
@@ -99,8 +117,7 @@ function LabelText({ label, ink, mark }: { label: ProductLabel; ink: string; mar
         style={{ fontFamily: "var(--font-serif)" }}
       >
         {name.lines.map((line, index) => (
-          // Lines are positional; the same text can repeat.
-          // biome-ignore lint/suspicious/noArrayIndexKey: the list never reorders.
+          // biome-ignore lint/suspicious/noArrayIndexKey: the lines never reorder.
           <text key={index} x={CENTER} y={firstBaseline + index * lineHeight}>
             {line}
           </text>

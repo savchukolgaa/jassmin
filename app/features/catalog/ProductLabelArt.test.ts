@@ -46,6 +46,14 @@ describe("ProductLabelArt (#99)", () => {
     expect(html).toContain("Квітковий");
   });
 
+  it("puts a long brand on two lines instead of cutting it", () => {
+    const html = render({ label: { ...LABEL, brand: "Maison Francis Kurkdjian" } });
+
+    expect(html).toContain("MAISON FRANCIS");
+    expect(html).toContain("KURKDJIAN");
+    expect(html).not.toContain("…");
+  });
+
   it("escapes the text", () => {
     expect(render({ label: { ...LABEL, title: "<b>Bold</b>" } })).not.toContain("<b>");
   });

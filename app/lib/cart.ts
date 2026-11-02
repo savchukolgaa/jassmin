@@ -20,6 +20,8 @@ export interface CartLine {
   slug: string | null;
   title: string;
   brand: string;
+  /** The primary fragrance family (stored Ukrainian value), for the label card (#99). */
+  fragranceFamily: string | null;
   /** The product photo (#88); `null` without one. */
   image: ResponsiveImage | null;
   packSize: number;

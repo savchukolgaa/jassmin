@@ -176,13 +176,13 @@ Answered from the codebase:
   identical on server and client. Test with `renderToStaticMarkup`: the colours of the family's
   palette appear, the name lines and the brand appear, `minimal` has no `<text>`, and there are no
   `href`/`url(` references (no requests).
-- [ ] **4. `ProductImage` uses it.** Change the props to `label: ProductLabel` (export the type
+- [x] **4. `ProductImage` uses it.** Change the props to `label: ProductLabel` (export the type
   from `ProductLabelArt.tsx`). Without `image`, render the frame (no `bg-blush`) containing
   `ProductLabelArt`. With `alt` set, the wrapper is `role="img" aria-label={alt}`, otherwise it's
   `aria-hidden="true"`, as today. Add a `labelDetail` prop that defaults to `"full"`. Update
   `ProductImage.test.ts`: without a photo it renders `<svg` and the title and has no initial-only
   span; with a photo it renders `<img` and no `<svg`; the alt/role cases still hold.
-- [ ] **5. Catalog and product page.** `ProductCard.tsx` (both cards): pass
+- [x] **5. Catalog and product page.** `ProductCard.tsx` (both cards): pass
   `label={{ id: product.id, brand: product.brand, title: product.title, family: product.fragranceFamily }}`.
   `routes/product.tsx`: `family: product.fragranceFamilies[0] ?? null`, keeping `priority`.
   Update `ProductCard.dom.test.ts` / `catalog-ui.test.ts` fixtures if they assert the initial.

@@ -39,6 +39,7 @@ const line: CartLine = {
   slug: "coco-mademoiselle",
   title: "Coco Mademoiselle",
   brand: "Chanel",
+  fragranceFamily: "квіткові",
   image: null,
   packSize: 1,
   volumeMl: 50,

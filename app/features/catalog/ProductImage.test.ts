@@ -15,7 +15,12 @@ const render = (props: Partial<ProductImageProps> = {}) =>
   renderToStaticMarkup(
     createElement(ProductImage, {
       image: IMAGE,
-      brand: "Chanel",
+      label: {
+        id: "0193a1b2-7c1e-7a2b-9f00-000000000001",
+        brand: "Chanel",
+        title: "Coco",
+        family: "квіткові",
+      },
       alt: "Chanel Coco",
       layout: "card",
       ...props,
@@ -55,6 +60,31 @@ describe("ProductImage (#88)", () => {
 
   it("keeps an empty alt for a decorative duplicate", () => {
     expect(render({ alt: "" })).toContain('alt=""');
+  });
+
+  it("shows the photo, not the label card, when there is one", () => {
+    const html = render();
+
+    expect(html).toContain("<img");
+    expect(html).not.toContain("<svg");
+  });
+
+  it("draws the label card without a photo (#99)", () => {
+    const html = render({ image: null });
+
+    expect(html).toContain("<svg");
+    expect(html).not.toContain("<img");
+    expect(html).toContain(">CHANEL</text>");
+    expect(html).toContain(">Coco</text>");
+    expect(html).toContain("aspect-[4/5]");
+    expect(html).toContain("rounded-card");
+  });
+
+  it("leaves the text off a minimal label card", () => {
+    const html = render({ image: null, labelDetail: "minimal" });
+
+    expect(html).toContain("<svg");
+    expect(html).not.toContain("<text");
   });
 
   it("labels the placeholder like the photo, or hides it when decorative", () => {

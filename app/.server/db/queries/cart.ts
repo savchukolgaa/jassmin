@@ -107,6 +107,7 @@ export function listCartLines(db: Executor, cartId: number) {
       slug: products.slug,
       title: products.title,
       brand: products.brand,
+      fragranceFamily: products.fragranceFamily,
       imageUrl: products.imageUrl,
       imageWidth: products.imageWidth,
       imageHeight: products.imageHeight,

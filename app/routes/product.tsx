@@ -133,7 +133,12 @@ export default function Product({ loaderData }: Route.ComponentProps) {
       <div className="mt-6 grid gap-8 md:grid-cols-2 md:gap-12">
         <ProductImage
           image={product.image}
-          brand={product.brand}
+          label={{
+            id: product.id,
+            brand: product.brand,
+            title: product.title,
+            family: product.fragranceFamilies[0] ?? null,
+          }}
           alt={t("product.imageAlt", { brand: product.brand, title: product.title })}
           layout="page"
           priority

@@ -1,3 +1,4 @@
+import type { CatalogGender } from "./catalog";
 import type { CmsImage, HomePage, SiteSettings, StructuredAddress } from "./cms";
 import type { Locale } from "./i18n";
 import type { ProductSummary } from "./products";
@@ -11,6 +12,8 @@ export interface HomeShopData {
   trioFamilies: string[];
   /** Families picked in the URL (the trio builder without JS), at most `TRIO_SIZE`. */
   selectedFamilies: string[];
+  /** The trio builder's gender (#102), from the URL; women by default. */
+  selectedGender: CatalogGender;
   bestsellers: ProductSummary[];
 }
 
@@ -28,7 +31,7 @@ export interface HomePageView {
     image: CmsImage | null;
   };
   trioOffer: TrioOffer | null;
-  trio: { families: string[]; selected: string[] };
+  trio: { families: string[]; selected: string[]; gender: CatalogGender };
   bestsellers: ProductSummary[];
   location: {
     address: string;

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/Button";
 import { ButtonLink } from "~/components/ui/ButtonLink";
+import type { CatalogGender } from "~/lib/catalog";
 import { useT } from "~/lib/i18n";
 import {
   labelTrioFamilies,
+  TRIO_GENDER_KEYS,
+  TRIO_GENDERS,
   TRIO_SIZE,
   type TrioOffer,
   toggleTrioFamily,
@@ -15,16 +18,19 @@ type TrioBuilderProps = {
   families: string[];
   /** Families picked in the URL, from a submission without JS. */
   selected: string[];
+  /** The Women / Men switch's choice from the URL (#102); women by default. */
+  gender: CatalogGender;
   trioOffer: TrioOffer | null;
 };
 
 /**
- * "Build your trio": pick up to three fragrance families, see them fill three slots, then go to
- * the popular perfumes with those families (#67). A GET form, so it works without JS (the
- * "Show my picks" button reloads the page with `?family=`); with JS the slots fill in place.
+ * "Build your trio": choose women or men (#102), pick up to three fragrance families, see them
+ * fill three slots, then go to the popular perfumes of that gender with those families (#67). A
+ * GET form, so it works without JS (the "Show my picks" button reloads the page with `?gender=`
+ * and `?family=`); with JS the slots fill and the link updates in place.
  * It never adds anything to the cart.
  */
-export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps) {
+export function TrioBuilder({ families, selected, gender, trioOffer }: TrioBuilderProps) {
   const translator = useT();
   const { t, formatPrice } = translator;
   const [picked, setPicked] = useState(selected);
@@ -33,6 +39,8 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
   // A new no-JS submission (or back/forward) brings new picks from the loader.
   const selectedKey = selected.join("\n");
   useEffect(() => setPicked(selectedKey ? selectedKey.split("\n") : []), [selectedKey]);
+  const [chosenGender, setChosenGender] = useState(gender);
+  useEffect(() => setChosenGender(gender), [gender]);
 
   if (families.length === 0) {
     return null;
@@ -60,6 +68,27 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
               {t("home.trio.title")}
             </h2>
             <p className="text-lg leading-relaxed text-on-dark-muted">{t("home.trio.intro")}</p>
+            <fieldset>
+              <legend className="sr-only">{t("home.trio.gender.legend")}</legend>
+              {/* Native radios: one tab stop, and the arrow keys move between the options. */}
+              <div className="inline-flex rounded-pill border-2 border-primary-light p-1">
+                {TRIO_GENDERS.map((value) => (
+                  <label key={value} className="relative">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value={value}
+                      checked={chosenGender === value}
+                      onChange={() => setChosenGender(value)}
+                      className="peer sr-only"
+                    />
+                    <span className="inline-flex min-h-11 cursor-pointer items-center rounded-pill px-5 text-[0.9375rem] font-extrabold transition-colors peer-checked:bg-primary-light peer-checked:text-ink peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-light">
+                      {t(TRIO_GENDER_KEYS[value])}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <fieldset>
               <legend className="sr-only">{t("home.trio.families")}</legend>
               <div className="flex flex-wrap gap-2.5">
@@ -129,7 +158,7 @@ export function TrioBuilder({ families, selected, trioOffer }: TrioBuilderProps)
             </ol>
             {full ? (
               <ButtonLink
-                to={trioHref(translator.locale, picked)}
+                to={trioHref(translator.locale, picked, chosenGender)}
                 size="lg"
                 className="animate-pop"
               >

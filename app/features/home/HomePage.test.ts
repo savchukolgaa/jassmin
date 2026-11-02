@@ -32,6 +32,7 @@ const view: HomePageView = {
   trio: {
     families: ["квіткові", "деревні", "свіжі", "східні"],
     selected: [],
+    gender: "women",
   },
   bestsellers: [],
   location: {

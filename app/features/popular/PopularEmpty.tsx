@@ -3,7 +3,7 @@ import { usePathFor, useT } from "~/lib/i18n";
 import { popularHref } from "~/lib/popular";
 
 /**
- * Shown when no popular perfume is listed: with the trio's families, a way back to every popular
+ * Shown when no popular perfume is listed: with the trio's gender or families, a way back to every popular
  * perfume; always both catalogs.
  */
 export function PopularEmpty({ filtered }: { filtered: boolean }) {
@@ -22,7 +22,11 @@ export function PopularEmpty({ filtered }: { filtered: boolean }) {
         {t(filtered ? "popular.empty.filteredText" : "popular.empty.text")}
       </p>
       <div className="flex flex-wrap gap-3">
-        {filtered && <ButtonLink to={popularHref(locale, [])}>{t("popular.showAll")}</ButtonLink>}
+        {filtered && (
+          <ButtonLink to={popularHref(locale, { families: [], gender: null })}>
+            {t("popular.showAll")}
+          </ButtonLink>
+        )}
         <ButtonLink
           to={path("catalog", { gender: "women" })}
           variant={filtered ? "dark" : "primary"}

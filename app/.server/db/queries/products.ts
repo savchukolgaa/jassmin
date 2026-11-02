@@ -321,6 +321,7 @@ const detailColumns = {
   imageHeight: products.imageHeight,
   imageFormats: products.imageFormats,
   description: products.description,
+  descriptionEn: products.descriptionEn,
   fragranceFamilies: products.fragranceFamilies,
   notes: products.notes,
   storeCode: products.storeCode,
@@ -466,7 +467,10 @@ export interface ProductWrite {
   title: string;
   slug: string;
   brand: string;
+  /** In Ukrainian. */
   description: string | null;
+  /** In English (#100). */
+  descriptionEn: string | null;
   gender: Gender;
   /** Always `fragranceFamilies[0] ?? null`: a CHECK enforces it (#65). */
   fragranceFamily: string | null;
@@ -570,6 +574,7 @@ export async function findProductSyncState(db: Executor, productId: number) {
       slug: products.slug,
       brand: products.brand,
       description: products.description,
+      descriptionEn: products.descriptionEn,
       gender: products.gender,
       fragranceFamilies: products.fragranceFamilies,
       notes: products.notes,

@@ -75,8 +75,11 @@ only descriptions that are empty.
 - `resolveProductHandle(handle, locale, db)` takes the locale (the route passes
   `await getLocale(request)`), and `toDetail` applies `pickDescription`. `meta` and `productLd`
   keep reading `product.description`, so they get the localized text without changes.
-- zod: `descriptionEn: optionalText` in `productFields`. Both description fields also get
-  `.max(5000)`, a sanity cap so a mistaken paste can't land in the page and meta.
+- zod: both description fields use one `descriptionText` schema (trimmed, empty means `null`,
+  at most `MAX_PRODUCT_DESCRIPTION` = 5000 characters), a sanity cap so a mistaken paste can't
+  land in the page and meta. It replaced `optionalText`, whose only user was `description`. The
+  Strapi refusal message (`cms/src/utils/app-sync.ts`) names the limit when a description field is
+  refused.
 
 ## Resolved questions
 
@@ -138,14 +141,14 @@ only descriptions that are empty.
   `db/rollbacks/0019_product_description_en.sql` (`drop column description_en`). Check that
   `schema.test.ts` and `migrator.test.ts` pass, and that `pnpm db:rollback` and migrate round-trip
   on a dev DB.
-- [ ] **2. App side of the sync model.** In `~/lib/cms-sync`, add `descriptionEn: optionalText`
+- [x] **2. App side of the sync model.** In `~/lib/cms-sync`, add `descriptionEn: optionalText`
   to `productFields` and `descriptionEn: string | null` to `CmsProductState`. In
   `db/queries/products.ts`, add it to `ProductWrite`, `detailColumns` and
   `findProductSyncState`. Map it in `productWrite` (`services/cms-sync.ts`) and
   `toCmsProductState` (`services/cms-push.ts`). Update fixtures and tests (`cms-sync.test.ts`,
   `cms-push.test.ts`, `routes/cms.products.test.ts`) so a create/update with both languages
   stores both and answers both, and a push sends `descriptionEn`.
-- [ ] **3. Length cap.** Add `.max(5000)` to the description schema used by both fields
+- [x] **3. Length cap.** Add `.max(5000)` to the description schema used by both fields
   (a separate `descriptionText` so `optionalText`'s other users don't change), with a test. Make
   sure the middleware's 422 shows a Ukrainian message for it.
 - [ ] **4. Strapi.** Add `"descriptionEn": { "type": "text" }` after `description` in the

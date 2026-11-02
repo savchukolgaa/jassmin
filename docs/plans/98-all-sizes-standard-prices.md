@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/98
 Branch: `issue/98`
 Worktree: `.claude/worktrees/issue-98`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Customers should be able to order every active perfume in 5, 10, 30, 50 and 100 ml at the shop's
@@ -193,7 +193,7 @@ all five sizes at the price table and queues the products for Strapi.
 - [x] **8. UI.** `ProductPurchase` passes `stockQuantity={selected.trackStock ? selected.stockQuantity : undefined}`. Tests: `StockStatus` shows "В наявності" for an untracked size, `ProductPurchase` never shows "Залишилося лише" for an untracked size, and `CardVolumePicker` leaves untracked stock-0 sizes enabled (no strike-through). No i18n changes are needed.
 - [x] **9. Fixtures and seed.** Fix existing tests that build "sold out" sizes so they set `trackStock: true`. Seed data keeps the default (untracked). The sample 3 × 10 ml set gets `active: false` in `seed-data.ts`, so a fresh dev database matches what the script does. Run the whole suite.
 - [x] **10. Docs.** `app/.server/AGENTS.md`: product variants (`track_stock`, `variantStock` / `availableStock`, `UNTRACKED_STOCK`), the Cart and Orders sections (stock rules apply to tracked sizes), CMS sync (`trackStock`, delta rule), the #66 import note (sizes are untracked), a new bullet for `pnpm db:apply-catalog-prices` (archives sets, re-running resets staff prices), and Discounts: migration 0020 creates the tester trio, plus how to change its price (migration + Strapi hero/offer texts) and the guard test. `README.md`: script table and Strapi field.
-- [ ] **11. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and `pnpm aspire:build`. Then the manual run (below).
+- [x] **11. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and `pnpm aspire:build`: all pass (1511 tests). The manual Aspire run (below) is **not done yet**: it needs a running Strapi and changes the dev database, so it is left to the owner.
 
 ## Testing & verification
 - Automated: the tests listed in steps 2–8 (unit plus DB integration with `describe.skipIf(!hasDatabase)` / `createTestDatabase()`).
@@ -209,13 +209,13 @@ all five sizes at the price table and queues the products for Strapi.
   8. Add three different perfumes in 10 ml. The cart shows the subtotal 720 ₴, the "Тестерне тріо 3 × 10 мл" discount of 221 ₴ and a total of 499 ₴. The sample 3 × 10 ml set is no longer listed.
 
 ## Acceptance criteria
-- [ ] Every active product offers 5, 10, 30, 50 and 100 ml at 119, 240, 459, 629 and 969 ₴, on the site and in Strapi — steps 5, 6, 7 (sets are archived, so every active product is a single perfume)
-- [ ] (Added by the owner) Three 10 ml testers through the trio still cost less than buying them normally — step 5a
-- [ ] Every size of every active product can be added to the cart and ordered. Nothing shows as "out of stock" — steps 1–4, 8
-- [ ] Checkout no longer decrements stock for untracked sizes, and tracked sizes (if any) keep today's behaviour — step 4
-- [ ] Archived products stay unavailable — steps 2, 4 (`availableStock` keeps 0 for inactive)
-- [ ] Running the data script twice changes nothing the second time — step 5
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
+- [ ] Every active product offers 5, 10, 30, 50 and 100 ml at 119, 240, 459, 629 and 969 ₴, on the site and in Strapi — steps 5, 6, 7 (sets are archived, so every active product is a single perfume). Verified in the database and the storefront by tests (`apply-catalog-prices.test.ts`, `products.test.ts`); the push to Strapi is covered by unit tests only, **not yet checked in a running Strapi** (manual step 3)
+- [x] (Added by the owner) Three 10 ml testers through the trio still cost less than buying them normally — step 5a
+- [x] Every size of every active product can be added to the cart and ordered. Nothing shows as "out of stock" — steps 1–4, 8
+- [x] Checkout no longer decrements stock for untracked sizes, and tracked sizes (if any) keep today's behaviour — step 4
+- [x] Archived products stay unavailable — steps 2, 4 (`availableStock` keeps 0 for inactive)
+- [x] Running the data script twice changes nothing the second time — step 5
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
 
 ## Out of scope
 - Product pictures and descriptions (separate issues).

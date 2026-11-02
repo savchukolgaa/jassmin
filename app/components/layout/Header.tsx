@@ -1,4 +1,5 @@
 import { Link, NavLink } from "react-router";
+import type { SocialLink } from "~/lib/cms";
 import { cn } from "~/lib/cn";
 import { formatCartCount, type HeaderState } from "~/lib/header";
 import { usePathFor, useT } from "~/lib/i18n";
@@ -8,13 +9,16 @@ import { LocaleSwitcher } from "./LocaleSwitcher";
 import { MobileMenu } from "./MobileMenu";
 import { focusRing, headerNavItemClasses, iconButtonClasses, useNavLinks } from "./nav";
 
-export type HeaderProps = HeaderState;
+export type HeaderProps = HeaderState & {
+  /** The store's social profiles, shown in the mobile menu (#101). */
+  socialLinks?: readonly SocialLink[];
+};
 
 /**
  * Site header shown on every public page; data comes from the `_shop` layout loader. White with
  * `ink` text (#72), so it stands apart from the deep-pink hero; colours are tokens only.
  */
-export function Header({ user, cartCount }: HeaderProps) {
+export function Header({ user, cartCount, socialLinks = [] }: HeaderProps) {
   const { t } = useT();
   const path = usePathFor();
   const links = useNavLinks();
@@ -98,7 +102,7 @@ export function Header({ user, cartCount }: HeaderProps) {
             <CartIcon className="size-5" />
             {badge && <span aria-hidden="true">{badge}</span>}
           </NavLink>
-          <MobileMenu />
+          <MobileMenu socialLinks={socialLinks} />
         </nav>
       </div>
     </header>

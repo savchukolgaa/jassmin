@@ -229,4 +229,23 @@ describe("Header", () => {
   it("marks Ukrainian as the active language when it is", () => {
     expect(renderHeader({}, "/", "uk")).toMatch(/value="uk" lang="uk" aria-pressed="true"/);
   });
+  it("shows the store's social links in the mobile menu, after the language switcher (#101)", () => {
+    const html = renderHeader({
+      socialLinks: [
+        { platform: "instagram", url: "https://www.instagram.com/jassminperfume" },
+        { platform: "telegram", url: "https://t.me/jassmin" },
+      ],
+    });
+    const menu = html.slice(html.indexOf("<details"));
+
+    expect(menu).toContain('aria-label="Jassmin on Instagram"');
+    expect(menu.indexOf('aria-label="Jassmin on Telegram"')).toBeGreaterThan(
+      menu.indexOf('aria-label="Jassmin on Instagram"'),
+    );
+    expect(menu).toMatch(/<a(?=[^>]*aria-label="Jassmin on Instagram")[^>]*outline-primary /);
+  });
+
+  it("has no social row in the mobile menu without links", () => {
+    expect(renderHeader()).not.toContain('aria-label="Social media"');
+  });
 });

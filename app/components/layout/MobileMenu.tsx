@@ -1,13 +1,15 @@
 import { Link, NavLink } from "react-router";
+import type { SocialLink } from "~/lib/cms";
 import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
 import { CloseIcon, MenuIcon } from "./icons";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { iconButtonClasses, navItemClasses, summaryReset, useNavLinks } from "./nav";
+import { SocialLinks } from "./SocialLinks";
 import { useDisclosure } from "./useDisclosure";
 
 /** Hamburger menu below `lg` with the same links and language switcher as the inline nav. */
-export function MobileMenu() {
+export function MobileMenu({ socialLinks = [] }: { socialLinks?: readonly SocialLink[] }) {
   const { t } = useT();
   const links = useNavLinks();
   const { detailsProps, summaryProps } = useDisclosure();
@@ -71,6 +73,11 @@ export function MobileMenu() {
           <li className="mt-2 border-line border-t pt-3">
             <LocaleSwitcher tone="onLight" />
           </li>
+          {socialLinks.length > 0 && (
+            <li className="border-line border-t pt-3">
+              <SocialLinks links={socialLinks} tone="onLight" />
+            </li>
+          )}
         </ul>
       </div>
     </details>

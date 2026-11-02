@@ -113,6 +113,11 @@ export const en = {
       other: "Cart, {count} items",
     },
   },
+  social: {
+    title: "Social media",
+    followUs: "Follow us",
+    linkLabel: "Jassmin on {platform}",
+  },
   errors: {
     notFoundTitle: "Page not found",
     title: "Oops!",
@@ -593,7 +598,6 @@ export const en = {
       eyebrow: "Contacts",
       title: "Questions? Ask us anything.",
       serviceHours: "Customer service hours: ",
-      social: "Social media",
     },
   },
   contact: {

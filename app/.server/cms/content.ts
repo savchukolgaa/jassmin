@@ -11,6 +11,7 @@ import type {
 } from "~/lib/cms";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "~/lib/i18n";
 import { buildSrcSet, type ImageCandidate } from "~/lib/images";
+import { normalizeSocialLinks } from "~/lib/social";
 import { getEnv } from "../env";
 import { cmsFetch, type StrapiQuery } from "./client";
 import { isCmsError } from "./errors";
@@ -176,7 +177,7 @@ export function toSiteSettings(
     email: entry.email,
     customerServiceHours: entry.customerServiceHours ?? null,
     legalName: entry.legalName?.trim() || null,
-    socialLinks: (entry.socialLinks ?? []).map(({ platform, url }) => ({ platform, url })),
+    socialLinks: normalizeSocialLinks(entry.socialLinks ?? []),
   };
 }
 

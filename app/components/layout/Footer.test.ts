@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
+import type { SocialLink } from "~/lib/cms";
 import { createTranslator, I18nProvider, type Locale } from "~/lib/i18n";
 import { Footer } from "./Footer";
 import { navLinks } from "./nav";
@@ -9,8 +10,13 @@ import { navLinks } from "./nav";
 const FOOTER_LINKS = navLinks("en").footer;
 
 // The "Cookie settings" `<Form>` needs a data router. Without a locale, the default (Ukrainian).
-function renderFooter(locale: Locale | null = "en", path = "/") {
-  const router = createMemoryRouter([{ path: "*", element: createElement(Footer) }], {
+function renderFooter(
+  locale: Locale | null = "en",
+  path = "/",
+  socialLinks: readonly SocialLink[] = [],
+) {
+  const element = createElement(Footer, { socialLinks });
+  const router = createMemoryRouter([{ path: "*", element }], {
     initialEntries: [path],
   });
   const app = createElement(RouterProvider, { router });
@@ -67,6 +73,27 @@ describe("Footer", () => {
       /<button(?=[^>]*type="submit")(?=[^>]*name="consent")(?=[^>]*value="reset")[^>]*>Cookie settings</,
     );
     expect(renderFooter(null)).toContain(">Налаштування cookie<");
+  });
+
+  it("shows the store's Instagram and Telegram under a Follow us label (#101)", () => {
+    const html = renderFooter("en", "/", [
+      { platform: "instagram", url: "https://www.instagram.com/jassminperfume" },
+      { platform: "telegram", url: "https://t.me/jassmin" },
+    ]);
+
+    expect(html).toContain(">Follow us<");
+    expect(html).toMatch(
+      /<a(?=[^>]*href="https:\/\/www\.instagram\.com\/jassminperfume")(?=[^>]*target="_blank")(?=[^>]*aria-label="Jassmin on Instagram")/,
+    );
+    expect(html).toContain('aria-label="Jassmin on Telegram"');
+    expect(html).toContain("focus-visible:outline-white");
+  });
+
+  it("leaves out the social row without links, e.g. while Strapi is down", () => {
+    const html = renderFooter();
+
+    expect(html).not.toContain("Follow us");
+    expect(html).not.toContain('aria-label="Social media"');
   });
 
   it("hides the decorative wordmark from assistive technology", () => {

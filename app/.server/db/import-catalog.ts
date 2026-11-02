@@ -15,7 +15,8 @@ export interface CatalogImportResult {
 
 /**
  * Loads the owner's perfume range (#66) in one transaction: inserts each entry that isn't in the
- * database yet (matched by `public_id`) with every size of the price table at stock 0, and queues
+ * database yet (matched by `public_id`) with every size of the price table, untracked so it's
+ * available straight away (#98; `stock_quantity` stays 0 and isn't used), and queues
  * the new products for Strapi. New products get the owner's popular position (#67). A product
  * that exists is never touched, so whatever staff changed in Strapi (fields, prices, stock, sizes,
  * archiving, the popular position) survives a re-run, and running it twice adds nothing.
@@ -68,7 +69,9 @@ export async function importCatalog(
     const variants = await tx
       .insert(productVariants)
       .values(
-        ids.flatMap((productId) => sizes.map((size) => ({ ...size, productId, stockQuantity: 0 }))),
+        ids.flatMap((productId) =>
+          sizes.map((size) => ({ ...size, productId, stockQuantity: 0, trackStock: false })),
+        ),
       )
       .onConflictDoNothing({ target: [productVariants.productId, productVariants.volumeMl] })
       .returning({ id: productVariants.id });

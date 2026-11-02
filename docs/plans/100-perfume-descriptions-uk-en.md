@@ -133,7 +133,7 @@ only descriptions that are empty.
 
 ## Steps
 
-- [ ] **1. Schema and migration.** Add `descriptionEn: text()` next to `description` in
+- [x] **1. Schema and migration.** Add `descriptionEn: text()` next to `description` in
   `products` (`db/schema.ts`). Run `pnpm db:generate --name product_description_en`, and write
   `db/rollbacks/0019_product_description_en.sql` (`drop column description_en`). Check that
   `schema.test.ts` and `migrator.test.ts` pass, and that `pnpm db:rollback` and migrate round-trip

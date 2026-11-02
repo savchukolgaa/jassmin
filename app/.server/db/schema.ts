@@ -111,7 +111,10 @@ export const products = pgTable(
      * list. Not unique, so staff can renumber one product at a time; ties keep the sales order.
      */
     popularRank: integer(),
+    /** The Ukrainian description, plain text; paragraphs are separated by a blank line. */
     description: text(),
+    /** The English description (#100); the English page falls back to `description`. */
+    descriptionEn: text(),
     /** @deprecated Price, volume and stock live in `product_variants` (#26); not read by the app. */
     price: numeric({ precision: 10, scale: 2 }).notNull(),
     /** @deprecated Use `product_variants.volume_ml` (#26). */

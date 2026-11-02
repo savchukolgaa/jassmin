@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/96
 Branch: `issue/96`
 Worktree: `.claude/worktrees/issue-96`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -192,7 +192,7 @@ its revert (decision 2). Step 5 changed nothing.
   server uses `createTranslator`; code rules: zod schemas live in `*.schema.ts` and are imported
   only from loaders/actions/server). If ≥ 90 isn't reached, record the result in the PR and open a
   follow-up issue (`/create-issue`) describing the remaining bottleneck and the measurements.
-- [ ] **8. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and do the
+- [x] **8. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and do the
   no-JS manual checks below.
 
 ## Testing & verification
@@ -242,7 +242,7 @@ Latin subsets) and the hero image preload from Strapi's origin, both out of scop
 - [x] No page loses functionality without JavaScript (steps 5, 8): checked with plain form posts
   (cart add/update/remove, promo, checkout, login, contact form, cookie banner accept/reset,
   language switch), each with translated errors
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass (step 8)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass (step 8)
 
 ## Out of scope
 

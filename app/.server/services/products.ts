@@ -4,7 +4,7 @@ import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib
 import { GENDERS, type Gender } from "~/lib/enums";
 import { DEFAULT_LOCALE, type Locale } from "~/lib/i18n";
 import { type ImageFormat, type ResponsiveImage, toResponsiveImage } from "~/lib/images";
-import type { PopularPage } from "~/lib/popular";
+import type { PopularFilter, PopularPage } from "~/lib/popular";
 import {
   type CatalogPage,
   defaultVariant,
@@ -158,16 +158,20 @@ export const POPULAR_PAGE_SIZE = CATALOG_PAGE_SIZE;
 
 /**
  * One page of `/popular` (#67): every listed product staff ranked, in their order, narrowed to
- * `families` (any of them) when given. When fewer than a page are ranked, the best-selling
+ * the filter's `families` (any of them) and `gender` (#102, with unisex, like the catalogs) when
+ * given. When fewer than a page are ranked, the best-selling
  * unranked products fill the first page, so it is never empty while products are listed; the list
  * never grows into the whole catalog. A page past the end shows the last one.
  */
 export async function getPopularPage(
-  families: readonly string[],
+  { families, gender }: PopularFilter,
   page: number,
   db: Db = defaultDb,
 ): Promise<PopularPage> {
-  const filters = { fragranceFamilies: families };
+  const filters = {
+    fragranceFamilies: families,
+    genders: gender ? GENDER_SCOPE[gender] : undefined,
+  };
   const { ranked, listed } = await countPopularProducts(db, filters);
   const total = Math.max(ranked, Math.min(POPULAR_PAGE_SIZE, listed));
   const pageCount = Math.max(1, Math.ceil(total / POPULAR_PAGE_SIZE));

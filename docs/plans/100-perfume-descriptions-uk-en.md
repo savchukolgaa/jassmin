@@ -52,6 +52,9 @@ only descriptions that are empty.
   English text is a natural rewrite, not a word-for-word translation. Note names in English text
   are translated in prose (e.g. "blackcurrant, pear and iris"), while the stored `notes` stay
   Ukrainian (out of scope). Unisex perfumes (11) are described as suiting anyone.
+- Steps 6 and 7 landed in one commit: both lists were written together, so the completeness
+  test was on from the start instead of being a `todo` in between. The texts are 155–283
+  characters (average about 200).
 - **Plain text with paragraphs.** A blank line separates paragraphs. The page splits on
   `/\n\s*\n/` and renders each part as a `<p>`, never as Markdown or HTML. The catalog texts are
   one paragraph each.
@@ -171,13 +174,13 @@ only descriptions that are empty.
   `lang={useContentLang(product.descriptionLocale)}` on the section. Update `product.test.ts`
   (the uk page shows Ukrainian; `/en/` shows English and falls back to Ukrainian with `lang="uk"`;
   the meta description contains the localized text) and `product-jsonld.test.ts`.
-- [ ] **6. Write the descriptions: women's list (75).** Create `db/catalog-descriptions.ts`.
+- [x] **6. Write the descriptions: women's list (75).** Create `db/catalog-descriptions.ts`.
   Go through `CATALOG_PRODUCTS` in list order, and for each perfume write `uk` and `en` from its
   `fragranceFamilies` and `notes` only, following the writing rules above. Give each text its
   own opening and structure, so there are no templated sentences. Add
   `catalog-descriptions.test.ts` now, so it guards the work as it grows. Leave the completeness
   assertion as a `todo` until step 7.
-- [ ] **7. Write the descriptions: men's list (53),** including the unisex ones. Turn on the
+- [x] **7. Write the descriptions: men's list (53),** including the unisex ones. Turn on the
   completeness test:
   - Every `CATALOG_PRODUCTS` `publicId` has an entry, and there are no unknown keys.
   - `uk` and `en` are each 150–600 characters after trimming and have 2–4 sentences.

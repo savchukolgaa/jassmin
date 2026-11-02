@@ -241,6 +241,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
       packSize: 1,
       image: null,
       description: sauvage.description,
+      descriptionLocale: "uk",
       fragranceFamilies: sauvage.fragranceFamilies,
       notes: sauvage.notes,
       // The sample catalog has no store codes; the imported range does (#66).
@@ -257,6 +258,38 @@ describe.skipIf(!hasDatabase)("products service", () => {
         },
       ],
     });
+  });
+
+  it("gives the description in the requested language, else in the other one (#100)", async () => {
+    const { eq } = await import("drizzle-orm");
+    const { products } = await import("../db/schema");
+    const { getProduct } = await import("./products");
+    const sauvage = sampleNamed("Sauvage");
+
+    // The sample catalog has only Ukrainian descriptions.
+    expect(await getProduct(sauvage.publicId, testDb.db, "en")).toMatchObject({
+      description: sauvage.description,
+      descriptionLocale: "uk",
+    });
+    await testDb.db
+      .update(products)
+      .set({ descriptionEn: "A fresh spicy scent." })
+      .where(eq(products.publicId, sauvage.publicId));
+    try {
+      expect(await getProduct(sauvage.publicId, testDb.db, "en")).toMatchObject({
+        description: "A fresh spicy scent.",
+        descriptionLocale: "en",
+      });
+      expect(await getProduct(sauvage.publicId, testDb.db, "uk")).toMatchObject({
+        description: sauvage.description,
+        descriptionLocale: "uk",
+      });
+    } finally {
+      await testDb.db
+        .update(products)
+        .set({ descriptionEn: null })
+        .where(eq(products.publicId, sauvage.publicId));
+    }
   });
 
   it("checks that a variant belongs to the product and is in stock", async () => {
@@ -323,7 +356,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
     if (!slugged || !unslugged || !archived) throw new Error("insert failed");
     await recordOldSlug(testDb.db, slugged.id, "handle-old");
     await recordOldSlug(testDb.db, archived.id, "handle-archived-old");
-    const resolve = (handle: string) => resolveProductHandle(handle, testDb.db);
+    const resolve = (handle: string) => resolveProductHandle(handle, "uk", testDb.db);
 
     expect(await resolve("handle-slugged")).toMatchObject({
       kind: "product",
@@ -372,7 +405,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
     const { resolveProductHandle } = await import("./products");
     const { publicId } = await archived();
 
-    const found = await resolveProductHandle(publicId, testDb.db);
+    const found = await resolveProductHandle(publicId, "uk", testDb.db);
 
     expect(found).toMatchObject({ kind: "product", available: false });
     if (found?.kind !== "product") throw new Error("not a product");

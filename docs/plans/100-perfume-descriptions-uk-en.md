@@ -67,12 +67,16 @@ only descriptions that are empty.
   - A second run changes nothing and queues nothing.
   - Staff text is never overwritten, including when staff wrote only one language.
 - **Locale selection is a pure function in `~/lib/products`**: `pickDescription({ description,
-  descriptionEn }, locale)` returns `{ text, locale }`. For `en` it returns `descriptionEn`, and
-  falls back to `description` (`locale: "uk"`). For `uk` it returns `description`. It returns
-  `null` when both are empty. `ProductDetail` keeps `description: string | null` (the chosen text)
+  descriptionEn }, locale)` returns `{ text, locale }`: the page's language, else the other one.
+  For `en` it returns `descriptionEn`, and falls back to `description` (`locale: "uk"`). For `uk`
+  it returns `description`, and falls back to `descriptionEn`, a small extension of the plan so a
+  product staff described only in English still has a description on the Ukrainian page (marked
+  `lang="en"`). Blank text counts as none, and it returns `null` when both are empty.
+  `descriptionParagraphs(text)` splits on blank lines for the page. `ProductDetail` keeps `description: string | null` (the chosen text)
   and gains `descriptionLocale: Locale`, so the page can mark fallback text with
   `lang={useContentLang(…)}` like CMS content.
-- `resolveProductHandle(handle, locale, db)` takes the locale (the route passes
+- `resolveProductHandle(handle, locale, db)` takes the locale (`getProduct` /
+  `getProductWithId` take an optional `locale` after `db`, default `uk`; only tests call them) (the route passes
   `await getLocale(request)`), and `toDetail` applies `pickDescription`. `meta` and `productLd`
   keep reading `product.description`, so they get the localized text without changes.
 - zod: both description fields use one `descriptionText` schema (trimmed, empty means `null`,
@@ -159,7 +163,7 @@ only descriptions that are empty.
   `cms/types/generated` (`pnpm --filter jassmin-cms strapi ts:generate-types`). Check it in
   `pnpm cms:dev`: edit both fields, save, and see both columns change in PostgreSQL and the
   answer saved back.
-- [ ] **5. Locale on the product page.** Add `pickDescription` and `descriptionLocale` to
+- [x] **5. Locale on the product page.** Add `pickDescription` and `descriptionLocale` to
   `~/lib/products` (unit tests: `en` with and without English, `uk`, blank strings, both empty).
   Pass `locale` through `resolveProductHandle` → `productResult` → `toDetail`. In
   `routes/product.tsx`, pass `await getLocale(request)`, render the description as

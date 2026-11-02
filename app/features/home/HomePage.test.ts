@@ -343,7 +343,21 @@ describe("HomePage", () => {
 
     expect(html).toContain('href="tel:+380441234567"');
     expect(html).toContain('href="mailto:hello@jassmin.ua"');
-    expect(html).toMatch(/href="https:\/\/www\.instagram\.com\/jassmin"[^>]*>Instagram<\/a>/);
+    expect(html).toMatch(
+      /<a(?=[^>]*href="https:\/\/www\.instagram\.com\/jassmin")(?=[^>]*target="_blank")(?=[^>]*aria-label="Jassmin on Instagram")[^>]*><svg/,
+    );
+  });
+
+  it("shows the social links as the same icons as the footer, ringed for the dark section (#101)", () => {
+    const contacts = render().slice(render().indexOf('id="contacts"'));
+
+    expect(contacts).toContain('aria-label="Social media"');
+    expect(contacts).toMatch(
+      /<a(?=[^>]*aria-label="Jassmin on Instagram")[^>]*outline-primary-light/,
+    );
+    expect(render({ contacts: { ...view.contacts, socialLinks: [] } })).not.toContain(
+      'aria-label="Social media"',
+    );
   });
 
   it("embeds the map only when there is a safe map URL", () => {

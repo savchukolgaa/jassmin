@@ -190,11 +190,11 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
   `Promise.all` and return `socialLinks`. Pass it to `<Header>` and `<Footer>` in both the component
   and `ErrorBoundary` (`?.socialLinks ?? []`). Add a loader test that mocks `getSocialLinks` and
   checks the returned data.
-- [ ] **10. Contacts section.** Replace the text-button `<ul>` with
+- [x] **10. Contacts section.** Replace the text-button `<ul>` with
   `<SocialLinks links={contacts.socialLinks} tone="onInk" className="mt-8" />`. Remove the unused
   `buttonClasses`/`SOCIAL_LABELS` imports and the `home.contacts.social` key. Update
   `HomePage.test.ts`.
-- [ ] **11. Docs.** Add a line to `app/.server/AGENTS.md` (CMS section) on `getSocialLinks`: its
+- [x] **11. Docs.** Add a line to `app/.server/AGENTS.md` (CMS section) on `getSocialLinks`: its
   60 s cache, that it never throws, and that it's used by the `_shop` layout.
 - [ ] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Then
   `pnpm aspire run` and check by hand (see below).

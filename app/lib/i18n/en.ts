@@ -593,7 +593,6 @@ export const en = {
       eyebrow: "Contacts",
       title: "Questions? Ask us anything.",
       serviceHours: "Customer service hours: ",
-      social: "Social media",
     },
   },
   contact: {

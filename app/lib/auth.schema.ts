@@ -2,8 +2,7 @@
 // code and tests, so zod stays out of the client bundle (#96). Error messages are message keys.
 import { z } from "zod";
 import { PROFILE_INTENTS } from "./auth";
-import { msg, type TextKey } from "./i18n";
-import { isTextKey } from "./i18n/dictionaries";
+import { isTextKey, msg, type TextKey } from "./i18n";
 
 const PHONE = /^\+?[0-9 ()-]{7,20}$/;
 

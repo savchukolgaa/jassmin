@@ -1,7 +1,7 @@
 // Optimistic and stock state of a cart line, kept apart from the components so it can be tested
 // without rendering.
 import { type CartLine, MAX_LINE_QUANTITY } from "~/lib/cart";
-import type { Translator } from "~/lib/i18n";
+import { createTranslator, type Translator } from "~/lib/i18n";
 
 /** Prefix of every cart line's fetcher key, so the summary can tell when a line is saving. */
 export const CART_LINE_FETCHER_PREFIX = "cart-line-";
@@ -32,7 +32,7 @@ export function maxQuantity(line: Pick<CartLine, "stockQuantity">): number {
 /** A warning for a line whose stock has dropped since it was added, else `null`. */
 export function stockNotice(
   line: Pick<CartLine, "quantity" | "stockQuantity">,
-  { t }: Pick<Translator, "t">,
+  { t }: Translator = createTranslator(),
 ): string | null {
   if (line.stockQuantity <= 0) {
     return t("cart.stockOut");

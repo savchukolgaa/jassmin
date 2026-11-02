@@ -1,7 +1,6 @@
 import { BLOG_VARY, type BlogListView, type BlogPostCardView, type BlogPostView } from "~/lib/blog";
 import type { BlogPost, BlogPostSummary, Paginated } from "~/lib/cms";
-import { DEFAULT_LOCALE, type Locale } from "~/lib/i18n";
-import { createTranslator } from "~/lib/i18n/dictionaries";
+import { createTranslator, DEFAULT_LOCALE, type Locale } from "~/lib/i18n";
 import { renderArticleMarkdown, toPlainText } from "../markdown";
 import { hasSessionCookie } from "../session-cookie";
 

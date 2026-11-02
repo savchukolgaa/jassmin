@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cartErrorMessage as cartErrorMessage_ } from "./cart";
 import { parseCartAction } from "./cart.schema";
-import { createTranslator } from "./i18n/dictionaries";
+import { createTranslator } from "./i18n";
 
 const en = createTranslator("en");
 const cartErrorMessage = (result: Parameters<typeof cartErrorMessage_>[0]) =>
@@ -59,8 +59,8 @@ describe("parseCartAction", () => {
 });
 
 describe("cartErrorMessage in Ukrainian", () => {
-  it("uses the translator's locale", () => {
-    expect(cartErrorMessage_({ error: "exceeds-stock", available: 3 }, createTranslator())).toBe(
+  it("is the default", () => {
+    expect(cartErrorMessage_({ error: "exceeds-stock", available: 3 })).toBe(
       "Цього об’єму доступно лише 3 шт.",
     );
   });

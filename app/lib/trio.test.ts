@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTranslator } from "./i18n/dictionaries";
+import { createTranslator } from "./i18n";
 import { labelTrioFamilies, parseTrioSearch, toggleTrioFamily, trioHref } from "./trio";
 
 const known = ["квіткові", "деревні", "свіжі", "східні"];

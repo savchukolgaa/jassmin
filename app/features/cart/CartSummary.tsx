@@ -4,11 +4,11 @@ import type { CartView } from "~/lib/cart";
 import { FREE_SHIPPING_THRESHOLD } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
 import { discountLabel } from "~/lib/discounts";
-import { type Translator, usePathFor, useT } from "~/lib/i18n";
+import { createTranslator, type Translator, usePathFor, useT } from "~/lib/i18n";
 import { CART_LINE_FETCHER_PREFIX } from "./cart-line-state";
 import { PROMO_FETCHER_KEY, PromoCodeForm } from "./PromoCodeForm";
 
-export function formatItemCount(count: number, { t }: Pick<Translator, "t">): string {
+export function formatItemCount(count: number, { t }: Translator = createTranslator()): string {
   return t("cart.itemCount", { count });
 }
 

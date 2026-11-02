@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BlogPost } from "~/lib/cms";
-import { createTranslator } from "~/lib/i18n/dictionaries";
+import { createTranslator } from "~/lib/i18n";
 import blogPostBySlug from "../cms/__fixtures__/blog-post-by-slug.json";
 import blogPosts from "../cms/__fixtures__/blog-posts.json";
 import { toBlogPost, toBlogPostSummary, toPaginated } from "../cms/content";

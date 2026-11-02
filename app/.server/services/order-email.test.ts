@@ -1,7 +1,7 @@
 import type Mail from "nodemailer/lib/mailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrderConfirmation } from "~/lib/checkout";
-import { createTranslator } from "~/lib/i18n/dictionaries";
+import { createTranslator } from "~/lib/i18n";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
 import {
   buildOrderConfirmationEmail,

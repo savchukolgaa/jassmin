@@ -1,8 +1,6 @@
-// The translator itself, without any dictionary: the browser gets only the active locale's
-// messages, from the root loader (#96). Server code, tests and `isTextKey` take both dictionaries
-// from `./dictionaries`.
 import { formatPrice } from "../money";
-import { INTL_LOCALES, type Locale } from "./locales";
+import { en } from "./en";
+import { DEFAULT_LOCALE, INTL_LOCALES, type Locale } from "./locales";
 import type {
   Dictionary,
   MessageKey,
@@ -11,6 +9,9 @@ import type {
   PluralKey,
   TextKey,
 } from "./types";
+import { uk } from "./uk";
+
+const DICTIONARIES: Record<Locale, Dictionary> = { uk, en };
 
 export interface TranslateFunction {
   (key: PluralKey, params: MessageParams & { count: number }): string;
@@ -33,11 +34,7 @@ export function msg(key: TextKey): TextKey {
   return key;
 }
 
-/** The message at a dotted `key`, or `undefined` when there is none. */
-export function lookup(
-  dictionary: Dictionary | undefined,
-  key: string,
-): string | PluralForms | undefined {
+function lookup(dictionary: Dictionary, key: string): string | PluralForms | undefined {
   let node: unknown = dictionary;
   for (const part of key.split(".")) {
     if (typeof node !== "object" || node === null || !Object.hasOwn(node, part)) {
@@ -54,19 +51,22 @@ export function lookup(
   return undefined;
 }
 
-const translators = new WeakMap<Dictionary, Translator>();
+/** Whether `value` is a plain (non-plural) message key, e.g. an error returned by an action. */
+export function isTextKey(value: string): value is TextKey {
+  return typeof lookup(uk, value) === "string";
+}
 
-/**
- * The translator for `locale` with that locale's `messages`, created once per dictionary.
- * Without messages (only when the root loader failed) every message renders as its key.
- */
-export function createTranslatorFrom(locale: Locale, messages: Dictionary | undefined): Translator {
-  const cached = messages && translators.get(messages);
+const translators = new Map<Locale, Translator>();
+
+/** The translator for `locale`, created once per locale. */
+export function createTranslator(locale: Locale = DEFAULT_LOCALE): Translator {
+  const cached = translators.get(locale);
   if (cached) {
     return cached;
   }
 
   const intlLocale = INTL_LOCALES[locale];
+  const dictionary = DICTIONARIES[locale];
   const numbers = new Intl.NumberFormat(intlLocale);
   const plurals = new Intl.PluralRules(intlLocale);
   const dates = new Intl.DateTimeFormat(intlLocale, {
@@ -76,7 +76,7 @@ export function createTranslatorFrom(locale: Locale, messages: Dictionary | unde
   const formatNumber = (value: number) => numbers.format(value);
 
   function t(key: MessageKey, params: MessageParams = {}): string {
-    const message = lookup(messages, key);
+    const message = lookup(dictionary, key);
     if (message === undefined) {
       // Unreachable for typed keys; shows the key instead of crashing the page.
       return key;
@@ -103,8 +103,6 @@ export function createTranslatorFrom(locale: Locale, messages: Dictionary | unde
     formatDate: (iso) => dates.format(new Date(iso)),
     formatNumber,
   };
-  if (messages) {
-    translators.set(messages, translator);
-  }
+  translators.set(locale, translator);
   return translator;
 }

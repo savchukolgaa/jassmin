@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { createTranslator } from "~/lib/i18n/dictionaries";
+import { createTranslator } from "~/lib/i18n";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
 beforeAll(() => {

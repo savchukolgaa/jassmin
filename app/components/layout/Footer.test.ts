@@ -2,8 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import { I18nProvider, type Locale } from "~/lib/i18n";
-import { createTranslator } from "~/lib/i18n/dictionaries";
+import { createTranslator, I18nProvider, type Locale } from "~/lib/i18n";
 import { Footer } from "./Footer";
 import { navLinks } from "./nav";
 

@@ -6,8 +6,7 @@ import {
   type ContactValues,
   HONEYPOT_FIELD,
 } from "~/lib/contact";
-import { msg } from "~/lib/i18n";
-import { isTextKey } from "~/lib/i18n/dictionaries";
+import { isTextKey, msg } from "~/lib/i18n";
 
 export const contactFormSchema = z.object({
   name: z

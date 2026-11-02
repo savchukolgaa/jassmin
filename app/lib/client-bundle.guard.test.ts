@@ -6,22 +6,17 @@ import { describe, expect, it } from "vitest";
 // and `headers` from route modules in the client build, so a route module may import zod schemas
 // (`*.schema.ts`) and server code for them. Everything else that the UI reaches must not: a
 // module-level `z.object(…)` can't be tree-shaken, so one import of a schema module from a
-// component ships all of zod (~24 KB gzip) to every page. Likewise the dictionaries: the browser
-// gets the active locale's messages from the root loader, so `uk.ts` and `en.ts` (~21 KB gzip
-// together) stay out of the bundle.
+// component ships all of zod (~24 KB gzip) to every page.
 //
 // This walks the static value imports (not `import type`) from every page route module and every
-// component, and fails when a module on that graph imports `zod`, a `*.schema.ts` module, the
-// dictionaries or server code.
+// component, and fails when a module on that graph imports `zod`, a `*.schema.ts` module or
+// server code.
 
 const APP = join(import.meta.dirname, "..");
 
 const SOURCE = /\.tsx?$/;
 const TEST = /\.test\.tsx?$/;
 const SCHEMA = /\.schema\.ts$/;
-const DICTIONARIES = ["dictionaries.ts", "uk.ts", "en.ts"].map((file) =>
-  join(APP, "lib", "i18n", file),
-);
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -65,7 +60,6 @@ const name = (path: string) => `app/${relative(APP, path).replaceAll("\\", "/")}
 function forbidden(specifier: string, target: string | undefined): string | undefined {
   if (specifier === "zod") return "zod";
   if (target && SCHEMA.test(target)) return "a zod schema module";
-  if (target && DICTIONARIES.includes(target)) return "the dictionaries";
   if (target?.includes(`${join(APP, ".server")}`)) return "server code";
   return undefined;
 }
@@ -79,8 +73,8 @@ function findClientViolations(): string[] {
   const seen = new Set<string>();
   const queue = [...ui.filter((path) => !SCHEMA.test(path))];
 
-  // A route module's own imports: schema, dictionary and server modules are for its loader or
-  // action (the root loader sends `messagesFor(locale)`), which the client build strips.
+  // A route module's own imports: schema and server modules are for its loader or action, which
+  // the client build strips.
   for (const route of roots) {
     for (const specifier of valueImports(readFileSync(route, "utf8"))) {
       const target = resolveImport(route, specifier);
@@ -118,7 +112,7 @@ describe("client bundle", () => {
     expect(valueImports(source)).toEqual(["zod", "./b", "./e", "./side-effect.css"]);
   });
 
-  it("keeps zod, schemas, dictionaries and server code out of everything the UI imports", () => {
+  it("keeps zod, schemas and server code out of everything the UI imports", () => {
     expect(findClientViolations()).toEqual([]);
   });
 });

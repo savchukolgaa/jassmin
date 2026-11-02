@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blogPostBreadcrumbs, catalogBreadcrumbs, productBreadcrumbs } from "./breadcrumbs";
-import { createTranslator } from "./i18n/dictionaries";
+import { createTranslator } from "./i18n";
 
 const t = createTranslator("en");
 

@@ -1,7 +1,6 @@
 import type Mail from "nodemailer/lib/mailer";
 import type { AccountProfile } from "~/lib/account";
-import type { Locale, Translator } from "~/lib/i18n";
-import { createTranslator } from "~/lib/i18n/dictionaries";
+import { createTranslator, type Locale, type Translator } from "~/lib/i18n";
 import { type Db, db } from "../db";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import {

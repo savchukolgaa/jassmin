@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parsePopularPage, popularHref } from "./popular";
+import { popularHref } from "./popular";
+import { parsePopularPage } from "./popular.schema";
 
 describe("parsePopularPage", () => {
   it("reads a whole page number from 1", () => {

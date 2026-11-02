@@ -148,7 +148,7 @@ Schemas are only used in loaders and actions, and React Router strips those from
   median Performance, FCP, LCP, TBT, CLS, SEO and Accessibility, the list of modulepreloaded
   chunks per page (from the HTML `<link rel="modulepreload">`) and their gzip sizes. A small node
   script in the scratchpad is enough for this, so the visualizer is optional.
-- [ ] **2. Move zod schemas out of shared `lib` modules.** For each of `auth`, `cart`, `catalog`,
+- [x] **2. Move zod schemas out of shared `lib` modules.** For each of `auth`, `cart`, `catalog`,
   `checkout`, `consent`, `discounts`, `analytics`, `blog`, `popular` (and `contact-form`), move the
   `z.*` declarations and the parse helpers that use them to `<m>.schema.ts`. Update the imports in
   routes (`loader`/`action` only), `.server/` services and tests. Keep types from `z.infer`

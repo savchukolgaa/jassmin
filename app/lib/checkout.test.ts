@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { toFieldErrors } from "./auth";
+import { toFieldErrors } from "./auth.schema";
 import {
   CHECKOUT_FIELDS,
   checkoutValues,
   formatShippingAddress,
   freeShippingInfo,
   normalizeUkrainianPhone,
-  parseCheckout,
   parseOrderId,
 } from "./checkout";
+import { parseCheckout } from "./checkout.schema";
 
 const form = (fields: Record<string, string>) => {
   const formData = new FormData();

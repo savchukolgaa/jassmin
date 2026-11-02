@@ -4,7 +4,6 @@
 // These are visitor sessions for traffic and conversion analysis, not the auth cookie session
 // (app/.server/session.ts).
 import type { ShouldRevalidateFunctionArgs } from "react-router";
-import { z } from "zod";
 import { resolveAcquisitionChannel } from "./auth";
 import type { EventType } from "./enums";
 
@@ -103,29 +102,7 @@ export type ClientEventType = (typeof CLIENT_EVENT_TYPES)[number];
 /** Most events one `/api/events` request may carry. */
 export const MAX_CLIENT_EVENTS = 20;
 
-/** A same-site path: starts with one `/` (so not `//host`) and has no backslash. */
-const sitePath = z
-  .string()
-  .max(2048)
-  .refine((path) => path.startsWith("/") && !path.startsWith("//") && !path.includes("\\"));
-
-/** The JSON body the client tracker posts to `/api/events`. */
-export const clientEventBatchSchema = z.object({
-  events: z
-    .array(
-      z.object({
-        type: z.enum(CLIENT_EVENT_TYPES),
-        path: sitePath,
-        referrer: sitePath.optional(),
-      }),
-    )
-    .min(1)
-    .max(MAX_CLIENT_EVENTS),
-});
-
-export type ClientEventBatch = z.infer<typeof clientEventBatchSchema>;
-
-export type ClientEvent = ClientEventBatch["events"][number];
+export type { ClientEvent, ClientEventBatch } from "./analytics.schema";
 
 /**
  * `shouldRevalidate` for routes whose loader records a view (`product_view`, `search`): a form

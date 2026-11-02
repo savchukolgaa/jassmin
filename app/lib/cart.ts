@@ -1,34 +1,14 @@
 // Cart form contract shared by the cart route's `action` and the forms that post to it, plus the
 // cart DTOs its `loader` returns.
-import { z } from "zod";
-import { type CartPromo, type DiscountLine, promoCodeSchema } from "./discounts";
+import type { CartIntent } from "./cart.schema";
+import type { CartPromo, DiscountLine } from "./discounts";
 import { createTranslator, type TextKey, type Translator } from "./i18n";
 import type { ResponsiveImage } from "./images";
 
 /** Most of one size a single cart line may hold, whatever the stock. */
 export const MAX_LINE_QUANTITY = 99;
 
-const quantity = z.coerce.number().int().min(1).max(MAX_LINE_QUANTITY);
-
-export const cartActionSchema = z.discriminatedUnion("intent", [
-  z.object({
-    intent: z.literal("add"),
-    productId: z.uuid(),
-    /** The chosen size's `public_id`; the action checks it belongs to the product. */
-    variantId: z.uuid(),
-    quantity: quantity.default(1),
-  }),
-  /** `variantId` identifies the line; the stepper posts the new quantity. */
-  z.object({ intent: z.literal("update"), variantId: z.uuid(), quantity }),
-  z.object({ intent: z.literal("remove"), variantId: z.uuid() }),
-  /** Promo codes (#59): the code is trimmed and uppercased. */
-  z.object({ intent: z.literal("apply-promo"), code: promoCodeSchema }),
-  z.object({ intent: z.literal("remove-promo") }),
-]);
-
-export type CartActionInput = z.infer<typeof cartActionSchema>;
-
-export type CartIntent = CartActionInput["intent"];
+export type { CartActionInput, CartIntent } from "./cart.schema";
 
 /** One cart line (one size of a perfume). Prices are exact decimal strings. */
 export interface CartLine {
@@ -124,9 +104,4 @@ export function cartErrorMessage(
       : t(CART_ERROR_KEYS["out-of-stock"]);
   }
   return t(CART_ERROR_KEYS[result.error]);
-}
-
-/** Validates a cart form submission (`add`, `update` or `remove`). */
-export function parseCartAction(formData: FormData) {
-  return cartActionSchema.safeParse(Object.fromEntries(formData));
 }

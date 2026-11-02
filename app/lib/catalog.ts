@@ -1,6 +1,5 @@
 // Catalog URL contract: which genders have a catalog page, and the filter/sort/page search params.
 // Parsed with zod on the server; invalid values fall back to their defaults so a bad URL never errors.
-import { z } from "zod";
 import { type FragranceFamily, isFragranceFamily } from "./enums";
 import type { TextKey, Translator } from "./i18n";
 
@@ -63,43 +62,11 @@ export function fragranceFamilyLabel(value: string, { t }: Pick<Translator, "t">
 
 export const CATALOG_PAGE_SIZE = 12;
 
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((value) => value || undefined)
-    .optional()
-    .catch(undefined);
-
-const catalogSearchSchema = z.object({
-  fragrance_family: optionalText(100),
-  brand: optionalText(255),
-  sort: z.enum(CATALOG_SORTS).catch(DEFAULT_CATALOG_SORT),
-  page: z.coerce.number().int().min(1).max(10_000).catch(1),
-});
-
 export interface CatalogSearch {
   fragranceFamily?: string;
   brand?: string;
   sort: CatalogSort;
   page: number;
-}
-
-/** Reads the catalog filters from a URL's search params. */
-export function parseCatalogSearch(params: URLSearchParams): CatalogSearch {
-  const parsed = catalogSearchSchema.parse({
-    fragrance_family: params.get("fragrance_family") ?? undefined,
-    brand: params.get("brand") ?? undefined,
-    sort: params.get("sort") ?? undefined,
-    page: params.get("page") ?? undefined,
-  });
-  return {
-    fragranceFamily: parsed.fragrance_family,
-    brand: parsed.brand,
-    sort: parsed.sort,
-    page: parsed.page,
-  };
 }
 
 /** Whether the shopper narrowed or re-sorted the catalog (a `search` analytics event, #18). */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { consentFormSchema, isConsentValue } from "./consent";
+import { isConsentValue } from "./consent";
+import { consentFormSchema } from "./consent.schema";
 
 describe("isConsentValue", () => {
   it("accepts only the stored choices", () => {

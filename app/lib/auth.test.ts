@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { loginRedirectPath, resolveAcquisitionChannel, safeRedirect } from "./auth";
 import {
   changeEmailSchema,
   changePasswordSchema,
   contactSchema,
-  loginRedirectPath,
   loginSchema,
   profileIntentSchema,
   registerSchema,
-  resolveAcquisitionChannel,
-  safeRedirect,
   toFieldErrors,
-} from "./auth";
+} from "./auth.schema";
 
 const validRegistration = {
   fullName: "  Olena Petrenko ",

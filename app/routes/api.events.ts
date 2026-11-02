@@ -7,7 +7,8 @@ import {
 } from "~/.server/analytics";
 import { eventsLimiter, MAX_EVENTS_BODY_BYTES, readLimitedBody } from "~/.server/client-events";
 import { getClientIp } from "~/.server/rate-limit";
-import { type ClientEvent, clientEventBatchSchema } from "~/lib/analytics";
+import type { ClientEvent } from "~/lib/analytics";
+import { clientEventBatchSchema } from "~/lib/analytics.schema";
 import type { Route } from "./+types/api.events";
 
 function status(code: number, headers?: HeadersInit): Response {

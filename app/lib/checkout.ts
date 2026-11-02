@@ -1,13 +1,14 @@
 // Checkout form contract (#11) shared by the `/checkout` action and its form, plus the DTOs the
 // checkout and order-confirmation loaders return. Isomorphic: no server imports. Error messages
 // are message keys, translated when the form renders them.
-import { z } from "zod";
-import { type AuthFormErrors, emailSchema } from "./auth";
+import type { AuthFormErrors } from "./auth";
 import type { CartLine } from "./cart";
 import type { DiscountLine } from "./discounts";
-import { PAYMENT_METHODS, type PaymentMethod } from "./enums";
-import { msg, type TextKey } from "./i18n";
+import type { PaymentMethod } from "./enums";
+import type { TextKey } from "./i18n";
 import { fromKopiyky, toKopiyky } from "./money";
+
+export type { CheckoutInput } from "./checkout.schema";
 
 /** From this subtotal (after discount) the store pays Nova Poshta; below it the recipient does. */
 export const FREE_SHIPPING_THRESHOLD = "1500.00";
@@ -27,45 +28,6 @@ export function normalizeUkrainianPhone(raw: string): string | undefined {
   return match ? `+38${match[1]}` : undefined;
 }
 
-const requiredText = (max: number, required: TextKey, tooLong: TextKey) =>
-  z
-    .string({ error: msg(required) })
-    .trim()
-    .min(1, msg(required))
-    .max(max, msg(tooLong));
-
-export const checkoutSchema = z.object({
-  fullName: requiredText(
-    255,
-    "checkout.errors.fullNameRequired",
-    "checkout.errors.fullNameTooLong",
-  ),
-  email: emailSchema,
-  // Normalised, so `orders.guest_phone` matches however the number was typed (identity resolution).
-  phone: z.string({ error: msg("checkout.errors.phoneInvalid") }).transform((value, ctx) => {
-    const phone = normalizeUkrainianPhone(value);
-    if (phone === undefined) {
-      ctx.addIssue({ code: "custom", message: msg("checkout.errors.phoneInvalid") });
-      return z.NEVER;
-    }
-    return phone;
-  }),
-  city: requiredText(100, "checkout.errors.cityRequired", "checkout.errors.cityTooLong"),
-  branch: requiredText(255, "checkout.errors.branchRequired", "checkout.errors.branchTooLong"),
-  paymentMethod: z.enum(PAYMENT_METHODS, { error: msg("checkout.errors.paymentRequired") }),
-  /**
-   * The total the page showed (#59), so the order is never placed at more: a code or offer may
-   * stop working between loading the page and submitting it. Left out, it isn't checked.
-   */
-  expectedTotal: z
-    .string()
-    .regex(/^\d{1,8}(?:\.\d{1,2})?$/)
-    .optional()
-    .catch(undefined),
-});
-
-export type CheckoutInput = z.infer<typeof checkoutSchema>;
-
 export const CHECKOUT_FIELDS = [
   "fullName",
   "email",
@@ -79,11 +41,6 @@ export type CheckoutField = (typeof CHECKOUT_FIELDS)[number];
 
 /** What the checkout `action` returns when the order can't be placed. Errors are keys. */
 export type CheckoutFormErrors = AuthFormErrors<CheckoutField>;
-
-/** Validates a checkout form submission. */
-export function parseCheckout(formData: FormData) {
-  return checkoutSchema.safeParse(Object.fromEntries(formData));
-}
 
 /** The submitted values, to refill the form after an error. */
 export function checkoutValues(formData: FormData): Partial<Record<CheckoutField, string>> {

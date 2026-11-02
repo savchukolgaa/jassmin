@@ -1,8 +1,7 @@
 // Promo codes and discount DTOs (#59), shared by the cart route, its forms and the order pages.
 // Isomorphic: no server imports. Error messages are message keys, translated when rendered.
-import { z } from "zod";
 import type { DiscountKind } from "./enums";
-import { createTranslator, msg, type TextKey, type Translator } from "./i18n";
+import { createTranslator, type TextKey, type Translator } from "./i18n";
 
 /** `discounts.slug` of the automatic tester-trio rule, the price the home page advertises. */
 export const TESTER_TRIO_DISCOUNT_SLUG = "tester-trio";
@@ -14,17 +13,6 @@ export const MAX_PROMO_CODE_LENGTH = 40;
 export function normalizePromoCode(raw: string): string {
   return raw.trim().toUpperCase();
 }
-
-export const promoCodeSchema = z
-  .string({ error: msg("cart.errors.promoInvalid") })
-  .transform(normalizePromoCode)
-  .pipe(
-    z
-      .string()
-      .min(1, msg("cart.errors.promoInvalid"))
-      .max(MAX_PROMO_CODE_LENGTH, msg("cart.errors.promoInvalid"))
-      .regex(/^[A-Z0-9_-]+$/, msg("cart.errors.promoInvalid")),
-  );
 
 /**
  * Where the cart's promo code stands: `applied`; `not-best` when an automatic rule saves more (the

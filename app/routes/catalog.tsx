@@ -17,8 +17,8 @@ import {
   catalogHref,
   hasActiveFilters,
   isCatalogGender,
-  parseCatalogSearch,
 } from "~/lib/catalog";
+import { parseCatalogSearch } from "~/lib/catalog.schema";
 import { cn } from "~/lib/cn";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { paramFromSegment } from "~/lib/paths";

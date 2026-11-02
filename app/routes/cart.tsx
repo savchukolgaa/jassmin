@@ -15,12 +15,8 @@ import { checkVariantForCart } from "~/.server/services/products";
 import { CartLineItem } from "~/features/cart/CartLineItem";
 import { CartSummary } from "~/features/cart/CartSummary";
 import { EmptyCart } from "~/features/cart/EmptyCart";
-import {
-  type CartActionResult,
-  type CartIntent,
-  cartErrorMessage,
-  parseCartAction,
-} from "~/lib/cart";
+import { type CartActionResult, type CartIntent, cartErrorMessage } from "~/lib/cart";
+import { parseCartAction } from "~/lib/cart.schema";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/cart";

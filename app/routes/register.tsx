@@ -10,11 +10,10 @@ import { AuthLayout, FormAlert } from "~/features/auth/AuthLayout";
 import {
   type AuthFormErrors,
   type RegisterField,
-  registerSchema,
   resolveAcquisitionChannel,
   safeRedirect,
-  toFieldErrors,
 } from "~/lib/auth";
+import { registerSchema, toFieldErrors } from "~/lib/auth.schema";
 import { metaTranslator, usePathFor, useT } from "~/lib/i18n";
 import { pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";

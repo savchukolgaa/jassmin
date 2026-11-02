@@ -1,6 +1,6 @@
 // `pnpm db:make-admin <email> [--revoke]`: gives a registered user the admin role, or takes it
 // away. The CLI wrapper is scripts/make-admin.ts.
-import { emailSchema } from "~/lib/auth";
+import { emailSchema } from "~/lib/auth.schema";
 import type { UserRole } from "~/lib/enums";
 import type { Db } from "./client";
 import { setUserRole } from "./queries/users";

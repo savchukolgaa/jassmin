@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalizePromoCode, promoCodeSchema } from "./discounts";
+import { normalizePromoCode } from "./discounts";
+import { promoCodeSchema } from "./discounts.schema";
 
 describe("promoCodeSchema", () => {
   it("trims and uppercases what the shopper typed", () => {

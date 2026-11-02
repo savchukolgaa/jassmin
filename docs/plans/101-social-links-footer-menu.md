@@ -152,7 +152,7 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
 - [x] **2. Apply in the DTO.** `toSiteSettings` returns
   `socialLinks: normalizeSocialLinks(entry.socialLinks ?? [])`. Extend `content.test.ts`. Run the
   `structured-data` tests to confirm `sameAs` still works; it now gets cleaned URLs.
-- [ ] **3. Cached layout data.** Create `app/.server/cms/social.ts` with
+- [x] **3. Cached layout data.** Create `app/.server/cms/social.ts` with
   `getSocialLinks(locale): Promise<SocialLink[]>`. It wraps `getSiteSettings(locale)`, keeps a
   `Map<Locale, { value; expiresAt; pending? }>`, uses a 60 s TTL on success and 10 s after a
   failure, returns the stale value or `[]` on error, and never rejects. Mock

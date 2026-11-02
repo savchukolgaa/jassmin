@@ -557,6 +557,11 @@ export const en = {
       intro:
         "Not sure where to start? Pick three scent families and we'll show you testers to match.",
       families: "Scent families",
+      gender: {
+        legend: "Who's it for",
+        women: "Women",
+        men: "Men",
+      },
       update: "Show my picks",
       slots: "Your trio",
       slot: "Slot {n}",
@@ -668,6 +673,12 @@ export const en = {
     yourTrio: "Your trio:",
     chosenFamilies: "Chosen fragrance families",
     removeFamily: "Remove {family}",
+    gender: {
+      label: "Who it's for",
+      women: "Women",
+      men: "Men",
+      remove: "Remove filter: {gender}",
+    },
     showAll: "Show all popular",
     list: "Popular perfumes",
     more: {

@@ -15,7 +15,7 @@ import { metaTranslator, useT } from "~/lib/i18n";
 import { pageOf } from "~/lib/paths";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import { storeGraphLd } from "~/lib/structured-data";
-import { parseTrioSearch } from "~/lib/trio";
+import { parseTrioGender, parseTrioSearch } from "~/lib/trio";
 import { useSiteUrl } from "~/lib/use-site-url";
 import type { Route } from "./+types/home";
 
@@ -38,8 +38,8 @@ export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
 
 // Content is edited in Strapi (`home-page`, `site-settings`), in the visitor's language with a
 // Ukrainian fallback; an outage becomes a 503 page. The tester-trio price, the trio builder's
-// families and the bestsellers come from PostgreSQL (#64); `?family=` holds the trio picks when
-// the builder was submitted without JS.
+// families and the bestsellers come from PostgreSQL (#64); `?family=` and `?gender=` hold the trio
+// picks and gender (#102, women unless it is a valid one) when the builder was submitted without JS.
 export async function loader({ request }: Route.LoaderArgs) {
   const locale = await getLocale(request);
   const [homePage, siteSettings, trioOffer, trioFamilies, bestsellers] = await Promise.all([
@@ -49,11 +49,14 @@ export async function loader({ request }: Route.LoaderArgs) {
     getTrioFamilies(),
     getBestsellers(),
   ]);
-  const selectedFamilies = parseTrioSearch(new URL(request.url).searchParams, trioFamilies);
+  const { searchParams } = new URL(request.url);
+  const selectedFamilies = parseTrioSearch(searchParams, trioFamilies);
+  const selectedGender = parseTrioGender(searchParams) ?? "women";
   return buildHomePageView(homePage, siteSettings, {
     trioOffer,
     trioFamilies,
     selectedFamilies,
+    selectedGender,
     bestsellers,
   });
 }

@@ -30,8 +30,8 @@ beforeEach(() => {
 
 describe("popular loader", () => {
   it("loads the first page of every popular perfume", async () => {
-    expect(await load()).toMatchObject({ total: 30, families: [] });
-    expect(products.getPopularPage).toHaveBeenCalledWith([], 1);
+    expect(await load()).toMatchObject({ total: 30, families: [], gender: null });
+    expect(products.getPopularPage).toHaveBeenCalledWith({ families: [], gender: null }, 1);
   });
 
   it("passes up to three known families, in pick order, with labels", async () => {
@@ -46,7 +46,10 @@ describe("popular loader", () => {
 
     const result = await load(`?${query}`);
 
-    expect(products.getPopularPage).toHaveBeenCalledWith(["свіжі", "квіткові", "водяні"], 1);
+    expect(products.getPopularPage).toHaveBeenCalledWith(
+      { families: ["свіжі", "квіткові", "водяні"], gender: null },
+      1,
+    );
     expect(result.families).toEqual([
       { value: "свіжі", label: "Fresh" },
       { value: "квіткові", label: "Floral" },
@@ -57,8 +60,24 @@ describe("popular loader", () => {
   it("reads the page and the families", async () => {
     const result = await load(`?page=2&${new URLSearchParams([["family", "квіткові"]])}`);
 
-    expect(products.getPopularPage).toHaveBeenCalledWith(["квіткові"], 2);
+    expect(products.getPopularPage).toHaveBeenCalledWith(
+      { families: ["квіткові"], gender: null },
+      2,
+    );
     expect(result.page).toBe(2);
+  });
+
+  it("reads the trio's gender and ignores an invalid one (#102)", async () => {
+    const families = new URLSearchParams([["family", "квіткові"]]);
+    const result = await load(`?gender=men&${families}`);
+
+    expect(products.getPopularPage).toHaveBeenCalledWith(
+      { families: ["квіткові"], gender: "men" },
+      1,
+    );
+    expect(result.gender).toBe("men");
+    expect((await load("?gender=unisex")).gender).toBeNull();
+    expect(products.getPopularPage).toHaveBeenLastCalledWith({ families: [], gender: null }, 1);
   });
 
   it("treats an invalid page as the first", async () => {
@@ -66,7 +85,7 @@ describe("popular loader", () => {
 
     const result = await load("?page=abc");
 
-    expect(products.getPopularPage).toHaveBeenCalledWith([], 1);
+    expect(products.getPopularPage).toHaveBeenCalledWith({ families: [], gender: null }, 1);
     expect(result.page).toBe(1);
   });
 });
@@ -89,6 +108,7 @@ describe("popular meta", () => {
 
   it("points filtered pages to the unfiltered list, keeping the page number", () => {
     const search = `?${new URLSearchParams([
+      ["gender", "men"],
       ["family", "квіткові"],
       ["page", "2"],
       ["utm_source", "instagram"],
@@ -96,7 +116,7 @@ describe("popular meta", () => {
     const tags = meta({
       matches: EN,
       location: { pathname: "/popular", search },
-      loaderData: { ...page, families: [] },
+      loaderData: { ...page, families: [], gender: "men" },
     } as unknown as MetaArgs);
 
     expect(tags).toContainEqual({ title: "Popular perfumes — Page 2 — Jassmin" });

@@ -2,14 +2,16 @@ import { z } from "zod";
 import type { CartActionError } from "~/lib/cart";
 import { CATALOG_PAGE_SIZE, type CatalogGender, type CatalogSearch } from "~/lib/catalog";
 import { GENDERS, type Gender } from "~/lib/enums";
+import { DEFAULT_LOCALE, type Locale } from "~/lib/i18n";
 import { type ImageFormat, type ResponsiveImage, toResponsiveImage } from "~/lib/images";
-import type { PopularPage } from "~/lib/popular";
+import type { PopularFilter, PopularPage } from "~/lib/popular";
 import {
   type CatalogPage,
   defaultVariant,
   type ProductDetail,
   type ProductSummary,
   type ProductVariant,
+  pickDescription,
 } from "~/lib/products";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
@@ -88,7 +90,12 @@ function toVariant(row: ProductVariantRow): ProductVariant {
   };
 }
 
-function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): ProductDetail {
+function toDetail(
+  row: ProductDetailRow,
+  variants: ProductVariantRow[],
+  locale: Locale,
+): ProductDetail {
+  const description = pickDescription(row, locale);
   return {
     id: row.publicId,
     slug: row.slug,
@@ -97,7 +104,8 @@ function toDetail(row: ProductDetailRow, variants: ProductVariantRow[]): Product
     gender: row.gender,
     packSize: row.packSize,
     image: productImage(row),
-    description: row.description,
+    description: description?.text ?? null,
+    descriptionLocale: description?.locale ?? locale,
     fragranceFamilies: row.fragranceFamilies,
     notes: row.notes,
     storeCode: row.storeCode,
@@ -150,16 +158,20 @@ export const POPULAR_PAGE_SIZE = CATALOG_PAGE_SIZE;
 
 /**
  * One page of `/popular` (#67): every listed product staff ranked, in their order, narrowed to
- * `families` (any of them) when given. When fewer than a page are ranked, the best-selling
+ * the filter's `families` (any of them) and `gender` (#102, with unisex, like the catalogs) when
+ * given. When fewer than a page are ranked, the best-selling
  * unranked products fill the first page, so it is never empty while products are listed; the list
  * never grows into the whole catalog. A page past the end shows the last one.
  */
 export async function getPopularPage(
-  families: readonly string[],
+  { families, gender }: PopularFilter,
   page: number,
   db: Db = defaultDb,
 ): Promise<PopularPage> {
-  const filters = { fragranceFamilies: families };
+  const filters = {
+    fragranceFamilies: families,
+    genders: gender ? GENDER_SCOPE[gender] : undefined,
+  };
   const { ranked, listed } = await countPopularProducts(db, filters);
   const total = Math.max(ranked, Math.min(POPULAR_PAGE_SIZE, listed));
   const pageCount = Math.max(1, Math.ceil(total / POPULAR_PAGE_SIZE));
@@ -197,8 +209,9 @@ export async function getProductSummaries(
 export async function getProduct(
   publicId: string,
   db: Db = defaultDb,
+  locale: Locale = DEFAULT_LOCALE,
 ): Promise<ProductDetail | null> {
-  return (await getProductWithId(publicId, db))?.product ?? null;
+  return (await getProductWithId(publicId, db, locale))?.product ?? null;
 }
 
 /**
@@ -208,12 +221,13 @@ export async function getProduct(
 export async function getProductWithId(
   publicId: string,
   db: Db = defaultDb,
+  locale: Locale = DEFAULT_LOCALE,
 ): Promise<{ id: number; product: ProductDetail } | null> {
   const row = await findProductByPublicId(db, publicId);
   if (!row) {
     return null;
   }
-  return { id: row.id, product: toDetail(row, await listVariantsByProductId(db, row.id)) };
+  return { id: row.id, product: await detailOf(row, db, locale) };
 }
 
 export type ProductHandleResult =
@@ -229,10 +243,12 @@ export type ProductHandleResult =
  * What `/products/:handle` shows (#83). A UUID is a `public_id`: its product renders when it has
  * no slug yet, otherwise it redirects to the slug URL. Anything else is a slug: the current one
  * renders, a former one (`product_slug_history`) redirects to the current one. Archived products
- * are found too, marked unavailable (#88). `null` (a 404) for an unknown handle.
+ * are found too, marked unavailable (#88). `null` (a 404) for an unknown handle. The description
+ * is in `locale`, the page's language (#100).
  */
 export async function resolveProductHandle(
   handle: string,
+  locale: Locale,
   db: Db = defaultDb,
 ): Promise<ProductHandleResult | null> {
   const options = { includeArchived: true };
@@ -242,12 +258,12 @@ export async function resolveProductHandle(
     if (row.slug !== null) {
       return { kind: "redirect", publicId: row.publicId, slug: row.slug };
     }
-    return productResult(row, db);
+    return productResult(row, db, locale);
   }
 
   const row = await findProductBySlug(db, handle, options);
   if (row) {
-    return productResult(row, db);
+    return productResult(row, db, locale);
   }
 
   const formerOwner = await findProductIdBySlugHistory(db, handle);
@@ -257,8 +273,12 @@ export async function resolveProductHandle(
   return { kind: "redirect", publicId: current.publicId, slug: current.slug };
 }
 
-async function productResult(row: ProductDetailRow, db: Db): Promise<ProductHandleResult> {
-  const product = await detailOf(row, db);
+async function productResult(
+  row: ProductDetailRow,
+  db: Db,
+  locale: Locale,
+): Promise<ProductHandleResult> {
+  const product = await detailOf(row, db, locale);
   if (row.active) {
     return { kind: "product", id: row.id, product, available: true };
   }
@@ -267,8 +287,8 @@ async function productResult(row: ProductDetailRow, db: Db): Promise<ProductHand
   return { kind: "product", id: row.id, product: { ...product, variants }, available: false };
 }
 
-async function detailOf(row: ProductDetailRow, db: Db): Promise<ProductDetail> {
-  return toDetail(row, await listVariantsByProductId(db, row.id));
+async function detailOf(row: ProductDetailRow, db: Db, locale: Locale): Promise<ProductDetail> {
+  return toDetail(row, await listVariantsByProductId(db, row.id), locale);
 }
 
 /** How many similar perfumes an archived product's page suggests (#88). */

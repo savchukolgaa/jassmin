@@ -107,7 +107,7 @@ describe("home loader", () => {
     const view = await load();
 
     expect(view.trioOffer).toEqual(trioOffer);
-    expect(view.trio).toEqual({ families, selected: [] });
+    expect(view.trio).toEqual({ families, selected: [], gender: "women" });
     expect(shop.getBestsellers).toHaveBeenCalledOnce();
   });
 
@@ -121,6 +121,16 @@ describe("home loader", () => {
     const view = await load(undefined, `/?${query}`);
 
     expect(view.trio.selected).toEqual(["свіжі", "деревні", "квіткові"]);
+  });
+
+  it("keeps the trio gender of a no-JS submission, women when missing or invalid (#102)", async () => {
+    content.getHomePage.mockResolvedValue(homePage);
+    content.getSiteSettings.mockResolvedValue(siteSettings);
+
+    const men = await load(undefined, `/?gender=men&family=${encodeURIComponent("свіжі")}`);
+    expect(men.trio).toMatchObject({ gender: "men", selected: ["свіжі"] });
+    expect((await load(undefined, "/?gender=unisex")).trio.gender).toBe("women");
+    expect((await load(undefined, "/")).trio.gender).toBe("women");
   });
 
   it("turns a CMS outage into a 503 for the error boundary", async () => {

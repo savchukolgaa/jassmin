@@ -7,6 +7,7 @@ const NO_SHOP_DATA: HomeShopData = {
   trioOffer: null,
   trioFamilies: [],
   selectedFamilies: [],
+  selectedGender: "women",
   bestsellers: [],
 };
 
@@ -22,7 +23,11 @@ export function buildHomePageView(
     hero,
     about: { title: about.title, bodyHtml: renderMarkdown(about.body), image: about.image },
     trioOffer: shop.trioOffer,
-    trio: { families: shop.trioFamilies, selected: shop.selectedFamilies },
+    trio: {
+      families: shop.trioFamilies,
+      selected: shop.selectedFamilies,
+      gender: shop.selectedGender,
+    },
     bestsellers: shop.bestsellers,
     location: {
       address: location.address,

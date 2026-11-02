@@ -19,6 +19,10 @@ const UNSOLD_BRAND = "Unsold House";
 // A women's product archived in Strapi (#40): kept for order history, never listed or sold.
 const ARCHIVED_BRAND = "Archived House";
 
+// Women's products whose sizes don't track stock (#98): always available at stock 0.
+const POURED_BRAND = "Poured House";
+const POURED_ARCHIVED_BRAND = "Poured Archived House";
+
 const sampleNamed = (prefix: string) => {
   const product = SAMPLE_PRODUCTS.find((p) => p.title.startsWith(prefix));
   if (!product) throw new Error(`No sample product ${prefix}`);
@@ -75,6 +79,25 @@ describe.skipIf(!hasDatabase)("products service", () => {
     await testDb.db
       .insert(productVariants)
       .values({ productId: archived?.id ?? 0, volumeMl: 30, price: "500.00", stockQuantity: 5 });
+    const poured = await testDb.db
+      .insert(products)
+      .values(
+        [POURED_BRAND, POURED_ARCHIVED_BRAND].map((brand) => ({
+          title: brand,
+          brand,
+          gender: "women" as const,
+          price: "119.00",
+          volumeMl: 5,
+          active: brand === POURED_BRAND,
+        })),
+      )
+      .returning({ id: products.id });
+    await testDb.db.insert(productVariants).values(
+      poured.flatMap(({ id }) => [
+        { productId: id, volumeMl: 5, price: "119.00", stockQuantity: 0 },
+        { productId: id, volumeMl: 100, price: "969.00", stockQuantity: 0, trackStock: true },
+      ]),
+    );
   });
 
   /** The archived product's public id and its only size's. */
@@ -113,7 +136,8 @@ describe.skipIf(!hasDatabase)("products service", () => {
 
     expect(new Set(all.map((p) => p.gender))).toEqual(new Set(["women", "unisex"]));
     expect(all.map((p) => p.title)).toEqual(expect.arrayContaining(titlesOf(["women", "unisex"])));
-    expect(page.total).toBe(titlesOf(["women", "unisex"]).length + PAGING_COUNT);
+    // Plus the paging products and the listed poured one (#98).
+    expect(page.total).toBe(titlesOf(["women", "unisex"]).length + PAGING_COUNT + 1);
   });
 
   it("filters by brand and fragrance family", async () => {
@@ -246,13 +270,28 @@ describe.skipIf(!hasDatabase)("products service", () => {
       // The sample catalog has no store codes; the imported range does (#66).
       storeCode: null,
       variants: [
-        { id: expect.any(String), volumeMl: 10, price: "790.00", stockQuantity: 15, inStock: true },
-        { id: expect.any(String), volumeMl: 50, price: "3290.00", stockQuantity: 6, inStock: true },
+        {
+          id: expect.any(String),
+          volumeMl: 10,
+          price: "790.00",
+          stockQuantity: 15,
+          trackStock: true,
+          inStock: true,
+        },
+        {
+          id: expect.any(String),
+          volumeMl: 50,
+          price: "3290.00",
+          stockQuantity: 6,
+          trackStock: true,
+          inStock: true,
+        },
         {
           id: expect.any(String),
           volumeMl: 100,
           price: "4450.00",
           stockQuantity: 12,
+          trackStock: true,
           inStock: true,
         },
       ],
@@ -281,6 +320,67 @@ describe.skipIf(!hasDatabase)("products service", () => {
       ok: false,
       error: "invalid-variant",
     });
+  });
+
+  it("sells a size that doesn't track stock at stock 0, and a tracked one only in stock (#98)", async () => {
+    const { checkVariantForCart, getProduct } = await import("./products");
+    const { UNTRACKED_STOCK } = await import("../db/queries/products");
+    const [card] = (await catalog("women", { brand: POURED_BRAND })).products;
+    if (!card) throw new Error("no poured product");
+
+    expect(card.inStock).toBe(true);
+    expect(card.variants.map((v) => [v.volumeMl, v.inStock])).toEqual([
+      [5, true],
+      [100, false],
+    ]);
+    expect(card.defaultVariant.volumeMl).toBe(5);
+
+    const detail = await getProduct(card.id, testDb.db);
+    expect(detail?.variants).toEqual([
+      expect.objectContaining({
+        volumeMl: 5,
+        stockQuantity: UNTRACKED_STOCK,
+        trackStock: false,
+        inStock: true,
+      }),
+      expect.objectContaining({
+        volumeMl: 100,
+        stockQuantity: 0,
+        trackStock: true,
+        inStock: false,
+      }),
+    ]);
+    const size = (volumeMl: number) => detail?.variants.find((v) => v.volumeMl === volumeMl)?.id;
+    expect(await checkVariantForCart(card.id, size(5) ?? "", testDb.db)).toEqual({
+      ok: true,
+      variant: expect.objectContaining({ volumeMl: 5, stockQuantity: UNTRACKED_STOCK }),
+    });
+    expect(await checkVariantForCart(card.id, size(100) ?? "", testDb.db)).toEqual({
+      ok: false,
+      error: "out-of-stock",
+    });
+  });
+
+  it("sells nothing of an archived product, even a size that doesn't track stock (#98)", async () => {
+    const { eq } = await import("drizzle-orm");
+    const { products, productVariants } = await import("../db/schema");
+    const { checkVariantForCart, resolveProductHandle } = await import("./products");
+    const [row] = await testDb.db
+      .select({ publicId: products.publicId, variantId: productVariants.publicId })
+      .from(products)
+      .innerJoin(productVariants, eq(productVariants.productId, products.id))
+      .where(eq(products.brand, POURED_ARCHIVED_BRAND))
+      .orderBy(productVariants.volumeMl);
+    if (!row) throw new Error("no archived poured product");
+
+    expect((await catalog("women", { brand: POURED_ARCHIVED_BRAND })).products).toEqual([]);
+    expect(await checkVariantForCart(row.publicId, row.variantId, testDb.db)).toEqual({
+      ok: false,
+      error: "invalid-variant",
+    });
+    const found = await resolveProductHandle(row.publicId, testDb.db);
+    if (found?.kind !== "product") throw new Error("not a product");
+    expect(found.product.variants.every((v) => !v.inStock)).toBe(true);
   });
 
   it("returns null for an unknown public id", async () => {

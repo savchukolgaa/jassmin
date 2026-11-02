@@ -12,6 +12,7 @@ import {
   type SQL,
   sql,
 } from "drizzle-orm";
+import { MAX_LINE_QUANTITY } from "~/lib/cart";
 import type { CatalogSort } from "~/lib/catalog";
 import type { Gender, OrderStatus } from "~/lib/enums";
 import type { ImageFormat } from "~/lib/images";
@@ -33,10 +34,22 @@ export interface ProductFilters {
 const isListed = eq(products.active, true);
 
 /**
- * A size's stock as the shop may sell it: 0 once its product is archived (#40). Queries that use
- * it must join `products`.
+ * The stock an untracked size (#98) reports: the most a cart line may hold, so it can never run
+ * out, and the cart and checkout need no special case for it.
  */
-export const availableStock = sql<number>`case when ${products.active} then ${productVariants.stockQuantity} else 0 end`;
+export const UNTRACKED_STOCK = MAX_LINE_QUANTITY;
+
+/**
+ * A size's stock for selling, whatever its product's state: `stock_quantity` when the size tracks
+ * stock, else `UNTRACKED_STOCK` (#98).
+ */
+export const variantStock = sql<number>`case when ${productVariants.trackStock} then ${productVariants.stockQuantity} else ${sql.raw(String(UNTRACKED_STOCK))} end`;
+
+/**
+ * A size's stock as the shop may sell it: `variantStock`, or 0 once its product is archived
+ * (#40). Queries that use it must join `products`.
+ */
+export const availableStock = sql<number>`case when ${products.active} then ${variantStock} else 0 end`;
 
 /**
  * Products that have any of `families` among their `fragrance_families`, primary or not (#65),
@@ -71,7 +84,7 @@ function variantStats(db: Db) {
         'id', ${productVariants.publicId},
         'volumeMl', ${productVariants.volumeMl},
         'price', ${productVariants.price}::text,
-        'inStock', ${productVariants.stockQuantity} > 0
+        'inStock', ${variantStock} > 0
       ) order by ${productVariants.volumeMl})`.as("variants"),
     })
     .from(productVariants)
@@ -421,7 +434,9 @@ const variantColumns = {
   publicId: productVariants.publicId,
   volumeMl: productVariants.volumeMl,
   price: productVariants.price,
-  stockQuantity: productVariants.stockQuantity,
+  /** `variantStock`: `UNTRACKED_STOCK` for a size that doesn't count stock (#98). */
+  stockQuantity: variantStock.mapWith(Number),
+  trackStock: productVariants.trackStock,
 };
 
 /** A product's variants, smallest first. */

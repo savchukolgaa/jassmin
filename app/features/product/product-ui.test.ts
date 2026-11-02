@@ -23,6 +23,7 @@ const variant = (volumeMl: number, price: string, stockQuantity: number): Produc
   volumeMl,
   price,
   stockQuantity,
+  trackStock: true,
   inStock: stockQuantity > 0,
 });
 

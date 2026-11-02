@@ -179,14 +179,14 @@ ordered Instagram, Telegram, then the rest. Tracking parameters are stripped fro
     `outline-primary-light`).
 - [x] **6. i18n keys.** Add the `social` namespace to `uk.ts` and `en.ts`. `pnpm typecheck` catches
   any mismatch.
-- [ ] **7. Footer.** `Footer({ socialLinks = [] }: { socialLinks?: readonly SocialLink[] })` renders
+- [x] **7. Footer.** `Footer({ socialLinks = [] }: { socialLinks?: readonly SocialLink[] })` renders
   the "Follow us" row with `<SocialLinks tone="onPrimary">` when the list isn't empty. Update
   `Footer.test.ts`: links render when passed, and the row is absent when the list is empty.
-- [ ] **8. Header and mobile menu.** Add an optional `socialLinks` prop to `Header`, forward it to
+- [x] **8. Header and mobile menu.** Add an optional `socialLinks` prop to `Header`, forward it to
   `MobileMenu`, and render a new bordered `<li>` with `<SocialLinks tone="onLight">` after the locale
   switcher, only when there are links. Extend `Header.test.ts` so the mobile menu markup contains
   the labelled Instagram link.
-- [ ] **9. Layout loader.** In `_shop.tsx`, add `getLocale(request).then(getSocialLinks)` to the
+- [x] **9. Layout loader.** In `_shop.tsx`, add `getLocale(request).then(getSocialLinks)` to the
   `Promise.all` and return `socialLinks`. Pass it to `<Header>` and `<Footer>` in both the component
   and `ErrorBoundary` (`?.socialLinks ?? []`). Add a loader test that mocks `getSocialLinks` and
   checks the returned data.

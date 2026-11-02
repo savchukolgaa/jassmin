@@ -1,9 +1,16 @@
 import { Form, Link, useLocation } from "react-router";
+import type { SocialLink } from "~/lib/cms";
 import { useT } from "~/lib/i18n";
 import { navItemClasses, useNavLinks } from "./nav";
+import { SocialLinks } from "./SocialLinks";
+
+type FooterProps = {
+  /** The store's social profiles from the `_shop` layout loader; none while Strapi is down. */
+  socialLinks?: readonly SocialLink[];
+};
 
 /** Site footer shown on every public page, below the page content. */
-export function Footer() {
+export function Footer({ socialLinks = [] }: FooterProps) {
   const { t } = useT();
   const links = useNavLinks();
   const { pathname, search } = useLocation();
@@ -11,6 +18,12 @@ export function Footer() {
   return (
     <footer className="relative overflow-hidden bg-primary text-white">
       <div className="container mx-auto flex flex-col gap-6 px-4 pt-10 pb-4">
+        {socialLinks.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p className="text-sm font-bold">{t("social.followUs")}</p>
+            <SocialLinks links={socialLinks} tone="onPrimary" />
+          </div>
+        )}
         <nav aria-label={t("nav.footer")}>
           <ul className="-mx-3 flex flex-wrap gap-x-2 gap-y-1">
             {links.footer.map((link) => (

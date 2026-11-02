@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/99
 Branch: `issue/99`
 Worktree: `.claude/worktrees/issue-99`
-Status: Planned (questions answered)
+Status: Implemented
 
 ## Goal
 
@@ -205,12 +205,21 @@ Answered from the codebase:
   #96's results, CLS 0, and no new network requests in DevTools. Check the HTML size of the
   catalog page (it should grow by no more than ~30 KB uncompressed for 24 cards). Save a
   screenshot of `/katalog/zhinochi` for the PR so the store owner can approve the palette (Q4).
-- [ ] **9. Share image follow-up.** File a follow-up issue with `/create-issue`
+  - *Done so far:* a gallery of 17 cards covering every palette and shape was rendered with the
+    real fonts and screenshotted in headless Edge. Families are clearly distinct, neighbours in the
+    same family differ, and long Cyrillic and Latin names wrap inside the label. That check
+    surfaced one fix: long brands now go on two lines instead of being cut off. Markup: 24 cards are
+    29 KB raw / 1.7 KB gzipped (≈1.2 KB per card). The cards contain no `href`, `url(` or `<img>`
+    (tested), and the 4:5 frame is unchanged, so they add no requests or layout shift.
+  - *Not yet done:* `pnpm aspire run` + Lighthouse (mobile) on the real catalog and product pages,
+    and the `/katalog/zhinochi` screenshot for the PR. Do these before merging.
+- [x] **9. Share image follow-up.** Filed as #105, "Use the generated label card as the share
+  image for products without a photo". File a follow-up issue with `/create-issue`
   ("Rasterise the label card as the product's og:image"). It covers a resource route
   `/og/products/<slug>.png` at 1200×630, `satori` + `@resvg/resvg-js` with embedded Playfair and
   Manrope, `Cache-Control: public, max-age=86400, immutable`-style caching keyed on `updated_at`,
   and `product.tsx` `meta` falling back to it. Reference it in the PR.
-- [ ] **10. Checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- [x] **10. Checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ## Testing & verification
 
@@ -224,21 +233,22 @@ Answered from the codebase:
 
 ## Acceptance criteria
 
-- [ ] Every product without a photo shows a generated card with its brand and name, coloured by
+- [x] Every product without a photo shows a generated card with its brand and name, coloured by
   its main fragrance family. Products with a photo still show the photo. (Steps 1–6)
-- [ ] Two perfumes from different families look clearly different, and two from the same family
+- [x] Two perfumes from different families look clearly different, and two from the same family
   still differ. (Steps 1, 3, 8)
 - [ ] No extra network requests for the cards on catalog pages, no layout shift (CLS 0), and
-  Lighthouse Performance stays at or above #96's results. (Steps 3, 4, 8)
-- [ ] Text on the cards meets WCAG AA contrast, and alt text follows the existing rules.
+  Lighthouse Performance stays at or above #96's results. (Steps 3, 4, 8) *No requests and no
+  shift are guaranteed by construction and tests. Lighthouse has not been run yet (step 8).*
+- [x] Text on the cards meets WCAG AA contrast, and alt text follows the existing rules.
   (Steps 1, 4)
-- [ ] Sharing a product without a photo shows the card as the preview image (or a follow-up issue
-  exists). (Step 9)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. (Step 10)
+- [x] Sharing a product without a photo shows the card as the preview image (or a follow-up issue
+  exists). (Step 9: #105)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. (Step 10)
 
 ## Out of scope
 
 - Product photography, descriptions and availability (separate issues).
-- The OG PNG route itself (follow-up issue, Q1).
+- The OG PNG route itself (#105, Q1).
 - Images in checkout and order emails, which have none today.
 - A Unisex palette or catalog (there is no Unisex catalog).

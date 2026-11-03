@@ -6,6 +6,7 @@
 import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { resolveAcquisitionChannel } from "./auth";
 import type { EventType } from "./enums";
+import { crossesLocale } from "./paths";
 
 /** Free-form event details stored as `jsonb`, e.g. the search query or the cart quantity. */
 export type EventProperties = Record<string, unknown>;
@@ -107,12 +108,18 @@ export type { ClientEvent, ClientEventBatch } from "./analytics.schema";
 /**
  * `shouldRevalidate` for routes whose loader records a view (`product_view`, `search`): a form
  * post (cart, language switch, cookie banner) doesn't change their data, and reloading them would
- * record the same view twice. Navigations still load as usual.
+ * record the same view twice. Navigations still load as usual, and switching the language always
+ * reloads (#112).
  */
 export function shouldRevalidateView({
   formMethod,
+  currentUrl,
+  nextUrl,
   defaultShouldRevalidate,
 }: ShouldRevalidateFunctionArgs): boolean {
+  if (crossesLocale({ currentUrl, nextUrl })) {
+    return true;
+  }
   if (formMethod && formMethod.toUpperCase() !== "GET") {
     return false;
   }

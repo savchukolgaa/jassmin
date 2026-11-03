@@ -28,6 +28,15 @@ describe("_shop loader", () => {
     expect(social.getSocialLinks).toHaveBeenCalledWith("en");
   });
 
+  it("answers a client-side navigation to /en in English (#112)", async () => {
+    social.getSocialLinks.mockResolvedValue([]);
+
+    const data = await load("http://localhost/en.data");
+
+    expect(social.getSocialLinks).toHaveBeenLastCalledWith("en");
+    expect(data.suggestEnglish).toBe(false);
+  });
+
   it("returns no links when Strapi is down, without failing the page", async () => {
     social.getSocialLinks.mockResolvedValue([]);
 

@@ -77,12 +77,27 @@ describe("catalog loader", () => {
 });
 
 describe("catalog shouldRevalidate", () => {
+  const url = (path: string) => new URL(path, "http://localhost");
   const args = (overrides: Partial<ShouldRevalidateFunctionArgs>) =>
-    ({ defaultShouldRevalidate: true, ...overrides }) as ShouldRevalidateFunctionArgs;
+    ({
+      currentUrl: url("/katalog/zhinochi"),
+      nextUrl: url("/katalog/zhinochi"),
+      defaultShouldRevalidate: true,
+      ...overrides,
+    }) as ShouldRevalidateFunctionArgs;
 
   it("doesn't reload (and re-record the search) after a form post", () => {
-    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/cart" }))).toBe(false);
-    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/locale" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/koshyk" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/consent" }))).toBe(false);
+  });
+
+  it("reloads after switching the language, in either direction (#112)", () => {
+    const toEnglish = { currentUrl: url("/katalog/zhinochi"), nextUrl: url("/en/catalog/women") };
+    expect(
+      shouldRevalidate(args({ formMethod: "POST", formAction: "/locale", ...toEnglish })),
+    ).toBe(true);
+    const toUkrainian = { currentUrl: url("/en/catalog/men"), nextUrl: url("/katalog/cholovichi") };
+    expect(shouldRevalidate(args({ defaultShouldRevalidate: false, ...toUkrainian }))).toBe(true);
   });
 
   it("reloads when the filters change", () => {

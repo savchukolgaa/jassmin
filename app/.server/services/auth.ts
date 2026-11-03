@@ -17,6 +17,7 @@ import {
   touchLastLogin,
 } from "../db/queries/users";
 import { getDummyPasswordHash, hashPassword, verifyPassword } from "../password";
+import { pageUrl } from "../request-url";
 import { getUserId } from "../session";
 import { mergeGuestCart } from "./cart";
 
@@ -31,12 +32,13 @@ export async function getUser(request: Request, database: Db = db): Promise<Publ
 
 /**
  * The logged-in user. For protected loaders and actions: when logged out, throws a redirect to
- * `/login?redirectTo=<this page>`, so the user comes back here after logging in.
+ * `/login?redirectTo=<this page>`, so the user comes back here after logging in: the page, not the
+ * `.data` URL a client-side navigation requests (#112).
  */
 export async function requireUser(request: Request, database: Db = db): Promise<PublicUser> {
   const user = await getUser(request, database);
   if (!user) {
-    throw redirect(loginRedirectPath(new URL(request.url)));
+    throw redirect(loginRedirectPath(pageUrl(request)));
   }
   return user;
 }

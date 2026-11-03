@@ -139,12 +139,27 @@ describe("popular meta", () => {
 });
 
 describe("popular shouldRevalidate", () => {
+  const url = (path: string) => new URL(path, "http://localhost");
   const args = (overrides: Partial<ShouldRevalidateFunctionArgs>) =>
-    ({ defaultShouldRevalidate: true, ...overrides }) as ShouldRevalidateFunctionArgs;
+    ({
+      currentUrl: url("/populiarni"),
+      nextUrl: url("/populiarni"),
+      defaultShouldRevalidate: true,
+      ...overrides,
+    }) as ShouldRevalidateFunctionArgs;
 
   it("doesn't re-rank after adding to the cart", () => {
     expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/koshyk" }))).toBe(false);
     expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/en/cart" }))).toBe(false);
+  });
+
+  it("reloads after switching the language, in either direction (#112)", () => {
+    const toEnglish = { currentUrl: url("/populiarni"), nextUrl: url("/en/popular") };
+    expect(
+      shouldRevalidate(args({ formMethod: "POST", formAction: "/locale", ...toEnglish })),
+    ).toBe(true);
+    const toUkrainian = { currentUrl: url("/en/popular"), nextUrl: url("/populiarni") };
+    expect(shouldRevalidate(args({ defaultShouldRevalidate: false, ...toUkrainian }))).toBe(true);
   });
 
   it("reloads otherwise", () => {

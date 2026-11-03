@@ -1,6 +1,7 @@
 import { createCookie } from "react-router";
 import { isLocale, type Locale } from "~/lib/i18n";
 import { localeFromPath } from "~/lib/paths";
+import { pageUrl } from "./request-url";
 
 // Doesn't read the env, like `session-cookie.ts`, so any loader or test can resolve the locale.
 
@@ -41,10 +42,12 @@ export function parseAcceptLanguage(header: string | null): Locale | undefined {
 /**
  * The page's locale, from its URL alone (#84): `/en/…` is English, everything else Ukrainian. The
  * cookie and `Accept-Language` never change it; they only redirect (`locale-middleware.ts`) or
- * suggest the other language (`shouldSuggestEnglish`). Async, as when it read the cookie.
+ * suggest the other language (`shouldSuggestEnglish`). Reads the page's URL, not the raw one, so
+ * a client-side navigation to `/en` (fetched as `/en.data`) is English too (#112). Async, as when
+ * it read the cookie.
  */
 export async function getLocale(request: Request): Promise<Locale> {
-  return localeFromPath(new URL(request.url).pathname);
+  return localeFromPath(pageUrl(request).pathname);
 }
 
 /** The language the visitor explicitly chose with the switcher, if any. */

@@ -62,9 +62,12 @@ describe("getLocale", () => {
     ).toBe("en");
   });
 
-  it("resolves a single-fetch data request like its page", async () => {
-    // React Router strips `.data` before loaders see the request.
-    expect(await getLocale(await request({ path: "/en/catalog/women?_routes=x" }))).toBe("en");
+  it("resolves a single-fetch data request like its page (#112)", async () => {
+    // React Router v8 passes loaders the raw `.data` request of a client-side navigation.
+    expect(await getLocale(await request({ path: "/en.data" }))).toBe("en");
+    expect(await getLocale(await request({ path: "/en/popular.data?_routes=x" }))).toBe("en");
+    expect(await getLocale(await request({ path: "/_.data" }))).toBe("uk");
+    expect(await getLocale(await request({ path: "/koshyk.data" }))).toBe("uk");
   });
 });
 
@@ -97,5 +100,14 @@ describe("shouldSuggestEnglish", () => {
       false,
     );
     expect(await shouldSuggestEnglish(await request())).toBe(false);
+  });
+
+  it("answers a data request like its page (#112)", async () => {
+    expect(
+      await shouldSuggestEnglish(await request({ path: "/_.data", acceptLanguage: "en" })),
+    ).toBe(true);
+    expect(
+      await shouldSuggestEnglish(await request({ path: "/en.data", acceptLanguage: "en" })),
+    ).toBe(false);
   });
 });

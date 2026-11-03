@@ -12,7 +12,7 @@ import { parseContactForm } from "~/features/home/contact-form.schema";
 import { HomePage } from "~/features/home/HomePage";
 import type { ContactActionResult } from "~/lib/contact";
 import { metaTranslator, useT } from "~/lib/i18n";
-import { pageOf } from "~/lib/paths";
+import { crossesLocale, pageOf } from "~/lib/paths";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import { storeGraphLd } from "~/lib/structured-data";
 import { parseTrioGender, parseTrioSearch } from "~/lib/trio";
@@ -97,12 +97,18 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 // Sending the contact form or adding a bestseller to the cart doesn't change anything this page
-// shows, so skip reloading it from Strapi (the layout still refreshes the cart count).
+// shows, so skip reloading it from Strapi (the layout still refreshes the cart count). Switching
+// the language always reloads it (#112).
 export function shouldRevalidate({
   formMethod,
   formAction,
+  currentUrl,
+  nextUrl,
   defaultShouldRevalidate,
 }: ShouldRevalidateFunctionArgs) {
+  if (crossesLocale({ currentUrl, nextUrl })) {
+    return true;
+  }
   if (
     formMethod?.toUpperCase() === "POST" &&
     (pageOf(formAction) === "home" || pageOf(formAction) === "cart")

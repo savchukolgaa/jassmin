@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LOCALES } from "./i18n/locales";
 import {
+  crossesLocale,
   localeFromPath,
   localizeInternalPath,
   matchLegacyPath,
@@ -98,6 +99,25 @@ describe("localeFromPath", () => {
     expect(localeFromPath("/")).toBe("uk");
     expect(localeFromPath("/koshyk")).toBe("uk");
     expect(localeFromPath("/english")).toBe("uk");
+  });
+});
+
+describe("crossesLocale", () => {
+  const nav = (from: string, to: string) => ({
+    currentUrl: new URL(from, "http://localhost"),
+    nextUrl: new URL(to, "http://localhost"),
+  });
+
+  it("is true for a navigation into the other language, in either direction", () => {
+    expect(crossesLocale(nav("/", "/en"))).toBe(true);
+    expect(crossesLocale(nav("/en/catalog/women?sort=new", "/katalog/zhinochi?sort=new"))).toBe(
+      true,
+    );
+  });
+
+  it("is false within one language", () => {
+    expect(crossesLocale(nav("/", "/koshyk"))).toBe(false);
+    expect(crossesLocale(nav("/en", "/en/cart"))).toBe(false);
   });
 });
 

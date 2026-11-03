@@ -163,6 +163,14 @@ export function localeFromPath(pathname: string): Locale {
   return pathname === EN_PREFIX || pathname.startsWith(`${EN_PREFIX}/`) ? "en" : DEFAULT_LOCALE;
 }
 
+/**
+ * Whether a navigation goes into the other language, e.g. the redirect after the language
+ * switcher: every `shouldRevalidate` reloads then, so no loader keeps the old language (#112).
+ */
+export function crossesLocale({ currentUrl, nextUrl }: { currentUrl: URL; nextUrl: URL }): boolean {
+  return localeFromPath(currentUrl.pathname) !== localeFromPath(nextUrl.pathname);
+}
+
 /** The path without its locale prefix and slashes at either end: `/en/cart/` → `cart`. */
 function stripLocale(pathname: string, locale: Locale): string {
   const rest = locale === DEFAULT_LOCALE ? pathname : pathname.slice(EN_PREFIX.length);

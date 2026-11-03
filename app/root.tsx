@@ -15,7 +15,7 @@ import { getLocale } from "~/.server/locale";
 import { localeRedirectMiddleware } from "~/.server/locale-middleware";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
-import { localeFromPath } from "~/lib/paths";
+import { crossesLocale } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta } from "~/lib/seo";
 import type { Route } from "./+types/root";
@@ -60,15 +60,8 @@ export function meta({ matches, error }: Route.MetaArgs) {
   return error ? errorMeta({ matches, error }) : [];
 }
 
-export function shouldRevalidate({
-  currentUrl,
-  nextUrl,
-  defaultShouldRevalidate,
-}: ShouldRevalidateFunctionArgs) {
-  return (
-    localeFromPath(currentUrl.pathname) !== localeFromPath(nextUrl.pathname) ||
-    defaultShouldRevalidate
-  );
+export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+  return crossesLocale(args) || args.defaultShouldRevalidate;
 }
 
 const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';

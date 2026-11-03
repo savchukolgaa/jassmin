@@ -100,6 +100,19 @@ describe("home loader", () => {
     expect(view.seo.title).toBe("Jassmin — Order 3 Testers only for 499₴");
   });
 
+  it("loads English content on a client-side navigation to /en (#112)", async () => {
+    content.getHomePage.mockResolvedValue(homePage);
+    content.getSiteSettings.mockResolvedValue(siteSettings);
+
+    // React Router fetches `/en.data` and passes loaders that raw request.
+    await load(undefined, "/en.data");
+    expect(content.getHomePage).toHaveBeenLastCalledWith("en");
+    expect(content.getSiteSettings).toHaveBeenLastCalledWith("en");
+
+    await load(undefined, "/_.data");
+    expect(content.getHomePage).toHaveBeenLastCalledWith("uk");
+  });
+
   it("adds the trio offer, the families and the bestsellers from the shop", async () => {
     content.getHomePage.mockResolvedValue(homePage);
     content.getSiteSettings.mockResolvedValue(siteSettings);
@@ -228,8 +241,23 @@ describe("home action", () => {
 });
 
 describe("home shouldRevalidate", () => {
+  const url = (path: string) => new URL(path, "http://localhost");
   const args = (overrides: Partial<RevalidateArgs>) =>
-    ({ defaultShouldRevalidate: true, ...overrides }) as RevalidateArgs;
+    ({
+      currentUrl: url("/"),
+      nextUrl: url("/"),
+      defaultShouldRevalidate: true,
+      ...overrides,
+    }) as RevalidateArgs;
+
+  it("reloads after switching the language, in either direction (#112)", () => {
+    const toEnglish = { currentUrl: url("/"), nextUrl: url("/en") };
+    expect(
+      shouldRevalidate(args({ formMethod: "POST", formAction: "/locale", ...toEnglish })),
+    ).toBe(true);
+    const toUkrainian = { currentUrl: url("/en"), nextUrl: url("/") };
+    expect(shouldRevalidate(args({ defaultShouldRevalidate: false, ...toUkrainian }))).toBe(true);
+  });
 
   it("skips reloading CMS content after the contact form", () => {
     expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/?index" }))).toBe(false);

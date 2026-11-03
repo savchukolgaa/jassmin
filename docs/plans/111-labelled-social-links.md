@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/111
 Branch: `issue/111`
 Worktree: `.claude/worktrees/issue-111`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a customer looking at the contacts, I want the Instagram link to be a bigger icon with the word
@@ -97,7 +97,7 @@ in bold, inside a pill link. The footer and mobile menu keep the compact icon-on
     for the dark section (#101, #111)" and assert the contacts slice contains `>Instagram</span>`
     and `size-8`.
   - Footer/Header tests already pin the icon-only rows; confirm they pass unchanged.
-- [ ] **4. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- [x] **4. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ## Testing & verification
 - Unit: `SocialLinks.test.ts`, `HomePage.test.ts` (step 3); existing `Footer.test.ts`,
@@ -108,12 +108,16 @@ in bold, inside a pill link. The footer and mobile menu keep the compact icon-on
   show round icons only.
 
 ## Acceptance criteria
-- [ ] In the home contacts section, Instagram shows as a bigger icon with "Instagram" written next to
+- [x] In the home contacts section, Instagram shows as a bigger icon with "Instagram" written next to
   it, and Telegram the same way once it's set in Strapi — steps 1, 2, 3
-- [ ] The links open in a new tab, have a visible focus ring and a 44 px touch target, and their
+- [x] The links open in a new tab, have a visible focus ring and a 44 px touch target, and their
   accessible name contains the platform name — steps 1, 3
-- [ ] The footer and mobile menu still show compact icons — steps 1 (default `"icon"`), 3
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 4
+- [x] The footer and mobile menu still show compact icons — steps 1 (default `"icon"`), 3
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 4
+
+Verified by `SocialLinks.test.ts`, `HomePage.test.ts`, `Footer.test.ts` and `Header.test.ts` (server
+markup). The manual browser check in step 2 (alignment, wrapping at 320 px, hover) was not done in
+this session.
 
 ## Out of scope
 - Footer and mobile menu styling (stay icon-only).

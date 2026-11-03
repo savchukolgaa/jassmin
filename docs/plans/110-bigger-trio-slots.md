@@ -111,7 +111,7 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
   that it's for the single standout CTA of a block (the trio builder's "Show my trio"). Run
   `pnpm test app/components/ui`.
 
-- [ ] **3. Enlarge the slots** — In `TrioBuilder.tsx`:
+- [x] **3. Enlarge the slots** — In `TrioBuilder.tsx`:
   - `<ol>`: `grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:gap-3 md:gap-4`.
   - `<li>`: `flex h-32 items-center justify-center rounded-[3.25rem_3.25rem_1rem_1rem] border-2
     border-dashed border-muted sm:h-38 sm:w-28 sm:rounded-[3.5rem_3.5rem_1rem_1rem] md:h-48
@@ -125,7 +125,7 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
   - Empty number: `text-4xl font-extrabold text-on-dark-muted md:text-5xl`.
   - Let `pnpm format` sort the classes (Biome `useSortedClasses` if enabled).
 
-- [ ] **4. Bigger CTA without layout shift** — Still in `TrioBuilder.tsx`:
+- [x] **4. Bigger CTA without layout shift** — Still in `TrioBuilder.tsx`:
   - Form: `flex-[1_1_26rem]` → `flex-[1_1_24rem]`. Right column: `flex-[1_1_22rem]` →
     `flex-[1_1_29rem]`, `items-start` → `items-center`.
   - Wrap the `<ol>` and the status/CTA in `<div className="flex w-full flex-col gap-5 sm:w-fit">`.

@@ -55,7 +55,7 @@ export function TrioBuilder({ families, selected, gender, trioOffer }: TrioBuild
   return (
     <section id="trio" aria-labelledby="trio-title" className="reveal scroll-mt-20">
       <div className="container mx-auto px-4 py-10">
-        <div className="flex flex-wrap items-center gap-10 rounded-[2.5rem] bg-ink p-6 text-white sm:p-12">
+        <div className="flex flex-wrap items-center gap-10 rounded-[2.5rem] bg-ink px-4 py-6 text-white sm:p-12">
           <form
             method="get"
             action="/#trio"
@@ -137,13 +137,13 @@ export function TrioBuilder({ families, selected, gender, trioOffer }: TrioBuild
                       key={index}
                       // Per-breakpoint radii, not `rounded-t-full`: an oversized top radius makes
                       // the browser shrink every corner, which would flatten the bottom ones.
-                      className="flex h-32 items-center justify-center rounded-[3.25rem_3.25rem_1rem_1rem] border-2 border-dashed border-muted sm:h-38 sm:w-28 sm:rounded-[3.5rem_3.5rem_1rem_1rem] md:h-48 md:w-36 md:rounded-[4.5rem_4.5rem_1.25rem_1.25rem]"
+                      className="@container flex h-32 items-center justify-center rounded-[3.25rem_3.25rem_1rem_1rem] border-2 border-dashed border-muted sm:h-38 sm:w-28 sm:rounded-[3.5rem_3.5rem_1rem_1rem] md:h-48 md:w-36 md:rounded-[4.5rem_4.5rem_1.25rem_1.25rem]"
                     >
                       {family ? (
                         <span
                           // A new key replays the pop when the slot gets another family.
                           key={family}
-                          className="animate-slot-pop flex h-[calc(100%-0.75rem)] w-[calc(100%-0.75rem)] items-end justify-center rounded-[2.875rem_2.875rem_0.75rem_0.75rem] bg-primary-light px-1.5 pb-4 text-center text-sm leading-tight font-extrabold text-balance hyphens-auto text-ink [overflow-wrap:anywhere] sm:rounded-[3.125rem_3.125rem_0.75rem_0.75rem] sm:text-[0.9375rem] md:rounded-[4.125rem_4.125rem_1rem_1rem] md:pb-6 md:text-base"
+                          className="animate-slot-pop flex h-[calc(100%-0.5rem)] w-[calc(100%-0.5rem)] items-end justify-center rounded-[3rem_3rem_0.75rem_0.75rem] bg-primary-light px-0.5 pb-4 text-center text-[length:clamp(0.75rem,14.5cqi,0.875rem)] leading-tight font-extrabold text-balance hyphens-auto text-ink [overflow-wrap:anywhere] sm:rounded-[3.25rem_3.25rem_0.75rem_0.75rem] sm:text-[0.9375rem] md:h-[calc(100%-0.75rem)] md:w-[calc(100%-0.75rem)] md:rounded-[4.125rem_4.125rem_1rem_1rem] md:px-2 md:pb-6 md:text-base"
                         >
                           <span className="sr-only">{t("home.trio.slot", { n })}: </span>
                           {labels.get(family) ?? family}

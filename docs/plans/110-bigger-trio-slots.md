@@ -72,6 +72,22 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
   button are centred in the right half on desktop and under the form when stacked. (On mobile the
   row is full width, so this changes nothing there.)
 
+### Deviations found in step 5 (layout check)
+Rendering the block at a true 360 px viewport (headless Edge, 360 px iframe) showed two problems
+with the planned classes:
+- **Names broke mid-word** ("Аромати/чні", "Aldehydi/c"): the browser didn't hyphenate, so
+  `overflow-wrap: anywhere` split the word. With the 2 px border, the 12 px inset and `px-1.5`, the
+  bottle had only ≈ 60 px for text, and a 10-letter bold label at 14 px needs ≈ 85 px.
+  Fix: on mobile the card is `px-4 py-6` (was `p-6`; `sm:p-12` unchanged), the bottle inset is
+  0.5 rem below `md` (0.75 rem from `md`), the label padding is `px-0.5` (`md:px-2`), and the slot is
+  a size container (`@container`) whose label is `clamp(0.75rem, 14.5cqi, 0.875rem)`. That's
+  ≈ 13 px at 360 px, 14 px from ≈ 390 px, 15 px at `sm` and 16 px at `md`+, and every label stays
+  on one line. 14 px on the smallest phones (Q1) can't fit a 10-letter word without hyphenation,
+  which browsers don't reliably do for Ukrainian.
+- **The CTA wrapped onto two left-aligned lines** at 20 px in a 280 px-wide pill. Fix: the `xl` size
+  is responsive, `min-h-16 px-6 text-center text-lg leading-tight sm:px-10 sm:text-xl`. On phones
+  that's 64 px tall with 18 px text: still bigger than `lg` (58 px) and full width.
+
 ## Resolved questions
 - **Q1: Mobile family-name size** — 14 px below `sm`, 15 px at `sm`, 16 px at `md`+, with
   `hyphens-auto` and `overflow-wrap: anywhere` as a fallback; the card's mobile padding stays `p-6`
@@ -136,7 +152,7 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
     order), and in "leads to the popular perfumes…" assert the link's class contains `min-h-16`
     and `w-full`. Behaviour tests stay unchanged.
 
-- [ ] **5. Check the layout in the running app** — `pnpm aspire run`, open `/` and `/en/`, scroll to
+- [x] **5. Check the layout in the running app** — `pnpm aspire run`, open `/` and `/en/`, scroll to
   `#trio`. Use DevTools device widths 360, 390, 640, 768, 1024, 1280:
   - no horizontal scroll at 360 (`document.documentElement.scrollWidth === 360`);
   - pick the longest families ("Ароматичні", "Альдегідні", "Гурманські" in uk; "Aldehydic",

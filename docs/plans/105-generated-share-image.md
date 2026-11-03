@@ -253,7 +253,7 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
   `ProductHandleResult`, not to `ProductDetail`. Update the fixtures in `products.test.ts` and
   `product.test.ts`.
 
-- [ ] **7. Resource route `app/routes/og.products.$file.ts` + `app/routes.ts`.** Register
+- [x] **7. Resource route `app/routes/og.products.$file.ts` + `app/routes.ts`.** Register
   `route("og/products/:file", "routes/og.products.$file.ts")` before the `*` catch-all, with a
   comment in the style of the sitemap/robots entries. The loader:
   1. strips `.png` from `params.file` and answers 404 (short cache header) without it or for an

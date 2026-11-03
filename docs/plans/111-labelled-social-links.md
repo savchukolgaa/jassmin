@@ -68,7 +68,7 @@ in bold, inside a pill link. The footer and mobile menu keep the compact icon-on
 | modify | `app/features/home/HomePage.test.ts` | Assert the contacts section renders the labelled links |
 
 ## Steps
-- [ ] **1. Add the `labelled` variant to `SocialLinks`** — In `SocialLinks.tsx`, type the props as
+- [x] **1. Add the `labelled` variant to `SocialLinks`** — In `SocialLinks.tsx`, type the props as
   the union described above, add `labelledOnInkClasses`, and in the map render
   `<Icon className="size-8 shrink-0 text-primary-light" /><span>{SOCIAL_LABELS[platform]}</span>`
   for `labelled`, and the existing `<Icon className="size-6" />` otherwise. Switch the `<ul>`

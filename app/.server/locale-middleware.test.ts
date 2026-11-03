@@ -44,6 +44,19 @@ describe("localeRedirectMiddleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it("redirects a client-side navigation's data request too (#112)", async () => {
+    const { result, next } = await run("/koshyk.data?_routes=routes%2F_shop%2Ccart.uk", {
+      cookie: "en",
+    });
+
+    expect(result.status).toBe(302);
+    expect(result.headers.get("Location")).toBe("/en/cart");
+    expect(next).not.toHaveBeenCalled();
+
+    const english = await run("/en.data", { cookie: "en" });
+    expect(english.next).toHaveBeenCalledOnce();
+  });
+
   it("never redirects without the cookie, even when the browser prefers English", async () => {
     const { result, next } = await run("/koshyk", { acceptLanguage: "en-US,en" });
 

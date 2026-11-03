@@ -173,7 +173,7 @@ The same raw URL causes two more bugs I confirmed with curl:
   `shouldSuggestEnglish` on `/_.data` (true for an English browser without the cookie) and on
   `/en.data` (false). Run `pnpm vitest run app/.server` and check it fails before step 2 and passes
   after.
-- [ ] **3. Locale middleware on data requests.** `app/.server/locale-middleware.ts`: build
+- [x] **3. Locale middleware on data requests.** `app/.server/locale-middleware.ts`: build
   `url` with `pageUrl(request)`. The redirect target is
   `localizedUrl(url.pathname + url.search, "en")`, which already gives the page URL; React Router
   turns a thrown redirect in a data request into a single-fetch redirect. Tests: a `GET

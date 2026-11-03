@@ -241,7 +241,7 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
     - the Cyrillic render differs from the same card with an empty title, so the glyphs aren't
       dropped.
 
-- [ ] **5. `label-card-cache.ts`.** Provides `getOrRender(key, render)`. A `Map` of
+- [x] **5. `label-card-cache.ts`.** Provides `getOrRender(key, render)`. A `Map` of
   `Promise<Buffer>` holds at most `MAX_ENTRIES = 256`. A hit re-inserts the key (LRU); past the
   limit it evicts the oldest key; on rejection it deletes the entry. It also exports
   `clearShareCardCache()` for tests. Tests: a second call doesn't render; concurrent calls share

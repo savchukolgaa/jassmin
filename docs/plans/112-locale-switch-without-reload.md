@@ -152,7 +152,7 @@ The same raw URL causes two more bugs I confirmed with curl:
 
 ## Steps
 
-- [ ] **1. Add `pageUrl(request)`.** Create `app/.server/request-url.ts` with one exported function
+- [x] **1. Add `pageUrl(request)`.** Create `app/.server/request-url.ts` with one exported function
   mirroring React Router's `getNormalizedPath`:
   ```ts
   /** The URL of the page `request` is for. React Router v8 passes loaders the raw request of a

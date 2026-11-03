@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/105
 Branch: `issue/105`
 Worktree: `.claude/worktrees/issue-105`
-Status: Planned
+Status: Implemented
 
 ## Goal
 When a customer shares a perfume that has no photo of its own in a messenger, the link preview
@@ -291,7 +291,13 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
   (`app/.server/og/share-bottle.jpg`) with the brand and name in the family palette
   (`app/.server/og/label-card.ts`). Bump `CARD_VERSION` when the photo or layout changes.
 
-- [ ] **10. Build and production check.** Run `pnpm build`, then `pnpm start` with the DB up.
+- [ ] **10. Build and production check.** *(Partly verified. `pnpm build` passes, and
+  `build/server/index.js` imports `@resvg/resvg-js` as an external with the photo inlined, not in
+  `build/client`. `pnpm start` boots, and `/og/products/x.jpg` returns 404. The local dev database
+  is behind on migrations (`product_variants.track_stock` from #98, `products.description_en` from
+  #100), so every DB-backed page there answers 500, the new route included. The curl checks
+  against real products wait for `pnpm db:migrate` on the dev DB. The same paths are covered by
+  the route tests and the real-DB `resolveProductHandle` test.)* Run `pnpm build`, then `pnpm start` with the DB up.
   Check:
   - `curl -I http://localhost:3000/og/products/<slug>.png` returns 200, `image/png` and the
     headers;
@@ -320,11 +326,11 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
     (https://developers.facebook.com/tools/debug/) and in Telegram (refresh via @WebpageBot).
 
 ## Acceptance criteria
-- [ ] `GET /og/products/<handle>.png` returns a 1200×630 PNG of the product's label card in its family palette, with its brand and name in Playfair Display and Manrope, for both Cyrillic and Latin names — steps 1–4, 7. (Per the user's decision, the "card" is the shop bottle photo plus the brand and name on the family-palette panel.)
-- [ ] An unknown or archived handle returns 404, and responses are cacheable (`Cache-Control`, `ETag`, 304) — steps 5, 6, 7
-- [ ] A product page without a photo has `og:image` pointing at its generated PNG (with width, height and alt), and a product with a photo still shares the photo — step 8
-- [ ] A shared link to a product without a photo shows the card in the Telegram or Facebook Sharing Debugger preview — steps 7, 8, 10 (manual check after deploy)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] `GET /og/products/<handle>.png` returns a 1200×630 PNG of the product's label card in its family palette, with its brand and name in Playfair Display and Manrope, for both Cyrillic and Latin names — steps 1–4, 7. (Per the user's decision, the "card" is the shop bottle photo plus the brand and name on the family-palette panel.)
+- [x] An unknown or archived handle returns 404, and responses are cacheable (`Cache-Control`, `ETag`, 304) — steps 5, 6, 7
+- [x] A product page without a photo has `og:image` pointing at its generated PNG (with width, height and alt), and a product with a photo still shares the photo — step 8
+- [ ] A shared link to a product without a photo shows the card in the Telegram or Facebook Sharing Debugger preview — steps 7, 8, 10 (manual check after deploy; **not verified yet**, it needs a public URL)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
 
 ## Out of scope
 - Showing the shop photo on the site (catalog, product page). The drawn label cards (#99) stay.

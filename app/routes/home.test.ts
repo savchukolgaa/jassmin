@@ -100,6 +100,19 @@ describe("home loader", () => {
     expect(view.seo.title).toBe("Jassmin — Order 3 Testers only for 499₴");
   });
 
+  it("loads English content on a client-side navigation to /en (#112)", async () => {
+    content.getHomePage.mockResolvedValue(homePage);
+    content.getSiteSettings.mockResolvedValue(siteSettings);
+
+    // React Router fetches `/en.data` and passes loaders that raw request.
+    await load(undefined, "/en.data");
+    expect(content.getHomePage).toHaveBeenLastCalledWith("en");
+    expect(content.getSiteSettings).toHaveBeenLastCalledWith("en");
+
+    await load(undefined, "/_.data");
+    expect(content.getHomePage).toHaveBeenLastCalledWith("uk");
+  });
+
   it("adds the trio offer, the families and the bestsellers from the shop", async () => {
     content.getHomePage.mockResolvedValue(homePage);
     content.getSiteSettings.mockResolvedValue(siteSettings);

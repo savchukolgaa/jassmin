@@ -1,9 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-const { links, meta, shouldRevalidate } = await import("./root");
+vi.mock("~/.server/env", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/.server/env")>()),
+  getEnv: () => ({ PUBLIC_SITE_URL: undefined }),
+}));
+
+const { links, loader, meta, shouldRevalidate } = await import("./root");
 
 type MetaArgs = Parameters<typeof meta>[0];
 type RevalidateArgs = Parameters<typeof shouldRevalidate>[0];
+type LoaderArgs = Parameters<typeof loader>[0];
 
 describe("root meta", () => {
   it("keeps unmatched URLs out of search results", () => {
@@ -65,5 +71,26 @@ describe("root shouldRevalidate", () => {
         args({ formMethod: "POST", formAction: "/koshyk", defaultShouldRevalidate: true }),
       ),
     ).toBe(true);
+  });
+});
+
+describe("root loader", () => {
+  const load = (url: string) =>
+    loader({ request: new Request(url), params: {}, context: {} } as unknown as LoaderArgs);
+
+  it("gives a client-side navigation the locale of its page, not of its data URL (#112)", async () => {
+    // React Router fetches `/en.data` for `/en` and passes loaders that raw request.
+    expect(await load("http://localhost/en.data")).toMatchObject({ locale: "en" });
+    expect(await load("http://localhost/_.data")).toMatchObject({ locale: "uk" });
+    expect(await load("http://localhost/en/cart.data?_routes=root")).toMatchObject({
+      locale: "en",
+    });
+  });
+
+  it("gives a document request the locale of its URL", async () => {
+    expect(await load("http://localhost/en")).toMatchObject({
+      locale: "en",
+      site: { url: "http://localhost" },
+    });
   });
 });

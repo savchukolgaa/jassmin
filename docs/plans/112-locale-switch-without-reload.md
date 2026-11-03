@@ -206,7 +206,7 @@ The same raw URL causes two more bugs I confirmed with curl:
   - existing opt-outs still `false` (home: contact form and cart posts; popular: cart posts;
     catalog/product: a cart post within the same language);
   - root after any action within the same language → `true` (`defaultShouldRevalidate`).
-- [ ] **7. Loader-level regression tests for `.data` URLs.** These tests reproduce the actual bug:
+- [x] **7. Loader-level regression tests for `.data` URLs.** These tests reproduce the actual bug:
   - `root.test.ts`: `loader({ request: new Request("http://localhost/en.data") })` returns
     `locale: "en"`, and `/_.data` returns `uk`.
   - `home.test.ts`: the home loader for `/en.data` asks the CMS for English and returns

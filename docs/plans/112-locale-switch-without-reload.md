@@ -80,7 +80,7 @@ The same raw URL causes two more bugs I confirmed with curl:
     helper duplicates about 10 lines of React Router's private normalization. A test pins it to
     the URLs React Router actually sends (see step 1), so a change in React Router shows up as a
     failing test, not a silent regression.
-- **Fix the two side bugs in this issue (unconfirmed, see Q1).** The login redirect and the
+- **Fix the two side bugs in this issue (confirmed by the owner, 2026-11-03).** The login redirect and the
   locale middleware have the same root cause and a one-line fix each with `pageUrl`. Leaving them
   would keep `.data` URLs leaking into `redirectTo`.
 - **Leave other `new URL(request.url)` reads alone**, for search params (catalog, popular, home,
@@ -95,22 +95,18 @@ The same raw URL causes two more bugs I confirmed with curl:
   - `root`: use the helper (same behaviour as today).
   - `home`, `popular`, `shouldRevalidateView` (`catalog`, `product`): return `true` first when the
     navigation crosses into the other language. Otherwise behave as today: cart, contact and
-    other non-GET form posts stay `false`, so view events (`product_view`, `search`) aren't recorded twice and Strapi isn't
-    hit for a quick add.
+    other non-GET form posts stay `false`, so view events (`product_view`, `search`) aren't
+    recorded twice and Strapi isn't hit for a quick add.
 - **No change to `LocaleSwitcher`, `routes/locale.ts`, `I18nProvider` or `useContentLang`.** They
   behave correctly once the loaders return the right locale.
 - Fix the wrong comment and test in `app/.server/locale.test.ts`.
 
-## Open questions
-
-- [ ] **Q1: Fix the login `redirectTo` and the locale middleware on data requests in this PR?** —
-  Why it matters: both are real bugs with the same root cause (confirmed with curl). They're
-  outside the issue's wording, though. The middleware change also means a visitor who chose
-  English and follows a Ukrainian link client-side is now redirected to the English page, which
-  is what #84 intended but a visible change. Recommended default: yes, fix both here (steps 3 and
-  4) with tests, and mention them in the PR. Affects steps: 3, 4.
-
 ## Resolved questions
+
+- **Q1: Fix the login `redirectTo` and the locale middleware on data requests in this PR?** —
+  Yes, both, with tests (steps 3 and 4), and mention them in the PR. A visitor who chose English
+  and follows a Ukrainian link client-side is now redirected to the English page, as #84
+  intended. (source: the owner, 2026-11-03)
 
 - **Does a `shouldRevalidate` return `false` after the `/locale` redirect?** — No. Root returns
   `true` (`localeFromPath` differs and `defaultShouldRevalidate` is `true` after an action). The
@@ -141,10 +137,10 @@ The same raw URL causes two more bugs I confirmed with curl:
 | create | `app/.server/request-url.test.ts` | Normalization cases (`/en.data`, `/_.data`, `_routes`, `index`, origin) |
 | modify | `app/.server/locale.ts` | `getLocale` reads `pageUrl(request)` |
 | modify | `app/.server/locale.test.ts` | Replace the wrong "strips `.data`" test with real `.data` URLs; `shouldSuggestEnglish` on `/_.data` |
-| modify | `app/.server/locale-middleware.ts` | Match `pageUrl(request)` (Q1) |
-| modify | `app/.server/locale-middleware.test.ts` | Redirects a data request for a Ukrainian page to the English page (Q1) |
-| modify | `app/.server/services/auth.ts` | `loginRedirectPath(pageUrl(request))` (Q1) |
-| modify | `app/.server/services/auth.test.ts` | `redirectTo` has no `.data` / `_routes` (Q1) |
+| modify | `app/.server/locale-middleware.ts` | Match `pageUrl(request)` |
+| modify | `app/.server/locale-middleware.test.ts` | Redirects a data request for a Ukrainian page to the English page |
+| modify | `app/.server/services/auth.ts` | `loginRedirectPath(pageUrl(request))` |
+| modify | `app/.server/services/auth.test.ts` | `redirectTo` has no `.data` / `_routes` |
 | modify | `app/lib/paths.ts` | `crossesLocale({ currentUrl, nextUrl })` |
 | modify | `app/lib/paths.test.ts` (existing paths test) | `crossesLocale` cases |
 | modify | `app/root.tsx` | `shouldRevalidate` uses `crossesLocale` |
@@ -177,13 +173,13 @@ The same raw URL causes two more bugs I confirmed with curl:
   `shouldSuggestEnglish` on `/_.data` (true for an English browser without the cookie) and on
   `/en.data` (false). Run `pnpm vitest run app/.server` and check it fails before step 2 and passes
   after.
-- [ ] **3. Locale middleware on data requests (Q1).** `app/.server/locale-middleware.ts`: build
+- [ ] **3. Locale middleware on data requests.** `app/.server/locale-middleware.ts`: build
   `url` with `pageUrl(request)`. The redirect target is
   `localizedUrl(url.pathname + url.search, "en")`, which already gives the page URL; React Router
   turns a thrown redirect in a data request into a single-fetch redirect. Tests: a `GET
   /koshyk.data` with the `en` cookie throws a 302 to `/en/cart`, and `GET /en.data` with the `en`
   cookie passes through.
-- [ ] **4. Login redirect on data requests (Q1).** `app/.server/services/auth.ts`:
+- [ ] **4. Login redirect on data requests.** `app/.server/services/auth.ts`:
   `loginRedirectPath(pageUrl(request))`. Test: `requireUser` for a logged-out
   `/kabinet.data?_routes=…` redirects to `/vkhid?redirectTo=%2Fkabinet`, in the existing
   `app/.server/services/auth.test.ts`, following its mock pattern.

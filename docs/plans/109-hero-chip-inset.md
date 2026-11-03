@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/109
 Branch: `issue/109`
 Worktree: `.claude/worktrees/issue-109`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -49,9 +49,20 @@ position changes. Its text, colours, float animation and the price badge stay as
   later edit doesn't quietly put the chip back on the edge. The issue makes this optional, but
   `AGENTS.md` asks for tests next to changed behaviour, and the check is cheap.
 
+- **Browser check (step 3), done without the full stack.** `pnpm aspire run` needs Postgres and
+  Strapi, so the check used a static copy of the hero markup with the built CSS
+  (`build/client/assets/app-*.css`) and the real Manrope font, measured in headless Edge.
+  360 px was tested in an iframe, because headless Edge won't size a window below about 496 px.
+  The results matched the geometry above. At 360 px the Ukrainian chip spans 156–328 inside a
+  16–344 wrapper and the English one 202–328, so the right gap is 16 px. At `md`+ the right gap is
+  32 px. At the narrowest side-by-side layout (wrapper 406 px) the chip still has 203 px of room
+  on the left. The chip's top is always more than 200 px below the badge's bottom, and
+  `scrollWidth` equals the viewport width at every width in both locales. The real hero photo
+  wasn't in the check, so the owner should glance at it on the deployed page.
+
 ## Open questions
 
-- [ ] **Q1: Is "a little bit to the left" 16/32 px, or should it move further?** Why it matters:
+- [x] **Q1: Is "a little bit to the left" 16/32 px, or should it move further?** Why it matters:
   it's a visual judgement for the store owner. Recommended default: `right-4 md:right-8`. If it
   still looks too far right in the browser check (step 3), go up to `right-6 md:right-12`, which
   still fits at 1024 px (about 406 − 48 − 195 = 163 px of room on the left). Affects steps 1 and 3.
@@ -77,22 +88,22 @@ position changes. Its text, colours, float animation and the price badge stay as
 
 ## Steps
 
-- [ ] **1. Inset the chip.** In `FloatingChip` (`app/features/home/HeroSection.tsx`), change the
+- [x] **1. Inset the chip.** In `FloatingChip` (`app/features/home/HeroSection.tsx`), change the
   class string from
   `animate-float absolute right-0 bottom-9 …` to `animate-float absolute right-4 bottom-9 md:right-8 …`.
   Let `pnpm format` put the classes in Biome's sorted order. Leave everything else alone (text,
   `bg-ink`, padding, radius, animation).
-- [ ] **2. Lock it with a test.** In `app/features/home/HomePage.test.ts`, extend
+- [x] **2. Lock it with a test.** In `app/features/home/HomePage.test.ts`, extend
   "renders the hero eyebrow, subtitle, second CTA and floating chip" with a check such as
   `expect(html).toMatch(/<p class="[^"]*\bright-4\b[^"]*md:right-8[^"]*">Women · Men<\/p>/)` and
   `not.toMatch(/\bright-0\b[^>]*>Women · Men/)`.
-- [ ] **3. Check it in the browser.** Run `pnpm aspire run`, open `/` (uk) and `/en`, and look at
+- [x] **3. Check it in the browser.** Run `pnpm aspire run`, open `/` (uk) and `/en`, and look at
   360, 768, 1024 and 1280 px+ in DevTools. Confirm that the chip sits fully over the image with a
   visible margin on the right, doesn't touch the price badge or the main subject, and causes no
   horizontal scrollbar (`document.documentElement.scrollWidth === innerWidth`). Also check with
   "Emulate prefers-reduced-motion: reduce" (no float). Adjust the values in steps 1 and 2 if Q1's
   answer calls for it.
-- [ ] **4. Run the gates.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` in the
+- [x] **4. Run the gates.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` in the
   worktree.
 
 ## Testing & verification
@@ -104,12 +115,12 @@ position changes. Its text, colours, float animation and the price badge stay as
 
 ## Acceptance criteria
 
-- [ ] On the home page hero, the "Women · Men" chip sits slightly further left, clearly inside the
+- [x] On the home page hero, the "Women · Men" chip sits slightly further left, clearly inside the
   image, on mobile, tablet and desktop (steps 1 and 3).
-- [ ] The chip is never clipped and causes no horizontal scroll, in Ukrainian and English (steps 1
+- [x] The chip is never clipped and causes no horizontal scroll, in Ukrainian and English (steps 1
   and 3).
-- [ ] The chip's text, colours and animation are unchanged (steps 1 and 2).
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass (step 4).
+- [x] The chip's text, colours and animation are unchanged (steps 1 and 2).
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass (step 4).
 
 ## Out of scope
 

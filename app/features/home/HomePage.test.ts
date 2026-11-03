@@ -185,6 +185,9 @@ describe("HomePage", () => {
     expect(html).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>See all perfumes<\/a>/);
     expect(html).toContain("Women · Men");
     expect(html).not.toMatch(/unisex/i);
+    // #109: the chip is inset from the image's right edge, not pinned to it.
+    expect(html).toMatch(/<p class="[^"]*\bright-4\b[^"]*\bmd:right-8\b[^"]*">Women · Men<\/p>/);
+    expect(html).not.toMatch(/<p class="[^"]*\bright-0\b[^"]*">Women · Men<\/p>/);
   });
 
   it("leaves out the optional hero parts that aren't set", () => {

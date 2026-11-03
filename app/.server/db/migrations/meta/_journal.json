@@ -141,6 +141,20 @@
       "when": 1793625538706,
       "tag": "0019_product_description_en",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793626258580,
+      "tag": "0020_variant_track_stock",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793626747117,
+      "tag": "0021_tester_trio_rule",
+      "breakpoints": true
     }
   ]
 }

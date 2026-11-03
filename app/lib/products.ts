@@ -135,7 +135,10 @@ export interface ProductVariant {
   id: string;
   volumeMl: number;
   price: string;
+  /** Units for sale; for a size that doesn't track stock it's a stand-in, never shown (#98). */
   stockQuantity: number;
+  /** `false`: always available, the shop pours it to order (#98). */
+  trackStock: boolean;
   inStock: boolean;
 }
 

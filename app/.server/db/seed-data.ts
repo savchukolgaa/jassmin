@@ -175,6 +175,8 @@ export const SAMPLE_PRODUCTS: SampleProduct[] = [
     price: "990.00",
     volumeMl: 10,
     packSize: 3,
+    // Sets are archived (#98): the tester trio discount is the way to buy three testers.
+    active: false,
     stockQuantity: 20,
     variants: [{ volumeMl: 10, price: "990.00", stockQuantity: 20 }],
   },
@@ -190,7 +192,8 @@ export type SampleDiscount = typeof discounts.$inferInsert;
 export const SAMPLE_DISCOUNTS: SampleDiscount[] = [
   {
     // Any three single 10 ml sizes for 499 ₴, up to three sets per order. `pack_size 1` keeps
-    // the 3 × 10 ml tester set product out of it.
+    // the 3 × 10 ml tester set product out of it. Migration 0020 creates the same rule in every
+    // database (#98), so the seed skips it there; keep the two equal.
     slug: "tester-trio",
     kind: "fixed_price_set",
     value: "499.00",

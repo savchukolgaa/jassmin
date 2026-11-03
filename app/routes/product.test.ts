@@ -135,6 +135,7 @@ describe("product meta", () => {
     volumeMl: 50,
     price,
     stockQuantity: inStock ? 5 : 0,
+    trackStock: true,
     inStock,
   });
   const product: ProductDetail = {

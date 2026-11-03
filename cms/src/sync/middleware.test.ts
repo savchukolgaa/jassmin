@@ -109,6 +109,47 @@ describe("applyProductAnswer (#65)", () => {
   });
 });
 
+describe("productPayload: tracked stock (#98)", () => {
+  it("sends whether each size tracks stock, untracked when Strapi has no value", async () => {
+    const merged = {
+      ...stored,
+      variants: [
+        { id: 5, volumeMl: 50, price: 3200, stock: 2, trackStock: true },
+        { volumeMl: 10, price: 240 },
+      ],
+    };
+    expect((await productPayload(strapi, merged, stored)).variants).toEqual([
+      { volumeMl: 50, price: 3200, trackStock: true, stock: 2, expectedStock: 2 },
+      { volumeMl: 10, price: 240, trackStock: false, stock: 0, expectedStock: null },
+    ]);
+  });
+
+  it("keeps the stored stock when the admin hides the field", async () => {
+    const hidden = {
+      ...stored,
+      variants: [{ id: 5, volumeMl: 50, price: 3200, trackStock: false }],
+    };
+    expect((await productPayload(strapi, hidden, stored)).variants).toEqual([
+      { volumeMl: 50, price: 3200, trackStock: false, stock: 2, expectedStock: 2 },
+    ]);
+  });
+
+  it("saves the app's tracking and stock", () => {
+    const data = applyProductAnswer(stored, {
+      publicId: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+      active: true,
+      fragranceFamilies: [],
+      notes: [],
+      storeCode: null,
+      popularRank: null,
+      variants: [{ volumeMl: 50, price: "3200.00", stock: 2, trackStock: false }],
+    });
+    expect(data.variants).toEqual([
+      { id: 5, volumeMl: 50, price: 3200, stock: 2, trackStock: false },
+    ]);
+  });
+});
+
 describe("productPayload: image (#88)", () => {
   const file = {
     id: 7,

@@ -152,7 +152,9 @@ export async function createOrder(
       });
       await insertOrderItems(tx, orderId, lines);
       await insertOrderEmail(tx, { orderId, type: "confirmation", locale });
-      for (const line of lines) {
+      // Only sizes that track stock lose units; the rest are poured to order (#98).
+      const tracked = lines.filter((line) => line.trackStock);
+      for (const line of tracked) {
         await decrementVariantStock(tx, line.variantId, line.quantity);
       }
       await markCartConverted(tx, cartId);
@@ -161,7 +163,7 @@ export async function createOrder(
       await enqueueCmsSync(
         tx,
         "product",
-        lines.map((line) => line.productId),
+        tracked.map((line) => line.productId),
       );
       return {
         ok: true,

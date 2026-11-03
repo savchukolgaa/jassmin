@@ -1,0 +1,2 @@
+-- #98: sizes are available without counting stock unless `track_stock` is on; every existing size starts untracked.
+ALTER TABLE "product_variants" ADD COLUMN "track_stock" boolean DEFAULT false NOT NULL;

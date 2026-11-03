@@ -26,8 +26,22 @@ const product: ProductDetail = {
   notes: [],
   storeCode: "3-D",
   variants: [
-    { id: "v-10", volumeMl: 10, price: "1250.00", stockQuantity: 5, inStock: true },
-    { id: "v-50", volumeMl: 50, price: "3200.00", stockQuantity: 0, inStock: false },
+    {
+      id: "v-10",
+      volumeMl: 10,
+      price: "1250.00",
+      stockQuantity: 5,
+      trackStock: true,
+      inStock: true,
+    },
+    {
+      id: "v-50",
+      volumeMl: 50,
+      price: "3200.00",
+      stockQuantity: 0,
+      trackStock: true,
+      inStock: false,
+    },
   ],
 };
 

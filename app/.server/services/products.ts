@@ -86,6 +86,7 @@ function toVariant(row: ProductVariantRow): ProductVariant {
     volumeMl: row.volumeMl,
     price: row.price,
     stockQuantity: row.stockQuantity,
+    trackStock: row.trackStock,
     inStock: row.stockQuantity > 0,
   };
 }

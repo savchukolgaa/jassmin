@@ -104,7 +104,8 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:rollback` | Roll back the latest applied migration |
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
-| `pnpm db:import-catalog` | Add the shop's perfume range (`app/.server/db/catalog-data.ts`) that isn't in the database yet, every size at the price table's price (`catalog-prices.ts`) and stock 0, with its Ukrainian and English descriptions (`catalog-descriptions.ts`). Existing products only get a description where theirs is empty, so staff edits survive (safe to re-run). Then run `pnpm db:sync-cms` |
+| `pnpm db:import-catalog` | Add the shop's perfume range (`app/.server/db/catalog-data.ts`) that isn't in the database yet, every size at the price table's price (`catalog-prices.ts`), always available (stock isn't tracked, #98), with its Ukrainian and English descriptions (`catalog-descriptions.ts`). Existing products only get a description where theirs is empty, so staff edits survive (safe to re-run). Then run `pnpm db:sync-cms` |
+| `pnpm db:apply-catalog-prices` | One-off (#98): archive sets and give every active perfume the five standard sizes at the price table's prices (`catalog-prices.ts`), then queue the changed ones for Strapi. A second run changes nothing, but it would reset sizes and prices staff changed in Strapi since. Then run `pnpm db:sync-cms` |
 | `pnpm db:convert-catalog <path>` | Convert the owner's Markdown perfume list into `catalog-data.ts`, applying `app/.server/db/catalog/fixes.ts` (the list itself isn't committed) |
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin role](#admin-role) |
 | `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
@@ -248,7 +249,7 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 
 | Component | Fields |
 |-----------|--------|
-| `catalog.variant` | `volumeMl` (7, 10, 30, 50 or 100, checked by the app), `price` (UAH, over 0), `stock` |
+| `catalog.variant` | `volumeMl` (5, 10, 30, 50 or 100, checked by the app), `price` (UAH, over 0), `trackStock` (off by default: always available, #98), `stock` (shown and used only when `trackStock` is on) |
 | `orders.item` | `productPublicId`, `productName`, `brand`, `volumeMl`, `quantity`, `unitPrice` (a snapshot at checkout) |
 | `home.hero` | `headline`, `ctaLabel`, `ctaHref`, `image` |
 | `home.about` | `title`, `body` (Markdown) |
@@ -315,7 +316,7 @@ Without `SMTP_URL`, development logs the message to the server console instead, 
 There is no admin area in the app any more (#40): staff manage the catalogue and orders in the Strapi admin (`STRAPI_URL` + `/admin`), next to the editorial content. The app's PostgreSQL database stays the system of record, because checkout locks and decrements stock there and carts, order lines, offers and analytics point at its rows. Strapi is the screen staff use, and every save writes through to the app:
 
 - **Saving a product or an order in the Strapi admin** first sends the change to the app (`POST /cms/products` or `/cms/orders/:id`, authenticated with `CMS_SYNC_SECRET`). The app checks it, applies it in one transaction and answers with what it stored, which is what Strapi saves. When the app refuses, the save fails with a message in Ukrainian and nothing changes on either side. When the app is down, saves fail with a clear message too.
-- **Products:** name, slug, brand, description, gender, fragrance family, image, pack size, `active` and the sizes (`variants`: volume, price, stock). A stock number is applied as the **difference** from the number the form showed, so units sold while the form was open stay sold, and the form then shows the real stock. Removing a size deletes it in the shop (cart lines with it go; order lines keep their size). Unticking **Active** or deleting a product archives it: it disappears from the catalogue, product page, offers and checkout, and its past orders keep their title and image.
+- **Products:** name, slug, brand, description, gender, fragrance family, image, pack size, `active` and the sizes (`variants`: volume, price, **Track stock**, stock). A size is always available while **Track stock** is off (the default, #98: the shop pours from large bottles); checkout neither checks nor lowers its stock, and the admin hides the stock field. With **Track stock** on, a stock number is applied as the **difference** from the number the form showed, so units sold while the form was open stay sold, and the form then shows the real stock. Removing a size deletes it in the shop (cart lines with it go; order lines keep their size). Unticking **Active** or deleting a product archives it: it disappears from the catalogue, product page, offers and checkout, and its past orders keep their title and image.
 - **Orders:** only **Order status** (`orderStatus`, because Strapi reserves `status`) and **Payment status** can be changed; every other field is read-only and set by the shop. The shop checks each change against the lifecycle in `app/lib/order-status.ts`:
   - `pending` → `paid`, `shipped` (cash on delivery only: shipped while the payment is still pending) or `cancelled`
   - `paid` → `shipped` or `cancelled`
@@ -331,7 +332,8 @@ There is no admin area in the app any more (#40): staff manage the catalogue and
 1. Set the same `CMS_SYNC_SECRET` (32+ characters) in the root `.env` and in `cms/.env`, and `JASSMIN_APP_URL` (the app's URL, e.g. `http://localhost:5173`) in `cms/.env`. Under `pnpm aspire run`, Aspire generates the secret and sets both.
 2. Run `pnpm cms:seed -- --token` (or the `cms-seed` resource) and copy `STRAPI_SYNC_TOKEN=…` into the root `.env`.
 3. Copy the existing catalogue and orders into Strapi once: `pnpm db:sync-cms -- --all`. Products from before #40 get a slug from their title. It only upserts, so running it again is safe.
-4. Load the shop's perfume range with `pnpm db:import-catalog` (or the `db-import-catalog` resource), then push it with `pnpm db:sync-cms`. Staff add photos and stock in Strapi and can edit the descriptions there; a re-run of the import only adds perfumes that aren't there yet and fills descriptions that are empty.
+4. Load the shop's perfume range with `pnpm db:import-catalog` (or the `db-import-catalog` resource), then push it with `pnpm db:sync-cms`. Staff add photos in Strapi and can edit the descriptions there; a re-run of the import only adds perfumes that aren't there yet and fills descriptions that are empty.
+5. Once, after #98: `pnpm db:apply-catalog-prices` (or the `db-apply-catalog-prices` resource) puts every perfume on the five standard sizes and prices and archives sets, then `pnpm db:sync-cms` shows the result in Strapi.
 
 ## SEO
 

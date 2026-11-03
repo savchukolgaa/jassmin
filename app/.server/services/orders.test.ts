@@ -270,6 +270,42 @@ describe.skipIf(!hasDatabase)("order service", () => {
     }
   });
 
+  it("sells a size that doesn't track stock without checking or lowering it (#98)", async () => {
+    const { createOrder } = await import("./orders");
+    const { eq } = await import("drizzle-orm");
+    const { cmsOutbox, products, productVariants } = await import("../db/schema");
+    const [product] = await testDb.db
+      .insert(products)
+      .values({ title: "Poured", brand: "Test", gender: "women", price: "240.00", volumeMl: 10 })
+      .returning({ id: products.id });
+    const [poured] = await testDb.db
+      .insert(productVariants)
+      .values({ productId: product?.id ?? 0, volumeMl: 10, price: "240.00", stockQuantity: 0 })
+      .returning({ id: productVariants.id, productId: productVariants.productId });
+    if (!poured) throw new Error("No poured size");
+    const five = await variant(5, 10);
+    const cart = await cartWith([
+      { variant: poured, quantity: 5 },
+      { variant: five, quantity: 1 },
+    ]);
+
+    const result = await createOrder(
+      { cartId: cart.id, userId: null, customer, locale: "uk" },
+      testDb.db,
+    );
+
+    expect(result).toMatchObject({ ok: true, placed: true });
+    expect(await stockOf(poured.id)).toBe(0);
+    // A tracked size in the same order still loses its unit.
+    expect(await stockOf(five.id)).toBe(9);
+    // Nothing changed on the untracked product, so Strapi has nothing to update.
+    const queued = await testDb.db
+      .select()
+      .from(cmsOutbox)
+      .where(eq(cmsOutbox.entityId, poured.productId));
+    expect(queued.filter((row) => row.entity === "product")).toEqual([]);
+  });
+
   it("changes nothing when a line asks for more than is in stock", async () => {
     const { createOrder } = await import("./orders");
     const five = await variant(5, 10);

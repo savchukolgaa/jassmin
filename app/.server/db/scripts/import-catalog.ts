@@ -1,7 +1,7 @@
 // `pnpm db:import-catalog`: adds the owner's perfume range (catalog-data.ts) that isn't in the
-// database yet, with every size of catalog-prices.ts at stock 0 (#66) and the descriptions of
-// catalog-descriptions.ts (#100). Products that exist only get a description where theirs is
-// empty, so it's safe to re-run. Then run `pnpm db:sync-cms` to push the changes to Strapi.
+// database yet, with every size of catalog-prices.ts, always available (#66, #98), and the
+// descriptions of catalog-descriptions.ts (#100). Products that exist only get a description where
+// theirs is empty, so it's safe to re-run. Then run `pnpm db:sync-cms` to push the changes to Strapi.
 import { existsSync } from "node:fs";
 import { getDatabaseUrl } from "../../env";
 import { CATALOG_PRODUCTS } from "../catalog-data";

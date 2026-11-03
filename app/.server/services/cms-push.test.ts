@@ -58,7 +58,7 @@ const product: CmsProductState = {
   popularRank: 2,
   packSize: 1,
   active: true,
-  variants: [{ volumeMl: 5, price: "990.00", stock: 8 }],
+  variants: [{ volumeMl: 5, price: "990.00", trackStock: true, stock: 8 }],
 };
 
 const env = { STRAPI_URL: "http://cms.test", STRAPI_SYNC_TOKEN: "write" };
@@ -130,7 +130,8 @@ describe("toStrapiOrderData / toStrapiProductData", () => {
       popularRank: 2,
       description: "Квітковий шипровий аромат.",
       descriptionEn: "A floral chypre.",
-      variants: [{ volumeMl: 5, price: 990, stock: 8 }],
+      // Strapi shows whether the size counts its stock (#98).
+      variants: [{ volumeMl: 5, price: 990, trackStock: true, stock: 8 }],
     });
   });
 

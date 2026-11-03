@@ -53,6 +53,15 @@ await builder
   .withParentRelationship(db)
   .withExplicitStart();
 
+// Puts every perfume on the standard sizes and prices once (#98); then start `db-sync-cms`.
+await builder
+  .addJavaScriptApp("db-apply-catalog-prices", "..", { runScriptName: "db:apply-catalog-prices" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
 await builder
   .addJavaScriptApp("db-rollback", "..", { runScriptName: "db:rollback" })
   .withPnpm({ install: false })

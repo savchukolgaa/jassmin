@@ -49,7 +49,11 @@ export async function seedProducts(
     const idByPublicId = new Map(rows.map((row) => [row.publicId, row.id]));
     const variants = SAMPLE_PRODUCTS.flatMap((product) => {
       const productId = idByPublicId.get(product.publicId);
-      return productId === undefined ? [] : product.variants.map((v) => ({ ...v, productId }));
+      // The samples count their stock (#98), so local development and the tests keep sold-out and
+      // low-stock sizes; the shop's own range (`db:import-catalog`) is untracked.
+      return productId === undefined
+        ? []
+        : product.variants.map((v) => ({ ...v, productId, trackStock: true }));
     });
     const variantsInserted = await tx
       .insert(productVariants)

@@ -242,7 +242,8 @@ export interface CartVariant {
 
 /**
  * Adds `quantity` of the variant to the owner's cart (creating it), or adds to the line it
- * already has. The line may not exceed the variant's stock.
+ * already has. The line may not exceed the variant's stock, which for a size that doesn't track
+ * stock is `UNTRACKED_STOCK`, the line limit (#98).
  */
 export async function addItem(
   writer: CartWriter,

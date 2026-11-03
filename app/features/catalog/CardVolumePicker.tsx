@@ -17,7 +17,8 @@ export interface CardVolumePickerProps {
  * The size pills on a product card (#74): radios named `variantId`, so the card's add-to-cart form
  * posts the picked size without JS too. Each form is its own radio group, so the name is the same
  * on every card; the ids are unique. Uncontrolled, so a size picked before hydration stays picked.
- * Sold-out sizes are shown struck through but can't be picked.
+ * Sold-out sizes are shown struck through but can't be picked; a size that doesn't track stock
+ * (#98) is never sold out.
  */
 export function CardVolumePicker({
   variants,

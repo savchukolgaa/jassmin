@@ -156,7 +156,7 @@ export const products = pgTable(
   ],
 );
 
-/** One sellable size of a product, with its own price and stock. */
+/** One sellable size of a product, with its own price and (when tracked, #98) stock. */
 export const productVariants = pgTable(
   "product_variants",
   {
@@ -171,6 +171,11 @@ export const productVariants = pgTable(
     /** Exact decimal, returned as a string (e.g. `"2450.00"`). */
     price: numeric({ precision: 10, scale: 2 }).notNull(),
     stockQuantity: integer().notNull().default(0),
+    /**
+     * Whether `stockQuantity` limits sales (#98). `false` (the default): the shop pours from large
+     * bottles, so the size is always available and checkout neither checks nor decrements stock.
+     */
+    trackStock: boolean().notNull().default(false),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

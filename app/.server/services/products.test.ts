@@ -467,6 +467,8 @@ describe.skipIf(!hasDatabase)("products service", () => {
       available: true,
       id: slugged.id,
       product: { id: slugged.publicId, slug: "handle-slugged", title: "Slugged", variants: [] },
+      // The share image's cache key (#105).
+      updatedAt: expect.any(Date),
     });
     expect(await resolve(slugged.publicId)).toEqual({
       kind: "redirect",
@@ -495,6 +497,7 @@ describe.skipIf(!hasDatabase)("products service", () => {
       available: false,
       id: archived.id,
       product: { title: "Archived" },
+      updatedAt: expect.any(Date),
     });
     const archivedTarget = {
       kind: "redirect",

@@ -236,7 +236,14 @@ export type ProductHandleResult =
    * Render the page; `id` is the serial id, for server-side use only. `available` is `false` for
    * an archived product (#88): its page stays, without a way to buy it.
    */
-  | { kind: "product"; id: number; product: ProductDetail; available: boolean }
+  | {
+      kind: "product";
+      id: number;
+      product: ProductDetail;
+      available: boolean;
+      /** The row's `updated_at`, server-side only: the share image's cache key (#105). */
+      updatedAt: Date;
+    }
   /** Answer 301 to `productHref({ id: publicId, slug })`, the product's current URL. */
   | { kind: "redirect"; publicId: string; slug: string };
 
@@ -281,11 +288,17 @@ async function productResult(
 ): Promise<ProductHandleResult> {
   const product = await detailOf(row, db, locale);
   if (row.active) {
-    return { kind: "product", id: row.id, product, available: true };
+    return { kind: "product", id: row.id, product, available: true, updatedAt: row.updatedAt };
   }
   // Nothing of an archived product is for sale (#40), whatever its sizes' stock says.
   const variants = product.variants.map((v) => ({ ...v, stockQuantity: 0, inStock: false }));
-  return { kind: "product", id: row.id, product: { ...product, variants }, available: false };
+  return {
+    kind: "product",
+    id: row.id,
+    product: { ...product, variants },
+    available: false,
+    updatedAt: row.updatedAt,
+  };
 }
 
 async function detailOf(row: ProductDetailRow, db: Db, locale: Locale): Promise<ProductDetail> {

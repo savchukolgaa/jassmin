@@ -247,7 +247,7 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
   `clearShareCardCache()` for tests. Tests: a second call doesn't render; concurrent calls share
   one render; a rejected render is retried; eviction works.
 
-- [ ] **6. `updatedAt` on the handle result.** Add `updatedAt: products.updatedAt` to the columns
+- [x] **6. `updatedAt` on the handle result.** Add `updatedAt: products.updatedAt` to the columns
   `findProductByPublicId` / `findProductBySlug` select (`ProductDetailRow`). Return
   `updatedAt: row.updatedAt` from `productResult` on both branches, and add it to
   `ProductHandleResult`, not to `ProductDetail`. Update the fixtures in `products.test.ts` and

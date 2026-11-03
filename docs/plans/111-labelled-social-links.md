@@ -46,6 +46,9 @@ in bold, inside a pill link. The footer and mobile menu keep the compact icon-on
 - `target="_blank"` and `rel="noopener noreferrer"` stay on every link; the `<ul aria-label>`
   ("Social media") stays.
 
+- **Deviation:** the `HomePage.test.ts` update moved from step 3 into step 2's commit, because the
+  renamed test asserts the labelled markup and only passes once `ContactsSection` uses it.
+
 ## Resolved questions
 - **Which platforms are labelled?** Every link in the list, not only Instagram — the label comes
   from `SOCIAL_LABELS`, so Telegram etc. render the same once set in Strapi (source: #111 Context).
@@ -75,11 +78,11 @@ in bold, inside a pill link. The footer and mobile menu keep the compact icon-on
   spacing by variant (`-mx-3 flex flex-wrap gap-x-2 gap-y-1` vs `-mx-1 flex flex-wrap gap-1`).
   Compute the label once (`const label = SOCIAL_LABELS[platform]`) and reuse it for `aria-label`.
   Update the JSDoc to mention the variant and #111. Check: `pnpm typecheck`.
-- [ ] **2. Use it in the contacts section** — In `ContactsSection.tsx`, pass `variant="labelled"`
+- [x] **2. Use it in the contacts section** — In `ContactsSection.tsx`, pass `variant="labelled"`
   and update the comment (labelled pills, #111; footer/menu stay icon-only). Check visually in
   `pnpm aspire run` (or `pnpm dev`): icon lines up with the phone/mail icons, two links wrap at
   320 px, focus ring visible on Tab, hover tint.
-- [ ] **3. Tests** —
+- [x] **3. Tests** —
   - `SocialLinks.test.ts`: extend `render()` to accept a `variant`; add
     - "labelled variant shows each platform name after a bigger icon": `html` contains
       `>Instagram</span>` and `>Telegram</span>`, each anchor contains `<svg` with `size-8`, and

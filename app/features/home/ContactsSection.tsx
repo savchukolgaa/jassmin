@@ -66,8 +66,13 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
               </li>
             )}
           </ul>
-          {/* The same icon links as the footer and mobile menu (#101). */}
-          <SocialLinks links={contacts.socialLinks} tone="onInk" className="mt-8" />
+          {/* A bigger icon with the platform name (#111); the footer and menu stay icon-only. */}
+          <SocialLinks
+            links={contacts.socialLinks}
+            tone="onInk"
+            variant="labelled"
+            className="mt-8"
+          />
         </div>
         <div className="min-w-0 flex-[1_1_28rem]">{children}</div>
       </div>

@@ -349,12 +349,12 @@ describe("HomePage", () => {
     );
   });
 
-  it("shows the social links as the same icons as the footer, ringed for the dark section (#101)", () => {
+  it("shows the social links as labelled pills, ringed for the dark section (#101, #111)", () => {
     const contacts = render().slice(render().indexOf('id="contacts"'));
 
     expect(contacts).toContain('aria-label="Social media"');
     expect(contacts).toMatch(
-      /<a(?=[^>]*aria-label="Jassmin on Instagram")[^>]*outline-primary-light/,
+      /<a(?=[^>]*aria-label="Jassmin on Instagram")[^>]*outline-primary-light[^>]*><svg[^>]*size-8[^>]*>.*?<\/svg><span>Instagram<\/span><\/a>/,
     );
     expect(render({ contacts: { ...view.contacts, socialLinks: [] } })).not.toContain(
       'aria-label="Social media"',

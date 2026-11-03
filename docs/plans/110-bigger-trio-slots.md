@@ -49,7 +49,7 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
   `<html lang>` is set from the locale (`app/root.tsx:82`), so `hyphens-auto` can use Ukrainian
   rules where the browser has them. Longest labels to check: "Ароматичні", "Альдегідні",
   "Гурманські", "Цитрусові" (uk) and "Aldehydic", "Aromatic", "Gourmand" (en). At 360 px the inner
-  bottle is ≈ 76 px wide, so mobile stays at 14 px (`text-sm`, up from 13 px) **(unconfirmed, Q1)**.
+  bottle is ≈ 76 px wide, so mobile stays at 14 px (`text-sm`, up from 13 px) (Q1).
 - **Empty-slot number:** `text-3xl` → `text-4xl md:text-5xl`.
 - `animate-slot-pop` and its `key={family}` replay stay. `prefers-reduced-motion: reduce` is
   handled globally in `app/app.css` (turns off all animations), so nothing to add.
@@ -72,18 +72,12 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
   button are centred in the right half on desktop and under the form when stacked. (On mobile the
   row is full width, so this changes nothing there.)
 
-## Open questions
-- [ ] **Q1: Mobile family-name size** — Why it matters: at 360 px the filled bottle is only ≈ 76 px
-  wide, and the longest Ukrainian single words ("Ароматичні", "Альдегідні") can't wrap without
-  hyphenation; 15–16 px (the issue's example) would overflow or break mid-word on the smallest
-  phones. Recommended default: 14 px below `sm`, 15 px at `sm`, 16 px at `md`+, with `hyphens-auto`
-  and `overflow-wrap: anywhere` as a fallback. If the owner wants 15 px on mobile too, reduce the
-  card's mobile padding (`p-6` → `p-5`) to win 8 px. Affects step 3.
-- [ ] **Q2: Centre the right column or keep it left-aligned** — Why it matters: purely visual; the
-  issue says "may need more room or centring". Recommended default: centre (`items-center`). Affects
-  step 4.
-
 ## Resolved questions
+- **Q1: Mobile family-name size** — 14 px below `sm`, 15 px at `sm`, 16 px at `md`+, with
+  `hyphens-auto` and `overflow-wrap: anywhere` as a fallback; the card's mobile padding stays `p-6`
+  (source: owner, answering this plan).
+- **Q2: Centre the right column or keep it left-aligned** — Centre (`items-center`) (source: owner,
+  answering this plan).
 - **Where does reduced motion come from?** — A global `@media (prefers-reduced-motion: reduce)` rule
   turns off every animation, so `animate-slot-pop`/`animate-pop` are covered with no extra classes
   (source: `app/app.css` ~line 295).
@@ -133,7 +127,7 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
 
 - [ ] **4. Bigger CTA without layout shift** — Still in `TrioBuilder.tsx`:
   - Form: `flex-[1_1_26rem]` → `flex-[1_1_24rem]`. Right column: `flex-[1_1_22rem]` →
-    `flex-[1_1_29rem]`, `items-start` → `items-center` (Q2).
+    `flex-[1_1_29rem]`, `items-start` → `items-center`.
   - Wrap the `<ol>` and the status/CTA in `<div className="flex w-full flex-col gap-5 sm:w-fit">`.
   - Put the `full ? … : …` switch inside `<div className="flex min-h-16 items-center">`.
   - `ButtonLink`: `size="xl"`, `className="animate-pop w-full"` (keep `to` and the copy).

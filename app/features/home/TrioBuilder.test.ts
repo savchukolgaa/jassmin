@@ -69,7 +69,7 @@ describe("TrioBuilder", () => {
     expect(checkedValues(html)).toEqual([]);
     expect(html.match(/<span class="sr-only">Slot \d<\/span>/g)).toHaveLength(3);
     expect(html).toContain(
-      '<p role="status" class="font-bold text-on-dark-muted">3 more to pick</p>',
+      '<p role="status" class="text-lg font-bold text-on-dark-muted">3 more to pick</p>',
     );
     expect(html).not.toContain('href="/en/popular');
   });
@@ -93,6 +93,9 @@ describe("TrioBuilder", () => {
 
     expect(html).toContain(`href="${href.replaceAll("&", "&amp;")}"`);
     expect(html).toContain(`Show my trio · ${formatPrice("499.00", "en")} →`);
+    // The standout `xl` size, as wide as the slot row (#110).
+    const link = html.match(/<a[^>]*href="\/en\/popular[^>]*>/)?.[0] ?? "";
+    expect(link.split(/[\s"]/)).toEqual(expect.arrayContaining(["min-h-16", "w-full"]));
     expect(html).not.toContain('role="status"');
     // Before hydration nothing is locked: without JS the server caps the picks.
     expect(html).not.toMatch(/<input type="checkbox"[^>]*disabled/);

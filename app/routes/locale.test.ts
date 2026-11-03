@@ -51,6 +51,29 @@ describe("locale action", () => {
     expect(post_.headers.get("Location")).toBe("/en/blog");
   });
 
+  it("goes to the same page in the other language on every page, both ways (#112)", async () => {
+    const pairs = [
+      ["/", "/en"],
+      ["/katalog/zhinochi?sort=newest#grid", "/en/catalog/women?sort=newest#grid"],
+      ["/katalog/cholovichi", "/en/catalog/men"],
+      ["/parfumy/dior-sauvage", "/en/perfumes/dior-sauvage"],
+      ["/populiarni?family=floral", "/en/popular?family=floral"],
+      ["/koshyk", "/en/cart"],
+      ["/kabinet", "/en/account"],
+      ["/kabinet/zamovlennia/42", "/en/account/orders/42"],
+      ["/blog", "/en/blog"],
+    ] as const;
+    for (const [uk, en] of pairs) {
+      const toEnglish = (await action(post({ locale: "en", redirectTo: uk }))) as Response;
+      expect(toEnglish.headers.get("Location"), uk).toBe(en);
+      expect(await localeCookie.parse(toEnglish.headers.get("Set-Cookie"))).toBe("en");
+
+      const toUkrainian = (await action(post({ locale: "uk", redirectTo: en }))) as Response;
+      expect(toUkrainian.headers.get("Location"), en).toBe(uk);
+      expect(await localeCookie.parse(toUkrainian.headers.get("Set-Cookie"))).toBe("uk");
+    }
+  });
+
   it("redirects home instead of to another site", async () => {
     const response = (await action(post({ locale: "uk", redirectTo: "//evil.com" }))) as Response;
     expect(response.headers.get("Location")).toBe("/");

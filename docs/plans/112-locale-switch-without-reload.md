@@ -213,7 +213,7 @@ The same raw URL causes two more bugs I confirmed with curl:
     `contentLocale` `en` (mock as the existing loader tests do).
   - `_shop.test.ts`: the layout loader for `/en.data` passes `en` to `getSocialLinks` and returns
     `suggestEnglish: false`.
-- [ ] **8. Extend the `/locale` action test.** In `app/routes/locale.test.ts`, add a table test
+- [x] **8. Extend the `/locale` action test.** In `app/routes/locale.test.ts`, add a table test
   over home, catalog, product, popular, cart, account and blog in both directions, checking the
   `Location` header, plus the existing cookie assertions. This covers the issue's "route-level
   test" bullet. The redirect logic itself was already correct.

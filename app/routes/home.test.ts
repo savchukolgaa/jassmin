@@ -228,8 +228,23 @@ describe("home action", () => {
 });
 
 describe("home shouldRevalidate", () => {
+  const url = (path: string) => new URL(path, "http://localhost");
   const args = (overrides: Partial<RevalidateArgs>) =>
-    ({ defaultShouldRevalidate: true, ...overrides }) as RevalidateArgs;
+    ({
+      currentUrl: url("/"),
+      nextUrl: url("/"),
+      defaultShouldRevalidate: true,
+      ...overrides,
+    }) as RevalidateArgs;
+
+  it("reloads after switching the language, in either direction (#112)", () => {
+    const toEnglish = { currentUrl: url("/"), nextUrl: url("/en") };
+    expect(
+      shouldRevalidate(args({ formMethod: "POST", formAction: "/locale", ...toEnglish })),
+    ).toBe(true);
+    const toUkrainian = { currentUrl: url("/en"), nextUrl: url("/") };
+    expect(shouldRevalidate(args({ defaultShouldRevalidate: false, ...toUkrainian }))).toBe(true);
+  });
 
   it("skips reloading CMS content after the contact form", () => {
     expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/?index" }))).toBe(false);

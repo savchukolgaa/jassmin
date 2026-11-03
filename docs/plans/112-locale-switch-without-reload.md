@@ -100,6 +100,12 @@ The same raw URL causes two more bugs I confirmed with curl:
 - **No change to `LocaleSwitcher`, `routes/locale.ts`, `I18nProvider` or `useContentLang`.** They
   behave correctly once the loaders return the right locale.
 - Fix the wrong comment and test in `app/.server/locale.test.ts`.
+- **Implementation note: steps 5 and 6 are one commit.** The new `crossesLocale` check reads
+  `currentUrl`/`nextUrl`, which the existing `shouldRevalidate` tests didn't pass. React Router
+  always passes them. Their arg builders had to gain those defaults in the same commit, which is
+  where step 6's cases go. The catalog test that expected a `/locale` post to skip reloading now
+  expects a reload when it crosses the language. Within one language a non-GET post still skips
+  it (checked with `/koshyk` and `/consent` posts).
 
 ## Resolved questions
 
@@ -183,13 +189,13 @@ The same raw URL causes two more bugs I confirmed with curl:
   `loginRedirectPath(pageUrl(request))`. Test: `requireUser` for a logged-out
   `/kabinet.data?_routes=…` redirects to `/vkhid?redirectTo=%2Fkabinet`, in the existing
   `app/.server/services/auth.test.ts`, following its mock pattern.
-- [ ] **5. `crossesLocale` and explicit `shouldRevalidate` rules.** In `app/lib/paths.ts` add
+- [x] **5. `crossesLocale` and explicit `shouldRevalidate` rules.** In `app/lib/paths.ts` add
   `crossesLocale({ currentUrl, nextUrl }: { currentUrl: URL; nextUrl: URL }): boolean` (the
   `localeFromPath` comparison now inlined in `root.tsx`). Use it in `root.tsx`. In `home.tsx`,
   `popular.tsx` and `shouldRevalidateView` (`app/lib/analytics.ts`) add `currentUrl`/`nextUrl` to
   the destructured args and `if (crossesLocale(args)) return true;` before the existing rules.
   Update their comments. Unit-test `crossesLocale` in the paths test.
-- [ ] **6. Revalidation tests for every route with a `shouldRevalidate`.** In `root.test.ts`,
+- [x] **6. Revalidation tests for every route with a `shouldRevalidate`.** In `root.test.ts`,
   `home.test.ts`, `popular.test.ts`, `catalog.test.ts` and `product.test.ts`, add a
   `describe("… shouldRevalidate")` (extend home's existing one) covering:
   - after the `/locale` action into the other language (`formMethod: "POST"`,

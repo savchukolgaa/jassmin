@@ -113,11 +113,32 @@ describe("product loader", () => {
 });
 
 describe("product shouldRevalidate", () => {
+  const url = (path: string) => new URL(path, "http://localhost");
   const args = (overrides: Partial<ShouldRevalidateFunctionArgs>) =>
-    ({ defaultShouldRevalidate: true, ...overrides }) as ShouldRevalidateFunctionArgs;
+    ({
+      currentUrl: url("/parfumy/dior-sauvage"),
+      nextUrl: url("/parfumy/dior-sauvage"),
+      defaultShouldRevalidate: true,
+      ...overrides,
+    }) as ShouldRevalidateFunctionArgs;
 
   it("doesn't reload (and re-record the view) after adding to the cart", () => {
-    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/cart" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/koshyk" }))).toBe(false);
+  });
+
+  it("reloads after switching the language, in either direction (#112)", () => {
+    const toEnglish = {
+      currentUrl: url("/parfumy/dior-sauvage"),
+      nextUrl: url("/en/perfumes/dior-sauvage"),
+    };
+    expect(
+      shouldRevalidate(args({ formMethod: "POST", formAction: "/locale", ...toEnglish })),
+    ).toBe(true);
+    const toUkrainian = {
+      currentUrl: url("/en/perfumes/dior-sauvage"),
+      nextUrl: url("/parfumy/dior-sauvage"),
+    };
+    expect(shouldRevalidate(args({ defaultShouldRevalidate: false, ...toUkrainian }))).toBe(true);
   });
 
   it("reloads on navigation", () => {

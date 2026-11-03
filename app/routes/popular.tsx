@@ -5,7 +5,7 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { PopularPage } from "~/features/popular/PopularPage";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { createTranslator, metaTranslator, useT } from "~/lib/i18n";
-import { pageOf } from "~/lib/paths";
+import { crossesLocale, pageOf } from "~/lib/paths";
 import type { PopularPageView } from "~/lib/popular";
 import { parsePopularPage } from "~/lib/popular.schema";
 import { describeRouteError } from "~/lib/route-error";
@@ -51,12 +51,17 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 // Adding a card to the cart doesn't change the list, so skip re-ranking (the layout still
-// refreshes the cart count).
+// refreshes the cart count). Switching the language always reloads it (#112).
 export function shouldRevalidate({
   formMethod,
   formAction,
+  currentUrl,
+  nextUrl,
   defaultShouldRevalidate,
 }: ShouldRevalidateFunctionArgs) {
+  if (crossesLocale({ currentUrl, nextUrl })) {
+    return true;
+  }
   if (formMethod?.toUpperCase() === "POST" && pageOf(formAction) === "cart") {
     return false;
   }

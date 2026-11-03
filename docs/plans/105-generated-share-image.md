@@ -286,7 +286,7 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
     height `630` and the name as alt;
   - with a photo, it's still the photo's URL and size.
 
-- [ ] **9. Docs.** In `docs/design.md` → "Label card palette", add a paragraph: a product without
+- [x] **9. Docs.** In `docs/design.md` → "Label card palette", add a paragraph: a product without
   its own photo shares `/og/products/<handle>.png`, the shop bottle photo
   (`app/.server/og/share-bottle.jpg`) with the brand and name in the family palette
   (`app/.server/og/label-card.ts`). Bump `CARD_VERSION` when the photo or layout changes.

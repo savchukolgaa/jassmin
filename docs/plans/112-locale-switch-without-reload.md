@@ -274,7 +274,8 @@ The same raw URL causes two more bugs I confirmed with curl:
 - [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10. In the full
   parallel run, `afterAll` drops of throwaway test databases sometimes exceed the 10 s hook timeout
   on this machine. That happens to a different DB-backed file each run; every one passes when rerun
-  alone, and no test assertion failed.
+  alone, and no test assertion failed. After rebasing onto `538fe9c`, which raised `hookTimeout` to 30 s, the
+  full run passes cleanly (157 files, 1639 tests).
 
 ## Out of scope
 

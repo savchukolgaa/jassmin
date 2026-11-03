@@ -102,10 +102,10 @@ stands out. Behaviour, the Women / Men switch (#102) and the no-JS form don't ch
 
 ## Steps
 
-- [ ] **1. Worktree setup** — In `.claude/worktrees/issue-110` run `pnpm install` (env files are
+- [x] **1. Worktree setup** — In `.claude/worktrees/issue-110` run `pnpm install` (env files are
   already linked). Confirm `git branch --show-current` is `issue/110`.
 
-- [ ] **2. Add the `xl` button size** — In `button-styles.ts`: `ButtonSize = "sm" | "md" | "lg" |
+- [x] **2. Add the `xl` button size** — In `button-styles.ts`: `ButtonSize = "sm" | "md" | "lg" |
   "xl"`, `xl: "min-h-16 px-10 text-xl"`. Add `["xl", "min-h-16"]` to the `it.each` table in
   `button-styles.test.ts`. In `docs/design.md` → Buttons add the row `| `xl` | 64px |` and a line
   that it's for the single standout CTA of a block (the trio builder's "Show my trio"). Run

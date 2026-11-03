@@ -221,8 +221,10 @@ Don't use a translucent white overlay such as `bg-white/15`: white text on it dr
 | `sm` | 44px |
 | `md` (default) | 52px |
 | `lg` | 58px |
+| `xl` | 64px |
 
-All variants are pills with weight 800 and scale to 1.03 on hover when motion is allowed.
+All variants are pills with weight 800 and scale to 1.03 on hover when motion is allowed. Keep `xl`
+for the one standout CTA of a block, such as the trio builder's "Show my trio" (#110).
 
 ```tsx
 <ButtonLink to="/catalog/women" size="lg">Shop women</ButtonLink>

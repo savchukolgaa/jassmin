@@ -179,7 +179,7 @@ The same raw URL causes two more bugs I confirmed with curl:
   turns a thrown redirect in a data request into a single-fetch redirect. Tests: a `GET
   /koshyk.data` with the `en` cookie throws a 302 to `/en/cart`, and `GET /en.data` with the `en`
   cookie passes through.
-- [ ] **4. Login redirect on data requests.** `app/.server/services/auth.ts`:
+- [x] **4. Login redirect on data requests.** `app/.server/services/auth.ts`:
   `loginRedirectPath(pageUrl(request))`. Test: `requireUser` for a logged-out
   `/kabinet.data?_routes=…` redirects to `/vkhid?redirectTo=%2Fkabinet`, in the existing
   `app/.server/services/auth.test.ts`, following its mock pattern.

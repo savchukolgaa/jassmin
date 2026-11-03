@@ -115,6 +115,18 @@ describe("requireUser", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/vkhid?redirectTo=%2Faccount%3Ftab%3Dorders");
   });
+
+  it("returns to the page, not its data URL, after a client-side navigation (#112)", async () => {
+    const { requireUser } = await import("./auth");
+
+    const thrown = await requireUser(
+      new Request("http://localhost/en/account.data?_routes=routes%2F_shop%2Caccount.en"),
+    ).catch((error: unknown) => error);
+
+    expect((thrown as Response).headers.get("Location")).toBe(
+      "/en/login?redirectTo=%2Fen%2Faccount",
+    );
+  });
 });
 
 describe("requireAdmin", () => {

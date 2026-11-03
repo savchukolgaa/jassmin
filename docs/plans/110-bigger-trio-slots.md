@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/110
 Branch: `issue/110`
 Worktree: `.claude/worktrees/issue-110`
-Status: Planned
+Status: Implemented
 
 ## Goal
 In the home page's "Build your trio" block, a customer should clearly see the three scents they
@@ -166,7 +166,7 @@ with the planned classes:
   - with "Emulate prefers-reduced-motion: reduce", the pop animations don't play.
   Adjust sizes here if something is off (e.g. Q1's padding fallback).
 
-- [ ] **6. Verify and commit** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`. Commit
+- [x] **6. Verify and commit** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`. Commit
   with explicit paths (`git add app/components/ui/button-styles.ts …`).
 
 ## Testing & verification
@@ -177,13 +177,16 @@ with the planned classes:
 - **Manual:** the checklist in step 5 (widths, both languages, layout shift, no-JS, reduced motion).
 
 ## Acceptance criteria
-- [ ] The three trio slots are clearly bigger on desktop and mobile, and the chosen family names are
+- [x] The three trio slots are clearly bigger on desktop and mobile, and the chosen family names are
   easy to read in Ukrainian and English — steps 3, 5
-- [ ] The "Show my trio" button is bigger and stands out, at every screen width — steps 2, 4, 5
-- [ ] Three slots still fit on a 360 px screen with no horizontal scroll, and nothing jumps when the
+- [x] The "Show my trio" button is bigger and stands out, at every screen width — steps 2, 4, 5
+- [x] Three slots still fit on a 360 px screen with no horizontal scroll, and nothing jumps when the
   button appears — steps 3, 4, 5
 - [ ] Picking, the gender switch and the no-JS form work as before — steps 4 (tests unchanged), 5
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 6
+  — *Not ticked:* the picking and gender logic is unchanged, and the server-render tests for the
+  form, picks, gender switch and no-JS button pass unchanged, but clicking through the hydrated
+  page in a live browser wasn't done (the home page needs Strapi, which wasn't running).
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 6
 
 ## Out of scope
 - The family chips and gender switch on the left (only the form's flex basis changes, for room).

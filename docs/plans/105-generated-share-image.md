@@ -277,7 +277,7 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
   - 304 with an empty body for a matching `If-None-Match` (plain, `W/"…"`, and a list);
   - a second request doesn't re-render.
 
-- [ ] **8. `meta` uses the generated image.** Add `productShareImagePath` and `SHARE_IMAGE_SIZE`
+- [x] **8. `meta` uses the generated image.** Add `productShareImagePath` and `SHARE_IMAGE_SIZE`
   to `app/lib/products.ts`, with tests for the slug and no-slug cases. In `app/routes/product.tsx`
   `meta`, change the `product.image ? … : null` fallback to
   `{ url: productShareImagePath(product), alt: name, ...SHARE_IMAGE_SIZE }`. In

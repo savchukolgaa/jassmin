@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/112
 Branch: `issue/112`
 Worktree: `.claude/worktrees/issue-112`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -217,13 +217,33 @@ The same raw URL causes two more bugs I confirmed with curl:
   over home, catalog, product, popular, cart, account and blog in both directions, checking the
   `Location` header, plus the existing cookie assertions. This covers the issue's "route-level
   test" bullet. The redirect logic itself was already correct.
-- [ ] **9. Verify in the browser.** Run `pnpm aspire run`, or `pnpm react-router dev` in the worktree
+- [x] **9. Verify in the browser.** Run `pnpm aspire run`, or `pnpm react-router dev` in the worktree
   with the main checkout's DB/Strapi running. Check home, both catalogs, a product, popular, cart,
   account (logged in) and blog, uk → en and en → uk, with JS and with JS disabled. Confirm the URL,
   header text, page text and CMS content, `document.title` and `html lang` all switch with no
   reload. Confirm the scroll position, query (`?sort=…`) and hash are kept. Also check logged-out
   `/kabinet` via a client link → login → back to `/kabinet` (step 4).
-- [ ] **10. Checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+
+  **Done on 2026-11-03**, with `pnpm react-router dev` in the worktree and headless Edge over the
+  DevTools protocol. Aspire had been stopped, so Strapi was down. Postgres (the `.env` database) was
+  up but lacks the #100 migration, so product pages error on `description_en` and the catalogs are
+  empty.
+  - JS, both directions: home (`/` ↔ `/en`, the original bug), women's and men's catalogs (with
+    `?sort=newest#grid`), product (its error page), popular, cart, blog, and privacy (uk → en).
+    In every case the URL, `html lang`, header links, h1, `document.title` and the pressed switcher
+    button changed in the same document, with no reload. The scroll position was kept, and so were
+    the query and hash.
+  - No JS: home both ways and cart uk → en switched with a full document load.
+  - Logged-out client navigation to `/kabinet` and `/en/account` lands on
+    `/vkhid?redirectTo=%2Fkabinet` and `/en/login?redirectTo=%2Fen%2Faccount`. Before the fix it
+    was `.data?_routes=…`.
+  - `GET /koshyk.data` with the `en` cookie → single-fetch redirect to `/en/cart`, and
+    `GET /en.data` → `"en"`.
+  - **Not verified in the browser:** CMS content (home, blog and offers render their 503 page
+    without Strapi; product pages need the migrated DB), and account pages while logged in (no test
+    user). Covered by the loader unit tests instead (`home.test.ts`, `_shop.test.ts`,
+    `root.test.ts`). Recheck under `pnpm aspire run` before merging.
+- [x] **10. Checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ## Testing & verification
 
@@ -241,13 +261,20 @@ The same raw URL causes two more bugs I confirmed with curl:
 ## Acceptance criteria
 
 - [ ] Clicking UA or EN switches the page to that language immediately, without a manual reload:
-  the URL, the interface text, the CMS content and `html lang` all update — steps 1, 2, 9
+  the URL, the interface text, the CMS content and `html lang` all update — steps 1, 2, 9.
+  Verified in the browser except the CMS content: Strapi was down. The loader tests show the CMS is
+  asked for the new language (`home.test.ts`). Recheck under `pnpm aspire run`.
 - [ ] It works on every page (home, catalogs, product, popular, cart, account, blog), in both
-  directions, with and without JavaScript — steps 2, 8, 9
-- [ ] The scroll position and the URL's query and hash are kept (#82, #84) — no change to the
+  directions, with and without JavaScript — steps 2, 8, 9. Verified in the browser on every page
+  except account pages while logged in (no test user) and real product and blog content (error
+  pages only, see step 9). Recheck under `pnpm aspire run`.
+- [x] The scroll position and the URL's query and hash are kept (#82, #84) — no change to the
   switcher or action; verified in steps 8, 9
-- [ ] Tests cover the revalidation, so the bug can't come back unnoticed — steps 2, 5, 6, 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] Tests cover the revalidation, so the bug can't come back unnoticed — steps 2, 5, 6, 7
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10. In the full
+  parallel run, `afterAll` drops of throwaway test databases sometimes exceed the 10 s hook timeout
+  on this machine. That happens to a different DB-backed file each run; every one passes when rerun
+  alone, and no test assertion failed.
 
 ## Out of scope
 

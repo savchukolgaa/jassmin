@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "description_en" text;

@@ -10,10 +10,10 @@ import type { PopularPageView } from "~/lib/popular";
 import { parsePopularPage } from "~/lib/popular.schema";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, seoMeta } from "~/lib/seo";
-import { parseTrioSearch } from "~/lib/trio";
+import { parseTrioGender, parseTrioSearch } from "~/lib/trio";
 import type { Route } from "./+types/popular";
 
-// Family filters (from the trio builder) point to the unfiltered list; its pages are
+// Gender and family filters (from the trio builder) point to the unfiltered list; its pages are
 // self-canonical (#85).
 export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
   if (error) {
@@ -32,18 +32,20 @@ export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
   );
 }
 
-// The staff-ranked perfumes topped up from the bestsellers (#67), from PostgreSQL only. `family`
-// params come from the trio builder's "Show my trio": known families only, at most three, in the
-// order they were picked.
+// The staff-ranked perfumes topped up from the bestsellers (#67), from PostgreSQL only. `gender`
+// and `family` params come from the trio builder's "Show my trio": `women` or `men` (anything else
+// is ignored, #102), and known families only, at most three, in the order they were picked.
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const [locale, knownFamilies] = await Promise.all([getLocale(request), getTrioFamilies()]);
   const families = parseTrioSearch(url.searchParams, knownFamilies);
-  const page = await getPopularPage(families, parsePopularPage(url.searchParams));
+  const gender = parseTrioGender(url.searchParams);
+  const page = await getPopularPage({ families, gender }, parsePopularPage(url.searchParams));
   const translator = createTranslator(locale);
   const view: PopularPageView = {
     ...page,
     families: families.map((value) => ({ value, label: fragranceFamilyLabel(value, translator) })),
+    gender,
   };
   return view;
 }

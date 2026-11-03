@@ -13,14 +13,14 @@ import { PopularHero } from "./PopularHero";
 export function PopularPage({ view }: { view: PopularPageView }) {
   const { t, locale } = useT();
   const path = usePathFor();
-  const familyValues = view.families.map((family) => family.value);
+  const filter = { families: view.families.map((family) => family.value), gender: view.gender };
 
   return (
     <main>
-      <PopularHero families={view.families} />
+      <PopularHero families={view.families} gender={view.gender} />
       <div className="container mx-auto flex flex-col gap-10 px-4 pt-12 pb-16 md:pb-20">
         {view.products.length === 0 ? (
-          <PopularEmpty filtered={view.families.length > 0} />
+          <PopularEmpty filtered={view.families.length > 0 || view.gender !== null} />
         ) : (
           <>
             <div className="flex flex-col gap-5">
@@ -41,7 +41,7 @@ export function PopularPage({ view }: { view: PopularPageView }) {
             <Pagination
               page={view.page}
               pageCount={view.pageCount}
-              hrefForPage={(page) => popularHref(locale, familyValues, page)}
+              hrefForPage={(page) => popularHref(locale, filter, page)}
             />
             <section
               aria-labelledby="popular-more"

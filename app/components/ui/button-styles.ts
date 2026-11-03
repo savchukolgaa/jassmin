@@ -1,7 +1,7 @@
 import { cn } from "~/lib/cn";
 
 export type ButtonVariant = "primary" | "dark" | "outline-light" | "ghost";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "sm" | "md" | "lg" | "xl";
 
 export type ButtonStyleOptions = {
   variant?: ButtonVariant;
@@ -40,6 +40,8 @@ const sizes: Record<ButtonSize, string> = {
   sm: "min-h-11 px-5 text-sm",
   md: "min-h-13 px-7 text-base",
   lg: "min-h-14.5 px-9 text-lg",
+  // Narrower padding and 18px text on phones, so a long label still fits a full-width button.
+  xl: "min-h-16 px-6 text-center text-lg leading-tight sm:px-10 sm:text-xl",
 };
 
 /** Class names shared by `Button` and `ButtonLink`, so both always look the same. */

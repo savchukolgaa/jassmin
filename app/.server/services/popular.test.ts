@@ -82,9 +82,9 @@ describe.skipIf(!hasDatabase)("popular perfumes (#67)", () => {
       .values({ orderId: row.id, productId, quantity, priceAtPurchase: "100.00" });
   }
 
-  async function popular(families: string[] = [], page = 1) {
+  async function popular(families: string[] = [], page = 1, gender: "women" | "men" | null = null) {
     const { getPopularPage } = await import("./products");
-    const result = await getPopularPage(families, page, testDb.db);
+    const result = await getPopularPage({ families, gender }, page, testDb.db);
     return { ...result, titles: result.products.map((p) => p.title) };
   }
 
@@ -191,5 +191,30 @@ describe.skipIf(!hasDatabase)("popular perfumes (#67)", () => {
       page: 1,
       pageCount: 1,
     });
+  });
+
+  it("narrows to a gender with unisex, like the catalogs (#102)", async () => {
+    await product("Women", { rank: 1 });
+    await product("Men", { rank: 2, gender: "men" });
+    await product("Unisex", { rank: 3, gender: "unisex" });
+    await product("Men unranked", { gender: "men" });
+
+    expect(await popular([], 1, "women")).toMatchObject({
+      titles: ["Women", "Unisex"],
+      total: 2,
+    });
+    expect(await popular([], 1, "men")).toMatchObject({
+      titles: ["Men", "Unisex", "Men unranked"],
+      total: 3,
+    });
+  });
+
+  it("combines the gender with the families (#102)", async () => {
+    await product("Floral women", { rank: 1, families: ["квіткові"] });
+    await product("Floral men", { rank: 2, gender: "men", families: ["квіткові"] });
+    await product("Woody men", { rank: 3, gender: "men", families: ["деревні"] });
+
+    expect((await popular(["квіткові"], 1, "men")).titles).toEqual(["Floral men"]);
+    expect((await popular(["деревні"], 1, "women")).titles).toEqual([]);
   });
 });

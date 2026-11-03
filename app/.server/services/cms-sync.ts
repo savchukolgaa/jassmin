@@ -63,6 +63,7 @@ function productWrite(fields: CmsProductFields, sizes: readonly VariantWrite[]):
     slug: fields.slug,
     brand: fields.brand,
     description: fields.description,
+    descriptionEn: fields.descriptionEn,
     gender: fields.gender,
     // The ML column keeps the primary family; a CHECK holds it to the first one (#65).
     fragranceFamily: fields.fragranceFamilies[0] ?? null,

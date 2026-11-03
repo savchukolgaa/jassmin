@@ -1,5 +1,5 @@
 {
-  "id": "42204fdc-5abc-4f3d-b994-b1e3ab798d58",
+  "id": "af7f9e46-356c-4110-aa4d-e34201a079de",
   "prevId": "05d63cd2-fb58-4eda-99d6-cd40f1bd0bfb",
   "version": "7",
   "dialect": "postgresql",
@@ -1387,13 +1387,6 @@
           "notNull": true,
           "default": 0
         },
-        "track_stock": {
-          "name": "track_stock",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1539,6 +1532,12 @@
         },
         "description": {
           "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description_en": {
+          "name": "description_en",
           "type": "text",
           "primaryKey": false,
           "notNull": false

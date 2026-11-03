@@ -49,7 +49,8 @@ const product: CmsProductState = {
   name: "Coco Mademoiselle",
   slug: "coco-mademoiselle",
   brand: "Chanel",
-  description: null,
+  description: "Квітковий шипровий аромат.",
+  descriptionEn: "A floral chypre.",
   gender: "women",
   fragranceFamilies: ["шипрові", "квіткові"],
   notes: ["апельсин", "троянда"],
@@ -127,6 +128,8 @@ describe("toStrapiOrderData / toStrapiProductData", () => {
       publicId: product.publicId,
       storeCode: "1-D",
       popularRank: 2,
+      description: "Квітковий шипровий аромат.",
+      descriptionEn: "A floral chypre.",
       // Strapi shows whether the size counts its stock (#98).
       variants: [{ volumeMl: 5, price: 990, trackStock: true, stock: 8 }],
     });

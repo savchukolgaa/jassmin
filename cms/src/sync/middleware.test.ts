@@ -64,6 +64,23 @@ describe("productPayload: popular position (#67)", () => {
   });
 });
 
+describe("productPayload: descriptions (#100)", () => {
+  it("sends both languages, and none for an emptied field", async () => {
+    const described = { ...stored, description: "Квітковий аромат.", descriptionEn: "A floral." };
+    expect(await productPayload(strapi, described, stored)).toMatchObject({
+      description: "Квітковий аромат.",
+      descriptionEn: "A floral.",
+    });
+    expect(
+      await productPayload(strapi, { ...described, descriptionEn: " " }, stored),
+    ).toMatchObject({ description: "Квітковий аромат.", descriptionEn: null });
+    expect(await productPayload(strapi, stored, stored)).toMatchObject({
+      description: null,
+      descriptionEn: null,
+    });
+  });
+});
+
 describe("applyProductAnswer (#65)", () => {
   it("saves the families, notes and store code the app stored", () => {
     const data = applyProductAnswer(
@@ -75,10 +92,14 @@ describe("applyProductAnswer (#65)", () => {
         notes: ["лимон"],
         storeCode: null,
         popularRank: 5,
+        description: "Квітковий аромат.",
+        descriptionEn: null,
         variants: [{ volumeMl: 50, price: "3200.00", stock: 2 }],
       },
     );
     expect(data).toMatchObject({
+      description: "Квітковий аромат.",
+      descriptionEn: null,
       fragranceFamilies: [{ family: "квіткові" }, { family: "фруктові" }],
       notes: [{ name: "лимон" }],
       storeCode: null,

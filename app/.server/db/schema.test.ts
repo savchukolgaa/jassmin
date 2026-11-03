@@ -119,6 +119,7 @@ describe("products", () => {
       storeCode: ["varchar(20)", false, false],
       popularRank: ["integer", false, false],
       description: ["text", false, false],
+      descriptionEn: ["text", false, false],
       price: ["numeric(10, 2)", true, false],
       volumeMl: ["integer", true, false],
       packSize: ["integer", true, true],

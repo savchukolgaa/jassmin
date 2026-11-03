@@ -74,6 +74,7 @@ describe("buttonClasses", () => {
     ["sm", "min-h-11"],
     ["md", "min-h-13"],
     ["lg", "min-h-14.5"],
+    ["xl", "min-h-16"],
   ] as const)("maps size %s to %s", (size, height) => {
     expect(classList(buttonClasses({ size }))).toContain(height);
   });

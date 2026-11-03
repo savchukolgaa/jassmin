@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "./i18n";
-import { labelTrioFamilies, parseTrioSearch, toggleTrioFamily, trioHref } from "./trio";
+import {
+  labelTrioFamilies,
+  parseTrioGender,
+  parseTrioSearch,
+  toggleTrioFamily,
+  trioHref,
+} from "./trio";
 
 const known = ["квіткові", "деревні", "свіжі", "східні"];
 
@@ -30,15 +36,34 @@ describe("parseTrioSearch", () => {
   });
 });
 
+describe("parseTrioGender", () => {
+  const gender = (query: string) => parseTrioGender(new URLSearchParams(query));
+
+  it("reads women or men, trimmed", () => {
+    expect(gender("gender=women")).toBe("women");
+    expect(gender("gender=men&family=свіжі")).toBe("men");
+    expect(gender("gender=%20men%20")).toBe("men");
+  });
+
+  it("ignores unknown values and a missing param", () => {
+    for (const query of ["", "gender=", "gender=unisex", "gender=WOMEN", "gender=toString"]) {
+      expect(gender(query)).toBeNull();
+    }
+  });
+});
+
 describe("trioHref", () => {
-  it("links to the popular page with each family", () => {
-    expect(trioHref("uk", ["квіткові", "свіжі"])).toBe(
-      `/populiarni?family=${encodeURIComponent("квіткові")}&family=${encodeURIComponent("свіжі")}`,
+  it("links to the popular page with the gender, then each family", () => {
+    expect(trioHref("uk", ["квіткові", "свіжі"], "women")).toBe(
+      `/populiarni?gender=women&family=${encodeURIComponent("квіткові")}&family=${encodeURIComponent("свіжі")}`,
     );
   });
 
-  it("links to the popular page alone without families", () => {
-    expect(trioHref("en", [])).toBe("/en/popular");
+  it("uses the English path", () => {
+    expect(trioHref("en", ["свіжі"], "men")).toBe(
+      `/en/popular?gender=men&family=${encodeURIComponent("свіжі")}`,
+    );
+    expect(trioHref("en", [], "women")).toBe("/en/popular?gender=women");
   });
 });
 

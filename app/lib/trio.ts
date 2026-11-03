@@ -1,11 +1,20 @@
 // The home page's tester trio (#64): the offer it advertises and the "Build your trio" picker.
 // Isomorphic: no server imports.
-import { fragranceFamilyLabel } from "./catalog";
-import { INTL_LOCALES, type Locale, type Translator } from "./i18n";
+import { type CatalogGender, fragranceFamilyLabel, isCatalogGender } from "./catalog";
+import { INTL_LOCALES, type Locale, type TextKey, type Translator } from "./i18n";
 import { popularHref } from "./popular";
 
 /** How many fragrance families the trio builder takes, one per tester. */
 export const TRIO_SIZE = 3;
+
+/** The trio builder's Women / Men switch (#102), in this order; Women is the default. */
+export const TRIO_GENDERS = ["women", "men"] as const satisfies readonly CatalogGender[];
+
+/** Each switch option's label: "Жінки" / "Women". */
+export const TRIO_GENDER_KEYS = {
+  women: "home.trio.gender.women",
+  men: "home.trio.gender.men",
+} as const satisfies Record<CatalogGender, TextKey>;
 
 /**
  * The live tester-trio discount rule, as the home page advertises it. `null` when the rule is
@@ -44,6 +53,15 @@ export function parseTrioSearch(
 }
 
 /**
+ * The gender in a URL's `gender` param (#102), trimmed: `women` or `men`, else `null` (anything
+ * unknown is ignored, never an error).
+ */
+export function parseTrioGender(params: URLSearchParams): CatalogGender | null {
+  const gender = params.get("gender")?.trim() ?? "";
+  return isCatalogGender(gender) ? gender : null;
+}
+
+/**
  * The picks after a chip was checked or unchecked. A fourth family is refused: the shopper has to
  * drop one first.
  */
@@ -58,9 +76,16 @@ export function toggleTrioFamily(
   return picked.length < TRIO_SIZE && !picked.includes(family) ? [...picked, family] : [...picked];
 }
 
-/** "Show my trio": the popular perfumes (#67) in `locale`, narrowed to each chosen family. */
-export function trioHref(locale: Locale, families: readonly string[]): string {
-  return popularHref(locale, families);
+/**
+ * "Show my trio": the popular perfumes (#67) in `locale`, narrowed to the chosen gender (#102) and
+ * each chosen family.
+ */
+export function trioHref(
+  locale: Locale,
+  families: readonly string[],
+  gender: CatalogGender,
+): string {
+  return popularHref(locale, { families, gender });
 }
 
 /** A family as the trio builder and the marquee show it: the URL value and its label. */

@@ -5,6 +5,7 @@ import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
+import type { ProductLabel } from "~/lib/label-art";
 import { cardPrice, formatVolume, type ProductSummary, productHref } from "~/lib/products";
 import { CardVolumePicker } from "./CardVolumePicker";
 import { FamilyChip } from "./FamilyChip";
@@ -109,6 +110,16 @@ function SizePicker({
   );
 }
 
+/** What a card's generated label shows without a photo (#99). */
+function summaryLabel(product: ProductSummary): ProductLabel {
+  return {
+    id: product.id,
+    brand: product.brand,
+    title: product.title,
+    family: product.fragranceFamily,
+  };
+}
+
 function CatalogProductCard({ product, headingLevel }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
@@ -120,7 +131,7 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
     <article className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line">
       {/* Hidden duplicate of the title link, so its photo needs no alt text (#88). */}
       <Link to={href} tabIndex={-1} aria-hidden="true">
-        <ProductImage image={product.image} brand={product.brand} alt="" layout="card" />
+        <ProductImage image={product.image} label={summaryLabel(product)} alt="" layout="card" />
       </Link>
       <div className="flex flex-1 flex-col gap-1 px-2 pt-4">
         <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">
@@ -183,7 +194,7 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
         <div data-zoom>
           <ProductImage
             image={product.image}
-            brand={product.brand}
+            label={summaryLabel(product)}
             alt=""
             layout="compact"
             className="rounded-2xl"

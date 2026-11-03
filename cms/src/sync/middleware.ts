@@ -125,6 +125,7 @@ export async function productPayload(strapi: Core.Strapi, merged: Data, stored: 
     slug: merged.slug,
     brand: merged.brand,
     description: text(merged.description),
+    descriptionEn: text(merged.descriptionEn),
     gender: merged.gender,
     fragranceFamilies: componentValues(merged.fragranceFamilies, "family"),
     notes: componentValues(merged.notes, "name"),
@@ -173,6 +174,9 @@ export function applyProductAnswer(data: Data, answer: unknown): Data {
     ...data,
     publicId: answer.publicId,
     active: answer.active,
+    // Trimmed by the app, and `null` once emptied (#100).
+    description: typeof answer.description === "string" ? answer.description : null,
+    descriptionEn: typeof answer.descriptionEn === "string" ? answer.descriptionEn : null,
     fragranceFamilies: strings(answer.fragranceFamilies).map((family) => ({ family })),
     notes: strings(answer.notes).map((name) => ({ name })),
     storeCode: typeof answer.storeCode === "string" ? answer.storeCode : null,

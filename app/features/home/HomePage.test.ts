@@ -32,6 +32,7 @@ const view: HomePageView = {
   trio: {
     families: ["квіткові", "деревні", "свіжі", "східні"],
     selected: [],
+    gender: "women",
   },
   bestsellers: [],
   location: {
@@ -184,6 +185,9 @@ describe("HomePage", () => {
     expect(html).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>See all perfumes<\/a>/);
     expect(html).toContain("Women · Men");
     expect(html).not.toMatch(/unisex/i);
+    // #109: the chip is inset from the image's right edge, not pinned to it.
+    expect(html).toMatch(/<p class="[^"]*\bright-4\b[^"]*\bmd:right-8\b[^"]*">Women · Men<\/p>/);
+    expect(html).not.toMatch(/<p class="[^"]*\bright-0\b[^"]*">Women · Men<\/p>/);
   });
 
   it("leaves out the optional hero parts that aren't set", () => {
@@ -343,7 +347,21 @@ describe("HomePage", () => {
 
     expect(html).toContain('href="tel:+380441234567"');
     expect(html).toContain('href="mailto:hello@jassmin.ua"');
-    expect(html).toMatch(/href="https:\/\/www\.instagram\.com\/jassmin"[^>]*>Instagram<\/a>/);
+    expect(html).toMatch(
+      /<a(?=[^>]*href="https:\/\/www\.instagram\.com\/jassmin")(?=[^>]*target="_blank")(?=[^>]*aria-label="Jassmin on Instagram")[^>]*><svg/,
+    );
+  });
+
+  it("shows the social links as labelled pills, ringed for the dark section (#101, #111)", () => {
+    const contacts = render().slice(render().indexOf('id="contacts"'));
+
+    expect(contacts).toContain('aria-label="Social media"');
+    expect(contacts).toMatch(
+      /<a(?=[^>]*aria-label="Jassmin on Instagram")[^>]*outline-primary-light[^>]*><svg[^>]*size-8[^>]*>.*?<\/svg><span>Instagram<\/span><\/a>/,
+    );
+    expect(render({ contacts: { ...view.contacts, socialLinks: [] } })).not.toContain(
+      'aria-label="Social media"',
+    );
   });
 
   it("embeds the map only when there is a safe map URL", () => {

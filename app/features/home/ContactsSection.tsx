@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { ClockIcon, MailIcon, PhoneIcon } from "~/components/layout/icons";
-import { buttonClasses } from "~/components/ui/button-styles";
-import { SOCIAL_LABELS } from "~/lib/cms";
+import { SocialLinks } from "~/components/layout/SocialLinks";
 import { cn } from "~/lib/cn";
 import type { HomePageView } from "~/lib/home";
 import { useContentLang, useT } from "~/lib/i18n";
@@ -67,22 +66,13 @@ export function ContactsSection({ contacts, children }: ContactsSectionProps) {
               </li>
             )}
           </ul>
-          {contacts.socialLinks.length > 0 && (
-            <ul aria-label={t("home.contacts.social")} className="mt-8 flex flex-wrap gap-3">
-              {contacts.socialLinks.map((link) => (
-                <li key={`${link.platform}-${link.url}`}>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={buttonClasses({ variant: "outline-light", size: "sm" })}
-                  >
-                    {SOCIAL_LABELS[link.platform]}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+          {/* A bigger icon with the platform name (#111); the footer and menu stay icon-only. */}
+          <SocialLinks
+            links={contacts.socialLinks}
+            tone="onInk"
+            variant="labelled"
+            className="mt-8"
+          />
         </div>
         <div className="min-w-0 flex-[1_1_28rem]">{children}</div>
       </div>

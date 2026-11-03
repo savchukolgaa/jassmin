@@ -104,7 +104,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:rollback` | Roll back the latest applied migration |
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
-| `pnpm db:import-catalog` | Add the shop's perfume range (`app/.server/db/catalog-data.ts`) that isn't in the database yet, every size at the price table's price (`catalog-prices.ts`), always available (stock isn't tracked, #98); existing products are never changed (safe to re-run). Then run `pnpm db:sync-cms` |
+| `pnpm db:import-catalog` | Add the shop's perfume range (`app/.server/db/catalog-data.ts`) that isn't in the database yet, every size at the price table's price (`catalog-prices.ts`), always available (stock isn't tracked, #98), with its Ukrainian and English descriptions (`catalog-descriptions.ts`). Existing products only get a description where theirs is empty, so staff edits survive (safe to re-run). Then run `pnpm db:sync-cms` |
 | `pnpm db:apply-catalog-prices` | One-off (#98): archive sets and give every active perfume the five standard sizes at the price table's prices (`catalog-prices.ts`), then queue the changed ones for Strapi. A second run changes nothing, but it would reset sizes and prices staff changed in Strapi since. Then run `pnpm db:sync-cms` |
 | `pnpm db:convert-catalog <path>` | Convert the owner's Markdown perfume list into `catalog-data.ts`, applying `app/.server/db/catalog/fixes.ts` (the list itself isn't committed) |
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin role](#admin-role) |
@@ -332,7 +332,7 @@ There is no admin area in the app any more (#40): staff manage the catalogue and
 1. Set the same `CMS_SYNC_SECRET` (32+ characters) in the root `.env` and in `cms/.env`, and `JASSMIN_APP_URL` (the app's URL, e.g. `http://localhost:5173`) in `cms/.env`. Under `pnpm aspire run`, Aspire generates the secret and sets both.
 2. Run `pnpm cms:seed -- --token` (or the `cms-seed` resource) and copy `STRAPI_SYNC_TOKEN=…` into the root `.env`.
 3. Copy the existing catalogue and orders into Strapi once: `pnpm db:sync-cms -- --all`. Products from before #40 get a slug from their title. It only upserts, so running it again is safe.
-4. Load the shop's perfume range with `pnpm db:import-catalog` (or the `db-import-catalog` resource), then push it with `pnpm db:sync-cms`. Staff add photos and descriptions in Strapi; a re-run of the import only adds perfumes that aren't there yet.
+4. Load the shop's perfume range with `pnpm db:import-catalog` (or the `db-import-catalog` resource), then push it with `pnpm db:sync-cms`. Staff add photos in Strapi and can edit the descriptions there; a re-run of the import only adds perfumes that aren't there yet and fills descriptions that are empty.
 5. Once, after #98: `pnpm db:apply-catalog-prices` (or the `db-apply-catalog-prices` resource) puts every perfume on the five standard sizes and prices and archives sets, then `pnpm db:sync-cms` shows the result in Strapi.
 
 ## SEO

@@ -2,6 +2,7 @@ import { type ComponentType, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider, type Locale } from "~/lib/i18n";
 import type { ProductDetail } from "~/lib/products";
 
 vi.mock("~/.server/services/products", () => ({ resolveProductHandle: vi.fn() }));
@@ -20,6 +21,7 @@ const product: ProductDetail = {
   packSize: 1,
   image: { url: "/images/coco.jpg", srcSet: null, width: null, height: null },
   description: "</script><script>alert(1)</script>",
+  descriptionLocale: "uk",
   fragranceFamilies: [],
   notes: [],
   storeCode: "3-D",
@@ -44,7 +46,7 @@ const product: ProductDetail = {
 };
 
 /** Renders the product page under a root route whose loader data holds the site URL (#85). */
-function render(detail: ProductDetail, available = true) {
+function render(detail: ProductDetail, available = true, locale: Locale = "uk") {
   const Page = Product as unknown as ComponentType<{
     loaderData: { product: ProductDetail; available: boolean; similar: [] };
   }>;
@@ -68,7 +70,9 @@ function render(detail: ProductDetail, available = true) {
       hydrationData: { loaderData: { root: { site: { url: SITE } } } },
     },
   );
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+  return renderToStaticMarkup(
+    createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })),
+  );
 }
 
 function jsonLd(html: string): Array<Record<string, unknown>> {
@@ -114,6 +118,37 @@ describe("product page JSON-LD (#86)", () => {
     const types = jsonLd(render(product, false)).map((data) => data["@type"]);
     expect(types).not.toContain("Product");
     expect(types).toContain("BreadcrumbList");
+  });
+});
+
+describe("product page description (#100)", () => {
+  const section = (html: string) =>
+    html.match(/<section aria-labelledby="description-heading".*?<\/section>/s)?.[0];
+
+  it("renders each paragraph as plain text", () => {
+    const html = render({
+      ...product,
+      description: "Перший абзац з <b>тегом</b>.\n\n  Другий абзац.  \n\n\n",
+    });
+    const paragraphs = [...(section(html) ?? "").matchAll(/<p[^>]*>(.*?)<\/p>/g)].map((m) => m[1]);
+
+    expect(paragraphs).toEqual(["Перший абзац з &lt;b&gt;тегом&lt;/b&gt;.", "Другий абзац."]);
+  });
+
+  it("marks Ukrainian text shown as a fallback on the English page", () => {
+    const fallback = section(render(product, true, "en"));
+    expect(fallback).toContain('lang="uk"');
+
+    const english = section(
+      render({ ...product, description: "A floral scent.", descriptionLocale: "en" }, true, "en"),
+    );
+    expect(english).toContain("A floral scent.");
+    expect(english).not.toContain("lang=");
+    expect(section(render(product))).not.toContain("lang=");
+  });
+
+  it("leaves the section out without a description", () => {
+    expect(section(render({ ...product, description: null }))).toBeUndefined();
   });
 });
 

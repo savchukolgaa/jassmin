@@ -27,6 +27,40 @@ export function productHref(locale: Locale, product: { id: string; slug: string 
   return pathFor(locale, "product", { handle: product.slug ?? product.id });
 }
 
+/** A product's stored descriptions: `description` is Ukrainian, `descriptionEn` English (#100). */
+export interface ProductDescriptions {
+  description: string | null;
+  descriptionEn: string | null;
+}
+
+/**
+ * The description to show in `locale` (#100): that language's text, else the other language's,
+ * so a page never goes without one while a translation is missing. Blank text counts as none.
+ */
+export function pickDescription(
+  { description, descriptionEn }: ProductDescriptions,
+  locale: Locale,
+): { text: string; locale: Locale } | null {
+  const texts: Record<Locale, string | undefined> = {
+    uk: description?.trim() || undefined,
+    en: descriptionEn?.trim() || undefined,
+  };
+  const other: Locale = locale === "en" ? "uk" : "en";
+  for (const candidate of [locale, other]) {
+    const text = texts[candidate];
+    if (text) return { text, locale: candidate };
+  }
+  return null;
+}
+
+/** A description's paragraphs: separated by blank lines, trimmed, empty ones dropped. */
+export function descriptionParagraphs(text: string): string[] {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
 /** A size on a product card (#74). No exact stock, which the card doesn't show. */
 export type CardVariant = Pick<ProductVariant, "id" | "volumeMl" | "price" | "inStock">;
 
@@ -52,7 +86,13 @@ export interface ProductSummary extends ProductBase {
 }
 
 export interface ProductDetail extends ProductBase {
+  /**
+   * Plain text in the page's language, or in the other one when it has none (#100); a blank line
+   * separates paragraphs (`descriptionParagraphs`). `null` when neither language has one.
+   */
   description: string | null;
+  /** The language `description` is in; mark it with `useContentLang` when it's a fallback. */
+  descriptionLocale: Locale;
   /** Stored Ukrainian values, primary first; label them with `fragranceFamilyLabel` (#65). */
   fragranceFamilies: string[];
   /** Scent notes, Ukrainian only (#65). */

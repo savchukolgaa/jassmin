@@ -16,6 +16,7 @@ const fields: CmsProductFields = {
   slug: "gypsy-water",
   brand: "Byredo",
   description: "Свіжий деревний аромат.",
+  descriptionEn: "A fresh woody scent.",
   gender: "unisex",
   fragranceFamilies: ["деревні", "свіжі"],
   notes: ["лимон", "ялівець", "ладан"],
@@ -136,6 +137,52 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       price: "1900.00",
       volumeMl: 10,
       stockQuantity: 6,
+    });
+  });
+
+  it("stores, answers and clears both descriptions (#100)", async () => {
+    const { applyCmsProductChange } = await import("./cms-sync");
+    const product = await created();
+    expect(product).toMatchObject({
+      description: "Свіжий деревний аромат.",
+      descriptionEn: "A fresh woody scent.",
+    });
+    expect(await productRow(product.publicId)).toMatchObject({
+      description: "Свіжий деревний аромат.",
+      descriptionEn: "A fresh woody scent.",
+    });
+
+    const result = await applyCmsProductChange(
+      {
+        action: "update",
+        ...fields,
+        descriptionEn: "Citrus and juniper over incense.",
+        publicId: product.publicId,
+        slug: product.slug,
+      },
+      testDb.db,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      product: {
+        description: "Свіжий деревний аромат.",
+        descriptionEn: "Citrus and juniper over incense.",
+      },
+    });
+
+    await applyCmsProductChange(
+      {
+        action: "update",
+        ...fields,
+        descriptionEn: null,
+        publicId: product.publicId,
+        slug: product.slug,
+      },
+      testDb.db,
+    );
+    expect(await productRow(product.publicId)).toMatchObject({
+      description: "Свіжий деревний аромат.",
+      descriptionEn: null,
     });
   });
 

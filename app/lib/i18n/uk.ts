@@ -114,6 +114,11 @@ export const uk = {
       other: "Кошик, {count} товару",
     },
   },
+  social: {
+    title: "Соціальні мережі",
+    followUs: "Стежте за нами",
+    linkLabel: "Jassmin у {platform}",
+  },
   errors: {
     notFoundTitle: "Сторінку не знайдено",
     title: "Ой!",
@@ -572,6 +577,11 @@ export const uk = {
       intro:
         "Не знаєте, з чого почати? Оберіть три родини ароматів, і ми покажемо тестери, що їм відповідають.",
       families: "Родини ароматів",
+      gender: {
+        legend: "Для кого тріо",
+        women: "Жінки",
+        men: "Чоловіки",
+      },
       update: "Показати вибір",
       slots: "Ваше тріо",
       slot: "Місце {n}",
@@ -605,7 +615,6 @@ export const uk = {
       eyebrow: "Контакти",
       title: "Є запитання? Питайте що завгодно.",
       serviceHours: "Години роботи служби підтримки: ",
-      social: "Соціальні мережі",
     },
   },
   contact: {
@@ -689,6 +698,12 @@ export const uk = {
     yourTrio: "Ваше тріо:",
     chosenFamilies: "Обрані родини ароматів",
     removeFamily: "Прибрати «{family}»",
+    gender: {
+      label: "Для кого",
+      women: "Жінки",
+      men: "Чоловіки",
+      remove: "Прибрати фільтр «{gender}»",
+    },
     showAll: "Усі популярні",
     list: "Популярні аромати",
     more: {

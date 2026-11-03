@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cmsProductChangeSchema, MAX_PRODUCT_NOTES } from "./cms-sync";
+import { cmsProductChangeSchema, MAX_PRODUCT_DESCRIPTION, MAX_PRODUCT_NOTES } from "./cms-sync";
 
 const create = {
   action: "create",
@@ -99,6 +99,28 @@ describe("cmsProductChangeSchema: families, notes and store code (#65)", () => {
     expect(parse({ storeCode: " 3-D " }).data).toMatchObject({ storeCode: "3-D" });
     expect(parse({ storeCode: "" }).data).toMatchObject({ storeCode: null });
     expect(parse({ storeCode: "x".repeat(21) }).success).toBe(false);
+  });
+});
+
+describe("cmsProductChangeSchema: descriptions (#100)", () => {
+  it("are optional, trimmed, and empty means none", () => {
+    expect(parse({}).data).toMatchObject({ description: null, descriptionEn: null });
+    expect(parse({ description: "  ", descriptionEn: null }).data).toMatchObject({
+      description: null,
+      descriptionEn: null,
+    });
+    const descriptionEn = "A floral scent.\n\nFor day.";
+    expect(parse({ description: " Квітковий аромат. ", descriptionEn }).data).toMatchObject({
+      description: "Квітковий аромат.",
+      descriptionEn,
+    });
+  });
+
+  it("refuses a description over the limit in either language", () => {
+    const long = "а".repeat(MAX_PRODUCT_DESCRIPTION + 1);
+    expect(parse({ description: "а".repeat(MAX_PRODUCT_DESCRIPTION) }).success).toBe(true);
+    expect(issues({ description: long })[0]?.[0]).toBe("description");
+    expect(issues({ descriptionEn: long })[0]?.[0]).toBe("descriptionEn");
   });
 });
 

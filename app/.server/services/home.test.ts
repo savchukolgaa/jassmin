@@ -63,11 +63,12 @@ describe("buildHomePageView", () => {
       trioOffer,
       trioFamilies: families,
       selectedFamilies: ["квіткові"],
+      selectedGender: "men",
       bestsellers: [],
     });
 
     expect(view.trioOffer).toEqual(trioOffer);
-    expect(view.trio).toEqual({ families, selected: ["квіткові"] });
+    expect(view.trio).toEqual({ families, selected: ["квіткові"], gender: "men" });
     expect(view.bestsellers).toEqual([]);
   });
 
@@ -75,7 +76,7 @@ describe("buildHomePageView", () => {
     const view = buildHomePageView(homePage, siteSettings);
 
     expect(view.trioOffer).toBeNull();
-    expect(view.trio).toEqual({ families: [], selected: [] });
+    expect(view.trio).toEqual({ families: [], selected: [], gender: "women" });
   });
 
   it("passes on the locale the home page copy was served in", () => {

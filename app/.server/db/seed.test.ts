@@ -178,7 +178,7 @@ describe.skipIf(!hasDatabase)("seedProducts", () => {
     const { discounts } = await import("./schema");
     const { eq } = await import("drizzle-orm");
 
-    // Migration 0020 already created the tester trio (#98); the seed adds the others.
+    // Migration 0021 already created the tester trio (#98); the seed adds the others.
     expect(await seedDiscounts(testDb.db)).toBe(SAMPLE_DISCOUNTS.length - 1);
     await testDb.db
       .update(discounts)

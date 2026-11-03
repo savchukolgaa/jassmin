@@ -2,10 +2,11 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import type { AccountOrder } from "~/lib/account";
+import type { AccountOrder, AccountOrderLine } from "~/lib/account";
 import type { OrderStatus } from "~/lib/enums";
 import { createTranslator, I18nProvider, type Locale } from "~/lib/i18n";
 import { CurrentOrderCard } from "./CurrentOrderCard";
+import { OrderLineThumb } from "./OrderLineItem";
 import { OrderProgress } from "./OrderProgress";
 import { OrderStatusPill } from "./OrderStatusPill";
 import { PreviousOrdersList } from "./PreviousOrdersList";
@@ -41,6 +42,8 @@ const order = (status: OrderStatus, overrides: Partial<AccountOrder> = {}): Acco
       title: "Coco Mademoiselle",
       brand: "Chanel",
       imageUrl: "https://example.com/coco.jpg",
+      productId: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+      fragranceFamily: "квіткові",
       volumeMl: 5,
       packSize: 1,
       quantity: 2,
@@ -52,6 +55,8 @@ const order = (status: OrderStatus, overrides: Partial<AccountOrder> = {}): Acco
       title: null,
       brand: null,
       imageUrl: null,
+      productId: null,
+      fragranceFamily: null,
       volumeMl: 10,
       packSize: 1,
       quantity: 1,
@@ -101,6 +106,29 @@ describe("OrderProgress", () => {
 
   it("renders nothing for statuses off the path", () => {
     expect(render(createElement(OrderProgress, { status: "cancelled" }))).toBe("");
+  });
+});
+
+describe("OrderLineThumb (#99)", () => {
+  const [bought, deleted] = order("paid").lines as [AccountOrderLine, AccountOrderLine];
+
+  it("shows the product's photo", () => {
+    const html = render(createElement(OrderLineThumb, { line: bought }));
+    expect(html).toContain('src="https://example.com/coco.jpg"');
+    expect(html).not.toContain("<svg");
+  });
+
+  it("draws the label card without text when the product has no photo", () => {
+    const html = render(createElement(OrderLineThumb, { line: { ...bought, imageUrl: null } }));
+    expect(html).toContain("<svg");
+    expect(html).not.toContain("<text");
+    expect(html).not.toContain("<img");
+  });
+
+  it("is a neutral tile once the product has been deleted", () => {
+    const html = render(createElement(OrderLineThumb, { line: deleted }));
+    expect(html).toContain("bg-card");
+    expect(html).not.toContain("<svg");
   });
 });
 

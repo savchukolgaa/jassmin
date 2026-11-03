@@ -22,9 +22,14 @@ const priceSchema = z
   .refine((value) => Number(value) > 0, "price")
   .transform((value) => Number(value).toFixed(2));
 
-const optionalText = z
+/** The longest product description the app takes, in characters (#100): a sanity cap. */
+export const MAX_PRODUCT_DESCRIPTION = 5000;
+
+/** A product description in one language: plain text, a blank line between paragraphs. */
+const descriptionText = z
   .string()
   .trim()
+  .max(MAX_PRODUCT_DESCRIPTION)
   .nullish()
   .transform((value) => (value ? value : null));
 
@@ -101,7 +106,10 @@ const productFields = {
     // reached.
     .refine((slug) => !z.uuid().safeParse(slug).success, "uuid-slug"),
   brand: z.string().trim().min(1).max(255),
-  description: optionalText,
+  /** In Ukrainian. */
+  description: descriptionText,
+  /** In English (#100); the English page falls back to `description` when it's empty. */
+  descriptionEn: descriptionText,
   gender: z.enum(GENDERS),
   /** Primary first (#65); the app mirrors the first into `products.fragrance_family`. */
   fragranceFamilies: z
@@ -178,6 +186,7 @@ export interface CmsProductState {
   slug: string | null;
   brand: string;
   description: string | null;
+  descriptionEn: string | null;
   gender: (typeof GENDERS)[number];
   /** Primary first; rows from before #65 may hold a value outside `FRAGRANCE_FAMILIES`. */
   fragranceFamilies: string[];

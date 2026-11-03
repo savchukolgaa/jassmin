@@ -39,7 +39,13 @@ export function CartLineItem({ line }: { line: CartLine }) {
         {/* Hidden duplicate of the title link, so its photo needs no alt text (#88). */}
         <ProductImage
           image={line.image}
-          brand={line.brand}
+          label={{
+            id: line.productId,
+            brand: line.brand,
+            title: line.title,
+            family: line.fragranceFamily,
+          }}
+          labelDetail="minimal"
           alt=""
           layout="thumb"
           className="rounded-t-full"

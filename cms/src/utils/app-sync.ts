@@ -51,11 +51,15 @@ export function describeAppSyncError(status: number, body: unknown): string {
       const slugHint = fields.includes("slug")
         ? " Slug — латинські літери, цифри та «-», «.», «_», «~», і не у вигляді UUID."
         : "";
+      const descriptionHint = fields.some((field) => field.startsWith("description"))
+        ? " Опис — до 5000 символів."
+        : "";
       return withCode(
         `Магазин не прийняв дані. Перевірте поля: ${fields.join(", ") || "—"}. ` +
           "Об’єм — 7, 10, 30, 50 або 100 мл, кожен лише раз; ціна більша за 0; залишок не від’ємний. " +
           "Парфум має хоча б одне сімейство аромату, кожне лише раз; нота — до 100 символів." +
-          slugHint,
+          slugHint +
+          descriptionHint,
       );
     }
     case "unknown-product":

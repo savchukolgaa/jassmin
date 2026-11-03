@@ -124,6 +124,14 @@ share image needs them too. A new entry in `FRAGRANCE_FAMILIES` must get a palet
 | `musky` | мускусні | `#ECE4EE` | `#A893AE` | `#5E4B66` | `#FCF9FD` | `#3F3146` 11.56:1 | `#5E4B66` 6.32:1 |
 | `neutral` | none, or an unknown value | `#F7F3F4` (`card`) | `#D9CDD1` | `#5F5558` (`muted`) | `#FFFFFF` | `#1F1A1C` (`ink`) 17.17:1 | `#5F5558` 6.52:1 |
 
+**Share image (#105).** A product without a photo also gets a generated link preview,
+`/og/products/<handle>.png` (`app/routes/og.products.$file.ts`), 1200×630. On the left is the shop's
+own bottle photo (`app/.server/og/share-bottle.jpg`, 504×630, EXIF stripped; every perfume is sold
+in the same JASSMIN bottle). On the right, a `bg` panel holds the brand (Manrope 800 capitals), the
+name (Playfair Display 700) and "jassmin.", all in `mark`, with an `accent` strip between the two.
+`app/.server/og/label-card.ts` draws it with resvg. Bump its `CARD_VERSION` when the photo or the
+layout changes, so caches and crawlers fetch the new image.
+
 - All text sits on `panel` (brand, name) or `bg` (wordmark) and passes AA for normal text;
   `app/lib/label-art.test.ts` checks every palette. `accent` and `cap` are decorative and never sit
   behind text.

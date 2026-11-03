@@ -9,6 +9,7 @@ import {
   formatVolume,
   pickDescription,
   productHref,
+  productShareImagePath,
 } from "./products";
 
 const en = createTranslator("en");
@@ -67,6 +68,15 @@ describe("productHref", () => {
 
   it("encodes the slug", () => {
     expect(productHref("uk", { id, slug: "a b/c" })).toBe("/parfumy/a%20b%2Fc");
+  });
+});
+
+describe("productShareImagePath", () => {
+  const id = "01a1652b-6e25-7c03-ae47-25b57131fb06";
+
+  it("uses the slug, else the public id, like productHref", () => {
+    expect(productShareImagePath({ id, slug: "bleu" })).toBe("/og/products/bleu.png");
+    expect(productShareImagePath({ id, slug: null })).toBe(`/og/products/${id}.png`);
   });
 });
 

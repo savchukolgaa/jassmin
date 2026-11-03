@@ -14,7 +14,13 @@ import { productBreadcrumbs } from "~/lib/breadcrumbs";
 import type { CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
 import { metaTranslator, useContentLang, useT } from "~/lib/i18n";
-import { descriptionParagraphs, formatVolume, productHref } from "~/lib/products";
+import {
+  descriptionParagraphs,
+  formatVolume,
+  productHref,
+  productShareImagePath,
+  SHARE_IMAGE_SIZE,
+} from "~/lib/products";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta, priceAmount, seoMeta } from "~/lib/seo";
 import { breadcrumbListLd, productLd } from "~/lib/structured-data";
@@ -27,7 +33,8 @@ function catalogOf(gender: Gender): CatalogGender {
 }
 
 // A shared product link shows its name, image and price (#85): messengers read only `og:title`,
-// `og:description` and `og:image`, so the price leads the description too.
+// `og:description` and `og:image`, so the price leads the description too. Without its own photo,
+// the image is generated from the product's brand and name (#105).
 export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
   if (error || !loaderData) {
     return errorMeta({ matches, error });
@@ -64,7 +71,8 @@ export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
             width: product.image.width,
             height: product.image.height,
           }
-        : null,
+        : // The shop's bottle photo with this product's brand and name (#105).
+          { url: productShareImagePath(product), alt: name, ...SHARE_IMAGE_SIZE },
       // An archived product's page stays for old links, out of search results (#88).
       noindex: !loaderData.available,
       extra:

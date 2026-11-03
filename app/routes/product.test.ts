@@ -206,14 +206,24 @@ describe("product meta", () => {
     });
   });
 
-  it("shows a single price without 'from', and the default image without its own", () => {
+  it("shows a single price without 'from', and the generated image without its own (#105)", () => {
     const tags = run({ variants: [variant("990.00", false)], image: null, description: null });
 
     expect(String(content(tags, "og:description")).replace(/\s/gu, " ")).toBe(
       "Chanel Coco Mademoiselle — 990 ₴. Купуйте в магазині парфумів Jassmin.",
     );
-    expect(content(tags, "og:image")).toBe("https://jassmin.ua/og-default.jpg");
+    expect(content(tags, "og:image")).toBe("https://jassmin.ua/og/products/coco-mademoiselle.png");
+    expect(content(tags, "og:image:width")).toBe("1200");
+    expect(content(tags, "og:image:height")).toBe("630");
+    expect(content(tags, "og:image:alt")).toBe("Coco Mademoiselle — Chanel");
     expect(content(tags, "product:availability")).toBe("out of stock");
+  });
+
+  it("shares the photo's size when the product has one", () => {
+    const tags = run();
+
+    expect(content(tags, "og:image:width")).toBe("800");
+    expect(content(tags, "og:image:height")).toBe("1000");
   });
 
   it("describes the English page with the English description (#100)", () => {

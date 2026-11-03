@@ -326,7 +326,10 @@ export async function listFilterOptions(db: Db, genders: readonly Gender[]) {
   };
 }
 
-/** The columns of a product page (`ProductDetail`), plus the serial id. */
+/**
+ * The columns of a product page (`ProductDetail`), plus the serial id and `updated_at` (the share
+ * image's ETag, #105).
+ */
 const detailColumns = {
   id: products.id,
   publicId: products.publicId,
@@ -345,6 +348,7 @@ const detailColumns = {
   notes: products.notes,
   storeCode: products.storeCode,
   active: products.active,
+  updatedAt: products.updatedAt,
 };
 
 export interface ProductLookupOptions {

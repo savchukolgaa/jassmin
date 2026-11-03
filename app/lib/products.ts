@@ -27,6 +27,17 @@ export function productHref(locale: Locale, product: { id: string; slug: string 
   return pathFor(locale, "product", { handle: product.slug ?? product.id });
 }
 
+/** The generated share image's size (#105), the 1.91:1 messengers expect. */
+export const SHARE_IMAGE_SIZE = { width: 1200, height: 630 } as const;
+
+/**
+ * The generated share image of a product without its own photo (#105): the shop's bottle photo
+ * with the product's brand and name. Language-neutral, with the same handle as `productHref`.
+ */
+export function productShareImagePath(product: { id: string; slug: string | null }): string {
+  return `/og/products/${encodeURIComponent(product.slug ?? product.id)}.png`;
+}
+
 /** A product's stored descriptions: `description` is Ukrainian, `descriptionEn` English (#100). */
 export interface ProductDescriptions {
   description: string | null;

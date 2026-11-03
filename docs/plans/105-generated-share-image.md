@@ -109,13 +109,30 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
   handle as `productHref`, and exports `SHARE_IMAGE_SIZE = { width: 1200, height: 630 }`, because
   `meta` can't import `.server`.
 
+- **Implementation findings (step 1 spike)**:
+  - resvg-js 2.6.2 mis-renders fonts passed as `fontBuffers`: it used a squeezed wrong face for
+    Manrope and a fallback for Playfair. As `fontFiles` they render correctly, so `fonts.ts`
+    writes the converted `.ttf` files once to `os.tmpdir()/jassmin-og-fonts/<content hash>.ttf`
+    and passes their paths. `ogFontFiles()` replaces the planned `ogFontBuffers()`.
+  - Manrope's static 800 files name their family **"Manrope ExtraBold"**, not "Manrope", so
+    `OG_FONTS.sans` is that name.
+  - `@fontsource/playfair-display` has no `cyrillic-ext` file at 700, so there are 7 font files:
+    Playfair latin, latin-ext and cyrillic, and Manrope latin, latin-ext, cyrillic and
+    cyrillic-ext.
+  - The photo was cropped with Pillow (`ImageOps.exif_transpose`, crop 1700×2125 at (650, 1150),
+    Lanczos to 504×630, JPEG q82, saved without EXIF). The result is 61 KB and has no EXIF data.
+  - `?inline` gives a `data:image/jpeg;base64,` URL under Vitest too, so no fallback was needed.
+  - A render takes ≈ 270 ms. It runs through `renderAsync`, on libuv's thread pool.
+  - `SHARE_IMAGE_SIZE` and `productShareImagePath` (step 8) were added to `app/lib/products.ts`
+    early, because `label-card.ts` uses the size.
+
 ## Open questions
-- [ ] **Q1: Is it OK to add the static `@fontsource/playfair-display` and `@fontsource/manrope`
+- [x] **Q1: Is it OK to add the static `@fontsource/playfair-display` and `@fontsource/manrope`
   packages (server-only) next to the variable ones?** Why it matters: the issue says to load the
   `@fontsource-variable` files. Those are WOFF2 variable fonts, which resvg can't load or render
   at weight 700/800 without an extra WOFF2 decoder and variable-font instancing. Recommended
   default: add the static packages. The fallback is `wawoff2` for WOFF2 decoding, with the spike
-  checking the weights. Affects steps: 1, 3.
+  checking the weights. Affects steps: 1, 3. **Answer:** went with the default; the user didn't object after planning.
 
 ## Resolved questions
 - **The drawn card, or real photos?** One general shop photo of the JASSMIN bottle for every
@@ -162,7 +179,7 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
 
 ## Steps
 
-- [ ] **1. Spike: prepare the photo, add the dependencies, prove the pipeline.**
+- [x] **1. Spike: prepare the photo, add the dependencies, prove the pipeline.**
   - Copy `images/IMG_1589.JPG` from the main checkout into the scratchpad. Crop it to 4:5 around
     the bottle and hand, resize it to 504×630 and save it as JPEG q≈82 with metadata stripped:
     `pnpm dlx sharp-cli -i IMG_1589.JPG -o share-bottle.jpg resize 504 630 --fit cover --position centre`,
@@ -180,7 +197,7 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
     `readFileSync` fallback from "Decisions".
   - Check that `pnpm install` printed no "ignored build scripts" warning for resvg.
 
-- [ ] **2. `woff.ts`: WOFF1 → SFNT.** `export function woffToSfnt(woff: Buffer): Buffer`. It does
+- [x] **2. `woff.ts`: WOFF1 → SFNT.** `export function woffToSfnt(woff: Buffer): Buffer`. It does
   the following:
   - check the `wOFF` signature;
   - read `flavor`, `numTables` and the 20-byte table directory entries;
@@ -192,14 +209,14 @@ and name in its fragrance-family palette (#99). The product page's `meta` uses t
   starting with `0x00010000`, with `numTables` matching and each table inside the buffer; a
   non-WOFF buffer throws.
 
-- [ ] **3. `fonts.ts`: load the fonts once.** `export const OG_FONTS = { sans: "Manrope", serif:
+- [x] **3. `fonts.ts`: load the fonts once.** `export const OG_FONTS = { sans: "Manrope", serif:
   "Playfair Display" }` and `export function ogFontBuffers(): Buffer[]`, memoised. It resolves
   `@fontsource/playfair-display/files/playfair-display-{latin,latin-ext,cyrillic,cyrillic-ext}-700-normal.woff`
   and `@fontsource/manrope/files/manrope-{…}-800-normal.woff` with
   `createRequire(import.meta.url)`, then reads and converts them. The test checks that it returns
   8 SFNT buffers and the same array on a second call.
 
-- [ ] **4. `label-card.ts`: the share image.**
+- [x] **4. `label-card.ts`: the share image.**
   - Exports: `CARD_WIDTH = 1200`, `CARD_HEIGHT = 630`, `PHOTO_WIDTH = 504`, `CARD_VERSION = 1`.
   - `shareCardSvg(label: ProductLabel): string` builds
     `<svg xmlns width=1200 height=630 viewBox>` containing:

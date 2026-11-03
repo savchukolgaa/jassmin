@@ -136,7 +136,7 @@ function PriceBadge({ offer }: { offer: TrioOffer }) {
 function FloatingChip() {
   const { t } = useT();
   return (
-    <p className="animate-float absolute right-0 bottom-9 rounded-2xl bg-ink px-4.5 py-3 text-sm font-extrabold text-white">
+    <p className="animate-float absolute right-4 bottom-9 rounded-2xl bg-ink px-4.5 py-3 text-sm font-extrabold text-white md:right-8">
       {t("home.hero.chip")}
     </p>
   );

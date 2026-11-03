@@ -166,7 +166,7 @@ The same raw URL causes two more bugs I confirmed with curl:
   `/en/catalog/women.data?_routes=a,b&sort=new` → `/en/catalog/women?sort=new`, `/en.data?index`
   keeps `index`, a document URL is unchanged, and a path merely containing `.data` in the middle
   (`/blog/a.data-b`) is unchanged.
-- [ ] **2. Use it in `getLocale`.** `app/.server/locale.ts`:
+- [x] **2. Use it in `getLocale`.** `app/.server/locale.ts`:
   `localeFromPath(pageUrl(request).pathname)`. Update the doc comment. In `locale.test.ts`, replace
   "resolves a single-fetch data request like its page" with real cases: `/en.data` → `en`,
   `/_.data` → `uk`, `/en/popular.data?_routes=x` → `en`, `/koshyk.data` → `uk`. Add

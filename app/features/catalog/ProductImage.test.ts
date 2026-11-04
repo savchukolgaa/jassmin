@@ -2,6 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PRODUCT_IMAGE_SIZES, type ResponsiveImage } from "~/lib/images";
+import { LABEL_PALETTES } from "~/lib/label-art";
+import { SHOP_BOTTLE_IMAGE } from "~/lib/shop-bottle";
 import { ProductImage, type ProductImageProps } from "./ProductImage";
 
 const IMAGE: ResponsiveImage = {
@@ -69,11 +71,48 @@ describe("ProductImage (#88)", () => {
     expect(html).not.toContain("<svg");
   });
 
-  it("draws the label card without a photo (#99)", () => {
+  it("shows no family strip over an uploaded photo", () => {
+    expect(render()).not.toContain("data-family-strip");
+  });
+
+  it("shows the shop's bottle photo without one, with a strip in the family colour (#118)", () => {
     const html = render({ image: null });
+
+    expect(html).toContain(`src="${SHOP_BOTTLE_IMAGE.url}"`);
+    expect(html).toContain(`srcSet="${SHOP_BOTTLE_IMAGE.srcSet}"`);
+    expect(html).toContain(`sizes="${PRODUCT_IMAGE_SIZES.card}"`);
+    expect(html).toContain('width="1280"');
+    expect(html).toContain('height="1600"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('alt="Chanel Coco"');
+    expect(html).not.toContain("<svg");
+    expect(html).toMatch(
+      new RegExp(`data-family-strip=""[^>]*background-color:${LABEL_PALETTES.floral.accent}`),
+    );
+    expect(html).toContain("aspect-[4/5]");
+  });
+
+  it("uses the neutral strip without a family", () => {
+    const html = render({ image: null, label: { id: "x", brand: "B", title: "T", family: null } });
+
+    expect(html).toContain(`background-color:${LABEL_PALETTES.neutral.accent}`);
+  });
+
+  it("loads the shop photo first on the product page and keeps an empty alt on cards", () => {
+    const page = render({ image: null, layout: "page", priority: true });
+    expect(page).toContain('loading="eager"');
+    expect(page).toContain('fetchPriority="high"');
+    expect(page).toContain(`sizes="${PRODUCT_IMAGE_SIZES.page}"`);
+
+    expect(render({ image: null, alt: "" })).toContain('alt=""');
+  });
+
+  it("draws the label card in thumbnails without a photo (#99)", () => {
+    const html = render({ image: null, layout: "thumb" });
 
     expect(html).toContain("<svg");
     expect(html).not.toContain("<img");
+    expect(html).not.toContain("data-family-strip");
     expect(html).toContain(">CHANEL</text>");
     expect(html).toContain(">Coco</text>");
     expect(html).toContain("aspect-[4/5]");
@@ -81,15 +120,17 @@ describe("ProductImage (#88)", () => {
   });
 
   it("leaves the text off a minimal label card", () => {
-    const html = render({ image: null, labelDetail: "minimal" });
+    const html = render({ image: null, layout: "thumb", labelDetail: "minimal" });
 
     expect(html).toContain("<svg");
     expect(html).not.toContain("<text");
   });
 
-  it("labels the placeholder like the photo, or hides it when decorative", () => {
-    expect(render({ image: null })).toContain('role="img" aria-label="Chanel Coco"');
-    const hidden = render({ image: null, alt: "" });
+  it("labels the thumbnail card like the photo, or hides it when decorative", () => {
+    expect(render({ image: null, layout: "thumb" })).toContain(
+      'role="img" aria-label="Chanel Coco"',
+    );
+    const hidden = render({ image: null, layout: "thumb", alt: "" });
     expect(hidden).toContain('aria-hidden="true"');
     expect(hidden).not.toContain('role="img"');
   });

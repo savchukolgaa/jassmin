@@ -123,7 +123,7 @@ uploaded photo still always wins.
   that `srcSet` lists 5 candidates from 320w to 1280w, smallest first, that `url` is the 640 file,
   and the 4:5 width/height.
 
-- [ ] **3. `ProductImage`.** Without `image`:
+- [x] **3. `ProductImage`.** Without `image`:
   - if `layout === "thumb"`, render today's `ProductLabelArt` branch, unchanged;
   - otherwise, render the `<img>` branch with `SHOP_BOTTLE_IMAGE`, keeping `alt`, `priority` and
     `sizes`, plus the family strip
@@ -134,7 +134,7 @@ uploaded photo still always wins.
   the JSDoc: "Product photo, or the shop's bottle photo with a family strip without one (#118); the
   drawn label card in thumbnails (#99)."
 
-- [ ] **4. Tests.** In `ProductImage.test.ts`:
+- [x] **4. Tests.** In `ProductImage.test.ts`:
   - replace "draws the label card without a photo (#99)" with:
     - without a photo (`card`), the `<img>` has `SHOP_BOTTLE_IMAGE`'s `src`/`srcSet`,
       `sizes=card`, `loading="lazy"` and no `<svg>`;

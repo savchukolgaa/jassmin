@@ -65,6 +65,16 @@ describe.each(["default", "compact"] as const)("ProductCard (%s) in the browser"
     expect(container.querySelector('[role="img"]')).toBeNull();
   });
 
+  it("shows the shop's bottle photo with a family strip without its own photo (#118)", () => {
+    const { container } = renderCard(variant);
+    const photo = container.querySelector("img");
+
+    expect(photo?.getAttribute("src")).toMatch(/shop-bottle-640\.webp/);
+    expect(photo?.getAttribute("alt")).toBe("");
+    expect(container.querySelector("[data-family-strip]")).not.toBeNull();
+    expect(container.querySelector("svg[viewBox='0 0 400 500']")).toBeNull();
+  });
+
   it("shows the default size's price once hydrated, without the skeleton", () => {
     const { container } = renderCard(variant);
 

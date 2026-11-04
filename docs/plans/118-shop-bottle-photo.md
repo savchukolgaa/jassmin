@@ -149,7 +149,7 @@ uploaded photo still always wins.
   Check `ProductCard.dom.test.ts` (its fixture has `image: null`) and any page tests that assert
   `<svg>` in a card or the product page, and update them to expect the shop photo.
 
-- [ ] **5. Docs.** In `docs/design.md`, "Label card palette": a product without a photo now shows
+- [x] **5. Docs.** In `docs/design.md`, "Label card palette": a product without a photo now shows
   the shop's bottle photo (`app/lib/shop-bottle.ts`) with a strip in its family `accent` on cards
   and the product page (#118). The drawn label card remains for cart thumbnails, the palette
   table still applies, and an uploaded photo always wins.

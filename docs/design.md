@@ -99,11 +99,17 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
 
 ## Label card palette
 
-A product without a photo gets a generated label card instead (#99): an inline SVG
+A product without its own photo shows **the shop's bottle photo** on product cards and the product
+page (#118). Every perfume is sold in the same clear JASSMIN bottle, so one real photo
+(`app/lib/shop-bottle.ts`, five WebP widths in `app/assets/shop-bottle/`) stands in for all of
+them. A `h-2` strip along the bottom of the frame, in the family's `accent` colour, tells perfumes
+apart at a glance.
+
+Cart thumbnails (`layout="thumb"`) keep the generated label card (#99): an inline SVG
 (`app/features/catalog/ProductLabelArt.tsx`) in the 4:5 `rounded-card` frame. It shows a bottle and
 cap, the brand in small caps (Manrope 800), the name in Playfair Display and the "jassmin."
-wordmark. **An uploaded photo always wins**: the card only stands in where `products.image_url` is
-empty.
+wordmark. **An uploaded photo always wins**: the shop photo and the card only stand in where
+`products.image_url` is empty.
 
 The colours come from the product's **primary** fragrance family (`products.fragrance_family`).
 Similar families share a palette. The hex values live in `LABEL_PALETTES` / `FAMILY_PALETTE` in

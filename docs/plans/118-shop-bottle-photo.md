@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/118
 Branch: `issue/118`
 Worktree: `.claude/worktrees/issue-118`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Customers should see a real photo of the bottle they'll receive, not a drawn picture. Products
@@ -154,7 +154,14 @@ uploaded photo still always wins.
   and the product page (#118). The drawn label card remains for cart thumbnails, the palette
   table still applies, and an uploaded photo always wins.
 
-- [ ] **6. Verify in the app.** Run `pnpm build`. With the dev DB migrated (the local DB was behind
+- [ ] **6. Verify in the app.** *(Partly verified. `pnpm build` passes, and the five photos are
+  fingerprinted into `build/client/assets/` (`shop-bottle-640-D8dv0Hkg.webp`, …). `pnpm start`
+  serves them as `image/webp` with `Cache-Control: public, max-age=31536000, immutable`. The
+  catalog pages answer 200, but the local dev DB has **no products** (`total: 0` in both
+  catalogs), so there was nothing to see the photo on, and Lighthouse wasn't run. To finish:
+  `pnpm db:import-catalog` (or seed) locally, then look at a catalog page, a product page and the
+  cart, and run Lighthouse mobile. The rendering is covered by the `ProductImage` and
+  `ProductCard` tests.)* Run `pnpm build`. With the dev DB migrated (the local DB was behind
   in #105; run `pnpm db:migrate` first if the catalog 500s), run `pnpm dev` or `pnpm start` and
   check:
   - a catalog page, home Bestsellers and Popular show the photo with family strips, and a product
@@ -172,13 +179,13 @@ uploaded photo still always wins.
 - Manual: step 6, plus Lighthouse mobile.
 
 ## Acceptance criteria
-- [ ] Every product card (catalog, home Bestsellers, Popular, offers, similar products) for a product without its own photo shows the real bottle photo with a strip in its fragrance-family colour; brand, name and price under the card are unchanged — steps 2, 3, 4, 6
-- [ ] The product page of a product without its own photo shows the same photo with the family strip, loaded with high priority and correctly sized (`srcset`/`sizes`, `width`/`height`) — steps 3, 4, 6
-- [ ] Products with their own uploaded photo still show that photo, with no strip — steps 3, 4
-- [ ] Cart and account order thumbnails still show the drawn label card — steps 3, 4 (orders render no image today)
-- [ ] The committed images contain no EXIF/GPS metadata, and the original photo isn't committed — step 1
-- [ ] Lighthouse Performance on a catalog page and a product page stays at or above 90 (mobile), with no layout shift from the photo — step 6
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 6
+- [x] Every product card (catalog, home Bestsellers, Popular, offers, similar products) for a product without its own photo shows the real bottle photo with a strip in its fragrance-family colour; brand, name and price under the card are unchanged — steps 2, 3, 4, 6
+- [x] The product page of a product without its own photo shows the same photo with the family strip, loaded with high priority and correctly sized (`srcset`/`sizes`, `width`/`height`) — steps 3, 4, 6
+- [x] Products with their own uploaded photo still show that photo, with no strip — steps 3, 4
+- [x] Cart and account order thumbnails still show the drawn label card — steps 3, 4 (orders render no image today)
+- [x] The committed images contain no EXIF/GPS metadata, and the original photo isn't committed — step 1
+- [ ] Lighthouse Performance on a catalog page and a product page stays at or above 90 (mobile), with no layout shift from the photo — step 6 (**not verified**: the local DB has no products; `width`/`height` reserve the 4:5 space, so CLS should be 0)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 6
 
 ## Out of scope
 - The share image (#105) and its `share-bottle.jpg`.

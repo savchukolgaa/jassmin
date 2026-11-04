@@ -34,7 +34,7 @@ uploaded photo still always wins.
   - Target ≤ 80 KB for the 1280 px file, at quality ~78 with `method=6`.
   - Cropping: `ImageOps.exif_transpose`, a 4:5 box 1700×2125 at (650, 1150), the same framing as
     #105's `share-bottle.jpg`, Lanczos resize, saved without EXIF.
-  - AVIF would be smaller, but WebP is simpler and already small. **(unconfirmed, see Q1)**
+  - AVIF would be smaller, but WebP is simpler and already small (Q1: confirmed).
 - **`SHOP_BOTTLE_IMAGE: ResponsiveImage`** lives in a new isomorphic module
   `app/lib/shop-bottle.ts`, so `images.ts` stays asset-free and its tests don't change. It's built
   with the existing `buildSrcSet`, with width/height 1280×1600 (the largest file; `width` and
@@ -65,10 +65,15 @@ uploaded photo still always wins.
 - The `bg-blush` behind the photo stays, so the frame isn't empty while the image loads.
 - `ProductLabelArt` and the `labelDetail` prop stay, because cart thumbnails still use them.
 
+- **Deviation (step 1): quality 60, not 78; the 1280 px file is 117 KB, not ≤ 80 KB.** The
+  textured wall compresses poorly. At q78 the 1280 file was 164 KB, and q50 still gave 102 KB.
+  q60 looks sharp at full size. The sizes are 12, 27, 44, 79 and 117 KB, and phones at 2× pick
+  mostly the 640/960 files.
+
 ## Open questions
-- [ ] **Q1: WebP only, or AVIF too?** Why it matters: AVIF is ~20–30% smaller but needs a
+- [x] **Q1: WebP only, or AVIF too?** Why it matters: AVIF is ~20–30% smaller but needs a
   `<picture>` element (or AVIF-only, which very old Safari can't decode), which complicates
-  `ProductImage`. Recommended default: WebP only. Affects steps: 1, 2.
+  `ProductImage`. Recommended default: WebP only. Affects steps: 1, 2. **Answer:** default (WebP only), per the user.
 
 ## Resolved questions
 - **Which photo, where, and how to tell perfumes apart?** `IMG_1589`, on product cards and the
@@ -100,7 +105,7 @@ uploaded photo still always wins.
 
 ## Steps
 
-- [ ] **1. Export the photo.** In the scratchpad, write a Pillow script and run it with
+- [x] **1. Export the photo.** In the scratchpad, write a Pillow script and run it with
   `python -I`:
   - open `C:/Users/КТС/jassmin/images/IMG_1589.JPG` and apply `exif_transpose`;
   - crop `(650, 1150, 2350, 3275)`;
@@ -111,7 +116,7 @@ uploaded photo still always wins.
   the bottle is fully in frame at 320 px (look at it). Copy the files to
   `app/assets/shop-bottle/`. Note the exact command in the PR.
 
-- [ ] **2. `app/lib/shop-bottle.ts`.** Import the five files
+- [x] **2. `app/lib/shop-bottle.ts`.** Import the five files
   (`import w320 from "~/assets/shop-bottle/shop-bottle-320.webp"`, …) and export
   `SHOP_BOTTLE_IMAGE: ResponsiveImage = { url: w640, srcSet: buildSrcSet([...]), width: 1280,
   height: 1600 }`. Add a header comment on why one photo serves every perfume. The test checks

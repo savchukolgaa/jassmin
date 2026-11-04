@@ -45,7 +45,7 @@ strip that #118 added. Everything else stays as it is.
 
 ## Steps
 
-- [ ] **1. `ProductImage` without the strip.**
+- [x] **1. `ProductImage` without the strip.**
   - Compute `photo` as above.
   - If `photo` is set, render `<div className={cn(frame, "bg-blush")}><img … /></div>`, the
     current `<img>` attributes inlined from `Photo`.
@@ -55,7 +55,7 @@ strip that #118 added. Everything else stays as it is.
     (#118), or the generated label card in thumbnails (#99)." The `label` prop now reads: "What the
     thumbnail label card shows without a photo (#99)."
 
-- [ ] **2. Tests.**
+- [x] **2. Tests.**
   - In `ProductImage.test.ts`:
     - remove `LABEL_PALETTES` and the test "uses the neutral strip without a family";
     - in "shows the shop's bottle photo without one…", replace the strip regex with

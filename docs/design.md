@@ -102,8 +102,8 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
 A product without its own photo shows **the shop's bottle photo** on product cards and the product
 page (#118). Every perfume is sold in the same clear JASSMIN bottle, so one real photo
 (`app/lib/shop-bottle.ts`, five WebP widths in `app/assets/shop-bottle/`) stands in for all of
-them. A `h-2` strip along the bottom of the frame, in the family's `accent` colour, tells perfumes
-apart at a glance.
+them, with nothing drawn over it (#120): perfumes are told apart by the brand, name and family chip
+under the photo.
 
 Cart thumbnails (`layout="thumb"`) keep the generated label card (#99): an inline SVG
 (`app/features/catalog/ProductLabelArt.tsx`) in the 4:5 `rounded-card` frame. It shows a bottle and

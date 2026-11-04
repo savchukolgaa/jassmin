@@ -66,7 +66,7 @@ strip that #118 added. Everything else stays as it is.
   - In `ProductCard.dom.test.ts`, rename the #118 test to "shows the shop's bottle photo without
     its own photo (#118, #120)" and expect `[data-family-strip]` to be `null`.
 
-- [ ] **3. Docs.** In `docs/design.md` → "Label card palette", delete the sentence "A `h-2` strip
+- [x] **3. Docs.** In `docs/design.md` → "Label card palette", delete the sentence "A `h-2` strip
   along the bottom of the frame, in the family's `accent` colour, tells perfumes apart at a
   glance." Optionally add: "Perfumes are told apart by the brand, name and family chip under the
   photo (#120)."

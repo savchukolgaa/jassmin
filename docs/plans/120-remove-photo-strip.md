@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/120
 Branch: `issue/120`
 Worktree: `.claude/worktrees/issue-120`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Product cards and the product page should show only the shop's bottle photo for products without
@@ -71,8 +71,8 @@ strip that #118 added. Everything else stays as it is.
   glance." Optionally add: "Perfumes are told apart by the brand, name and family chip under the
   photo (#120)."
 
-- [ ] **4. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then
-  `grep -rn "family-strip" app` (expect no hits).
+- [x] **4. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then
+  `grep -rn "family-strip" app` (expect no hits). *(Done: no hits outside the two tests, which assert the strip is absent.)*
 
 ## Testing & verification
 - Updated `ProductImage.test.ts`: the shop photo has no strip, and the uploaded photo, thumbnail
@@ -83,10 +83,10 @@ strip that #118 added. Everything else stays as it is.
   the bottle photo only.
 
 ## Acceptance criteria
-- [ ] Product cards (catalog, home Bestsellers, Popular, offers, similar products) and the product page show the shop's bottle photo with no coloured line at the bottom for products without their own photo — steps 1, 2
-- [ ] Products with their own photo and cart thumbnails look as before — steps 1, 2
-- [ ] Tests and `docs/design.md` no longer refer to the strip — steps 2, 3
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 4
+- [x] Product cards (catalog, home Bestsellers, Popular, offers, similar products) and the product page show the shop's bottle photo with no coloured line at the bottom for products without their own photo — steps 1, 2
+- [x] Products with their own photo and cart thumbnails look as before — steps 1, 2
+- [x] Tests and `docs/design.md` no longer refer to the strip — steps 2, 3
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 4
 
 ## Out of scope
 - The share image (#105) and its strip.

@@ -136,18 +136,15 @@ name (Playfair Display 700) and "jassmin.", all in `mark`, with an `accent` stri
 `app/.server/og/label-card.ts` draws it with resvg. Bump its `CARD_VERSION` when the photo or the
 layout changes, so caches and crawlers fetch the new image.
 
-- All text sits on `panel` (brand, name) or `bg` (wordmark) and passes AA for normal text;
-  `app/lib/label-art.test.ts` checks every palette. `accent` and `cap` are decorative and never sit
-  behind text.
-- **Variation:** the 32-bit FNV-1a hash of the product's `public_id` picks one of 4 bottles (tall,
-  rounded flask, faceted, round-shouldered) and one of 3 caps, so neighbours from the same family
-  still differ. It's deterministic, so the server and client render the same markup.
-- **Text fitting:** `layoutLabelText` wraps the name on spaces into at most 3 lines, at the largest
-  of 30/26/22/19 (viewBox units) that fits by character count. It breaks an over-long word and adds
-  "…" if the name still doesn't fit.
-- **Thumbnails** (the cart, account orders) use `detail="minimal"`: the bottle without text. The
-  card is decorative (`aria-hidden`) where the name is next to it. On the product page, the frame is
-  `role="img"` labelled "<brand> <name>", the same as a photo.
+- Text drawn in the palette sits on `bg` in `mark` (the share image's brand, name and wordmark) and
+  passes AA for normal text; `app/lib/label-art.test.ts` checks every palette. `accent` is
+  decorative and never sits behind text.
+- **Text fitting:** `layoutLabelText` wraps text on spaces into at most `maxLines`, at the largest
+  candidate size that fits by character count. It breaks an over-long word and adds "…" if the
+  text still doesn't fit. The share image uses it for the brand and name.
+- `labelVariant` (bottle/cap shape from the `public_id` hash) and the `cap`/`panel`/`ink` colours
+  only served the removed drawn card (#122). They're kept in `label-art.ts` but nothing draws
+  them.
 
 ## Typeface and scale
 

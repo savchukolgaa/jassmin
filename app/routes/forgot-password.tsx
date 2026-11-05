@@ -4,6 +4,7 @@ import { getLocale } from "~/.server/locale";
 import { getClientIp, passwordResetLimiters } from "~/.server/rate-limit";
 import { getUser } from "~/.server/services/auth";
 import { requestPasswordReset } from "~/.server/services/password-reset";
+import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { TextField } from "~/components/ui/TextField";
 import { AuthLayout, FormAlert, FormNotice } from "~/features/auth/AuthLayout";
@@ -96,7 +97,10 @@ export default function ForgotPassword({ actionData }: Route.ComponentProps) {
         <Button type="submit" size="lg" className="rounded-full" loading={submitting}>
           {t("auth.forgot.submit")}
         </Button>
-        <Link to={path("login")} className="self-start font-bold text-primary-dark underline">
+        <Link
+          to={path("login")}
+          className={`self-start rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
+        >
           {t("auth.forgot.backToLogin")}
         </Link>
       </Form>

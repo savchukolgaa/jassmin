@@ -1,15 +1,16 @@
-import { data, Form, redirect, useNavigation } from "react-router";
+import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { db } from "~/.server/db";
 import { getLocale } from "~/.server/locale";
 import { getClientIp, loginLimiters } from "~/.server/rate-limit";
 import { getUser, onUserAuthenticated, verifyLogin } from "~/.server/services/auth";
 import { createUserSession } from "~/.server/session";
+import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { TextField } from "~/components/ui/TextField";
 import { AuthLayout, FormAlert } from "~/features/auth/AuthLayout";
 import { type AuthFormErrors, type LoginField, safeRedirect } from "~/lib/auth";
 import { loginSchema, toFieldErrors } from "~/lib/auth.schema";
-import { metaTranslator, useT } from "~/lib/i18n";
+import { metaTranslator, usePathFor, useT } from "~/lib/i18n";
 import { pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/login";
@@ -77,6 +78,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 export default function Login({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useT();
+  const path = usePathFor();
   const submitting = useNavigation().state === "submitting";
   const errors = actionData?.fieldErrors;
 
@@ -104,6 +106,12 @@ export default function Login({ loaderData, actionData }: Route.ComponentProps) 
           autoComplete="current-password"
           error={errors?.password && t(errors.password)}
         />
+        <Link
+          to={path("forgotPassword")}
+          className={`self-start rounded-pill font-bold text-primary-dark underline ${focusRing("onLight")}`}
+        >
+          {t("auth.forgot.link")}
+        </Link>
         {loaderData.redirectTo && (
           <input type="hidden" name="redirectTo" value={loaderData.redirectTo} />
         )}

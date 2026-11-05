@@ -1,7 +1,9 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { db } from "~/.server/db";
+import { getEnv, getSiteUrl } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
 import { getUser, onUserAuthenticated, registerUser } from "~/.server/services/auth";
+import { sendVerificationEmail } from "~/.server/services/email-verification";
 import { createUserSession } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
@@ -70,10 +72,17 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   await onUserAuthenticated({ request, context }, result.userId, "register");
+  const locale = await getLocale(request);
+  // Best effort and not awaited (#135): the account page offers to resend it.
+  void sendVerificationEmail({
+    userId: result.userId,
+    locale,
+    siteUrl: getSiteUrl(getEnv(), request),
+  });
   return createUserSession({
     request,
     userId: result.userId,
-    redirectTo: safeRedirect(redirectTo, pathFor(await getLocale(request), "account")),
+    redirectTo: safeRedirect(redirectTo, pathFor(locale, "account")),
   });
 }
 

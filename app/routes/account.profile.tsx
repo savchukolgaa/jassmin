@@ -1,7 +1,9 @@
 import { data, useNavigation } from "react-router";
+import { getEnv, getSiteUrl } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
 import { profilePasswordLimiter } from "~/.server/rate-limit";
 import { type PublicUser, requireUser } from "~/.server/services/auth";
+import { sendVerificationEmail } from "~/.server/services/email-verification";
 import {
   changeEmail,
   changePassword,
@@ -9,6 +11,7 @@ import {
   notifyEmailChanged,
   updateContact,
 } from "~/.server/services/profile";
+import { renewSessionAuth } from "~/.server/session";
 import {
   ContactPanel,
   EmailPanel,
@@ -61,8 +64,8 @@ export async function loader({ request }: Route.LoaderArgs) {
   return getProfile(user.id);
 }
 
-const reply = (result: ProfileActionData, status = 200) =>
-  data<ProfileActionData>(result, { status });
+const reply = (result: ProfileActionData, status = 200, headers?: HeadersInit) =>
+  data<ProfileActionData>(result, { status, headers });
 
 export async function action({ request }: Route.ActionArgs) {
   const user = await requireUser(request);
@@ -81,7 +84,7 @@ export async function action({ request }: Route.ActionArgs) {
     case "email":
       return saveEmail(user, formData, request);
     case "password":
-      return savePassword(user, formData);
+      return savePassword(user, formData, request);
   }
 }
 
@@ -147,17 +150,20 @@ async function saveEmail(user: PublicUser, formData: FormData, request: Request)
 
   profilePasswordLimiter.reset(limiterKey(user));
   if (result.previousEmail !== null) {
+    const locale = await getLocale(request);
     void notifyEmailChanged({
       to: result.previousEmail,
       newEmail: email,
       fullName: user.fullName,
-      locale: await getLocale(request),
+      locale,
     });
+    // The new address starts unverified (#135): send it a confirmation link.
+    void sendVerificationEmail({ userId: user.id, locale, siteUrl: getSiteUrl(getEnv(), request) });
   }
   return reply({ ok: true, intent: "email" });
 }
 
-async function savePassword(user: PublicUser, formData: FormData) {
+async function savePassword(user: PublicUser, formData: FormData, request: Request) {
   if (profilePasswordLimiter.isBlocked(limiterKey(user))) {
     return reply(
       { ok: false, intent: "password", formError: "account.profile.errors.tooManyAttempts" },
@@ -195,7 +201,10 @@ async function savePassword(user: PublicUser, formData: FormData) {
   }
 
   profilePasswordLimiter.reset(limiterKey(user));
-  return reply({ ok: true, intent: "password" });
+  // The change logs out every other session (#135); this one stays logged in.
+  return reply({ ok: true, intent: "password" }, 200, {
+    "Set-Cookie": await renewSessionAuth(request, result.changedAt),
+  });
 }
 
 /** The action result for one panel, or `undefined` when the last post was another panel's. */

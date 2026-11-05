@@ -276,7 +276,7 @@ Each step is small, ordered, and leaves the app in a working state.
   The reset and verify pages get `headers()` → `Referrer-Policy: no-referrer`,
   `Cache-Control: no-store`. All three use `noindexMeta`. `AuthLayout` gets a variant without the
   login/register tabs, following the C+ tokens in `docs/design.md`.
-- [ ] **8. Wire the entry points.**
+- [x] **8. Wire the entry points.**
   - `login.tsx`: a "Forgot password?" link (`pathFor(locale, "forgotPassword")`) under the
     password field.
   - `register.tsx`: after `registerUser` succeeds, runs `void sendVerificationEmail(…)`.

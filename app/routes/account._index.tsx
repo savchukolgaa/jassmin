@@ -1,11 +1,18 @@
+import { data, useNavigation } from "react-router";
+import { getEnv, getSiteUrl } from "~/.server/env";
+import { getLocale } from "~/.server/locale";
+import { verificationEmailLimiter } from "~/.server/rate-limit";
 import { requireUser } from "~/.server/services/auth";
+import { sendVerificationEmail } from "~/.server/services/email-verification";
 import { getAccountGiftCards } from "~/.server/services/gift-cards";
 import { getAccountOrders } from "~/.server/services/orders";
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { AccountGiftCards } from "~/features/account/AccountGiftCards";
 import { CurrentOrderCard } from "~/features/account/CurrentOrderCard";
 import { PreviousOrdersList } from "~/features/account/PreviousOrdersList";
-import { usePathFor, useT } from "~/lib/i18n";
+import { VerifyEmailBanner } from "~/features/account/VerifyEmailBanner";
+import { resendVerificationSchema } from "~/lib/auth.schema";
+import { type TextKey, usePathFor, useT } from "~/lib/i18n";
 import type { Route } from "./+types/account._index";
 
 // The account layout's loader doesn't protect this one: loaders run in parallel.
@@ -15,21 +22,61 @@ export async function loader({ request }: Route.LoaderArgs) {
     getAccountOrders(user.id),
     getAccountGiftCards(user.id),
   ]);
-  return { ...orders, giftCards };
+  // The "Confirm your email" banner (#135), until the email is confirmed.
+  return { ...orders, giftCards, email: user.email, emailVerified: user.emailVerified };
+}
+
+export type ResendVerificationActionData = { resent: true } | { error: TextKey };
+
+/** Sends the verification email again (#135), at most 3 times per user per hour. */
+export async function action({ request }: Route.ActionArgs) {
+  const user = await requireUser(request);
+  const parsed = resendVerificationSchema.safeParse(Object.fromEntries(await request.formData()));
+  if (!parsed.success) {
+    return data<ResendVerificationActionData>({ error: "errors.invalid" }, { status: 400 });
+  }
+  if (user.emailVerified) {
+    return data<ResendVerificationActionData>({ resent: true });
+  }
+
+  const key = String(user.id);
+  if (verificationEmailLimiter.isBlocked(key)) {
+    return data<ResendVerificationActionData>(
+      { error: "auth.errors.tooManyRequests" },
+      { status: 429 },
+    );
+  }
+  verificationEmailLimiter.hit(key);
+  void sendVerificationEmail({
+    userId: user.id,
+    locale: await getLocale(request),
+    siteUrl: getSiteUrl(getEnv(), request),
+  });
+  return data<ResendVerificationActionData>({ resent: true });
 }
 
 const sectionHeading = "text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl";
 
-export default function AccountOrders({ loaderData }: Route.ComponentProps) {
+export default function AccountOrders({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useT();
   const path = usePathFor();
   const { current, previous, giftCards } = loaderData;
   // The cards the user bought (#125), under their orders or the "no orders yet" panel.
   const cards = giftCards.length > 0 && <AccountGiftCards cards={giftCards} />;
+  const submitting = useNavigation().state === "submitting";
+  const banner = !loaderData.emailVerified && (
+    <VerifyEmailBanner
+      email={loaderData.email}
+      resent={actionData !== undefined && "resent" in actionData}
+      error={actionData && "error" in actionData ? actionData.error : undefined}
+      submitting={submitting}
+    />
+  );
 
   if (current.length === 0 && previous.length === 0) {
     return (
       <div className="flex flex-col gap-14">
+        {banner}
         <section
           aria-labelledby="no-orders-heading"
           className="flex flex-col items-start gap-4 rounded-card-lg bg-blush p-8 md:p-14"
@@ -55,6 +102,7 @@ export default function AccountOrders({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex flex-col gap-14">
+      {banner}
       {current.length > 0 && (
         <section aria-labelledby="current-orders-heading" className="flex flex-col gap-5">
           <h2 id="current-orders-heading" className={sectionHeading}>

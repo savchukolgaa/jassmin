@@ -165,20 +165,6 @@ export async function updateUserEmail(db: Db, id: number, email: string): Promis
   return updated.length > 0;
 }
 
-/** Stores a new password hash. `false` when no user has this id. */
-export async function updateUserPasswordHash(
-  db: Db,
-  id: number,
-  passwordHash: string,
-): Promise<boolean> {
-  const updated = await db
-    .update(users)
-    .set({ passwordHash })
-    .where(eq(users.id, id))
-    .returning({ id: users.id });
-  return updated.length > 0;
-}
-
 /** Who an account email goes to (#135): the user's id, name and current address. */
 export interface UserRecipient {
   id: number;

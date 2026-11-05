@@ -78,6 +78,9 @@ export const resetPasswordSchema = z
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
+/** The account page's "send it again" button (#135). */
+export const resendVerificationSchema = z.object({ intent: z.literal("resend-verification") });
+
 export const profileIntentSchema = z.enum(PROFILE_INTENTS);
 
 const currentPasswordSchema = z

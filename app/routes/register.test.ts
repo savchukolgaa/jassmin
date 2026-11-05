@@ -6,7 +6,14 @@ const auth = vi.hoisted(() => ({
   onUserAuthenticated: vi.fn(),
 }));
 
+const verification = vi.hoisted(() => ({ sendVerificationEmail: vi.fn() }));
+
 vi.mock("~/.server/services/auth", () => auth);
+vi.mock("~/.server/services/email-verification", () => verification);
+vi.mock("~/.server/env", () => ({
+  getEnv: () => ({}),
+  getSiteUrl: () => "https://jassmin.ua",
+}));
 vi.mock("~/.server/db", () => ({ db: {} }));
 vi.mock("~/.server/session", () => ({
   createUserSession: vi.fn(
@@ -75,6 +82,12 @@ describe("register action", () => {
       "register",
     );
     expect((result as Response).headers.get("Location")).toBe("/kabinet");
+    // The new account gets a verification email (#135).
+    expect(verification.sendVerificationEmail).toHaveBeenCalledWith({
+      userId: 9,
+      locale: "uk",
+      siteUrl: "https://jassmin.ua",
+    });
   });
 
   it("reports a taken email and refills the form without the password", async () => {
@@ -89,6 +102,7 @@ describe("register action", () => {
       values: { fullName: "Olena Petrenko", email: "Olena@Example.com", phone: "" },
     });
     expect(JSON.stringify(body)).not.toContain("correct horse");
+    expect(verification.sendVerificationEmail).not.toHaveBeenCalled();
   });
 
   it("returns field errors for invalid input", async () => {

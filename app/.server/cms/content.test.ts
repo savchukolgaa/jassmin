@@ -907,6 +907,7 @@ describe("listActiveOffers", () => {
       "winter-holidays",
       "free-delivery",
       "tester-trio",
+      "couple-offer",
       "gifts-by-budget",
       "welcome-offer",
     ]);
@@ -943,7 +944,7 @@ describe("listActiveOffers", () => {
     const result = await listActiveOffers("uk", new Date("2027-01-08T22:01:00.000Z"));
 
     expect(result.map((o) => o.slug)).not.toContain("winter-holidays");
-    expect(result).toHaveLength(4);
+    expect(result).toHaveLength(5);
   });
 
   it("re-sorts so the order doesn't depend on Strapi", async () => {
@@ -967,6 +968,7 @@ describe("listActiveOffers", () => {
       ["winter-holidays", "en"],
       ["free-delivery", "en"],
       ["tester-trio", "en"],
+      ["couple-offer", "en"],
       ["gifts-by-budget", "uk"],
       ["welcome-offer", "en"],
     ]);

@@ -445,6 +445,31 @@ const OFFERS: SeedOffer[] = [
     },
   },
   {
+    // The app's `couple-15` discount rule (#124) gives the 15%; keep the texts in sync with it.
+    slug: "couple-offer",
+    kind: "bundle",
+    image: "cover",
+    productIds: [],
+    ctaUrl: "/catalog/women",
+    sortOrder: 15,
+    copy: {
+      uk: {
+        title: "Пропозиція для двох",
+        summary: "Купуєте два повні флакони — другий на 15% дешевше.",
+        body: "Додайте до кошика будь-які два флакони по 30, 50 або 100 мл — для себе й коханої людини або на подарунок, з жіночого чи чоловічого каталогу. Кошик сам зробить знижку 15% на дешевший із пари. З чотирьох флаконів знижку отримають два, з трьох — один. Об’єми 5 і 10 мл не враховуються, а з іншими знижками пропозиція не поєднується: кошик обере ту, що вигідніша.",
+        priceNote: "−15% на другий флакон",
+        ctaLabel: "Обрати пару",
+      },
+      en: {
+        title: "Couple offer",
+        summary: "Buy two full bottles and the second is 15% off.",
+        body: "Add any two 30, 50 or 100 ml bottles to your cart, for you and your partner or as a gift, from the women's or the men's catalog. The cart takes 15% off the cheaper one of the pair by itself. Of four bottles two get the discount, of three one does. The 5 and 10 ml sizes don't count, and the offer doesn't add up with other discounts: the cart picks whichever saves you more.",
+        priceNote: "−15% on the second bottle",
+        ctaLabel: "Choose a pair",
+      },
+    },
+  },
+  {
     slug: "gifts-by-budget",
     kind: "gift",
     image: "cover",

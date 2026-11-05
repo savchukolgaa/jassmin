@@ -180,6 +180,45 @@ describe("OffersPage", () => {
     }
   });
 
+  it("shows the couple offer in the bundles group in both languages (#124)", () => {
+    const couple = (locale: "uk" | "en") =>
+      offer({
+        slug: "couple-offer",
+        kind: "bundle",
+        contentLocale: locale,
+        title: locale === "uk" ? "Пропозиція для двох" : "Couple offer",
+        summary: null,
+        bodyHtml: null,
+        priceNote: locale === "uk" ? "−15% на другий флакон" : "−15% on the second bottle",
+        cta: {
+          to: `/${locale}/catalog/women`,
+          label: locale === "uk" ? "Обрати пару" : "Choose a pair",
+        },
+      });
+    const page = (locale: "uk" | "en") =>
+      render(
+        createElement(OffersPage, {
+          view: view({
+            hero: offer({ slug: "winter", kind: "seasonal", title: "Winter holidays" }),
+            groups: [{ kind: "bundle", offers: [couple(locale)] }],
+          }),
+        }),
+        locale,
+      );
+
+    const uk = page("uk");
+    expect(uk).toContain(">Набори<");
+    expect(uk).toMatch(/<h3[^>]*>Пропозиція для двох<\/h3>/);
+    expect(uk).toContain("−15% на другий флакон");
+    expect(uk).toMatch(/<a[^>]*href="\/uk\/catalog\/women"[^>]*>Обрати пару<\/a>/);
+
+    const en = page("en");
+    expect(en).toContain(">Bundles<");
+    expect(en).toMatch(/<h3[^>]*>Couple offer<\/h3>/);
+    expect(en).toContain("−15% on the second bottle");
+    expect(en).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>Choose a pair<\/a>/);
+  });
+
   it("renders in Ukrainian by default", () => {
     const html = render(createElement(OffersPage, { view: view() }));
 

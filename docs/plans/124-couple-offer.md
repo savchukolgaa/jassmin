@@ -149,7 +149,7 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   the new kind shows the code); a couple-offer line in `cart-ui.test.ts` (en),
   `checkout-ui.test.ts` (uk) and `order-email.test.ts`
   (`"Пропозиція для двох: −15% на другий флакон: −225 ₴"`).
-- [ ] **6. Strapi offer** — In `cms/scripts/seed.ts` add to `OFFERS` (and a comment that its
+- [x] **6. Strapi offer** — In `cms/scripts/seed.ts` add to `OFFERS` (and a comment that its
   `priceNote` matches the `couple-15` rule):
   slug `couple-offer`, kind `bundle`, image `cover`, no products, `ctaUrl: "/catalog/women"`,
   `sortOrder: 15`; uk: title "Пропозиція для двох", summary "Купуєте два повні флакони —

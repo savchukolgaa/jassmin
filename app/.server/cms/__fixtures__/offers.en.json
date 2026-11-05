@@ -232,6 +232,29 @@
       "locale": "en"
     },
     {
+      "id": 44,
+      "documentId": "c0upl3o8f2e5r1t4y7u0i3pq",
+      "title": "Couple offer",
+      "slug": "couple-offer",
+      "kind": "bundle",
+      "summary": "Buy two full bottles and the second is 15% off.",
+      "body": "Add any two 30, 50 or 100 ml bottles to your cart, for you and your partner or as a gift, from the women's or the men's catalog. The cart takes 15% off the cheaper one of the pair by itself. Of four bottles two get the discount, of three one does. The 5 and 10 ml sizes don't count, and the offer doesn't add up with other discounts: the cart picks whichever saves you more.",
+      "startsAt": null,
+      "endsAt": null,
+      "priceNote": "−15% on the second bottle",
+      "ctaLabel": "Choose a pair",
+      "ctaUrl": "/catalog/women",
+      "sortOrder": 15,
+      "image": null,
+      "imageLocalized": null,
+      "imageAlt": null,
+      "products": [],
+      "createdAt": "2026-11-05T09:00:00.000Z",
+      "updatedAt": "2026-11-05T09:00:00.000Z",
+      "publishedAt": "2026-11-05T09:00:01.000Z",
+      "locale": "en"
+    },
+    {
       "id": 43,
       "documentId": "w3lc0m3a8b2c6d4e9f1g5h7j",
       "title": "Welcome to Jassmin",
@@ -260,7 +283,7 @@
       "page": 1,
       "pageSize": 5,
       "pageCount": 1,
-      "total": 4
+      "total": 5
     }
   }
 }

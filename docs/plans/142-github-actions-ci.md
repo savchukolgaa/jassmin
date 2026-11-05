@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/142
 Branch: `issue/142`
 Worktree: `.claude/worktrees/issue-142`
-Status: Planned (Q1, Q2 answered)
+Status: Implemented (step 8, the first CI run, happens on the PR)
 
 ## Goal
 Every pull request and every push to `main` runs `pnpm typecheck`, `pnpm lint`, `pnpm test` (against
@@ -78,6 +78,10 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
 - **Public repo:** PRs from forks run with a read-only token and no secrets; CI needs no secrets, so
   that's fine. `docs/ci.md` recommends keeping "Require approval for first-time contributors" (the
   default) for workflow runs from forks.
+- **Step 8 moves to the PR:** the workflow runs on `pull_request` and on pushes to `main` only, so
+  pushing `issue/142` alone runs nothing. The first CI run, the deliberate guard failure and the `cms`
+  job check happen after `/open-pr 142`. Locally, the guard was verified against real vitest reports:
+  green when nothing is skipped, red listing 220 DB tests without a database, red on a missing report.
 - **Parallel issues #125/#126:** this change touches no file they edit, so merges won't conflict.
   `pull_request` runs check out GitHub's merge ref (PR head merged into `main`), so once this PR is
   merged, the next push to their PRs runs CI automatically, without merging `main` first. They then
@@ -197,7 +201,7 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
 - [ ] A PR with a failing check can't be merged once branch protection is on (`docs/ci.md` explains the
   setup) — steps 5, 6 (enforced once the owner turns protection on in the public repo)
 - [ ] A normal run finishes in under 10 minutes, with dependency caching — steps 2, 8
-- [ ] The README shows the CI badge — step 7
+- [x] The README shows the CI badge — step 7 (renders once the repo is public and the workflow has run on `main`)
 
 ## Out of scope
 - Any change to app code, `cms/`, `scripts/`, `package.json`, `vitest.config.ts` or the lockfile

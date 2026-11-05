@@ -354,7 +354,7 @@ From the codebase and issues:
   and shows "Paid with a gift card" instead (Q1). `PaymentMethodField` iterates
   `SELECTABLE_PAYMENT_METHODS`. The success page, account order page and email show the
   `gift_card` label through `PAYMENT_KEYS`. Route and UI tests in uk and en.
-- [ ] **9. Gift card pages** — `routes/gift-cards.tsx`: `meta` (title and description,
+- [x] **9. Gift card pages** — `routes/gift-cards.tsx`: `meta` (title and description,
   indexable, `hreflang` through the existing helpers), a loader (`cardPaymentAvailable`, the
   amounts, the prefill email from `getUser`), and an action (zod `giftCardPurchaseSchema`:
   `amount` coerced and limited to `GIFT_CARD_AMOUNTS`, `email` via `emailSchema`, optional

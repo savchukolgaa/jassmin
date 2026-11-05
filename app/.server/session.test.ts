@@ -72,4 +72,21 @@ describe("session helpers", () => {
 
     expect(await getSessionOrderIds(request())).toEqual([5, 11, 10, 9, 8, 7, 6, 4, 3, 2]);
   });
+
+  it("remembers the last 10 gift cards bought in this browser, newest first (#125)", async () => {
+    const { getSessionGiftCardIds, getSessionOrderIds, rememberGiftCard } = await import(
+      "./session"
+    );
+    let cookie = "";
+    const request = () =>
+      new Request("http://localhost/podarunkovi-kartky", { headers: { Cookie: cookie } });
+
+    expect(await getSessionGiftCardIds(request())).toEqual([]);
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 5]) {
+      cookie = (await rememberGiftCard(request(), id)).split(";")[0] ?? "";
+    }
+
+    expect(await getSessionGiftCardIds(request())).toEqual([5, 11, 10, 9, 8, 7, 6, 4, 3, 2]);
+    expect(await getSessionOrderIds(request())).toEqual([]);
+  });
 });

@@ -65,6 +65,9 @@ export default [
       localizedChild("accountProfile", "account", "routes/account.profile.tsx", locale),
     ]),
     ...localizedRoute("privacy", "routes/privacy.tsx"),
+    // Gift cards (#125): the purchase page and the provider's return page with its "Pay" action.
+    ...localizedRoute("giftCards", "routes/gift-cards.tsx"),
+    ...localizedRoute("giftCardSuccess", "routes/gift-card-success.tsx"),
   ]),
   // Action-only (POST); outside the layout so its loader doesn't run for it.
   route("logout", "routes/logout.ts"),

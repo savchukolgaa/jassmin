@@ -171,6 +171,8 @@ app/
     services/          business logic (orders, auth, cart, …)
     cms/               Strapi client: content queries, zod schemas, CmsError, sync writer
     seo/               sitemap.xml and robots.txt builders
+    og/                generated share images (Open Graph label cards)
+    payments/          payment provider interface and the local simulator
 cms/                   Strapi v5 CMS (content types in src/api, components in src/components,
                        product and order write-through in src/sync)
 aspire-apphost/        Aspire TypeScript AppHost (local dev orchestration)
@@ -182,7 +184,7 @@ Anything under `app/.server/` is server-only. Importing it from code that reache
 
 ## Content (Strapi CMS)
 
-[Strapi](https://docs.strapi.io) v5, in the `cms/` workspace package, is the shop's only admin interface. Staff edit editorial content there (blog posts, home page copy, the store's contact details, special offers) and manage products and orders (#40, see [Products and orders in Strapi](#products-and-orders-in-strapi)). Products, stock, carts, orders, users and analytics still live in the app's PostgreSQL database, which stays the system of record. Strapi has its own `strapidb` database on the same PostgreSQL server.
+[Strapi](https://docs.strapi.io) v5, in the `cms/` workspace package, is the shop's only admin interface. Staff edit editorial content there (blog posts, home page copy, the store's contact details, special offers) and manage products and orders (#40, see [Products and orders in Strapi](#products-and-orders-in-strapi)); gift cards are visible there, read-only (#125). Products, stock, carts, orders, gift cards, discount rules, users and analytics still live in the app's PostgreSQL database, which stays the system of record. Strapi has its own `strapidb` database on the same PostgreSQL server.
 
 The app reads published content on the server only, through `app/.server/cms/content.ts`, using a read-only API token. Strapi admin accounts are separate from Jassmin customer accounts.
 
@@ -213,7 +215,7 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
    - Offer: `find`
    - Site-setting: `find`
 
-   Save the token and copy it into `STRAPI_API_TOKEN` in `.env`. Create a second **Custom**, **Unlimited** token for `STRAPI_SYNC_TOKEN` with only `find`, `findOne`, `create` and `update` on Product and Order.
+   Save the token and copy it into `STRAPI_API_TOKEN` in `.env`. Create a second **Custom**, **Unlimited** token for `STRAPI_SYNC_TOKEN` with only `find`, `findOne`, `create` and `update` on Product, Order and Gift-card (#125).
 
 Don't give the Public or Authenticated roles (Settings → Users & Permissions → Roles) any permission on these content types. Strapi doesn't grant any by default, unauthenticated requests get a 403, and Strapi logs a warning at startup if someone enables one. The token's `find` permission can technically request drafts (`?status=draft`). The app never does, because `cmsFetch` always sends `status=published`.
 
@@ -227,14 +229,18 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 |------|------|--------|
 | `blog-post` | Collection, Draft & Publish | `title` (required), `slug` (UID from title, required, unique), `excerpt` (text, max 300), `content` (Markdown, required), `coverImage` (image), `authorName`, `seo` (`shared.seo`) |
 | `home-page` | Single type | `hero` (`home.hero`), `about` (`home.about`), `location` (`home.location`) |
-| `product` (#40) | Collection, no Draft & Publish | `name`, `slug` (UID from name), `brand`, `description`, `gender` (`women`, `men`, `unisex`), `fragranceFamily`, `image`, `packSize`, `active`, `variants` (repeatable `catalog.variant`, at least one), `publicId` (set by the app) |
-| `order` (#40) | Collection, no Draft & Publish | `orderId` (the app's order id, unique), `orderStatus`, `paymentStatus`, `paymentMethod`, customer name, email and phone, `userId`, `shippingAddress`, `freeShipping`, amounts, `placedAt`, `paidAt`, `shippedAt`, `completedAt`, `cancelledAt`, `refundedAt`, `items` (repeatable `orders.item`) |
-| `offer` | Collection, Draft & Publish | `title` (required), `slug` (UID from title), `kind` (`discovery-set`, `seasonal`, `gift`, `bundle`, `featured`, `last-units`, `perk`), `summary`, `body` (Markdown), `image`, `startsAt` / `endsAt` (date-times, optional), `priceNote`, `products` (repeatable `offers.product-ref`), `ctaLabel`, `ctaUrl` (app path), `sortOrder` |
+| `product` (#40) | Collection, no Draft & Publish | `name`, `slug` (UID from name), `brand`, `description`, `descriptionEn`, `gender` (`women`, `men`, `unisex`; the shop only has women's and men's catalogs), `fragranceFamilies` (repeatable `catalog.fragrance-family`, primary first, #65), `notes` (repeatable `catalog.note`), `storeCode` (staff only), `popularRank` (the order on `/popular`, #67), `image`, `packSize`, `active`, `variants` (repeatable `catalog.variant`, at least one), `publicId` (set by the app) |
+| `order` (#40) | Collection, no Draft & Publish | `orderId` (the app's order id, unique), `orderStatus`, `paymentStatus`, `paymentMethod` (`card`, `cod`, `gift_card`), customer name, email and phone, `userId`, `shippingAddress`, `freeShipping`, amounts (`subtotal`, `discountAmount`, `shippingAmount`, `giftCardAmount`, `totalAmount`), `placedAt`, `paidAt`, `shippedAt`, `completedAt`, `cancelledAt`, `refundedAt`, `items` (repeatable `orders.item`) |
+| `offer` | Collection, Draft & Publish | `title` (required), `slug` (UID from title), `kind` (`discovery-set`, `seasonal`, `gift`, `bundle`, `featured`, `last-units`, `perk`), `summary`, `body` (Markdown), `image`, `imageLocalized` and `imageAlt` (per language), `startsAt` / `endsAt` (date-times, optional), `priceNote`, `products` (repeatable `offers.product-ref`), `ctaLabel`, `ctaUrl` (app path), `sortOrder` |
+| `gift-card` (#125) | Collection, no Draft & Publish, read-only | `giftCardId`, `code`, `giftCardStatus` (`pending`, `active`, `used_up`, `expired`), `initialAmount`, `balance`, `currency`, `buyerEmail`, `recipientEmail`, `userId`, `placedAt`, `activatedAt`, `expiresAt`, `redemptions` (repeatable `gift-cards.redemption`) |
 | `site-setting` ("Site settings") | Single type | `phone`, `email`, `customerServiceHours`, `socialLinks` (repeatable `shared.social-link`) |
 
 | Component | Fields |
 |-----------|--------|
 | `catalog.variant` | `volumeMl` (5, 10, 30, 50 or 100, checked by the app), `price` (UAH, over 0), `trackStock` (off by default: always available, #98), `stock` (shown and used only when `trackStock` is on) |
+| `catalog.fragrance-family` | `family` (one of the Ukrainian family names, e.g. `квіткові`) |
+| `catalog.note` | `name` |
+| `gift-cards.redemption` | `orderId`, `amount`, `redeemedAt`, `reversedAt` |
 | `orders.item` | `productPublicId`, `productName`, `brand`, `volumeMl`, `quantity`, `unitPrice` (a snapshot at checkout) |
 | `home.hero` | `headline`, `ctaLabel`, `ctaHref`, `image` |
 | `home.about` | `title`, `body` (Markdown) |
@@ -243,7 +249,7 @@ Schemas are committed in `cms/src/api/*/content-types/*/schema.json` and `cms/sr
 | `shared.seo` | `metaTitle` (max 60), `metaDescription` (max 160), `ogImage` |
 | `shared.social-link` | `platform` (`instagram`, `facebook`, `tiktok`, `telegram`, `viber`, `youtube`), `url` |
 
-The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/offers`, `/api/site-setting`, plus `/api/products` and `/api/orders` for the app's sync token. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
+The single types have Draft & Publish off, so saving publishes. REST endpoints: `/api/blog-posts`, `/api/home-page`, `/api/offers`, `/api/site-setting`, plus `/api/products`, `/api/orders` and `/api/gift-cards` for the app's sync token. When you change the model, update the zod schemas, the DTOs in `app/lib/cms.ts` and the fixtures in `app/.server/cms/__fixtures__/` (see `app/.server/AGENTS.md`).
 
 ### Translations (Ukrainian and English)
 
@@ -256,7 +262,7 @@ Which fields are per language:
 | `blog-post` | `title`, `excerpt`, `content`, `authorName`, `seo` | `slug`, `coverImage` |
 | `home-page` | `hero`, `about`, `location` (whole components, including the hero image, CTA link and map URL) | — |
 | `site-setting` | `customerServiceHours` | `phone`, `email`, `socialLinks` |
-| `offer` | `title`, `summary`, `body`, `priceNote`, `ctaLabel` | `slug`, `kind`, `image`, `startsAt`, `endsAt`, `products`, `ctaUrl`, `sortOrder` |
+| `offer` | `title`, `summary`, `body`, `priceNote`, `ctaLabel`, `imageLocalized`, `imageAlt` | `slug`, `kind`, `image`, `startsAt`, `endsAt`, `products`, `ctaUrl`, `sortOrder` |
 
 Strapi can't share single fields inside a localized component, so the hero `image` and `ctaHref` and the location `mapEmbedUrl` are stored once per language. Keep them the same in both.
 
@@ -279,7 +285,7 @@ Shared fields (a post's slug and cover, the phone, email and social links) are e
 - **Sort order** (lowest first) orders offers within each group. The active non-perk offer with the lowest `sortOrder` becomes the hero at the top of the page, so lowering a campaign's `sortOrder` features it.
 - **Products** are shop products by their `public_id` (copy it from the product URL, `/products/<id>`). Products that no longer exist, or have no sizes for sale, are left out.
 - **CTA link** (`ctaUrl`) must be a path in the shop, such as `/catalog/women`; anything else hides the button.
-- **Prices aren't changed.** Checkout has no discounts yet, so `priceNote` is plain text ("3 × 7 мл — від 499 ₴"). Word offers as curated picks unless the cart prices already match.
+- **Offers don't change prices.** `priceNote` is plain text. Prices change only through the discount rules in PostgreSQL (`discounts`, #59): checkout applies one per order, whichever saves the most. Two apply by themselves, the tester trio (any three single 10 ml sizes for 499 ₴) and the couple offer (15% off the cheaper of each pair of 30, 50 or 100 ml bottles, #124); every other saving needs a promo code. Rules are created by a migration or the seed, not in Strapi. When an offer states a price, keep its `priceNote` in sync with the rule (see Discounts in `app/.server/AGENTS.md`); otherwise word it as a curated pick.
 
 When no offer is active the page shows an empty state, and when Strapi is down a 503 error page.
 

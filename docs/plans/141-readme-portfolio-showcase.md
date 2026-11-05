@@ -111,6 +111,18 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
   written with an AI coding agent under the owner's review, and what guards quality (plans, strict
   TypeScript, tests, CI from #142).
 
+- **#125 merged before the move** (PR #144), so its README edits (Gift cards section,
+  `db:expire-gift-cards`, Strapi gift cards) were rebased in and moved with the rest; no port
+  needed for it. #126 is still open.
+- **Fixed in step 3:** Special offers said "Checkout has no discounts yet" (now describes the
+  discount rules, #59/#124); the content model lacked the `gift-card` type, the product's
+  `descriptionEn`, `fragranceFamilies`, `notes`, `storeCode`, `popularRank`, the order amounts and
+  `gift_card` method, the offer's `imageLocalized`/`imageAlt` and three components; the sync token's
+  manual permissions lacked Gift-card; the project structure lacked `og/` and `payments/`. The seed
+  description ("gift ideas") is left to #126, which changes it.
+- **Per-step checks:** the steps change only Markdown, so `pnpm lint` runs per step and the full
+  `typecheck`/`test`/`build` run once at the end (and `test` in step 7 for the numbers).
+
 ## Resolved questions
 
 Answered by the owner:
@@ -175,7 +187,7 @@ No other files change.
   and relative paths (`app/...`, `cms/...`) get the `../` prefix where they are links. Remove the
   moved text from `README.md`. Commit: "Move the setup guide to docs/setup.md (#141)". Check: a diff
   of the moved text shows only anchor/path changes.
-- [ ] **3. Fix out-of-date lines in `docs/setup.md` (separate commit)** — Read the moved guide
+- [x] **3. Fix out-of-date lines in `docs/setup.md` (separate commit)** — Read the moved guide
   against the code on `main` and correct what's wrong, e.g. "Prices aren't changed. Checkout has no
   discounts yet" in Special offers (promo codes and offer discounts exist since #59, the couple
   offer since #124: describe what checkout applies, pointing at `app/.server/services/` for the

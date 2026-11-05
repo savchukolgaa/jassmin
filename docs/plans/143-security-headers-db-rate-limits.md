@@ -210,7 +210,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 
 ## Steps
 
-- [ ] **1. Pure header builders.** In `app/.server/security-headers.ts`, write
+- [x] **1. Pure header builders.** In `app/.server/security-headers.ts`, write
   `buildCsp({ nonce, mode, strapiOrigin, isDev })` and `buildSecurityHeaders({ env, html, nonce })`.
   The second returns a `Headers` with the CSP (or `-Report-Only`) only when `html`, the
   `Reporting-Endpoints` header and HSTS only in production over `https:`. Add `CSP_MODE` to

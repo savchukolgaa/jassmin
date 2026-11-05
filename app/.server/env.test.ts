@@ -21,6 +21,7 @@ describe("parseEnv", () => {
       NODE_ENV: "production",
       PUBLIC_SITE_URL: "https://jassmin.ua",
       STRAPI_URL: "http://localhost:1337",
+      CSP_MODE: "report-only",
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
     });
@@ -161,6 +162,18 @@ describe("parseEnv: ROBOTS_DISALLOW_ALL", () => {
     expect(() => parseEnv({ ...valid, ROBOTS_DISALLOW_ALL: "maybe" })).toThrow(
       /ROBOTS_DISALLOW_ALL/,
     );
+  });
+});
+
+describe("parseEnv: CSP_MODE", () => {
+  it("defaults to report-only and treats an empty value as unset", () => {
+    expect(parseEnv(valid).CSP_MODE).toBe("report-only");
+    expect(parseEnv({ ...valid, CSP_MODE: "" }).CSP_MODE).toBe("report-only");
+  });
+
+  it("accepts enforce and rejects anything else", () => {
+    expect(parseEnv({ ...valid, CSP_MODE: "enforce" }).CSP_MODE).toBe("enforce");
+    expect(() => parseEnv({ ...valid, CSP_MODE: "off" })).toThrow(/CSP_MODE/);
   });
 });
 

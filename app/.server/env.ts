@@ -50,6 +50,9 @@ const envSchema = z
     // `/robots.txt` answers `Disallow: /` when this is set, or whenever NODE_ENV isn't production
     // (#87): for a staging or preview server that runs in production mode. `true`/`1`/`yes`/`on`.
     ROBOTS_DISALLOW_ALL: z.stringbool().optional(),
+    // Content-Security-Policy mode (#143): `report-only` sends `Content-Security-Policy-Report-Only`
+    // (violations are only logged), `enforce` sends `Content-Security-Policy`. See docs/security.md.
+    CSP_MODE: z.enum(["report-only", "enforce"]).default("report-only"),
     ...mailEnvSchema.shape,
   })
   .refine((env) => env.NODE_ENV !== "production" || env.PUBLIC_SITE_URL !== undefined, {
@@ -113,6 +116,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
     PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
     ROBOTS_DISALLOW_ALL: source.ROBOTS_DISALLOW_ALL || undefined,
+    CSP_MODE: source.CSP_MODE || undefined,
     ...mailSource(source),
   });
 

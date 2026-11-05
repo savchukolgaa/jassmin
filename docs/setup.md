@@ -47,6 +47,7 @@ pnpm dev                    # http://localhost:5173
 | `CMS_SYNC_SECRET` | no* | Shared secret (32+ characters) that Strapi sends to the app's `/cms/*` sync routes; the same value goes in `cms/.env`. *Without it, saving a product or an order in the Strapi admin fails. |
 | `PAYMENT_PROVIDER` | no* | Where card payments go. Only `simulator` for now, a local fake payment page that's refused when `NODE_ENV=production` (see [Card payments](#card-payments-simulator)). *Without it the app still starts, but card payment is unavailable at checkout. |
 | `ROBOTS_DISALLOW_ALL` | no | `true` makes `/robots.txt` answer `Disallow: /`, for a staging or preview server running with `NODE_ENV=production`. Outside production that is always the case (see [SEO](#seo)). |
+| `CSP_MODE` | no | `report-only` (default) sends the Content-Security-Policy as `Content-Security-Policy-Report-Only`, so violations are only logged; `enforce` blocks them (#143, see [Security](security.md)). |
 | `SMTP_URL` | no* | SMTP server for contact form and order emails (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container. *Without it, development logs contact messages instead of sending them, production shows a "couldn't send" error, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |

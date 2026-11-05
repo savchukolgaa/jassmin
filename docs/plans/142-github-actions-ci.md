@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/142
 Branch: `issue/142`
 Worktree: `.claude/worktrees/issue-142`
-Status: Planned
+Status: Planned (Q1, Q2 answered)
 
 ## Goal
 Every pull request and every push to `main` runs `pnpm typecheck`, `pnpm lint`, `pnpm test` (against
@@ -18,7 +18,8 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   `README.md` (the badge, plus a pointer to `docs/ci.md`). No changes to `app/`, `cms/`,
   `scripts/`, `package.json`, `vitest.config.ts`, `biome.json` or the lockfile.
 - No new packages, env vars or migrations. CI uses dummy values only (no secrets).
-- The GitHub-side branch protection is done by the owner by hand (see open question Q1).
+- The owner makes the repo public and then turns on branch protection by hand, following
+  `docs/ci.md` (see resolved Q1).
 
 ## Decisions & assumptions
 - **One workflow file**, `.github/workflows/ci.yml`, with two jobs: `check` (always) and `cms`
@@ -31,8 +32,8 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
 - **Actions pinned to a major version** (`actions/checkout@v5`, `actions/setup-node@v5`,
   `pnpm/action-setup@v4`, `dorny/paths-filter@v3`); the implementer checks each one's current major
   tag on github.com before writing the file. Pinning to SHAs is not needed for a solo-owner repo.
-- **Node from `.nvmrc`** (`node-version-file: .nvmrc`, currently `24`), not a hard-coded 22: it's what
-  the developer runs locally and it satisfies `engines` (`>=22`) of both the app and `cms/`.
+- **Node from `.nvmrc`** (`node-version-file: .nvmrc`, currently `24`), not a hard-coded 22 (resolved
+  Q2): it's what the developer runs locally and satisfies `engines` (`>=22`) of the app and `cms/`.
 - **pnpm from `packageManager`** (`pnpm@12.15.0`): `pnpm/action-setup` without a `version` input
   reads it. Then `actions/setup-node` with `cache: pnpm`. Install with `pnpm install --frozen-lockfile`.
   `pnpm-workspace.yaml` has `enableGlobalVirtualStore: true`; if that breaks the cache or install on
@@ -73,30 +74,24 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   block merging if it were required. A failing `cms` job still shows red on the PR.
 - **Job time limit:** `timeout-minutes: 15` on each job, so a hung service can't eat the minute budget.
 - **README badge:** `[![CI](https://github.com/savchukolgaa/jassmin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/savchukolgaa/jassmin/actions/workflows/ci.yml)`
-  directly under the `# Jassmin` heading. The repo is private, so the badge only renders for signed-in
-  users with access (noted in `docs/ci.md`).
+  directly under the `# Jassmin` heading. The repo is going public, so the badge renders for everyone.
+- **Public repo:** PRs from forks run with a read-only token and no secrets; CI needs no secrets, so
+  that's fine. `docs/ci.md` recommends keeping "Require approval for first-time contributors" (the
+  default) for workflow runs from forks.
 - **Parallel issues #125/#126:** this change touches no file they edit, so merges won't conflict.
   `pull_request` runs check out GitHub's merge ref (PR head merged into `main`), so once this PR is
   merged, the next push to their PRs runs CI automatically, without merging `main` first. They then
   have to pass CI before merging, which is intended.
 
-## Open questions
-- [ ] **Q1: Branch protection isn't available on this repo as it is.** `gh api
-  repos/savchukolgaa/jassmin/branches/main/protection` answers *HTTP 403 "Upgrade to GitHub Pro or
-  make this repository public to enable this feature."* Protected branches and rulesets on a private
-  repo need GitHub Pro (personal account) or a paid org plan. Options: (a) upgrade to GitHub Pro,
-  (b) make the repo public, (c) stay private and free: CI still runs and shows on every PR, and
-  `/open-pr` refuses to merge unless `gh pr checks` is green (a process rule, not enforced by GitHub).
-  — Why it matters: acceptance criterion 3 ("can't be merged") is only enforceable with (a) or (b).
-  Recommended default: write `docs/ci.md` for both cases (the protection/ruleset steps for when it's
-  available, and the process rule that applies either way), and leave the decision to the owner;
-  criterion 3 is met by documentation plus the `/open-pr` rule until then. Affects steps: 5, 6.
-- [ ] **Q2: Node 22 or 24 in CI?** The issue assumes Node 22 (`engines`), but `.nvmrc` says `24`.
-  — Why it matters: testing on a different major than local dev hides or invents failures.
-  Recommended default: `.nvmrc` (24), the version actually used locally and in a future deploy.
-  Affects steps: 2.
-
 ## Resolved questions
+- **Q1: Branch protection isn't available on a private repo with a free plan** (`gh api
+  repos/savchukolgaa/jassmin/branches/main/protection` → HTTP 403 "Upgrade to GitHub Pro or make this
+  repository public"). — The owner makes the repo **public** (done by the owner in GitHub settings, not
+  by this issue). Then branch protection works, Actions minutes are free and unlimited, and the badge
+  renders for everyone. `docs/ci.md` documents the protection steps for a public repo. (source: user
+  answer)
+- **Q2: Node 22 or 24 in CI?** — `.nvmrc` (24), the version used locally; it satisfies `engines`
+  (`>=22`). (source: user answer, `.nvmrc`)
 - **Which PostgreSQL version does Aspire use?** 18 (`addPostgres` default in Aspire 13.6.3; the local
   Docker images are `postgres:18` / `postgres:18.3`). (source: `aspire.config.json`, `docker images`)
 - **How do DB tests find the server?** `getDatabaseUrl` reads `JASSMINDB_URI`, then `DATABASE_URL`;
@@ -118,8 +113,8 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
 - **Does a `.github/scripts/*.mjs` file affect `pnpm typecheck`?** No, `tsconfig.json` includes
   `**/*` but has no `allowJs`, so `.mjs` files aren't checked. Biome does lint it. (source:
   `tsconfig.json`, `biome.json`)
-- **Free Actions minutes?** The repo is private: 2,000 free minutes/month on ubuntu-latest, enough
-  for ~10-minute runs. (source: `gh repo view` → `PRIVATE`)
+- **Free Actions minutes?** Once public, standard GitHub-hosted runners are free and unlimited.
+  (source: resolved Q1)
 
 ## Files
 | Action | Path | Purpose |
@@ -162,12 +157,11 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   compares to the previous commit, which is fine.
 - [ ] **5. `docs/ci.md`** — What runs and when (jobs, triggers, cancel rule); the database service and
   the "no skipped tests in CI" rule with how to add an exception; how to reproduce a CI run locally
-  (same commands, a throwaway Postgres via `docker run postgres:18`); dependency caching; the private
-  repo badge note; **branch protection, step by step**: Settings → Branches → Add classic branch
+  (same commands, a throwaway Postgres via `docker run postgres:18`); dependency caching; the
+  fork-PR note; **branch protection, step by step**: Settings → Branches → Add classic branch
   protection rule (or Settings → Rules → Rulesets) for `main`: require a pull request before merging,
   require status checks to pass → add `check`, require branches to be up to date before merging, block
-  force pushes, no bypass; plus the Q1 note that a private repo on a free plan needs GitHub Pro or a
-  public repo for this, and what applies until then. Troubleshooting: service not healthy, skipped
+  force pushes, no bypass (the setting needs the repo to be public, or GitHub Pro). Troubleshooting: service not healthy, skipped
   tests, frozen lockfile errors.
 - [ ] **6. `docs/skills/open-pr.md`** (+ `implement.md` if it fits) — In the merge section, before
   `gh pr merge`: `gh pr checks <pr-number> --watch --fail-fast`; merge only when every check is green;
@@ -201,7 +195,7 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
 - [ ] The database tests run in CI against a PostgreSQL service, and CI fails if they're skipped —
   steps 2, 3, 8
 - [ ] A PR with a failing check can't be merged once branch protection is on (`docs/ci.md` explains the
-  setup) — steps 5, 6 (enforcement depends on Q1)
+  setup) — steps 5, 6 (enforced once the owner turns protection on in the public repo)
 - [ ] A normal run finishes in under 10 minutes, with dependency caching — steps 2, 8
 - [ ] The README shows the CI badge — step 7
 
@@ -209,5 +203,6 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
 - Any change to app code, `cms/`, `scripts/`, `package.json`, `vitest.config.ts` or the lockfile
   (parallel work on #125/#126), including the `CI=true` guard inside `test-utils.ts` the issue suggests.
 - Deploying (the hosting issue), browser/E2E tests, Dependabot.
-- Turning on branch protection in GitHub settings (done by the owner, see Q1).
+- Making the repo public and turning on branch protection in GitHub settings (done by the owner,
+  following `docs/ci.md`).
 - Building or testing `aspire-apphost/` in CI.

@@ -908,7 +908,7 @@ describe("listActiveOffers", () => {
       "free-delivery",
       "tester-trio",
       "couple-offer",
-      "gifts-by-budget",
+      "gift-cards",
       "welcome-offer",
     ]);
     expect(result.every((o) => o.locale === "uk")).toBe(true);
@@ -957,7 +957,11 @@ describe("listActiveOffers", () => {
   });
 
   it("swaps in English translations and keeps Ukrainian where one is missing", async () => {
-    const fetchMock = respondByLocale({ uk: offers, en: offersEn });
+    const withoutWelcome = {
+      ...offersEn,
+      data: offersEn.data.filter((o) => o.slug !== "welcome-offer"),
+    };
+    const fetchMock = respondByLocale({ uk: offers, en: withoutWelcome });
 
     const result = await listActiveOffers("en", NOW);
 
@@ -969,10 +973,27 @@ describe("listActiveOffers", () => {
       ["free-delivery", "en"],
       ["tester-trio", "en"],
       ["couple-offer", "en"],
-      ["gifts-by-budget", "uk"],
-      ["welcome-offer", "en"],
+      ["gift-cards", "en"],
+      ["welcome-offer", "uk"],
     ]);
     expect(result[2]?.ctaLabel).toBe("Build my trio");
+  });
+
+  it("returns the gift card offer in English, linking to the gift card page (#126)", async () => {
+    respondByLocale({ uk: offers, en: offersEn });
+
+    const result = await listActiveOffers("en", NOW);
+
+    expect(result.every((o) => o.locale === "en")).toBe(true);
+    const giftCards = result.find((o) => o.slug === "gift-cards");
+    expect(giftCards).toMatchObject({
+      kind: "gift",
+      title: "Gift cards of 500, 1000 and 2000 ₴",
+      priceNote: "500 · 1000 · 2000 ₴",
+      ctaLabel: "Choose a card",
+      ctaUrl: "/podarunkovi-kartky",
+      productIds: [],
+    });
   });
 
   it("doesn't ask for translations when no offer is active", async () => {

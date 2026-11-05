@@ -69,6 +69,17 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   criterion), so it goes into both fixtures. The fallback test then builds its own English
   response from `offersEn` with one entry filtered out (`welcome-offer`), and a new assertion
   checks that `gift-cards` comes back in English.
+- **Deviation (step 1): `MISSING_PRODUCT` moved to the winter campaign.** The plan assumed other
+  offers still used it, but `gifts-by-budget` was its only user. It's the seed's check that
+  offers skip products that no longer exist, so it now goes in `winter-holidays`' `productIds`
+  instead of being dropped. The page looks the same, because missing products are skipped.
+- **Deviation (step 2): English fixture pagination.** `offers.en.json`'s `meta.pagination` said
+  5 entries; with `gift-cards` it says 6 (`pageSize`/`total`).
+- **Deviation (step 4): split into 4a and 4b.** The `content.test.ts` changes had to land with
+  the fixtures in step 2, or the suite would fail. The `offers-ui.test.ts` test gets
+  already-localized CTA paths, so it doesn't need #125 either. Only the `offers.test.ts` check
+  (`/podarunkovi-kartky` → `/en/gift-cards`) needs `PAGES.giftCards`, so it waits for #125 as
+  step 4b.
 
 ## Resolved questions
 - **Should the `gift` group heading and the offers intro change to mention gift cards?** No. A
@@ -101,25 +112,28 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
 | modify | `README.md` | The seed description (line ~224): "gift ideas" → "gift cards" |
 
 ## Steps
-- [ ] **1. Seed: replace the offer** — In `cms/scripts/seed.ts`'s `OFFERS`, replace the
+- [x] **1. Seed: replace the offer** — In `cms/scripts/seed.ts`'s `OFFERS`, replace the
   `gifts-by-budget` object with `slug: "gift-cards"`, `kind: "gift"`, `image: "cover"`,
   `productIds: []`, `ctaUrl: "/podarunkovi-kartky"`, `sortOrder: 20`, and the uk/en copy from
   the table in Decisions, with the sync comment above it. In the file's header comment, change
   "gift ideas" to "gift cards". `SAUVAGE`, `LA_VIE_EST_BELLE` and `MISSING_PRODUCT` stay because
   other offers use them. Biome flags them if any becomes unused. Check: `pnpm --dir "$WT" lint`
   and `pnpm --dir "$WT" typecheck`.
-- [ ] **2. Fixtures** — In `offers.json`, rewrite the `id: 23` entry: new `documentId` (24
+- [x] **2. Fixtures** — In `offers.json`, rewrite the `id: 23` entry: new `documentId` (24
   lowercase characters, e.g. `g1f7c4r2d5s8k0p3m6n9q1wz`), `title`, `slug: "gift-cards"`, `summary`,
   `body`, `priceNote`, `ctaLabel`, `ctaUrl: "/podarunkovi-kartky"`, `products: []`. Keep the
   `image` block, `sortOrder: 20`, the timestamps and `locale: "uk"`. In `offers.en.json`, add the
   English entry at the same position (after `couple-offer`, before `welcome-offer`) with the
   **same `documentId`**, a new `id`, `locale: "en"` and the English copy. Both fixtures are
   checked against the zod schema in `app/.server/cms/schemas.ts` when the tests load them.
-- [ ] **3. README** — In `README.md` line ~224 (the seed description), change "gift ideas" to
+- [x] **3. README** — In `README.md` line ~224 (the seed description), change "gift ideas" to
   "gift cards". The app's offers copy (`offers.kinds.gift`, `offers.intro`,
   `offers.metaDescription`) stays as it is.
-- [ ] **4. Tests (after rebasing onto #125)** — Rebase onto `origin/main` with #125 merged and
-  check `PAGES.giftCards` (see Dependencies). Then:
+- [x] **4a. Tests that don't need #125** — the `content.test.ts` and `offers-ui.test.ts` items
+  below (see the step 4 deviation in Decisions).
+- [ ] **4b. Tests that need #125** — Rebase onto `origin/main` with #125 merged and check
+  `PAGES.giftCards` (see Dependencies). Then add the `offers.test.ts` item below and run the
+  whole suite. Items:
   - `content.test.ts`, "returns the active offers in editor order": `gifts-by-budget` →
     `gift-cards`.
   - "swaps in English translations and keeps Ukrainian where one is missing": answer `en` with
@@ -136,7 +150,7 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
     `href="/podarunkovi-kartky"` / `href="/en/gift-cards"` link, the couple-offer title, and no
     "Подарунки за бюджетом" / "Gifts by budget".
   - Check: `pnpm --dir "$WT" test`.
-- [ ] **5. Free-delivery sweep** — Run `git -C "$WT" grep -nE "1000" -- app cms/scripts cms/src
+- [x] **5. Free-delivery sweep** — Run `git -C "$WT" grep -nE "1000" -- app cms/scripts cms/src
   README.md docs` and read every match that's about delivery. None is expected after step 1.
   Write the result in the PR description. Don't change any `{threshold}` copy.
 - [ ] **6. Manual check** — `pnpm aspire run` from the worktree, re-seed (after deleting

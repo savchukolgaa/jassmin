@@ -221,7 +221,7 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
    ```bash
    pnpm cms:seed -- --token
    ```
-   The seed creates the home page and site settings in Ukrainian and English, two published blog posts (one translated, one Ukrainian only), one draft, and special offers for `/offers` (a current and an expired campaign, a tester trio, gift ideas and three perks), and prints `STRAPI_API_TOKEN=…` and `STRAPI_SYNC_TOKEN=…` once each (Strapi stores only a hash). Copy both lines into the root `.env` and restart `web`. Running the seed again leaves existing content alone. With `--token`, an existing token keeps its key and is granted any permissions it lacks (such as `offer.find`, added in #55). It uses the same database variables as `pnpm cms:dev`.
+   The seed creates the home page and site settings in Ukrainian and English, two published blog posts (one translated, one Ukrainian only), one draft, and special offers for `/offers` (a current and an expired campaign, a tester trio, a couple offer, gift cards and three perks), and prints `STRAPI_API_TOKEN=…` and `STRAPI_SYNC_TOKEN=…` once each (Strapi stores only a hash). Copy both lines into the root `.env` and restart `web`. Running the seed again leaves existing content alone. With `--token`, an existing token keeps its key and is granted any permissions it lacks (such as `offer.find`, added in #55). It uses the same database variables as `pnpm cms:dev`.
 3. **Or create the token by hand:** go to Settings → API Tokens → Create new API Token, choose type **Custom** and duration **Unlimited**, and enable only:
    - Blog-post: `find`, `findOne`
    - Home-page: `find`

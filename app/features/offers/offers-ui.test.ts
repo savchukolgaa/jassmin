@@ -219,6 +219,65 @@ describe("OffersPage", () => {
     expect(en).toMatch(/<a[^>]*href="\/en\/catalog\/women"[^>]*>Choose a pair<\/a>/);
   });
 
+  it("shows the gift card offer next to the couple offer in both languages (#126)", () => {
+    const giftCards = (locale: "uk" | "en") =>
+      offer({
+        slug: "gift-cards",
+        kind: "gift",
+        contentLocale: locale,
+        title:
+          locale === "uk"
+            ? "Подарункові картки на 500, 1000 і 2000 ₴"
+            : "Gift cards of 500, 1000 and 2000 ₴",
+        summary: null,
+        bodyHtml: null,
+        priceNote: "500 · 1000 · 2000 ₴",
+        cta: {
+          to: locale === "uk" ? "/podarunkovi-kartky" : "/en/gift-cards",
+          label: locale === "uk" ? "Обрати картку" : "Choose a card",
+        },
+      });
+    const couple = (locale: "uk" | "en") =>
+      offer({
+        slug: "couple-offer",
+        kind: "bundle",
+        contentLocale: locale,
+        title: locale === "uk" ? "Пропозиція для двох" : "Couple offer",
+        summary: null,
+        bodyHtml: null,
+        cta: null,
+      });
+    const page = (locale: "uk" | "en") =>
+      render(
+        createElement(OffersPage, {
+          view: view({
+            hero: offer({ slug: "winter", kind: "seasonal", title: "Winter holidays" }),
+            groups: [
+              { kind: "gift", offers: [giftCards(locale)] },
+              { kind: "bundle", offers: [couple(locale)] },
+            ],
+          }),
+        }),
+        locale,
+      );
+
+    const uk = page("uk");
+    expect(uk).toContain(">Ідеї подарунків<");
+    expect(uk).toMatch(/<h3[^>]*>Подарункові картки на 500, 1000 і 2000 ₴<\/h3>/);
+    expect(uk).toContain("500 · 1000 · 2000 ₴");
+    expect(uk).toMatch(/<a[^>]*href="\/podarunkovi-kartky"[^>]*>Обрати картку<\/a>/);
+    expect(uk).toMatch(/<h3[^>]*>Пропозиція для двох<\/h3>/);
+    expect(uk).not.toContain("Подарунки за бюджетом");
+
+    const en = page("en");
+    expect(en).toContain(">Gift ideas<");
+    expect(en).toMatch(/<h3[^>]*>Gift cards of 500, 1000 and 2000 ₴<\/h3>/);
+    expect(en).toContain("500 · 1000 · 2000 ₴");
+    expect(en).toMatch(/<a[^>]*href="\/en\/gift-cards"[^>]*>Choose a card<\/a>/);
+    expect(en).toMatch(/<h3[^>]*>Couple offer<\/h3>/);
+    expect(en).not.toContain("Gifts by budget");
+  });
+
   it("renders in Ukrainian by default", () => {
     const html = render(createElement(OffersPage, { view: view() }));
 

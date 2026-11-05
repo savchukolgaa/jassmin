@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { htmlSection, htmlWords, words } from "../email/test-helpers";
 import type { MailSender } from "../mail";
 import { createRateLimiter } from "../rate-limit";
 import { buildContactEmail, type ContactDeps, submitContactMessage } from "./contact";
@@ -39,20 +40,42 @@ afterEach(() => {
 });
 
 describe("buildContactEmail", () => {
-  it("addresses the store, replies to the visitor and sends plain text", () => {
-    expect(buildContactEmail(message, env, receivedAt)).toEqual({
+  it("addresses the store in Ukrainian and replies to the visitor", () => {
+    const email = buildContactEmail(message, env, receivedAt);
+
+    expect(email).toMatchObject({
       from: "Jassmin website <no-reply@example.com>",
       to: "shop@example.com",
       replyTo: { name: "Olha", address: "olha@example.com" },
-      subject: "New message from Olha — jassmin.ua",
-      text: [
-        "Name: Olha",
+      subject: "Нове повідомлення від Olha — jassmin.ua",
+    });
+    expect(String(email.text).split("\n\n-- \n")[0]).toBe(
+      [
+        "Повідомлення з форми на сайті",
+        "Ім’я: Olha",
         "Email: olha@example.com",
-        "Received: 2026-10-23T10:00:00.000Z",
+        "Отримано: 2026-10-23T10:00:00.000Z",
         "",
         "Do you have Chanel testers?",
       ].join("\n"),
-    });
+    );
+  });
+
+  it("uses the shared HTML layout and escapes the visitor's text (#134)", () => {
+    const email = buildContactEmail(
+      { ...message, name: "<b>Olha</b>", message: "Hi <script>x</script>\nsecond line" },
+      env,
+      receivedAt,
+    );
+    const html = String(email.html);
+    const [body] = String(email.text).split("\n\n-- \n");
+
+    expect(html).toContain('<html lang="uk">');
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("Hi &lt;script&gt;x&lt;/script&gt;<br>second line");
+    expect(html).toContain("&lt;b&gt;Olha&lt;/b&gt;");
+    expect(htmlWords(htmlSection(html, "content"))).toEqual(words(body ?? ""));
+    expect(email.messageId).toMatch(/@example\.com>$/);
   });
 
   it("keeps line breaks out of the subject", () => {
@@ -62,7 +85,7 @@ describe("buildContactEmail", () => {
       receivedAt,
     );
 
-    expect(email.subject).toBe("New message from Olha Bcc: x@evil.test — jassmin.ua");
+    expect(email.subject).toBe("Нове повідомлення від Olha Bcc: x@evil.test — jassmin.ua");
   });
 
   it("produces a message a real nodemailer transport accepts", async () => {

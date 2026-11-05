@@ -3,16 +3,17 @@ import type { Translator } from "~/lib/i18n";
 import type { Locale } from "~/lib/i18n/locales";
 import { pathFor } from "~/lib/paths";
 import type { Db } from "../db";
+import { composeEmail } from "../email/layout";
 import type { Env } from "../env";
 import type { MailSender } from "../mail";
 import { stripLineBreaks } from "../mail";
 
-// The password reset and email verification emails (#135): plain text in the request's language,
-// from `CONTACT_FROM`, each with its one-time link. Sent directly and best effort, like the
-// email-changed notice: the user can always ask for another link. #134 wraps them in the shared
-// branded layout.
+// The password reset and email verification emails (#135), in the shared layout (#134) and the
+// request's language, from `CONTACT_FROM`, each with its one-time link as a button. Sent directly
+// and best effort, like the email-changed notice: the user can always ask for another link. The
+// app's mailer (`getMailer`) never sends to a suppressed address.
 
-export type AuthEmailEnv = Pick<Env, "CONTACT_FROM" | "CONTACT_INBOX">;
+export type AuthEmailEnv = Pick<Env, "CONTACT_FROM" | "CONTACT_INBOX" | "PUBLIC_SITE_URL">;
 
 /** What the reset and verification services need, injectable for tests. */
 export interface AuthEmailDeps {
@@ -43,27 +44,30 @@ export function authLink(
 function buildEmail(
   kind: "reset" | "verify",
   email: AuthEmail,
-  { t }: Translator,
+  translator: Translator,
   env: AuthEmailEnv,
 ): Mail.Options {
-  return {
+  const { t } = translator;
+  return composeEmail({
     from: env.CONTACT_FROM,
     to: email.to,
     replyTo: env.CONTACT_INBOX,
     subject: t(`auth.${kind}.mail.subject`),
-    text: [
-      t(`auth.${kind}.mail.greeting`, { name: stripLineBreaks(email.fullName) }),
-      "",
-      t(`auth.${kind}.mail.body`),
-      email.link,
-      "",
-      t(`auth.${kind}.mail.validity`),
-      "",
-      t(`auth.${kind}.mail.notYou`),
-      "",
-      t(`auth.${kind}.mail.signature`),
-    ].join("\n"),
-  };
+    preheader: t(`auth.${kind}.mail.validity`),
+    blocks: [
+      {
+        type: "paragraph",
+        text: t(`auth.${kind}.mail.greeting`, { name: stripLineBreaks(email.fullName) }),
+      },
+      { type: "paragraph", text: t(`auth.${kind}.mail.body`) },
+      { type: "button", label: t(`auth.${kind}.mail.button`), url: email.link },
+      { type: "paragraph", text: t(`auth.${kind}.mail.validity`) },
+      { type: "paragraph", text: t(`auth.${kind}.mail.notYou`) },
+      { type: "signature", text: t(`auth.${kind}.mail.signature`) },
+    ],
+    translator,
+    footer: { inbox: env.CONTACT_INBOX, siteUrl: env.PUBLIC_SITE_URL },
+  });
 }
 
 /** The email with a link to set a new password. */

@@ -12,14 +12,14 @@ import {
 } from "../db/queries/auth-tokens";
 import { findUserRecipientById, markEmailVerified } from "../db/queries/users";
 import { getEnv } from "../env";
-import { getMailTransport } from "../mail";
 import { type AuthEmailDeps, authLink, buildVerificationEmail } from "./auth-emails";
+import { getMailer } from "./mailer";
 
 // Email verification (#135): a link, valid for a week, that confirms the address. It's soft:
 // unverified users can log in and order; the account page offers to resend the link.
 
 function defaultDeps(): AuthEmailDeps {
-  return { db, mailer: getMailTransport(), env: getEnv(), now: () => new Date() };
+  return { db, mailer: getMailer(), env: getEnv(), now: () => new Date() };
 }
 
 /**

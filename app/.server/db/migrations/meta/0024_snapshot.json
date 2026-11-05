@@ -1,114 +1,9 @@
 {
-  "id": "0904cac7-b748-43fc-bbbe-52236bb8b7b7",
+  "id": "b7634d11-7a67-497c-95e7-003d42c1614c",
   "prevId": "7607ad33-a1dd-4d79-8010-5f59d879f4f4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.auth_tokens": {
-      "name": "auth_tokens",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "purpose": {
-          "name": "purpose",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "used_at": {
-          "name": "used_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "auth_tokens_user_id_purpose_idx": {
-          "name": "auth_tokens_user_id_purpose_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "purpose",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "auth_tokens_user_id_users_id_fk": {
-          "name": "auth_tokens_user_id_users_id_fk",
-          "tableFrom": "auth_tokens",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "auth_tokens_token_hash_unique": {
-          "name": "auth_tokens_token_hash_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "token_hash"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "auth_tokens_purpose_check": {
-          "name": "auth_tokens_purpose_check",
-          "value": "\"auth_tokens\".\"purpose\" in ('password_reset', 'email_verification')"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.cart_items": {
       "name": "cart_items",
       "schema": "",
@@ -709,6 +604,53 @@
       },
       "isRLSEnabled": false
     },
+    "public.email_suppressions": {
+      "name": "email_suppressions",
+      "schema": "",
+      "columns": {
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detail": {
+          "name": "detail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "email_suppressions_reason_check": {
+          "name": "email_suppressions_reason_check",
+          "value": "\"email_suppressions\".\"reason\" in ('hard_bounce', 'complaint', 'blocked', 'invalid')"
+        },
+        "email_suppressions_address_lowercase_check": {
+          "name": "email_suppressions_address_lowercase_check",
+          "value": "\"email_suppressions\".\"address\" = lower(\"email_suppressions\".\"address\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.gift_card_redemptions": {
       "name": "gift_card_redemptions",
       "schema": "",
@@ -1080,6 +1022,12 @@
         "sent_at": {
           "name": "sent_at",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -2617,18 +2565,6 @@
         "first_touch_campaign": {
           "name": "first_touch_campaign",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email_verified_at": {
-          "name": "email_verified_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "password_changed_at": {
-          "name": "password_changed_at",
-          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }

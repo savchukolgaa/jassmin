@@ -35,6 +35,10 @@ describe("password reset email", () => {
     expect(mail.text).toContain("Вітаємо, Olena Bcc: evil@example.com!");
     expect(mail.text).toContain(`\n${SITE}/novyi-parol/abc\n`);
     expect(mail.text).toContain("1 годину");
+    // The shared layout (#134): the link is a button in the HTML part too.
+    expect(mail.html).toContain(`href="${SITE}/novyi-parol/abc"`);
+    expect(mail.html).toContain("Задати новий пароль");
+    expect(String(mail.html)).not.toContain("Bcc: evil@example.com\r");
   });
 
   it("is written in English for the English site", async () => {

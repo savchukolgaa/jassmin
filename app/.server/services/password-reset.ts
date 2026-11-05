@@ -12,15 +12,15 @@ import {
 } from "../db/queries/auth-tokens";
 import { findUserRecipientByEmail, setPasswordChanged } from "../db/queries/users";
 import { getEnv } from "../env";
-import { getMailTransport } from "../mail";
 import { hashPassword } from "../password";
 import { type AuthEmailDeps, authLink, buildPasswordResetEmail } from "./auth-emails";
+import { getMailer } from "./mailer";
 
 // "Forgot password" (#135): a one-time link, valid for an hour, to set a new password. Setting it
 // logs out every other session (`users.password_changed_at`).
 
 function defaultDeps(): AuthEmailDeps {
-  return { db, mailer: getMailTransport(), env: getEnv(), now: () => new Date() };
+  return { db, mailer: getMailer(), env: getEnv(), now: () => new Date() };
 }
 
 /**

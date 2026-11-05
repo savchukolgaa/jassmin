@@ -10,9 +10,11 @@ import {
   updateUserContact,
   updateUserEmail,
 } from "../db/queries/users";
+import { composeEmail } from "../email/layout";
 import { type Env, getEnv } from "../env";
-import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
+import { type MailSender, stripLineBreaks } from "../mail";
 import { hashPassword, verifyPassword } from "../password";
+import { getMailer } from "./mailer";
 
 // The account profile page (#54): contact details, email and password. Email and password changes
 // need the current password; the route rate-limits wrong ones (`profilePasswordLimiter`).
@@ -108,33 +110,43 @@ export interface EmailChangedNotice {
   changedAt: Date;
 }
 
-export type EmailChangedEnv = Pick<Env, "CONTACT_FROM" | "CONTACT_INBOX">;
+export type EmailChangedEnv = Pick<Env, "CONTACT_FROM" | "CONTACT_INBOX" | "PUBLIC_SITE_URL">;
 
-/** The plain-text notice sent to the old address after an email change. */
+/** The notice sent to the old address after an email change, in the shared layout (#134). */
 export function buildEmailChangedNotice(
   notice: EmailChangedNotice,
   translator: Translator,
   env: EmailChangedEnv,
 ): Mail.Options {
   const { t, formatDate } = translator;
-  return {
+  return composeEmail({
     from: env.CONTACT_FROM,
     to: notice.to,
     replyTo: env.CONTACT_INBOX,
     subject: t("account.profile.emailChangedMail.subject"),
-    text: [
-      t("account.profile.emailChangedMail.greeting", { name: stripLineBreaks(notice.fullName) }),
-      "",
-      t("account.profile.emailChangedMail.body", {
-        date: formatDate(notice.changedAt.toISOString()),
-        newEmail: notice.newEmail,
-      }),
-      "",
-      t("account.profile.emailChangedMail.notYou", { email: env.CONTACT_INBOX }),
-      "",
-      t("account.profile.emailChangedMail.signature"),
-    ].join("\n"),
-  };
+    blocks: [
+      {
+        type: "paragraph",
+        text: t("account.profile.emailChangedMail.greeting", {
+          name: stripLineBreaks(notice.fullName),
+        }),
+      },
+      {
+        type: "paragraph",
+        text: t("account.profile.emailChangedMail.body", {
+          date: formatDate(notice.changedAt.toISOString()),
+          newEmail: notice.newEmail,
+        }),
+      },
+      {
+        type: "paragraph",
+        text: t("account.profile.emailChangedMail.notYou", { email: env.CONTACT_INBOX }),
+      },
+      { type: "signature", text: t("account.profile.emailChangedMail.signature") },
+    ],
+    translator,
+    footer: { inbox: env.CONTACT_INBOX, siteUrl: env.PUBLIC_SITE_URL },
+  });
 }
 
 export interface EmailChangedDeps {
@@ -145,7 +157,7 @@ export interface EmailChangedDeps {
 }
 
 function defaultEmailChangedDeps(): EmailChangedDeps {
-  return { mailer: getMailTransport(), env: getEnv(), now: () => new Date() };
+  return { mailer: getMailer(), env: getEnv(), now: () => new Date() };
 }
 
 /**

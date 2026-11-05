@@ -37,6 +37,20 @@ describe("email-changed notice", () => {
     expect(mail.text).toContain("hello@jassmin.ua");
   });
 
+  it("uses the shared HTML layout with the same words as the text part (#134)", async () => {
+    const { buildEmailChangedNotice } = await import("./profile");
+    const { htmlSection, htmlWords, words } = await import("../email/test-helpers");
+
+    for (const locale of ["uk", "en"] as const) {
+      const mail = buildEmailChangedNotice(notice, createTranslator(locale), env);
+      const html = String(mail.html);
+      const [body] = String(mail.text).split("\n\n-- \n");
+      expect(html).toContain(`<html lang="${locale}">`);
+      expect(htmlWords(htmlSection(html, "content"))).toEqual(words(body ?? ""));
+      expect(mail.messageId).toMatch(/@jassmin\.ua>$/);
+    }
+  });
+
   it("is written in English for the English site", async () => {
     const { buildEmailChangedNotice } = await import("./profile");
 

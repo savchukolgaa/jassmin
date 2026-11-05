@@ -20,6 +20,7 @@ import {
   carts,
   cmsOutbox,
   discounts,
+  emailSuppressions,
   genderType,
   giftCardRedemptions,
   giftCards,
@@ -360,6 +361,7 @@ describe("order_emails", () => {
       nextAttemptAt: ["timestamp with time zone", true, true],
       lastError: ["text", false, false],
       sentAt: ["timestamp with time zone", false, false],
+      messageId: ["text", false, false],
       createdAt: ["timestamp with time zone", true, true],
       updatedAt: ["timestamp with time zone", true, true],
     });
@@ -522,6 +524,26 @@ describe("discounts", () => {
       ],
       uniques: ["discounts_slug_unique"],
       indexes: ["discounts_code_unique"],
+    });
+  });
+});
+
+describe("email_suppressions", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(emailSuppressions)).toEqual({
+      address: ["text", true, false],
+      reason: ["text", true, false],
+      detail: ["text", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("checks the reason and that addresses are lowercase", () => {
+    expect(describeForeignKeys(emailSuppressions)).toEqual({});
+    expect(describeConstraints(emailSuppressions)).toEqual({
+      checks: ["email_suppressions_address_lowercase_check", "email_suppressions_reason_check"],
+      uniques: [],
+      indexes: [],
     });
   });
 });

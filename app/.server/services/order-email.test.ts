@@ -4,6 +4,8 @@ import type { OrderConfirmation } from "~/lib/checkout";
 import type { GiftCard } from "~/lib/commerce";
 import { createTranslator } from "~/lib/i18n";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
+import { htmlSection, htmlWords, words } from "../email/test-helpers";
+import { withSuppressions } from "../mail";
 import {
   buildGiftCardEmail,
   buildGiftCardRecipientEmail,
@@ -12,15 +14,21 @@ import {
   describeOrderEmailReport,
   type OrderEmailDeps,
   type OrderEmailEnv,
+  orderEmailTag,
+  parseOrderEmailTag,
 } from "./order-email";
 
 /** `Intl` puts (narrow) no-break spaces in prices; compare them as plain spaces. */
 const normalize = (text: string) => text.replace(/[  ]/gu, " ");
 
+/** The text part without the layout's footer (after `-- `). */
+const bodyOf = (email: Mail.Options) => normalize(String(email.text)).split("\n\n-- \n")[0];
+
 const env: OrderEmailEnv = {
   ORDER_FROM: undefined,
   CONTACT_FROM: "Jassmin website <no-reply@example.com>",
   CONTACT_INBOX: "shop@example.com",
+  PUBLIC_SITE_URL: "https://jassmin.ua",
 };
 
 const codOrder: OrderConfirmation = {
@@ -95,7 +103,7 @@ describe("buildOrderConfirmationEmail", () => {
       replyTo: "shop@example.com",
       subject: "Замовлення №1042 прийнято — Jassmin",
     });
-    expect(normalize(String(email.text))).toBe(
+    expect(bodyOf(email)).toBe(
       [
         "Вітаємо, Олена Коваль!",
         "",
@@ -128,7 +136,7 @@ describe("buildOrderConfirmationEmail", () => {
     const email = buildOrderConfirmationEmail(cardOrder, createTranslator("en"), env);
 
     expect(email.subject).toBe("Order №1043 received — Jassmin");
-    expect(normalize(String(email.text))).toBe(
+    expect(bodyOf(email)).toBe(
       [
         "Hello Olena Koval,",
         "",
@@ -367,6 +375,51 @@ describe("gift card emails (#125)", () => {
   });
 });
 
+describe("order emails in the shared layout (#134)", () => {
+  const builders = {
+    confirmation: (locale: "uk" | "en") =>
+      buildOrderConfirmationEmail(codOrder, createTranslator(locale), env),
+    giftCard: (locale: "uk" | "en") => buildGiftCardEmail(giftCard, createTranslator(locale), env),
+    giftCardRecipient: (locale: "uk" | "en") =>
+      buildGiftCardRecipientEmail(giftCard, createTranslator(locale), env),
+  };
+
+  for (const [name, build] of Object.entries(builders)) {
+    for (const locale of ["uk", "en"] as const) {
+      it(`renders the ${name} email as HTML and text in ${locale}`, () => {
+        const email = build(locale);
+        const html = String(email.html);
+        expect(html).toContain(`<html lang="${locale}">`);
+        expect(htmlWords(htmlSection(html, "content"))).toEqual(words(bodyOf(email) ?? ""));
+        expect(htmlSection(html, "footer")).toContain('href="mailto:shop@example.com"');
+        expect(String(email.text)).toContain(
+          "\n-- \nJassmin · shop@example.com · https://jassmin.ua",
+        );
+        expect(email.replyTo).toBe("shop@example.com");
+        expect(email.messageId).toMatch(/^<[0-9a-f-]{36}@example\.com>$/);
+      });
+    }
+  }
+
+  it("shows the gift card code in its own box", () => {
+    const html = String(buildGiftCardEmail(giftCard, createTranslator("uk"), env).html);
+    expect(html).toMatch(/Courier New[^>]*>ABCD-2345-EFGH-6789</);
+  });
+
+  it("escapes the shopper's name and address in the HTML", () => {
+    const html = String(
+      buildOrderConfirmationEmail(
+        { ...codOrder, fullName: "<b>Olena</b>", shippingAddress: "Kyiv & <i>1</i>" },
+        createTranslator("en"),
+        env,
+      ).html,
+    );
+    expect(html).not.toContain("<b>Olena");
+    expect(html).toContain("Hello &lt;b&gt;Olena&lt;/b&gt;,");
+    expect(html).toContain("Kyiv &amp; &lt;i&gt;1&lt;/i&gt;");
+  });
+});
+
 describe("deliverOrderEmails", () => {
   beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -393,7 +446,7 @@ describe("deliverOrderEmails", () => {
       to: { address: "olena@example.com" },
       subject: "Order №1043 received — Jassmin",
     });
-    expect(deps.markSent).toHaveBeenCalledWith(2);
+    expect(deps.markSent).toHaveBeenCalledWith(2, expect.stringMatching(/@example\.com>$/));
   });
 
   it("sends a paid gift card's emails right after its payment (#125)", async () => {
@@ -418,8 +471,8 @@ describe("deliverOrderEmails", () => {
       "buyer@example.com",
       "friend@example.com",
     ]);
-    expect(deps.markSent).toHaveBeenCalledWith(2);
-    expect(deps.markSent).toHaveBeenCalledWith(3);
+    expect(deps.markSent).toHaveBeenCalledWith(2, expect.stringMatching(/@example\.com>$/));
+    expect(deps.markSent).toHaveBeenCalledWith(3, expect.stringMatching(/@example\.com>$/));
   });
 
   it("gives up on a gift card email whose card is gone, and retries a failed one", async () => {
@@ -495,6 +548,42 @@ describe("deliverOrderEmails", () => {
     );
   });
 
+  it("tags each sent email with its row for the bounce webhook (#134)", async () => {
+    const deps = fakeDeps([queued(7, codOrder.id)]);
+
+    await deliverOrderEmails({ orderId: codOrder.id }, deps);
+
+    const sent = deps.sendMail.mock.calls[0]?.[0];
+    expect(sent?.headers).toEqual({ "X-Mailin-custom": "order-email:7" });
+    expect(sent?.messageId).toMatch(/@example\.com>$/);
+    expect(deps.markSent).toHaveBeenCalledWith(7, sent?.messageId);
+  });
+
+  it("fails an email to a suppressed address at once, without sending it (#134)", async () => {
+    const deps = fakeDeps([queued(1, codOrder.id), queued(2, cardOrder.id)]);
+    const lookup = vi.fn(async (addresses: string[]) =>
+      addresses.includes("olena@example.com")
+        ? new Map([["olena@example.com", "hard_bounce" as const]])
+        : new Map(),
+    );
+    const mailer = deps.mailer;
+    if (!mailer) throw new Error("fakeDeps has a mailer");
+    deps.mailer = withSuppressions(mailer, lookup);
+
+    const report = await deliverOrderEmails({}, deps);
+
+    // Both orders go to olena@example.com: neither is sent, neither is retried.
+    expect(report).toEqual({ sent: 0, retrying: 0, gaveUp: 2, skipped: false });
+    expect(deps.sendMail).not.toHaveBeenCalled();
+    expect(deps.markFailed).toHaveBeenCalledWith(1, {
+      error: "suppressed: hard_bounce",
+      final: true,
+    });
+    expect(deps.markSent).not.toHaveBeenCalled();
+    // The log doesn't name the address.
+    expect(JSON.stringify(vi.mocked(console.info).mock.calls)).not.toContain("olena@");
+  });
+
   it("never rejects, even when the queue itself fails", async () => {
     const deps = fakeDeps([], {
       claim: vi.fn(async () => {
@@ -515,6 +604,24 @@ describe("deliverOrderEmails", () => {
     });
     await expect(deliverOrderEmails({}, failingMarks)).resolves.toMatchObject({ sent: 1 });
     expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe("order email tags (#134)", () => {
+  it("round-trips an order_emails id and refuses anything else", () => {
+    expect(orderEmailTag(42)).toBe("order-email:42");
+    expect(parseOrderEmailTag(orderEmailTag(42))).toBe(42);
+    expect(parseOrderEmailTag(" order-email:7 ")).toBe(7);
+    for (const tag of [
+      undefined,
+      "",
+      "order-email:",
+      "order-email:x",
+      "gift:1",
+      "order-email:1;2",
+    ]) {
+      expect(parseOrderEmailTag(tag)).toBeUndefined();
+    }
   });
 });
 

@@ -83,7 +83,7 @@ isn't rendered anywhere, so its component is removed.
       renders the shop photo with `sizes=PRODUCT_IMAGE_SIZES.thumb` and no `<svg>`;
     - keep the uploaded-photo, shop-photo, priority and alt tests.
 
-- [ ] **2. `OrderLineThumb` shows the shop photo.**
+- [x] **2. `OrderLineThumb` shows the shop photo.**
   - Add `orderThumb: "52px"` to `PRODUCT_IMAGE_SIZES` (with a comment: "Account order line
     tiles").
   - In `OrderLineThumb`, replace the `ProductLabelArt` branch with an `<img>` of

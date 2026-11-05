@@ -2,9 +2,9 @@
  * Seeds local Strapi content for the Jassmin app in Ukrainian (`uk`, the default locale) and
  * English (`en`): the home page, site settings, two published blog posts (one of them only in
  * `uk`, to exercise the app's fallback), one draft, and special offers for /offers (a current
- * campaign, an expired one, a tester trio, gift ideas and two perks). Safe to run repeatedly:
- * existing localizations (single types by locale, posts and offers by slug and locale) are left
- * alone, and missing ones are added.
+ * campaign, an expired one, a tester trio, a couple offer, gift cards and three perks). Safe to
+ * run repeatedly: existing localizations (single types by locale, posts and offers by slug and
+ * locale) are left alone, and missing ones are added.
  *
  *   pnpm cms:seed               # content only
  *   pnpm cms:seed -- --token    # also creates the app's read-only API token and its sync token
@@ -406,7 +406,7 @@ const OFFERS: SeedOffer[] = [
     image: "hero",
     startsAt: kyivMidnight(-1),
     endsAt: kyivMidnight(60),
-    productIds: [JADORE, BLEU_DE_CHANEL],
+    productIds: [JADORE, BLEU_DE_CHANEL, MISSING_PRODUCT],
     ctaUrl: "/catalog/women",
     sortOrder: 0,
     copy: {
@@ -475,24 +475,27 @@ const OFFERS: SeedOffer[] = [
     },
   },
   {
-    slug: "gifts-by-budget",
+    // The gift card page and checkout (#125) set these rules; keep the texts in sync with them.
+    slug: "gift-cards",
     kind: "gift",
     image: "cover",
-    productIds: [SAUVAGE, LA_VIE_EST_BELLE, MISSING_PRODUCT],
-    ctaUrl: "/catalog/men",
+    productIds: [],
+    ctaUrl: "/podarunkovi-kartky",
     sortOrder: 20,
     copy: {
       uk: {
-        title: "Подарунки за бюджетом",
-        summary: "Ідеї до 500, 1000 і 2000 ₴ — для неї та для нього.",
-        body: "- **До 500 ₴**: мініатюри 5 мл\n- **До 1000 ₴**: 10 мл улюбленого аромату\n- **До 2000 ₴**: 30 мл класики",
-        ctaLabel: "Подарунки для нього",
+        title: "Подарункові картки на 500, 1000 і 2000 ₴",
+        summary: "Подаруйте аромат, не вгадуючи його: отримувач обере парфуми сам.",
+        body: "Оберіть картку на **500**, **1000** або **2000 ₴** і оплатіть її карткою онлайн. Код прийде вам на пошту одразу після оплати: перешліть його тому, кого вітаєте. Код вводять під час оформлення замовлення, а залишок зберігається на картці для наступних покупок. Картка діє 12 місяців.",
+        priceNote: "500 · 1000 · 2000 ₴",
+        ctaLabel: "Обрати картку",
       },
       en: {
-        title: "Gifts by budget",
-        summary: "Ideas up to 500, 1000 and 2000 ₴, for her and for him.",
-        body: "- **Up to 500 ₴**: 5 ml minis\n- **Up to 1000 ₴**: 10 ml of a favourite scent\n- **Up to 2000 ₴**: 30 ml of a classic",
-        ctaLabel: "Gifts for him",
+        title: "Gift cards of 500, 1000 and 2000 ₴",
+        summary: "Give perfume without guessing the scent: they choose it themselves.",
+        body: "Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through: forward it to the person you're celebrating. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months.",
+        priceNote: "500 · 1000 · 2000 ₴",
+        ctaLabel: "Choose a card",
       },
     },
   },

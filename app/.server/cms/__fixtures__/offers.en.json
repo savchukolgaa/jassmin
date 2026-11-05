@@ -255,6 +255,99 @@
       "locale": "en"
     },
     {
+      "id": 45,
+      "documentId": "g1f7c4r2d5s8k0p3m6n9q1wz",
+      "title": "Gift cards of 500, 1000 and 2000 ₴",
+      "slug": "gift-cards",
+      "kind": "gift",
+      "summary": "Give perfume without guessing the scent: they choose it themselves.",
+      "body": "Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through: forward it to the person you're celebrating. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months.",
+      "startsAt": null,
+      "endsAt": null,
+      "priceNote": "500 · 1000 · 2000 ₴",
+      "ctaLabel": "Choose a card",
+      "ctaUrl": "/podarunkovi-kartky",
+      "sortOrder": 20,
+      "image": {
+        "id": 2,
+        "documentId": "pzlh70nvymnvpu6rrwxnsoh7",
+        "name": "blog-cover.jpg",
+        "alternativeText": "Perfume bottles",
+        "caption": null,
+        "focalPoint": null,
+        "width": 1200,
+        "height": 800,
+        "formats": {
+          "large": {
+            "ext": ".jpg",
+            "url": "/uploads/large_blog_cover_3f9a1c2b7d.jpg",
+            "hash": "large_blog_cover_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "large_blog-cover.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 1000,
+            "height": 666,
+            "sizeInBytes": 40120
+          },
+          "small": {
+            "ext": ".jpg",
+            "url": "/uploads/small_blog_cover_3f9a1c2b7d.jpg",
+            "hash": "small_blog_cover_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "small_blog-cover.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 500,
+            "height": 333,
+            "sizeInBytes": 40120
+          },
+          "medium": {
+            "ext": ".jpg",
+            "url": "/uploads/medium_blog_cover_3f9a1c2b7d.jpg",
+            "hash": "medium_blog_cover_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "medium_blog-cover.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 750,
+            "height": 500,
+            "sizeInBytes": 40120
+          },
+          "thumbnail": {
+            "ext": ".jpg",
+            "url": "/uploads/thumbnail_blog_cover_3f9a1c2b7d.jpg",
+            "hash": "thumbnail_blog_cover_3f9a1c2b7d",
+            "mime": "image/jpeg",
+            "name": "thumbnail_blog-cover.jpg",
+            "path": null,
+            "size": 40.12,
+            "width": 234,
+            "height": 156,
+            "sizeInBytes": 40120
+          }
+        },
+        "hash": "blog_cover_3f9a1c2b7d",
+        "ext": ".jpg",
+        "mime": "image/jpeg",
+        "size": 180.4,
+        "url": "/uploads/blog_cover_3f9a1c2b7d.jpg",
+        "previewUrl": null,
+        "provider": "local",
+        "provider_metadata": null,
+        "createdAt": "2026-10-24T11:46:34.962Z",
+        "updatedAt": "2026-10-24T11:46:34.962Z",
+        "publishedAt": "2026-10-24T11:46:34.963Z"
+      },
+      "imageLocalized": null,
+      "imageAlt": "Perfume bottles",
+      "products": [],
+      "createdAt": "2026-10-25T09:00:00.000Z",
+      "updatedAt": "2026-10-25T09:00:00.000Z",
+      "publishedAt": "2026-10-25T09:00:01.000Z",
+      "locale": "en"
+    },
+    {
       "id": 43,
       "documentId": "w3lc0m3a8b2c6d4e9f1g5h7j",
       "title": "Welcome to Jassmin",
@@ -281,9 +374,9 @@
   "meta": {
     "pagination": {
       "page": 1,
-      "pageSize": 5,
+      "pageSize": 6,
       "pageCount": 1,
-      "total": 5
+      "total": 6
     }
   }
 }

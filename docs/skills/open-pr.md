@@ -57,6 +57,7 @@ https://github.com/<owner>/<repo>/blob/<commit-before-removal>/docs/plans/<file>
 
 ## Testing
 - <commands run and their results, e.g. `pnpm typecheck` ✅>
+- CI (`check`, see `docs/ci.md`) runs the same checks on this PR.
 - <manual verification steps a reviewer can follow>
 
 ## Acceptance criteria
@@ -76,7 +77,7 @@ https://github.com/<owner>/<repo>/blob/<commit-before-removal>/docs/plans/<file>
    ```
    Add labels matching the issue (`--label "<label1>,<label2>"`). Use `--draft` if the user requested a draft PR.
 3. **Report to user**:
-   Provide the PR URL and worktree path. Remind the user of the post-merge cleanup commands (see [worktree.md → Worktree Cleanup](./worktree.md#worktree-cleanup-post-merge-only); never plain `git worktree remove`, which follows `node_modules` junctions into pnpm's shared store):
+   Provide the PR URL and worktree path, and the CI status (`gh pr checks <pr-number>`; it starts within a minute of creating the PR). Remind the user of the post-merge cleanup commands (see [worktree.md → Worktree Cleanup](./worktree.md#worktree-cleanup-post-merge-only); never plain `git worktree remove`, which follows `node_modules` junctions into pnpm's shared store):
    ```bash
    pnpm worktree:remove <n>
    git branch -D issue/<n>
@@ -85,14 +86,19 @@ https://github.com/<owner>/<repo>/blob/<commit-before-removal>/docs/plans/<file>
 
 ## Squash Merging the Pull Request
 
-Only merge when the user asks for it. PRs are squash merged so each issue lands on `main` as one commit.
+Only merge when the user asks for it. PRs are squash merged so each issue lands on `main` as one commit. A PR is only merged when every CI check is green ([docs/ci.md](../ci.md)); `main` is protected so GitHub enforces this.
 
 1. **Bring the branch up to date**: `git -C "$WT" fetch origin && git -C "$WT" merge origin/main` (merge, not rebase, so no force-push is needed). Resolve conflicts, re-run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then commit and push.
-2. **Merge with an explicit subject**: always pass `--subject`. Without it the squash commit's subject doesn't always match the PR title, and the `#<number>:` prefix can be lost (it was for #52):
+2. **Wait for green checks**: every push re-runs CI, so wait for the run on the latest commit:
+   ```bash
+   gh pr checks <pr-number> --watch --fail-fast
+   ```
+   Merge only when every check passed (a skipped `cms` check is fine). If one fails, open its log (`gh run view <run-id> --log-failed`), fix the cause in the worktree, commit, push and wait again. **Never bypass the checks**: no `gh pr merge --admin`, no switching branch protection off, no skipping or deleting a failing test to get green.
+3. **Merge with an explicit subject**: always pass `--subject`. Without it the squash commit's subject doesn't always match the PR title, and the `#<number>:` prefix can be lost (it was for #52):
    ```bash
    TITLE=$(gh pr view <pr-number> --json title -q .title)   # already starts with "#$N: "
    gh pr merge <pr-number> --squash --subject "$TITLE (#<pr-number>)"
    ```
    Don't pass `--delete-branch`: inside a worktree, `gh` tries to switch branches and fails. Delete the remote branch during cleanup instead.
-3. **If the merge is refused** because `main` moved or the PR conflicts, repeat step 1 and try again.
-4. **Clean up** the worktree and branches as in [worktree.md](./worktree.md#worktree-cleanup-post-merge-only).
+4. **If the merge is refused** because `main` moved, the PR conflicts or a required check isn't green, repeat steps 1–2 and try again.
+5. **Clean up** the worktree and branches as in [worktree.md](./worktree.md#worktree-cleanup-post-merge-only).

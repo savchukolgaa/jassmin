@@ -289,7 +289,7 @@ From the codebase:
   missing secret → 401 and nothing written; no secret configured → 503; malformed → 400/422;
   `hard_bounce` and `spam` → suppressed; `soft_bounce` → 200 and nothing written; an array body;
   a tagged event marks its order email `failed`.
-- [ ] **9. `docs/email.md`.** Cover:
+- [x] **9. `docs/email.md`.** Cover:
   1. why (spam and Gmail's/Yahoo's 2024 sender rules);
   2. creating the Brevo account and an SMTP key, and `SMTP_URL=smtps://<login>:<smtp-key>@smtp-relay.brevo.com:465` (URL-encode `@` in the login);
   3. adding the `jassmin.ua` domain in Brevo;

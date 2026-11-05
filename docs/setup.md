@@ -9,6 +9,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Scripts](#scripts)
 - [Abandoned carts](#abandoned-carts)
 - [Order emails](#order-emails)
+- [Email delivery in production](#email-delivery-in-production)
 - [Gift cards](#gift-cards)
 - [Card payments (simulator)](#card-payments-simulator)
 - [Database migrations](#database-migrations)
@@ -109,7 +110,7 @@ A shopper whose cart was abandoned sees an empty cart when they come back, and t
 
 ## Order emails
 
-Every placed order gets a plain-text confirmation email (#45) in the language the shopper checked out in, from `ORDER_FROM` (default `CONTACT_FROM`) with replies going to `CONTACT_INBOX`. It's queued in the `order_emails` table in the same transaction as the order, so an order never exists without its email and a failed checkout queues nothing. Right after the order commits, the checkout tries to send it without waiting; a mail failure is logged and never affects the order or the redirect.
+Every placed order gets a confirmation email (#45), HTML and plain text in the shared branded layout (#134), in the language the shopper checked out in, from `ORDER_FROM` (default `CONTACT_FROM`) with replies going to `CONTACT_INBOX`. It's queued in the `order_emails` table in the same transaction as the order, so an order never exists without its email and a failed checkout queues nothing. Right after the order commits, the checkout tries to send it without waiting; a mail failure is logged and never affects the order or the redirect.
 
 `pnpm db:send-order-emails` sends whatever is still due: it retries a failed email after 1, 5 and 15 minutes, then 1, 3, 6, 12 and 24 hours, and after 8 attempts (about two days) marks it `failed` with the last error in `last_error`. Sending a row first pushes its next attempt out, so two senders never send the same email and a crash mid-send only means a later retry. Without `SMTP_URL`, nothing is sent and the emails stay `pending` until it's set.
 
@@ -120,6 +121,12 @@ Run the job every 5 minutes from an external scheduler, like the abandoned-cart 
 ```
 
 It needs the database URL and the mail variables (`SMTP_URL`, `ORDER_FROM`, `CONTACT_FROM`, `CONTACT_INBOX`), but not `SESSION_SECRET`. Under Aspire, start the `db-send-order-emails` resource from the dashboard; it sends to smtp4dev.
+
+An email to an address that hard-bounced or complained before is never sent: its row becomes `failed` with `suppressed: <reason>` at once. A bounce that arrives later marks the sent row `failed` too (see below).
+
+## Email delivery in production
+
+In production every email goes through Brevo, a transactional provider, from `no-reply@jassmin.ua`, with SPF, DKIM and DMARC on `jassmin.ua`, so it reaches the inbox instead of spam (#134). [docs/email.md](email.md) covers it step by step: the Brevo account and `SMTP_URL`, every DNS record, the `/hooks/email` bounce and complaint webhook (`EMAIL_WEBHOOK_SECRET`), how to check the result (mail-tester ≥ 9/10, Gmail showing SPF/DKIM/DMARC `PASS`), and how to lift a suppressed address.
 
 ## Gift cards
 
@@ -294,14 +301,14 @@ When no offer is active the page shows an empty state, and when Strapi is down a
 
 The home page (`/`) shows four sections: Hero, About us (`/#about`), Location and Contacts (`/#contacts`). All their text, images, the address, opening hours, map and contact details come from Strapi (`home-page` and `site-settings`), so editors change them in the Strapi admin without a deploy. The "About us" body is Markdown, rendered and sanitized on the server. If Strapi is unreachable, the page shows a 503 error page.
 
-The contact form posts to the home route's `action` and works without JavaScript. Valid messages are emailed as plain text to `CONTACT_INBOX`, with the visitor's address as reply-to; they aren't stored. Each client can send 5 messages per 10 minutes (in memory, per server process), and a hidden honeypot field silently drops bots.
+The contact form posts to the home route's `action` and works without JavaScript. Valid messages are emailed to `CONTACT_INBOX` in Ukrainian, in the shared layout (HTML and plain text), with the visitor's address as reply-to; they aren't stored. Each client can send 5 messages per 10 minutes (in memory, per server process), and a hidden honeypot field silently drops bots.
 
 Locally, emails go to **smtp4dev**, which catches every message instead of delivering it:
 
 - **With Aspire:** `pnpm aspire run` starts the `smtp4dev` container and passes its SMTP endpoint to `web` as `SMTP_URL`. Open its web UI from the dashboard to read the messages.
 - **Without Aspire:** run `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev:v3`, set `SMTP_URL=smtp://localhost:2525` in `.env`, and open http://localhost:5000.
 
-Without `SMTP_URL`, development logs the message to the server console instead, and production shows a "couldn't send" error.
+Without `SMTP_URL`, development logs the message to the server console instead; production doesn't start without it.
 
 ## Products and orders in Strapi
 

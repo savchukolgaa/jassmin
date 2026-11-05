@@ -123,6 +123,21 @@ describe("buildOffersPageView", () => {
     ]);
   });
 
+  it("links the gift card offer to the gift card page in each language (#126)", () => {
+    const giftCards = [
+      offer("gift-cards", "gift", { ctaUrl: "/podarunkovi-kartky", ctaLabel: "Choose a card" }),
+    ];
+
+    expect(buildOffersPageView(giftCards, PRODUCTS, "uk").hero?.cta).toEqual({
+      to: "/podarunkovi-kartky",
+      label: "Choose a card",
+    });
+    expect(buildOffersPageView(giftCards, PRODUCTS, "en").hero?.cta).toEqual({
+      to: "/en/gift-cards",
+      label: "Choose a card",
+    });
+  });
+
   it("renders the Markdown body to sanitized HTML", () => {
     const view = buildOffersPageView(
       [offer("trio", "discovery-set", { body: "**Три** аромати <script>alert(1)</script>" })],

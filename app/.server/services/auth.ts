@@ -125,7 +125,8 @@ export async function verifyLogin(
 export async function onUserAuthenticated(
   args: RequestArgs,
   userId: number,
-  kind: "login" | "register",
+  /** `password_reset`: logged in by setting a new password with a reset link (#135). */
+  kind: "login" | "register" | "password_reset",
 ): Promise<void> {
   const { request, context } = args;
   let anonymousId: string | undefined;

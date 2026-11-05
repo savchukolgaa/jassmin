@@ -3,11 +3,15 @@ import { Link } from "react-router";
 import { cn } from "~/lib/cn";
 import { type TextKey, usePathFor, useT } from "~/lib/i18n";
 
-export type AuthMode = "login" | "register";
+/** The login and register pages, and the password reset and email verification pages (#135). */
+export type AuthMode = "login" | "register" | "forgot" | "reset" | "verify";
 
 const COPY: Record<AuthMode, { headline: TextKey; sub: TextKey }> = {
   login: { headline: "auth.login.headline", sub: "auth.login.sub" },
   register: { headline: "auth.register.headline", sub: "auth.register.sub" },
+  forgot: { headline: "auth.forgot.headline", sub: "auth.forgot.sub" },
+  reset: { headline: "auth.reset.headline", sub: "auth.reset.sub" },
+  verify: { headline: "auth.verify.headline", sub: "auth.verify.sub" },
 };
 
 const BENEFITS: TextKey[] = [
@@ -23,7 +27,8 @@ function withRedirect(path: string, redirectTo: string | undefined): string {
 
 /**
  * The two-column frame of `/login` and `/register` (C+ "Sign in / Sign up"): a brand panel and
- * the form with tabs to switch between the two pages.
+ * the form with tabs to switch between the two pages. The reset and verification pages (#135) use
+ * the same frame without the tabs.
  */
 export function AuthLayout({
   mode,
@@ -69,17 +74,19 @@ export function AuthLayout({
       </section>
 
       <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-6">
-        <nav
-          aria-label={t("auth.tabs.label")}
-          className="flex gap-1.5 self-start rounded-full bg-gray-100 p-1.5"
-        >
-          <AuthTab to={withRedirect(path("login"), redirectTo)} active={mode === "login"}>
-            {t("auth.tabs.login")}
-          </AuthTab>
-          <AuthTab to={withRedirect(path("register"), redirectTo)} active={mode === "register"}>
-            {t("auth.tabs.register")}
-          </AuthTab>
-        </nav>
+        {(mode === "login" || mode === "register") && (
+          <nav
+            aria-label={t("auth.tabs.label")}
+            className="flex gap-1.5 self-start rounded-full bg-gray-100 p-1.5"
+          >
+            <AuthTab to={withRedirect(path("login"), redirectTo)} active={mode === "login"}>
+              {t("auth.tabs.login")}
+            </AuthTab>
+            <AuthTab to={withRedirect(path("register"), redirectTo)} active={mode === "register"}>
+              {t("auth.tabs.register")}
+            </AuthTab>
+          </nav>
+        )}
 
         {children}
 
@@ -108,6 +115,15 @@ function AuthTab({ to, active, children }: { to: string; active: boolean; childr
     >
       {children}
     </Link>
+  );
+}
+
+/** A confirmation about the whole form, e.g. "we've sent a link" (#135). */
+export function FormNotice({ children }: { children: ReactNode }) {
+  return (
+    <p role="status" className="rounded-2xl bg-success-bg px-5 py-3.5 font-bold text-success">
+      {children}
+    </p>
   );
 }
 

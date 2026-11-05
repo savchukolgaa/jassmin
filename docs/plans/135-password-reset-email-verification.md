@@ -255,7 +255,7 @@ Each step is small, ordered, and leaves the app in a working state.
 
   Tests: verification sets `email_verified_at`; a used token or an expired one gives a typed error;
   the email is in the requested locale (uk and en).
-- [ ] **7. Pages.**
+- [x] **7. Pages.**
   - `forgot-password.tsx`: a logged-in user is redirected to the account. The action parses
     `forgotPasswordSchema` (400 with field errors), checks `passwordResetLimiters`
     (`byEmail.isBlocked(email)` or `byIp.isBlocked(ip)` → 429 `tooManyRequests`), hits both, runs

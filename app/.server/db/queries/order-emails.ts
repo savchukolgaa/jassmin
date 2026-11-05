@@ -9,10 +9,13 @@ import { orderEmails } from "../schema";
 /** A `Db` or a transaction, so the order service can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update">;
 
-/** Queues an email for the order; call it inside the order's transaction. */
+/**
+ * Queues an email for the order (or the gift card, #125); call it inside the transaction that
+ * placed the order or activated the card.
+ */
 export async function insertOrderEmail(
   db: Executor,
-  email: { orderId: number; type: OrderEmailType; locale: Locale },
+  email: ({ orderId: number } | { giftCardId: number }) & { type: OrderEmailType; locale: Locale },
 ): Promise<void> {
   await db.insert(orderEmails).values(email);
 }

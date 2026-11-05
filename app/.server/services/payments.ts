@@ -3,6 +3,9 @@
 // signed callback settles the attempt and, on success, the order.
 //
 // - The amount is always the order's stored `total_amount`, never anything from the request.
+// - Gift cards (#125) are bought the same way: an attempt for the card's stored amount, with the
+//   reference `G<gift card id>-<attempt>`. A successful callback activates the card and queues
+//   its code emails; a failed one leaves it `pending`.
 // - The callback is idempotent: it locks the attempt row, ignores attempts that already
 //   succeeded, and marks the order paid only while it is `pending` and `unpaid`
 //   (`markOrderPaid`), so a repeated callback never changes the order twice.
@@ -10,12 +13,15 @@
 //
 // The provider and the database are injectable for tests.
 import type { PaymentView } from "~/lib/checkout";
+import type { GiftCardPaymentView } from "~/lib/gift-cards";
 import type { Locale } from "~/lib/i18n";
 import { createTranslator } from "~/lib/i18n";
 import { pathFor } from "~/lib/paths";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { enqueueCmsSync } from "../db/queries/cms-outbox";
+import { activateGiftCard, findGiftCard } from "../db/queries/gift-cards";
+import { insertOrderEmail } from "../db/queries/order-emails";
 import {
   countPayments,
   findLatestPaymentStatus,
@@ -28,6 +34,7 @@ import {
 import { getEnv } from "../env";
 import type { ParsedCallback, PaymentProvider } from "../payments/provider";
 import { getPaymentProvider } from "../payments/provider";
+import { canViewGiftCard, type GiftCardViewer } from "./gift-cards";
 import { canViewOrder, type OrderViewer } from "./orders";
 
 export interface PaymentDeps {
@@ -87,7 +94,7 @@ export async function startPayment(
     if (!isPayable(order)) {
       return { ok: false, error: "not-payable" };
     }
-    const reference = `${orderId}-${(await countPayments(tx, orderId)) + 1}`;
+    const reference = `${orderId}-${(await countPayments(tx, { orderId })) + 1}`;
     await insertPayment(tx, {
       orderId,
       provider: provider.name,
@@ -111,11 +118,70 @@ export async function startPayment(
   });
 }
 
+export interface StartGiftCardPaymentInput {
+  giftCardId: number;
+  /** The provider page's language. */
+  locale: Locale;
+  /** This site's origin, for the absolute return and callback URLs. */
+  origin: string;
+  /** When set, only a card this viewer bought can be paid; others are `not-found`. */
+  viewer?: GiftCardViewer;
+}
+
+/**
+ * Starts a new attempt for a `pending` gift card's stored amount (#125) and returns the provider
+ * page to go to. A card that is paid already is `not-payable`.
+ */
+export async function startGiftCardPayment(
+  { giftCardId, locale, origin, viewer }: StartGiftCardPaymentInput,
+  { db, provider }: PaymentDeps = defaultDeps(),
+): Promise<StartPaymentResult> {
+  if (!provider) {
+    return { ok: false, error: "unavailable" };
+  }
+  return db.transaction(async (tx): Promise<StartPaymentResult> => {
+    // Locked, so two tabs retrying at once get different attempt numbers.
+    const card = await findGiftCard(tx, giftCardId, { lock: true });
+    if (!card || (viewer && !canViewGiftCard(card, viewer))) {
+      return { ok: false, error: "not-found" };
+    }
+    if (card.status !== "pending") {
+      return { ok: false, error: "not-payable" };
+    }
+    const reference = `G${giftCardId}-${(await countPayments(tx, { giftCardId })) + 1}`;
+    await insertPayment(tx, {
+      giftCardId,
+      provider: provider.name,
+      reference,
+      amount: card.initialAmount,
+      currency: card.currency,
+    });
+    const translator = createTranslator(locale);
+    const { redirectUrl } = provider.createCheckout({
+      reference,
+      amount: card.initialAmount,
+      currency: card.currency,
+      description: translator.t("payments.giftCardDescription", {
+        amount: translator.formatPrice(card.initialAmount),
+      }),
+      resultUrl: new URL(
+        pathFor(locale, "giftCardSuccess", { giftCardId: String(giftCardId) }),
+        origin,
+      ).toString(),
+      callbackUrl: new URL("/payments/callback", origin).toString(),
+      locale,
+    });
+    return { ok: true, redirectUrl, reference };
+  });
+}
+
 export type PaymentCallbackResult =
   | Exclude<ParsedCallback, { ok: true }>
   | { ok: false; error: "unavailable" }
+  /** A gift card attempt that paid also says which card is now active, for its emails. */
+  | { ok: true; result: "paid"; giftCardId?: number }
   /** `ignored`: unknown reference, a repeat, an amount mismatch or an order that can't be paid. */
-  | { ok: true; result: "paid" | "failed" | "pending" | "ignored" };
+  | { ok: true; result: "failed" | "pending" | "ignored" };
 
 /** Verifies a provider callback and applies it to its attempt and order, idempotently. */
 export async function handlePaymentCallback(
@@ -152,6 +218,34 @@ export async function handlePaymentCallback(
     switch (event.outcome) {
       case "success": {
         await markPayment(tx, payment.id, { status: "succeeded", ...update });
+        if (payment.giftCardId !== null) {
+          const card = await activateGiftCard(tx, payment.giftCardId, {
+            paymentId: payment.id,
+            now: new Date(),
+          });
+          if (!card) {
+            console.warn(
+              `Payment ${payment.reference} succeeded, but gift card ${payment.giftCardId} is no longer awaiting payment`,
+            );
+            return { ok: true, result: "ignored" };
+          }
+          // The code goes to the buyer, and to the recipient they named; the callback route
+          // sends them and pushes the card to Strapi after the commit.
+          await insertOrderEmail(tx, {
+            giftCardId: card.id,
+            type: "gift_card",
+            locale: card.locale,
+          });
+          if (card.recipientEmail) {
+            await insertOrderEmail(tx, {
+              giftCardId: card.id,
+              type: "gift_card_recipient",
+              locale: card.locale,
+            });
+          }
+          await enqueueCmsSync(tx, "gift_card", [card.id]);
+          return { ok: true, result: "paid", giftCardId: card.id };
+        }
         if (payment.orderId !== null && (await markOrderPaid(tx, payment.orderId))) {
           // Strapi shows the order as paid (#40); the callback route pushes it after the commit.
           await enqueueCmsSync(tx, "order", [payment.orderId]);
@@ -199,5 +293,17 @@ export async function getPaymentView(
   if (!isPayable(order)) {
     return null;
   }
-  return (await findLatestPaymentStatus(db, orderId)) === "failed" ? "failed" : "pending";
+  return (await findLatestPaymentStatus(db, { orderId })) === "failed" ? "failed" : "pending";
+}
+
+/** Where a gift card's purchase payment stands, for its result page (#125). */
+export async function getGiftCardPaymentView(
+  giftCardId: number,
+  db: Db = defaultDb,
+): Promise<GiftCardPaymentView> {
+  const card = await findGiftCard(db, giftCardId);
+  if (card && card.status !== "pending") {
+    return "paid";
+  }
+  return (await findLatestPaymentStatus(db, { giftCardId })) === "failed" ? "failed" : "pending";
 }

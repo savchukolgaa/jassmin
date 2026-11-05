@@ -300,7 +300,7 @@ From the codebase and issues:
   `getGiftCardView`, `getAccountGiftCards`, `deliverGiftCardEmail(giftCardId)`. Unit tests: the
   code is 16 symbols from the alphabet and round-trips through format/normalize, and the
   check/amount functions are covered for each state.
-- [ ] **5. Payments** — In `db/queries/payments.ts`, let `countPayments` / `insertPayment` /
+- [x] **5. Payments** — In `db/queries/payments.ts`, let `countPayments` / `insertPayment` /
   `findLatestPaymentStatus` take a target (`{ orderId } | { giftCardId }`), and add
   `findPayableGiftCard(tx, id, { lock })`. In `services/payments.ts`, pull the shared attempt logic
   out of `startPayment` and add `startGiftCardPayment({ giftCardId, locale, origin, viewer })`

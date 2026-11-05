@@ -177,7 +177,7 @@ async function pushOne(row: ClaimedCmsSync, deps: CmsSyncDeps): Promise<void> {
         toStrapiOrderData(order),
       );
     }
-  } else {
+  } else if (row.entity === "product") {
     const product = await deps.loadProduct(row.entityId);
     if (product) {
       await upsertDocument(

@@ -56,8 +56,8 @@ describe.skipIf(!hasDatabase)("payment queries", () => {
   it("counts attempts and finds the latest attempt's status", async () => {
     const { countPayments, findLatestPaymentStatus, markPayment } = await import("./payments");
     const { id } = await order();
-    expect(await countPayments(testDb.db, id)).toBe(0);
-    expect(await findLatestPaymentStatus(testDb.db, id)).toBeUndefined();
+    expect(await countPayments(testDb.db, { orderId: id })).toBe(0);
+    expect(await findLatestPaymentStatus(testDb.db, { orderId: id })).toBeUndefined();
 
     const first = await attempt(id, `${id}-1`);
     await markPayment(testDb.db, first, {
@@ -65,11 +65,11 @@ describe.skipIf(!hasDatabase)("payment queries", () => {
       providerPaymentId: "sim_1",
       lastCallback: { status: "failure" },
     });
-    expect(await findLatestPaymentStatus(testDb.db, id)).toBe("failed");
+    expect(await findLatestPaymentStatus(testDb.db, { orderId: id })).toBe("failed");
 
     await attempt(id, `${id}-2`);
-    expect(await countPayments(testDb.db, id)).toBe(2);
-    expect(await findLatestPaymentStatus(testDb.db, id)).toBe("pending");
+    expect(await countPayments(testDb.db, { orderId: id })).toBe(2);
+    expect(await findLatestPaymentStatus(testDb.db, { orderId: id })).toBe("pending");
   });
 
   it("keeps references unique", async () => {

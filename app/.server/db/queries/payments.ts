@@ -5,11 +5,20 @@ import type { Db } from "../client";
 import { orders, payments } from "../schema";
 
 // Card payment attempts (#44). The service runs these inside one transaction per change, so the
-// order row (`findPayableOrder` with `lock`) or the attempt row (`lockPaymentByReference`) is
-// locked before anything is written.
+// order row (`findPayableOrder` with `lock`), the gift card row (#125) or the attempt row
+// (`lockPaymentByReference`) is locked before anything is written.
 
 /** A `Db` or a transaction, so the payments service can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update">;
+
+/** What an attempt pays for: a card order, or a gift card being bought (#125). */
+export type PaymentTarget = { orderId: number } | { giftCardId: number };
+
+function targetIs(target: PaymentTarget) {
+  return "orderId" in target
+    ? eq(payments.orderId, target.orderId)
+    : eq(payments.giftCardId, target.giftCardId);
+}
 
 /** What deciding whether an order can be paid needs; `lock` takes the row `FOR UPDATE`. */
 export async function findPayableOrder(
@@ -33,23 +42,19 @@ export async function findPayableOrder(
   return row;
 }
 
-/** How many payment attempts the order has had, for the next attempt's reference. */
-export async function countPayments(db: Executor, orderId: number): Promise<number> {
-  const [row] = await db
-    .select({ attempts: count() })
-    .from(payments)
-    .where(eq(payments.orderId, orderId));
+/** How many payment attempts the order or gift card has had, for the next attempt's reference. */
+export async function countPayments(db: Executor, target: PaymentTarget): Promise<number> {
+  const [row] = await db.select({ attempts: count() }).from(payments).where(targetIs(target));
   return row?.attempts ?? 0;
 }
 
-export interface NewPayment {
-  orderId: number;
+export type NewPayment = PaymentTarget & {
   provider: PaymentProvider;
   reference: string;
-  /** The order's `total_amount`, never an amount from the request. */
+  /** The order's `total_amount` or the gift card's amount, never an amount from the request. */
   amount: string;
   currency: string;
-}
+};
 
 /** Inserts a `pending` attempt and returns its id. */
 export async function insertPayment(db: Executor, payment: NewPayment): Promise<number> {
@@ -111,15 +116,15 @@ export async function markOrderPaid(db: Executor, orderId: number): Promise<bool
   return rows.length > 0;
 }
 
-/** The status of the order's latest payment attempt, or `undefined` before the first one. */
+/** The status of the latest attempt, or `undefined` before the first one. */
 export async function findLatestPaymentStatus(
   db: Executor,
-  orderId: number,
+  target: PaymentTarget,
 ): Promise<PaymentAttemptStatus | undefined> {
   const [row] = await db
     .select({ status: payments.status })
     .from(payments)
-    .where(eq(payments.orderId, orderId))
+    .where(targetIs(target))
     .orderBy(desc(payments.id))
     .limit(1);
   return row?.status;

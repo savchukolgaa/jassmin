@@ -87,6 +87,10 @@ export function buildOrderConfirmationEmail(
       t("checkout.shipping"),
       order.freeShipping ? t("checkout.shippingFree") : t("checkout.shippingCarrierRate"),
     ),
+    // What a gift card paid (#125), after the discount and delivery.
+    ...(Number(order.giftCardAmount) > 0
+      ? [amount(t("checkout.giftCard.line"), `−${formatPrice(order.giftCardAmount)}`)]
+      : []),
     amount(t("checkout.total"), formatPrice(order.totalAmount)),
     "",
     t("checkout.success.payment"),

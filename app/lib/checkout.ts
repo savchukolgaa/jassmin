@@ -134,6 +134,8 @@ export interface OrderConfirmation {
   /** The applied discount (#59), or `null`. */
   discount: DiscountLine | null;
   shippingAmount: string;
+  /** What a gift card paid (#125), `"0.00"` without one; `totalAmount` is what was left to pay. */
+  giftCardAmount: string;
   totalAmount: string;
   lines: OrderSummaryLine[];
 }

@@ -6,7 +6,7 @@ import type { GiftCard, GiftCardRedemption } from "~/lib/commerce";
 import { GIFT_CARD_VALIDITY_MONTHS } from "~/lib/gift-cards";
 import type { Locale } from "~/lib/i18n";
 import type { Db } from "../client";
-import { giftCardRedemptions, giftCards } from "../schema";
+import { carts, giftCardRedemptions, giftCards } from "../schema";
 
 /** A `Db` or a transaction, so the services can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update">;
@@ -180,3 +180,22 @@ export async function findGiftCardSyncState(
 }
 
 export type GiftCardSyncRow = NonNullable<Awaited<ReturnType<typeof findGiftCardSyncState>>>;
+
+/** The gift card applied to the cart at checkout, or `null`. */
+export async function findCartGiftCardId(db: Executor, cartId: number): Promise<number | null> {
+  const [row] = await db
+    .select({ giftCardId: carts.giftCardId })
+    .from(carts)
+    .where(eq(carts.id, cartId))
+    .limit(1);
+  return row?.giftCardId ?? null;
+}
+
+/** Stores (or with `null` clears) the cart's gift card; `$onUpdate` bumps its `updated_at`. */
+export async function setCartGiftCard(
+  db: Executor,
+  cartId: number,
+  giftCardId: number | null,
+): Promise<void> {
+  await db.update(carts).set({ giftCardId }).where(eq(carts.id, cartId));
+}

@@ -7,20 +7,32 @@
 import { randomInt } from "node:crypto";
 import type { GiftCard } from "~/lib/commerce";
 import {
+  type CheckoutGiftCard,
   GIFT_CARD_CODE_ALPHABET,
   GIFT_CARD_CODE_LENGTH,
   type GiftCardAmount,
   type GiftCardRefusal,
   type GiftCardView,
+  maskGiftCardCode,
+  normalizeGiftCardCode,
 } from "~/lib/gift-cards";
 import type { Locale } from "~/lib/i18n";
-import { toKopiyky } from "~/lib/money";
+import { fromKopiyky, toKopiyky } from "~/lib/money";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
-import { findGiftCard, insertGiftCard, listUserGiftCards } from "../db/queries/gift-cards";
+import { lockCart, touchCart } from "../db/queries/cart";
+import {
+  findCartGiftCardId,
+  findGiftCard,
+  findGiftCardByCode,
+  insertGiftCard,
+  listUserGiftCards,
+  setCartGiftCard,
+} from "../db/queries/gift-cards";
 import { getEnv } from "../env";
 import { getMailTransport } from "../mail";
+import { type CartOwner, getActiveCartId } from "./cart";
 import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
 
 /** A new random code: 16 symbols of Crockford's base 32, 80 bits from the system's CSPRNG. */
@@ -161,4 +173,83 @@ export function deliverGiftCardEmails(
   db: Db = defaultDb,
 ): Promise<OrderEmailReport> {
   return deliverOrderEmails({ giftCardId }, () => orderEmailDeps(db, getMailTransport(), getEnv()));
+}
+
+export type ApplyGiftCardResult =
+  | { ok: true }
+  /** `no-cart`: there's no active cart to apply it to (checkout sends the shopper to the cart). */
+  | { ok: false; error: GiftCardRefusal | "no-cart" };
+
+/**
+ * Applies a typed code to the owner's active cart at checkout, when the card can pay now. A
+ * refused code writes nothing. The card is checked again, and its balance taken, when the order
+ * is placed (`createOrder`).
+ */
+export async function applyGiftCard(
+  owner: CartOwner,
+  input: string,
+  db: Db = defaultDb,
+  now: Date = new Date(),
+): Promise<ApplyGiftCardResult> {
+  const code = normalizeGiftCardCode(input);
+  if (code === null) {
+    return { ok: false, error: "unknown" };
+  }
+  const cartId = await getActiveCartId(owner, db);
+  if (cartId === undefined) {
+    return { ok: false, error: "no-cart" };
+  }
+  return db.transaction(async (tx): Promise<ApplyGiftCardResult> => {
+    if (!(await lockCart(tx, cartId))) {
+      return { ok: false, error: "no-cart" };
+    }
+    const card = await findGiftCardByCode(tx, code);
+    const refusal = checkGiftCard(card, now);
+    if (refusal !== null || !card) {
+      return { ok: false, error: refusal ?? "unknown" };
+    }
+    await setCartGiftCard(tx, cartId, card.id);
+    await touchCart(tx, cartId);
+    return { ok: true };
+  });
+}
+
+/** Takes the gift card off the owner's active cart. */
+export async function removeGiftCard(owner: CartOwner, db: Db = defaultDb): Promise<void> {
+  const cartId = await getActiveCartId(owner, db);
+  if (cartId === undefined) {
+    return;
+  }
+  await db.transaction(async (tx) => {
+    if (await lockCart(tx, cartId)) {
+      await setCartGiftCard(tx, cartId, null);
+      await touchCart(tx, cartId);
+    }
+  });
+}
+
+/**
+ * The card applied to the owner's cart as the checkout summary shows it, for an order costing
+ * `total` (after the discount and delivery), or `null` without a card or when it can no longer
+ * pay (it expired or was spent meanwhile).
+ */
+export async function getCheckoutGiftCard(
+  owner: CartOwner,
+  total: string,
+  db: Db = defaultDb,
+  now: Date = new Date(),
+): Promise<CheckoutGiftCard | null> {
+  const cartId = await getActiveCartId(owner, db);
+  const giftCardId = cartId === undefined ? null : await findCartGiftCardId(db, cartId);
+  const card = giftCardId === null ? undefined : await findGiftCard(db, giftCardId);
+  if (!card || checkGiftCard(card, now) !== null) {
+    return null;
+  }
+  const balance = toKopiyky(card.balance);
+  const amount = giftCardAmountFor(toKopiyky(total), balance);
+  return {
+    maskedCode: maskGiftCardCode(card.code),
+    amount: fromKopiyky(amount),
+    balanceAfter: fromKopiyky(balance - amount),
+  };
 }

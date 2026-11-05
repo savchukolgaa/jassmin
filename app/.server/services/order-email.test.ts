@@ -37,6 +37,7 @@ const codOrder: OrderConfirmation = {
   discountAmount: "0.00",
   discount: null,
   shippingAmount: "0.00",
+  giftCardAmount: "0.00",
   totalAmount: "900.00",
   lines: [
     {
@@ -292,6 +293,33 @@ const giftCard: GiftCard = {
 };
 
 describe("gift card emails (#125)", () => {
+  it("shows what a gift card paid in the order confirmation, in both languages", () => {
+    const order = {
+      ...codOrder,
+      paymentMethod: "gift_card" as const,
+      giftCardAmount: "900.00",
+      totalAmount: "0.00",
+    };
+    const uk = normalize(
+      String(buildOrderConfirmationEmail(order, createTranslator("uk"), env).text),
+    );
+    expect(uk).toContain("Подарункова картка: −900 ₴\nДо сплати: 0 ₴");
+    expect(uk).toContain(
+      "Подарунковою карткою\nЗамовлення повністю оплачено подарунковою карткою.",
+    );
+    const en = normalize(
+      String(buildOrderConfirmationEmail(order, createTranslator("en"), env).text),
+    );
+    expect(en).toContain("Gift card: −₴900");
+    expect(en).toContain("The order is paid in full with a gift card.");
+  });
+
+  it("has no gift card line without one", () => {
+    expect(
+      String(buildOrderConfirmationEmail(codOrder, createTranslator("uk"), env).text),
+    ).not.toContain("Подарункова картка");
+  });
+
   it("sends the buyer the code, the expiry and how to use it, in Ukrainian", () => {
     const email = buildGiftCardEmail(giftCard, createTranslator("uk"), env);
     expect(email.to).toBe("buyer@example.com");

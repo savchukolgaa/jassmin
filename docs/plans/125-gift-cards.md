@@ -325,7 +325,7 @@ From the codebase and issues:
   recipient gets the purchase locale). Tests: both emails in both languages, the recipient email
   only queued when there's a recipient, retries and the give-up path for the new types, and order
   emails unchanged.
-- [ ] **7. Redemption in `createOrder`** — In `db/queries/cart.ts`, add `setCartGiftCard` /
+- [x] **7. Redemption in `createOrder`** — In `db/queries/cart.ts`, add `setCartGiftCard` /
   `findCartGiftCardId` (bump `updated_at`). In `services/cart.ts`, add `applyGiftCard(writer,
   code)` / `removeGiftCard(writer)`: the lookup → `checkGiftCard` → store, and a refused code
   writes nothing. `mergeGuestCart` brings the guest's card along when the user's cart has none.

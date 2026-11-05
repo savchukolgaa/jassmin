@@ -79,6 +79,8 @@ export interface AccountOrderDetail extends AccountOrder {
   subtotal: string;
   /** The applied discount (#59), or `null`. */
   discount: DiscountLine | null;
+  /** What a gift card paid (#125), `"0.00"` without one. */
+  giftCardAmount: string;
 }
 
 export interface AccountOrders {

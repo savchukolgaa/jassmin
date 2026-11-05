@@ -37,6 +37,7 @@ import {
   listCandidateDiscounts,
   setCartDiscount,
 } from "../db/queries/discounts";
+import { findCartGiftCardId, setCartGiftCard } from "../db/queries/gift-cards";
 import { findUserById } from "../db/queries/users";
 import { cartItems, carts } from "../db/schema";
 import { getUserId } from "../session";
@@ -404,6 +405,11 @@ export async function mergeGuestCart(
     const guestDiscountId = await findCartDiscountId(tx, guestCartId);
     if (guestDiscountId !== null && (await findCartDiscountId(tx, userCartId)) === null) {
       await setCartDiscount(tx, userCartId, guestDiscountId);
+    }
+    // So does the gift card applied at checkout (#125).
+    const guestGiftCardId = await findCartGiftCardId(tx, guestCartId);
+    if (guestGiftCardId !== null && (await findCartGiftCardId(tx, userCartId)) === null) {
+      await setCartGiftCard(tx, userCartId, guestGiftCardId);
     }
     await tx.delete(carts).where(eq(carts.id, guestCartId));
     await touchCart(tx, userCartId);

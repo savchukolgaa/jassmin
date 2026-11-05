@@ -4,7 +4,7 @@ import { createTranslator, DEFAULT_LOCALE } from "~/lib/i18n";
 import { composeEmail } from "../email/layout";
 import { type Env, getEnv } from "../env";
 import { type MailSender, stripLineBreaks } from "../mail";
-import { createRateLimiter, type RateLimiter } from "../rate-limit";
+import { appRateLimitStore, createRateLimiter, type RateLimiter } from "../rate-limit";
 import { getMailer } from "./mailer";
 
 // Contact form submissions from the home page: spam checks, rate limiting and delivery by email
@@ -35,14 +35,12 @@ export type ContactSubmitResult =
   | { status: "rate_limited"; retryAfterSeconds: number }
   | { status: "delivery_failed" };
 
-// Keep the counter across Vite HMR reloads in development, like the login limiters.
-const globalForLimiters = globalThis as typeof globalThis & {
-  __jassminContactLimiter?: RateLimiter;
-};
-
-globalForLimiters.__jassminContactLimiter ??= createRateLimiter(CONTACT_RATE_LIMIT);
-
-const contactLimiter: RateLimiter = globalForLimiters.__jassminContactLimiter;
+// Shared by every instance and kept across restarts (#143).
+const contactLimiter: RateLimiter = createRateLimiter({
+  name: "contact",
+  ...CONTACT_RATE_LIMIT,
+  store: appRateLimitStore,
+});
 
 function defaultDeps(): ContactDeps {
   return {
@@ -118,11 +116,11 @@ export async function submitContactMessage(
   if (honeypot) {
     return { status: "ignored" };
   }
-  if (deps.limiter.isBlocked(clientKey)) {
+  if (await deps.limiter.isBlocked(clientKey)) {
     // The limiter doesn't expose when the window ends, so report the whole window as the upper bound.
     return { status: "rate_limited", retryAfterSeconds: CONTACT_RATE_LIMIT.windowMs / 1000 };
   }
-  deps.limiter.hit(clientKey);
+  await deps.limiter.hit(clientKey);
   return (await deliverContactMessage(message, deps))
     ? { status: "sent" }
     : { status: "delivery_failed" };

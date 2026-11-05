@@ -31,6 +31,8 @@ describe("parseEnv", () => {
       PUBLIC_SITE_URL: "https://jassmin.ua",
       SMTP_URL: "smtps://user:key@smtp-relay.example.com:465",
       STRAPI_URL: "http://localhost:1337",
+      CSP_MODE: "report-only",
+      TRUSTED_PROXY_HOPS: 0,
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
     });
@@ -171,6 +173,32 @@ describe("parseEnv: ROBOTS_DISALLOW_ALL", () => {
     expect(() => parseEnv({ ...valid, ROBOTS_DISALLOW_ALL: "maybe" })).toThrow(
       /ROBOTS_DISALLOW_ALL/,
     );
+  });
+});
+
+describe("parseEnv: CSP_MODE", () => {
+  it("defaults to report-only and treats an empty value as unset", () => {
+    expect(parseEnv(valid).CSP_MODE).toBe("report-only");
+    expect(parseEnv({ ...valid, CSP_MODE: "" }).CSP_MODE).toBe("report-only");
+  });
+
+  it("accepts enforce and rejects anything else", () => {
+    expect(parseEnv({ ...valid, CSP_MODE: "enforce" }).CSP_MODE).toBe("enforce");
+    expect(() => parseEnv({ ...valid, CSP_MODE: "off" })).toThrow(/CSP_MODE/);
+  });
+});
+
+describe("parseEnv: TRUSTED_PROXY_HOPS", () => {
+  it("defaults to 0 and treats an empty value as unset", () => {
+    expect(parseEnv(valid).TRUSTED_PROXY_HOPS).toBe(0);
+    expect(parseEnv({ ...valid, TRUSTED_PROXY_HOPS: "" }).TRUSTED_PROXY_HOPS).toBe(0);
+  });
+
+  it("coerces a whole number of hops and rejects anything else", () => {
+    expect(parseEnv({ ...valid, TRUSTED_PROXY_HOPS: "2" }).TRUSTED_PROXY_HOPS).toBe(2);
+    for (const value of ["-1", "1.5", "11", "many"]) {
+      expect(() => parseEnv({ ...valid, TRUSTED_PROXY_HOPS: value })).toThrow(/TRUSTED_PROXY_HOPS/);
+    }
   });
 });
 

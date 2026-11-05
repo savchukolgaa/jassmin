@@ -88,6 +88,15 @@ await builder
   .withParentRelationship(db)
   .withExplicitStart();
 
+// Deletes ended rate-limit windows from `rate_limits` (#143, daily cron in production).
+await builder
+  .addJavaScriptApp("db-prune-rate-limits", "..", { runScriptName: "db:prune-rate-limits" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
 // Strapi secrets (APP_KEYS, …) come from cms/.env; the variables set here take precedence.
 const cms = builder
   .addJavaScriptApp("cms", "../cms", { runScriptName: "develop" })

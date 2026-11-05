@@ -112,7 +112,7 @@ const limiterKey = (user: PublicUser) => String(user.id);
 async function saveEmail(user: PublicUser, formData: FormData, request: Request) {
   // Refill the new email after an error; the password is never sent back.
   const values = { email: String(formData.get("email") ?? "") };
-  if (profilePasswordLimiter.isBlocked(limiterKey(user))) {
+  if (await profilePasswordLimiter.isBlocked(limiterKey(user))) {
     return reply(
       { ok: false, intent: "email", formError: "account.profile.errors.tooManyAttempts", values },
       429,
@@ -137,7 +137,7 @@ async function saveEmail(user: PublicUser, formData: FormData, request: Request)
   const { email, currentPassword } = parsed.data;
   const result = await changeEmail(user.id, currentPassword, email);
   if (!result.ok) {
-    if (result.error === "wrong-password") profilePasswordLimiter.hit(limiterKey(user));
+    if (result.error === "wrong-password") await profilePasswordLimiter.hit(limiterKey(user));
     const fieldErrors =
       result.error === "wrong-password"
         ? { currentPassword: "account.profile.errors.currentPasswordWrong" as const }
@@ -145,7 +145,7 @@ async function saveEmail(user: PublicUser, formData: FormData, request: Request)
     return reply({ ok: false, intent: "email", fieldErrors, values }, 400);
   }
 
-  profilePasswordLimiter.reset(limiterKey(user));
+  await profilePasswordLimiter.reset(limiterKey(user));
   if (result.previousEmail !== null) {
     void notifyEmailChanged({
       to: result.previousEmail,
@@ -158,7 +158,7 @@ async function saveEmail(user: PublicUser, formData: FormData, request: Request)
 }
 
 async function savePassword(user: PublicUser, formData: FormData) {
-  if (profilePasswordLimiter.isBlocked(limiterKey(user))) {
+  if (await profilePasswordLimiter.isBlocked(limiterKey(user))) {
     return reply(
       { ok: false, intent: "password", formError: "account.profile.errors.tooManyAttempts" },
       429,
@@ -183,7 +183,7 @@ async function savePassword(user: PublicUser, formData: FormData) {
   const { currentPassword, newPassword } = parsed.data;
   const result = await changePassword(user.id, currentPassword, newPassword);
   if (!result.ok) {
-    profilePasswordLimiter.hit(limiterKey(user));
+    await profilePasswordLimiter.hit(limiterKey(user));
     return reply(
       {
         ok: false,
@@ -194,7 +194,7 @@ async function savePassword(user: PublicUser, formData: FormData) {
     );
   }
 
-  profilePasswordLimiter.reset(limiterKey(user));
+  await profilePasswordLimiter.reset(limiterKey(user));
   return reply({ ok: true, intent: "password" });
 }
 

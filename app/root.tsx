@@ -13,8 +13,10 @@ import {
 import { getEnv, getSiteUrl } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
 import { localeRedirectMiddleware } from "~/.server/locale-middleware";
+import { securityHeadersMiddleware } from "~/.server/security-headers";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
+import { useNonce } from "~/lib/nonce";
 import { crossesLocale } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta } from "~/lib/seo";
@@ -45,8 +47,13 @@ export const links: Route.LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet, precedence: "default" },
 ];
 
-// Sends visitors who chose English from Ukrainian pages to the English ones (#84).
-export const middleware: Route.MiddlewareFunction[] = [localeRedirectMiddleware];
+// First, so it wraps everything: the security headers and the CSP nonce for every response,
+// redirects and error pages included (#143). Then visitors who chose English from Ukrainian pages
+// go to the English ones (#84).
+export const middleware: Route.MiddlewareFunction[] = [
+  securityHeadersMiddleware,
+  localeRedirectMiddleware,
+];
 
 // The page's locale comes from its URL (#84). Runs on every request, after every action and
 // whenever a navigation crosses into the other language (`shouldRevalidate`). `site.url` is the
@@ -69,6 +76,8 @@ const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';
 export function Layout({ children }: { children: React.ReactNode }) {
   // `undefined` when the root loader failed; the error page then renders in the default locale.
   const locale = useRouteLoaderData<typeof loader>("root")?.locale ?? DEFAULT_LOCALE;
+  // The CSP nonce (#143); see `~/lib/nonce` for how the browser reads it back.
+  const nonce = useNonce();
 
   return (
     // The inline script changes the class before React hydrates.
@@ -80,16 +89,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Marks pages where JS runs, before first paint: product cards show a price skeleton
             until hydration there, and their "from" price without JS (#74). */}
         <script
+          nonce={nonce}
+          // Browsers hide a script's nonce attribute after parsing, so hydration sees "" here.
+          suppressHydrationWarning
           // biome-ignore lint/security/noDangerouslySetInnerHtml: a constant, no user input; a text child would be HTML-escaped.
           dangerouslySetInnerHTML={{ __html: JS_CLASS_SCRIPT }}
         />
         <Meta />
-        <Links />
+        <Links nonce={nonce} />
       </head>
       <body>
         <I18nProvider locale={locale}>{children}</I18nProvider>
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
   );

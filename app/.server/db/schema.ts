@@ -2,7 +2,8 @@
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
 // checkout fields on orders (#11), the order email queue (#45), card payment attempts (#44) and
 // discount rules (#59), the Strapi catalog and order sync (#40) and several fragrance families,
-// notes and a store code per product (#65), and gift cards with their redemptions (#125).
+// notes and a store code per product (#65), gift cards with their redemptions (#125), email
+// suppressions (#134) and the shared rate-limit counters (#143).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -737,5 +738,24 @@ export const emailSuppressions = pgTable(
   (t) => [
     check("email_suppressions_reason_check", oneOf(t.reason, EMAIL_SUPPRESSION_REASONS)),
     check("email_suppressions_address_lowercase_check", sql`${t.address} = lower(${t.address})`),
+  ],
+);
+
+/**
+ * Fixed-window rate-limit counters (#143), shared by every app instance and kept across restarts.
+ * `key` is `<limiter name>:<sha256 of the key>`, so no email or IP is stored in plain text. Rows
+ * whose window ended are harmless (the next hit restarts them) and `pnpm db:prune-rate-limits`
+ * deletes them.
+ */
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    key: varchar({ length: 200 }).primaryKey(),
+    count: integer().notNull(),
+    resetAt: timestamp({ withTimezone: true }).notNull(),
+  },
+  (t) => [
+    check("rate_limits_count_check", sql`${t.count} > 0`),
+    index("rate_limits_reset_at_idx").on(t.resetAt),
   ],
 );

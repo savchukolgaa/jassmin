@@ -293,7 +293,7 @@ From the codebase and issues:
   'used_up' …`, in SQL as `numeric`), `findGiftCardForViewer`, `listUserGiftCards`,
   `findGiftCardSyncState`, `findGiftCardEmail`, `markExpiredGiftCards(now)`. Integration tests
   with `createTestDatabase()`.
-- [ ] **4. Gift card service** — `services/gift-cards.ts`: `generateGiftCardCode(random =
+- [x] **4. Gift card service** — `services/gift-cards.ts`: `generateGiftCardCode(random =
   crypto.randomInt)`, `createGiftCard({ amount, email, userId, locale })` (retries a code clash a
   few times), `checkGiftCard(card, now)` → `ok | unknown | not-active | expired | used-up` (pure),
   `giftCardAmountFor(totalKopiyky, balanceKopiyky)` (pure: `min`), `canViewGiftCard`,

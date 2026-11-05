@@ -22,17 +22,17 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
   Files table and steps around lines 263, 397 and 408). Whichever lands second has to port the
   other's README edits. This plan moves those sections **verbatim** to `docs/setup.md` in one
   dedicated commit so the port is mechanical (step 2), and rebases on `origin/main` before the PR
-  (step 9).
+  (step 10).
 - **#142 (CI) is planned in parallel.** It adds `.github/workflows/ci.yml` (job `check`) and asks for
   a CI status badge in the README. This plan owns the badge row: it adds the badge if #142 has
-  merged by then, otherwise it leaves the exact badge line as a commented-out placeholder (step 3).
+  merged by then, otherwise it leaves the exact badge line as a commented-out placeholder (step 4).
   #142 should then only uncomment it, not add a second badge.
 - **#131 (synthetic shop data) is open.** Screenshots must be taken on synthetic data, never on
-  real customer data, so the screenshots are a **later step** (step 10, not part of this PR).
-- **Hosting is not set up yet.** The live demo link is "coming soon" (step 3) and filled in later
-  (step 10).
+  real customer data, so the screenshots are a **later step** (step 11, not part of this PR).
+- **Hosting is not set up yet.** The live demo link is "coming soon" (step 4) and filled in later
+  (step 11).
 - **#133 (analytics case study) is open.** Its README doesn't exist yet, so this README links to
-  the issue, not to a file (step 5).
+  the issue, not to a file (step 6).
 - No packages, env vars or migrations. Link checking and Mermaid rendering use `pnpm dlx` one-offs,
   nothing is added to `package.json`.
 - **Scope restriction from the owner:** only `README.md`, `docs/**` and `LICENSE` may change.
@@ -45,13 +45,14 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
   abandoned carts, order emails, card payments, database migrations, project structure, Strapi
   (running, first-time setup, content model, translations), special offers, home page and contact
   form, products and orders in Strapi, SEO and sitemap submission, admin role, conventions.
-  The text is moved as-is, with only the heading levels and internal anchors adjusted. Rewording
-  stale lines is not part of this issue (see Q3).
+  The text is moved as-is in its own commit, with only the heading levels and internal anchors
+  adjusted. Out-of-date lines are fixed afterwards in a separate commit (step 3), so the move
+  stays easy to rebase and review.
 - **Keep the headings that other files point to:** `scripts/aspire.mjs` says "see README →
   Prerequisites", so the README keeps a `### Prerequisites` heading. `app/.server/AGENTS.md` line 8
   says "the README table" for env vars; the README's Getting started gets a one-line pointer to
   `docs/setup.md#environment-variables`. Updating that AGENTS.md line is outside the allowed files
-  (see Q4).
+  and is a follow-up after #125 and #126 merge.
 - **Issue/PR links are full URLs** (`https://github.com/savchukolgaa/jassmin/issues/40`,
   `…/pull/63`). GitHub autolinks `#40` only in issues, PRs and comments, not in repository Markdown
   files. Decisions link the PR where one exists (more useful to a reviewer: it holds the diff and
@@ -62,9 +63,9 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
 - **Licence default: source-available, all rights reserved** (the issue's default; the shop is a
   real business). `LICENSE` grants permission to read and evaluate the code (e.g. for hiring or code
   review) and nothing else; the Jassmin name, logo, product texts and images are excluded.
-  **(unconfirmed, Q1)**
-- **Badges:** a static shields.io licence badge (works whatever the repo's visibility) and the CI
-  badge from #142. No coverage or Lighthouse badges: they'd need a service or would go stale.
+  Copyright holder: "Ольга Савчук" (the git author name), year 2026.
+- **The repo is public**, so the CI badge renders and issue/PR links work for every reader.
+- **Badges:** a static shields.io licence badge and the CI badge from #142. No coverage or Lighthouse badges: they'd need a service or would go stale.
 - **Numbers are measured, not guessed.** The test count is read from `pnpm test` output on the day
   of writing (today ~161 test files and ~1,530 `it`/`test` calls by grep; the issue says "over
   1,600", the exact Vitest count decides). Lighthouse numbers come from PR #97 (#96), with how and
@@ -104,33 +105,29 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
   catalog), five sizes per perfume, cart, checkout with card or cash on delivery, promo codes and
   offers, accounts and order history, order emails, blog and offers from Strapi, Ukrainian and
   English with translated URLs, staff management in Strapi. Gift cards (#125) are added only if
-  #125 has merged by step 9.
+  #125 has merged by step 10.
 - **"How it's built"** describes the issue → plan → worktree → PR workflow and links
   `docs/skills/README.md`, `.claude/skills/` and `AGENTS.md`. It states plainly that the code is
   written with an AI coding agent under the owner's review, and what guards quality (plans, strict
   TypeScript, tests, CI from #142).
 
-## Open questions
-
-- [ ] **Q1: Which licence?** — Why it matters: decides the `LICENSE` text and the badge, and
-  whether anyone may reuse the code. Recommended default: source-available, all rights reserved
-  (view and evaluate only). Alternative: MIT. Affects steps: 7, 3.
-- [ ] **Q2: Will the repo be made public, and under which copyright name?** — Why it matters: the
-  repo is **private** today (`gh repo view`). For reviewers without access, the CI badge doesn't
-  render and every issue/PR link is a 404. The copyright line needs a name. Recommended default:
-  the plan doesn't change visibility; links and badge are written for the public repo; copyright
-  holder is "Ольга Савчук" as in the git author name. Affects steps: 3, 6, 7.
-- [ ] **Q3: Fix stale lines while moving them to `docs/setup.md`?** — Why it matters: some
-  sections are out of date ("Checkout has no discounts yet" in Special offers, despite #59; the
-  Strapi product `gender` still lists `unisex`). Fixing them in the move makes the #125/#126 port
-  harder. Recommended default: move verbatim, list the stale lines in the PR description and fix them
-  in a follow-up commit after the move (same PR, separate commit). Affects steps: 2, 8.
-- [ ] **Q4: Update `app/.server/AGENTS.md` ("the README table") later?** — Why it matters: that file
-  is outside the allowed paths, and after the move the env table is in `docs/setup.md`. Recommended
-  default: leave it; the README's pointer line covers it; fix the wording in a small follow-up once
-  #125/#126 are merged. Affects steps: 4.
-
 ## Resolved questions
+
+Answered by the owner:
+
+- **Which licence?** — Source available for review, all rights reserved (view and evaluate only),
+  not MIT.
+- **Is the repo public, and whose copyright?** — Public now (confirmed with `gh repo view`:
+  `PUBLIC`). Copyright holder "Ольга Савчук".
+- **Fix outdated lines while moving them to `docs/setup.md`?** — Yes, in a separate commit after
+  the verbatim move (step 3). Known so far: "Checkout has no discounts yet" in Special offers
+  (wrong since #59/#124); the seed list of offers (#126 changes it). `unisex` in the Strapi product
+  `gender` is **not** stale: `cms/src/api/product/content-types/product/schema.json:39` still
+  allows it, even though the shop has no unisex catalog.
+- **Update `app/.server/AGENTS.md` ("the README table")?** — Not in this PR; fix it in a small
+  follow-up after #125 and #126 merge.
+
+Answered from the repo and issues:
 
 - **Does GitHub autolink `#40` in the README?** — No, only in issues, PRs and comments; use full
   URLs (GitHub docs on autolinked references).
@@ -158,9 +155,9 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
 |--------|------|---------|
 | create | `docs/setup.md` | Full developer and operations guide, moved from `README.md` |
 | modify | `README.md` | Showcase on top, condensed Getting started, links to `docs/setup.md` |
-| create | `docs/screenshots/README.md` | Shot list, naming, size limits and how to capture (for step 10) |
-| create | `LICENSE` | Licence per Q1 |
-| modify | `docs/skills/README.md` | Only if needed: link back to the README's "How it's built" (check in step 6) |
+| create | `docs/screenshots/README.md` | Shot list, naming, size limits and how to capture (for step 11) |
+| create | `LICENSE` | Source-available, all rights reserved |
+| modify | `docs/skills/README.md` | Only if needed: link back to the README's "How it's built" (check in step 7) |
 
 No other files change.
 
@@ -178,7 +175,15 @@ No other files change.
   and relative paths (`app/...`, `cms/...`) get the `../` prefix where they are links. Remove the
   moved text from `README.md`. Commit: "Move the setup guide to docs/setup.md (#141)". Check: a diff
   of the moved text shows only anchor/path changes.
-- [ ] **3. Header, pitch and badges** — Title, one-line pitch (e.g. "A bilingual, server-rendered
+- [ ] **3. Fix out-of-date lines in `docs/setup.md` (separate commit)** — Read the moved guide
+  against the code on `main` and correct what's wrong, e.g. "Prices aren't changed. Checkout has no
+  discounts yet" in Special offers (promo codes and offer discounts exist since #59, the couple
+  offer since #124: describe what checkout applies, pointing at `app/.server/services/` for the
+  rules), and any env var, script or Strapi type that's missing or gone (compare with
+  `app/.server/env.ts`, `package.json` scripts, `cms/src/api/`). Check each claim in the code before
+  changing it. Commit: "Bring the setup guide up to date (#141)". Note every fix for the PR
+  description.
+- [ ] **4. Header, pitch and badges** — Title, one-line pitch (e.g. "A bilingual, server-rendered
   e-commerce site for a small perfume shop in Ukraine: React Router v8 SSR, PostgreSQL, Strapi"),
   then the badge row: CI badge (live if #142 is merged, otherwise this exact line in an HTML
   comment: `<!-- CI badge, enable once #142 is merged: [![CI](…/ci.yml/badge.svg?branch=main)](…/actions/workflows/ci.yml) -->`),
@@ -187,16 +192,16 @@ No other files change.
   and the visible "Screenshots coming soon" line. Create `docs/screenshots/README.md` now: the shot
   list (home, catalog, product, cart, checkout × desktop 1440×900 and phone 390×844), file names
   (`<page>-<desktop|phone>.webp`), the 200 KB limit, the "synthetic data only, no personal data"
-  rule and the capture steps, so step 10 is mechanical.
-- [ ] **4. Features and tech stack** — A short Features list (Decisions). Keep the existing Stack
+  rule and the capture steps, so step 11 is mechanical.
+- [ ] **5. Features and tech stack** — A short Features list (Decisions). Keep the existing Stack
   table, add rows for i18n (own typed dictionaries, translated URLs), email (Nodemailer + outbox),
   payments (provider interface, simulator) and tests (Vitest, real PostgreSQL integration tests).
   Check each row against `package.json`.
-- [ ] **5. Architecture** — The Mermaid `flowchart` from Decisions, with 3–4 sentences under it
+- [ ] **6. Architecture** — The Mermaid `flowchart` from Decisions, with 3–4 sentences under it
   explaining reads/writes, the system of record and the outboxes. Link #133 for the analytics case
   study. Check it renders: `pnpm dlx @mermaid-js/mermaid-cli -i <extracted .mmd> -o <scratch>.svg`
-  (scratchpad, not committed), and on GitHub after pushing the branch (step 9).
-- [ ] **6. Engineering decisions, Quality, How it's built** — The 6–7 decision bullets with full
+  (scratchpad, not committed), and on GitHub after pushing the branch (step 10).
+- [ ] **7. Engineering decisions, Quality, How it's built** — The 6–7 decision bullets with full
   issue/PR URLs. Quality: run `pnpm test` in the worktree (with a database configured, so the DB
   tests run) and quote the file and test counts with the date; `pnpm typecheck` and `pnpm lint`
   (strict TS, no `any`, Biome); Lighthouse numbers from PR #97 with how they were measured;
@@ -204,25 +209,25 @@ No other files change.
   motion), no unmeasured claims. Mention CI (#142) with a link to its issue, or to the workflow if
   merged. How it's built: the workflow (Decisions), links to `docs/skills/README.md`,
   `.claude/skills/`, `AGENTS.md`, and to `docs/plans/` as where plans live while an issue is open.
-- [ ] **7. Getting started and LICENSE** — README "Getting started": `### Prerequisites` (as today),
+- [ ] **8. Getting started and LICENSE** — README "Getting started": `### Prerequisites` (as today),
   `### Quick start` (as today, including the `pnpm aspire` note), the five everyday commands
   (`dev`, `typecheck`, `lint`, `test`, `build`), and a list of links into `docs/setup.md`
   (environment variables, all scripts, Strapi setup, jobs, payments, migrations, SEO, admin role).
-  Add a short "Licence" section linking `LICENSE`. Write `LICENSE` per Q1: copyright line
-  (year 2026, holder per Q2), the permitted use (view and evaluate), everything else reserved,
+  Add a short "Licence" section linking `LICENSE`. Write `LICENSE` (source available, all rights reserved): copyright line
+  (year 2026, holder "Ольга Савчук"), the permitted use (view and evaluate), everything else reserved,
   brand and content excluded, no warranty. If the owner picks MIT, use the standard MIT text.
-- [ ] **8. Link check** — Run `pnpm dlx markdown-link-check README.md docs/setup.md
+- [ ] **9. Link check** — Run `pnpm dlx markdown-link-check README.md docs/setup.md
   docs/screenshots/README.md` (or `lychee` if available) from the worktree. Every relative link and
-  anchor must resolve. GitHub issue/PR URLs fail while the repo is private and unauthenticated;
+  anchor must resolve. The repo is public, so issue/PR URLs can be checked too; if the checker is rate-limited by GitHub,
   check them with `gh issue view <n>` / `gh pr view <n>` instead and record that they exist. List
-  stale lines found on the way for Q3.
-- [ ] **9. Rebase, port and push** — `git fetch origin && git rebase origin/main`. If #125 or #126
+  any out-of-date lines still left after step 3.
+- [ ] **10. Rebase, port and push** — `git fetch origin && git rebase origin/main`. If #125 or #126
   merged first and touched `README.md` in sections that moved, take main's version of those
   sections, apply their edits to `docs/setup.md`, and drop them from the README. Re-check the CI
-  badge (step 3) and the gift-card feature line (step 4). Push `issue/141` and check on GitHub that
+  badge (step 4) and the gift-card feature line (step 5). Push `issue/141` and check on GitHub that
   the Mermaid diagram renders, in light and dark theme, and that the README reads well at phone
   width.
-- [ ] **10. Later, not in this PR: screenshots and live demo** — Once #131 provides synthetic data
+- [ ] **11. Later, not in this PR: screenshots and live demo** — Once #131 provides synthetic data
   (and hosting exists for the demo): capture home, catalog, product, cart and checkout at desktop
   (1440×900) and phone (390×844) per `docs/screenshots/README.md`, convert to WebP under 200 KB
   each, check them for personal data, commit to `docs/screenshots/`, replace the hero placeholder
@@ -232,9 +237,9 @@ No other files change.
 
 - No code changes, so no new Vitest tests. Still run, from the worktree:
   `pnpm --dir "$WT" typecheck`, `pnpm --dir "$WT" lint` (Biome checks Markdown only if configured;
-  it must stay green), `pnpm --dir "$WT" test` (also gives the numbers for step 6) and
+  it must stay green), `pnpm --dir "$WT" test` (also gives the numbers for step 7) and
   `pnpm --dir "$WT" build`.
-- Link check (step 8) and Mermaid render check (steps 5, 9).
+- Link check (step 9) and Mermaid render check (steps 6, 10).
 - Manual: read the README top to bottom on GitHub as a reviewer (two-minute test); follow every
   `docs/setup.md` link from the Getting started list; confirm nothing from the old README is lost
   (compare headings from step 1 with `docs/setup.md`).
@@ -242,21 +247,20 @@ No other files change.
 ## Acceptance criteria
 
 - [ ] The README opens with a pitch, a screenshot and the features, and the setup guide is still
-  complete (in the README or `docs/setup.md`) — steps 2, 3, 4, 7. The screenshot part is a
-  placeholder until step 10.
-- [ ] A Mermaid architecture diagram renders on GitHub — steps 5, 9
-- [ ] Screenshots show desktop and phone layouts and contain no real customer data — step 10
+  complete (in the README or `docs/setup.md`) — steps 2, 3, 4, 5, 8. The screenshot part is a
+  placeholder until step 11.
+- [ ] A Mermaid architecture diagram renders on GitHub — steps 6, 10
+- [ ] Screenshots show desktop and phone layouts and contain no real customer data — step 11
   (deferred: needs #131); this PR adds the shot list and placeholders
-- [ ] The key decisions link to their issues or PRs — step 6
-- [ ] A `LICENSE` file exists — step 7
-- [ ] All links in the README work — step 8
+- [ ] The key decisions link to their issues or PRs — step 7
+- [ ] A `LICENSE` file exists — step 8
+- [ ] All links in the README work — step 9
 
 ## Out of scope
 
-- Taking the screenshots and adding the live demo URL (step 10, after #131 and hosting).
+- Taking the screenshots and adding the live demo URL (step 11, after #131 and hosting).
 - The analytics case study README (#133) and a separate portfolio site.
 - The CI workflow and branch protection (#142); this plan only places the badge.
 - Changing files outside `README.md`, `docs/**` and `LICENSE` (e.g. `app/.server/AGENTS.md`,
   `scripts/aspire.mjs`, a `license` field in `package.json`).
-- Changing the repo's visibility.
-- Rewriting the moved setup text beyond anchors and paths (Q3).
+- Updating `app/.server/AGENTS.md` ("the README table"): a follow-up after #125 and #126 merge.

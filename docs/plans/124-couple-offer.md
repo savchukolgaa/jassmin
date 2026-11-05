@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/124
 Branch: `issue/124`
 Worktree: `.claude/worktrees/issue-124`
-Status: Planned
+Status: Implemented
 
 ## Goal
 A shopper buying perfume for two gets 15% off every second full bottle (30, 50 or 100 ml). The
@@ -161,7 +161,7 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   `__fixtures__/offers.json` and `offers.en.json`, then update `content.test.ts` (expected slug
   order and `toHaveLength`) and add an `offers-ui.test.ts` case: a `bundle` group with the couple
   offer renders its title, price note and CTA in uk and, under `<I18nProvider locale="en">`, en.
-- [ ] **7. Docs** — `app/.server/AGENTS.md` → Discounts: list the new kind and how it prices,
+- [x] **7. Docs** — `app/.server/AGENTS.md` → Discounts: list the new kind and how it prices,
   say the shop now has two automatic rules (tester trio and `couple-15`, migration 0022), and how
   to change the percent (migration `UPDATE … WHERE slug = 'couple-15'`, `SAMPLE_DISCOUNTS`, the
   `checkout.discountCouple` copy, the Strapi offer's texts).
@@ -179,13 +179,13 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   couple-offer card on /offers in both languages.
 
 ## Acceptance criteria
-- [ ] A cart with two full bottles (30/50/100 ml) gets 15% off the cheaper one, automatically — steps 2, 3
-- [ ] With 3 full bottles one unit is discounted, with 4 two are, always the cheaper of each pair — step 2
-- [ ] 5 and 10 ml units never count towards the couple offer — steps 2, 3
-- [ ] When another rule (tester trio, promo code) saves more, that rule is used instead — step 2
-- [ ] The cart, checkout, order page and email show the couple-offer discount line in Ukrainian and English — step 5
-- [ ] The offers page shows a couple-offer card in both languages — step 6
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
+- [x] A cart with two full bottles (30/50/100 ml) gets 15% off the cheaper one, automatically — steps 2, 3
+- [x] With 3 full bottles one unit is discounted, with 4 two are, always the cheaper of each pair — step 2
+- [x] 5 and 10 ml units never count towards the couple offer — steps 2, 3
+- [x] When another rule (tester trio, promo code) saves more, that rule is used instead — step 2
+- [x] The cart, checkout, order page and email show the couple-offer discount line in Ukrainian and English — step 5
+- [x] The offers page shows a couple-offer card in both languages — step 6
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
 
 ## Out of scope
 - Stacking discounts, or combining the couple offer with the tester trio or a code.

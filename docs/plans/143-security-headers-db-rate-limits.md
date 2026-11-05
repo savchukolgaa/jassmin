@@ -62,8 +62,8 @@ the other hardening headers. The rate-limit counters move from process memory in
     `STRAPI_URL` upload URLs (`cms/content.ts`, `routes/cms.products.ts`). OG images are same-origin.
   - `font-src 'self'`: fonts are bundled by `@fontsource` (`root.tsx`, `app.css`).
   - `connect-src 'self'`, plus `ws:` in development only (Vite HMR). `/api/events` beacons are same-origin.
-  - `frame-src https://www.google.com`: the home page's map `<iframe>` (`features/home/LocationSection.tsx`)
-    loads Strapi's `mapEmbedUrl`, a Google Maps embed in the seed (`cms/scripts/seed.ts`). **(unconfirmed, Q3)**
+  - `frame-src https://www.google.com https://maps.google.com`: the home page's map `<iframe>` (`features/home/LocationSection.tsx`)
+    loads Strapi's `mapEmbedUrl`, a Google Maps embed in the seed (`cms/scripts/seed.ts`).
   - `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, `object-src 'none'`
   - Report-only mode: header `Content-Security-Policy-Report-Only`, `report-uri /csp-report` and
     `report-to csp` with `Reporting-Endpoints: csp="/csp-report"`. Enforced mode sends
@@ -88,7 +88,7 @@ the other hardening headers. The rate-limit counters move from process memory in
   the in-memory store, not the table (a report flood mustn't become a write flood).
 - **Static files** that `react-router-serve` serves with `express.static` (`/assets/*`, `public/`)
   never reach the app, so they don't get these headers. That's acceptable: securityheaders.com
-  grades the HTML document, and hashed JS/CSS can't be framed or sniffed into HTML. **(unconfirmed, Q2)**
+  grades the HTML document, and hashed JS/CSS can't be framed or sniffed into HTML.
 
 **Rate limits**
 
@@ -137,39 +137,23 @@ the other hardening headers. The rate-limit counters move from process memory in
     "the socket address" here, but `react-router-serve` (`@react-router/express`'s
     `createRequestHandler` without `getLoadContext`) gives the app only a Fetch `Request`, with no
     remote address. So with 0 hops the IP is `undefined`, and callers fall back as they do today
-    (the visitor id, or `"anonymous"`). **(unconfirmed, Q1)**
-
-## Open questions
-
-- [ ] **Q1: How should the IP work with `TRUSTED_PROXY_HOPS=0`, given that `react-router-serve`
-  exposes no socket address?** Why it matters: with 0 hops and no IP, the login per-IP limit is
-  skipped (per-email still applies), and the contact form's fallback key `"anonymous"` becomes **one
-  bucket for all visitors**: after 5 messages in a window nobody can send. Hosting isn't decided
-  yet. Recommended default: keep `react-router-serve`, make 0 mean "ignore `X-Forwarded-For`, IP
-  unknown", and document that production behind a proxy (any PaaS/CDN) must set
-  `TRUSTED_PROXY_HOPS=1`. Also log one startup warning when `NODE_ENV=production` and hops is 0.
-  The alternative is a small custom Express server (`server.ts` with
-  `getLoadContext` → `req.socket.remoteAddress`) replacing `pnpm start`. It's more work and it
-  changes the deploy, so it's better decided together with hosting. Affects steps: 6, 7.
-- [ ] **Q2: Must static files (`/assets/*`, `public/`) also carry the headers?** Why it matters:
-  `react-router-serve` serves them before the app runs, so adding headers there also needs a custom
-  server (see Q1) or the hosting proxy. Recommended default: no. Only app responses get them, and
-  `docs/security.md` says the proxy may add `X-Content-Type-Options` for static files. Affects
-  steps: 2, 11.
-- [ ] **Q3: Is the map always a Google Maps embed?** Why it matters: `mapEmbedUrl` is free text in
-  Strapi. With the CSP enforced, another provider (OpenStreetMap, Mapbox) or a `maps.google.com`
-  URL would be blocked in the frame. Recommended default: `frame-src https://www.google.com
-  https://maps.google.com`, with `docs/security.md` explaining how to add an origin. A later option
-  is a Strapi regex validation on the field. Affects steps: 1, 11.
-- [ ] **Q4: Which real payment provider comes next?** Why it matters: Chrome applies `form-action`
-  to the redirect after a form POST, and a hosted payment page (e.g. LiqPay's checkout) is
-  cross-origin. The simulator is same-origin, so nothing breaks today. Recommended default:
-  `form-action 'self'` now, and `docs/security.md` plus a comment in `buildCsp` say the provider's
-  origin must be added together with the provider (`app/.server/AGENTS.md` → Payments). Affects
-  steps: 1, 11.
+    (the visitor id, or `"anonymous"`).
 
 ## Resolved questions
 
+- **Q1 (owner, 2026-11-05: defaults): the IP with `TRUSTED_PROXY_HOPS=0`.** Keep
+  `react-router-serve`. 0 means "ignore `X-Forwarded-For`, IP unknown", and callers fall back as
+  today. Production behind a proxy must set `TRUSTED_PROXY_HOPS=1` (documented), and the app logs
+  one startup warning when `NODE_ENV=production` and hops is 0. A custom Express server that reads
+  the socket address is left for the hosting decision.
+- **Q2 (owner: default): headers on static files.** Not added. Only app responses get them, and
+  `docs/security.md` says the hosting proxy may add `X-Content-Type-Options` for `/assets/*` and
+  `public/`.
+- **Q3 (owner: default): map origins.** `frame-src https://www.google.com https://maps.google.com`,
+  and `docs/security.md` explains how to add another map provider's origin.
+- **Q4 (owner: default): payment provider and `form-action`.** `form-action 'self'` for now. A
+  comment in `buildCsp` and `docs/security.md` say the provider's origin must be added together with
+  a real provider.
 - **Which rate limiters exist?** Seven instances in three files: `loginLimiters.byEmail/byIp`,
   `profilePasswordLimiter`, `promoCodeLimiter` and `giftCardCodeLimiter` (`app/.server/rate-limit.ts`),
   the contact limiter (`services/contact.ts`) and `eventsLimiter` (`client-events.ts`). Their callers
@@ -263,7 +247,7 @@ the other hardening headers. The rate-limit counters move from process memory in
   `clientIpFromHeader(header, hops)` and `getClientIp(request, hops?)`, and re-export it from
   `rate-limit.ts`. Rewrite the `getClientIp` tests: 0 hops ignores the header, 1 and 2 hops pick
   the right entry, a spoofed left-hand entry is ignored, too few entries or a non-IP value gives
-  `undefined`. Add the production startup warning for 0 hops **(unconfirmed, Q1)**.
+  `undefined`. Add the production startup warning for 0 hops.
 - [ ] **7. `rate_limits` table.** Add `rateLimits` to `db/schema.ts`, run
   `pnpm db:generate --name rate_limits`, and write `db/rollbacks/0024_rate_limits.sql`. Put
   `hitRateLimit(db, key, windowMs, now)` (the upsert, `RETURNING count, reset_at`),

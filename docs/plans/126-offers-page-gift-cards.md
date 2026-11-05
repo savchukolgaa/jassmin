@@ -57,8 +57,12 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   fixture perk say "від 1500 ₴" / "from 1500 ₴". The only "1000 ₴" left is in the
   `gifts-by-budget` body, which this plan removes. Step 5 repeats the search so the PR can say
   so. The live Strapi entries may still be wrong, and that's the PR's staff checklist.
-- **Offers group heading and page intro:** see Q1. Until it's answered, the plan follows the
-  recommended default.
+- **Offers group heading and page intro stay as they are.** "Ідеї подарунків" / "Gift ideas"
+  still fits a gift card, and the `gift` group can hold other gift offers later. `offers.kinds.gift`,
+  `offers.intro` and `offers.metaDescription` in `uk.ts`/`en.ts` don't change.
+- **No seed cleanup for the retired offer.** The seed only adds missing entries, so a local Strapi
+  that was seeded before keeps `gifts-by-budget`. The PR description says to delete it in the local
+  Strapi admin (or to reset the CMS database), just as staff do on the live site.
 - **The English-fallback test keeps its coverage.** Today `gifts-by-budget` is the only offer
   missing from `offers.en.json`, and that's what tests "keep Ukrainian where a translation is
   missing" in `content.test.ts`. The gift card offer must exist in English (acceptance
@@ -66,21 +70,13 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   response from `offersEn` with one entry filtered out (`welcome-offer`), and a new assertion
   checks that `gift-cards` comes back in English.
 
-## Open questions
-- [ ] **Q1: Should the `gift` group heading and the offers intro mention gift cards?** Why it
-  matters: the gift card offer would sit under "Ідеї подарунків" / "Gift ideas", and the page
-  intro and meta description say "ідеї подарунків" / "gift ideas", which describe the offer this
-  issue removes. Recommended default: rename `offers.kinds.gift` to "Подарунки" / "Gifts", and in
-  `offers.intro` and `offers.metaDescription` replace "ідеї подарунків" / "gift ideas" with
-  "подарункові картки" / "gift cards". Change `uk.ts` and `en.ts` together, and the
-  `">Gift ideas<"` marker in `offers-ui.test.ts`. Affects step 3.
-- [ ] **Q2: Should re-running the seed remove `gifts-by-budget` from an existing local Strapi?**
-  Why it matters: the seed only adds missing entries ("existing localizations … are left
-  alone"), so a developer's local Strapi keeps the old offer next to the new one. Recommended
-  default: no cleanup code. The PR description says to delete `gifts-by-budget` in the local
-  Strapi admin (or reset the CMS database), just like staff do on the live site. Affects step 1.
-
 ## Resolved questions
+- **Should the `gift` group heading and the offers intro change to mention gift cards?** No. A
+  gift card is a gift idea, so "Ідеї подарунків" / "Gift ideas" stays (source: user decision,
+  2026-11-05).
+- **Should re-running the seed remove `gifts-by-budget` from an existing local Strapi?** No. There
+  is no cleanup code, and the PR description says to delete the entry by hand (source: user
+  decision, 2026-11-05).
 - **Which URL does the CTA use, and does it need one per locale?** One app path (the Ukrainian
   `/podarunkovi-kartky`). The app localizes it per viewer (source: `app/.server/services/offers.ts`
   `toOfferView`, `app/lib/links.ts` `toInternalPath`, `app/lib/paths.ts` `localizeInternalPath`;
@@ -101,8 +97,7 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
 | modify | `app/.server/cms/__fixtures__/offers.en.json` | Add the English `gift-cards` entry (same `documentId` as the Ukrainian one) |
 | modify | `app/.server/cms/content.test.ts` | Expected slugs, the fallback test with its own filtered English response, a check that `gift-cards` comes back in English |
 | modify | `app/.server/services/offers.test.ts` | Check that the gift card CTA becomes `/podarunkovi-kartky` (uk) / `/en/gift-cards` (en) |
-| modify | `app/features/offers/offers-ui.test.ts` | Render the gift card offer next to the couple offer in both languages; update the group heading marker (Q1) |
-| modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | Q1: `offers.kinds.gift`, `offers.intro`, `offers.metaDescription` |
+| modify | `app/features/offers/offers-ui.test.ts` | Render the gift card offer next to the couple offer in both languages |
 | modify | `README.md` | The seed description (line ~224): "gift ideas" → "gift cards" |
 
 ## Steps
@@ -120,13 +115,9 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   English entry at the same position (after `couple-offer`, before `welcome-offer`) with the
   **same `documentId`**, a new `id`, `locale: "en"` and the English copy. Both fixtures are
   checked against the zod schema in `app/.server/cms/schemas.ts` when the tests load them.
-- [ ] **3. Offers copy (Q1 default)** — In `uk.ts`/`en.ts`, `offers.kinds.gift`: "Подарунки" /
-  "Gifts". In `offers.intro` and `offers.metaDescription`: "ідеї подарунків" → "подарункові
-  картки", "gift ideas" → "gift cards". Update the `">Gift ideas<"` marker in the `OffersPage`
-  grouping test to `">Gifts<"`. That test's card is also titled "Gifts", so give the card a
-  different title (e.g. "Gift cards") so the order check stays meaningful. Update `README.md`
-  line ~224 ("gift ideas" → "gift cards"). Check: `pnpm --dir "$WT" typecheck` (the uk/en key
-  check).
+- [ ] **3. README** — In `README.md` line ~224 (the seed description), change "gift ideas" to
+  "gift cards". The app's offers copy (`offers.kinds.gift`, `offers.intro`,
+  `offers.metaDescription`) stays as it is.
 - [ ] **4. Tests (after rebasing onto #125)** — Rebase onto `origin/main` with #125 merged and
   check `PAGES.giftCards` (see Dependencies). Then:
   - `content.test.ts`, "returns the active offers in editor order": `gifts-by-budget` →
@@ -148,8 +139,8 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
 - [ ] **5. Free-delivery sweep** — Run `git -C "$WT" grep -nE "1000" -- app cms/scripts cms/src
   README.md docs` and read every match that's about delivery. None is expected after step 1.
   Write the result in the PR description. Don't change any `{threshold}` copy.
-- [ ] **6. Manual check** — `pnpm aspire run` from the worktree, re-seed (or add the entry by
-  hand, see Q2), and open `/aktsii` and `/en/offers`. Check that the gift card offer shows with
+- [ ] **6. Manual check** — `pnpm aspire run` from the worktree, re-seed (after deleting
+  `gifts-by-budget` in the local Strapi admin, or on a fresh CMS database), and open `/aktsii` and `/en/offers`. Check that the gift card offer shows with
   the amounts and its CTA opens the gift card page in each language, that the couple offer card
   is in the bundles group, that the perks strip says 1500 ₴, and that "Gifts by budget" is gone.
 - [ ] **7. PR description: staff checklist for live Strapi** — For `/open-pr 126`, list the
@@ -189,5 +180,6 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
 - The gift card page, its purchase action and redemption at checkout (#125).
 - Couple-offer pricing (#124).
 - A Strapi schema change or a new offer kind.
-- Seed code that deletes retired offers from an existing Strapi (Q2).
+- Seed code that deletes retired offers from an existing Strapi.
+- Changing the offers page's group heading, intro or meta description.
 - Editing the live Strapi entries: staff do that from the PR checklist.

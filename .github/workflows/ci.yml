@@ -36,6 +36,9 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      # Services under test load the app's env (app/.server/env.ts), which requires a 32+ character
+      # session secret. Locally `.env` provides it; CI has no `.env`, so it gets a dummy value.
+      SESSION_SECRET: ci-session-secret-not-used-for-anything-real
     steps:
       - uses: actions/checkout@v7
 

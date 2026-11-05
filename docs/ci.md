@@ -26,7 +26,8 @@ on each PR's **Checks** section.
 ## The database tests
 
 `check` starts a `postgres:18` service container, the same major version Aspire runs locally, and sets
-`DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres`. Each DB test file creates and drops
+`DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres`, plus a dummy `SESSION_SECRET`
+(service tests load the app's env, which requires one; locally `.env` provides it). Each DB test file creates and drops
 its own throwaway database on that server (`app/.server/db/test-utils.ts`).
 
 Without a database those tests skip themselves (`describe.skipIf(!hasDatabase)`), which is fine on a
@@ -104,6 +105,8 @@ or switch the rule off to get a PR in: fix the check instead.
   test, look for an `it.skip`, `describe.skip` or a `skipIf` condition that is true on Linux.
 - **`ERR_PNPM_OUTDATED_LOCKFILE`:** `package.json` changed without `pnpm install`. Run it locally and
   commit `pnpm-lock.yaml`.
+- **`Invalid environment variables`:** a test loads the app's env and a required variable has no
+  value in CI. Add a dummy value to the `check` job's `env` in `ci.yml`, never a real secret.
 - **Works locally, fails in CI:** CI starts from a clean checkout, without `.env`, on Linux. Look for
   files that exist only locally, case-sensitive import paths, and `\` in paths.
 - **Re-running:** the run's page → **Re-run jobs**, or `gh run rerun <run-id> --failed`.

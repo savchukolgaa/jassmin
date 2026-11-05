@@ -277,7 +277,7 @@ From the codebase:
   order-email:<id>`. Tests: `mail.test.ts` (one suppressed `to` → nothing sent; a mix keeps the
   rest; a case difference is still suppressed); `order-email.test.ts` (a suppressed recipient →
   `failed` on the first attempt, `sendMail` never called).
-- [ ] **8. Webhook.** In `email/webhook-brevo.schema.ts`, a zod schema for one Brevo event
+- [x] **8. Webhook.** In `email/webhook-brevo.schema.ts`, a zod schema for one Brevo event
   (`event`, `email`, optional `message-id`, `reason`, `X-Mailin-custom`, `ts_event`, passthrough
   ignored) and for `event | event[]`. `webhook-brevo.ts`: map events → suppression entries (null
   for ignored events) and parse `order-email:<id>`. `services/email-webhook.ts`:

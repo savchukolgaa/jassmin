@@ -12,8 +12,9 @@ import {
 } from "../db/queries/users";
 import { composeEmail } from "../email/layout";
 import { type Env, getEnv } from "../env";
-import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
+import { type MailSender, stripLineBreaks } from "../mail";
 import { hashPassword, verifyPassword } from "../password";
+import { getMailer } from "./mailer";
 
 // The account profile page (#54): contact details, email and password. Email and password changes
 // need the current password; the route rate-limits wrong ones (`profilePasswordLimiter`).
@@ -148,7 +149,7 @@ export interface EmailChangedDeps {
 }
 
 function defaultEmailChangedDeps(): EmailChangedDeps {
-  return { mailer: getMailTransport(), env: getEnv(), now: () => new Date() };
+  return { mailer: getMailer(), env: getEnv(), now: () => new Date() };
 }
 
 /**

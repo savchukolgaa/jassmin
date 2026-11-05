@@ -265,7 +265,7 @@ From the codebase:
   `markOrderEmailBounced`, which only touches `status = 'sent'` rows, sets `failed` and
   `last_error`, and matches by id or message id. Add integration tests next to the queries,
   following `order-emails.test.ts`.
-- [ ] **7. Skip suppressed recipients.** In `mail.ts`, add `withSuppressions(sender, lookup)`
+- [x] **7. Skip suppressed recipients.** In `mail.ts`, add `withSuppressions(sender, lookup)`
   and `SuppressedRecipientError` (the reason, no address in the message). It handles string, object
   and array forms of `to`/`cc`/`bcc` (a `recipientAddresses` helper) and compares lowercase
   addresses. `services/mailer.ts`: `getMailer()` = `getMailTransport()` wrapped with

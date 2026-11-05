@@ -4,13 +4,14 @@
 import { existsSync } from "node:fs";
 import nodemailer from "nodemailer";
 import { getDatabaseUrl, type MailEnv, parseMailEnv } from "../../env";
-import { smtpOptionsFromUrl } from "../../mail";
+import { smtpOptionsFromUrl, withSuppressions } from "../../mail";
 import {
   deliverOrderEmails,
   describeOrderEmailReport,
   orderEmailDeps,
 } from "../../services/order-email";
 import { createDb } from "../client";
+import { findEmailSuppressions } from "../queries/email-suppressions";
 
 if (existsSync(".env")) {
   process.loadEnvFile(".env");
@@ -35,7 +36,11 @@ const transport = env.SMTP_URL
   : null;
 const db = createDb(url, 1);
 try {
-  const report = await deliverOrderEmails({}, orderEmailDeps(db, transport, env));
+  // Never to an address that bounced or complained (#134).
+  const mailer = transport
+    ? withSuppressions(transport, (addresses) => findEmailSuppressions(db, addresses))
+    : null;
+  const report = await deliverOrderEmails({}, orderEmailDeps(db, mailer, env));
   console.log(describeOrderEmailReport(report));
 } finally {
   transport?.close();

@@ -3,8 +3,9 @@ import type { ContactMessage } from "~/features/home/contact-form.schema";
 import { createTranslator, DEFAULT_LOCALE } from "~/lib/i18n";
 import { composeEmail } from "../email/layout";
 import { type Env, getEnv } from "../env";
-import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
+import { type MailSender, stripLineBreaks } from "../mail";
 import { createRateLimiter, type RateLimiter } from "../rate-limit";
+import { getMailer } from "./mailer";
 
 // Contact form submissions from the home page: spam checks, rate limiting and delivery by email
 // to the store (`CONTACT_INBOX`). Messages are not stored.
@@ -45,7 +46,7 @@ const contactLimiter: RateLimiter = globalForLimiters.__jassminContactLimiter;
 
 function defaultDeps(): ContactDeps {
   return {
-    mailer: getMailTransport(),
+    mailer: getMailer(),
     limiter: contactLimiter,
     env: getEnv(),
     now: () => new Date(),

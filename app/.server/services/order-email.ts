@@ -23,7 +23,7 @@ import {
 import { findOrderConfirmation } from "../db/queries/orders";
 import { composeEmail, type EmailAmount, type EmailBlock } from "../email/layout";
 import type { MailEnv } from "../env";
-import { type MailSender, stripLineBreaks } from "../mail";
+import { type MailSender, SuppressedRecipientError, stripLineBreaks } from "../mail";
 
 /**
  * Minutes to wait before retrying after the 1st, 2nd, … failed attempt: about two days in all.
@@ -226,6 +226,24 @@ const GIFT_CARD_BUILDERS = {
   gift_card_recipient: buildGiftCardRecipientEmail,
 } as const;
 
+/** The header that tags a sent order email with its `order_emails` id (#134). */
+export const ORDER_EMAIL_TAG = "X-Mailin-custom";
+
+/** The tag's value for an `order_emails` row, read back by `parseOrderEmailTag`. */
+export function orderEmailTag(id: number): string {
+  return `order-email:${id}`;
+}
+
+/** The `order_emails` id a webhook event's tag names, or `undefined`. */
+export function parseOrderEmailTag(tag: string | undefined): number | undefined {
+  const match = tag?.trim().match(/^order-email:(\d{1,9})$/);
+  return match?.[1] ? Number(match[1]) : undefined;
+}
+
+function orderEmailTagHeader(id: number): Record<string, string> {
+  return { [ORDER_EMAIL_TAG]: orderEmailTag(id) };
+}
+
 /** Rows the retry job claims at a time. */
 export const ORDER_EMAIL_BATCH_SIZE = 50;
 
@@ -244,7 +262,8 @@ export interface OrderEmailDeps {
   }): Promise<ClaimedOrderEmail[]>;
   loadOrder(orderId: number): Promise<OrderConfirmation | undefined>;
   loadGiftCard(giftCardId: number): Promise<GiftCard | undefined>;
-  markSent(id: number): Promise<void>;
+  /** `messageId` is the Message-ID it went out with (#134), to match a later bounce. */
+  markSent(id: number, messageId: string): Promise<void>;
   markFailed(id: number, failure: { error: string; final: boolean }): Promise<void>;
 }
 
@@ -261,7 +280,7 @@ export function orderEmailDeps(
       claimOrderEmails(db, { ...options, retryDelaysMinutes: ORDER_EMAIL_RETRY_DELAYS_MINUTES }),
     loadOrder: (orderId) => findOrderConfirmation(db, orderId),
     loadGiftCard: (giftCardId) => findGiftCard(db, giftCardId),
-    markSent: (id) => markOrderEmailSent(db, id),
+    markSent: (id, messageId) => markOrderEmailSent(db, id, messageId),
     markFailed: (id, failure) => markOrderEmailFailed(db, id, failure),
   };
 }
@@ -305,6 +324,7 @@ async function deliverOne(
     email.giftCardId === null
       ? `order ${email.orderId}'s ${email.type} email`
       : `gift card ${email.giftCardId}'s ${email.type} email`;
+  let messageId: string;
   try {
     const message = await buildEmail(email, deps);
     if (!message) {
@@ -314,8 +334,24 @@ async function deliverOne(
       report.gaveUp += 1;
       return;
     }
-    await mailer.sendMail(message);
+    messageId = message.messageId;
+    // Brevo echoes this tag in its webhook events, so a bounce finds its row (#134).
+    await mailer.sendMail({
+      ...message,
+      headers: orderEmailTagHeader(email.id),
+    });
   } catch (error) {
+    if (error instanceof SuppressedRecipientError) {
+      // The address bounced or complained before (#134): never retried.
+      console.info(`[order-email] Not sending ${label}: ${error.message}`);
+      await deps
+        .markFailed(email.id, { error: `suppressed: ${error.reasons.join(", ")}`, final: true })
+        .catch((markError: unknown) =>
+          console.error(`[order-email] Recording the failure of ${label} failed:`, markError),
+        );
+      report.gaveUp += 1;
+      return;
+    }
     const final = email.attempts >= MAX_ORDER_EMAIL_ATTEMPTS;
     const message = errorMessage(error);
     console.error(
@@ -333,7 +369,7 @@ async function deliverOne(
   // beats losing it.
   report.sent += 1;
   await deps
-    .markSent(email.id)
+    .markSent(email.id, messageId)
     .catch((markError: unknown) =>
       console.error(`[order-email] Recording ${label} as sent failed:`, markError),
     );

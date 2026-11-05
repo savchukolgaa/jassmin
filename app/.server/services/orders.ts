@@ -55,8 +55,8 @@ import {
 } from "../db/queries/orders";
 import { findUserContact } from "../db/queries/users";
 import { getEnv } from "../env";
-import { getMailTransport } from "../mail";
 import { checkGiftCard, giftCardAmountFor } from "./gift-cards";
+import { getMailer } from "./mailer";
 import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
 import { type PricedCart, type PricingLine, priceCart } from "./pricing";
 
@@ -306,7 +306,7 @@ export function deliverOrderConfirmation(
   orderId: number,
   db: Db = defaultDb,
 ): Promise<OrderEmailReport> {
-  return deliverOrderEmails({ orderId }, () => orderEmailDeps(db, getMailTransport(), getEnv()));
+  return deliverOrderEmails({ orderId }, () => orderEmailDeps(db, getMailer(), getEnv()));
 }
 
 /** The user's orders for the account dashboard (#12), split into current and previous. */

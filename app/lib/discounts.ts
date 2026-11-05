@@ -6,6 +6,9 @@ import { createTranslator, type TextKey, type Translator } from "./i18n";
 /** `discounts.slug` of the automatic tester-trio rule, the price the home page advertises. */
 export const TESTER_TRIO_DISCOUNT_SLUG = "tester-trio";
 
+/** `discounts.slug` of the automatic couple offer (#124): 15% off every second full bottle. */
+export const COUPLE_OFFER_DISCOUNT_SLUG = "couple-15";
+
 /** Longest code `discounts.code` holds. */
 export const MAX_PROMO_CODE_LENGTH = 40;
 

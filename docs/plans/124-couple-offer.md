@@ -137,7 +137,7 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   `"0021_tester_trio_rule"` rollback and fix the "0007 to 0021" comments; add a test like the
   #98 one: 0022 creates the rule once, keeps an existing one, rolls it back, and the restored
   checks reject `percent_every_nth`. Update `seed.test.ts` for the extra rule.
-- [ ] **4. DB test for the advertised rule** — `app/.server/db/couple-offer.test.ts` (skipped
+- [x] **4. DB test for the advertised rule** — `app/.server/db/couple-offer.test.ts` (skipped
   without a DB, like `tester-trio.test.ts`): after `migrateLatest`, `findDiscountBySlug(db,
   COUPLE_OFFER_DISCOUNT_SLUG)` matches the `SAMPLE_DISCOUNTS` row, `value` is `"15.00"` (the
   label copy and the Strapi texts say 15%), and `priceCart` on two `CATALOG_PRICES[50]` bottles

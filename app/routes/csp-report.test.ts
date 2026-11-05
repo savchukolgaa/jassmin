@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 const { action } = await import("./csp-report");
 const { MAX_CSP_REPORT_BYTES, stripQuery } = await import("~/.server/csp-report");
@@ -20,7 +20,15 @@ function post(
   return action({ request, params: {}, context: {} } as unknown as ActionArgs);
 }
 
-let warn: ReturnType<typeof vi.spyOn>;
+let warn: MockInstance<typeof console.warn>;
+
+/** The violations logged so far, parsed back from their `[csp] {json}` lines. */
+function logged(): unknown[] {
+  return warn.mock.calls.map(([line]) => {
+    expect(String(line)).toMatch(/^\[csp\] \{.*\}$/);
+    return JSON.parse(String(line).slice("[csp] ".length));
+  });
+}
 
 beforeEach(() => {
   warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -47,14 +55,16 @@ describe("CSP report endpoint", () => {
     const response = await post(reportUriBody);
 
     expect(response.status).toBe(204);
-    expect(warn).toHaveBeenCalledWith("[csp]", {
-      directive: "script-src-elem",
-      blockedUri: "https://evil.example/x.js",
-      documentPath: "/vkhid",
-      sourceFile: "https://jassmin.ua/assets/app.js",
-      line: 12,
-      disposition: "report",
-    });
+    expect(logged()).toEqual([
+      {
+        directive: "script-src-elem",
+        blockedUri: "https://evil.example/x.js",
+        documentPath: "/vkhid",
+        sourceFile: "https://jassmin.ua/assets/app.js",
+        line: 12,
+        disposition: "report",
+      },
+    ]);
     expect(JSON.stringify(warn.mock.calls)).not.toContain("secret");
     expect(JSON.stringify(warn.mock.calls)).not.toContain("email");
   });
@@ -80,14 +90,14 @@ describe("CSP report endpoint", () => {
 
     expect(response.status).toBe(204);
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith("[csp]", {
-      directive: "img-src",
-      blockedUri: "https://cdn.example/a.png",
-      documentPath: "/koshyk",
-      sourceFile: undefined,
-      line: undefined,
-      disposition: "enforce",
-    });
+    expect(logged()).toEqual([
+      {
+        directive: "img-src",
+        blockedUri: "https://cdn.example/a.png",
+        documentPath: "/koshyk",
+        disposition: "enforce",
+      },
+    ]);
   });
 
   it("refuses bodies over the size limit, invalid JSON and other methods", async () => {

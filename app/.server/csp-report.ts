@@ -93,7 +93,7 @@ export function parseCspReport(contentType: string, text: string): CspViolation[
   ];
 }
 
-/** Logs one violation as a single `[csp]` line. */
+/** Logs one violation as a single `[csp] {json}` line, easy to grep and parse. */
 export function logCspViolation(violation: CspViolation): void {
-  console.warn("[csp]", violation);
+  console.warn(`[csp] ${JSON.stringify(violation)}`);
 }

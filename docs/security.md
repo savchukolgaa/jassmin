@@ -65,7 +65,7 @@ Release with `report-only`, watch the logs for a week, fix any real violation, t
 `/csp-report` (`app/routes/csp-report.ts`) accepts both report formats (`application/csp-report` from `report-uri`, `application/reports+json` from `report-to`), at most 16 KB per request and 30 requests per client IP per minute (counted in memory, so a report flood never becomes database writes). It stores nothing and answers 204. Each violation becomes one log line:
 
 ```
-[csp] { directive: 'script-src-elem', blockedUri: 'https://evil.example/x.js', documentPath: '/vkhid', sourceFile: undefined, line: undefined, disposition: 'report' }
+[csp] {"directive":"script-src-elem","blockedUri":"https://evil.example/x.js","documentPath":"/vkhid","disposition":"report"}
 ```
 
 Query strings and fragments are removed from every URL first, so tokens or emails in a URL never reach the logs.

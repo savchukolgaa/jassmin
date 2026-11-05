@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/143
 Branch: `issue/143`
 Worktree: `.claude/worktrees/issue-143`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -304,9 +304,14 @@ the other hardening headers. The rate-limit counters move from process memory in
   securityheaders.com check after hosting. Update `app/.server/AGENTS.md`
   (rate limiting: DB-backed, hashed keys, memory store only for `/csp-report`; auth: counters
   survive restarts; client IP) and link `docs/security.md` from `README.md`.
-- [ ] **12. Full check.** `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the
+- [x] **12. Full check.** `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the
   manual pass of step 4 in report-only mode (`curl -I` on `/`, `/sitemap.xml`, `/robots.txt`,
   `/og/products/<handle>.png` and a 404 URL to confirm the headers).
+  *Done:* all four checks pass (1813 tests, 1 skipped as before). `curl` against the build in
+  production mode showed the report-only CSP and HSTS on the page, every other header on the
+  resource routes and the 404, the 0-hops startup warning, and a 204 for a report. That run also
+  showed Node printing the logged object across several lines, so `[csp]` lines are now
+  `[csp] {json}`, one per violation.
 
 ## Testing & verification
 
@@ -326,13 +331,13 @@ the other hardening headers. The rate-limit counters move from process memory in
 
 ## Acceptance criteria
 
-- [ ] Every page and resource route sends the security headers above, HSTS only in production — steps 1, 2, 12
-- [ ] The CSP uses a per-request nonce, with no `unsafe-inline` for scripts, and the site works with it enforced (checked on home, catalog, product, cart, checkout, account, blog, and with the theme script) — steps 1, 3, 4
-- [ ] CSP can run in report-only mode, with violations logged — steps 1, 5
-- [ ] Login, contact and events rate limits persist across a restart and are shared between instances — steps 7, 8, 9 (also profile, promo and gift card limits)
-- [ ] A spoofed `X-Forwarded-For` can't bypass the per-IP limits — step 6
+- [x] Every page and resource route sends the security headers above, HSTS only in production — steps 1, 2, 12 (static files served by `react-router-serve` excepted, as decided in Q2)
+- [x] The CSP uses a per-request nonce, with no `unsafe-inline` for scripts, and the site works with it enforced (checked on home, catalog, product, cart, checkout, account, blog, and with the theme script) — steps 1, 3, 4 (home and blog as their 503 page and the product page as its 404, since Strapi and listed products weren't available locally; the map and CMS images only through the policy tests)
+- [x] CSP can run in report-only mode, with violations logged — steps 1, 5
+- [x] Login, contact and events rate limits persist across a restart and are shared between instances — steps 7, 8, 9 (also profile, promo and gift card limits)
+- [x] A spoofed `X-Forwarded-For` can't bypass the per-IP limits — step 6
 - [ ] securityheaders.com rates the deployed site A or better (checked after hosting) — step 11 documents the check; done after hosting
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
 
 ## Out of scope
 

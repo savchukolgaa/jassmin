@@ -100,7 +100,7 @@ isn't rendered anywhere, so its component is removed.
   - Update the `label-art.ts` header comment.
   - `grep -rn "ProductLabelArt\|labelDetail" app` → no hits.
 
-- [ ] **4. Docs.** In `docs/design.md` → "Label card palette", replace the "Cart thumbnails
+- [x] **4. Docs.** In `docs/design.md` → "Label card palette", replace the "Cart thumbnails
   (`layout="thumb"`) keep the generated label card…" paragraph. The shop photo is now the
   picture of every product without its own photo, everywhere: cards, the product page, cart and
   order thumbnails (#122). The generated label card was removed. An uploaded photo always wins.

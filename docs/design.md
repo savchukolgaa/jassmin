@@ -99,22 +99,20 @@ Each `--color-<name>` token in `@theme` becomes a Tailwind colour (`bg-<name>`, 
 
 ## Label card palette
 
-A product without its own photo shows **the shop's bottle photo** on product cards and the product
-page (#118). Every perfume is sold in the same clear JASSMIN bottle, so one real photo
+A product without its own photo shows **the shop's bottle photo** everywhere: product cards, the
+product page (#118), and cart and account order thumbnails (#122). Every perfume is sold in the same clear JASSMIN bottle, so one real photo
 (`app/lib/shop-bottle.ts`, five WebP widths in `app/assets/shop-bottle/`) stands in for all of
 them, with nothing drawn over it (#120): perfumes are told apart by the brand, name and family chip
 under the photo.
 
-Cart thumbnails (`layout="thumb"`) keep the generated label card (#99): an inline SVG
-(`app/features/catalog/ProductLabelArt.tsx`) in the 4:5 `rounded-card` frame. It shows a bottle and
-cap, the brand in small caps (Manrope 800), the name in Playfair Display and the "jassmin."
-wordmark. **An uploaded photo always wins**: the shop photo and the card only stand in where
-`products.image_url` is empty.
+**An uploaded photo always wins**: the shop photo only stands in where `products.image_url` is
+empty. The generated label card that #99 drew in its place was removed in #122. Its palette below
+still colours the share image (#105).
 
 The colours come from the product's **primary** fragrance family (`products.fragrance_family`).
 Similar families share a palette. The hex values live in `LABEL_PALETTES` / `FAMILY_PALETTE` in
-`app/lib/label-art.ts`, not in `@theme`, because the SVG uses them as `fill` and a later rasterised
-share image needs them too. A new entry in `FRAGRANCE_FAMILIES` must get a palette in
+`app/lib/label-art.ts`, not in `@theme`, because the rasterised share image (#105) uses them as
+`fill`. A new entry in `FRAGRANCE_FAMILIES` must get a palette in
 `FAMILY_PALETTE` (`pnpm typecheck` fails otherwise). A missing or pre-#65 family is `neutral`.
 
 | Palette | Families | `bg` | `accent` (bottle) | `cap` | `panel` (label) | `ink` on `panel` | `mark` on `bg` |

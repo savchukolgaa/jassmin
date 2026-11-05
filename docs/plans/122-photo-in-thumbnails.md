@@ -67,7 +67,7 @@ isn't rendered anywhere, so its component is removed.
 
 ## Steps
 
-- [ ] **1. `ProductImage` always shows a photo.**
+- [x] **1. `ProductImage` always shows a photo.**
   - Set `photo = image ?? SHOP_BOTTLE_IMAGE`, and render only the `bg-blush` frame with the
     `<img>`.
   - Remove the `label`/`labelDetail` props, the `ProductLabelArt` and `ProductLabel` imports and

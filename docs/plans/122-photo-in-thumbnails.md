@@ -95,7 +95,7 @@ isn't rendered anywhere, so its component is removed.
     - the photo and deleted tests stay;
     - check the `CurrentOrderCard`/`PreviousOrdersList` tests in that file still pass.
 
-- [ ] **3. Remove the label card.**
+- [x] **3. Remove the label card.**
   - Delete `ProductLabelArt.tsx` and `ProductLabelArt.test.ts`.
   - Update the `label-art.ts` header comment.
   - `grep -rn "ProductLabelArt\|labelDetail" app` → no hits.

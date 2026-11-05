@@ -230,7 +230,7 @@ From the codebase:
   `env.test.ts`: production fails without `SMTP_URL` (app and mail env), the existing production
   fixtures get an `SMTP_URL`, a short webhook secret is refused, and an empty one is unset. Update
   `.env.example` and the env table in `docs/setup.md`. Check with `pnpm typecheck && pnpm test`.
-- [ ] **2. Shared bearer check.** Create `bearer-auth.ts` with
+- [x] **2. Shared bearer check.** Create `bearer-auth.ts` with
   `checkBearerSecret(request, secret | undefined): Response | null` (the body of today's
   `checkCmsSyncAuth`), and make `checkCmsSyncAuth` call it. Its tests cover 503, 401, a token with
   a different length, and success. The existing `cms.*` route tests must still pass.

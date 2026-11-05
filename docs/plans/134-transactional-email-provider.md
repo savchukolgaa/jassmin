@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/134
 Branch: `issue/134`
 Worktree: `.claude/worktrees/issue-134`
-Status: Planned
+Status: Planned (open questions answered)
 
 ## Goal
 
@@ -31,7 +31,7 @@ and record hard bounces and spam complaints so those addresses never get mail ag
 
 ## Decisions & assumptions
 
-### Provider: Brevo (recommended) **(unconfirmed, Q1)**
+### Provider: Brevo (Q1)
 
 | | **Brevo** | Postmark | Amazon SES |
 |---|---|---|---|
@@ -52,7 +52,7 @@ The code is **provider-agnostic except for one adapter**: the webhook payload pa
 (`app/.server/email/webhook-brevo.ts` and its zod schema). Switching providers means a new parser
 and a new `SMTP_URL`, nothing else.
 
-### Webhook authentication **(unconfirmed, Q2)**
+### Webhook authentication (Q2)
 
 The issue says "signed with the provider's secret". Brevo (like Postmark) doesn't sign webhooks
 with an HMAC. It sends a configured credential with each request. We configure the webhook with
@@ -71,7 +71,7 @@ same code. Without the secret the route answers 503, as `/cms/*` does.
 - HTML: a 600 px table layout with inline styles (email clients ignore `<style>`/CSS variables),
   using the C+ colours from `docs/design.md`: a `primary` `#C22F4B` header band with a white
   **text wordmark "JASSMIN"** (serif stack `Georgia, 'Times New Roman', serif`; web fonts don't
-  load in most clients) **(unconfirmed, Q3)**, `ink` `#1F1A1C` headings, `body` `#4A4245` copy,
+  load in most clients) (Q3), `ink` `#1F1A1C` headings, `body` `#4A4245` copy,
   `muted` `#5F5558` captions, `card` `#F7F3F4` amount table, `line` `#E5DADD` dividers, and a
   `primary` footer with white text. `lang="uk|en"`, `<meta name="color-scheme" content="light">`
   (C+ is light-only), and a hidden preheader.
@@ -79,7 +79,7 @@ same code. Without the secret the route answers 503, as `/cms/*` does.
   data.
 - Footer: the shop's contacts from env: `CONTACT_INBOX` (mailto), the site
   (`PUBLIC_SITE_URL`, left out when unset), and a localized one-line "why you got this" note.
-  The phone and hours live in Strapi, which the retry job can't read, so they're left out **(Q4)**.
+  The phone and hours live in Strapi, which the retry job can't read, so they're left out (Q4).
 - Copy for the layout (footer, preheader fallback) goes in a new `email` namespace in
   `app/lib/i18n/uk.ts` / `en.ts`.
 
@@ -134,7 +134,8 @@ same code. Without the secret the route answers 503, as `/cms/*` does.
 - `PUBLIC_SITE_URL` moves into `mailEnvSchema`, so the retry job can link the site in the footer.
   It's still spread into `envSchema`, and its production refine is unchanged.
 - `EMAIL_WEBHOOK_SECRET`: `z.string().min(32).optional()` in `envSchema` (web app only). Without
-  it, `/hooks/email` answers 503 **(Q5: optional vs required in production)**.
+  it, `/hooks/email` answers 503, and in production `getEnv()` logs a one-time `console.warn`
+  that bounces aren't recorded (Q5).
 - `smtps://` (port 465) is the documented form for Brevo, so TLS never depends on STARTTLS being
   offered. `smtpOptionsFromUrl` stays as it is.
 
@@ -142,31 +143,28 @@ same code. Without the secret the route answers 503, as `/cms/*` does.
 
 It goes to the store, not a customer. Its subject and labels are hard-coded in English today. It
 moves to the shared layout with i18n keys (`contactEmail` namespace) and is rendered in **`uk`**
-(the shop's language) **(unconfirmed, Q6)**.
-
-## Open questions
-
-- [ ] **Q1: Which provider: Brevo, Postmark or SES?** Why it matters: it decides the DNS records
-  in `docs/email.md`, the webhook adapter and its auth. Recommended default: **Brevo** (free tier,
-  EU, simple webhook). Affects steps: 6, 9.
-- [ ] **Q2: Is a bearer-token check acceptable for "signed with the provider's secret"?** Brevo
-  and Postmark don't HMAC-sign webhooks. Why it matters: true signing would mean SES with SNS
-  certificate verification, a lot more code. Recommended default: bearer token in constant time,
-  plus a payload check with zod. Affects steps: 2, 6.
-- [ ] **Q3: Logo: a text wordmark, or an image?** There's no logo file in `public/`, and many
-  clients block images by default. Recommended default: the white serif text wordmark "JASSMIN" on
-  the `primary` band; an image can replace it later. Affects steps: 3.
-- [ ] **Q4: Should the footer show the shop phone?** The phone lives in Strapi (`site-setting.phone`),
-  which the retry job doesn't read. Recommended default: email and site only. Alternative: an
-  optional `SHOP_PHONE` env var. Affects steps: 3.
-- [ ] **Q5: Should production also refuse to start without `EMAIL_WEBHOOK_SECRET`?** Why it matters:
-  without it, bounces are silently not recorded. Recommended default: optional (503 + a startup
-  `console.warn` in production), like `CMS_SYNC_SECRET`, so the site can go live before the
-  webhook is configured. Affects steps: 1.
-- [ ] **Q6: What language should the contact form email (to the store) be in?** Recommended
-  default: Ukrainian through i18n keys. Today it's hard-coded English. Affects steps: 5.
+(the shop's language) (Q6).
 
 ## Resolved questions
+
+The owner accepted every recommended default on 2026-11-05:
+
+- **Q1: Which provider?** Brevo (free tier, EU, simple webhook). Postmark stays the fallback if
+  delivery to Ukr.net turns out poor (source: owner, 2026-11-05).
+- **Q2: Is a bearer token enough for "signed with the provider's secret"?** Yes: a bearer token
+  checked in constant time, plus zod validation of the body. Brevo doesn't HMAC-sign webhooks
+  (source: owner, 2026-11-05).
+- **Q3: Logo?** A white serif text wordmark "JASSMIN" on the `primary` band; an image can replace
+  it later (source: owner, 2026-11-05).
+- **Q4: Phone in the footer?** No: email and site only, no `SHOP_PHONE` (source: owner,
+  2026-11-05).
+- **Q5: Is `EMAIL_WEBHOOK_SECRET` required in production?** No: optional. The webhook answers 503
+  without it, and the app logs a `console.warn` at startup in production when it's missing
+  (source: owner, 2026-11-05).
+- **Q6: Contact email language?** Ukrainian, through i18n keys (`contactEmail` namespace) (source:
+  owner, 2026-11-05).
+
+From the codebase:
 
 - **Does the code change for the provider?** No: nodemailer and `smtpOptionsFromUrl` already
   handle `smtp(s)://user:pass@host:port`. Only `SMTP_URL` changes (source: `app/.server/mail.ts`,
@@ -227,7 +225,8 @@ moves to the shared layout with i18n keys (`contactEmail` namespace) and is rend
 - [ ] **1. Env.** In `env.ts`, add a `requireSmtpInProduction` refinement on `envSchema` and
   apply it in `parseMailEnv` too (`mailEnvSchema.refine(...)` used there). Move `PUBLIC_SITE_URL`
   (with its transform) into `mailEnvSchema` and add it to `mailSource`. Add
-  `EMAIL_WEBHOOK_SECRET: z.string().min(32).optional()` (empty counts as unset) to `envSchema`.
+  `EMAIL_WEBHOOK_SECRET: z.string().min(32).optional()` (empty counts as unset) to `envSchema`,
+  and a one-time `console.warn` from `getEnv()` in production when it's unset (Q5).
   `env.test.ts`: production fails without `SMTP_URL` (app and mail env), the existing production
   fixtures get an `SMTP_URL`, a short webhook secret is refused, and an empty one is unset. Update
   `.env.example` and the env table in `docs/setup.md`. Check with `pnpm typecheck && pnpm test`.
@@ -254,7 +253,7 @@ moves to the shared layout with i18n keys (`contactEmail` namespace) and is rend
   `toContain` per builder in `uk` and `en`.
 - [ ] **5. Contact and email-changed notice on the layout.** `buildEmailChangedNotice` →
   `composeEmail`. `buildContactEmail` → `composeEmail` with the new `contactEmail.*` keys,
-  rendered with `createTranslator("uk")` (Q6). The visitor's name and message are escaped in the
+  rendered with `createTranslator("uk")`. The visitor's name and message are escaped in the
   HTML, and `replyTo` stays the visitor. Update both test files.
 - [ ] **6. Schema and migration.** Add `EMAIL_SUPPRESSION_REASONS` to `~/lib/enums`. In
   `schema.ts`, add `emailSuppressions` (columns above, `email_suppressions_reason_check` via

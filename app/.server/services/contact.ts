@@ -1,8 +1,11 @@
 import type Mail from "nodemailer/lib/mailer";
 import type { ContactMessage } from "~/features/home/contact-form.schema";
+import { createTranslator, DEFAULT_LOCALE } from "~/lib/i18n";
+import { composeEmail } from "../email/layout";
 import { type Env, getEnv } from "../env";
-import { getMailTransport, type MailSender, stripLineBreaks } from "../mail";
+import { type MailSender, stripLineBreaks } from "../mail";
 import { createRateLimiter, type RateLimiter } from "../rate-limit";
+import { getMailer } from "./mailer";
 
 // Contact form submissions from the home page: spam checks, rate limiting and delivery by email
 // to the store (`CONTACT_INBOX`). Messages are not stored.
@@ -13,7 +16,7 @@ export interface ContactDeps {
   /** `null` when `SMTP_URL` is not configured. */
   mailer: MailSender | null;
   limiter: RateLimiter;
-  env: Pick<Env, "CONTACT_INBOX" | "CONTACT_FROM" | "NODE_ENV">;
+  env: Pick<Env, "CONTACT_INBOX" | "CONTACT_FROM" | "NODE_ENV" | "PUBLIC_SITE_URL">;
   now: () => Date;
 }
 
@@ -43,33 +46,45 @@ const contactLimiter: RateLimiter = globalForLimiters.__jassminContactLimiter;
 
 function defaultDeps(): ContactDeps {
   return {
-    mailer: getMailTransport(),
+    mailer: getMailer(),
     limiter: contactLimiter,
     env: getEnv(),
     now: () => new Date(),
   };
 }
 
-/** The plain-text email the store receives; replying goes straight to the visitor. */
+/**
+ * The email the store receives, in the shop's language (Ukrainian) and the shared layout (#134);
+ * replying goes straight to the visitor.
+ */
 export function buildContactEmail(
   message: ContactMessage,
   env: ContactDeps["env"],
   receivedAt: Date,
 ): Mail.Options {
+  const translator = createTranslator(DEFAULT_LOCALE);
+  const { t } = translator;
   const name = stripLineBreaks(message.name);
-  return {
+  return composeEmail({
     from: env.CONTACT_FROM,
     to: env.CONTACT_INBOX,
     replyTo: { name, address: message.email },
-    subject: `New message from ${name} — jassmin.ua`,
-    text: [
-      `Name: ${name}`,
-      `Email: ${message.email}`,
-      `Received: ${receivedAt.toISOString()}`,
-      "",
-      message.message,
-    ].join("\n"),
-  };
+    subject: t("contactEmail.subject", { name }),
+    blocks: [
+      { type: "heading", text: t("contactEmail.heading") },
+      {
+        type: "amounts",
+        rows: [
+          { label: t("contactEmail.name"), value: name },
+          { label: t("contactEmail.email"), value: message.email },
+          { label: t("contactEmail.received"), value: receivedAt.toISOString() },
+        ],
+      },
+      { type: "paragraph", text: message.message },
+    ],
+    translator,
+    footer: { inbox: env.CONTACT_INBOX, siteUrl: env.PUBLIC_SITE_URL },
+  });
 }
 
 /** Sends the message to the store. Returns `false` when it could not be delivered. */

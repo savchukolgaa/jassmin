@@ -31,8 +31,8 @@ import {
   setCartGiftCard,
 } from "../db/queries/gift-cards";
 import { getEnv } from "../env";
-import { getMailTransport } from "../mail";
 import { type CartOwner, getActiveCartId } from "./cart";
+import { getMailer } from "./mailer";
 import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
 
 /** A new random code: 16 symbols of Crockford's base 32, 80 bits from the system's CSPRNG. */
@@ -172,7 +172,7 @@ export function deliverGiftCardEmails(
   giftCardId: number,
   db: Db = defaultDb,
 ): Promise<OrderEmailReport> {
-  return deliverOrderEmails({ giftCardId }, () => orderEmailDeps(db, getMailTransport(), getEnv()));
+  return deliverOrderEmails({ giftCardId }, () => orderEmailDeps(db, getMailer(), getEnv()));
 }
 
 export type ApplyGiftCardResult =

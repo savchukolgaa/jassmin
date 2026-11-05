@@ -423,6 +423,20 @@ export const uk = {
       continue: "Продовжити покупки",
     },
   },
+  // The contact form message the store receives (#134: was hard-coded English).
+  contactEmail: {
+    subject: "Нове повідомлення від {name} — jassmin.ua",
+    heading: "Повідомлення з форми на сайті",
+    name: "Ім’я",
+    email: "Email",
+    received: "Отримано",
+  },
+  // The branded layout every email shares (#134).
+  email: {
+    footer: {
+      note: "Цей лист надіслав інтернет-магазин парфумів Jassmin.",
+    },
+  },
   orderEmail: {
     subject: "Замовлення №{id} прийнято — Jassmin",
     greeting: "Вітаємо, {name}!",
@@ -431,7 +445,6 @@ export const uk = {
     itemsHeading: "Ваше замовлення",
     line: "• {name}, {details} = {total}",
     quantityPrice: "{quantity} × {price}",
-    amount: "{label}: {amount}",
     deliveryCarrier: "Нова Пошта",
     contact: "Маєте запитання? Відповідайте на цей лист або пишіть на {email}.",
     signature: "Команда Jassmin",
@@ -442,7 +455,7 @@ export const uk = {
     intro:
       "Дякуємо за покупку! Ваша подарункова картка Jassmin на {amount} оплачена й готова до використання.",
     recipientCopy: "Ми також надіслали код на {email}.",
-    code: "Код картки: {code}",
+    code: "Код картки",
     expires: "Картка діє до {date}",
     howTo:
       "Щоб скористатися карткою, додайте парфуми в кошик і введіть код під час оформлення замовлення. Якщо замовлення дешевше за залишок, решта залишиться на картці.",
@@ -453,7 +466,7 @@ export const uk = {
     subject: "Вам подарували картку Jassmin на {amount}",
     greeting: "Вітаємо!",
     intro: "Вам подарували подарункову картку Jassmin на {amount}. Оберіть аромат до душі!",
-    code: "Код картки: {code}",
+    code: "Код картки",
     expires: "Картка діє до {date}",
     howTo:
       "Додайте парфуми в кошик і введіть код під час оформлення замовлення. Якщо замовлення дешевше за залишок, решта залишиться на картці для наступних покупок.",

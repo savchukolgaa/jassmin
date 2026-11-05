@@ -180,6 +180,50 @@ describe.skipIf(!hasDatabase)("order email queries", () => {
     expect(await claimOrderEmails(testDb.db, { limit: 1, retryDelaysMinutes: delays })).toEqual([]);
   });
 
+  it("keeps the Message-ID it was sent with (#134)", async () => {
+    const { claimOrderEmails, markOrderEmailSent } = await import("./order-emails");
+    const orderId = await queued();
+    const [claimed] = await claimOrderEmails(testDb.db, { limit: 1, retryDelaysMinutes: delays });
+
+    await markOrderEmailSent(testDb.db, claimed?.id ?? 0, "<abc@jassmin.ua>");
+    expect(await row(orderId)).toMatchObject({ status: "sent", messageId: "<abc@jassmin.ua>" });
+  });
+
+  it("marks a sent email that bounced as failed, by id or by Message-ID (#134)", async () => {
+    const { claimOrderEmails, markOrderEmailBounced, markOrderEmailSent } = await import(
+      "./order-emails"
+    );
+    const byId = await queued();
+    const byMessageId = await queued();
+    const stillPending = await queued();
+    const claimed = await claimOrderEmails(testDb.db, { limit: 2, retryDelaysMinutes: delays });
+    const idOf = (orderId: number) => claimed.find((email) => email.orderId === orderId)?.id ?? 0;
+    await markOrderEmailSent(testDb.db, idOf(byId), "<one@jassmin.ua>");
+    await markOrderEmailSent(testDb.db, idOf(byMessageId), "<two@jassmin.ua>");
+
+    expect(
+      await markOrderEmailBounced(testDb.db, {
+        orderEmailId: idOf(byId),
+        error: "hard_bounce: 550",
+      }),
+    ).toBe(1);
+    expect(
+      await markOrderEmailBounced(testDb.db, {
+        messageId: "<two@jassmin.ua>",
+        error: "complaint",
+      }),
+    ).toBe(1);
+    expect(await row(byId)).toMatchObject({ status: "failed", lastError: "hard_bounce: 550" });
+    expect(await row(byMessageId)).toMatchObject({ status: "failed", lastError: "complaint" });
+
+    // A row that wasn't sent, an unknown Message-ID and no key at all change nothing.
+    const pendingId = (await row(stillPending))?.id ?? 0;
+    expect(await markOrderEmailBounced(testDb.db, { orderEmailId: pendingId, error: "x" })).toBe(0);
+    expect(await markOrderEmailBounced(testDb.db, { messageId: "<nope@x>", error: "x" })).toBe(0);
+    expect(await markOrderEmailBounced(testDb.db, { error: "x" })).toBe(0);
+    expect(await row(stillPending)).toMatchObject({ status: "pending" });
+  });
+
   it("rejects retry delays that aren't whole positive minutes", async () => {
     const { claimOrderEmails } = await import("./order-emails");
     expect(() => claimOrderEmails(testDb.db, { limit: 1, retryDelaysMinutes: [] })).toThrow();

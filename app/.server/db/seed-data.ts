@@ -186,8 +186,8 @@ export type SampleDiscount = typeof discounts.$inferInsert;
 
 /**
  * Discount rules for local development (#59), matched by `slug`, so re-running the seed skips the
- * ones that exist. The tester trio is the shop's one automatic offer; the codes exercise every
- * case on the cart page.
+ * ones that exist. The tester trio and the couple offer are the shop's automatic offers; the codes
+ * exercise every case on the cart page.
  */
 export const SAMPLE_DISCOUNTS: SampleDiscount[] = [
   {
@@ -201,6 +201,17 @@ export const SAMPLE_DISCOUNTS: SampleDiscount[] = [
     scopePackSize: 1,
     minQuantity: 3,
     maxSets: 3,
+  },
+  {
+    // The couple offer (#124): 15% off the cheaper of each pair of single 30/50/100 ml bottles.
+    // Migration 0022 creates the same rule in every database, so the seed skips it there; keep
+    // the two equal, and the percent in `checkout.discountCouple` and the Strapi offer too.
+    slug: "couple-15",
+    kind: "percent_every_nth",
+    value: "15.00",
+    scopeVolumesMl: [30, 50, 100],
+    scopePackSize: 1,
+    minQuantity: 2,
   },
   { slug: "welcome-10", code: "JASSMIN10", kind: "percent", value: "10.00" },
   {

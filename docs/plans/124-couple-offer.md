@@ -125,7 +125,7 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   full bottles picks the larger of trio and couple; `JASSMIN10` (10% of everything) beats the
   couple offer when it saves more and is reported `not-best` when it doesn't; free delivery is
   decided after the couple discount.
-- [ ] **3. Migration and rollback** — `pnpm db:generate --name couple_offer`, then append to
+- [x] **3. Migration and rollback** — `pnpm db:generate --name couple_offer`, then append to
   `0022_couple_offer.sql`:
   `INSERT INTO "discounts" ("slug", "kind", "value", "scope_volumes_ml", "scope_pack_size", "min_quantity") VALUES ('couple-15', 'percent_every_nth', '15.00', '{30,50,100}', 1, 2) ON CONFLICT ("slug") DO NOTHING;`
   with a header comment like 0021's. Write `rollbacks/0022_couple_offer.sql`: delete `couple-15`

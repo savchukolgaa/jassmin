@@ -20,7 +20,7 @@ address is confirmed. Verification is soft: unverified users can still log in an
 - **#134 production email**: **open**. It brings the real SMTP provider and "one branded HTML +
   text layout" for every email. Nothing here blocks on it: we send through the existing
   `getMailTransport()` (`SMTP_URL`, smtp4dev under Aspire), and locally it works with smtp4dev.
-  See Q1 for the layout.
+  Emails are plain text for now (Q1).
 - `PUBLIC_SITE_URL` already exists (`app/.server/env.ts`, `getSiteUrl(env, request)`: required in
   production, the request origin otherwise). No new env variables.
 - One migration, `0024_auth_tokens` (`pnpm db:generate --name auth_tokens`), plus its hand-written
@@ -38,8 +38,8 @@ address is confirmed. Verification is soft: unverified users can still log in an
 - **Tokens** are 32 random bytes (`randomBytes(32).toString("base64url")`, 43 characters, 256
   bits). Only `sha256(token)` hex is stored. The raw token appears only in the emailed link. Being
   random, the token needs no salt or slow hash, so a lookup by hash is enough.
-- **Lifetimes**: password reset is 1 hour (issue). Email verification is 7 days **(unconfirmed,
-  Q3)**. Both are constants in `~/lib/auth`: `PASSWORD_RESET_TTL_MINUTES = 60` and
+- **Lifetimes**: password reset is 1 hour (issue). Email verification is 7 days (Q3).
+  Both are constants in `~/lib/auth`: `PASSWORD_RESET_TTL_MINUTES = 60` and
   `EMAIL_VERIFICATION_TTL_HOURS = 168`.
 - **Single use is atomic.** `consumeAuthToken(tx, purpose, hash, now)` runs inside a transaction:
   `SELECT … FOR UPDATE` by hash and purpose, then classifies the row (`unknown`, `used` or
@@ -54,7 +54,7 @@ address is confirmed. Verification is soft: unverified users can still log in an
   *check* the token (`inspectAuthToken`, no write) and render the form or the error. Consuming the
   token happens in the action. A link previewed or prefetched by a mail scanner therefore never
   uses up the token. For verification, the page shows one "Confirm my email" button that POSTs
-  **(unconfirmed, Q4)**.
+ .
 - **Revoking other sessions with a cookie session store**: there's no server-side session table
   (`session.ts` uses `createCookieSessionStorage`). `createUserSession` stores a new
   `SessionData.authenticatedAt` (epoch ms). `users.password_changed_at` is set on a reset. When
@@ -88,7 +88,7 @@ address is confirmed. Verification is soft: unverified users can still log in an
   request that triggered it (`getLocale(request)`; users have no stored locale). The link is
   `getSiteUrl(env, request) + pathFor(locale, "resetPassword" | "verifyEmail", { token })`. There's
   one builder per email (`buildPasswordResetEmail`, `buildVerificationEmail`), so #134's layout can
-  wrap them later **(unconfirmed, Q1)**.
+  wrap them later.
 - **A reset also verifies the email** (`email_verified_at = coalesce(email_verified_at, now)`):
   following the link proves the user owns the address.
 - **After a reset**: `touchLastLogin` (an ML feature), `loginLimiters.byEmail.reset(email)`,
@@ -103,32 +103,24 @@ address is confirmed. Verification is soft: unverified users can still log in an
   that route's action (`intent=resend-verification`). It doesn't live in the `account.tsx` layout,
   where a POST to `/kabinet` would be ambiguous between the layout and the index route.
 
-## Open questions
-
-- [ ] **Q1: HTML layout for these emails.** Should they wait for #134's branded HTML + text layout,
-  or ship as plain text now? Why it matters: the issue says "Emails in the shared layout", but
-  #134 (still open) introduces that layout, and every current email is plain text.
-  Recommended default: plain text now, through dedicated builders that #134 wraps in its layout.
-  Affects steps: 5, 6.
-- [ ] **Q2: Should the profile page's password change also log out other sessions?** It would set
-  `password_changed_at` and re-issue the current cookie. Why it matters: the issue only covers a
-  reset. `app/.server/AGENTS.md` says "other sessions aren't revoked" because no mechanism existed,
-  and the one built here covers this for free. Recommended default: **yes**, same mechanism, and
-  the current session stays logged in. Affects steps: 3, 8.
-- [ ] **Q3: How long is a verification link valid?** Why it matters: the issue sets only the
-  reset lifetime. Recommended default: 7 days, since the account page can always resend.
-  Affects steps: 1, 5.
-- [ ] **Q4: Should verification take one click on the link, or the link plus a "Confirm" button?**
-  Why it matters: AGENTS.md puts writes in actions, and mail scanners follow GET links. A loader
-  that verifies would break the rule but save a click. Recommended default: the link opens a page
-  with a "Confirm my email" button (POST). Affects steps: 7.
-- [ ] **Q5: When the email changes on the profile page, should `email_verified_at` reset and a
-  verification email go to the new address?** Why it matters: "changing the email" is out of
-  scope, but otherwise a typo made later stays "verified", which defeats the point.
-  Recommended default: **yes**: `updateUserEmail` sets `email_verified_at = null` and the profile
-  action sends the verification email to the new address. Affects steps: 8.
-
 ## Resolved questions
+
+The user accepted every recommended default (2026-11-05):
+
+- **Q1: HTML layout for these emails?** Plain text now, through dedicated builders
+  (`buildPasswordResetEmail`, `buildVerificationEmail`) that #134 wraps in its layout later.
+  Steps 5, 6.
+- **Q2: Does the profile page's password change also log out other sessions?** Yes, with the same
+  `password_changed_at` mechanism. The current session stays logged in because its cookie is
+  re-issued with the same `authenticatedAt`. Steps 3, 8.
+- **Q3: How long is a verification link valid?** 7 days (`EMAIL_VERIFICATION_TTL_HOURS = 168`).
+  The account page can always resend. Steps 1, 6.
+- **Q4: One click, or the link plus a button?** The link opens a page with a "Confirm my email"
+  button (POST). The loader only checks the token, so writes stay in actions and mail scanners
+  can't use up the link. Step 7.
+- **Q5: Does an email change on the profile reset verification?** Yes: `updateUserEmail` sets
+  `email_verified_at = null`, and the profile action sends a verification email to the new
+  address. Step 8.
 
 - **Is there a server-side session store to revoke sessions in?** No. The cookie session storage
   has no store, so revocation is the `authenticatedAt` vs `password_changed_at` check (source:

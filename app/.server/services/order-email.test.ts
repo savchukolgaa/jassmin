@@ -4,6 +4,7 @@ import type { OrderConfirmation } from "~/lib/checkout";
 import type { GiftCard } from "~/lib/commerce";
 import { createTranslator } from "~/lib/i18n";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
+import { htmlSection, words } from "../email/test-helpers";
 import {
   buildGiftCardEmail,
   buildGiftCardRecipientEmail,
@@ -17,10 +18,14 @@ import {
 /** `Intl` puts (narrow) no-break spaces in prices; compare them as plain spaces. */
 const normalize = (text: string) => text.replace(/[  ]/gu, " ");
 
+/** The text part without the layout's footer (after `-- `). */
+const bodyOf = (email: Mail.Options) => normalize(String(email.text)).split("\n\n-- \n")[0];
+
 const env: OrderEmailEnv = {
   ORDER_FROM: undefined,
   CONTACT_FROM: "Jassmin website <no-reply@example.com>",
   CONTACT_INBOX: "shop@example.com",
+  PUBLIC_SITE_URL: "https://jassmin.ua",
 };
 
 const codOrder: OrderConfirmation = {
@@ -95,7 +100,7 @@ describe("buildOrderConfirmationEmail", () => {
       replyTo: "shop@example.com",
       subject: "Замовлення №1042 прийнято — Jassmin",
     });
-    expect(normalize(String(email.text))).toBe(
+    expect(bodyOf(email)).toBe(
       [
         "Вітаємо, Олена Коваль!",
         "",
@@ -128,7 +133,7 @@ describe("buildOrderConfirmationEmail", () => {
     const email = buildOrderConfirmationEmail(cardOrder, createTranslator("en"), env);
 
     expect(email.subject).toBe("Order №1043 received — Jassmin");
-    expect(normalize(String(email.text))).toBe(
+    expect(bodyOf(email)).toBe(
       [
         "Hello Olena Koval,",
         "",
@@ -364,6 +369,51 @@ describe("gift card emails (#125)", () => {
     expect(buildGiftCardEmail(sneaky, createTranslator("uk"), env).to).toBe(
       "a@example.com Bcc: x@example.com",
     );
+  });
+});
+
+describe("order emails in the shared layout (#134)", () => {
+  const builders = {
+    confirmation: (locale: "uk" | "en") =>
+      buildOrderConfirmationEmail(codOrder, createTranslator(locale), env),
+    giftCard: (locale: "uk" | "en") => buildGiftCardEmail(giftCard, createTranslator(locale), env),
+    giftCardRecipient: (locale: "uk" | "en") =>
+      buildGiftCardRecipientEmail(giftCard, createTranslator(locale), env),
+  };
+
+  for (const [name, build] of Object.entries(builders)) {
+    for (const locale of ["uk", "en"] as const) {
+      it(`renders the ${name} email as HTML and text in ${locale}`, () => {
+        const email = build(locale);
+        const html = String(email.html);
+        expect(html).toContain(`<html lang="${locale}">`);
+        expect(words(htmlSection(html, "content"))).toEqual(words(bodyOf(email) ?? ""));
+        expect(htmlSection(html, "footer")).toContain('href="mailto:shop@example.com"');
+        expect(String(email.text)).toContain(
+          "\n-- \nJassmin · shop@example.com · https://jassmin.ua",
+        );
+        expect(email.replyTo).toBe("shop@example.com");
+        expect(email.messageId).toMatch(/^<[0-9a-f-]{36}@example\.com>$/);
+      });
+    }
+  }
+
+  it("shows the gift card code in its own box", () => {
+    const html = String(buildGiftCardEmail(giftCard, createTranslator("uk"), env).html);
+    expect(html).toMatch(/Courier New[^>]*>ABCD-2345-EFGH-6789</);
+  });
+
+  it("escapes the shopper's name and address in the HTML", () => {
+    const html = String(
+      buildOrderConfirmationEmail(
+        { ...codOrder, fullName: "<b>Olena</b>", shippingAddress: "Kyiv & <i>1</i>" },
+        createTranslator("en"),
+        env,
+      ).html,
+    );
+    expect(html).not.toContain("<b>Olena");
+    expect(html).toContain("Hello &lt;b&gt;Olena&lt;/b&gt;,");
+    expect(html).toContain("Kyiv &amp; &lt;i&gt;1&lt;/i&gt;");
   });
 });
 

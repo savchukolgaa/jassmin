@@ -246,7 +246,7 @@ From the codebase:
   `&` is escaped; every block's text appears in both the HTML (tags stripped, entities decoded)
   and the text part, in order, which is the "text matches HTML" test; `messageId` ends in
   `@jassmin.ua>`; `replyTo` is set.
-- [ ] **4. Order and gift card emails on the layout.** Rewrite `buildOrderConfirmationEmail`,
+- [x] **4. Order and gift card emails on the layout.** Rewrite `buildOrderConfirmationEmail`,
   `buildGiftCardEmail` and `buildGiftCardRecipientEmail` to build blocks and call `composeEmail`,
   keeping today's copy keys and order. `OrderEmailEnv` gains `PUBLIC_SITE_URL`. Update
   `order-email.test.ts` (its assertions on `text` should mostly hold) and add one HTML snapshot or

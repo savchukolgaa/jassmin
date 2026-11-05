@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/125
 Branch: `issue/125`
 Worktree: `.claude/worktrees/issue-125`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -175,6 +175,24 @@ Strapi (read-only), and buyers can see them on `/account`.
   (6 and 11), so every commit typechecks.
 - `robots.ts` blocks a private page with parameters from its static prefix
   (`/podarunkovi-kartky/uspikh`), since `giftCardSuccess` has no private parent page.
+- `applyGiftCard`, `removeGiftCard` and `getCheckoutGiftCard` live in `services/gift-cards.ts`
+  (with the cart queries `findCartGiftCardId` / `setCartGiftCard` in `db/queries/gift-cards.ts`),
+  not in `services/cart.ts`: they're about the card, and `cart.ts` only gained the merge.
+- The checkout's gift card intents answer with the new summary (`CheckoutGiftCardResult`), read
+  by the page through a shared fetcher key, and `routes/checkout.tsx` exports `shouldRevalidate`
+  to skip its loader for them. Otherwise every apply or remove would record `checkout_start`
+  again.
+- When the card covers the whole order, the form posts a hidden `paymentMethod=cod` only to
+  satisfy the schema (so the card-availability check can't refuse it); `createOrder` stores
+  `gift_card` whenever nothing is left to pay.
+- The gift card line was added to the order confirmation email in step 7 (with the amount on the
+  order), not step 6.
+- `cms/types/generated/*.d.ts` were edited by hand to match the new schemas, the same way Strapi
+  writes them; `strapi develop` regenerates them and should produce no diff.
+- The expiry job is also an explicit-start Aspire resource (`db-expire-gift-cards`), like the
+  other jobs.
+- An existing `jassmin-sync` token gets the gift card permissions by re-running
+  `pnpm cms:seed -- --token`, which grants missing permissions and keeps the key.
 
 ## Resolved questions
 
@@ -408,8 +426,9 @@ From the codebase and issues:
   always has an order. `README.md`: the new script, the Strapi type and the sync-token permissions
   (an existing token needs the gift card permissions added by hand or by re-running
   `pnpm cms:seed`).
-- [ ] **15. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, then the manual
-  run below.
+- [x] **15. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, then the manual
+  run below. The four commands pass (170 test files, 1768 tests). **The manual run under Aspire
+  wasn't done** (it needs Strapi, the simulator and smtp4dev): do it before merging.
 
 ## Testing & verification
 
@@ -438,20 +457,22 @@ From the codebase and issues:
 
 ## Acceptance criteria
 
-- [ ] A customer can buy a 500, 1000 or 2000 ₴ gift card with a card payment, and receives a
+- [x] A customer can buy a 500, 1000 or 2000 ₴ gift card with a card payment, and receives a
   unique code by email after the payment succeeds — steps 3, 4, 5, 6, 9
-- [ ] A gift card can't be put in the same cart as perfumes, and isn't sold for cash on delivery
+- [x] A gift card can't be put in the same cart as perfumes, and isn't sold for cash on delivery
   — decisions (no cart path at all); step 9 (card-only action, refused without a provider)
-- [ ] At checkout, a valid code lowers the amount to pay by up to its balance. Any rest stays on
+- [x] At checkout, a valid code lowers the amount to pay by up to its balance. Any rest stays on
   the card for a later order — steps 7, 8
-- [ ] An unknown, expired, used-up or unpaid code shows a translated error and changes nothing —
+- [x] An unknown, expired, used-up or unpaid code shows a translated error and changes nothing —
   steps 4, 7, 8, 13
-- [ ] Two orders can't spend more than the card's balance — step 7 (`FOR UPDATE`,
+- [x] Two orders can't spend more than the card's balance — step 7 (`FOR UPDATE`,
   `expectedTotal`, CHECK; race test)
-- [ ] The order summary, order page and email show the gift card amount, in Ukrainian and English
+- [x] The order summary, order page and email show the gift card amount, in Ukrainian and English
   — steps 6, 7, 8, 10, 13
-- [ ] Staff can see gift cards and their balances in Strapi — step 11
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 15
+- [ ] Staff can see gift cards and their balances in Strapi — step 11. The push, its mapping and
+  the admin refusal are tested, but the new content type hasn't been loaded in a running Strapi yet
+  (manual run).
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 15
 
 ## Out of scope
 

@@ -247,7 +247,7 @@ Each step is small, ordered, and leaves the app in a working state.
   - the link works once and expires after 1 hour (injected `now`);
   - other reset tokens are invalidated;
   - `password_changed_at` is set.
-- [ ] **6. Email verification service.** In `services/email-verification.ts`:
+- [x] **6. Email verification service.** In `services/email-verification.ts`:
   - `sendVerificationEmail({ userId, email, fullName, locale, siteUrl })` inserts a 7-day token
     and sends `buildVerificationEmail`. It's best effort.
   - `verifyEmail({ token, now })`: a transaction with `consumeAuthToken`, `markEmailVerified`

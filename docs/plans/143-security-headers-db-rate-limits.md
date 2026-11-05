@@ -217,7 +217,7 @@ the other hardening headers. The rate-limit counters move from process memory in
   `envSchema` (+ `.env.example`, `docs/setup.md`, `env.test.ts`). Unit-test every directive, both
   modes, the HSTS rule (dev, prod + http, prod + https) and that `'unsafe-inline'` never appears in
   `script-src`.
-- [ ] **2. Middleware.** Add `nonceContext` and `securityHeadersMiddleware`: nonce →
+- [x] **2. Middleware.** Add `nonceContext` and `securityHeadersMiddleware`: nonce →
   `context.set` → `await next()` → set headers on the response, with `html` from the response's
   `Content-Type`. Register it **first** in `root.tsx`'s `middleware`. Test with a fake `next`: an
   HTML page, an XML resource response (no CSP, all other headers), a thrown-`Response` / 500 error

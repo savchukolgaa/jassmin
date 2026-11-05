@@ -13,6 +13,7 @@ import {
 import { getEnv, getSiteUrl } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
 import { localeRedirectMiddleware } from "~/.server/locale-middleware";
+import { securityHeadersMiddleware } from "~/.server/security-headers";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
 import { crossesLocale } from "~/lib/paths";
@@ -45,8 +46,13 @@ export const links: Route.LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet, precedence: "default" },
 ];
 
-// Sends visitors who chose English from Ukrainian pages to the English ones (#84).
-export const middleware: Route.MiddlewareFunction[] = [localeRedirectMiddleware];
+// First, so it wraps everything: the security headers and the CSP nonce for every response,
+// redirects and error pages included (#143). Then visitors who chose English from Ukrainian pages
+// go to the English ones (#84).
+export const middleware: Route.MiddlewareFunction[] = [
+  securityHeadersMiddleware,
+  localeRedirectMiddleware,
+];
 
 // The page's locale comes from its URL (#84). Runs on every request, after every action and
 // whenever a navigation crosses into the other language (`shouldRevalidate`). `site.url` is the

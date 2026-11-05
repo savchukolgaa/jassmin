@@ -1,5 +1,12 @@
+import { type MiddlewareFunction, RouterContextProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import { buildCsp, buildSecurityHeaders, createNonce } from "./security-headers";
+import {
+  buildCsp,
+  buildSecurityHeaders,
+  createNonce,
+  createSecurityHeadersMiddleware,
+  nonceContext,
+} from "./security-headers";
 
 type HeaderEnv = Parameters<typeof buildSecurityHeaders>[0]["env"];
 
@@ -115,5 +122,63 @@ describe("createNonce", () => {
     const nonce = createNonce();
     expect(Buffer.from(nonce, "base64")).toHaveLength(16);
     expect(createNonce()).not.toBe(nonce);
+  });
+});
+
+describe("securityHeadersMiddleware", () => {
+  type Args = Parameters<MiddlewareFunction<Response>>[0];
+
+  async function run(response: Response) {
+    const middleware = createSecurityHeadersMiddleware(() => devEnv);
+    const context = new RouterContextProvider();
+    let nonceDuringNext: string | undefined;
+    const result = await middleware(
+      { request: new Request("http://localhost/"), context, params: {} } as unknown as Args,
+      async () => {
+        nonceDuringNext = context.get(nonceContext);
+        return response;
+      },
+    );
+    return { result: result as Response, nonce: nonceDuringNext ?? "" };
+  }
+
+  const html = () => new Response("<!DOCTYPE html>", { headers: { "Content-Type": "text/html" } });
+
+  it("gives a page the CSP with the nonce the render saw", async () => {
+    const { result, nonce } = await run(html());
+
+    expect(nonce).not.toBe("");
+    expect(result.headers.get("Content-Security-Policy-Report-Only")).toContain(`'nonce-${nonce}'`);
+    expect(result.headers.get("X-Frame-Options")).toBe("DENY");
+  });
+
+  it("uses a new nonce for every request", async () => {
+    const first = await run(html());
+    const second = await run(html());
+
+    expect(first.nonce).not.toBe(second.nonce);
+  });
+
+  it("gives a resource route every header but the CSP", async () => {
+    const { result } = await run(
+      new Response("<urlset/>", { headers: { "Content-Type": "application/xml" } }),
+    );
+
+    expect(result.headers.get("Content-Security-Policy-Report-Only")).toBeNull();
+    expect(result.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(result.headers.get("Content-Type")).toBe("application/xml");
+  });
+
+  it("covers error pages and redirects, even with immutable headers", async () => {
+    const error = await run(
+      new Response("<p>404</p>", { status: 404, headers: { "Content-Type": "text/html" } }),
+    );
+    expect(error.result.status).toBe(404);
+    expect(error.result.headers.get("Content-Security-Policy-Report-Only")).not.toBeNull();
+
+    const redirect = await run(Response.redirect("http://localhost/en", 302));
+    expect(redirect.result.status).toBe(302);
+    expect(redirect.result.headers.get("Location")).toBe("http://localhost/en");
+    expect(redirect.result.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
   });
 });

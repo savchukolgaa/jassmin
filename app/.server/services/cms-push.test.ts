@@ -1,11 +1,12 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import type { CmsOrderState, CmsProductState } from "~/lib/cms-sync";
+import type { CmsGiftCardState, CmsOrderState, CmsProductState } from "~/lib/cms-sync";
 import type { ClaimedCmsSync } from "../db/queries/cms-outbox";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 import {
   type CmsSyncDeps,
   deliverCmsSync,
   describeCmsSyncReport,
+  toStrapiGiftCardData,
   toStrapiOrderData,
   toStrapiProductData,
 } from "./cms-push";
@@ -24,6 +25,7 @@ const order: CmsOrderState = {
   subtotal: "6430.00",
   discountAmount: "0.00",
   shippingAmount: "0.00",
+  giftCardAmount: "0.00",
   totalAmount: "6430.00",
   currency: "UAH",
   placedAt: "2026-10-25T10:00:00.000Z",
@@ -61,9 +63,31 @@ const product: CmsProductState = {
   variants: [{ volumeMl: 5, price: "990.00", trackStock: true, stock: 8 }],
 };
 
+const giftCard: CmsGiftCardState = {
+  giftCardId: 12,
+  code: "ABCD2345EFGH6789",
+  status: "active",
+  initialAmount: "1000.00",
+  balance: "400.00",
+  currency: "UAH",
+  buyerEmail: "buyer@example.com",
+  recipientEmail: "friend@example.com",
+  userId: null,
+  placedAt: "2026-11-05T09:58:00.000Z",
+  activatedAt: "2026-11-05T10:00:00.000Z",
+  expiresAt: "2027-11-05T10:00:00.000Z",
+  redemptions: [
+    { orderId: 7, amount: "600.00", redeemedAt: "2026-11-06T10:00:00.000Z", reversedAt: null },
+  ],
+};
+
 const env = { STRAPI_URL: "http://cms.test", STRAPI_SYNC_TOKEN: "write" };
 
-function claimed(entity: "order" | "product", entityId: number, version = 1): ClaimedCmsSync {
+function claimed(
+  entity: "order" | "product" | "gift_card",
+  entityId: number,
+  version = 1,
+): ClaimedCmsSync {
   return { id: entityId * 10, entity, entityId, version, attempts: 1 };
 }
 
@@ -78,6 +102,7 @@ function fakeDeps(rows: ClaimedCmsSync[], overrides: Partial<CmsSyncDeps> = {}):
     }),
     loadOrder: vi.fn(async () => order),
     loadProduct: vi.fn(async () => product),
+    loadGiftCard: vi.fn(async () => giftCard),
     markSynced: vi.fn(async () => {}),
     markFailed: vi.fn(async () => {}),
     ...overrides,
@@ -135,6 +160,27 @@ describe("toStrapiOrderData / toStrapiProductData", () => {
     });
   });
 
+  it("sends a gift card's amounts as numbers and its status as giftCardStatus (#125)", () => {
+    expect(toStrapiGiftCardData(giftCard)).toEqual({
+      giftCardId: 12,
+      code: "ABCD2345EFGH6789",
+      giftCardStatus: "active",
+      initialAmount: 1000,
+      balance: 400,
+      currency: "UAH",
+      buyerEmail: "buyer@example.com",
+      recipientEmail: "friend@example.com",
+      userId: null,
+      placedAt: "2026-11-05T09:58:00.000Z",
+      activatedAt: "2026-11-05T10:00:00.000Z",
+      expiresAt: "2027-11-05T10:00:00.000Z",
+      redemptions: [
+        { orderId: 7, amount: 600, redeemedAt: "2026-11-06T10:00:00.000Z", reversedAt: null },
+      ],
+    });
+    expect(toStrapiOrderData({ ...order, giftCardAmount: "500.00" }).giftCardAmount).toBe(500);
+  });
+
   it("sends families and notes as Strapi component rows, primary first (#65)", () => {
     const data = toStrapiProductData(product);
     expect(data.fragranceFamilies).toEqual([{ family: "шипрові" }, { family: "квіткові" }]);
@@ -164,6 +210,20 @@ describe("deliverCmsSync", () => {
     expect(calls[1]?.body).toEqual({ data: toStrapiOrderData(order) });
     expect(deps.markSynced).toHaveBeenCalledWith(70, 3);
     expect(deps.markSynced).toHaveBeenCalledWith(10, 1);
+  });
+
+  it("pushes a gift card with its balance and uses, keyed by its id (#125)", async () => {
+    const calls = stubStrapi({ "gift-cards": ["card-doc"] });
+    const deps = fakeDeps([claimed("gift_card", 12, 2)]);
+
+    expect(await deliverCmsSync({}, deps)).toEqual({ synced: 1, failed: 0, skipped: false });
+    expect(calls.map((c) => [c.method, decodeURIComponent(c.path)])).toEqual([
+      ["GET", "/api/gift-cards?filters[giftCardId][$eq]=12&fields[0]=documentId"],
+      ["PUT", "/api/gift-cards/card-doc"],
+    ]);
+    expect(calls[1]?.body).toEqual({ data: toStrapiGiftCardData(giftCard) });
+    expect(deps.loadGiftCard).toHaveBeenCalledWith(12);
+    expect(deps.markSynced).toHaveBeenCalledWith(120, 2);
   });
 
   it("keeps the error on a failed push and goes on with the rest", async () => {

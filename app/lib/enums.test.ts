@@ -36,7 +36,7 @@ describe("enum values", () => {
   });
 
   it("lists the payment methods", () => {
-    expect(PAYMENT_METHODS).toEqual(["card", "cod"]);
+    expect(PAYMENT_METHODS).toEqual(["card", "cod", "gift_card"]);
   });
 
   it("lists the event types", () => {

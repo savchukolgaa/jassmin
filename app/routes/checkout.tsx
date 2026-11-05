@@ -1,8 +1,15 @@
-import { data, Link, redirect } from "react-router";
+import { data, Link, redirect, type ShouldRevalidateFunctionArgs, useFetcher } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { getLocale } from "~/.server/locale";
-import { getActiveCartId, getCartOwner, getCartView } from "~/.server/services/cart";
+import { getClientIp, giftCardCodeLimiter } from "~/.server/rate-limit";
+import {
+  type CartOwner,
+  getActiveCartId,
+  getCartOwner,
+  getCartView,
+} from "~/.server/services/cart";
 import { pushToCms } from "~/.server/services/cms-sync";
+import { applyGiftCard, getCheckoutGiftCard, removeGiftCard } from "~/.server/services/gift-cards";
 import {
   createOrder,
   deliverOrderConfirmation,
@@ -12,6 +19,7 @@ import { isCardPaymentAvailable, startPayment } from "~/.server/services/payment
 import { rememberOrder } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
 import { CheckoutForm } from "~/features/checkout/CheckoutForm";
+import { GiftCardField } from "~/features/checkout/GiftCardField";
 import { OrderSummary } from "~/features/checkout/OrderSummary";
 import { toFieldErrors } from "~/lib/auth.schema";
 import {
@@ -23,8 +31,17 @@ import {
 } from "~/lib/checkout";
 import { parseCheckout } from "~/lib/checkout.schema";
 import { cn } from "~/lib/cn";
+import {
+  amountDueAfter,
+  CHECKOUT_GIFT_CARD_FETCHER,
+  type CheckoutGiftCardResult,
+  GIFT_CARD_ERROR_KEYS,
+  type GiftCardIntent,
+  isGiftCardIntent,
+} from "~/lib/gift-cards";
+import { giftCardCodeSchema } from "~/lib/gift-cards.schema";
 import { type Locale, metaTranslator, usePathFor, useT } from "~/lib/i18n";
-import { pathFor } from "~/lib/paths";
+import { crossesLocale, pathFor } from "~/lib/paths";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/checkout";
 
@@ -54,18 +71,89 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       discountCode: cart.promo?.status === "applied" ? cart.promo.code : null,
     },
   });
-  const prefill = owner.userId === null ? null : await getCheckoutPrefill(owner.userId);
+  const [prefill, giftCard] = await Promise.all([
+    owner.userId === null ? null : getCheckoutPrefill(owner.userId),
+    getCheckoutGiftCard(owner, cart.total),
+  ]);
   return {
     cart,
     prefill,
-    // Free delivery is decided on what's left after the discount (#59).
+    // Free delivery is decided on what's left after the discount (#59), before the gift card.
     shipping: freeShippingInfo(cart.total),
     cardPaymentAvailable: isCardPaymentAvailable(),
+    giftCard,
+    // What is left to pay after the gift card (#125); the form posts it as `expectedTotal`.
+    amountDue: amountDueAfter(cart.total, giftCard),
   };
+}
+
+/**
+ * The gift card intents answer with the new summary themselves (`CheckoutGiftCardResult`), so
+ * this loader doesn't run again for them and `checkout_start` is recorded once per visit.
+ */
+export function shouldRevalidate({
+  formData,
+  currentUrl,
+  nextUrl,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (crossesLocale({ currentUrl, nextUrl })) {
+    return true;
+  }
+  if (isGiftCardIntent(formData?.get("intent"))) {
+    return false;
+  }
+  return defaultShouldRevalidate;
+}
+
+/** Applies or removes the checkout's gift card (#125). */
+async function giftCardAction(
+  request: Request,
+  formData: FormData,
+  owner: CartOwner,
+  intent: GiftCardIntent,
+) {
+  if (intent === "apply-gift-card") {
+    // Refused codes count against the client, so codes can't be guessed one after another.
+    const key = getClientIp(request) ?? owner.anonymousId ?? "anonymous";
+    if (giftCardCodeLimiter.isBlocked(key)) {
+      return data<CheckoutGiftCardResult>(
+        { ok: false, error: GIFT_CARD_ERROR_KEYS["too-many-attempts"] },
+        { status: 429 },
+      );
+    }
+    const parsed = giftCardCodeSchema.safeParse(Object.fromEntries(formData));
+    const result = parsed.success
+      ? await applyGiftCard(owner, parsed.data.code)
+      : ({ ok: false, error: "unknown" } as const);
+    if (!result.ok) {
+      if (result.error === "no-cart") {
+        return redirect(pathFor(await getLocale(request), "cart"));
+      }
+      giftCardCodeLimiter.hit(key);
+      return data<CheckoutGiftCardResult>(
+        { ok: false, error: GIFT_CARD_ERROR_KEYS[result.error] },
+        { status: result.error === "unknown" ? 400 : 409 },
+      );
+    }
+  } else {
+    await removeGiftCard(owner);
+  }
+  const cart = await getCartView(owner);
+  const giftCard = await getCheckoutGiftCard(owner, cart.total);
+  return data<CheckoutGiftCardResult>({
+    ok: true,
+    giftCard,
+    amountDue: amountDueAfter(cart.total, giftCard),
+  });
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
+  const intent = formData.get("intent");
+  if (isGiftCardIntent(intent)) {
+    return giftCardAction(request, formData, await getCartOwner(request), intent);
+  }
   const values = checkoutValues(formData);
   const parsed = parseCheckout(formData);
   if (!parsed.success) {
@@ -127,7 +215,9 @@ export async function action({ request, context }: Route.ActionArgs) {
         discountAmount: result.discountAmount,
         discountId: result.discountId,
         discountCode: result.discountCode,
-        paymentMethod: parsed.data.paymentMethod,
+        giftCardAmount: result.giftCardAmount,
+        // `gift_card` when the card paid the whole order (#125).
+        paymentMethod: result.paymentMethod,
       },
     });
   }
@@ -135,7 +225,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   // A card order goes on to the provider's payment page (#44); also after a double submit, since
   // the browser follows the last response. `startPayment` checks the stored order, so an order
   // that is paid already, or was placed as cash on delivery, goes to its success page instead.
-  if (parsed.data.paymentMethod === "card") {
+  // An order a gift card paid in full (#125) has nothing left to pay.
+  const paymentMethod = result.placed ? result.paymentMethod : parsed.data.paymentMethod;
+  if (paymentMethod === "card") {
     const redirectUrl = await paymentRedirect(result.orderId, locale, request);
     if (redirectUrl) {
       return redirect(redirectUrl, { headers });
@@ -168,18 +260,25 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
   const { t } = useT();
   const path = usePathFor();
   const { cart, prefill, shipping, cardPaymentAvailable } = loaderData;
+  // The gift card form's answer, until the next load brings the same (#125).
+  const giftCardFetcher = useFetcher<CheckoutGiftCardResult>({ key: CHECKOUT_GIFT_CARD_FETCHER });
+  const latest = giftCardFetcher.data?.ok ? giftCardFetcher.data : null;
+  const giftCard = latest ? latest.giftCard : loaderData.giftCard;
+  const amountDue = latest ? latest.amountDue : loaderData.amountDue;
+  const formError = actionData && "formError" in actionData ? actionData.formError : undefined;
+  const formErrors = actionData && "values" in actionData ? actionData : undefined;
 
   return (
     <main className="container mx-auto px-4 pt-10 pb-16">
       <h1 className="text-4xl font-bold leading-tight tracking-[-0.01em] text-ink md:text-5xl">
         {t("checkout.heading")}
       </h1>
-      {actionData?.formError && (
+      {formError && (
         <p
           role="alert"
           className="mt-4 rounded-card bg-blush px-4 py-3 font-bold text-primary-dark"
         >
-          {t(actionData.formError)}{" "}
+          {t(formError)}{" "}
           <Link to={path("cart")} className={cn("rounded underline", focusRing("onLight"))}>
             {t("checkout.backToCart")}
           </Link>
@@ -188,20 +287,24 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
       <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
         <CheckoutForm
           prefill={prefill}
-          fieldErrors={actionData?.fieldErrors}
-          values={actionData?.values}
+          fieldErrors={formErrors?.fieldErrors}
+          values={formErrors?.values}
           cardAvailable={cardPaymentAvailable}
-          expectedTotal={cart.total}
+          expectedTotal={amountDue}
+          paidByGiftCard={giftCard !== null && Number(amountDue) === 0}
         />
         <OrderSummary
           lines={cart.lines.map(cartSummaryLine)}
           subtotal={cart.subtotal}
           discount={cart.discount}
-          // Nothing is added for delivery.
-          total={cart.total}
+          giftCardAmount={giftCard?.amount}
+          // Nothing is added for delivery; the gift card comes off last.
+          total={amountDue}
           freeShipping={shipping.free}
           remainingForFreeShipping={shipping.free ? undefined : shipping.remaining}
-        />
+        >
+          <GiftCardField giftCard={giftCard} />
+        </OrderSummary>
       </div>
       <p className="mt-6">
         <Link

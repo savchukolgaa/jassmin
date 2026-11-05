@@ -109,6 +109,22 @@ globalForPromoLimiter.__jassminPromoCodeLimiter ??= createRateLimiter({
  */
 export const promoCodeLimiter: RateLimiter = globalForPromoLimiter.__jassminPromoCodeLimiter;
 
+const globalForGiftCardLimiter = globalThis as typeof globalThis & {
+  __jassminGiftCardCodeLimiter?: RateLimiter;
+};
+
+globalForGiftCardLimiter.__jassminGiftCardCodeLimiter ??= createRateLimiter({
+  limit: 10,
+  windowMs: LOGIN_WINDOW_MS,
+});
+
+/**
+ * Gift card codes checkout refused (#125), per client IP (or visitor id), so codes can't be
+ * guessed by trying them one after another.
+ */
+export const giftCardCodeLimiter: RateLimiter =
+  globalForGiftCardLimiter.__jassminGiftCardCodeLimiter;
+
 /** The client IP from the first `X-Forwarded-For` entry, or `undefined` when there is none. */
 export function getClientIp(request: Request): string | undefined {
   const forwarded = request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim();

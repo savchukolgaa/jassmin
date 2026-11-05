@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { OrderSummaryLine } from "~/lib/checkout";
 import { I18nProvider, type Locale } from "~/lib/i18n";
 import { CheckoutForm, type CheckoutFormProps } from "./CheckoutForm";
+import { GiftCardField } from "./GiftCardField";
 import { OrderSummary } from "./OrderSummary";
 import { PaymentStatus } from "./PaymentStatus";
 
@@ -229,6 +230,78 @@ describe("OrderSummary", () => {
 
     expect(html).toContain("This perfume is no longer sold");
     expect(html).toContain("Qty 2");
+  });
+});
+
+describe("gift cards at checkout (#125)", () => {
+  const renderSummary = (props: Parameters<typeof OrderSummary>[0], locale?: Locale) =>
+    render(routerFor(createElement(OrderSummary, props)), locale);
+  const normalize = (html: string) => html.replace(/[\u00a0\u202f]/g, " ");
+
+  it("shows what the card pays before what is left to pay, in English and Ukrainian", () => {
+    const props = {
+      lines: [line],
+      subtotal: "900.00",
+      giftCardAmount: "500.00",
+      total: "400.00",
+      freeShipping: false,
+    };
+    const en = normalize(renderSummary(props));
+    expect(en).toContain("Gift card");
+    expect(en).toContain("−₴500");
+    expect(en.indexOf("Gift card")).toBeLessThan(en.indexOf("₴400"));
+    const uk = normalize(renderSummary(props, "uk"));
+    expect(uk).toContain("Подарункова картка");
+    expect(uk).toContain("−500 ₴");
+  });
+
+  it("has no gift card row without one", () => {
+    const html = renderSummary({
+      lines: [line],
+      subtotal: "900.00",
+      total: "900.00",
+      freeShipping: false,
+    });
+    expect(html).not.toContain("Gift card");
+  });
+
+  it("offers a code field, posting the apply intent to checkout", () => {
+    const html = render(routerFor(createElement(GiftCardField, { giftCard: null })));
+    expect(html).toContain("Gift card code");
+    expect(html).toContain('name="code"');
+    expect(tag(html, 'name="intent"')).toContain('value="apply-gift-card"');
+    expect(html).toContain('action="/en/checkout"');
+  });
+
+  it("shows the applied card, what stays on it and a remove button", () => {
+    const html = normalize(
+      render(
+        routerFor(
+          createElement(GiftCardField, {
+            giftCard: {
+              maskedCode: "••••-••••-••••-WXYZ",
+              amount: "600.00",
+              balanceAfter: "400.00",
+            },
+          }),
+        ),
+      ),
+    );
+    expect(html).toContain("Card ••••-••••-••••-WXYZ applied");
+    expect(html).toContain("Left on the card after this order: ₴400");
+    expect(tag(html, 'name="intent"')).toContain('value="remove-gift-card"');
+    expect(html).not.toContain('name="code"');
+  });
+
+  it("drops the payment choice when the card pays the whole order", () => {
+    const html = renderForm({ prefill: null, expectedTotal: "0.00", paidByGiftCard: true });
+    expect(html).toContain("Your gift card covers the whole order");
+    expect(html).not.toContain('value="card"');
+    expect(tag(html, 'name="expectedTotal"')).toContain('value="0.00"');
+  });
+
+  it("never offers gift_card as a payment choice", () => {
+    expect(renderForm({ prefill: null })).not.toContain('value="gift_card"');
   });
 });
 

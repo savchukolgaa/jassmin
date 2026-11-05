@@ -6,6 +6,8 @@ import type {
   Cart,
   CartItem,
   Discount,
+  GiftCard,
+  GiftCardRedemption,
   Order,
   OrderItem,
   Payment,
@@ -19,6 +21,8 @@ import {
   cmsOutbox,
   discounts,
   genderType,
+  giftCardRedemptions,
+  giftCards,
   orderEmails,
   orderItems,
   orderStatusType,
@@ -195,12 +199,14 @@ describe("carts", () => {
       updatedAt: ["timestamp with time zone", true, true],
       abandonedAt: ["timestamp with time zone", false, false],
       discountId: ["integer", false, false],
+      giftCardId: ["integer", false, false],
     });
   });
 
   it("links the analytics session, restricts deleting a user and has the lookup indexes", () => {
     expect(describeForeignKeys(carts)).toEqual({
       discountId: ["discounts", "set null"],
+      giftCardId: ["gift_cards", "set null"],
       sessionId: ["sessions", "set null"],
       userId: ["users", "restrict"],
     });
@@ -268,6 +274,7 @@ describe("orders", () => {
       subtotal: ["numeric(10, 2)", true, false],
       discountAmount: ["numeric(10, 2)", true, true],
       shippingAmount: ["numeric(10, 2)", true, true],
+      giftCardAmount: ["numeric(10, 2)", true, true],
       totalAmount: ["numeric(10, 2)", true, false],
       currency: ["text", true, true],
       createdAt: ["timestamp with time zone", true, true],
@@ -288,7 +295,11 @@ describe("orders", () => {
       discountId: ["discounts", "restrict"],
     });
     expect(describeConstraints(orders)).toEqual({
-      checks: ["orders_amounts_check", "orders_payment_method_check"],
+      checks: [
+        "orders_amounts_check",
+        "orders_gift_card_payment_check",
+        "orders_payment_method_check",
+      ],
       uniques: [],
       indexes: [
         "orders_cart_id_unique",
@@ -338,7 +349,8 @@ describe("order_emails", () => {
   it("has the specified columns", () => {
     expect(describeColumns(orderEmails)).toEqual({
       id: ["serial", true, true],
-      orderId: ["integer", true, false],
+      orderId: ["integer", false, false],
+      giftCardId: ["integer", false, false],
       type: ["text", true, false],
       locale: ["text", true, false],
       status: ["text", true, true],
@@ -352,15 +364,19 @@ describe("order_emails", () => {
   });
 
   it("cascades order deletes, keeps one email per type and indexes the due rows", () => {
-    expect(describeForeignKeys(orderEmails)).toEqual({ orderId: ["orders", "cascade"] });
+    expect(describeForeignKeys(orderEmails)).toEqual({
+      orderId: ["orders", "cascade"],
+      giftCardId: ["gift_cards", "cascade"],
+    });
     expect(describeConstraints(orderEmails)).toEqual({
       checks: [
         "order_emails_attempts_check",
         "order_emails_locale_check",
         "order_emails_status_check",
+        "order_emails_target_check",
         "order_emails_type_check",
       ],
-      uniques: ["order_emails_order_id_type_unique"],
+      uniques: ["order_emails_gift_card_id_type_unique", "order_emails_order_id_type_unique"],
       indexes: ["order_emails_status_next_attempt_at_idx"],
     });
   });
@@ -370,7 +386,8 @@ describe("payments", () => {
   it("has the specified columns", () => {
     expect(describeColumns(payments)).toEqual({
       id: ["serial", true, true],
-      orderId: ["integer", true, false],
+      orderId: ["integer", false, false],
+      giftCardId: ["integer", false, false],
       provider: ["text", true, false],
       reference: ["text", true, false],
       status: ["text", true, true],
@@ -385,11 +402,84 @@ describe("payments", () => {
   });
 
   it("cascades order deletes and keeps references unique", () => {
-    expect(describeForeignKeys(payments)).toEqual({ orderId: ["orders", "cascade"] });
+    expect(describeForeignKeys(payments)).toEqual({
+      orderId: ["orders", "cascade"],
+      giftCardId: ["gift_cards", "cascade"],
+    });
     expect(describeConstraints(payments)).toEqual({
-      checks: ["payments_amount_check", "payments_provider_check", "payments_status_check"],
+      checks: [
+        "payments_amount_check",
+        "payments_provider_check",
+        "payments_status_check",
+        "payments_target_check",
+      ],
       uniques: ["payments_reference_unique"],
-      indexes: ["payments_order_id_idx"],
+      indexes: ["payments_gift_card_id_idx", "payments_order_id_idx"],
+    });
+  });
+});
+
+describe("gift_cards", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(giftCards)).toEqual({
+      id: ["serial", true, true],
+      code: ["varchar(16)", true, false],
+      initialAmount: ["numeric(10, 2)", true, false],
+      balance: ["numeric(10, 2)", true, false],
+      currency: ["text", true, true],
+      status: ["text", true, true],
+      buyerUserId: ["integer", false, false],
+      buyerEmail: ["varchar(255)", true, false],
+      recipientEmail: ["varchar(255)", false, false],
+      locale: ["text", true, false],
+      paymentId: ["integer", false, false],
+      activatedAt: ["timestamp with time zone", false, false],
+      expiresAt: ["timestamp with time zone", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+      updatedAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("keeps codes unique, restricts deleting the buyer and checks amounts and states", () => {
+    expect(describeForeignKeys(giftCards)).toEqual({
+      buyerUserId: ["users", "restrict"],
+      paymentId: ["payments", "set null"],
+    });
+    expect(describeConstraints(giftCards)).toEqual({
+      checks: [
+        "gift_cards_activation_check",
+        "gift_cards_balance_check",
+        "gift_cards_initial_amount_check",
+        "gift_cards_locale_check",
+        "gift_cards_status_check",
+      ],
+      uniques: ["gift_cards_code_unique"],
+      indexes: ["gift_cards_buyer_user_id_idx", "gift_cards_status_expires_at_idx"],
+    });
+  });
+});
+
+describe("gift_card_redemptions", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(giftCardRedemptions)).toEqual({
+      id: ["serial", true, true],
+      giftCardId: ["integer", true, false],
+      orderId: ["integer", true, false],
+      amount: ["numeric(10, 2)", true, false],
+      createdAt: ["timestamp with time zone", true, true],
+      reversedAt: ["timestamp with time zone", false, false],
+    });
+  });
+
+  it("restricts deleting a used card and keeps one redemption per card and order", () => {
+    expect(describeForeignKeys(giftCardRedemptions)).toEqual({
+      giftCardId: ["gift_cards", "restrict"],
+      orderId: ["orders", "cascade"],
+    });
+    expect(describeConstraints(giftCardRedemptions)).toEqual({
+      checks: ["gift_card_redemptions_amount_check"],
+      uniques: ["gift_card_redemptions_gift_card_id_order_id_unique"],
+      indexes: ["gift_card_redemptions_order_id_idx"],
     });
   });
 });
@@ -468,6 +558,8 @@ describe("shared commerce types", () => {
     expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();
     expectTypeOf<typeof orderItems.$inferSelect>().toEqualTypeOf<OrderItem>();
     expectTypeOf<typeof payments.$inferSelect>().toEqualTypeOf<Payment>();
+    expectTypeOf<typeof giftCards.$inferSelect>().toEqualTypeOf<GiftCard>();
+    expectTypeOf<typeof giftCardRedemptions.$inferSelect>().toEqualTypeOf<GiftCardRedemption>();
     expectTypeOf<typeof discounts.$inferSelect>().toEqualTypeOf<Discount>();
   });
 });

@@ -14,6 +14,11 @@ const orders = vi.hoisted(() => ({
 const session = vi.hoisted(() => ({ rememberOrder: vi.fn() }));
 const cmsSync = vi.hoisted(() => ({ pushToCms: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
+const giftCards = vi.hoisted(() => ({
+  applyGiftCard: vi.fn(),
+  getCheckoutGiftCard: vi.fn(),
+  removeGiftCard: vi.fn(),
+}));
 const payments = vi.hoisted(() => ({
   isCardPaymentAvailable: vi.fn(),
   startPayment: vi.fn(),
@@ -25,6 +30,7 @@ vi.mock("~/.server/session", () => session);
 vi.mock("~/.server/services/cms-sync", () => cmsSync);
 vi.mock("~/.server/analytics", () => analytics);
 vi.mock("~/.server/services/payments", () => payments);
+vi.mock("~/.server/services/gift-cards", () => giftCards);
 
 type ActionArgs = Parameters<typeof import("./checkout").action>[0];
 type LoaderArgs = Parameters<typeof import("./checkout").loader>[0];
@@ -97,6 +103,7 @@ beforeEach(() => {
   cart.getActiveCartId.mockResolvedValue(5);
   session.rememberOrder.mockResolvedValue("__jassmin_session=abc; Path=/");
   payments.isCardPaymentAvailable.mockReturnValue(true);
+  giftCards.getCheckoutGiftCard.mockResolvedValue(null);
 });
 
 describe("checkout loader", () => {
@@ -147,6 +154,8 @@ describe("checkout loader", () => {
       prefill: null,
       shipping: { free: false, remaining: "600.00" },
       cardPaymentAvailable: true,
+      giftCard: null,
+      amountDue: "900.00",
     });
     expect(orders.getCheckoutPrefill).not.toHaveBeenCalled();
   });
@@ -251,7 +260,13 @@ describe("checkout action", () => {
 
   describe("card payment", () => {
     const card = { ...valid, paymentMethod: "card" };
-    const placed = { ok: true, orderId: 42, placed: true, subtotal: "900.00" };
+    const placed = {
+      ok: true,
+      orderId: 42,
+      placed: true,
+      subtotal: "900.00",
+      paymentMethod: "card",
+    };
     const providerUrl = "http://localhost/payments/simulator?data=abc&signature=def";
 
     it("sends the shopper to the provider's page for the new order", async () => {
@@ -350,6 +365,8 @@ describe("checkout action", () => {
       discountId: 3,
       discountCode: "JASSMIN10",
       discountKind: "percent",
+      giftCardAmount: "0.00",
+      paymentMethod: "cod",
     });
     const args = post(valid);
 
@@ -367,6 +384,7 @@ describe("checkout action", () => {
           discountAmount: "90.00",
           discountId: 3,
           discountCode: "JASSMIN10",
+          giftCardAmount: "0.00",
           paymentMethod: "cod",
         },
       },
@@ -456,5 +474,137 @@ describe("checkout action", () => {
     orders.createOrder.mockResolvedValueOnce({ ok: false, error: "cart-empty" });
     expect(await redirectOf(action(post(valid)))).toBe("/koshyk");
     expect(orders.deliverOrderConfirmation).not.toHaveBeenCalled();
+  });
+
+  it("goes straight to the success page for an order a gift card paid in full (#125)", async () => {
+    const { action } = await import("./checkout");
+    orders.createOrder.mockResolvedValueOnce({
+      ok: true,
+      orderId: 42,
+      placed: true,
+      subtotal: "900.00",
+      giftCardAmount: "900.00",
+      totalAmount: "0.00",
+      paymentMethod: "gift_card",
+    });
+
+    const response = (await action(post({ ...valid, paymentMethod: "card" }))) as Response;
+
+    expect(response.headers.get("Location")).toBe("/oformlennia/uspikh/42");
+    expect(payments.startPayment).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "purchase", {
+      properties: expect.objectContaining({ giftCardAmount: "900.00", paymentMethod: "gift_card" }),
+    });
+  });
+
+  it("refuses a posted gift_card payment method", async () => {
+    const { action } = await import("./checkout");
+    const { status, body } = unwrap(await action(post({ ...valid, paymentMethod: "gift_card" })));
+    expect(status).toBe(400);
+    expect(body).toMatchObject({
+      fieldErrors: { paymentMethod: "checkout.errors.paymentRequired" },
+    });
+    expect(orders.createOrder).not.toHaveBeenCalled();
+  });
+});
+
+describe("checkout gift card (#125)", () => {
+  const view = cartView({ lines: [line], itemCount: 2, subtotal: "900.00" });
+  const applied = { maskedCode: "••••-••••-••••-WXYZ", amount: "500.00", balanceAfter: "0.00" };
+
+  it("shows the applied card and what is left to pay", async () => {
+    const { loader } = await import("./checkout");
+    cart.getCartView.mockResolvedValueOnce(view);
+    giftCards.getCheckoutGiftCard.mockResolvedValueOnce(applied);
+
+    expect(await loader(get())).toMatchObject({ giftCard: applied, amountDue: "400.00" });
+    expect(giftCards.getCheckoutGiftCard).toHaveBeenCalledWith(guest, "900.00");
+  });
+
+  it("applies a code and answers with the new summary, without placing an order", async () => {
+    const { action } = await import("./checkout");
+    giftCards.applyGiftCard.mockResolvedValueOnce({ ok: true });
+    cart.getCartView.mockResolvedValueOnce(view);
+    giftCards.getCheckoutGiftCard.mockResolvedValueOnce(applied);
+
+    const result = unwrap(
+      await action(post({ intent: "apply-gift-card", code: " abcd-efgh-jkmn-wxyz " })),
+    );
+
+    expect(result).toEqual({
+      status: 200,
+      body: { ok: true, giftCard: applied, amountDue: "400.00" },
+    });
+    expect(giftCards.applyGiftCard).toHaveBeenCalledWith(guest, "abcd-efgh-jkmn-wxyz");
+    expect(orders.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("answers a refused code with its translated message key", async () => {
+    const { action } = await import("./checkout");
+    const headers = { "X-Forwarded-For": "203.0.113.50" };
+    for (const [error, key, status] of [
+      ["unknown", "checkout.giftCard.errors.unknown", 400],
+      ["not-active", "checkout.giftCard.errors.notActive", 409],
+      ["expired", "checkout.giftCard.errors.expired", 409],
+      ["used-up", "checkout.giftCard.errors.usedUp", 409],
+    ] as const) {
+      giftCards.applyGiftCard.mockResolvedValueOnce({ ok: false, error });
+      expect(
+        unwrap(await action(post({ intent: "apply-gift-card", code: "X".repeat(16) }, headers))),
+      ).toEqual({ status, body: { ok: false, error: key } });
+    }
+    // A blank code never reaches the service.
+    expect(unwrap(await action(post({ intent: "apply-gift-card", code: " " }, headers)))).toEqual({
+      status: 400,
+      body: { ok: false, error: "checkout.giftCard.errors.unknown" },
+    });
+    expect(giftCards.applyGiftCard).toHaveBeenCalledTimes(4);
+  });
+
+  it("stops checking codes after too many refusals from one client", async () => {
+    const { action } = await import("./checkout");
+    const headers = { "X-Forwarded-For": "203.0.113.51" };
+    giftCards.applyGiftCard.mockResolvedValue({ ok: false, error: "unknown" });
+    for (let i = 0; i < 10; i += 1) {
+      await action(post({ intent: "apply-gift-card", code: "X".repeat(16) }, headers));
+    }
+    expect(
+      unwrap(await action(post({ intent: "apply-gift-card", code: "X".repeat(16) }, headers))),
+    ).toEqual({
+      status: 429,
+      body: { ok: false, error: "checkout.giftCard.errors.tooManyAttempts" },
+    });
+    expect(giftCards.applyGiftCard).toHaveBeenCalledTimes(10);
+    giftCards.applyGiftCard.mockReset();
+  });
+
+  it("removes the card", async () => {
+    const { action } = await import("./checkout");
+    cart.getCartView.mockResolvedValueOnce(view);
+
+    expect(unwrap(await action(post({ intent: "remove-gift-card" })))).toEqual({
+      status: 200,
+      body: { ok: true, giftCard: null, amountDue: "900.00" },
+    });
+    expect(giftCards.removeGiftCard).toHaveBeenCalledWith(guest);
+  });
+
+  it("doesn't reload the page's loader for a gift card change", async () => {
+    const { shouldRevalidate } = await import("./checkout");
+    const url = new URL("http://localhost/oformlennia");
+    const args = (intent: string) => {
+      const formData = new FormData();
+      formData.set("intent", intent);
+      return {
+        formData,
+        formMethod: "POST",
+        currentUrl: url,
+        nextUrl: url,
+        defaultShouldRevalidate: true,
+      } as unknown as Parameters<typeof shouldRevalidate>[0];
+    };
+    expect(shouldRevalidate(args("apply-gift-card"))).toBe(false);
+    expect(shouldRevalidate(args("remove-gift-card"))).toBe(false);
+    expect(shouldRevalidate(args("place-order"))).toBe(true);
   });
 });

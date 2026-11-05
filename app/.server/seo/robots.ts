@@ -4,7 +4,7 @@ import { EN_PREFIX, PAGES, type Page } from "~/lib/paths";
 
 /**
  * The private pages: cart, checkout (with its success and payment pages), login, register and
- * the account (with its orders and profile). Each one's path is a prefix of its sub-pages' paths,
+ * the account (with its orders and profile), and a gift card's result page (#125). Each one's path is a prefix of its sub-pages' paths,
  * so these cover every page that isn't indexable; a test checks that.
  */
 export const ROBOTS_PRIVATE_PAGES = [
@@ -13,6 +13,8 @@ export const ROBOTS_PRIVATE_PAGES = [
   "login",
   "register",
   "account",
+  // The gift card purchase page is indexable, so only its result pages are blocked (#125).
+  "giftCardSuccess",
 ] as const satisfies readonly Page[];
 
 /**
@@ -20,7 +22,10 @@ export const ROBOTS_PRIVATE_PAGES = [
  * English pattern without `/en`, e.g. `/cart`), which only 301s but shouldn't be crawled either.
  */
 function privatePaths(page: Page): string[] {
-  const { uk, en } = PAGES[page];
+  // A page with parameters is blocked from its static prefix: `…/uspikh/:giftCardId` → `…/uspikh`.
+  const prefix = (pattern: string) => pattern.replace(/\/:.*$/, "");
+  const uk = prefix(PAGES[page].uk);
+  const en = prefix(PAGES[page].en);
   return [`/${uk}`, `${EN_PREFIX}/${en}`, `/${en}`];
 }
 

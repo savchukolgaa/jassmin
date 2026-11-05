@@ -327,4 +327,146 @@ describe.skipIf(!hasDatabase)("payments service", () => {
       expect(await getPaymentView(await order({ status: "cancelled" }), testDb.db)).toBeNull();
     });
   });
+
+  describe("gift cards (#125)", () => {
+    async function giftCard(recipientEmail?: string) {
+      const { createGiftCard } = await import("./gift-cards");
+      return createGiftCard(
+        { amount: 1000, email: "buyer@example.com", recipientEmail, userId: null, locale: "en" },
+        { db: testDb.db },
+      );
+    }
+
+    async function startCard(giftCardId: number) {
+      const { startGiftCardPayment } = await import("./payments");
+      const result = await startGiftCardPayment(
+        { giftCardId, locale: "en", origin: ORIGIN },
+        deps(),
+      );
+      if (!result.ok) throw new Error(result.error);
+      const url = new URL(result.redirectUrl);
+      const checkout = simulator.verifyCheckout(
+        url.searchParams.get("data") ?? "",
+        url.searchParams.get("signature") ?? "",
+      );
+      if (!checkout) throw new Error("checkout should verify");
+      return checkout;
+    }
+
+    async function cardState(giftCardId: number) {
+      const { findGiftCard } = await import("../db/queries/gift-cards");
+      return findGiftCard(testDb.db, giftCardId);
+    }
+
+    async function queuedEmails(giftCardId: number) {
+      const { asc, eq } = await import("drizzle-orm");
+      const { orderEmails } = await import("../db/schema");
+      const rows = await testDb.db
+        .select({ type: orderEmails.type, locale: orderEmails.locale })
+        .from(orderEmails)
+        .where(eq(orderEmails.giftCardId, giftCardId))
+        .orderBy(asc(orderEmails.id));
+      return rows;
+    }
+
+    it("charges the card's amount, with its own references and return page", async () => {
+      const id = await giftCard();
+      const first = await startCard(id);
+      expect(first).toMatchObject({
+        reference: `G${id}-1`,
+        amount: "1000.00",
+        currency: "UAH",
+        description: "Jassmin gift card of ₴1,000",
+        result_url: `${ORIGIN}/en/gift-cards/success/${id}`,
+        callback_url: `${ORIGIN}/payments/callback`,
+      });
+      expect((await startCard(id)).reference).toBe(`G${id}-2`);
+    });
+
+    it("activates the card and queues its emails on success, once", async () => {
+      const { getGiftCardPaymentView } = await import("./payments");
+      const id = await giftCard("friend@example.com");
+      const checkout = await startCard(id);
+      expect(await getGiftCardPaymentView(id, testDb.db)).toBe("pending");
+
+      expect(await callback(checkout, "success")).toEqual({
+        ok: true,
+        result: "paid",
+        giftCardId: id,
+      });
+      const card = await cardState(id);
+      expect(card).toMatchObject({ status: "active", balance: "1000.00" });
+      expect(card?.expiresAt).toBeInstanceOf(Date);
+      expect(await queuedEmails(id)).toEqual([
+        { type: "gift_card", locale: "en" },
+        { type: "gift_card_recipient", locale: "en" },
+      ]);
+      expect(await getGiftCardPaymentView(id, testDb.db)).toBe("paid");
+
+      // A repeated callback changes nothing and queues nothing more.
+      expect(await callback(checkout, "success")).toEqual({ ok: true, result: "ignored" });
+      expect(await queuedEmails(id)).toHaveLength(2);
+    });
+
+    it("queues only the buyer's email without a recipient", async () => {
+      const id = await giftCard();
+      await callback(await startCard(id), "success");
+      expect(await queuedEmails(id)).toEqual([{ type: "gift_card", locale: "en" }]);
+    });
+
+    it("leaves the card pending after a failure, and lets it be paid again", async () => {
+      const { getGiftCardPaymentView, startGiftCardPayment } = await import("./payments");
+      const id = await giftCard();
+      expect(await callback(await startCard(id), "failure")).toEqual({
+        ok: true,
+        result: "failed",
+      });
+      expect((await cardState(id))?.status).toBe("pending");
+      expect(await getGiftCardPaymentView(id, testDb.db)).toBe("failed");
+      expect(await queuedEmails(id)).toEqual([]);
+
+      await callback(await startCard(id), "success");
+      expect((await cardState(id))?.status).toBe("active");
+      expect(
+        await startGiftCardPayment({ giftCardId: id, locale: "uk", origin: ORIGIN }, deps()),
+      ).toEqual({ ok: false, error: "not-payable" });
+    });
+
+    it("ignores a callback for another amount", async () => {
+      const { handlePaymentCallback } = await import("./payments");
+      const id = await giftCard();
+      const checkout = await startCard(id);
+      const form = callbackForm(
+        simulator.buildCallback({ ...checkout, amount: "1.00" }, "success"),
+      );
+      expect(await handlePaymentCallback(form, deps())).toEqual({ ok: true, result: "ignored" });
+      expect((await cardState(id))?.status).toBe("pending");
+    });
+
+    it("only lets the buyer pay, and only with a provider", async () => {
+      const { startGiftCardPayment } = await import("./payments");
+      const id = await giftCard();
+      const input = { giftCardId: id, locale: "uk" as const, origin: ORIGIN };
+      expect(
+        await startGiftCardPayment(
+          { ...input, viewer: { userId: null, giftCardIds: [id + 1] } },
+          deps(),
+        ),
+      ).toEqual({ ok: false, error: "not-found" });
+      expect(
+        await startGiftCardPayment(
+          { ...input, viewer: { userId: null, giftCardIds: [id] } },
+          deps(),
+        ),
+      ).toMatchObject({ ok: true, reference: `G${id}-1` });
+      expect(await startGiftCardPayment({ ...input, giftCardId: 999_999 }, deps())).toEqual({
+        ok: false,
+        error: "not-found",
+      });
+      expect(await startGiftCardPayment(input, { db: testDb.db, provider: null })).toEqual({
+        ok: false,
+        error: "unavailable",
+      });
+    });
+  });
 });

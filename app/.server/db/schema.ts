@@ -2,7 +2,7 @@
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
 // checkout fields on orders (#11), the order email queue (#45), card payment attempts (#44) and
 // discount rules (#59), the Strapi catalog and order sync (#40) and several fragrance families,
-// notes and a store code per product (#65).
+// notes and a store code per product (#65), and gift cards with their redemptions (#125).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -36,6 +36,8 @@ import {
   EVENT_TYPES,
   type EventType,
   GENDERS,
+  GIFT_CARD_STATUSES,
+  type GiftCardStatus,
   ORDER_EMAIL_STATUSES,
   ORDER_EMAIL_TYPES,
   ORDER_STATUSES,
@@ -51,6 +53,7 @@ import {
   PERFUME_VOLUMES_ML,
   USER_ROLES,
 } from "~/lib/enums";
+import { GIFT_CARD_AMOUNTS } from "~/lib/gift-cards";
 import { LOCALES, type Locale } from "~/lib/i18n/locales";
 import type { ImageFormat } from "~/lib/images";
 
@@ -295,6 +298,11 @@ export const carts = pgTable(
      * they are worked out again on every read.
      */
     discountId: integer().references((): AnyPgColumn => discounts.id, { onDelete: "set null" }),
+    /**
+     * The gift card applied at checkout (#125); `null` without one. Checked again, and its balance
+     * taken, when the order is placed.
+     */
+    giftCardId: integer().references((): AnyPgColumn => giftCards.id, { onDelete: "set null" }),
   },
   (t) => [
     index("carts_user_id_idx").on(t.userId),
@@ -361,6 +369,11 @@ export const orders = pgTable(
     subtotal: numeric({ precision: 10, scale: 2 }).notNull(),
     discountAmount: numeric({ precision: 10, scale: 2 }).notNull().default("0"),
     shippingAmount: numeric({ precision: 10, scale: 2 }).notNull().default("0"),
+    /**
+     * What a gift card paid (#125), taken off after the discount and delivery. `total_amount` is
+     * what is left to pay, so the order's full price is `total_amount + gift_card_amount`.
+     */
+    giftCardAmount: numeric({ precision: 10, scale: 2 }).notNull().default("0"),
     totalAmount: numeric({ precision: 10, scale: 2 }).notNull(),
     currency: text().notNull().default("UAH"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -388,7 +401,12 @@ export const orders = pgTable(
     ),
     check(
       "orders_amounts_check",
-      sql`${t.subtotal} >= 0 and ${t.discountAmount} >= 0 and ${t.shippingAmount} >= 0 and ${t.totalAmount} >= 0`,
+      sql`${t.subtotal} >= 0 and ${t.discountAmount} >= 0 and ${t.shippingAmount} >= 0 and ${t.giftCardAmount} >= 0 and ${t.totalAmount} >= 0`,
+    ),
+    // `gift_card` is only for orders a gift card paid in full (#125).
+    check(
+      "orders_gift_card_payment_check",
+      sql`${t.paymentMethod} <> 'gift_card' or (${t.totalAmount} = 0 and ${t.giftCardAmount} > 0)`,
     ),
     index("orders_guest_email_idx").on(t.guestEmail),
     index("orders_guest_phone_idx").on(t.guestPhone),
@@ -441,11 +459,12 @@ export const orderEmails = pgTable(
   "order_emails",
   {
     id: serial().primaryKey(),
-    orderId: integer()
-      .notNull()
-      .references(() => orders.id, { onDelete: "cascade" }),
+    /** The order this email is about; `null` for a gift card's email. */
+    orderId: integer().references(() => orders.id, { onDelete: "cascade" }),
+    /** The gift card whose code this email sends (#125); `null` for an order's email. */
+    giftCardId: integer().references((): AnyPgColumn => giftCards.id, { onDelete: "cascade" }),
     type: text().$type<OrderEmailType>().notNull(),
-    /** The language the shopper checked out in. */
+    /** The language the shopper checked out (or bought the gift card) in. */
     locale: text().$type<Locale>().notNull(),
     status: text().$type<OrderEmailStatus>().notNull().default("pending"),
     /** Send attempts so far, counted when a sender claims the row. */
@@ -464,6 +483,8 @@ export const orderEmails = pgTable(
     check("order_emails_status_check", oneOf(t.status, ORDER_EMAIL_STATUSES)),
     check("order_emails_attempts_check", sql`${t.attempts} >= 0`),
     unique("order_emails_order_id_type_unique").on(t.orderId, t.type),
+    unique("order_emails_gift_card_id_type_unique").on(t.giftCardId, t.type),
+    check("order_emails_target_check", sql`(${t.orderId} is null) <> (${t.giftCardId} is null)`),
     index("order_emails_status_next_attempt_at_idx").on(t.status, t.nextAttemptAt),
   ],
 );
@@ -478,11 +499,15 @@ export const payments = pgTable(
   "payments",
   {
     id: serial().primaryKey(),
-    orderId: integer()
-      .notNull()
-      .references(() => orders.id, { onDelete: "cascade" }),
+    /** The card order being paid; `null` for a gift card purchase. */
+    orderId: integer().references(() => orders.id, { onDelete: "cascade" }),
+    /** The gift card being bought (#125); `null` for an order's payment. */
+    giftCardId: integer().references((): AnyPgColumn => giftCards.id, { onDelete: "cascade" }),
     provider: text().$type<PaymentProvider>().notNull(),
-    /** Sent to the provider as its order id: `<order id>-<attempt number>`. */
+    /**
+     * Sent to the provider as its order id: `<order id>-<attempt number>`, or
+     * `G<gift card id>-<attempt number>` for a gift card.
+     */
     reference: text().notNull(),
     status: text().$type<PaymentAttemptStatus>().notNull().default("pending"),
     amount: numeric({ precision: 10, scale: 2 }).notNull(),
@@ -502,6 +527,91 @@ export const payments = pgTable(
     check("payments_amount_check", sql`${t.amount} >= 0`),
     unique("payments_reference_unique").on(t.reference),
     index("payments_order_id_idx").on(t.orderId),
+    index("payments_gift_card_id_idx").on(t.giftCardId),
+    // An attempt pays exactly one thing: an order or a gift card.
+    check("payments_target_check", sql`(${t.orderId} is null) <> (${t.giftCardId} is null)`),
+  ],
+);
+
+/**
+ * Gift cards (#125): bought online by card in 500, 1000 or 2000 ₴ and spent at checkout, across
+ * as many orders as it takes, until the balance runs out or 12 months pass. A card is created
+ * `pending` with its code and full balance, and only becomes usable (`active`) when its payment
+ * succeeds; that also starts its 12 months.
+ */
+export const giftCards = pgTable(
+  "gift_cards",
+  {
+    id: serial().primaryKey(),
+    /** 16 symbols of Crockford's base 32, uppercase without separators (`~/lib/gift-cards`). */
+    code: varchar({ length: 16 }).notNull(),
+    initialAmount: numeric({ precision: 10, scale: 2 }).notNull(),
+    /** What can still be spent; lowered by each redemption. */
+    balance: numeric({ precision: 10, scale: 2 }).notNull(),
+    currency: text().notNull().default("UAH"),
+    status: text().$type<GiftCardStatus>().notNull().default("pending"),
+    /** The logged-in buyer; `null` for a guest. Restrict, like orders. */
+    buyerUserId: integer().references(() => users.id, { onDelete: "restrict" }),
+    /** Where the code is sent. */
+    buyerEmail: varchar({ length: 255 }).notNull(),
+    /** Who the card is for, when the buyer named them: the code is sent there too. */
+    recipientEmail: varchar({ length: 255 }),
+    /** The language the card was bought in, for its emails. */
+    locale: text().$type<Locale>().notNull(),
+    /** The attempt that paid for the card. */
+    paymentId: integer().references((): AnyPgColumn => payments.id, { onDelete: "set null" }),
+    activatedAt: timestamp({ withTimezone: true }),
+    /** `activated_at` + 12 months; the card can't be used from then on. */
+    expiresAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("gift_cards_code_unique").on(t.code),
+    check("gift_cards_status_check", oneOf(t.status, GIFT_CARD_STATUSES)),
+    check("gift_cards_locale_check", oneOf(t.locale, LOCALES)),
+    check(
+      "gift_cards_initial_amount_check",
+      sql`${t.initialAmount} in (${sql.raw(GIFT_CARD_AMOUNTS.join(", "))})`,
+    ),
+    check(
+      "gift_cards_balance_check",
+      sql`${t.balance} >= 0 and ${t.balance} <= ${t.initialAmount}`,
+    ),
+    check(
+      "gift_cards_activation_check",
+      sql`${t.status} = 'pending' or (${t.activatedAt} is not null and ${t.expiresAt} is not null)`,
+    ),
+    index("gift_cards_buyer_user_id_idx").on(t.buyerUserId),
+    // For the expiry job: active cards past their date.
+    index("gift_cards_status_expires_at_idx").on(t.status, t.expiresAt),
+  ],
+);
+
+/**
+ * What each order took off a gift card (#125). A cancelled or unclaimed order gives the amount
+ * back and keeps the row with `reversed_at` set.
+ */
+export const giftCardRedemptions = pgTable(
+  "gift_card_redemptions",
+  {
+    id: serial().primaryKey(),
+    /** Restrict: a card that paid for an order is never deleted. */
+    giftCardId: integer()
+      .notNull()
+      .references(() => giftCards.id, { onDelete: "restrict" }),
+    orderId: integer()
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    amount: numeric({ precision: 10, scale: 2 }).notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** When the amount went back on the card because the order was cancelled or unclaimed. */
+    reversedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    check("gift_card_redemptions_amount_check", sql`${t.amount} > 0`),
+    unique("gift_card_redemptions_gift_card_id_order_id_unique").on(t.giftCardId, t.orderId),
+    index("gift_card_redemptions_order_id_idx").on(t.orderId),
   ],
 );
 

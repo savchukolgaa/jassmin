@@ -11,6 +11,11 @@
 // using the same rule and fails once it's used up; the cart is then priced without it. An order
 // whose total came out higher than the page showed (`expectedTotal`) isn't placed.
 //
+// Gift cards (#125) pay after the discount and delivery: the cart's card is locked after the cart
+// and its variants (the same lock order as every checkout), checked again, and its amount taken
+// in the same transaction, so two orders can never spend more than its balance. An order the card
+// pays in full is placed `gift_card` and already paid.
+//
 // The order's confirmation email (#45) is queued in the same transaction (`order_emails`), so an
 // order never exists without it and a rolled-back order sends nothing. The caller records the
 // `purchase` event (#18) and makes the first delivery attempt for an order this call `placed`,
@@ -20,7 +25,7 @@ import type { AccountOrderDetail, AccountOrderLine, AccountOrders } from "~/lib/
 import { isCurrentOrder } from "~/lib/account";
 import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
 import { formatShippingAddress } from "~/lib/checkout";
-import type { DiscountKind } from "~/lib/enums";
+import type { DiscountKind, PaymentMethod } from "~/lib/enums";
 import type { Locale } from "~/lib/i18n";
 import { fromKopiyky, toKopiyky } from "~/lib/money";
 import { db as defaultDb } from "../db";
@@ -32,6 +37,7 @@ import {
   listCandidateDiscounts,
   redeemDiscount,
 } from "../db/queries/discounts";
+import { findCartGiftCardId, findGiftCard, redeemGiftCard } from "../db/queries/gift-cards";
 import { insertOrderEmail } from "../db/queries/order-emails";
 import {
   decrementVariantStock,
@@ -50,6 +56,7 @@ import {
 import { findUserContact } from "../db/queries/users";
 import { getEnv } from "../env";
 import { getMailTransport } from "../mail";
+import { checkGiftCard, giftCardAmountFor } from "./gift-cards";
 import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
 import { type PricedCart, type PricingLine, priceCart } from "./pricing";
 
@@ -90,6 +97,10 @@ export interface PlacedOrderTotals {
   /** The applied promo code; `null` for an automatic rule or no discount. */
   discountCode: string | null;
   discountKind: DiscountKind | null;
+  /** What a gift card paid (#125), `"0.00"` without one. */
+  giftCardAmount: string;
+  /** As placed: `gift_card` when the card paid the whole order, else the shopper's choice. */
+  paymentMethod: PaymentMethod;
 }
 
 export type CreateOrderResult =
@@ -133,11 +144,16 @@ export async function createOrder(
       // The variant rows are locked, so these prices are the ones the lines are sold at.
       const { subtotal } = await cartTotals(tx, cartId);
       const priced = await priceAndRedeem(tx, cartId, lines, now);
-      if (expectedTotal !== undefined && priced.total > toKopiyky(expectedTotal)) {
+      const giftCard = await lockCartGiftCard(tx, cartId, priced.total, now);
+      const amountDue = priced.total - giftCard.amount;
+      if (expectedTotal !== undefined && amountDue > toKopiyky(expectedTotal)) {
         // Thrown, not returned, so the redemption rolls back with the rest.
         throw new TotalChanged();
       }
       const discountAmount = fromKopiyky(priced.discount);
+      const giftCardAmount = fromKopiyky(giftCard.amount);
+      const paymentMethod: PaymentMethod =
+        amountDue === 0 && giftCard.amount > 0 ? "gift_card" : customer.paymentMethod;
       const orderId = await insertOrder(tx, {
         cartId,
         userId,
@@ -145,12 +161,18 @@ export async function createOrder(
         email: customer.email,
         phone: customer.phone,
         shippingAddress: formatShippingAddress(customer),
-        paymentMethod: customer.paymentMethod,
+        paymentMethod,
         subtotal,
         discountAmount,
         discountId: priced.applied?.discountId ?? null,
+        giftCardAmount,
       });
       await insertOrderItems(tx, orderId, lines);
+      if (giftCard.id !== null && giftCard.amount > 0) {
+        await redeemGiftCard(tx, { giftCardId: giftCard.id, orderId, amount: giftCardAmount });
+        // Strapi shows the card's lower balance (#40); pushed after the commit.
+        await enqueueCmsSync(tx, "gift_card", [giftCard.id]);
+      }
       await insertOrderEmail(tx, { orderId, type: "confirmation", locale });
       // Only sizes that track stock lose units; the rest are poured to order (#98).
       const tracked = lines.filter((line) => line.trackStock);
@@ -171,10 +193,12 @@ export async function createOrder(
         placed: true,
         subtotal,
         discountAmount,
-        totalAmount: fromKopiyky(priced.total),
+        totalAmount: fromKopiyky(amountDue),
         discountId: priced.applied?.discountId ?? null,
         discountCode: priced.applied?.code ?? null,
         discountKind: priced.applied?.kind ?? null,
+        giftCardAmount,
+        paymentMethod,
       };
     })
     .catch((error: unknown) => {
@@ -186,6 +210,29 @@ export async function createOrder(
 }
 
 class TotalChanged extends Error {}
+
+/**
+ * The cart's gift card, locked `FOR UPDATE`, and what it pays of an order costing `total` (whole
+ * kopiyky): 0 without a card or when it can't pay `now` (it expired or was spent meanwhile, which
+ * the `expectedTotal` check then reports). A concurrent order using the same card waits here and
+ * then sees the lower balance.
+ */
+async function lockCartGiftCard(
+  tx: Pick<Db, "select" | "insert" | "update">,
+  cartId: number,
+  total: number,
+  now: Date,
+): Promise<{ id: number | null; amount: number }> {
+  const giftCardId = await findCartGiftCardId(tx, cartId);
+  if (giftCardId === null) {
+    return { id: null, amount: 0 };
+  }
+  const card = await findGiftCard(tx, giftCardId, { lock: true });
+  if (!card || checkGiftCard(card, now) !== null) {
+    return { id: giftCardId, amount: 0 };
+  }
+  return { id: giftCardId, amount: giftCardAmountFor(total, toKopiyky(card.balance)) };
+}
 
 /**
  * Prices the locked lines with the best rule and counts it as redeemed. A rule a concurrent

@@ -162,6 +162,13 @@
       "when": 1793885872631,
       "tag": "0022_couple_offer",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793889509270,
+      "tag": "0023_gift_cards",
+      "breakpoints": true
     }
   ]
 }

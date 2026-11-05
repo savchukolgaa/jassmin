@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { emailSchema } from "./auth.schema";
 import { normalizeUkrainianPhone } from "./checkout";
-import { PAYMENT_METHODS } from "./enums";
+import { SELECTABLE_PAYMENT_METHODS } from "./enums";
 import { msg, type TextKey } from "./i18n";
 
 const requiredText = (max: number, required: TextKey, tooLong: TextKey) =>
@@ -31,7 +31,10 @@ export const checkoutSchema = z.object({
   }),
   city: requiredText(100, "checkout.errors.cityRequired", "checkout.errors.cityTooLong"),
   branch: requiredText(255, "checkout.errors.branchRequired", "checkout.errors.branchTooLong"),
-  paymentMethod: z.enum(PAYMENT_METHODS, { error: msg("checkout.errors.paymentRequired") }),
+  // `gift_card` is set by the shop when a gift card covers the order (#125), never posted.
+  paymentMethod: z.enum(SELECTABLE_PAYMENT_METHODS, {
+    error: msg("checkout.errors.paymentRequired"),
+  }),
   /**
    * The total the page showed (#59), so the order is never placed at more: a code or offer may
    * stop working between loading the page and submitting it. Left out, it isn't checked.

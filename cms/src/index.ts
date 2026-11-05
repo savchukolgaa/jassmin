@@ -1,5 +1,5 @@
 import type { Core } from "@strapi/strapi";
-import { createSyncMiddleware, ORDER_UID, PRODUCT_UID } from "./sync/middleware";
+import { createSyncMiddleware, GIFT_CARD_UID, ORDER_UID, PRODUCT_UID } from "./sync/middleware";
 
 /**
  * Content types the Jassmin app reads with its read-only API token (or writes with its sync
@@ -12,6 +12,7 @@ const PROTECTED_UIDS = [
   "api::site-setting.site-setting",
   PRODUCT_UID,
   ORDER_UID,
+  GIFT_CARD_UID,
 ];
 
 interface RoleWithPermissions {
@@ -148,6 +149,24 @@ async function lockOrderFields(strapi: Core.Strapi): Promise<void> {
   }
 }
 
+/**
+ * Makes every gift card field read-only in its edit view (#125). Only a hint for staff: the sync
+ * middleware refuses every admin save of a gift card.
+ */
+async function lockGiftCardFields(strapi: Core.Strapi): Promise<void> {
+  try {
+    await updateEditMetadata(strapi, "content-types", GIFT_CARD_UID, (_field, edit) => {
+      if (edit.editable === false) {
+        return false;
+      }
+      edit.editable = false;
+      return true;
+    });
+  } catch (error) {
+    strapi.log.warn(`Could not make the gift card fields read-only: ${String(error)}`);
+  }
+}
+
 interface FieldHint {
   label: string;
   description: string;
@@ -263,6 +282,7 @@ export default {
     await ensureLocales(strapi);
     await warnAboutPublicAccess(strapi);
     await lockOrderFields(strapi);
+    await lockGiftCardFields(strapi);
     await describeFields(strapi);
   },
 };

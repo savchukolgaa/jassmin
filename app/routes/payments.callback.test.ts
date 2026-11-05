@@ -6,9 +6,11 @@ const handlePaymentCallback = vi.hoisted(() =>
 );
 
 const pushToCms = vi.hoisted(() => vi.fn());
+const deliverGiftCardEmails = vi.hoisted(() => vi.fn());
 
 vi.mock("~/.server/services/payments", () => ({ handlePaymentCallback }));
 vi.mock("~/.server/services/cms-sync", () => ({ pushToCms }));
+vi.mock("~/.server/services/gift-cards", () => ({ deliverGiftCardEmails }));
 
 type ActionArgs = Parameters<typeof import("./payments.callback").action>[0];
 
@@ -25,6 +27,16 @@ describe("payments callback route", () => {
   beforeEach(() => {
     handlePaymentCallback.mockClear();
     pushToCms.mockClear();
+    deliverGiftCardEmails.mockClear();
+  });
+
+  it("sends a paid gift card's code emails after the commit (#125)", async () => {
+    handlePaymentCallback.mockResolvedValueOnce({ ok: true, result: "paid", giftCardId: 12 });
+    const { action } = await import("./payments.callback");
+
+    expect((await action(post(callbackBody()))).status).toBe(200);
+    expect(deliverGiftCardEmails).toHaveBeenCalledWith(12);
+    expect(pushToCms).toHaveBeenCalledOnce();
   });
 
   it("passes the form to the payments service and answers 200 for a verified callback", async () => {
@@ -34,6 +46,7 @@ describe("payments callback route", () => {
 
     expect(response.status).toBe(200);
     expect(pushToCms).toHaveBeenCalledOnce();
+    expect(deliverGiftCardEmails).not.toHaveBeenCalled();
     const form = handlePaymentCallback.mock.calls[0]?.[0];
     expect(form?.get("data")).toBe("ZGF0YQ==");
     expect(form?.get("signature")).toBe("c2ln");

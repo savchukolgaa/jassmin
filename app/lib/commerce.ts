@@ -5,12 +5,14 @@
 import type {
   CartStatus,
   DiscountKind,
+  GiftCardStatus,
   OrderStatus,
   PaymentAttemptStatus,
   PaymentMethod,
   PaymentProvider,
   PaymentStatus,
 } from "./enums";
+import type { Locale } from "./i18n/locales";
 
 export interface Cart {
   id: number;
@@ -26,6 +28,8 @@ export interface Cart {
   abandonedAt: Date | null;
   /** The promo code the shopper applied (`discounts.id`, #59). */
   discountId: number | null;
+  /** The gift card applied at checkout (`gift_cards.id`, #125). */
+  giftCardId: number | null;
 }
 
 export interface ProductVariant {
@@ -69,6 +73,8 @@ export interface Order {
   subtotal: string;
   discountAmount: string;
   shippingAmount: string;
+  /** What a gift card paid (#125); `total_amount` is what's left to pay. */
+  giftCardAmount: string;
   totalAmount: string;
   currency: string;
   createdAt: Date;
@@ -99,12 +105,15 @@ export interface OrderItem {
 /** One attempt at paying a card order online (#44). */
 export interface Payment {
   id: number;
-  orderId: number;
+  /** The card order being paid; `null` for a gift card purchase. */
+  orderId: number | null;
+  /** The gift card being bought (#125); `null` for an order's payment. */
+  giftCardId: number | null;
   provider: PaymentProvider;
-  /** The provider's order id for this attempt: `<order id>-<attempt number>`. */
+  /** The provider's order id for this attempt: `<order id>-<n>`, or `G<gift card id>-<n>`. */
   reference: string;
   status: PaymentAttemptStatus;
-  /** The order total when the attempt started. */
+  /** The order total, or the gift card's amount, when the attempt started. */
   amount: string;
   currency: string;
   providerPaymentId: string | null;
@@ -112,6 +121,39 @@ export interface Payment {
   createdAt: Date;
   updatedAt: Date;
   completedAt: Date | null;
+}
+
+/** A gift card (#125): bought by card, spent at checkout until its balance or 12 months run out. */
+export interface GiftCard {
+  id: number;
+  code: string;
+  initialAmount: string;
+  balance: string;
+  currency: string;
+  status: GiftCardStatus;
+  /** `null` for a guest buyer. */
+  buyerUserId: number | null;
+  buyerEmail: string;
+  /** Who the card is for, when the buyer named them. */
+  recipientEmail: string | null;
+  locale: Locale;
+  /** The attempt that paid for the card. */
+  paymentId: number | null;
+  activatedAt: Date | null;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** What one order took off a gift card (#125). */
+export interface GiftCardRedemption {
+  id: number;
+  giftCardId: number;
+  orderId: number;
+  amount: string;
+  createdAt: Date;
+  /** When the amount went back on the card (the order was cancelled or unclaimed). */
+  reversedAt: Date | null;
 }
 
 /** A discount rule (#59): a promo code, or an automatic rule when `code` is `null`. */

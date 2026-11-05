@@ -19,6 +19,9 @@ import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import { findGiftCard, insertGiftCard, listUserGiftCards } from "../db/queries/gift-cards";
+import { getEnv } from "../env";
+import { getMailTransport } from "../mail";
+import { deliverOrderEmails, type OrderEmailReport, orderEmailDeps } from "./order-email";
 
 /** A new random code: 16 symbols of Crockford's base 32, 80 bits from the system's CSPRNG. */
 export function generateGiftCardCode(random: (max: number) => number = randomInt): string {
@@ -147,4 +150,15 @@ export async function getAccountGiftCards(
   db: Db = defaultDb,
 ): Promise<GiftCardView[]> {
   return (await listUserGiftCards(db, userId)).map((card) => toGiftCardView(card));
+}
+
+/**
+ * The first attempt at sending a paid card's code emails, right after the payment callback
+ * committed. Never rejects; `pnpm db:send-order-emails` retries a failure.
+ */
+export function deliverGiftCardEmails(
+  giftCardId: number,
+  db: Db = defaultDb,
+): Promise<OrderEmailReport> {
+  return deliverOrderEmails({ giftCardId }, () => orderEmailDeps(db, getMailTransport(), getEnv()));
 }

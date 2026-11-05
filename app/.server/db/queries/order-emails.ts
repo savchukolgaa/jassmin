@@ -35,6 +35,8 @@ export interface ClaimedOrderEmail {
 export interface ClaimOptions {
   /** Only this order's emails (the attempt right after checkout). */
   orderId?: number;
+  /** Only this gift card's emails (the attempt right after its payment, #125). */
+  giftCardId?: number;
   limit: number;
   /**
    * Minutes to wait before retrying after attempt 1, 2, …; the last value repeats. Whole
@@ -51,7 +53,7 @@ export interface ClaimOptions {
  */
 export function claimOrderEmails(
   db: Executor,
-  { orderId, limit, retryDelaysMinutes }: ClaimOptions,
+  { orderId, giftCardId, limit, retryDelaysMinutes }: ClaimOptions,
 ): Promise<ClaimedOrderEmail[]> {
   const delays = retryDelaysMinutes.map((minutes) => {
     if (!Number.isInteger(minutes) || minutes <= 0) {
@@ -70,6 +72,7 @@ export function claimOrderEmails(
         eq(orderEmails.status, "pending"),
         lte(orderEmails.nextAttemptAt, sql`now()`),
         orderId === undefined ? undefined : eq(orderEmails.orderId, orderId),
+        giftCardId === undefined ? undefined : eq(orderEmails.giftCardId, giftCardId),
       ),
     )
     .orderBy(asc(orderEmails.nextAttemptAt), asc(orderEmails.id))

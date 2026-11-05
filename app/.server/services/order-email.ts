@@ -1,15 +1,19 @@
-// Order confirmation emails (#45). `createOrder` queues one in `order_emails` inside the order's
-// transaction; this module renders and sends queued emails. The checkout action tries its order's
-// email right after the commit, and `pnpm db:send-order-emails` retries whatever failed, with the
-// backoff below. Nothing here ever fails a checkout.
+// Order confirmation emails (#45) and gift card code emails (#125). `createOrder` queues the
+// confirmation in `order_emails` inside the order's transaction, and the payment callback queues a
+// paid gift card's emails inside its transaction; this module renders and sends queued emails.
+// The checkout action (or the callback route) tries them right after the commit, and
+// `pnpm db:send-order-emails` retries whatever failed, with the backoff below. Nothing here ever
+// fails a checkout or a payment.
 import type Mail from "nodemailer/lib/mailer";
 import type { OrderConfirmation } from "~/lib/checkout";
 import { PAYMENT_KEYS } from "~/lib/checkout";
+import type { GiftCard } from "~/lib/commerce";
 import { discountLabel } from "~/lib/discounts";
-import type { OrderEmailType } from "~/lib/enums";
+import { formatGiftCardCode } from "~/lib/gift-cards";
 import { createTranslator, type Translator } from "~/lib/i18n";
 import { formatVolume } from "~/lib/products";
 import type { Db } from "../db/client";
+import { findGiftCard } from "../db/queries/gift-cards";
 import {
   type ClaimedOrderEmail,
   claimOrderEmails,
@@ -109,12 +113,93 @@ export function buildOrderConfirmationEmail(
   };
 }
 
-const BUILDERS: Record<
-  Extract<OrderEmailType, "confirmation">,
-  (order: OrderConfirmation, translator: Translator, env: OrderEmailEnv) => Mail.Options
-> = {
-  confirmation: buildOrderConfirmationEmail,
-};
+/** The card's amount, code, expiry and how to use it: the body both gift card emails share. */
+function giftCardDetails(
+  card: GiftCard,
+  translator: Translator,
+  keys: "giftCardEmail" | "giftCardRecipientEmail",
+) {
+  const { t, formatDate } = translator;
+  return [
+    t(`${keys}.code`, { code: formatGiftCardCode(card.code) }),
+    ...(card.expiresAt
+      ? [t(`${keys}.expires`, { date: formatDate(card.expiresAt.toISOString()) })]
+      : []),
+    "",
+    t(`${keys}.howTo`),
+  ];
+}
+
+/** The plain-text email with a paid gift card's code to its buyer (#125). */
+export function buildGiftCardEmail(
+  card: GiftCard,
+  translator: Translator,
+  env: OrderEmailEnv,
+): Mail.Options {
+  const { t, formatPrice } = translator;
+  const amount = formatPrice(card.initialAmount);
+  const text = [
+    t("giftCardEmail.greeting"),
+    "",
+    t("giftCardEmail.intro", { amount }),
+    ...(card.recipientEmail
+      ? [t("giftCardEmail.recipientCopy", { email: stripLineBreaks(card.recipientEmail) })]
+      : []),
+    "",
+    ...giftCardDetails(card, translator, "giftCardEmail"),
+    "",
+    t("giftCardEmail.contact", { email: env.CONTACT_INBOX }),
+    "",
+    t("giftCardEmail.signature"),
+  ].join("\n");
+  return {
+    from: env.ORDER_FROM ?? env.CONTACT_FROM,
+    to: stripLineBreaks(card.buyerEmail),
+    replyTo: env.CONTACT_INBOX,
+    // Only the amount: no user input in the subject.
+    subject: t("giftCardEmail.subject", { amount }),
+    text,
+  };
+}
+
+/**
+ * The plain-text email with a paid gift card's code to the recipient its buyer named (#125). It
+ * shows nothing the buyer typed, so it can't carry their text to a stranger.
+ */
+export function buildGiftCardRecipientEmail(
+  card: GiftCard,
+  translator: Translator,
+  env: OrderEmailEnv,
+): Mail.Options {
+  if (!card.recipientEmail) {
+    throw new Error(`Gift card ${card.id} has no recipient`);
+  }
+  const { t, formatPrice } = translator;
+  const amount = formatPrice(card.initialAmount);
+  const text = [
+    t("giftCardRecipientEmail.greeting"),
+    "",
+    t("giftCardRecipientEmail.intro", { amount }),
+    "",
+    ...giftCardDetails(card, translator, "giftCardRecipientEmail"),
+    "",
+    t("giftCardRecipientEmail.contact", { email: env.CONTACT_INBOX }),
+    "",
+    t("giftCardRecipientEmail.signature"),
+  ].join("\n");
+  return {
+    from: env.ORDER_FROM ?? env.CONTACT_FROM,
+    to: stripLineBreaks(card.recipientEmail),
+    replyTo: env.CONTACT_INBOX,
+    subject: t("giftCardRecipientEmail.subject", { amount }),
+    text,
+  };
+}
+
+const GIFT_CARD_BUILDERS = {
+  gift_card: buildGiftCardEmail,
+  gift_card_recipient: buildGiftCardRecipientEmail,
+} as const;
 
 /** Rows the retry job claims at a time. */
 export const ORDER_EMAIL_BATCH_SIZE = 50;
@@ -127,8 +212,13 @@ export interface OrderEmailDeps {
   /** `null` when `SMTP_URL` is not configured. */
   mailer: MailSender | null;
   env: OrderEmailEnv;
-  claim(options: { orderId?: number; limit: number }): Promise<ClaimedOrderEmail[]>;
+  claim(options: {
+    orderId?: number;
+    giftCardId?: number;
+    limit: number;
+  }): Promise<ClaimedOrderEmail[]>;
   loadOrder(orderId: number): Promise<OrderConfirmation | undefined>;
+  loadGiftCard(giftCardId: number): Promise<GiftCard | undefined>;
   markSent(id: number): Promise<void>;
   markFailed(id: number, failure: { error: string; final: boolean }): Promise<void>;
 }
@@ -145,6 +235,7 @@ export function orderEmailDeps(
     claim: (options) =>
       claimOrderEmails(db, { ...options, retryDelaysMinutes: ORDER_EMAIL_RETRY_DELAYS_MINUTES }),
     loadOrder: (orderId) => findOrderConfirmation(db, orderId),
+    loadGiftCard: (giftCardId) => findGiftCard(db, giftCardId),
     markSent: (id) => markOrderEmailSent(db, id),
     markFailed: (id, failure) => markOrderEmailFailed(db, id, failure),
   };
@@ -165,28 +256,40 @@ function errorMessage(error: unknown): string {
   return message.slice(0, MAX_ERROR_LENGTH);
 }
 
+/** The queued email's message, or `null` when its order or gift card is gone. */
+async function buildEmail(
+  email: ClaimedOrderEmail,
+  deps: OrderEmailDeps,
+): Promise<Mail.Options | null> {
+  const translator = createTranslator(email.locale);
+  if (email.type === "confirmation") {
+    const order = email.orderId === null ? undefined : await deps.loadOrder(email.orderId);
+    return order ? buildOrderConfirmationEmail(order, translator, deps.env) : null;
+  }
+  const card = email.giftCardId === null ? undefined : await deps.loadGiftCard(email.giftCardId);
+  return card ? GIFT_CARD_BUILDERS[email.type](card, translator, deps.env) : null;
+}
+
 async function deliverOne(
   email: ClaimedOrderEmail,
   mailer: MailSender,
   deps: OrderEmailDeps,
   report: OrderEmailReport,
 ): Promise<void> {
-  const label = `order ${email.orderId}'s ${email.type} email`;
+  const label =
+    email.giftCardId === null
+      ? `order ${email.orderId}'s ${email.type} email`
+      : `gift card ${email.giftCardId}'s ${email.type} email`;
   try {
-    if (email.type !== "confirmation" || email.orderId === null) {
-      // Gift card emails are sent from step 6 of #125 on.
-      throw new Error(`Unsupported email type ${email.type}`);
-    }
-    const order = await deps.loadOrder(email.orderId);
-    if (!order) {
-      // Deleted orders cascade to their emails, so this only happens in a race; don't retry.
-      console.error(`[order-email] Not sending ${label}: the order doesn't exist`);
-      await deps.markFailed(email.id, { error: "Order not found", final: true });
+    const message = await buildEmail(email, deps);
+    if (!message) {
+      // Deleted orders and cards cascade to their emails, so this only happens in a race.
+      console.error(`[order-email] Not sending ${label}: its order or gift card doesn't exist`);
+      await deps.markFailed(email.id, { error: "Order or gift card not found", final: true });
       report.gaveUp += 1;
       return;
     }
-    const build = BUILDERS[email.type];
-    await mailer.sendMail(build(order, createTranslator(email.locale), deps.env));
+    await mailer.sendMail(message);
   } catch (error) {
     const final = email.attempts >= MAX_ORDER_EMAIL_ATTEMPTS;
     const message = errorMessage(error);
@@ -212,8 +315,8 @@ async function deliverOne(
 }
 
 /**
- * Sends due queued emails: only `orderId`'s right after its checkout, otherwise every due one in
- * batches (the retry job). Never rejects: every failure is logged and left to the retries. `deps`
+ * Sends due queued emails: only `orderId`'s right after its checkout (or `giftCardId`'s right
+ * after its payment), otherwise every due one in batches (the retry job). Never rejects: every failure is logged and left to the retries. `deps`
  * may be a factory, so an error while building them (e.g. the env) is caught too.
  *
  * This module doesn't import the app's pool (`db/index.ts`), which validates the web app's whole
@@ -221,7 +324,11 @@ async function deliverOne(
  * `services/orders.ts`.
  */
 export async function deliverOrderEmails(
-  { orderId, limit = ORDER_EMAIL_BATCH_SIZE }: { orderId?: number; limit?: number },
+  {
+    orderId,
+    giftCardId,
+    limit = ORDER_EMAIL_BATCH_SIZE,
+  }: { orderId?: number; giftCardId?: number; limit?: number },
   deps: OrderEmailDeps | (() => OrderEmailDeps),
 ): Promise<OrderEmailReport> {
   const report: OrderEmailReport = { sent: 0, retrying: 0, gaveUp: 0, skipped: false };
@@ -230,19 +337,21 @@ export async function deliverOrderEmails(
     const { mailer } = resolved;
     if (!mailer) {
       console.info(
-        orderId === undefined
-          ? "[order-email] SMTP_URL is not set; queued order emails stay queued"
-          : `[order-email] SMTP_URL is not set; order ${orderId}'s confirmation stays queued`,
+        orderId !== undefined
+          ? `[order-email] SMTP_URL is not set; order ${orderId}'s confirmation stays queued`
+          : giftCardId !== undefined
+            ? `[order-email] SMTP_URL is not set; gift card ${giftCardId}'s emails stay queued`
+            : "[order-email] SMTP_URL is not set; queued order emails stay queued",
       );
       return { ...report, skipped: true };
     }
     // Claimed rows aren't due again until their retry time, so this loop ends.
     for (;;) {
-      const batch = await resolved.claim({ orderId, limit });
+      const batch = await resolved.claim({ orderId, giftCardId, limit });
       for (const email of batch) {
         await deliverOne(email, mailer, resolved, report);
       }
-      if (orderId !== undefined || batch.length < limit) break;
+      if (orderId !== undefined || giftCardId !== undefined || batch.length < limit) break;
     }
   } catch (error) {
     console.error("[order-email] Delivering order emails failed:", error);

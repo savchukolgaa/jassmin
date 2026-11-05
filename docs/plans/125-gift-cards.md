@@ -313,7 +313,7 @@ From the codebase and issues:
   gift card, `void deliverGiftCardEmail(id)` plus `void pushToCms()`. Tests: activation on
   success, a repeated callback is ignored, a failure leaves the card `pending`, an amount mismatch
   is ignored, and order payments behave exactly as before.
-- [ ] **6. Code email** — `claimOrderEmails` takes `giftCardId?` and returns `giftCardId`.
+- [x] **6. Code email** — `claimOrderEmails` takes `giftCardId?` and returns `giftCardId`.
   `deliverOrderEmails` / `deliverOne` load the gift card for a `gift_card` / `gift_card_recipient`
   row (new dep `loadGiftCard`). `buildGiftCardEmail(card, translator, env)` goes to
   `buyer_email`: the amount, the formatted code, the expiry date (`formatDate`), how to use it at

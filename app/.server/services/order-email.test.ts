@@ -1,9 +1,12 @@
 import type Mail from "nodemailer/lib/mailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrderConfirmation } from "~/lib/checkout";
+import type { GiftCard } from "~/lib/commerce";
 import { createTranslator } from "~/lib/i18n";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
 import {
+  buildGiftCardEmail,
+  buildGiftCardRecipientEmail,
   buildOrderConfirmationEmail,
   deliverOrderEmails,
   describeOrderEmailReport,
@@ -238,14 +241,21 @@ function fakeDeps(
     sendMail,
     mailer: { sendMail },
     env,
-    claim: vi.fn(async ({ orderId, limit }) => {
-      const matching = due.filter((e) => orderId === undefined || e.orderId === orderId);
+    claim: vi.fn(async ({ orderId, giftCardId, limit }) => {
+      const matching = due.filter(
+        (e) =>
+          (orderId === undefined || e.orderId === orderId) &&
+          (giftCardId === undefined || e.giftCardId === giftCardId),
+      );
       const batch = matching.slice(0, limit);
       for (const email of batch) due.splice(due.indexOf(email), 1);
       return batch;
     }),
     loadOrder: vi.fn(async (orderId: number) =>
       orderId === codOrder.id ? codOrder : orderId === cardOrder.id ? cardOrder : undefined,
+    ),
+    loadGiftCard: vi.fn(async (giftCardId: number) =>
+      giftCardId === giftCard.id ? giftCard : undefined,
     ),
     markSent: vi.fn(async () => {}),
     markFailed: vi.fn(async () => {}),
@@ -260,6 +270,73 @@ const queued = (id: number, orderId: number, attempts = 1): ClaimedOrderEmail =>
   type: "confirmation",
   locale: "uk",
   attempts,
+});
+
+const giftCard: GiftCard = {
+  id: 77,
+  code: "ABCD2345EFGH6789",
+  initialAmount: "1000.00",
+  balance: "1000.00",
+  currency: "UAH",
+  status: "active",
+  buyerUserId: null,
+  buyerEmail: "buyer@example.com",
+  recipientEmail: "friend@example.com",
+  locale: "uk",
+  paymentId: 5,
+  activatedAt: new Date("2026-11-05T10:00:00Z"),
+  // Kyiv's date: 5 November 2027.
+  expiresAt: new Date("2027-11-05T10:00:00Z"),
+  createdAt: new Date("2026-11-05T09:58:00Z"),
+  updatedAt: new Date("2026-11-05T10:00:00Z"),
+};
+
+describe("gift card emails (#125)", () => {
+  it("sends the buyer the code, the expiry and how to use it, in Ukrainian", () => {
+    const email = buildGiftCardEmail(giftCard, createTranslator("uk"), env);
+    expect(email.to).toBe("buyer@example.com");
+    expect(email.from).toBe(env.CONTACT_FROM);
+    expect(email.replyTo).toBe("shop@example.com");
+    expect(normalize(String(email.subject))).toBe("Ваша подарункова картка Jassmin на 1 000 ₴");
+    const text = normalize(String(email.text));
+    expect(text).toContain("Ваша подарункова картка Jassmin на 1 000 ₴ оплачена");
+    expect(text).toContain("Ми також надіслали код на friend@example.com.");
+    expect(text).toContain("Код картки: ABCD-2345-EFGH-6789");
+    expect(text).toContain("Картка діє до 5 листопада 2027 р.");
+    expect(text).toContain("введіть код під час оформлення замовлення");
+    expect(text).toContain("shop@example.com");
+  });
+
+  it("leaves out the recipient line without a recipient, in English", () => {
+    const email = buildGiftCardEmail(
+      { ...giftCard, recipientEmail: null },
+      createTranslator("en"),
+      env,
+    );
+    const text = normalize(String(email.text));
+    expect(normalize(String(email.subject))).toBe("Your Jassmin gift card of ₴1,000");
+    expect(text).toContain("Card code: ABCD-2345-EFGH-6789");
+    expect(text).not.toContain("We've also sent the code");
+  });
+
+  it("sends the recipient the code without the buyer's address", () => {
+    const uk = buildGiftCardRecipientEmail(giftCard, createTranslator("uk"), env);
+    expect(uk.to).toBe("friend@example.com");
+    expect(normalize(String(uk.subject))).toBe("Вам подарували картку Jassmin на 1 000 ₴");
+    expect(String(uk.text)).toContain("Код картки: ABCD-2345-EFGH-6789");
+    expect(String(uk.text)).not.toContain("buyer@example.com");
+
+    const en = buildGiftCardRecipientEmail(giftCard, createTranslator("en"), env);
+    expect(normalize(String(en.subject))).toBe("You've been given a Jassmin gift card of ₴1,000");
+    expect(String(en.text)).toContain("Card code: ABCD-2345-EFGH-6789");
+  });
+
+  it("keeps line breaks in the addresses out of the headers", () => {
+    const sneaky = { ...giftCard, buyerEmail: "a@example.com\nBcc: x@example.com" };
+    expect(buildGiftCardEmail(sneaky, createTranslator("uk"), env).to).toBe(
+      "a@example.com Bcc: x@example.com",
+    );
+  });
 });
 
 describe("deliverOrderEmails", () => {
@@ -278,13 +355,60 @@ describe("deliverOrderEmails", () => {
     const report = await deliverOrderEmails({ orderId: cardOrder.id }, deps);
 
     expect(report).toEqual({ sent: 1, retrying: 0, gaveUp: 0, skipped: false });
-    expect(deps.claim).toHaveBeenCalledWith({ orderId: cardOrder.id, limit: 50 });
+    expect(deps.claim).toHaveBeenCalledWith({
+      orderId: cardOrder.id,
+      giftCardId: undefined,
+      limit: 50,
+    });
     expect(deps.sendMail).toHaveBeenCalledOnce();
     expect(deps.sendMail.mock.calls[0]?.[0]).toMatchObject({
       to: { address: "olena@example.com" },
       subject: "Order №1043 received — Jassmin",
     });
     expect(deps.markSent).toHaveBeenCalledWith(2);
+  });
+
+  it("sends a paid gift card's emails right after its payment (#125)", async () => {
+    const card = (id: number, type: "gift_card" | "gift_card_recipient"): ClaimedOrderEmail => ({
+      id,
+      orderId: null,
+      giftCardId: giftCard.id,
+      type,
+      locale: "en",
+      attempts: 1,
+    });
+    const deps = fakeDeps([
+      queued(1, codOrder.id),
+      card(2, "gift_card"),
+      card(3, "gift_card_recipient"),
+    ]);
+
+    const report = await deliverOrderEmails({ giftCardId: giftCard.id }, deps);
+
+    expect(report).toEqual({ sent: 2, retrying: 0, gaveUp: 0, skipped: false });
+    expect(deps.sendMail.mock.calls.map((call) => call[0]?.to)).toEqual([
+      "buyer@example.com",
+      "friend@example.com",
+    ]);
+    expect(deps.markSent).toHaveBeenCalledWith(2);
+    expect(deps.markSent).toHaveBeenCalledWith(3);
+  });
+
+  it("gives up on a gift card email whose card is gone, and retries a failed one", async () => {
+    const gone: ClaimedOrderEmail = {
+      id: 1,
+      orderId: null,
+      giftCardId: 999,
+      type: "gift_card",
+      locale: "uk",
+      attempts: 1,
+    };
+    const failing: ClaimedOrderEmail = { ...gone, id: 2, giftCardId: giftCard.id };
+    const deps = fakeDeps([gone, failing]);
+    deps.sendMail.mockRejectedValueOnce(new Error("SMTP down"));
+
+    expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, retrying: 1, gaveUp: 1 });
+    expect(deps.markFailed).toHaveBeenCalledWith(2, { error: "SMTP down", final: false });
   });
 
   it("works through every due email in batches", async () => {
@@ -321,7 +445,10 @@ describe("deliverOrderEmails", () => {
     const deps = fakeDeps([queued(1, 999)]);
 
     expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
-    expect(deps.markFailed).toHaveBeenCalledWith(1, { error: "Order not found", final: true });
+    expect(deps.markFailed).toHaveBeenCalledWith(1, {
+      error: "Order or gift card not found",
+      final: true,
+    });
     expect(deps.sendMail).not.toHaveBeenCalled();
   });
 

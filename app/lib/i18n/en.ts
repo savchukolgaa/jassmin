@@ -722,7 +722,6 @@ export const en = {
     },
   },
   giftCards: {
-    title: "Gift cards",
     metaTitle: "Jassmin gift cards of 500, 1000 and 2000 ₴",
     metaDescription:
       "Give perfume without guessing the scent: a Jassmin gift card of 500, 1000 or 2000 ₴, with its code by email, valid for 12 months.",
@@ -751,7 +750,6 @@ export const en = {
       "Card payment isn't available right now, so gift cards can't be bought. Please try again later.",
     errors: {
       amountRequired: "Choose the card's amount",
-      startFailed: "We couldn't take you to the payment. Please try again.",
     },
     status: {
       pending: "Awaiting payment",

@@ -395,7 +395,7 @@ From the codebase and issues:
   `pnpm db:expire-gift-cards`: `active` cards with `expires_at <= now()` → `expired` (raw SQL sets
   `updated_at`), queued for Strapi in the same transaction. Integration test. Document a daily
   cron next to the other jobs in the README.
-- [ ] **13. Translations** — `giftCards.*` (page title/intro/amount labels/email/buy/unavailable/
+- [x] **13. Translations** — `giftCards.*` (page title/intro/amount labels/email/buy/unavailable/
   validity note/success states/code/expiry/pay/try again), `giftCardEmail.*`,
   `checkout.giftCard.*` (label, apply, remove, applied line, "To pay", errors `unknown`,
   `notActive`, `expired`, `usedUp`, `tooManyAttempts`), `account.giftCards.*`,

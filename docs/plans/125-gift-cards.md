@@ -402,7 +402,7 @@ From the codebase and issues:
   `payments.giftCardDescription`. Ukrainian first, then English; plurals not needed. Prices via
   `formatPrice`, dates via `formatDate`. Check: `pnpm typecheck` (dictionary parity) and
   `dictionaries.test.ts`.
-- [ ] **14. Docs** — `app/.server/AGENTS.md`: a "Gift cards" section (tables, code rules,
+- [x] **14. Docs** — `app/.server/AGENTS.md`: a "Gift cards" section (tables, code rules,
   `total_amount` meaning, lock order, the payment target, the email type, Strapi read-only,
   the expiry job). Update the Orders/Payments/Order email bullets that say an attempt or email
   always has an order. `README.md`: the new script, the Strapi type and the sync-token permissions

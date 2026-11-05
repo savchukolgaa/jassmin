@@ -27,3 +27,5 @@ These documents are referenced by both **Claude skills** (`.claude/skills/`) and
    - Pre-PR verification and plan removal before merge.
    - Pull request body template and `gh pr create` CLI usage.
    - Post-merge cleanup reminders.
+
+Related: **[Continuous integration](../ci.md)** describes the GitHub Actions checks every PR must pass before it is merged, and how `main` is protected.

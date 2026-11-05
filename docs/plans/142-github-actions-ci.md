@@ -155,7 +155,7 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   job `needs: changes`, `if: needs.changes.outputs.cms == 'true'`, same setup steps, env with the dummy
   Strapi secrets, `pnpm install --frozen-lockfile`, `pnpm cms:build`. On `push` to `main` the filter
   compares to the previous commit, which is fine.
-- [ ] **5. `docs/ci.md`** — What runs and when (jobs, triggers, cancel rule); the database service and
+- [x] **5. `docs/ci.md`** — What runs and when (jobs, triggers, cancel rule); the database service and
   the "no skipped tests in CI" rule with how to add an exception; how to reproduce a CI run locally
   (same commands, a throwaway Postgres via `docker run postgres:18`); dependency caching; the
   fork-PR note; **branch protection, step by step**: Settings → Branches → Add classic branch
@@ -163,13 +163,13 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   require status checks to pass → add `check`, require branches to be up to date before merging, block
   force pushes, no bypass (the setting needs the repo to be public, or GitHub Pro). Troubleshooting: service not healthy, skipped
   tests, frozen lockfile errors.
-- [ ] **6. `docs/skills/open-pr.md`** (+ `implement.md` if it fits) — In the merge section, before
+- [x] **6. `docs/skills/open-pr.md`** (+ `implement.md` if it fits) — In the merge section, before
   `gh pr merge`: `gh pr checks <pr-number> --watch --fail-fast`; merge only when every check is green;
   never `--admin` or any other bypass; a red check is fixed in the worktree, committed and pushed, then
   waited for again. After "bring the branch up to date" (step 1), the push re-runs CI, so wait again.
   In the PR description's verification section, mention CI. Mention `docs/ci.md` in
   `docs/skills/README.md` if that index lists related docs.
-- [ ] **7. `README.md`** — Badge line under `# Jassmin`; one line in the commands/contributing section
+- [x] **7. `README.md`** — Badge line under `# Jassmin`; one line in the commands/contributing section
   pointing to `docs/ci.md`.
 - [ ] **8. First CI run** — Commit (explicit paths only), push `issue/142`, open the PR with `/open-pr
   142`, and watch the run with `gh pr checks --watch`: all of `check` green, the guard reporting 0

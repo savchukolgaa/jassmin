@@ -1,5 +1,7 @@
 # Jassmin
 
+[![CI](https://github.com/savchukolgaa/jassmin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/savchukolgaa/jassmin/actions/workflows/ci.yml)
+
 E-commerce site for **Jassmin**, a small perfume store in Ukraine.
 
 It's a single full-stack, server-rendered app. Pages load data in route `loader`s and change data in route `action`s, so there is no separate REST backend and no client-side data-fetching layer.
@@ -376,3 +378,4 @@ The in-app `/admin` area was removed in #40. Every user still has a role, `custo
 - No `any`: Biome's `noExplicitAny` is an error, and `tsc` runs in strict mode.
 - Use database transactions wherever data integrity matters (e.g. checkout: stock, order, cart status).
 - Work is tracked in GitHub issues. Each issue is planned, implemented and reviewed on its own `issue/<number>` branch in a separate git worktree (see `AGENTS.md`).
+- Every pull request and push to `main` runs typecheck, lint, tests (with PostgreSQL) and build on GitHub Actions; a PR merges only when they pass (see [`docs/ci.md`](docs/ci.md)).

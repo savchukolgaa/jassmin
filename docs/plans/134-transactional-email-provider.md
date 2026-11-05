@@ -222,7 +222,7 @@ From the codebase:
 
 ## Steps
 
-- [ ] **1. Env.** In `env.ts`, add a `requireSmtpInProduction` refinement on `envSchema` and
+- [x] **1. Env.** In `env.ts`, add a `requireSmtpInProduction` refinement on `envSchema` and
   apply it in `parseMailEnv` too (`mailEnvSchema.refine(...)` used there). Move `PUBLIC_SITE_URL`
   (with its transform) into `mailEnvSchema` and add it to `mailSource`. Add
   `EMAIL_WEBHOOK_SECRET: z.string().min(32).optional()` (empty counts as unset) to `envSchema`,

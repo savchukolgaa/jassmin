@@ -186,7 +186,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `rollbacks/0024_auth_tokens.sql` (`DROP TABLE auth_tokens; ALTER TABLE users DROP COLUMN
   password_changed_at, DROP COLUMN email_verified_at;`). Check: the migrator test applies and
   rolls back on a test DB, and `schema.test.ts` stays green.
-- [ ] **2. Token primitives and queries.** In `app/.server/auth-tokens.ts`: `generateAuthToken()`
+- [x] **2. Token primitives and queries.** In `app/.server/auth-tokens.ts`: `generateAuthToken()`
   → `{ token, hash }` and `hashAuthToken(token)` (hex SHA-256). In `db/queries/auth-tokens.ts`:
   - `insertAuthToken(db, { userId, purpose, hash, expiresAt })`;
   - `inspectAuthToken(db, purpose, hash, now)`, which returns `{ ok: true, userId }` or

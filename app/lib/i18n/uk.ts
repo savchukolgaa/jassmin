@@ -423,6 +423,14 @@ export const uk = {
       continue: "Продовжити покупки",
     },
   },
+  // The contact form message the store receives (#134: was hard-coded English).
+  contactEmail: {
+    subject: "Нове повідомлення від {name} — jassmin.ua",
+    heading: "Повідомлення з форми на сайті",
+    name: "Ім’я",
+    email: "Email",
+    received: "Отримано",
+  },
   // The branded layout every email shares (#134).
   email: {
     footer: {

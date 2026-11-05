@@ -415,6 +415,14 @@ export const en = {
       continue: "Continue shopping",
     },
   },
+  // The contact form message the store receives (#134).
+  contactEmail: {
+    subject: "New message from {name} — jassmin.ua",
+    heading: "Message from the website's contact form",
+    name: "Name",
+    email: "Email",
+    received: "Received",
+  },
   // The branded layout every email shares (#134).
   email: {
     footer: {

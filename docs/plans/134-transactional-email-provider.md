@@ -251,7 +251,7 @@ From the codebase:
   keeping today's copy keys and order. `OrderEmailEnv` gains `PUBLIC_SITE_URL`. Update
   `order-email.test.ts` (its assertions on `text` should mostly hold) and add one HTML snapshot or
   `toContain` per builder in `uk` and `en`.
-- [ ] **5. Contact and email-changed notice on the layout.** `buildEmailChangedNotice` →
+- [x] **5. Contact and email-changed notice on the layout.** `buildEmailChangedNotice` →
   `composeEmail`. `buildContactEmail` → `composeEmail` with the new `contactEmail.*` keys,
   rendered with `createTranslator("uk")`. The visitor's name and message are escaped in the
   HTML, and `replyTo` stays the visitor. Update both test files.

@@ -4,7 +4,7 @@ import type { OrderConfirmation } from "~/lib/checkout";
 import type { GiftCard } from "~/lib/commerce";
 import { createTranslator } from "~/lib/i18n";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
-import { htmlSection, words } from "../email/test-helpers";
+import { htmlSection, htmlWords, words } from "../email/test-helpers";
 import {
   buildGiftCardEmail,
   buildGiftCardRecipientEmail,
@@ -387,7 +387,7 @@ describe("order emails in the shared layout (#134)", () => {
         const email = build(locale);
         const html = String(email.html);
         expect(html).toContain(`<html lang="${locale}">`);
-        expect(words(htmlSection(html, "content"))).toEqual(words(bodyOf(email) ?? ""));
+        expect(htmlWords(htmlSection(html, "content"))).toEqual(words(bodyOf(email) ?? ""));
         expect(htmlSection(html, "footer")).toContain('href="mailto:shop@example.com"');
         expect(String(email.text)).toContain(
           "\n-- \nJassmin · shop@example.com · https://jassmin.ua",

@@ -8,7 +8,7 @@ import {
   renderEmail,
   senderDomain,
 } from "./layout";
-import { htmlSection, words } from "./test-helpers";
+import { htmlSection, htmlWords, words } from "./test-helpers";
 
 const footer = { inbox: "hello@jassmin.ua", siteUrl: "https://jassmin.ua" };
 
@@ -69,7 +69,7 @@ describe("renderEmail", () => {
     for (const locale of ["uk", "en"] as const) {
       const { html, text } = render(locale);
       const [body] = text.split("\n\n-- \n");
-      expect(words(htmlSection(html, "content"))).toEqual(words(body ?? ""));
+      expect(htmlWords(htmlSection(html, "content"))).toEqual(words(body ?? ""));
     }
   });
 

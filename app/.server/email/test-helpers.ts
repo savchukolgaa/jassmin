@@ -22,14 +22,15 @@ export function htmlToText(html: string): string {
     .replaceAll("&amp;", "&");
 }
 
-/**
- * The words of a text part, or of an HTML fragment once its tags are gone, so the two parts can be
- * compared: the text part's `label: value` is two table cells in the HTML.
- */
-export function words(content: string): string[] {
-  const text = content.includes("<") ? htmlToText(content) : content;
+/** The words of a text part, without a trailing `:` (the HTML has `label: value` as two cells). */
+export function words(text: string): string[] {
   return text
     .split(/\s+/u)
     .map((word) => word.replace(/:$/, ""))
     .filter(Boolean);
+}
+
+/** The words of an HTML fragment once its tags are gone, to compare with `words(text)`. */
+export function htmlWords(html: string): string[] {
+  return words(htmlToText(html));
 }

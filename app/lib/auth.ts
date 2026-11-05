@@ -15,6 +15,16 @@ export type {
 export const PROFILE_INTENTS = ["contact", "email", "password"] as const;
 export type ProfileIntent = (typeof PROFILE_INTENTS)[number];
 
+/** How long a password reset link works (#135). */
+export const PASSWORD_RESET_TTL_MINUTES = 60;
+
+/** How long an email verification link works (#135): a week, and the account page can resend. */
+export const EMAIL_VERIFICATION_TTL_HOURS = 7 * 24;
+
+/** Why an emailed link (#135) can't be used: never issued (or mistyped), already used, or too old. */
+export const AUTH_TOKEN_ERRORS = ["unknown", "used", "expired"] as const;
+export type AuthTokenError = (typeof AUTH_TOKEN_ERRORS)[number];
+
 export type RegisterField = "fullName" | "email" | "password" | "phone";
 export type LoginField = "email" | "password";
 export type ContactField = "fullName" | "phone";

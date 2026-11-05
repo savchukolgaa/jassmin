@@ -97,6 +97,8 @@ describe("users", () => {
       firstTouchSource: ["text", false, false],
       firstTouchMedium: ["text", false, false],
       firstTouchCampaign: ["text", false, false],
+      emailVerifiedAt: ["timestamp with time zone", false, false],
+      passwordChangedAt: ["timestamp with time zone", false, false],
     });
   });
 

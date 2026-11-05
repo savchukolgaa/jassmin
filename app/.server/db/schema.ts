@@ -2,7 +2,8 @@
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
 // checkout fields on orders (#11), the order email queue (#45), card payment attempts (#44) and
 // discount rules (#59), the Strapi catalog and order sync (#40) and several fragrance families,
-// notes and a store code per product (#65), and gift cards with their redemptions (#125).
+// notes and a store code per product (#65), gift cards with their redemptions (#125), and
+// password reset and email verification tokens (#135).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -28,6 +29,8 @@ import {
 } from "drizzle-orm/pg-core";
 import type { EventProperties } from "~/lib/analytics";
 import {
+  AUTH_TOKEN_PURPOSES,
+  type AuthTokenPurpose,
   CART_STATUSES,
   CMS_SYNC_ENTITIES,
   type CmsSyncEntity,
@@ -79,7 +82,39 @@ export const users = pgTable("users", {
   firstTouchSource: text(),
   firstTouchMedium: text(),
   firstTouchCampaign: text(),
+  // Password reset and email verification (#135). `null` until the user confirms their email;
+  // users from before #135 start unverified. Verification is soft: nothing requires it.
+  emailVerifiedAt: timestamp({ withTimezone: true }),
+  // When the password was last set by a reset or a profile change: session cookies issued before
+  // it are rejected, which logs out every other session (`isSessionRevoked`).
+  passwordChangedAt: timestamp({ withTimezone: true }),
 });
+
+/**
+ * One-time links emailed for a password reset or an email verification (#135). Only the SHA-256
+ * of the token is stored; the token itself exists only in the email. A link works once
+ * (`used_at`) and until `expires_at`.
+ */
+export const authTokens = pgTable(
+  "auth_tokens",
+  {
+    id: serial().primaryKey(),
+    userId: integer()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    purpose: text().$type<AuthTokenPurpose>().notNull(),
+    /** Hex SHA-256 of the emailed token. */
+    tokenHash: varchar({ length: 64 }).notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    usedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("auth_tokens_token_hash_unique").on(t.tokenHash),
+    check("auth_tokens_purpose_check", oneOf(t.purpose, AUTH_TOKEN_PURPOSES)),
+    index("auth_tokens_user_id_purpose_idx").on(t.userId, t.purpose),
+  ],
+);
 
 // Shared by the products, carts, orders and order_emails tables: refreshed by every query-builder
 // update. Raw SQL updates must set `updated_at` themselves.

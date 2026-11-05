@@ -177,7 +177,7 @@ The user accepted every recommended default (2026-11-05):
 
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Schema and migration.** In `schema.ts`, add `emailVerifiedAt` and `passwordChangedAt`
+- [x] **1. Schema and migration.** In `schema.ts`, add `emailVerifiedAt` and `passwordChangedAt`
   (`timestamp({ withTimezone: true })`, nullable) to `users`. Add the `authTokens` table described
   in Decisions, with explicit snake_case constraint names: `auth_tokens_token_hash_unique`,
   `auth_tokens_purpose_check` built from `AUTH_TOKEN_PURPOSES`, and the index

@@ -96,12 +96,40 @@ export function claimOrderEmails(
     });
 }
 
-/** The email went out. */
-export async function markOrderEmailSent(db: Executor, id: number): Promise<void> {
+/** The email went out, with this Message-ID (#134; kept to match a later bounce). */
+export async function markOrderEmailSent(
+  db: Executor,
+  id: number,
+  messageId: string | null = null,
+): Promise<void> {
   await db
     .update(orderEmails)
-    .set({ status: "sent", sentAt: sql`now()`, lastError: null })
+    .set({ status: "sent", sentAt: sql`now()`, lastError: null, messageId })
     .where(eq(orderEmails.id, id));
+}
+
+/**
+ * A sent email bounced or drew a spam complaint (#134): marks it `failed` with the reason. Matches
+ * the row by id (the provider echoes the tag we sent) or by its Message-ID, and only touches a
+ * `sent` row. Returns how many rows changed (0 when nothing matched).
+ */
+export async function markOrderEmailBounced(
+  db: Executor,
+  { orderEmailId, messageId, error }: { orderEmailId?: number; messageId?: string; error: string },
+): Promise<number> {
+  const match =
+    orderEmailId !== undefined
+      ? eq(orderEmails.id, orderEmailId)
+      : messageId !== undefined
+        ? eq(orderEmails.messageId, messageId)
+        : undefined;
+  if (!match) return 0;
+  const rows = await db
+    .update(orderEmails)
+    .set({ status: "failed", lastError: error })
+    .where(and(match, eq(orderEmails.status, "sent")))
+    .returning({ id: orderEmails.id });
+  return rows.length;
 }
 
 /**

@@ -1,5 +1,5 @@
 {
-  "id": "d858fc63-4ab8-49fb-ac8d-9eb7494c9cc7",
+  "id": "b7634d11-7a67-497c-95e7-003d42c1614c",
   "prevId": "7607ad33-a1dd-4d79-8010-5f59d879f4f4",
   "version": "7",
   "dialect": "postgresql",
@@ -604,6 +604,53 @@
       },
       "isRLSEnabled": false
     },
+    "public.email_suppressions": {
+      "name": "email_suppressions",
+      "schema": "",
+      "columns": {
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detail": {
+          "name": "detail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "email_suppressions_reason_check": {
+          "name": "email_suppressions_reason_check",
+          "value": "\"email_suppressions\".\"reason\" in ('hard_bounce', 'complaint', 'blocked', 'invalid')"
+        },
+        "email_suppressions_address_lowercase_check": {
+          "name": "email_suppressions_address_lowercase_check",
+          "value": "\"email_suppressions\".\"address\" = lower(\"email_suppressions\".\"address\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.gift_card_redemptions": {
       "name": "gift_card_redemptions",
       "schema": "",
@@ -975,6 +1022,12 @@
         "sent_at": {
           "name": "sent_at",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -2100,58 +2153,6 @@
         "products_fragrance_family_primary_check": {
           "name": "products_fragrance_family_primary_check",
           "value": "\"products\".\"fragrance_family\" is not distinct from \"products\".\"fragrance_families\"[1]"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.rate_limits": {
-      "name": "rate_limits",
-      "schema": "",
-      "columns": {
-        "key": {
-          "name": "key",
-          "type": "varchar(200)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "count": {
-          "name": "count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reset_at": {
-          "name": "reset_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "rate_limits_reset_at_idx": {
-          "name": "rate_limits_reset_at_idx",
-          "columns": [
-            {
-              "expression": "reset_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "rate_limits_count_check": {
-          "name": "rate_limits_count_check",
-          "value": "\"rate_limits\".\"count\" > 0"
         }
       },
       "isRLSEnabled": false

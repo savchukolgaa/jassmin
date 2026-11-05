@@ -4,7 +4,7 @@ Every response the app renders carries the standard browser security headers, ev
 
 ## Where the headers come from
 
-`securityHeadersMiddleware` (`app/.server/security-headers.ts`) is the first entry in `root.tsx`'s `middleware`, so it wraps every response React Router produces: pages, `.data` requests from client navigations, resource routes (`/sitemap.xml`, `/robots.txt`, `/og/products/*.png`, `/cms/*`, `/payments/*`, `/api/events`, `/csp-report`), redirects and error pages. It makes the nonce, puts it in `nonceContext`, waits for the response and sets the headers on it. The builders (`buildCsp`, `buildSecurityHeaders`) are pure functions with unit tests next to them.
+`securityHeadersMiddleware` (`app/.server/security-headers.ts`) is the first entry in `root.tsx`'s `middleware`, so it wraps every response React Router produces: pages, `.data` requests from client navigations, resource routes (`/sitemap.xml`, `/robots.txt`, `/og/products/*.png`, `/cms/*`, `/hooks/email`, `/payments/*`, `/api/events`, `/csp-report`), redirects and error pages. It makes the nonce, puts it in `nonceContext`, waits for the response and sets the headers on it. The builders (`buildCsp`, `buildSecurityHeaders`) are pure functions with unit tests next to them.
 
 Static files (`/assets/*` and `public/`) are served by `react-router-serve` before the app runs, so they don't get these headers. That's fine: securityheaders.com grades the HTML page, and fingerprinted JS, CSS and fonts can't be framed. If you want `X-Content-Type-Options: nosniff` on them too, add it in the hosting proxy.
 

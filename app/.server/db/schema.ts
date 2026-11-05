@@ -2,8 +2,8 @@
 // product volume variants (#26), the user role (#14), one active cart per owner (#10) and the
 // checkout fields on orders (#11), the order email queue (#45), card payment attempts (#44) and
 // discount rules (#59), the Strapi catalog and order sync (#40) and several fragrance families,
-// notes and a store code per product (#65), gift cards with their redemptions (#125), and the
-// shared rate-limit counters (#143).
+// notes and a store code per product (#65), gift cards with their redemptions (#125), email
+// suppressions (#134) and the shared rate-limit counters (#143).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -34,6 +34,8 @@ import {
   type CmsSyncEntity,
   DISCOUNT_KINDS,
   type DiscountKind,
+  EMAIL_SUPPRESSION_REASONS,
+  type EmailSuppressionReason,
   EVENT_TYPES,
   type EventType,
   GENDERS,
@@ -472,9 +474,11 @@ export const orderEmails = pgTable(
     attempts: integer().notNull().default(0),
     /** When the row is next due; claiming moves it to the retry time. */
     nextAttemptAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    /** The last failure's message, without the email body. */
+    /** The last failure's message, without the email body; a bounce's reason (#134). */
     lastError: text(),
     sentAt: timestamp({ withTimezone: true }),
+    /** The Message-ID it was sent with (#134), to match a later bounce; `null` until sent. */
+    messageId: text(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: updatedAt(),
   },
@@ -713,6 +717,27 @@ export const cmsOutbox = pgTable(
     check("cms_outbox_attempts_check", sql`${t.attempts} >= 0`),
     unique("cms_outbox_entity_entity_id_unique").on(t.entity, t.entityId),
     index("cms_outbox_synced_at_next_attempt_at_idx").on(t.syncedAt, t.nextAttemptAt),
+  ],
+);
+
+/**
+ * Addresses that get no more email (#134): the email provider's webhook (`/hooks/email`) adds a
+ * hard bounce or a spam complaint here, and every send skips them (`withSuppressions` in
+ * `mail.ts`). One row per address, stored lowercase; the first reason wins. To send to an address
+ * again, delete its row (see docs/email.md).
+ */
+export const emailSuppressions = pgTable(
+  "email_suppressions",
+  {
+    address: text().primaryKey(),
+    reason: text().$type<EmailSuppressionReason>().notNull(),
+    /** The provider's own words for it, e.g. the bounce's SMTP reply. */
+    detail: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("email_suppressions_reason_check", oneOf(t.reason, EMAIL_SUPPRESSION_REASONS)),
+    check("email_suppressions_address_lowercase_check", sql`${t.address} = lower(${t.address})`),
   ],
 );
 

@@ -6,6 +6,14 @@ const valid = {
   SESSION_SECRET: "a".repeat(32),
 };
 
+/** A complete production environment. */
+const production = {
+  ...valid,
+  NODE_ENV: "production",
+  PUBLIC_SITE_URL: "https://jassmin.ua",
+  SMTP_URL: "smtps://user:key@smtp-relay.example.com:465",
+};
+
 describe("parseEnv", () => {
   it("accepts a valid environment and coerces PORT", () => {
     const env = parseEnv({
@@ -13,6 +21,7 @@ describe("parseEnv", () => {
       PORT: "4000",
       NODE_ENV: "production",
       PUBLIC_SITE_URL: "https://jassmin.ua",
+      SMTP_URL: "smtps://user:key@smtp-relay.example.com:465",
     });
 
     expect(env).toEqual({
@@ -20,6 +29,7 @@ describe("parseEnv", () => {
       PORT: 4000,
       NODE_ENV: "production",
       PUBLIC_SITE_URL: "https://jassmin.ua",
+      SMTP_URL: "smtps://user:key@smtp-relay.example.com:465",
       STRAPI_URL: "http://localhost:1337",
       CSP_MODE: "report-only",
       TRUSTED_PROXY_HOPS: 0,
@@ -138,7 +148,7 @@ describe("parseEnv: PAYMENT_PROVIDER", () => {
 
   it("refuses the simulator in production", () => {
     expect(() =>
-      parseEnv({ ...valid, PAYMENT_PROVIDER: "simulator", NODE_ENV: "production" }),
+      parseEnv({ ...production, PAYMENT_PROVIDER: "simulator", NODE_ENV: "production" }),
     ).toThrow(/PAYMENT_PROVIDER/);
   });
 
@@ -253,7 +263,12 @@ describe("getDatabaseUrl", () => {
 describe("parseMailEnv", () => {
   it("reads the mail variables without the web app's", () => {
     expect(
-      parseMailEnv({ SMTP_URL: "smtp://localhost:2525", ORDER_FROM: "", NODE_ENV: "production" }),
+      parseMailEnv({
+        SMTP_URL: "smtp://localhost:2525",
+        ORDER_FROM: "",
+        PUBLIC_SITE_URL: "",
+        NODE_ENV: "production",
+      }),
     ).toEqual({
       NODE_ENV: "production",
       SMTP_URL: "smtp://localhost:2525",
@@ -264,6 +279,18 @@ describe("parseMailEnv", () => {
 
   it("rejects invalid mail variables", () => {
     expect(() => parseMailEnv({ SMTP_URL: "http://localhost:5000" })).toThrow(/SMTP_URL/);
+  });
+
+  it("requires SMTP_URL in production only", () => {
+    expect(() => parseMailEnv({ NODE_ENV: "production" })).toThrow(/SMTP_URL is required/);
+    expect(() => parseMailEnv({ NODE_ENV: "production", SMTP_URL: "" })).toThrow(/SMTP_URL/);
+    expect(parseMailEnv({}).SMTP_URL).toBeUndefined();
+  });
+
+  it("reads PUBLIC_SITE_URL for the links in emails", () => {
+    expect(parseMailEnv({ PUBLIC_SITE_URL: "https://jassmin.ua/" }).PUBLIC_SITE_URL).toBe(
+      "https://jassmin.ua",
+    );
   });
 });
 
@@ -285,10 +312,9 @@ describe("parseCmsSyncEnv", () => {
 
 describe("PUBLIC_SITE_URL", () => {
   it("is required in production", () => {
-    expect(() => parseEnv({ ...valid, NODE_ENV: "production" })).toThrow(/PUBLIC_SITE_URL/);
-    expect(() => parseEnv({ ...valid, NODE_ENV: "production", PUBLIC_SITE_URL: "" })).toThrow(
-      /PUBLIC_SITE_URL/,
-    );
+    const { PUBLIC_SITE_URL: _, ...withoutSite } = production;
+    expect(() => parseEnv(withoutSite)).toThrow(/PUBLIC_SITE_URL/);
+    expect(() => parseEnv({ ...production, PUBLIC_SITE_URL: "" })).toThrow(/PUBLIC_SITE_URL/);
   });
 
   it("is optional outside production", () => {
@@ -301,6 +327,35 @@ describe("PUBLIC_SITE_URL", () => {
     );
     expect(() => parseEnv({ ...valid, PUBLIC_SITE_URL: "ftp://jassmin.ua" })).toThrow(
       /PUBLIC_SITE_URL/,
+    );
+  });
+});
+
+describe("SMTP_URL in production", () => {
+  it("is required, so production doesn't start without a mail server", () => {
+    const { SMTP_URL: _, ...withoutSmtp } = production;
+    expect(() => parseEnv(withoutSmtp)).toThrow(/SMTP_URL is required in production/);
+    expect(() => parseEnv({ ...production, SMTP_URL: "" })).toThrow(/SMTP_URL/);
+    expect(parseEnv(production).SMTP_URL).toBe(production.SMTP_URL);
+  });
+
+  it("is optional outside production", () => {
+    expect(parseEnv(valid).SMTP_URL).toBeUndefined();
+  });
+});
+
+describe("EMAIL_WEBHOOK_SECRET", () => {
+  it("is optional, also in production, and an empty value is unset", () => {
+    expect(parseEnv(production).EMAIL_WEBHOOK_SECRET).toBeUndefined();
+    expect(parseEnv({ ...valid, EMAIL_WEBHOOK_SECRET: "" }).EMAIL_WEBHOOK_SECRET).toBeUndefined();
+  });
+
+  it("accepts 32+ characters and rejects a short secret", () => {
+    expect(parseEnv({ ...valid, EMAIL_WEBHOOK_SECRET: "w".repeat(32) }).EMAIL_WEBHOOK_SECRET).toBe(
+      "w".repeat(32),
+    );
+    expect(() => parseEnv({ ...valid, EMAIL_WEBHOOK_SECRET: "short" })).toThrow(
+      /EMAIL_WEBHOOK_SECRET/,
     );
   });
 });

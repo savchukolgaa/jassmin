@@ -415,6 +415,20 @@ export const en = {
       continue: "Continue shopping",
     },
   },
+  // The contact form message the store receives (#134).
+  contactEmail: {
+    subject: "New message from {name} — jassmin.ua",
+    heading: "Message from the website's contact form",
+    name: "Name",
+    email: "Email",
+    received: "Received",
+  },
+  // The branded layout every email shares (#134).
+  email: {
+    footer: {
+      note: "This email was sent by Jassmin, a perfume shop in Ukraine.",
+    },
+  },
   orderEmail: {
     subject: "Order №{id} received — Jassmin",
     greeting: "Hello {name},",
@@ -423,7 +437,6 @@ export const en = {
     itemsHeading: "Your order",
     line: "• {name}, {details} = {total}",
     quantityPrice: "{quantity} × {price}",
-    amount: "{label}: {amount}",
     deliveryCarrier: "Nova Poshta",
     contact: "Any questions? Reply to this email or write to {email}.",
     signature: "The Jassmin team",
@@ -434,7 +447,7 @@ export const en = {
     intro:
       "Thank you for your purchase! Your Jassmin gift card of {amount} is paid and ready to use.",
     recipientCopy: "We've also sent the code to {email}.",
-    code: "Card code: {code}",
+    code: "Card code",
     expires: "The card is valid until {date}.",
     howTo:
       "To use the card, add perfumes to the cart and enter the code at checkout. If the order costs less than the balance, the rest stays on the card.",
@@ -445,7 +458,7 @@ export const en = {
     subject: "You've been given a Jassmin gift card of {amount}",
     greeting: "Hello!",
     intro: "You've been given a Jassmin gift card of {amount}. Pick a scent you love!",
-    code: "Card code: {code}",
+    code: "Card code",
     expires: "The card is valid until {date}.",
     howTo:
       "Add perfumes to the cart and enter the code at checkout. If the order costs less than the balance, the rest stays on the card for next time.",

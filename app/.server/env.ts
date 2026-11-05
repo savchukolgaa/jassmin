@@ -6,15 +6,30 @@ import { PAYMENT_PROVIDERS } from "~/lib/enums";
 // it without the web app's variables.
 const mailEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  // SMTP server for contact form and order emails, e.g. smtp://localhost:2525 (smtp4dev). Under
-  // Aspire it's the `smtp4dev` container. Optional: without it, development logs contact messages
-  // instead of sending them, and order emails stay queued.
+  // SMTP server for every email, e.g. smtp://localhost:2525 (smtp4dev). Under Aspire it's the
+  // `smtp4dev` container; in production the transactional provider (#134, see docs/email.md).
+  // Required in production; elsewhere, without it, development logs contact messages instead of
+  // sending them, and order emails stay queued.
   SMTP_URL: z.url({ protocol: /^smtps?$/ }).optional(),
   CONTACT_INBOX: z.email().default("hello@jassmin.ua"),
   CONTACT_FROM: z.string().min(1).default("Jassmin website <no-reply@jassmin.ua>"),
   // Sender of order emails (#45); `CONTACT_FROM` when unset.
   ORDER_FROM: z.string().min(1).optional(),
+  // The site's public origin, e.g. https://jassmin.ua (#85): canonical and Open Graph URLs are
+  // built from it, never from the `Host` header, and emails link to it (#134). Required in
+  // production; elsewhere the request's origin stands in (and emails leave the link out).
+  PUBLIC_SITE_URL: z
+    .url({ protocol: /^https?$/ })
+    .transform((url) => url.replace(/\/+$/, ""))
+    .optional(),
 });
+
+/** Production needs a real SMTP server (#134): without one no email would ever go out. */
+function hasSmtpInProduction(env: { NODE_ENV: string; SMTP_URL?: string | undefined }): boolean {
+  return env.NODE_ENV !== "production" || env.SMTP_URL !== undefined;
+}
+
+const SMTP_REQUIRED = { path: ["SMTP_URL"], message: "SMTP_URL is required in production" };
 
 // Pushing orders and stock to Strapi (#40). Its own schema, so `pnpm db:sync-cms` can read it
 // without the web app's variables.
@@ -40,13 +55,9 @@ const envSchema = z
     // Where card payments go (#44). Optional: without it the app still starts and card payment is
     // unavailable at checkout. `simulator` is the local fake payment page, never for production.
     PAYMENT_PROVIDER: z.enum(PAYMENT_PROVIDERS).optional(),
-    // The site's public origin, e.g. https://jassmin.ua (#85): canonical and Open Graph URLs are
-    // built from it, never from the `Host` header. Required in production; elsewhere the request's
-    // origin stands in.
-    PUBLIC_SITE_URL: z
-      .url({ protocol: /^https?$/ })
-      .transform((url) => url.replace(/\/+$/, ""))
-      .optional(),
+    // Bearer secret the email provider sends to `/hooks/email` with bounces and complaints
+    // (#134). Optional: without it the webhook answers 503 and production logs a warning.
+    EMAIL_WEBHOOK_SECRET: z.string().min(32).optional(),
     // `/robots.txt` answers `Disallow: /` when this is set, or whenever NODE_ENV isn't production
     // (#87): for a staging or preview server that runs in production mode. `true`/`1`/`yes`/`on`.
     ROBOTS_DISALLOW_ALL: z.stringbool().optional(),
@@ -59,6 +70,7 @@ const envSchema = z
     TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
     ...mailEnvSchema.shape,
   })
+  .refine(hasSmtpInProduction, SMTP_REQUIRED)
   .refine((env) => env.NODE_ENV !== "production" || env.PUBLIC_SITE_URL !== undefined, {
     path: ["PUBLIC_SITE_URL"],
     message: "PUBLIC_SITE_URL is required in production",
@@ -81,6 +93,7 @@ function mailSource(source: NodeJS.ProcessEnv) {
     CONTACT_INBOX: source.CONTACT_INBOX || undefined,
     CONTACT_FROM: source.CONTACT_FROM || undefined,
     ORDER_FROM: source.ORDER_FROM || undefined,
+    PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
   };
 }
 
@@ -118,7 +131,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     CMS_SYNC_SECRET: source.CMS_SYNC_SECRET || undefined,
     ...cmsSyncSource(source),
     PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
-    PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
+    EMAIL_WEBHOOK_SECRET: source.EMAIL_WEBHOOK_SECRET || undefined,
     ROBOTS_DISALLOW_ALL: source.ROBOTS_DISALLOW_ALL || undefined,
     CSP_MODE: source.CSP_MODE || undefined,
     TRUSTED_PROXY_HOPS: source.TRUSTED_PROXY_HOPS || undefined,
@@ -134,7 +147,9 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
 
 /** Validates only the mail variables, for scripts that send email without the web app's env. */
 export function parseMailEnv(source: NodeJS.ProcessEnv): MailEnv {
-  const result = mailEnvSchema.safeParse({ ...source, ...mailSource(source) });
+  const result = mailEnvSchema
+    .refine(hasSmtpInProduction, SMTP_REQUIRED)
+    .safeParse({ ...source, ...mailSource(source) });
   if (!result.success) {
     throw invalid(result.error);
   }
@@ -167,6 +182,11 @@ export function getEnv(): Env {
       process.loadEnvFile(".env");
     }
     cached = parseEnv(process.env);
+    if (cached.NODE_ENV === "production" && !cached.EMAIL_WEBHOOK_SECRET) {
+      console.warn(
+        "[env] EMAIL_WEBHOOK_SECRET is not set: bounces and spam complaints aren't recorded (see docs/email.md)",
+      );
+    }
   }
   return cached;
 }

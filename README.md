@@ -166,6 +166,7 @@ Open the Aspire dashboard and click the `web` resource's endpoint. Until you've 
 - [All scripts](docs/setup.md#scripts), including the `db:*` jobs
 - [Strapi: setup, content model and translations](docs/setup.md#content-strapi-cms)
 - [Products and orders in Strapi](docs/setup.md#products-and-orders-in-strapi)
+- [Email delivery: Brevo, SPF/DKIM/DMARC and bounces](docs/email.md)
 - [Order emails](docs/setup.md#order-emails), [abandoned carts](docs/setup.md#abandoned-carts) and [gift cards](docs/setup.md#gift-cards), with their cron jobs
 - [Card payments (simulator)](docs/setup.md#card-payments-simulator)
 - [Security headers, CSP and rate limits](docs/security.md)

@@ -93,6 +93,20 @@ export const ORDER_EMAIL_STATUSES = ["pending", "sent", "failed"] as const;
 export type OrderEmailStatus = (typeof ORDER_EMAIL_STATUSES)[number];
 
 /**
+ * Why an address gets no more email (#134): a hard bounce, a spam complaint, the provider
+ * blocking it, or an address that can't exist. A CHECK constraint limits
+ * `email_suppressions.reason` to these values.
+ */
+export const EMAIL_SUPPRESSION_REASONS = [
+  "hard_bounce",
+  "complaint",
+  "blocked",
+  "invalid",
+] as const;
+
+export type EmailSuppressionReason = (typeof EMAIL_SUPPRESSION_REASONS)[number];
+
+/**
  * Where card payments go (#44). Only the local `simulator` for now (never in production); a real
  * provider joins this list with a migration that rewrites the `payments_provider_check`.
  */

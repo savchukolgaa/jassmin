@@ -21,8 +21,9 @@ import {
   markOrderEmailSent,
 } from "../db/queries/order-emails";
 import { findOrderConfirmation } from "../db/queries/orders";
+import { composeEmail, type EmailAmount, type EmailBlock } from "../email/layout";
 import type { MailEnv } from "../env";
-import { type MailSender, stripLineBreaks } from "../mail";
+import { type MailSender, SuppressedRecipientError, stripLineBreaks } from "../mail";
 
 /**
  * Minutes to wait before retrying after the 1st, 2nd, … failed attempt: about two days in all.
@@ -32,18 +33,28 @@ export const ORDER_EMAIL_RETRY_DELAYS_MINUTES = [1, 5, 15, 60, 180, 360, 720, 14
 
 export const MAX_ORDER_EMAIL_ATTEMPTS = ORDER_EMAIL_RETRY_DELAYS_MINUTES.length;
 
-export type OrderEmailEnv = Pick<MailEnv, "ORDER_FROM" | "CONTACT_FROM" | "CONTACT_INBOX">;
+export type OrderEmailEnv = Pick<
+  MailEnv,
+  "ORDER_FROM" | "CONTACT_FROM" | "CONTACT_INBOX" | "PUBLIC_SITE_URL"
+>;
 
-/** The plain-text confirmation for a placed order, in the translator's language. */
+/** A message from the shared layout (#134): HTML and text parts and a Message-ID. */
+export type OrderEmailMessage = Mail.Options & { messageId: string };
+
+/** The layout's footer for these emails: the shop's inbox and site. */
+function footerOf(env: OrderEmailEnv) {
+  return { inbox: env.CONTACT_INBOX, siteUrl: env.PUBLIC_SITE_URL };
+}
+
+/** The confirmation for a placed order, in the translator's language. */
 export function buildOrderConfirmationEmail(
   order: OrderConfirmation,
   translator: Translator,
   env: OrderEmailEnv,
-): Mail.Options {
+): OrderEmailMessage {
   const { t, formatPrice, formatDate } = translator;
   const fullName = stripLineBreaks(order.fullName);
   const payment = PAYMENT_KEYS[order.paymentMethod];
-  const amount = (label: string, value: string) => t("orderEmail.amount", { label, amount: value });
 
   const lines = order.lines.map((line) => {
     const title = line.title ?? t("checkout.deletedProduct");
@@ -62,148 +73,176 @@ export function buildOrderConfirmationEmail(
     });
   });
 
-  const text = [
-    t("orderEmail.greeting", { name: fullName }),
-    "",
-    t("orderEmail.intro", {
-      id: String(order.id),
-      date: formatDate(order.createdAt.toISOString()),
-      phone: order.phone,
-    }),
-    "",
-    t("orderEmail.itemsHeading"),
-    ...lines,
-    "",
-    amount(t("checkout.subtotal"), formatPrice(order.subtotal)),
+  const amounts: EmailAmount[] = [
+    { label: t("checkout.subtotal"), value: formatPrice(order.subtotal) },
     ...(order.discount
       ? [
-          amount(
-            discountLabel(order.discount, translator),
-            `−${formatPrice(order.discount.amount)}`,
-          ),
+          {
+            label: discountLabel(order.discount, translator),
+            value: `−${formatPrice(order.discount.amount)}`,
+          },
         ]
       : []),
-    amount(
-      t("checkout.shipping"),
-      order.freeShipping ? t("checkout.shippingFree") : t("checkout.shippingCarrierRate"),
-    ),
+    {
+      label: t("checkout.shipping"),
+      value: order.freeShipping ? t("checkout.shippingFree") : t("checkout.shippingCarrierRate"),
+    },
     // What a gift card paid (#125), after the discount and delivery.
     ...(Number(order.giftCardAmount) > 0
-      ? [amount(t("checkout.giftCard.line"), `−${formatPrice(order.giftCardAmount)}`)]
+      ? [{ label: t("checkout.giftCard.line"), value: `−${formatPrice(order.giftCardAmount)}` }]
       : []),
-    amount(t("checkout.total"), formatPrice(order.totalAmount)),
-    "",
-    t("checkout.success.payment"),
-    t(payment.label),
-    t(payment.note),
-    "",
-    t("checkout.success.delivery"),
-    t("orderEmail.deliveryCarrier"),
-    `${fullName}, ${order.phone}`,
-    order.shippingAddress,
-    "",
-    t("orderEmail.contact", { email: env.CONTACT_INBOX }),
-    "",
-    t("orderEmail.signature"),
-  ].join("\n");
+    { label: t("checkout.total"), value: formatPrice(order.totalAmount), strong: true },
+  ];
 
-  return {
+  const blocks: EmailBlock[] = [
+    { type: "paragraph", text: t("orderEmail.greeting", { name: fullName }) },
+    {
+      type: "paragraph",
+      text: t("orderEmail.intro", {
+        id: String(order.id),
+        date: formatDate(order.createdAt.toISOString()),
+        phone: order.phone,
+      }),
+    },
+    { type: "heading", text: t("orderEmail.itemsHeading") },
+    { type: "lines", items: lines },
+    { type: "amounts", rows: amounts },
+    { type: "heading", text: t("checkout.success.payment") },
+    { type: "lines", items: [t(payment.label), t(payment.note)] },
+    { type: "heading", text: t("checkout.success.delivery") },
+    {
+      type: "lines",
+      items: [
+        t("orderEmail.deliveryCarrier"),
+        `${fullName}, ${order.phone}`,
+        order.shippingAddress,
+      ],
+    },
+    { type: "paragraph", text: t("orderEmail.contact", { email: env.CONTACT_INBOX }) },
+    { type: "signature", text: t("orderEmail.signature") },
+  ];
+
+  return composeEmail({
     from: env.ORDER_FROM ?? env.CONTACT_FROM,
     to: { name: fullName, address: order.email },
     replyTo: env.CONTACT_INBOX,
     // Only the order number: no user input in the subject.
     subject: t("orderEmail.subject", { id: String(order.id) }),
-    text,
-  };
+    blocks,
+    translator,
+    footer: footerOf(env),
+  });
 }
 
-/** The card's amount, code, expiry and how to use it: the body both gift card emails share. */
-function giftCardDetails(
+/** The card's code and expiry: the block both gift card emails share. */
+function giftCardCode(
   card: GiftCard,
   translator: Translator,
   keys: "giftCardEmail" | "giftCardRecipientEmail",
-) {
+): EmailBlock {
   const { t, formatDate } = translator;
-  return [
-    t(`${keys}.code`, { code: formatGiftCardCode(card.code) }),
+  return {
+    type: "code",
+    label: t(`${keys}.code`),
+    code: formatGiftCardCode(card.code),
     ...(card.expiresAt
-      ? [t(`${keys}.expires`, { date: formatDate(card.expiresAt.toISOString()) })]
-      : []),
-    "",
-    t(`${keys}.howTo`),
-  ];
+      ? { note: t(`${keys}.expires`, { date: formatDate(card.expiresAt.toISOString()) }) }
+      : {}),
+  };
 }
 
-/** The plain-text email with a paid gift card's code to its buyer (#125). */
+/** The email with a paid gift card's code to its buyer (#125). */
 export function buildGiftCardEmail(
   card: GiftCard,
   translator: Translator,
   env: OrderEmailEnv,
-): Mail.Options {
+): OrderEmailMessage {
   const { t, formatPrice } = translator;
   const amount = formatPrice(card.initialAmount);
-  const text = [
-    t("giftCardEmail.greeting"),
-    "",
-    t("giftCardEmail.intro", { amount }),
-    ...(card.recipientEmail
-      ? [t("giftCardEmail.recipientCopy", { email: stripLineBreaks(card.recipientEmail) })]
-      : []),
-    "",
-    ...giftCardDetails(card, translator, "giftCardEmail"),
-    "",
-    t("giftCardEmail.contact", { email: env.CONTACT_INBOX }),
-    "",
-    t("giftCardEmail.signature"),
-  ].join("\n");
-  return {
+  return composeEmail({
     from: env.ORDER_FROM ?? env.CONTACT_FROM,
     to: stripLineBreaks(card.buyerEmail),
     replyTo: env.CONTACT_INBOX,
     // Only the amount: no user input in the subject.
     subject: t("giftCardEmail.subject", { amount }),
-    text,
-  };
+    blocks: [
+      { type: "paragraph", text: t("giftCardEmail.greeting") },
+      {
+        type: "lines",
+        items: [
+          t("giftCardEmail.intro", { amount }),
+          ...(card.recipientEmail
+            ? [t("giftCardEmail.recipientCopy", { email: stripLineBreaks(card.recipientEmail) })]
+            : []),
+        ],
+      },
+      giftCardCode(card, translator, "giftCardEmail"),
+      { type: "paragraph", text: t("giftCardEmail.howTo") },
+      { type: "paragraph", text: t("giftCardEmail.contact", { email: env.CONTACT_INBOX }) },
+      { type: "signature", text: t("giftCardEmail.signature") },
+    ],
+    translator,
+    footer: footerOf(env),
+  });
 }
 
 /**
- * The plain-text email with a paid gift card's code to the recipient its buyer named (#125). It
- * shows nothing the buyer typed, so it can't carry their text to a stranger.
+ * The email with a paid gift card's code to the recipient its buyer named (#125). It shows
+ * nothing the buyer typed, so it can't carry their text to a stranger.
  */
 export function buildGiftCardRecipientEmail(
   card: GiftCard,
   translator: Translator,
   env: OrderEmailEnv,
-): Mail.Options {
+): OrderEmailMessage {
   if (!card.recipientEmail) {
     throw new Error(`Gift card ${card.id} has no recipient`);
   }
   const { t, formatPrice } = translator;
   const amount = formatPrice(card.initialAmount);
-  const text = [
-    t("giftCardRecipientEmail.greeting"),
-    "",
-    t("giftCardRecipientEmail.intro", { amount }),
-    "",
-    ...giftCardDetails(card, translator, "giftCardRecipientEmail"),
-    "",
-    t("giftCardRecipientEmail.contact", { email: env.CONTACT_INBOX }),
-    "",
-    t("giftCardRecipientEmail.signature"),
-  ].join("\n");
-  return {
+  return composeEmail({
     from: env.ORDER_FROM ?? env.CONTACT_FROM,
     to: stripLineBreaks(card.recipientEmail),
     replyTo: env.CONTACT_INBOX,
     subject: t("giftCardRecipientEmail.subject", { amount }),
-    text,
-  };
+    blocks: [
+      { type: "paragraph", text: t("giftCardRecipientEmail.greeting") },
+      { type: "paragraph", text: t("giftCardRecipientEmail.intro", { amount }) },
+      giftCardCode(card, translator, "giftCardRecipientEmail"),
+      { type: "paragraph", text: t("giftCardRecipientEmail.howTo") },
+      {
+        type: "paragraph",
+        text: t("giftCardRecipientEmail.contact", { email: env.CONTACT_INBOX }),
+      },
+      { type: "signature", text: t("giftCardRecipientEmail.signature") },
+    ],
+    translator,
+    footer: footerOf(env),
+  });
 }
 
 const GIFT_CARD_BUILDERS = {
   gift_card: buildGiftCardEmail,
   gift_card_recipient: buildGiftCardRecipientEmail,
 } as const;
+
+/** The header that tags a sent order email with its `order_emails` id (#134). */
+export const ORDER_EMAIL_TAG = "X-Mailin-custom";
+
+/** The tag's value for an `order_emails` row, read back by `parseOrderEmailTag`. */
+export function orderEmailTag(id: number): string {
+  return `order-email:${id}`;
+}
+
+/** The `order_emails` id a webhook event's tag names, or `undefined`. */
+export function parseOrderEmailTag(tag: string | undefined): number | undefined {
+  const match = tag?.trim().match(/^order-email:(\d{1,9})$/);
+  return match?.[1] ? Number(match[1]) : undefined;
+}
+
+function orderEmailTagHeader(id: number): Record<string, string> {
+  return { [ORDER_EMAIL_TAG]: orderEmailTag(id) };
+}
 
 /** Rows the retry job claims at a time. */
 export const ORDER_EMAIL_BATCH_SIZE = 50;
@@ -223,7 +262,8 @@ export interface OrderEmailDeps {
   }): Promise<ClaimedOrderEmail[]>;
   loadOrder(orderId: number): Promise<OrderConfirmation | undefined>;
   loadGiftCard(giftCardId: number): Promise<GiftCard | undefined>;
-  markSent(id: number): Promise<void>;
+  /** `messageId` is the Message-ID it went out with (#134), to match a later bounce. */
+  markSent(id: number, messageId: string): Promise<void>;
   markFailed(id: number, failure: { error: string; final: boolean }): Promise<void>;
 }
 
@@ -240,7 +280,7 @@ export function orderEmailDeps(
       claimOrderEmails(db, { ...options, retryDelaysMinutes: ORDER_EMAIL_RETRY_DELAYS_MINUTES }),
     loadOrder: (orderId) => findOrderConfirmation(db, orderId),
     loadGiftCard: (giftCardId) => findGiftCard(db, giftCardId),
-    markSent: (id) => markOrderEmailSent(db, id),
+    markSent: (id, messageId) => markOrderEmailSent(db, id, messageId),
     markFailed: (id, failure) => markOrderEmailFailed(db, id, failure),
   };
 }
@@ -264,7 +304,7 @@ function errorMessage(error: unknown): string {
 async function buildEmail(
   email: ClaimedOrderEmail,
   deps: OrderEmailDeps,
-): Promise<Mail.Options | null> {
+): Promise<OrderEmailMessage | null> {
   const translator = createTranslator(email.locale);
   if (email.type === "confirmation") {
     const order = email.orderId === null ? undefined : await deps.loadOrder(email.orderId);
@@ -284,6 +324,7 @@ async function deliverOne(
     email.giftCardId === null
       ? `order ${email.orderId}'s ${email.type} email`
       : `gift card ${email.giftCardId}'s ${email.type} email`;
+  let messageId: string;
   try {
     const message = await buildEmail(email, deps);
     if (!message) {
@@ -293,8 +334,24 @@ async function deliverOne(
       report.gaveUp += 1;
       return;
     }
-    await mailer.sendMail(message);
+    messageId = message.messageId;
+    // Brevo echoes this tag in its webhook events, so a bounce finds its row (#134).
+    await mailer.sendMail({
+      ...message,
+      headers: orderEmailTagHeader(email.id),
+    });
   } catch (error) {
+    if (error instanceof SuppressedRecipientError) {
+      // The address bounced or complained before (#134): never retried.
+      console.info(`[order-email] Not sending ${label}: ${error.message}`);
+      await deps
+        .markFailed(email.id, { error: `suppressed: ${error.reasons.join(", ")}`, final: true })
+        .catch((markError: unknown) =>
+          console.error(`[order-email] Recording the failure of ${label} failed:`, markError),
+        );
+      report.gaveUp += 1;
+      return;
+    }
     const final = email.attempts >= MAX_ORDER_EMAIL_ATTEMPTS;
     const message = errorMessage(error);
     console.error(
@@ -312,7 +369,7 @@ async function deliverOne(
   // beats losing it.
   report.sent += 1;
   await deps
-    .markSent(email.id)
+    .markSent(email.id, messageId)
     .catch((markError: unknown) =>
       console.error(`[order-email] Recording ${label} as sent failed:`, markError),
     );

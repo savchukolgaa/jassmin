@@ -2,9 +2,7 @@
 
 **A bilingual, server-rendered online shop for a small perfume store in Ukraine.** One full-stack TypeScript app: React Router v8 SSR, PostgreSQL as the system of record and Strapi as the staff admin.
 
-<!-- CI badge, enable once #142 is merged:
 [![CI](https://github.com/savchukolgaa/jassmin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/savchukolgaa/jassmin/actions/workflows/ci.yml)
--->
 [![Licence: source available](https://img.shields.io/badge/licence-source%20available-lightgrey)](LICENSE)
 
 **Live demo:** coming soon.
@@ -102,7 +100,7 @@ flowchart LR
 ## Quality
 
 - **1,768 tests in 170 files** (Vitest, November 2026), from pure pricing functions to route actions and components. The database tests run against a real PostgreSQL, each file in its own throwaway database.
-- **Strict TypeScript and Biome:** `strict` with `noUncheckedIndexedAccess`, no `any` (a Biome error), `import type` enforced. `pnpm typecheck`, `pnpm lint` and `pnpm test` pass before every commit, and `pnpm build` before every merge. CI will run them on every pull request ([#142](https://github.com/savchukolgaa/jassmin/issues/142)).
+- **Strict TypeScript and Biome:** `strict` with `noUncheckedIndexedAccess`, no `any` (a Biome error), `import type` enforced. `pnpm typecheck`, `pnpm lint` and `pnpm test` pass before every commit, and `pnpm build` before every merge. GitHub Actions runs all four on every pull request, with the database tests on a PostgreSQL service and a check that fails the run if any test was skipped; a PR merges only when they pass ([docs/ci.md](docs/ci.md), [#142](https://github.com/savchukolgaa/jassmin/issues/142)).
 - **Lighthouse (mobile):** Performance 90 on the home page, 94 on a catalog page and 92 on a product page; SEO 100 and CLS 0 on every page measured; Accessibility 90 on the home page and 95–96 on the others. Measured locally on a production build with Lighthouse 12.6.1, median of 3 runs ([PR #97](https://github.com/savchukolgaa/jassmin/pull/97)).
 - **Accessibility basics:** a visible `focus-visible` ring on every interactive element and motion that respects `prefers-reduced-motion`, defined in the design system ([docs/design.md](docs/design.md)).
 
@@ -114,7 +112,7 @@ Jassmin is built with an AI coding agent (Claude Code) working under the owner's
 2. **Plan.** The agent reads the issue and the code and writes a step-by-step plan, with its decisions and open questions, to `docs/plans/<n>-<slug>.md`. The owner answers the questions before any code is written (`/create-plan`).
 3. **Worktree.** Each issue gets its own branch `issue/<n>` and git worktree, so several issues are worked on in parallel without touching the main checkout.
 4. **Implement.** The agent works through the plan one step at a time, with tests, and commits each step once typecheck, lint and tests pass (`/implement`).
-5. **Pull request.** The PR links the issue and records how the work differed from the plan, and the owner reviews it before merging (`/open-pr`).
+5. **Pull request.** The PR links the issue and records how the work differed from the plan. CI must be green, and the owner reviews it before merging (`/open-pr`).
 
 The rules the agent follows are in [AGENTS.md](AGENTS.md) and the scoped [app/.server/AGENTS.md](app/.server/AGENTS.md). The skills are in [.claude/skills/](.claude/skills/), and the workflow guides they use are in [docs/skills/](docs/skills/README.md).
 

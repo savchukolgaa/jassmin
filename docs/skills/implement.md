@@ -64,4 +64,6 @@ Push the branch to origin:
 git -C "$WT" push -u origin "issue/$N"
 ```
 
+Once the branch has a pull request, every push runs the same checks in CI ([docs/ci.md](../ci.md)), including the database tests against PostgreSQL and a check that no test was skipped. Local checks still come first; CI doesn't replace them.
+
 Report progress, commits made on `issue/<number>`, verification check results, and suggest `/open-pr <number>` as the next step.

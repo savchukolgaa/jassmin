@@ -368,3 +368,4 @@ The in-app `/admin` area was removed in #40. Every user still has a role, `custo
 - No `any`: Biome's `noExplicitAny` is an error, and `tsc` runs in strict mode.
 - Use database transactions wherever data integrity matters (e.g. checkout: stock, order, cart status).
 - Work is tracked in GitHub issues. Each issue is planned, implemented and reviewed on its own `issue/<number>` branch in a separate git worktree (see `AGENTS.md`).
+- Every pull request and push to `main` runs typecheck, lint, tests (with PostgreSQL) and build on GitHub Actions; a PR merges only when they pass (see [`docs/ci.md`](ci.md)).

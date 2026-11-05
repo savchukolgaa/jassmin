@@ -9,10 +9,14 @@ import type { RenderToPipeableStreamOptions } from "react-dom/server";
 import { renderToPipeableStream } from "react-dom/server";
 import type { EntryContext, RouterContextProvider } from "react-router";
 import { ServerRouter } from "react-router";
+import { warnIfNoTrustedProxy } from "~/.server/client-ip";
 import { nonceContext } from "~/.server/security-headers";
 import { NonceProvider } from "~/lib/nonce";
 
 export const streamTimeout = 5_000;
+
+// Loaded once when the server starts.
+warnIfNoTrustedProxy();
 
 export default function handleRequest(
   request: Request,

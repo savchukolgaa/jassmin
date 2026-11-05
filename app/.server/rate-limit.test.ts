@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRateLimiter, getClientIp } from "./rate-limit";
+import { createRateLimiter } from "./rate-limit";
 
 function setup() {
   let time = 0;
@@ -46,19 +46,5 @@ describe("createRateLimiter", () => {
     limiter.reset("a");
 
     expect(limiter.isBlocked("a")).toBe(false);
-  });
-});
-
-describe("getClientIp", () => {
-  it("returns the first X-Forwarded-For entry", () => {
-    const request = new Request("http://localhost/", {
-      headers: { "X-Forwarded-For": " 203.0.113.7 , 10.0.0.1" },
-    });
-
-    expect(getClientIp(request)).toBe("203.0.113.7");
-  });
-
-  it("returns undefined without the header", () => {
-    expect(getClientIp(new Request("http://localhost/"))).toBeUndefined();
   });
 });

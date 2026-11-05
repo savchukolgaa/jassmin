@@ -199,6 +199,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 | create | `app/.server/csp-report.ts` | parsing, query stripping, `[csp]` logging, the in-memory limiter (route-module state must stay on the server, like `client-events.ts`) |
 | modify | `app/routes.ts` | `route("csp-report", "routes/csp-report.ts")` |
 | modify | `app/.server/env.ts`, `env.test.ts` | `TRUSTED_PROXY_HOPS`, `CSP_MODE` |
+| modify | `vitest.config.ts` | `TRUSTED_PROXY_HOPS=1` for the test run (the app behind one proxy) |
 | modify | `.env.example`, `docs/setup.md` | document the new vars and the prune cron |
 | modify | `app/.server/db/schema.ts` | `rateLimits` table |
 | create | `app/.server/db/migrations/0024_rate_limits.sql` (+ `meta/`) | generated migration |
@@ -255,12 +256,15 @@ the other hardening headers. The rate-limit counters move from process memory in
   `getClientIp(request) ?? "anonymous"`), sanitized `console.warn`, and 204. Register it in
   `routes.ts` outside the layout. Test both formats, an oversize body (413), a rate-limited client
   (429), invalid JSON (400) and a log line without a query string.
-- [ ] **6. `TRUSTED_PROXY_HOPS` and `getClientIp`.** Add the env var (`z.coerce.number().int().min(0).max(10).default(0)`,
+- [x] **6. `TRUSTED_PROXY_HOPS` and `getClientIp`.** Add the env var (`z.coerce.number().int().min(0).max(10).default(0)`,
   + `.env.example`, `docs/setup.md`, `env.test.ts`). Create `client-ip.ts` with
   `clientIpFromHeader(header, hops)` and `getClientIp(request, hops?)`, and re-export it from
   `rate-limit.ts`. Rewrite the `getClientIp` tests: 0 hops ignores the header, 1 and 2 hops pick
   the right entry, a spoofed left-hand entry is ignored, too few entries or a non-IP value gives
-  `undefined`. Add the production startup warning for 0 hops.
+  `undefined`. Add the production startup warning for 0 hops (`warnIfNoTrustedProxy`, called
+  once from `entry.server.tsx` when the server loads). `vitest.config.ts` sets
+  `TRUSTED_PROXY_HOPS=1` for the test run, so route tests can keep sending `X-Forwarded-For` to
+  stand for different clients.
 - [ ] **7. `rate_limits` table.** Add `rateLimits` to `db/schema.ts`, run
   `pnpm db:generate --name rate_limits`, and write `db/rollbacks/0024_rate_limits.sql`. Put
   `hitRateLimit(db, key, windowMs, now)` (the upsert, `RETURNING count, reset_at`),

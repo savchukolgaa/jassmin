@@ -125,8 +125,5 @@ globalForGiftCardLimiter.__jassminGiftCardCodeLimiter ??= createRateLimiter({
 export const giftCardCodeLimiter: RateLimiter =
   globalForGiftCardLimiter.__jassminGiftCardCodeLimiter;
 
-/** The client IP from the first `X-Forwarded-For` entry, or `undefined` when there is none. */
-export function getClientIp(request: Request): string | undefined {
-  const forwarded = request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim();
-  return forwarded || undefined;
-}
+// The per-IP limits' key: `X-Forwarded-For` as far as `TRUSTED_PROXY_HOPS` allows (#143).
+export { getClientIp } from "./client-ip";

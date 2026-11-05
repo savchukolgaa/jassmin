@@ -49,19 +49,14 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   15%, and `app/.server/AGENTS.md` documents that a value change means editing the copy too.
   A promo code still wins the label (`discountWithCode`) whatever its kind.
 - **Strapi offer** `couple-offer`, kind `bundle`, no products, `sortOrder: 15` (after the tester
-  trio), CTA to the women's catalog **(unconfirmed, Q1)**. Its `priceNote` is text and matches the
+  trio), CTA to the women's catalog. Its `priceNote` is text and matches the
   rule ("−15% на другий флакон" / "−15% on the second bottle").
 
-## Open questions
-- [ ] **Q1: Where does the couple-offer card link?** — Why it matters: the catalog route needs a
-  gender (`routes/catalog.tsx`, no unisex catalog), and a couple may shop both. Recommended
-  default: `/catalog/women`, like the tester-trio and winter offers; the body text mentions that
-  bottles from the men's catalog count too. Affects steps: 6.
-- [ ] **Q2: Should the couple offer have an end date?** — Why it matters: an open-ended 15% is a
-  standing price cut. Recommended default: no `starts_at`/`ends_at` on the rule or the offer;
-  staff can set `active = false` and unpublish the offer later. Affects steps: 3, 6.
-
 ## Resolved questions
+- **Where does the couple-offer card link?** — `/catalog/women`, like the tester-trio and winter
+  offers; the body text says bottles from the men's catalog count too (source: user, on this plan).
+- **Should the couple offer have an end date?** — No: no `starts_at`/`ends_at` on the rule or the
+  offer; staff can set `active = false` and unpublish the offer later (source: user, on this plan).
 - **Is `bundle` a valid offer kind?** — Yes, in the Strapi enum and `OFFER_GROUP_ORDER` (source:
   `cms/src/api/offer/content-types/offer/schema.json`, `app/lib/offers.ts`).
 - **Does the order page/email need its own change?** — No: the account order page and checkout
@@ -156,8 +151,8 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   (`"Пропозиція для двох: −15% на другий флакон: −225 ₴"`).
 - [ ] **6. Strapi offer** — In `cms/scripts/seed.ts` add to `OFFERS` (and a comment that its
   `priceNote` matches the `couple-15` rule):
-  slug `couple-offer`, kind `bundle`, image `cover`, no products, `ctaUrl: "/catalog/women"`
-  **(Q1)**, `sortOrder: 15`; uk: title "Пропозиція для двох", summary "Купуєте два повні флакони —
+  slug `couple-offer`, kind `bundle`, image `cover`, no products, `ctaUrl: "/catalog/women"`,
+  `sortOrder: 15`; uk: title "Пропозиція для двох", summary "Купуєте два повні флакони —
   другий на 15% дешевше.", body explaining that any two 30/50/100 ml bottles qualify (from the
   women's and men's catalogs), the cheaper of each pair is discounted, 5 and 10 ml don't count, and
   it doesn't add up with other discounts, priceNote "−15% на другий флакон", ctaLabel "Обрати

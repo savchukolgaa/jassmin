@@ -184,6 +184,21 @@ describe("buildOrderConfirmationEmail", () => {
     );
   });
 
+  it("shows the couple-offer line in both languages (#124)", () => {
+    const couple: OrderConfirmation = {
+      ...codOrder,
+      subtotal: "3000.00",
+      discountAmount: "225.00",
+      discount: { amount: "225.00", code: null, kind: "percent_every_nth" },
+      totalAmount: "2775.00",
+    };
+    const text = (locale: "uk" | "en") =>
+      normalize(String(buildOrderConfirmationEmail(couple, createTranslator(locale), env).text));
+
+    expect(text("uk")).toContain("Пропозиція для двох: −15% на другий флакон: −225 ₴");
+    expect(text("en")).toContain("Couple offer: −15% on the second bottle: −₴225");
+  });
+
   it("names deleted products and leaves out unknown sizes", () => {
     const email = buildOrderConfirmationEmail(
       {

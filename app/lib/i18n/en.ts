@@ -356,6 +356,7 @@ export const en = {
     discount: "Discount",
     discountWithCode: "Discount (promo code {code})",
     discountTesterSet: "Tester trio 3 × 10 ml",
+    discountCouple: "Couple offer: −15% on the second bottle",
     shipping: "Delivery",
     shippingFree: "Free",
     shippingCarrierRate: "Nova Poshta rates, paid on delivery",

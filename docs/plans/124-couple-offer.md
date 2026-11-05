@@ -142,7 +142,7 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   COUPLE_OFFER_DISCOUNT_SLUG)` matches the `SAMPLE_DISCOUNTS` row, `value` is `"15.00"` (the
   label copy and the Strapi texts say 15%), and `priceCart` on two `CATALOG_PRICES[50]` bottles
   saves 15% of one. Add `COUPLE_OFFER_DISCOUNT_SLUG = "couple-15"` to `app/lib/discounts.ts`.
-- [ ] **5. Label and copy** — `discountLabel`: code → `discountWithCode`; `fixed_price_set` →
+- [x] **5. Label and copy** — `discountLabel`: code → `discountWithCode`; `fixed_price_set` →
   `discountTesterSet`; `percent_every_nth` → `discountCouple`; else `discount` (a `Record` or
   `switch` over `DiscountKind` so a future kind is a type error). Add `checkout.discountCouple` to
   `uk.ts` and `en.ts`. Tests: `discounts.test.ts` (uk, en via `createTranslator("en")`, a code of

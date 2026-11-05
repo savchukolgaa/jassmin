@@ -44,9 +44,17 @@ export interface CartPromo {
   status: PromoStatus;
 }
 
+/** The label of an automatic rule, by kind: the tester trio, the couple offer or a plain one. */
+const AUTOMATIC_DISCOUNT_KEYS: Record<DiscountKind, TextKey> = {
+  percent: "checkout.discount",
+  fixed_amount: "checkout.discount",
+  fixed_price_set: "checkout.discountTesterSet",
+  percent_every_nth: "checkout.discountCouple",
+};
+
 /**
- * The discount line's label: the promo code when there is one; else the tester trio, the only
- * automatic rule (a fixed-price set); else a plain "Discount".
+ * The discount line's label: the promo code when there is one; else the automatic rule's own
+ * label (the tester trio, a fixed-price set, or the couple offer, #124); else a plain "Discount".
  */
 export function discountLabel(
   discount: Pick<DiscountLine, "code" | "kind">,
@@ -55,9 +63,7 @@ export function discountLabel(
   if (discount.code !== null) {
     return t("checkout.discountWithCode", { code: discount.code });
   }
-  return t(
-    discount.kind === "fixed_price_set" ? "checkout.discountTesterSet" : "checkout.discount",
-  );
+  return t(AUTOMATIC_DISCOUNT_KEYS[discount.kind]);
 }
 
 /** What the cart says about its stored promo code, by status. */

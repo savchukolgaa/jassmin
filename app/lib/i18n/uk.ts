@@ -366,6 +366,7 @@ export const uk = {
     discount: "Знижка",
     discountWithCode: "Знижка (промокод {code})",
     discountTesterSet: "Тестерне тріо 3 × 10 мл",
+    discountCouple: "Пропозиція для двох: −15% на другий флакон",
     shipping: "Доставка",
     shippingFree: "Безкоштовно",
     shippingCarrierRate: "За тарифами Нової Пошти при отриманні",

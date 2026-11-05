@@ -209,6 +209,26 @@ describe("CartSummary with a discount (#59)", () => {
     expect(html).toContain("Промокод JASSMIN10 застосовано.");
     expect(html).toContain("Безкоштовна доставка Новою Поштою від 1 500 ₴.");
   });
+
+  it("names the couple offer (#124)", () => {
+    const html = render(
+      createElement(CartSummary, {
+        cart: {
+          ...trio,
+          lines: [
+            { ...line, volumeMl: 50, unitPrice: "1500.00", quantity: 2, lineTotal: "3000.00" },
+          ],
+          itemCount: 2,
+          subtotal: "3000.00",
+          discount: { amount: "225.00", code: null, kind: "percent_every_nth" as const },
+          total: "2775.00",
+        },
+      }),
+    );
+
+    expect(html).toContain("Couple offer: −15% on the second bottle");
+    expect(html).toContain("−₴225");
+  });
 });
 
 describe("PromoCodeForm", () => {

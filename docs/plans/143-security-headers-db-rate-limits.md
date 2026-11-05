@@ -45,11 +45,13 @@ the other hardening headers. The rate-limit counters move from process memory in
   `loadContext` is the `RouterContextProvider`). It passes the nonce to `renderToPipeableStream({ nonce })`
   (React's own inline streaming scripts) and `<ServerRouter nonce>`, and wraps the tree in
   `<NonceProvider value={nonce}>`. `NonceProvider` / `useNonce()` live in `app/lib/nonce.tsx`
-  (isomorphic React context; on the client it's `""`). The root `Layout` puts `nonce` on the inline
-  `JS_CLASS_SCRIPT` script, `<ScrollRestoration nonce>` and `<Scripts nonce>`. The nonce is **not**
-  returned from a loader, so it never appears in the serialized loader data. This is the
-  Epic Stack pattern. Browsers hide the `nonce` attribute after parsing, so step 4 checks for a
-  hydration warning.
+  (isomorphic React context). The root `Layout` puts `nonce` on the inline `JS_CLASS_SCRIPT`
+  script, `<Links nonce>`, `<ScrollRestoration nonce>` and `<Scripts nonce>`. The nonce is **not**
+  returned from a loader, so it never appears in the serialized loader data.
+  **Hydration (found in step 4):** browsers hide a `<script>`'s nonce attribute (it reads `""`) but
+  keep a `<link>`'s. So in the browser `useNonce()` reads the real nonce back from a nonced
+  script's `nonce` property (scripts on the page can read it anyway), which makes `<Links>` match,
+  and the inline theme script has `suppressHydrationWarning` for its hidden attribute.
 - **Policy** (`buildCsp({ nonce, mode, env })`, a pure function):
   - `default-src 'self'`
   - `script-src 'self' 'nonce-…' 'strict-dynamic'` (no `unsafe-inline`). `<script type="application/ld+json">`
@@ -61,7 +63,9 @@ the other hardening headers. The rate-limit counters move from process memory in
     remove it later (`style-src-attr` / a CSS-variable class).
   - `img-src 'self' data: <origin of STRAPI_URL>`: CMS and product images are absolute
     `STRAPI_URL` upload URLs (`cms/content.ts`, `routes/cms.products.ts`). OG images are same-origin.
-  - `font-src 'self'`: fonts are bundled by `@fontsource` (`root.tsx`, `app.css`).
+  - `font-src 'self' data:`: fonts are bundled by `@fontsource` (`root.tsx`, `app.css`), and Vite
+    inlines the subsets under 4 KB as `data:` URIs in the stylesheet (found in step 4; `data:` fonts
+    can't run code).
   - `connect-src 'self'`, plus `ws:` in development only (Vite HMR). `/api/events` beacons are same-origin.
   - `frame-src https://www.google.com https://maps.google.com`: the home page's map `<iframe>` (`features/home/LocationSection.tsx`)
     loads Strapi's `mapEmbedUrl`, a Google Maps embed in the seed (`cms/scripts/seed.ts`).
@@ -231,12 +235,20 @@ the other hardening headers. The rate-limit counters move from process memory in
   `ServerRouter`, `useNonce()` and every inline `<script>` React streams. The whole-page check
   (every real `<script>` and `modulepreload` matches the header) is done against the built server
   in step 4, since a unit test can't render a full server build.
-- [ ] **4. Check the site with the CSP enforced.** `pnpm build && CSP_MODE=enforce pnpm start`,
+- [x] **4. Check the site with the CSP enforced.** `pnpm build && CSP_MODE=enforce pnpm start`,
   and with `pnpm dev`. In the browser console, check for CSP violations and React hydration
   warnings on home (map, theme script, contact form), catalog, product, cart (promo code),
   checkout (gift card, simulator payment), account, blog and blog post, the 404 page, and the cookie
   banner and client page-view beacons. Fix the policy or the code, never by adding `unsafe-inline`
   to scripts.
+  *Done with headless Edge (console log) against `pnpm build` + `react-router-serve` and the Vite dev
+  server, both with `CSP_MODE=enforce`. Every page listed above renders with no CSP violation and no
+  hydration warning, and the theme script runs. Strapi couldn't start outside Aspire, so home and
+  blog were checked as their 503 page, and the map frame and CMS images only by the policy tests.
+  The dev database has no listed products, so the product page was checked as its 404. Fixed along
+  the way: `data:` fonts, and the nonce hydration mismatch (above). Note: `vite.config.ts` ignores
+  `**/.claude/worktrees/**`, so a dev server started inside a worktree doesn't pick up edits;
+  restart it after each change.*
 - [ ] **5. `/csp-report`.** zod schemas in `app/lib/csp-report.schema.ts`, and the route with
   `readLimitedBody(request, 16 * 1024)`, a memory-store limiter (30/min per
   `getClientIp(request) ?? "anonymous"`), sanitized `console.warn`, and 204. Register it in

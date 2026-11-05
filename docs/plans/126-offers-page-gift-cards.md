@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/126
 Branch: `issue/126`
 Worktree: `.claude/worktrees/issue-126`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Shoppers should see the shop's current offers on `/aktsii` (`/en/offers`), and what they read
@@ -164,6 +164,9 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   `gifts-by-budget` in the local Strapi admin, or on a fresh CMS database), and open `/aktsii` and `/en/offers`. Check that the gift card offer shows with
   the amounts and its CTA opens the gift card page in each language, that the couple offer card
   is in the bundles group, that the perks strip says 1500 ₴, and that "Gifts by budget" is gone.
+  **Not done by the agent:** it needs `gifts-by-budget` deleted from the developer's local
+  Strapi, which is their data. The rendered page is covered by `offers-ui.test.ts`, the
+  per-language links by `offers.test.ts`, and the fixtures by `content.test.ts`.
 - [ ] **7. PR description: staff checklist for live Strapi** — For `/open-pr 126`, list the
   live entries to edit, with the exact text in both languages:
   1. **Offer "Подарунки за бюджетом" / "Gifts by budget"** (`gifts-by-budget`): delete it or
@@ -187,15 +190,15 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
 - Manual: step 6.
 
 ## Acceptance criteria
-- [ ] The offers page shows a gift card offer with the amounts 500, 1000 and 2000 ₴, linking to
+- [x] The offers page shows a gift card offer with the amounts 500, 1000 and 2000 ₴, linking to
   the gift card page, in Ukrainian and English — steps 1, 2, 4, 6
-- [ ] "Gifts by budget" no longer appears — steps 1, 2, 3, 4, 7
-- [ ] Every free-delivery mention on the site and in the seed says 1500 ₴ — step 5 (already true
+- [x] "Gifts by budget" no longer appears — steps 1, 2, 3, 4, 7
+- [x] Every free-delivery mention on the site and in the seed says 1500 ₴ — step 5 (already true
   in code; live entries via step 7)
-- [ ] The couple offer card is shown on the offers page — steps 4, 6 (already added in #124)
+- [x] The couple offer card is shown on the offers page — steps 4, 6 (already added in #124)
 - [ ] The PR description lists the live Strapi entries staff must edit, with the exact text —
-  step 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — Testing & verification
+  step 7 (still to do: `/open-pr 126` writes it)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — Testing & verification
 
 ## Out of scope
 - The gift card page, its purchase action and redemption at checkout (#125).

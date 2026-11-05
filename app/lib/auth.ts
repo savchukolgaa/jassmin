@@ -7,8 +7,10 @@ export type {
   ChangeEmailInput,
   ChangePasswordInput,
   ContactInput,
+  ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  ResetPasswordInput,
 } from "./auth.schema";
 
 // The three forms of the account profile page (#54), told apart by a hidden `intent` field.
@@ -27,6 +29,8 @@ export type AuthTokenError = (typeof AUTH_TOKEN_ERRORS)[number];
 
 export type RegisterField = "fullName" | "email" | "password" | "phone";
 export type LoginField = "email" | "password";
+export type ForgotPasswordField = "email";
+export type ResetPasswordField = "password" | "confirmPassword";
 export type ContactField = "fullName" | "phone";
 export type ChangeEmailField = "email" | "currentPassword";
 export type ChangePasswordField = "currentPassword" | "newPassword" | "confirmNewPassword";

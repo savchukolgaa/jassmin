@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { loginRedirectPath, resolveAcquisitionChannel, safeRedirect } from "./auth";
 import {
+  authTokenSchema,
   changeEmailSchema,
   changePasswordSchema,
   contactSchema,
+  forgotPasswordSchema,
   loginSchema,
   profileIntentSchema,
   registerSchema,
+  resetPasswordSchema,
   toFieldErrors,
 } from "./auth.schema";
 
@@ -203,5 +206,49 @@ describe("profile schemas", () => {
   it("only accepts the three intents", () => {
     expect(profileIntentSchema.safeParse("password").success).toBe(true);
     expect(profileIntentSchema.safeParse("delete").success).toBe(false);
+  });
+});
+
+describe("password reset schemas (#135)", () => {
+  it("accepts only 43-character base64url tokens", () => {
+    expect(authTokenSchema.safeParse("A".repeat(43)).success).toBe(true);
+    expect(authTokenSchema.safeParse(`${"a-_9".repeat(10)}abc`).success).toBe(true);
+    expect(authTokenSchema.safeParse("A".repeat(42)).success).toBe(false);
+    expect(authTokenSchema.safeParse(`${"A".repeat(42)}=`).success).toBe(false);
+    expect(authTokenSchema.safeParse(`${"A".repeat(42)}/`).success).toBe(false);
+  });
+
+  it("normalises the email to ask a reset for", () => {
+    expect(forgotPasswordSchema.parse({ email: " Olena@Example.COM " })).toEqual({
+      email: "olena@example.com",
+    });
+    const invalid = forgotPasswordSchema.safeParse({ email: "nope" });
+    expect(invalid.success).toBe(false);
+    if (!invalid.success) {
+      expect(toFieldErrors(invalid.error, ["email"])).toEqual({
+        email: "auth.errors.emailInvalid",
+      });
+    }
+  });
+
+  it("applies the registration password rules and checks the confirmation", () => {
+    const valid = { password: "correct horse", confirmPassword: "correct horse" };
+    expect(resetPasswordSchema.parse(valid)).toEqual(valid);
+
+    const short = resetPasswordSchema.safeParse({ password: "short", confirmPassword: "short" });
+    expect(short.success).toBe(false);
+    if (!short.success) {
+      expect(toFieldErrors(short.error, ["password", "confirmPassword"])).toEqual({
+        password: "auth.errors.passwordTooShort",
+      });
+    }
+
+    const mismatch = resetPasswordSchema.safeParse({ ...valid, confirmPassword: "other one" });
+    expect(mismatch.success).toBe(false);
+    if (!mismatch.success) {
+      expect(toFieldErrors(mismatch.error, ["password", "confirmPassword"])).toEqual({
+        confirmPassword: "auth.errors.passwordMismatch",
+      });
+    }
   });
 });

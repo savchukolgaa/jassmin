@@ -185,6 +185,8 @@ export const uk = {
       tooManyAttempts: "Забагато спроб. Зачекайте 15 хвилин і спробуйте ще раз.",
       invalidCredentials: "Неправильний email або пароль. Спробуйте ще раз.",
       emailTaken: "Акаунт із цим email уже існує.",
+      passwordMismatch: "Паролі не збігаються",
+      tooManyRequests: "Забагато запитів. Спробуйте ще раз за годину.",
     },
   },
   catalog: {

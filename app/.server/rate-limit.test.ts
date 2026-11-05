@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createRateLimiter, getClientIp } from "./rate-limit";
+import {
+  createRateLimiter,
+  getClientIp,
+  passwordResetLimiters,
+  verificationEmailLimiter,
+} from "./rate-limit";
 
 function setup() {
   let time = 0;
@@ -46,6 +51,27 @@ describe("createRateLimiter", () => {
     limiter.reset("a");
 
     expect(limiter.isBlocked("a")).toBe(false);
+  });
+});
+
+describe("password reset and verification limits (#135)", () => {
+  function hitsUntilBlocked(limiter: { isBlocked(k: string): boolean; hit(k: string): void }) {
+    const key = `test-${Math.random()}`;
+    let hits = 0;
+    while (!limiter.isBlocked(key) && hits < 100) {
+      limiter.hit(key);
+      hits += 1;
+    }
+    return hits;
+  }
+
+  it("allows 3 reset emails per address and 10 per IP", () => {
+    expect(hitsUntilBlocked(passwordResetLimiters.byEmail)).toBe(3);
+    expect(hitsUntilBlocked(passwordResetLimiters.byIp)).toBe(10);
+  });
+
+  it("allows 3 verification emails per user", () => {
+    expect(hitsUntilBlocked(verificationEmailLimiter)).toBe(3);
   });
 });
 

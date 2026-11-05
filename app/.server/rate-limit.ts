@@ -125,6 +125,41 @@ globalForGiftCardLimiter.__jassminGiftCardCodeLimiter ??= createRateLimiter({
 export const giftCardCodeLimiter: RateLimiter =
   globalForGiftCardLimiter.__jassminGiftCardCodeLimiter;
 
+const HOUR_MS = 60 * 60 * 1000;
+
+interface PasswordResetLimiters {
+  /** Reset emails asked for per normalised email, registered or not. */
+  byEmail: RateLimiter;
+  /** Reset emails asked for per client IP. */
+  byIp: RateLimiter;
+}
+
+const globalForResetLimiters = globalThis as typeof globalThis & {
+  __jassminPasswordResetLimiters?: PasswordResetLimiters;
+  __jassminVerificationEmailLimiter?: RateLimiter;
+};
+
+globalForResetLimiters.__jassminPasswordResetLimiters ??= {
+  byEmail: createRateLimiter({ limit: 3, windowMs: HOUR_MS }),
+  byIp: createRateLimiter({ limit: 10, windowMs: HOUR_MS }),
+};
+
+/**
+ * "Forgot password" requests (#135): 3 per email and 10 per IP per hour. Every request counts,
+ * whether the email is registered or not, so the limit reveals nothing about accounts.
+ */
+export const passwordResetLimiters: PasswordResetLimiters =
+  globalForResetLimiters.__jassminPasswordResetLimiters;
+
+globalForResetLimiters.__jassminVerificationEmailLimiter ??= createRateLimiter({
+  limit: 3,
+  windowMs: HOUR_MS,
+});
+
+/** Verification emails resent from the account page (#135): 3 per user id per hour. */
+export const verificationEmailLimiter: RateLimiter =
+  globalForResetLimiters.__jassminVerificationEmailLimiter;
+
 /** The client IP from the first `X-Forwarded-For` entry, or `undefined` when there is none. */
 export function getClientIp(request: Request): string | undefined {
   const forwarded = request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim();

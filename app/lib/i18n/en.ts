@@ -183,6 +183,8 @@ export const en = {
       tooManyAttempts: "Too many attempts. Please wait 15 minutes and try again.",
       invalidCredentials: "Email or password is incorrect. Try again.",
       emailTaken: "An account with this email already exists.",
+      passwordMismatch: "The passwords don't match",
+      tooManyRequests: "Too many requests. Please try again in an hour.",
     },
   },
   catalog: {

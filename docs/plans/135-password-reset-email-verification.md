@@ -97,6 +97,11 @@ address is confirmed. Verification is soft: unverified users can still log in an
 - **Token pages leak nothing**: the reset and verify pages answer with `Referrer-Policy: no-referrer`
   and `Cache-Control: no-store` (route `headers`), so the token never reaches a third-party
   `Referer` or a cache. They are `indexable: false` (`noindexMeta`).
+- **Implementation notes.** The three pages are registered in `routes.ts` together with their
+  route modules in step 7, since typegen needs the files. Message keys that a schema needs are
+  added in the step that uses them (e.g. `auth.errors.passwordMismatch` in step 4), not all in
+  step 9. `getUser` and the cart's owner share `getSessionUser` (`services/session-user.ts`),
+  because `services/auth.ts` imports the cart service and the cart service can't import it back.
 - **Existing users** start with `email_verified_at = null` (no backfill), as the issue says. They
   see the banner and can verify from it. Nothing is forced.
 - The banner lives on the account index page (`account._index.tsx`) and its resend button posts to
@@ -207,7 +212,7 @@ Each step is small, ordered, and leaves the app in a working state.
   instead of `getUserId`. Tests: a cookie from before the change is rejected after a password
   change, a cookie issued at the change survives, and a cookie without `authenticatedAt` stays
   valid while `password_changed_at` is null.
-- [ ] **4. Schemas, paths and routes skeleton.** In `auth.schema.ts`:
+- [x] **4. Schemas, paths and routes skeleton.** In `auth.schema.ts`:
   - `authTokenSchema`: `z.string().regex(/^[A-Za-z0-9_-]{43}$/)`;
   - `forgotPasswordSchema`: `{ email: emailSchema }`;
   - `resetPasswordSchema`: `{ password: newPasswordSchema, confirmPassword }`, with a refine on

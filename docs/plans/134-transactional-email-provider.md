@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/134
 Branch: `issue/134`
 Worktree: `.claude/worktrees/issue-134`
-Status: Planned (open questions answered)
+Status: Implemented
 
 ## Goal
 
@@ -305,7 +305,7 @@ From the codebase:
   8. local development: smtp4dev is unchanged.
 
   Link it from `docs/setup.md` (Order emails / mail section) and the README docs list.
-- [ ] **10. Docs and agent notes.** Update the mail bullets and the `order_emails` bullet
+- [x] **10. Docs and agent notes.** Update the mail bullets and the `order_emails` bullet
   (`message_id`) in `app/.server/AGENTS.md`, plus a suppressions bullet. Run the full
   `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
 
@@ -327,18 +327,41 @@ From the codebase:
 - Manual (production, owner): follow `docs/email.md` and get mail-tester ≥ 9/10 and Gmail PASS for
   SPF/DKIM/DMARC.
 
+## Deviations during implementation
+
+- **Copy keys:** `orderEmail.amount` is gone, because the layout writes `label: value` itself. The
+  gift card `code` keys are now just the label (`Код картки` / `Card code`), and the layout adds
+  the code after it. The plain text reads exactly as before.
+- **Contact email:** its new copy is in the `contactEmail` namespace, and it's rendered in `uk`
+  (Q6). The received time stays an ISO timestamp, as before.
+- **Footer note:** one generic line in both languages (`email.footer.note`: "This email was sent by
+  Jassmin, a perfume shop in Ukraine."), instead of a different "why you got this" line per email.
+- **Bounce tag:** the tag helpers (`ORDER_EMAIL_TAG`, `orderEmailTag`, `parseOrderEmailTag`) live
+  in `services/order-email.ts`, next to the sender. The webhook adapter imports them from there.
+- **Test helpers:** `email/test-helpers.ts` (`htmlSection`, `htmlWords`, `words`) is shared by the
+  layout tests and the email builders' tests, for the "text matches HTML" check.
+- **Webhook response:** 200 with `{ received, suppressed, bounced }`.
+- **`readJsonBody`:** it stays in `cms/sync-auth.ts`. The webhook route reads its body inline.
+- **Migration tests:** `migrator.test.ts` now rolls back `0024_email_suppressions` first in every
+  rollback chain, and has its own test for 0024.
+- **Verification:** each step ran typecheck, lint and its own tests. The full suite ran after step 7
+  and at the end (176 files, 1834 passed, 1 skipped, which was already skipped before), and
+  `pnpm build` passes.
+
 ## Acceptance criteria
 
-- [ ] With the provider's `SMTP_URL`, order confirmations and contact messages are delivered from
+- [ ] (**Not verified**: needs the real Brevo `SMTP_URL`; the code needs no provider-specific change)
+  With the provider's `SMTP_URL`, order confirmations and contact messages are delivered from
   `no-reply@jassmin.ua`: steps 4, 5, 7, 9 (the code needs no provider-specific change; delivery is
   confirmed manually after the DNS setup)
-- [ ] `docs/email.md` lists every DNS record, and a test email shows SPF, DKIM and DMARC = PASS:
+- [ ] `docs/email.md` lists every DNS record (done), and a test email shows SPF, DKIM and DMARC = PASS
+  (**not verified**: needs the Brevo account and the DNS records in place):
   step 9 (PASS is a manual check by the owner)
-- [ ] Every email uses the shared branded layout, with HTML and plain text, in Ukrainian and
+- [x] Every email uses the shared branded layout, with HTML and plain text, in Ukrainian and
   English: steps 3, 4, 5
-- [ ] Hard bounces and spam complaints are recorded and never sent to again: steps 6, 7, 8
-- [ ] Production doesn't start without `SMTP_URL`: step 1
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 10
+- [x] Hard bounces and spam complaints are recorded and never sent to again: steps 6, 7, 8
+- [x] Production doesn't start without `SMTP_URL`: step 1
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 10
 
 ## Out of scope
 

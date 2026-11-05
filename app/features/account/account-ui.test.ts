@@ -109,7 +109,7 @@ describe("OrderProgress", () => {
   });
 });
 
-describe("OrderLineThumb (#99)", () => {
+describe("OrderLineThumb (#99, #122)", () => {
   const [bought, deleted] = order("paid").lines as [AccountOrderLine, AccountOrderLine];
 
   it("shows the product's photo", () => {
@@ -118,17 +118,20 @@ describe("OrderLineThumb (#99)", () => {
     expect(html).not.toContain("<svg");
   });
 
-  it("draws the label card without text when the product has no photo", () => {
+  it("shows the shop's bottle photo when the product has no photo", () => {
     const html = render(createElement(OrderLineThumb, { line: { ...bought, imageUrl: null } }));
-    expect(html).toContain("<svg");
-    expect(html).not.toContain("<text");
-    expect(html).not.toContain("<img");
+    expect(html).toMatch(/src="[^"]*shop-bottle-640[^"]*\.webp"/);
+    expect(html).toMatch(/srcSet="[^"]*shop-bottle-320[^"]*\.webp 320w/);
+    expect(html).toContain('sizes="52px"');
+    expect(html).toContain('alt=""');
+    expect(html).not.toContain("<svg");
   });
 
   it("is a neutral tile once the product has been deleted", () => {
     const html = render(createElement(OrderLineThumb, { line: deleted }));
     expect(html).toContain("bg-card");
     expect(html).not.toContain("<svg");
+    expect(html).not.toContain("<img");
   });
 });
 

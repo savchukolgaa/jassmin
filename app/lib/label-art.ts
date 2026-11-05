@@ -1,7 +1,7 @@
-// Generated label cards (#99): the picture of a product without a photo. Its colours come from the
-// primary fragrance family and its bottle shape from the product's public id, so it's unique per
-// product and the same on every render. Isomorphic and pure: no React, no zod, no server imports.
-// The palette is documented in `docs/design.md` ("Label card palette").
+// Label card palette and text fitting (#99): the fragrance-family colours and the layout helpers the
+// share image (#105) uses. The drawn label card itself was replaced by the shop's bottle photo
+// (#118, #122). Isomorphic and pure: no React, no zod, no server imports. The palette is documented
+// in `docs/design.md` ("Label card palette").
 import { type FragranceFamily, isFragranceFamily } from "./enums";
 
 /** What a label card needs to know about its product. */

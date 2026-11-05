@@ -16,12 +16,6 @@ const render = (props: Partial<ProductImageProps> = {}) =>
   renderToStaticMarkup(
     createElement(ProductImage, {
       image: IMAGE,
-      label: {
-        id: "0193a1b2-7c1e-7a2b-9f00-000000000001",
-        brand: "Chanel",
-        title: "Coco",
-        family: "квіткові",
-      },
       alt: "Chanel Coco",
       layout: "card",
       ...props,
@@ -63,11 +57,11 @@ describe("ProductImage (#88)", () => {
     expect(render({ alt: "" })).toContain('alt=""');
   });
 
-  it("shows the photo, not the label card, when there is one", () => {
+  it("shows the product's own photo when there is one", () => {
     const html = render();
 
-    expect(html).toContain("<img");
-    expect(html).not.toContain("<svg");
+    expect(html).toContain(`src="${IMAGE.url}"`);
+    expect(html).not.toContain("shop-bottle");
   });
 
   it("shows the shop's bottle photo without one, with nothing over it (#118, #120)", () => {
@@ -95,30 +89,12 @@ describe("ProductImage (#88)", () => {
     expect(render({ image: null, alt: "" })).toContain('alt=""');
   });
 
-  it("draws the label card in thumbnails without a photo (#99)", () => {
-    const html = render({ image: null, layout: "thumb" });
+  it("shows the shop photo in cart thumbnails too, never a drawn label card (#122)", () => {
+    const html = render({ image: null, layout: "thumb", alt: "" });
 
-    expect(html).toContain("<svg");
-    expect(html).not.toContain("<img");
-    expect(html).toContain(">CHANEL</text>");
-    expect(html).toContain(">Coco</text>");
-    expect(html).toContain("aspect-[4/5]");
-    expect(html).toContain("rounded-card");
-  });
-
-  it("leaves the text off a minimal label card", () => {
-    const html = render({ image: null, layout: "thumb", labelDetail: "minimal" });
-
-    expect(html).toContain("<svg");
-    expect(html).not.toContain("<text");
-  });
-
-  it("labels the thumbnail card like the photo, or hides it when decorative", () => {
-    expect(render({ image: null, layout: "thumb" })).toContain(
-      'role="img" aria-label="Chanel Coco"',
-    );
-    const hidden = render({ image: null, layout: "thumb", alt: "" });
-    expect(hidden).toContain('aria-hidden="true"');
-    expect(hidden).not.toContain('role="img"');
+    expect(html).toContain(`src="${SHOP_BOTTLE_IMAGE.url}"`);
+    expect(html).toContain(`sizes="${PRODUCT_IMAGE_SIZES.thumb}"`);
+    expect(html).toContain('alt=""');
+    expect(html).not.toContain("<svg");
   });
 });

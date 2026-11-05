@@ -37,19 +37,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
     <li className="flex gap-4 rounded-card bg-white p-3 ring-1 ring-line sm:p-4">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="w-24 shrink-0 sm:w-28">
         {/* Hidden duplicate of the title link, so its photo needs no alt text (#88). */}
-        <ProductImage
-          image={line.image}
-          label={{
-            id: line.productId,
-            brand: line.brand,
-            title: line.title,
-            family: line.fragranceFamily,
-          }}
-          labelDetail="minimal"
-          alt=""
-          layout="thumb"
-          className="rounded-t-full"
-        />
+        <ProductImage image={line.image} alt="" layout="thumb" className="rounded-t-full" />
       </Link>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="text-sm font-bold uppercase tracking-wide text-primary-dark">{line.brand}</p>

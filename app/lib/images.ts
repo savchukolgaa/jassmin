@@ -74,8 +74,10 @@ export const PRODUCT_IMAGE_SIZES = {
   compact: "(min-width: 1024px) 22vw, (min-width: 640px) 46vw, 92vw",
   /** The product page photo: full width, half from `md`. */
   page: "(min-width: 1536px) 720px, (min-width: 768px) 46vw, 92vw",
-  /** Cart and order line thumbnails. */
+  /** Cart line thumbnails. */
   thumb: "(min-width: 640px) 112px, 96px",
+  /** Account order line tiles (`size-12` / `size-13`, #122). */
+  orderThumb: "52px",
 } as const;
 
 export type ProductImageLayout = keyof typeof PRODUCT_IMAGE_SIZES;

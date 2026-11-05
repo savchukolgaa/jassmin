@@ -255,7 +255,7 @@ From the codebase:
   `composeEmail`. `buildContactEmail` → `composeEmail` with the new `contactEmail.*` keys,
   rendered with `createTranslator("uk")`. The visitor's name and message are escaped in the
   HTML, and `replyTo` stays the visitor. Update both test files.
-- [ ] **6. Schema and migration.** Add `EMAIL_SUPPRESSION_REASONS` to `~/lib/enums`. In
+- [x] **6. Schema and migration.** Add `EMAIL_SUPPRESSION_REASONS` to `~/lib/enums`. In
   `schema.ts`, add `emailSuppressions` (columns above, `email_suppressions_reason_check` via
   `oneOf`, `email_suppressions_address_lowercase_check` `address = lower(address)`) and
   `orderEmails.messageId: text()`. Run `pnpm db:generate` and rename it to

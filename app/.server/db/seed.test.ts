@@ -71,7 +71,7 @@ describe("SAMPLE_PRODUCTS", () => {
     expect(SAMPLE_PRODUCTS.some((p) => inStock(p) === 0)).toBe(true);
   });
 
-  it("has the tester trio as the only automatic discount (#59)", () => {
+  it("has the tester trio and the couple offer as the automatic discounts (#59, #124)", () => {
     const automatic = SAMPLE_DISCOUNTS.filter((discount) => !discount.code);
     expect(automatic).toEqual([
       expect.objectContaining({
@@ -82,6 +82,14 @@ describe("SAMPLE_PRODUCTS", () => {
         scopePackSize: 1,
         minQuantity: 3,
         maxSets: 3,
+      }),
+      expect.objectContaining({
+        slug: "couple-15",
+        kind: "percent_every_nth",
+        value: "15.00",
+        scopeVolumesMl: [30, 50, 100],
+        scopePackSize: 1,
+        minQuantity: 2,
       }),
     ]);
     const slugs = SAMPLE_DISCOUNTS.map((discount) => discount.slug);
@@ -178,8 +186,9 @@ describe.skipIf(!hasDatabase)("seedProducts", () => {
     const { discounts } = await import("./schema");
     const { eq } = await import("drizzle-orm");
 
-    // Migration 0021 already created the tester trio (#98); the seed adds the others.
-    expect(await seedDiscounts(testDb.db)).toBe(SAMPLE_DISCOUNTS.length - 1);
+    // Migrations 0021 and 0022 already created the tester trio (#98) and the couple offer
+    // (#124); the seed adds the others.
+    expect(await seedDiscounts(testDb.db)).toBe(SAMPLE_DISCOUNTS.length - 2);
     await testDb.db
       .update(discounts)
       .set({ redemptionCount: 7 })

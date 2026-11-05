@@ -155,6 +155,13 @@
       "when": 1793626747117,
       "tag": "0021_tester_trio_rule",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793885872631,
+      "tag": "0022_couple_offer",
+      "breakpoints": true
     }
   ]
 }

@@ -194,6 +194,18 @@ describe("OrderSummary", () => {
     ).replace(/\s/gu, " ");
     expect(ukrainian).toContain("Тестерне тріо 3 × 10 мл");
     expect(ukrainian).toContain("−1 871 ₴");
+
+    const couple = render(
+      routerFor(
+        createElement(OrderSummary, {
+          ...props,
+          discount: { amount: "225.00", code: null, kind: "percent_every_nth" as const },
+        }),
+      ),
+      "uk",
+    ).replace(/\s/gu, " ");
+    expect(couple).toContain("Пропозиція для двох: −15% на другий флакон");
+    expect(couple).toContain("−225 ₴");
   });
 
   it("has no discount row without a discount", () => {

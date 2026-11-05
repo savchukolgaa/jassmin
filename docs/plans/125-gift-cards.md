@@ -46,7 +46,8 @@ Strapi (read-only), and buyers can see them on `/account`.
   activation: `activated_at + 12 months`), `created_at`, `updated_at`. CHECKs:
   `initial_amount in (500, 1000, 2000)`, `0 <= balance <= initial_amount`, and
   `status = 'pending' or expires_at is not null`. `balance` starts at `initial_amount`; `status`
-  alone keeps a pending card unusable.
+  alone keeps a pending card unusable. Plus an optional `recipient_email` (`varchar(255)`,
+  nullable): the person the buyer is giving the card to (Q4).
 - `gift_card_redemptions`: `id`, `gift_card_id` (FK, restrict), `order_id` (FK `orders`, cascade),
   `amount` (`numeric(10, 2)`, CHECK `> 0`), `created_at`, unique `(gift_card_id, order_id)`.
 - `orders.gift_card_amount` (`numeric(10, 2)`, default `0`), included in `orders_amounts_check`.
@@ -63,7 +64,14 @@ Strapi (read-only), and buyers can see them on `/account`.
 - `order_emails` is reused for the code email (the issue says to reuse the order-email service):
   `order_id` becomes nullable, plus `gift_card_id` (FK, cascade), CHECK `order_emails_target_check`
   (exactly one), unique `order_emails_gift_card_id_type_unique`, and `ORDER_EMAIL_TYPES` gains
-  `gift_card` (rewrite `order_emails_type_check`).
+  `gift_card` (to the buyer) and `gift_card_recipient` (to the recipient, only when one was given)
+  (rewrite `order_emails_type_check`).
+- **New payment method `gift_card` (Q1).** `PAYMENT_METHODS` becomes `card` | `cod` |
+  `gift_card`, and migration 0023 rewrites `orders_payment_method_check`. Shoppers never choose
+  it: a separate `SELECTABLE_PAYMENT_METHODS = ["card", "cod"]` feeds the checkout radios and the
+  zod enum, and the server sets `gift_card` itself when the card covers the whole order. Partly
+  covered orders keep the chosen `card` / `cod` for the rest. Strapi's order `paymentMethod` enum
+  gains `gift_card`, and `PAYMENT_KEYS` gains its label and note.
 - `CMS_SYNC_ENTITIES` gains `gift_card` (rewrite `cms_outbox_entity_check`).
 
 **Codes**
@@ -80,8 +88,14 @@ Strapi (read-only), and buyers can see them on `/account`.
 
 **Purchase and payment**
 
-- The gift card page (`giftCards`) has a form with the three amounts (radio) and the buyer's email
-  (pre-filled for a logged-in user). Its action is zod-validated (`app/lib/gift-cards.schema.ts`),
+- The gift card page (`giftCards`) has a form with the three amounts (radio), the buyer's email
+  (pre-filled for a logged-in user) and an **optional "Recipient's email"** field (Q4). It's
+  always on the form, but it can stay blank. When it's filled, the code is also sent to that
+  address once the payment succeeds. The buyer always gets their own email with the code, which
+  says whether a copy went to the recipient. The recipient's email shows the amount, the code, the
+  expiry date and how to use it. It doesn't show the buyer's address or any free text, so nothing
+  user-typed ends up in it apart from the address it's sent to. A recipient email that equals the
+  buyer's is stored as `null`, so nobody gets the same email twice. Its action is zod-validated (`app/lib/gift-cards.schema.ts`),
   refuses when no payment provider is configured (there's no cash on delivery here at all),
   creates a `pending` card, remembers its id in the cookie session (`SessionData.giftCardIds`,
   like `orderIds`) and sends the buyer to the provider.
@@ -90,7 +104,8 @@ Strapi (read-only), and buyers can see them on `/account`.
   request's.
 - `handlePaymentCallback`: an attempt with `gift_card_id` runs `activateGiftCard` (only while the
   card is `pending`: `status = active`, `activated_at`, `expires_at`, `payment_id`), queues the
-  `gift_card` email and the Strapi sync in the same transaction, and returns
+  `gift_card` email (plus `gift_card_recipient` when there's a recipient) and the Strapi sync in
+  the same transaction, and returns
   `{ result: "paid", giftCardId }`. The callback route then calls `void deliverGiftCardEmail(id)`
   and `void pushToCms()`. A failed attempt leaves the card `pending`; its page offers "Try again".
 - A new page `giftCardSuccess` (uk `podarunkovi-kartky/uspikh/:giftCardId`, en
@@ -115,10 +130,19 @@ Strapi (read-only), and buyers can see them on `/account`.
   card waits for the lock, sees the lower balance, and gets `total-changed` through the existing
   `expectedTotal` check. That covers "two orders can't spend more than the balance". The
   `balance >= 0` CHECK is the backstop.
-- **A card that covers the whole order:** `total_amount = 0`. The order is inserted
-  `paid` / `paid` with `paid_at`. `startPayment` then answers `not-payable`, so the action goes
-  straight to the success page with no provider redirect. **(unconfirmed, Q1: which
-  `payment_method` such an order stores.)**
+- **A card that covers the whole order:** `total_amount = 0`, `payment_method = 'gift_card'`
+  (Q1), and the order is inserted `paid` / `paid` with `paid_at`. `isPayable` only accepts `card`,
+  so there's no provider redirect and the action goes straight to the success page. If the
+  shopper's form showed something still to pay but the order comes out at 0 (it can't come out
+  higher, because of `expectedTotal`), the server switches to `gift_card` too. If an order was
+  shown as fully covered but would now cost something, it's `total-changed`.
+  `nextOrderState` (`~/lib/order-status`) needs no new rule: a `gift_card` order is already paid,
+  so `card-not-paid` and "completing COD marks paid" don't apply. A test pins that.
+- **Cancellation (Q2):** when an order moves to `cancelled` / `unclaimed` (where stock goes back,
+  `next.restock`), `applyCmsOrderChange` adds each redemption back to the card's balance in the
+  same transaction and sets `gift_card_redemptions.reversed_at`. A `used_up` card becomes `active`
+  again; an expired card stays `expired`. The card is queued for Strapi. `returned` doesn't
+  restore it, like stock.
 - Expiry: every check compares `expires_at` with `now`, so correctness never depends on a job.
   `pnpm db:expire-gift-cards` (like `db:mark-abandoned-carts`) marks expired active cards
   `expired` and queues them for Strapi, so Strapi and analytics show the right status.
@@ -129,7 +153,9 @@ Strapi (read-only), and buyers can see them on `/account`.
   "To pay" when a card was used. It's used on checkout, the success page and the account order
   page. The confirmation email gets the same line.
 - `/account` gets a "Gift cards" section listing the cards the user bought: amount, balance,
-  status, expiry, and the code for non-pending cards. A pending card links to its page to pay.
+  status, expiry, the recipient's email when there is one, and the code for non-pending cards
+  (Q3). The gift card's result page shows the code once it's active (Q3). Both pages are limited
+  to the buyer (user id or this browser's session). A pending card links to its page to pay.
 - Strapi: a read-only `gift-card` collection type (the app pushes it with the sync token, and staff
   can't create, edit, delete or clone it), plus `giftCardAmount` on `order`.
 - No header or menu link: the offers page (#126) links to the gift card page.
@@ -137,32 +163,22 @@ Strapi (read-only), and buyers can see them on `/account`.
   exists for gift cards, like cart and checkout. The card visual reuses the shop's generic bottle
   photo / label styling, not a new image (memory: shop bottle photos are generic).
 
-## Open questions
-
-- [ ] **Q1: Which `payment_method` does an order fully paid by a gift card store?** — Why it
-  matters: `orders.payment_method` is limited to `card` / `cod` by a CHECK, and analytics and
-  Strapi show it. Adding `gift_card` to `PAYMENT_METHODS` means a migration rewriting
-  `orders_payment_method_check`, a Strapi enum value and labels, and the radio list must leave it
-  out. Recommended default: keep `card` / `cod`. When the card covers everything, the checkout form
-  hides the payment choice and posts `card`, and the order is created already `paid`.
-  Affects steps: 7, 8.
-- [ ] **Q2: When an order paid partly with a gift card is cancelled or comes back unclaimed, does
-  the amount go back on the card?** — Why it matters: without it, the customer loses the money.
-  The issue only puts refunds *to a bank card* out of scope. Recommended default: yes. In
-  `applyCmsOrderChange`, where `cancelled` / `unclaimed` restock (`next.restock`), add the
-  redemption back to the balance (`active` again if it was `used_up`; an expired card stays
-  expired), set `gift_card_redemptions.reversed_at`, and queue the card for Strapi. `returned`
-  doesn't restore it, like stock. Affects steps: 2, 11.
-- [ ] **Q3: May the code be shown on the gift card's success page and on `/account`, besides the
-  email?** — Why it matters: it's convenient (the buyer can copy it right away, and lost emails
-  don't matter), but it's another place the code appears. Both pages are limited to the buyer
-  (user id or this browser's session). Recommended default: yes, for non-pending cards.
-  Affects steps: 6, 10.
-- [ ] **Q4: Does the purchase form ask for a recipient name or a message?** — Why it matters: it
-  changes the form, the table and the email. Recommended default: no, only the amount and the
-  buyer's email. The buyer forwards the code. Affects steps: 2, 5, 6.
-
 ## Resolved questions
+
+Answered by the owner on 2026-11-05:
+
+- **Q1: Which `payment_method` does an order fully paid by a gift card store?** — A new
+  `gift_card` method (migration rewrites `orders_payment_method_check`; Strapi enum and labels
+  updated; shoppers can't pick it). Steps 1, 2, 7, 8, 11.
+- **Q2: Does a cancelled or unclaimed order give the gift card amount back?** — Yes, the
+  default: restored where stock is restored, with `reversed_at` on the redemption; not on
+  `returned`. Steps 2, 3, 11.
+- **Q3: May the code be shown on the result page and `/account` too?** — Yes, for non-pending
+  cards, only to the buyer. Steps 9, 10.
+- **Q4: Recipient?** — An optional recipient email is always offered on the purchase form; when
+  given, the recipient also gets the code by email. Steps 2, 5, 6, 9.
+
+From the codebase and issues:
 
 - **Page key and paths?** — `giftCards`: uk `podarunkovi-kartky`, en `gift-cards`, indexable, in
   `app/lib/paths.ts`. Agreed with #126 (source: the user's instruction for this plan).
@@ -197,7 +213,7 @@ Strapi (read-only), and buyers can see them on `/account`.
 | create | `app/routes/gift-card-success.tsx` (+ `.test.ts`) | Status/code page; "Pay"/"Try again" action |
 | create | `app/lib/gift-cards.ts` (+ `.test.ts`) | `GIFT_CARD_AMOUNTS`, validity, `formatGiftCardCode`, `normalizeGiftCardCode`, DTO types, error keys |
 | create | `app/lib/gift-cards.schema.ts` | zod: purchase form, apply-code form |
-| modify | `app/lib/enums.ts` | `GIFT_CARD_STATUSES`; `ORDER_EMAIL_TYPES` + `gift_card`; `CMS_SYNC_ENTITIES` + `gift_card` |
+| modify | `app/lib/enums.ts` | `GIFT_CARD_STATUSES`; `PAYMENT_METHODS` + `gift_card`, `SELECTABLE_PAYMENT_METHODS`; `ORDER_EMAIL_TYPES` + `gift_card`, `gift_card_recipient`; `CMS_SYNC_ENTITIES` + `gift_card` |
 | modify | `app/lib/commerce.ts` | `GiftCard`, `GiftCardRedemption` row types; `Payment.orderId` nullable + `giftCardId`; `Order.giftCardAmount` |
 | modify | `app/.server/db/schema.ts` (+ `schema.test.ts`) | New tables and columns, checks |
 | create | `app/.server/db/migrations/0023_gift_cards.sql` (+ `meta/`) | Generated migration |
@@ -214,19 +230,20 @@ Strapi (read-only), and buyers can see them on `/account`.
 | modify | `app/.server/rate-limit.ts` | `giftCardCodeLimiter` |
 | modify | `app/.server/session.ts` (+ test) | `giftCardIds`, `rememberGiftCard`, `getSessionGiftCardIds` |
 | modify | `app/routes/checkout.tsx` (+ test) | Gift card intents, loader preview, `expectedTotal` after the card |
-| modify | `app/lib/checkout.ts`, `app/lib/checkout.schema.ts` | `OrderConfirmation.giftCardAmount`; intent-aware parsing |
+| modify | `app/lib/checkout.ts`, `app/lib/checkout.schema.ts` | `OrderConfirmation.giftCardAmount`; `PAYMENT_KEYS.gift_card`; selectable methods only; intent-aware parsing |
 | create | `app/features/checkout/GiftCardField.tsx` | Apply/remove form at checkout |
 | modify | `app/features/checkout/OrderSummary.tsx`, `CheckoutForm.tsx` (+ `checkout-ui.test.ts`) | Gift card row, "To pay"; hide the payment choice at 0 |
 | modify | `app/routes/checkout-success.tsx`, `app/routes/account.orders.$id.tsx` | Pass `giftCardAmount` |
 | create | `app/features/gift-cards/GiftCardPurchaseForm.tsx`, `GiftCardStatus.tsx`, `AccountGiftCards.tsx` (+ `gift-cards-ui.test.ts`) | Gift card UI |
 | modify | `app/routes/account._index.tsx` (+ test), `app/lib/account.ts` | Gift cards section |
 | modify | `app/lib/cms-sync.ts`, `services/cms-push.ts` (+ tests), `db/queries/cms-outbox.ts` | `CmsGiftCardState`, `toStrapiGiftCardData`, push `gift_card`; `giftCardAmount` on orders |
-| modify | `app/.server/services/cms-sync.ts` (+ test) | (Q2) restore the balance on cancel/unclaimed |
+| modify | `app/.server/services/cms-sync.ts` (+ test) | Restore the balance on cancel/unclaimed (Q2) |
+| modify | `app/features/checkout/PaymentMethodField.tsx` | Iterate `SELECTABLE_PAYMENT_METHODS` (Q1) |
 | modify | `app/.server/services/sitemap.ts`, `app/.server/seo/robots.ts` | New pages in the lists |
 | modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `giftCards` namespace, `giftCardEmail`, checkout/account/payments keys |
 | create | `cms/src/api/gift-card/{content-types/gift-card/schema.json,controllers,routes,services}` | Strapi read-only type |
 | create | `cms/src/components/gift-cards/redemption.json` | Redemption rows in Strapi |
-| modify | `cms/src/api/order/content-types/order/schema.json` | `giftCardAmount` |
+| modify | `cms/src/api/order/content-types/order/schema.json` | `giftCardAmount`; `gift_card` payment method |
 | modify | `cms/src/sync/middleware.ts` (+ test), `cms/src/index.ts` | Refuse staff writes to gift cards; read-only edit view |
 | modify | `cms/scripts/seed.ts` | **Only** `SYNC_TOKEN_PERMISSIONS` for `api::gift-card.gift-card.*` (no offers changes) |
 | modify | `cms/types/generated/contentTypes.d.ts`, `cms/types/generated/components.d.ts` | Regenerated |
@@ -241,10 +258,13 @@ Strapi (read-only), and buyers can see them on `/account`.
   `GIFT_CARD_AMOUNTS = [500, 1000, 2000] as const`, `GIFT_CARD_VALIDITY_MONTHS = 12`, the code
   alphabet and length, `normalizeGiftCardCode`, `formatGiftCardCode`, `parseGiftCardId`, DTOs
   (`GiftCardView`, `AccountGiftCard`, `CheckoutGiftCard`) and `GiftCardError` keys. Extend
-  `~/lib/enums` (`GIFT_CARD_STATUSES`, `ORDER_EMAIL_TYPES`, `CMS_SYNC_ENTITIES`). No zod here.
+  `~/lib/enums` (`GIFT_CARD_STATUSES`, `ORDER_EMAIL_TYPES` + `gift_card` / `gift_card_recipient`,
+  `CMS_SYNC_ENTITIES`, `PAYMENT_METHODS` + `gift_card` and `SELECTABLE_PAYMENT_METHODS`). Add
+  `PAYMENT_KEYS.gift_card` (label + note) in `~/lib/checkout`. No zod here.
   Check: `paths.test.ts`, `paths.guard.test.ts`, the sitemap and robots tests pass.
 - [ ] **2. Schema and migration 0023** — In `db/schema.ts`: `giftCards`, `giftCardRedemptions`
-  (with `reversedAt` only if Q2 is yes), `orders.giftCardAmount` (+ amounts check),
+  (with `reversedAt`), `giftCards.recipientEmail`, `orders.giftCardAmount` (+ amounts check), the
+  rewritten `orders_payment_method_check` (with `gift_card`),
   `carts.giftCardId`, `payments.orderId` nullable + `giftCardId` + `payments_target_check`,
   `orderEmails.orderId` nullable + `giftCardId` + `order_emails_target_check` + unique, and the
   rewritten type/entity checks. Give every constraint an explicit snake_case name. Mirror the row
@@ -274,18 +294,24 @@ Strapi (read-only), and buyers can see them on `/account`.
   (pending cards only; amount = `initial_amount`; reference `G<id>-<n>`; description
   `payments.giftCardDescription`; result URL `giftCardSuccess`). In `handlePaymentCallback`'s
   success branch, a gift card attempt → `activateGiftCard`, then `insertOrderEmail({ giftCardId,
-  type: "gift_card", locale: card.locale })` and `enqueueCmsSync(tx, "gift_card", [id])`. Return
+  type: "gift_card", locale: card.locale })`, a `gift_card_recipient` row when
+  `recipient_email` is set, and `enqueueCmsSync(tx, "gift_card", [id])`. Return
   `giftCardId` with `paid`. Add `getGiftCardPaymentView`. `routes/payments.callback.ts`: on a paid
   gift card, `void deliverGiftCardEmail(id)` plus `void pushToCms()`. Tests: activation on
   success, a repeated callback is ignored, a failure leaves the card `pending`, an amount mismatch
   is ignored, and order payments behave exactly as before.
 - [ ] **6. Code email** — `claimOrderEmails` takes `giftCardId?` and returns `giftCardId`.
-  `deliverOrderEmails` / `deliverOne` load the gift card for a `gift_card` row (new dep
-  `loadGiftCard`). `buildGiftCardEmail(card, translator, env)`: the amount, the formatted code,
-  the expiry date (`formatDate`), how to use it at checkout, and contact and signature, as plain
-  text with nothing user-supplied in headers. Keys go in `giftCardEmail.*` (uk + en). Tests: the
-  email in both languages, retries and the give-up path for the new type, and order emails
-  unchanged.
+  `deliverOrderEmails` / `deliverOne` load the gift card for a `gift_card` / `gift_card_recipient`
+  row (new dep `loadGiftCard`). `buildGiftCardEmail(card, translator, env)` goes to
+  `buyer_email`: the amount, the formatted code, the expiry date (`formatDate`), how to use it at
+  checkout, a line saying the code was also sent to the recipient (when there is one), and contact
+  and signature. `buildGiftCardRecipientEmail` goes to `recipient_email`: "you've received a
+  Jassmin gift card", the amount, code, expiry and how to use it, with no buyer address or free
+  text. Both are plain text with nothing user-supplied in headers (the address goes through
+  `stripLineBreaks`). Keys go in `giftCardEmail.*` and `giftCardRecipientEmail.*` (uk + en; the
+  recipient gets the purchase locale). Tests: both emails in both languages, the recipient email
+  only queued when there's a recipient, retries and the give-up path for the new types, and order
+  emails unchanged.
 - [ ] **7. Redemption in `createOrder`** — In `db/queries/cart.ts`, add `setCartGiftCard` /
   `findCartGiftCardId` (bump `updated_at`). In `services/cart.ts`, add `applyGiftCard(writer,
   code)` / `removeGiftCard(writer)`: the lookup → `checkGiftCard` → store, and a refused code
@@ -293,7 +319,8 @@ Strapi (read-only), and buyers can see them on `/account`.
   In `createOrder`, after `priceAndRedeem`: when the cart has a card, `lockGiftCard`,
   `checkGiftCard(now)`, `amount = giftCardAmountFor(priced.total, balance)` (0 when not ok),
   compare `priced.total − amount` with `expectedTotal`, `insertOrder({ …, giftCardAmount })`
-  (`total_amount` subtracts it, and at 0 the order is inserted `paid` / `paid` / `paid_at`), and
+  (`total_amount` subtracts it; at 0 the order is inserted with `payment_method = 'gift_card'`,
+  `paid` / `paid` / `paid_at`), and
   `redeemGiftCard` after the order exists. Enqueue the card for Strapi. Add `giftCardAmount` to
   `PlacedOrderTotals`, `findOrderConfirmation`, the account order queries and
   `findOrderSyncState`. Integration tests: partial redemption (rest stays), full redemption (order
@@ -306,42 +333,50 @@ Strapi (read-only), and buyers can see them on `/account`.
   uses `cart.total`. Action: dispatch on `intent` (`apply-gift-card` → rate limit
   `giftCardCodeLimiter`, zod `giftCardCodeSchema`, `applyGiftCard`, return `{ giftCardError }` or
   redirect back to checkout; `remove-gift-card`; anything else → place the order as now).
-  `expectedTotal` is the amount due. When the amount due is `0`, skip the card-availability check
-  (Q1). Add `giftCardAmount` to the `purchase` event properties. Create `GiftCardField.tsx`
+  `expectedTotal` is the amount due. When the amount due is `0`, the order is placed as
+  `gift_card` whatever was posted, and the card-availability check is skipped (Q1). The zod enum
+  uses `SELECTABLE_PAYMENT_METHODS`, so a posted `gift_card` is a validation error. Add `giftCardAmount` to the `purchase` event properties. Create `GiftCardField.tsx`
   (`Form` with code input, apply/remove buttons, `role="alert"` error). `OrderSummary` gets
-  `giftCardAmount?` and the "To pay" label. `CheckoutForm` hides the payment fieldset and posts
-  `paymentMethod=card` when nothing is due (Q1). Route and UI tests in uk and en.
+  `giftCardAmount?` and the "To pay" label. `CheckoutForm` hides the payment fieldset when nothing is due
+  and shows "Paid with a gift card" instead (Q1). `PaymentMethodField` iterates
+  `SELECTABLE_PAYMENT_METHODS`. The success page, account order page and email show the
+  `gift_card` label through `PAYMENT_KEYS`. Route and UI tests in uk and en.
 - [ ] **9. Gift card pages** — `routes/gift-cards.tsx`: `meta` (title and description,
   indexable, `hreflang` through the existing helpers), a loader (`cardPaymentAvailable`, the
   amounts, the prefill email from `getUser`), and an action (zod `giftCardPurchaseSchema`:
-  `amount` coerced and limited to `GIFT_CARD_AMOUNTS`, `email` via `emailSchema`; refuse without a
+  `amount` coerced and limited to `GIFT_CARD_AMOUNTS`, `email` via `emailSchema`, optional
+  `recipientEmail` (blank → `undefined`, otherwise `emailSchema`; the same as `email` → dropped); refuse without a
   provider; `createGiftCard`; `rememberGiftCard`; `startGiftCardPayment`; redirect to the provider,
   or to the success page if the start failed). `routes/gift-card-success.tsx`: `noindexMeta`; a
   loader with the viewer check (404 otherwise) returning `GiftCardView` + payment view; the action
   (POST "Pay" / "Try again") → `startGiftCardPayment`. Components in `app/features/gift-cards/`:
-  three amount tiles as radio cards, the email field, the primary button, the availability notice,
+  three amount tiles as radio cards, the email field, the optional "Recipient's email" field
+  with a hint ("we'll send the code there too"), the primary button, the availability notice,
   and the status panel reusing `PaymentStatus` patterns. Register both in `app/routes.ts`. Route
   tests: validation errors, no provider, the redirect to the provider, the 404 for a stranger, and
   pending/failed/active views.
 - [ ] **10. Account** — `routes/account._index.tsx` loader also returns `getAccountGiftCards`
   (parallel with orders). `AccountGiftCards` lists amount, balance (`formatPrice`), a status pill,
-  `expires_at` (`formatDate`), the code for non-pending cards, and a "Pay" link for pending ones.
+  `expires_at` (`formatDate`), the recipient's email when set, the code for non-pending cards,
+  and a "Pay" link for pending ones.
   It's shown even when there are no orders, and the empty state stays as it is when there are no
   cards. `account.orders.$id.tsx` and `checkout-success.tsx` pass `giftCardAmount` to
   `OrderSummary`. Tests.
 - [ ] **11. Strapi** — Create the `gift-card` collection type (`draftAndPublish: false`):
   `giftCardId` (integer, unique), `code`, `initialAmount`, `balance` (decimal), `currency`,
-  `giftCardStatus` (enum; Strapi reserves `status`), `buyerEmail`, `userId`, `placedAt`,
+  `giftCardStatus` (enum; Strapi reserves `status`), `buyerEmail`, `recipientEmail`, `userId`,
+  `placedAt`,
   `activatedAt`, `expiresAt`, and `redemptions` (repeatable `gift-cards.redemption`: `orderId`,
-  `amount`, `redeemedAt`). Add `giftCardAmount` (decimal) to `order`. Middleware: for
+  `amount`, `redeemedAt`). Add `giftCardAmount` (decimal) to `order` and `gift_card` to its `paymentMethod` enum. Middleware: for
   `api::gift-card.gift-card`, refuse every staff write with a Ukrainian message ("Подарункові
   картки змінюються лише в магазині."). In `index.ts`, mark every gift card field read-only, as for
   orders. `seed.ts`: add the four `api::gift-card.gift-card.*` sync-token permissions (nothing
   else in the seed changes). App side: `CmsGiftCardState` in `~/lib/cms-sync`, `toCmsGiftCardState`
   / `toStrapiGiftCardData`, a `gift-cards` collection in `upsertDocument`, `loadGiftCard` dep, and
   `db:sync-cms --all` also queues gift cards. `CmsOrderState` + `toStrapiOrderData` carry
-  `giftCardAmount`. (Q2) In `applyCmsOrderChange`, restore the redeemed amount on
-  `cancelled` / `unclaimed` and queue the card. Regenerate the Strapi types. Tests: push mapping,
+  `giftCardAmount`. (Q2) In `applyCmsOrderChange`, when `next.restock`, restore each
+  unreversed redemption (`restoreGiftCardRedemptions(tx, orderId)`: balance back, `used_up` →
+  `active` unless expired, `reversed_at`) and queue the cards. Regenerate the Strapi types. Tests: push mapping,
   middleware refusal, and the restore.
 - [ ] **12. Expiry job** — `db/expire-gift-cards.ts` + `db/scripts/expire-gift-cards.ts` +
   `pnpm db:expire-gift-cards`: `active` cards with `expires_at <= now()` → `expired` (raw SQL sets
@@ -373,14 +408,17 @@ Strapi (read-only), and buyers can see them on `/account`.
   callback and nothing on a failed one; partial and full redemption; an expired, used-up and
   pending card refused with nothing written; **two orders racing for one card's balance**; the
   checkout total with a discount, the free-delivery threshold and a gift card; the expiry job;
-  (Q2) the balance restored on cancel.
+  the balance restored on cancel/unclaimed and not on returned; a fully covered order stored as
+  `gift_card`; the recipient email queued only with a recipient.
 - **Route tests:** `gift-cards`, `gift-card-success`, `checkout` intents, `payments.callback`,
   `account._index`.
 - **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 - **Manual (`pnpm aspire run`, `PAYMENT_PROVIDER=simulator`, smtp4dev):** buy a 1000 ₴ card →
-  simulator "success" → the code email in smtp4dev (uk, then en from `/en/gift-cards`) → the card
+  simulator "success" → the code email in smtp4dev (and a second one to the recipient when
+  that field was filled) (uk, then en from `/en/gift-cards`) → the card
   on `/account` and in Strapi. Fail a payment → the card stays pending → "Try again" works. At
-  checkout, apply the code to a 600 ₴ cart → pay 0, the order is paid and the balance is 400 ₴;
+  checkout, apply the code to a 600 ₴ cart → pay 0, the order is paid with method "gift card" and the
+  balance is 400 ₴; cancel it in Strapi → the balance is back to 1000 ₴;
   apply it to a 2000 ₴ cart → 400 ₴ off, the card is used up. Bad, expired (set `expires_at` by
   hand) and pending codes show translated errors. In Strapi, editing or deleting a gift card is
   refused.
@@ -407,7 +445,8 @@ Strapi (read-only), and buyers can see them on `/account`.
 - The offers page copy, the Strapi offers seed and the offers fixtures (#126).
 - Physical cards, custom amounts, refunds to a bank card, and buying a gift card together with
   perfumes (#125).
-- Recipient name/message and scheduled delivery to a recipient (unless Q4 says otherwise).
+- A recipient name or personal message, and scheduled delivery to the recipient (only the
+  optional recipient email is in scope).
 - A header/menu link to the gift card page, and a new analytics event type for gift card
   purchases.
 - Real payment providers (still `simulator` only, #44).

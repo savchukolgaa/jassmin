@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/141
 Branch: `issue/141`
 Worktree: `.claude/worktrees/issue-141`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -131,6 +131,11 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
   `docs/setup.md`, which are expected. The quick start no longer says the home page shows "the
   database time and PostgreSQL version" (that page is gone). `docs/skills/README.md` didn't need a
   change.
+- **Step 10:** nothing new on `origin/main` (#126 still open, so its one-line seed change will
+  land in `docs/setup.md` when whichever PR merges second is rebased). Pushed; GitHub's rendered
+  README marks the diagram as `data-type="mermaid"`. The light/dark and phone-width look on
+  github.com was not checked by eye. Final checks: typecheck, lint, test (1,768 passed, 1 skipped)
+  and build pass. The first criterion stays open until the screenshots (step 11).
 
 ## Resolved questions
 
@@ -242,7 +247,7 @@ No other files change.
   anchor must resolve. The repo is public, so issue/PR URLs can be checked too; if the checker is rate-limited by GitHub,
   check them with `gh issue view <n>` / `gh pr view <n>` instead and record that they exist. List
   any out-of-date lines still left after step 3.
-- [ ] **10. Rebase, port and push** — `git fetch origin && git rebase origin/main`. If #125 or #126
+- [x] **10. Rebase, port and push** — `git fetch origin && git rebase origin/main`. If #125 or #126
   merged first and touched `README.md` in sections that moved, take main's version of those
   sections, apply their edits to `docs/setup.md`, and drop them from the README. Re-check the CI
   badge (step 4) and the gift-card feature line (step 5). Push `issue/141` and check on GitHub that
@@ -270,12 +275,12 @@ No other files change.
 - [ ] The README opens with a pitch, a screenshot and the features, and the setup guide is still
   complete (in the README or `docs/setup.md`) — steps 2, 3, 4, 5, 8. The screenshot part is a
   placeholder until step 11.
-- [ ] A Mermaid architecture diagram renders on GitHub — steps 6, 10
+- [x] A Mermaid architecture diagram renders on GitHub — steps 6, 10
 - [ ] Screenshots show desktop and phone layouts and contain no real customer data — step 11
   (deferred: needs #131); this PR adds the shot list and placeholders
-- [ ] The key decisions link to their issues or PRs — step 7
-- [ ] A `LICENSE` file exists — step 8
-- [ ] All links in the README work — step 9
+- [x] The key decisions link to their issues or PRs — step 7
+- [x] A `LICENSE` file exists — step 8
+- [x] All links in the README work — step 9
 
 ## Out of scope
 

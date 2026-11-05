@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/122
 Branch: `issue/122`
 Worktree: `.claude/worktrees/issue-122`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Customers should see the same real bottle photo everywhere. Account order thumbnails ("Current
@@ -43,6 +43,11 @@ isn't rendered anywhere, so its component is removed.
   and layout helpers the share image (#105) uses."
 - **Keep `fragranceFamily` on the cart and order line DTOs** (`app/lib/cart.ts`,
   `app/lib/account.ts`). No longer drawn, but changing the loaders and DTOs is out of scope.
+
+- **Addition while implementing:** the "Label card palette" bullets in `docs/design.md` described the
+  removed card's bottle variation, text sizes and thumbnail behaviour. They're reworded to what
+  remains: the palette and `layoutLabelText` for the share image, and `labelVariant` kept but
+  unused.
 
 ## Resolved questions
 - **Which thumbnails draw the label card today?** `OrderLineThumb`, used by
@@ -107,7 +112,7 @@ isn't rendered anywhere, so its component is removed.
   Keep the palette table; reword the sentence after it to: "the hex values live in
   `LABEL_PALETTES` … because the share image (#105) uses them".
 
-- [ ] **5. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Manual,
+- [x] **5. Verify.** *(typecheck, lint, test (162 files, 1655 passed; the 12 fewer tests than before are the removed label-card tests) and build pass. The manual check was skipped: the local DB has no products or orders.)* Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Manual,
   with products and an order in the local DB: the account page's current order thumbnails,
   previous order lines and the cart show the bottle photo.
 
@@ -118,11 +123,11 @@ isn't rendered anywhere, so its component is removed.
 - Manual: the account page and the cart, if the local DB has products and an order.
 
 ## Acceptance criteria
-- [ ] "Current orders" cards and "Previous orders" lines show the shop's bottle photo for products without their own photo, with no drawn label card — step 2
-- [ ] Cart line thumbnails show the shop's bottle photo for products without their own photo — step 1
-- [ ] Lines and cart items with their own photo still show it; a deleted product still shows the empty tile — steps 1, 2
-- [ ] The drawn label card isn't rendered anywhere on the site; `ProductLabelArt` is removed, and `label-art.ts` stays for the share image — step 3
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 5
+- [x] "Current orders" cards and "Previous orders" lines show the shop's bottle photo for products without their own photo, with no drawn label card — step 2
+- [x] Cart line thumbnails show the shop's bottle photo for products without their own photo — step 1
+- [x] Lines and cart items with their own photo still show it; a deleted product still shows the empty tile — steps 1, 2
+- [x] The drawn label card isn't rendered anywhere on the site; `ProductLabelArt` is removed, and `label-art.ts` stays for the share image — step 3
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 5
 
 ## Out of scope
 - Removing `labelVariant`/`BOTTLE_SHAPES` or other now-UI-unused exports from `label-art.ts`.

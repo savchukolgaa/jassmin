@@ -199,7 +199,8 @@ the other hardening headers. The rate-limit counters move from process memory in
 | create | `app/.server/csp-report.ts` | parsing, query stripping, `[csp]` logging, the in-memory limiter (route-module state must stay on the server, like `client-events.ts`) |
 | modify | `app/routes.ts` | `route("csp-report", "routes/csp-report.ts")` |
 | modify | `app/.server/env.ts`, `env.test.ts` | `TRUSTED_PROXY_HOPS`, `CSP_MODE` |
-| modify | `vitest.config.ts` | `TRUSTED_PROXY_HOPS=1` for the test run (the app behind one proxy) |
+| modify | `vitest.config.ts` | `TRUSTED_PROXY_HOPS=1` for the test run (the app behind one proxy), `setupFiles` |
+| create | `vitest.setup.ts` | the app limiters on an in-memory store for every test file |
 | modify | `.env.example`, `docs/setup.md` | document the new vars and the prune cron |
 | modify | `app/.server/db/schema.ts` | `rateLimits` table |
 | create | `app/.server/db/migrations/0024_rate_limits.sql` (+ `meta/`) | generated migration |
@@ -274,16 +275,20 @@ the other hardening headers. The rate-limit counters move from process memory in
   `count = 50`, an expired window restarts at 1, and prune deletes only expired rows.
   The table also has a `count > 0` CHECK. `migrator.test.ts` lists it in `ALL_TABLES`, rolls back
   `0024` first in every rollback chain, and has its own test for the migration.
-- [ ] **8. Async, store-backed limiter.** Rewrite `createRateLimiter` over `RateLimitStore` with
+- [x] **8. Async, store-backed limiter.** Rewrite `createRateLimiter` over `RateLimitStore` with
   hashed keys (`name:sha256(key)`), and add `createMemoryRateLimitStore` and
   `createPgRateLimitStore(getDb)`. Rebuild the app limiters on the pg store (lazy `import("./db")`),
   dropping the `globalThis` caches. Unit tests run on the memory store (the existing cases, now
   async). A DB test checks that a limit hit through one limiter instance blocks a **new** instance
   on the same table (simulated restart, and a second instance).
-- [ ] **9. Callers.** Add `await` in `login.tsx`, `account.profile.tsx`, `cart.tsx`, `checkout.tsx`,
-  `api.events.ts`, `services/contact.ts` and `client-events.ts`. Route tests that reach a limiter
-  without a DB get a memory store through `vi.mock("~/.server/rate-limit", …)`, or the limiter is
-  passed in where the service already takes deps (`contact.ts`). `login.test.ts` and
+  *Implementation:* steps 8 and 9 went into one commit, because an un-awaited `isBlocked()` is a
+  Promise, which is always truthy, so step 8 alone would have blocked every caller.
+- [x] **9. Callers.** Add `await` in `login.tsx`, `account.profile.tsx`, `cart.tsx`, `checkout.tsx`,
+  `api.events.ts`, `services/contact.ts` and `client-events.ts`. *Implementation:* instead of a
+  `vi.mock` per route test, the app limiters' store can be swapped (`setAppRateLimitStore`), and
+  `vitest.setup.ts` gives every test file a fresh in-memory store. Otherwise any test reaching a
+  limiter, today's or a future one, would write counters to the development database. The
+  contact service keeps taking its limiter through `deps`. `login.test.ts` and
   `account.profile.test.ts` `await` their `reset` calls. Run the whole suite.
 - [ ] **10. Pruning job.** Add `db/scripts/prune-rate-limits.ts` (same shape as
   `expire-gift-cards.ts`), the `db:prune-rate-limits` script in `package.json`, an explicit-start

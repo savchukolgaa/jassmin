@@ -2,7 +2,7 @@
 // violation as one `[csp]` line (see docs/security.md). Nothing is stored. Kept out of the route
 // module because its top-level state (the rate limiter) must stay on the server.
 import { cspReportUriBodySchema, reportingApiBodySchema } from "~/lib/csp-report.schema";
-import { createRateLimiter, type RateLimiter } from "./rate-limit";
+import { createMemoryRateLimitStore, createRateLimiter, type RateLimiter } from "./rate-limit";
 
 /** Largest report body accepted, in bytes. */
 export const MAX_CSP_REPORT_BYTES = 16 * 1024;
@@ -19,9 +19,12 @@ export interface CspViolation {
 
 // Reports per client IP per minute. One page with a broken policy sends a few; a flood is cut
 // off. In process memory on purpose: a report flood mustn't turn into database writes.
-const globalForLimiter = globalThis as { __jassminCspReportLimiter?: RateLimiter };
-globalForLimiter.__jassminCspReportLimiter ??= createRateLimiter({ limit: 30, windowMs: 60_000 });
-export const cspReportLimiter: RateLimiter = globalForLimiter.__jassminCspReportLimiter;
+export const cspReportLimiter: RateLimiter = createRateLimiter({
+  name: "csp-report",
+  limit: 30,
+  windowMs: 60_000,
+  store: createMemoryRateLimitStore(),
+});
 
 /**
  * A URL without its query and fragment. Keywords like `inline` or `eval` stay as they are, and

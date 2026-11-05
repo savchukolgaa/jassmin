@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MailSender } from "../mail";
-import { createRateLimiter } from "../rate-limit";
+import { createMemoryRateLimitStore, createRateLimiter } from "../rate-limit";
 import { buildContactEmail, type ContactDeps, submitContactMessage } from "./contact";
 
 vi.mock("../env", () => ({ getEnv: () => ({}) }));
@@ -25,7 +25,13 @@ const env: ContactDeps["env"] = {
 function deps(overrides: Partial<ContactDeps> = {}): ContactDeps {
   return {
     mailer: { sendMail: vi.fn(async () => ({})) },
-    limiter: createRateLimiter({ limit: 2, windowMs: 60_000, now: () => 0 }),
+    limiter: createRateLimiter({
+      name: "contact",
+      limit: 2,
+      windowMs: 60_000,
+      store: createMemoryRateLimitStore(),
+      now: () => 0,
+    }),
     env,
     now: () => receivedAt,
     ...overrides,

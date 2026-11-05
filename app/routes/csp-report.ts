@@ -19,10 +19,10 @@ export async function action({ request }: Route.ActionArgs) {
     return status(405, { Allow: "POST" });
   }
   const key = getClientIp(request) ?? "anonymous";
-  if (cspReportLimiter.isBlocked(key)) {
+  if (await cspReportLimiter.isBlocked(key)) {
     return status(429);
   }
-  cspReportLimiter.hit(key);
+  await cspReportLimiter.hit(key);
 
   const text = await readLimitedBody(request, MAX_CSP_REPORT_BYTES).catch(() => null);
   if (text === null) {

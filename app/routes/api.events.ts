@@ -46,10 +46,10 @@ export async function action({ request }: Route.ActionArgs) {
 
   try {
     const key = getClientIp(request) ?? (await readVisitor(request)).anonymousId ?? "anonymous";
-    if (eventsLimiter.isBlocked(key)) {
+    if (await eventsLimiter.isBlocked(key)) {
       return status(429);
     }
-    eventsLimiter.hit(key);
+    await eventsLimiter.hit(key);
     if (!(await isTrackingAllowed(request))) {
       return status(204);
     }

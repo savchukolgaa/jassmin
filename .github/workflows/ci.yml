@@ -1,0 +1,120 @@
+# Runs the checks AGENTS.md requires before every commit (typecheck, lint, test) and before
+# finishing an issue (build) on every pull request and every push to main (#142). See docs/ci.md.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to a PR cancels its outdated run; every push to main runs to the end.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Same major version as the Aspire container used locally. Each DB test file creates and
+      # drops its own throwaway database on this server (app/.server/db/test-utils.ts).
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v7
+
+      # pnpm's version comes from `packageManager` in package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test --reporter=default --reporter=json --outputFile.json=vitest-report.json
+
+      # The DB tests skip themselves without a database; in CI that would hide them, so any
+      # skipped test fails the run.
+      - name: Fail on skipped tests
+        if: ${{ !cancelled() }}
+        run: node .github/scripts/assert-no-skipped-tests.mjs vitest-report.json
+
+      - name: Build
+        run: pnpm build
+
+  # Decides whether the Strapi build has to run: only when the CMS or its dependencies changed.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      cms: ${{ steps.filter.outputs.cms }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            cms:
+              - "cms/**"
+              - "pnpm-lock.yaml"
+              - "pnpm-workspace.yaml"
+
+  cms:
+    name: cms
+    needs: changes
+    if: ${{ needs.changes.outputs.cms == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Dummy values: `strapi build` only builds the admin panel, but loads the config that reads them.
+    env:
+      APP_KEYS: ci-key-1,ci-key-2
+      API_TOKEN_SALT: ci-api-token-salt
+      ADMIN_JWT_SECRET: ci-admin-jwt-secret
+      TRANSFER_TOKEN_SALT: ci-transfer-token-salt
+      JWT_SECRET: ci-jwt-secret
+      ENCRYPTION_KEY: ci-encryption-key
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Strapi
+        run: pnpm cms:build

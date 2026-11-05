@@ -29,9 +29,9 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`, so outdated PR runs are cancelled
   but every `main` push finishes.
 - **Permissions:** top-level `permissions: contents: read` only.
-- **Actions pinned to a major version** (`actions/checkout@v5`, `actions/setup-node@v5`,
-  `pnpm/action-setup@v4`, `dorny/paths-filter@v3`); the implementer checks each one's current major
-  tag on github.com before writing the file. Pinning to SHAs is not needed for a solo-owner repo.
+- **Actions pinned to a major version** (`actions/checkout@v7`, `actions/setup-node@v7`,
+  `pnpm/action-setup@v6`, `dorny/paths-filter@v4`: the latest majors on 2026-11-05, checked with `gh api repos/<action>/releases/latest`; the plan first guessed older majors
+  ). Pinning to SHAs is not needed for a solo-owner repo.
 - **Node from `.nvmrc`** (`node-version-file: .nvmrc`, currently `24`), not a hard-coded 22 (resolved
   Q2): it's what the developer runs locally and satisfies `engines` (`>=22`) of the app and `cms/`.
 - **pnpm from `packageManager`** (`pnpm@12.15.0`): `pnpm/action-setup` without a `version` input
@@ -127,13 +127,13 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
 | modify | `docs/skills/implement.md` | Only if it describes "checks pass" before pushing: mention CI re-runs them on the PR (check while implementing; skip if nothing fits) |
 
 ## Steps
-- [ ] **1. Worktree setup** — In `.claude/worktrees/issue-142`, run `pnpm --dir "$WT" install` and
+- [x] **1. Worktree setup** — In `.claude/worktrees/issue-142`, run `pnpm --dir "$WT" install` and
   confirm `pnpm typecheck`, `pnpm lint`, `pnpm test` pass locally first (baseline). Run
   `pnpm test --reporter=default --reporter=json --outputFile.json=<scratchpad>/vitest-report.json`
   once with the local DB and once with `DATABASE_URL`/`JASSMINDB_URI` unset, and look at the JSON
   shape (`testResults[].assertionResults[].status`, `numPendingTests`, `numTodoTests`) to write the
   guard against the real output of vitest 5.
-- [ ] **2. `.github/workflows/ci.yml`, `check` job** — `name: CI`; triggers, `concurrency` and
+- [x] **2. `.github/workflows/ci.yml`, `check` job** — `name: CI`; triggers, `concurrency` and
   `permissions: contents: read` as in Decisions. `check` on `ubuntu-latest`, `timeout-minutes: 15`,
   `services.postgres` (`postgres:18`, health check `pg_isready -U postgres`, interval 5s, retries 10),
   env `DATABASE_URL`. Steps: checkout → `pnpm/action-setup` → `actions/setup-node` (`node-version-file:
@@ -142,7 +142,7 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   `node .github/scripts/assert-no-skipped-tests.mjs vitest-report.json` → `pnpm build`. Each command is
   its own step so the PR shows which one failed. Name the job `check` (`name: check`) so the status
   check is literally `check`.
-- [ ] **3. `.github/scripts/assert-no-skipped-tests.mjs`** — Reads the report path from `argv[2]`,
+- [x] **3. `.github/scripts/assert-no-skipped-tests.mjs`** — Reads the report path from `argv[2]`,
   exits 1 with a clear message if the file is missing or unparsable (vitest crashed before writing it),
   collects every assertion with status `skipped`, `pending` or `todo` (and suites reported as skipped)
   and, if any, prints `::error::`-annotated lines `<relative file> › <full test name>` plus a hint ("is
@@ -150,7 +150,7 @@ it's green. The README shows a CI badge, and the PR workflow docs wait for green
   checked. Small `ALLOWED_SKIPS` array (empty) documented at the top for future exceptions. Biome style
   (2 spaces, double quotes, width 100). Verify by hand: green against the report with a DB, red (listing
   the DB tests) against the report without one, red on a missing file. Run `pnpm lint`.
-- [ ] **4. `cms` job** — `changes` job with `dorny/paths-filter` (`permissions: contents: read,
+- [x] **4. `cms` job** — `changes` job with `dorny/paths-filter` (`permissions: contents: read,
   pull-requests: read`) and a `cms` filter (`cms/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`). `cms`
   job `needs: changes`, `if: needs.changes.outputs.cms == 'true'`, same setup steps, env with the dummy
   Strapi secrets, `pnpm install --frozen-lockfile`, `pnpm cms:build`. On `push` to `main` the filter

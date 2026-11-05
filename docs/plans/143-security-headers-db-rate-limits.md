@@ -207,6 +207,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 | create | `app/.server/db/rollbacks/0024_rate_limits.sql` | `DROP TABLE rate_limits` |
 | modify | `app/.server/db/migrator.test.ts` | the new table and migration in the migrate/rollback tests |
 | create | `app/.server/db/queries/rate-limits.ts`, `.test.ts` | `hitRateLimit`, `readRateLimit`, `deleteRateLimit`, `pruneRateLimits` |
+| create | `app/.server/db/prune-rate-limits.ts`, `.test.ts` | `pruneRateLimitsJob` (like `expire-gift-cards.ts`) |
 | create | `app/.server/db/scripts/prune-rate-limits.ts` | `pnpm db:prune-rate-limits` |
 | modify | `package.json` | `db:prune-rate-limits` script |
 | modify | `aspire-apphost/` (apphost + `AGENTS.md`) | explicit-start `db-prune-rate-limits` resource |
@@ -290,10 +291,12 @@ the other hardening headers. The rate-limit counters move from process memory in
   limiter, today's or a future one, would write counters to the development database. The
   contact service keeps taking its limiter through `deps`. `login.test.ts` and
   `account.profile.test.ts` `await` their `reset` calls. Run the whole suite.
-- [ ] **10. Pruning job.** Add `db/scripts/prune-rate-limits.ts` (same shape as
+- [x] **10. Pruning job.** Add `db/scripts/prune-rate-limits.ts` (same shape as
   `expire-gift-cards.ts`), the `db:prune-rate-limits` script in `package.json`, an explicit-start
   `db-prune-rate-limits` Aspire resource (following `aspire-apphost/AGENTS.md`), and a cron
-  example in `docs/setup.md` (daily).
+  example in `docs/setup.md` (daily). *Not verified:* `pnpm aspire:build` can't run in this
+  worktree (the git-ignored `aspire-apphost/.aspire/modules` that the Aspire CLI generates are
+  missing). The new resource copies the `db-expire-gift-cards` block.
 - [ ] **11. Docs.** Write `docs/security.md`: what each header does and why; the CSP directives and
   how to add an allowed origin in `buildCsp` (map provider, payment provider, image CDN);
   report-only vs `enforce` and when to switch; reading `[csp]` log lines and which ones are noise

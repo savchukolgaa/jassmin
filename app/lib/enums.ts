@@ -80,7 +80,7 @@ export type UserRole = (typeof USER_ROLES)[number];
  * its buyer (`gift_card`) and to the recipient they named (`gift_card_recipient`, #125). A CHECK
  * constraint limits it.
  */
-export const ORDER_EMAIL_TYPES = ["confirmation"] as const;
+export const ORDER_EMAIL_TYPES = ["confirmation", "gift_card", "gift_card_recipient"] as const;
 
 export type OrderEmailType = (typeof ORDER_EMAIL_TYPES)[number];
 
@@ -109,7 +109,7 @@ export const PAYMENT_ATTEMPT_STATUSES = ["pending", "succeeded", "failed"] as co
 export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
 
 /** What the app pushes to Strapi through `cms_outbox` (#40); a CHECK constraint limits it. */
-export const CMS_SYNC_ENTITIES = ["order", "product"] as const;
+export const CMS_SYNC_ENTITIES = ["order", "product", "gift_card"] as const;
 
 export type CmsSyncEntity = (typeof CMS_SYNC_ENTITIES)[number];
 

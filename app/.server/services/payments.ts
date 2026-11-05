@@ -152,7 +152,7 @@ export async function handlePaymentCallback(
     switch (event.outcome) {
       case "success": {
         await markPayment(tx, payment.id, { status: "succeeded", ...update });
-        if (await markOrderPaid(tx, payment.orderId)) {
+        if (payment.orderId !== null && (await markOrderPaid(tx, payment.orderId))) {
           // Strapi shows the order as paid (#40); the callback route pushes it after the commit.
           await enqueueCmsSync(tx, "order", [payment.orderId]);
           return { ok: true, result: "paid" };

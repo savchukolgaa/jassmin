@@ -275,7 +275,7 @@ From the codebase and issues:
   `CMS_SYNC_ENTITIES`, `PAYMENT_METHODS` + `gift_card` and `SELECTABLE_PAYMENT_METHODS`). Add
   `PAYMENT_KEYS.gift_card` (label + note) in `~/lib/checkout`. No zod here.
   Check: `paths.test.ts`, `paths.guard.test.ts`, the sitemap and robots tests pass.
-- [ ] **2. Schema and migration 0023** — In `db/schema.ts`: `giftCards`, `giftCardRedemptions`
+- [x] **2. Schema and migration 0023** — In `db/schema.ts`: `giftCards`, `giftCardRedemptions`
   (with `reversedAt`), `giftCards.recipientEmail`, `orders.giftCardAmount` (+ amounts check), the
   rewritten `orders_payment_method_check` (with `gift_card`),
   `carts.giftCardId`, `payments.orderId` nullable + `giftCardId` + `payments_target_check`,

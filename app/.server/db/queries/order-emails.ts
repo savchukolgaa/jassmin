@@ -20,7 +20,10 @@ export async function insertOrderEmail(
 /** A row this sender now holds until its `next_attempt_at`. `attempts` includes this one. */
 export interface ClaimedOrderEmail {
   id: number;
-  orderId: number;
+  /** The order's email; `null` for a gift card's. */
+  orderId: number | null;
+  /** The gift card's email (#125); `null` for an order's. */
+  giftCardId: number | null;
   type: OrderEmailType;
   locale: Locale;
   attempts: number;
@@ -80,6 +83,7 @@ export function claimOrderEmails(
     .returning({
       id: orderEmails.id,
       orderId: orderEmails.orderId,
+      giftCardId: orderEmails.giftCardId,
       type: orderEmails.type,
       locale: orderEmails.locale,
       attempts: orderEmails.attempts,

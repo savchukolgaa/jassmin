@@ -256,6 +256,7 @@ function fakeDeps(
 const queued = (id: number, orderId: number, attempts = 1): ClaimedOrderEmail => ({
   id,
   orderId,
+  giftCardId: null,
   type: "confirmation",
   locale: "uk",
   attempts,

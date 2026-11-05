@@ -110,7 +110,7 @@ export function buildOrderConfirmationEmail(
 }
 
 const BUILDERS: Record<
-  OrderEmailType,
+  Extract<OrderEmailType, "confirmation">,
   (order: OrderConfirmation, translator: Translator, env: OrderEmailEnv) => Mail.Options
 > = {
   confirmation: buildOrderConfirmationEmail,
@@ -173,6 +173,10 @@ async function deliverOne(
 ): Promise<void> {
   const label = `order ${email.orderId}'s ${email.type} email`;
   try {
+    if (email.type !== "confirmation" || email.orderId === null) {
+      // Gift card emails are sent from step 6 of #125 on.
+      throw new Error(`Unsupported email type ${email.type}`);
+    }
     const order = await deps.loadOrder(email.orderId);
     if (!order) {
       // Deleted orders cascade to their emails, so this only happens in a race; don't retry.

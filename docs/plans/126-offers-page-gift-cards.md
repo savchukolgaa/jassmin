@@ -47,7 +47,7 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   |---|---|---|
   | title | Подарункові картки на 500, 1000 і 2000 ₴ | Gift cards of 500, 1000 and 2000 ₴ |
   | summary | Подаруйте аромат, не вгадуючи його: отримувач обере парфуми сам. | Give perfume without guessing the scent: they choose it themselves. |
-  | body | Оберіть картку на **500**, **1000** або **2000 ₴** і оплатіть її карткою онлайн. Код прийде вам на пошту одразу після оплати: перешліть його тому, кого вітаєте. Код вводять під час оформлення замовлення, а залишок зберігається на картці для наступних покупок. Картка діє 12 місяців. | Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through: forward it to the person you're celebrating. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months. |
+  | body | Оберіть картку на **500**, **1000** або **2000 ₴** і оплатіть її карткою онлайн. Код прийде на ваш email одразу після оплати, а якщо вкажете email отримувача — то й йому. Код вводять під час оформлення замовлення, а залишок зберігається на картці для наступних покупок. Картка діє 12 місяців від дня оплати. | Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through, and in the recipient's too if you add their email. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months from the day it's paid. |
   | priceNote | 500 · 1000 · 2000 ₴ | 500 · 1000 · 2000 ₴ |
   | ctaLabel | Обрати картку | Choose a card |
 
@@ -80,6 +80,13 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   already-localized CTA paths, so it doesn't need #125 either. Only the `offers.test.ts` check
   (`/podarunkovi-kartky` → `/en/gift-cards`) needs `PAGES.giftCards`, so it waits for #125 as
   step 4b.
+- **Deviation (after the rebase onto #125): offer copy matches the shipped gift card page.**
+  #125 also emails the code to the recipient when the buyer gives their (optional) email, and a
+  card is valid for 12 months from the day it's paid (`GIFT_CARD_VALIDITY_MONTHS`,
+  `giftCards.steps.email` / `validity` in `uk.ts`/`en.ts`). The body no longer says "forward it
+  to the person you're celebrating"; it says the code also goes to the recipient if you add
+  their email, and "valid for 12 months from the day it's paid". The copy table above shows the
+  final text.
 
 ## Resolved questions
 - **Should the `gift` group heading and the offers intro change to mention gift cards?** No. A
@@ -131,7 +138,7 @@ free-delivery mention says 1500 ₴, and the couple offer card from #124 shows u
   `offers.metaDescription`) stays as it is.
 - [x] **4a. Tests that don't need #125** — the `content.test.ts` and `offers-ui.test.ts` items
   below (see the step 4 deviation in Decisions).
-- [ ] **4b. Tests that need #125** — Rebase onto `origin/main` with #125 merged and check
+- [x] **4b. Tests that need #125** — Rebase onto `origin/main` with #125 merged and check
   `PAGES.giftCards` (see Dependencies). Then add the `offers.test.ts` item below and run the
   whole suite. Items:
   - `content.test.ts`, "returns the active offers in editor order": `gifts-by-budget` →

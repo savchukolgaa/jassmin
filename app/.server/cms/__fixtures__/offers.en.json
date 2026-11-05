@@ -261,7 +261,7 @@
       "slug": "gift-cards",
       "kind": "gift",
       "summary": "Give perfume without guessing the scent: they choose it themselves.",
-      "body": "Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through: forward it to the person you're celebrating. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months.",
+      "body": "Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through, and in the recipient's too if you add their email. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months from the day it's paid.",
       "startsAt": null,
       "endsAt": null,
       "priceNote": "500 · 1000 · 2000 ₴",

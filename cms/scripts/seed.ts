@@ -486,14 +486,14 @@ const OFFERS: SeedOffer[] = [
       uk: {
         title: "Подарункові картки на 500, 1000 і 2000 ₴",
         summary: "Подаруйте аромат, не вгадуючи його: отримувач обере парфуми сам.",
-        body: "Оберіть картку на **500**, **1000** або **2000 ₴** і оплатіть її карткою онлайн. Код прийде вам на пошту одразу після оплати: перешліть його тому, кого вітаєте. Код вводять під час оформлення замовлення, а залишок зберігається на картці для наступних покупок. Картка діє 12 місяців.",
+        body: "Оберіть картку на **500**, **1000** або **2000 ₴** і оплатіть її карткою онлайн. Код прийде на ваш email одразу після оплати, а якщо вкажете email отримувача — то й йому. Код вводять під час оформлення замовлення, а залишок зберігається на картці для наступних покупок. Картка діє 12 місяців від дня оплати.",
         priceNote: "500 · 1000 · 2000 ₴",
         ctaLabel: "Обрати картку",
       },
       en: {
         title: "Gift cards of 500, 1000 and 2000 ₴",
         summary: "Give perfume without guessing the scent: they choose it themselves.",
-        body: "Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through: forward it to the person you're celebrating. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months.",
+        body: "Choose a card of **500**, **1000** or **2000 ₴** and pay for it by card online. The code arrives in your inbox as soon as the payment goes through, and in the recipient's too if you add their email. They enter it at checkout, and anything left stays on the card for their next order. A card is valid for 12 months from the day it's paid.",
         priceNote: "500 · 1000 · 2000 ₴",
         ctaLabel: "Choose a card",
       },

@@ -391,7 +391,7 @@ From the codebase and issues:
   unreversed redemption (`restoreGiftCardRedemptions(tx, orderId)`: balance back, `used_up` →
   `active` unless expired, `reversed_at`) and queue the cards. Regenerate the Strapi types. Tests: push mapping,
   middleware refusal, and the restore.
-- [ ] **12. Expiry job** — `db/expire-gift-cards.ts` + `db/scripts/expire-gift-cards.ts` +
+- [x] **12. Expiry job** — `db/expire-gift-cards.ts` + `db/scripts/expire-gift-cards.ts` +
   `pnpm db:expire-gift-cards`: `active` cards with `expires_at <= now()` → `expired` (raw SQL sets
   `updated_at`), queued for Strapi in the same transaction. Integration test. Document a daily
   cron next to the other jobs in the README.

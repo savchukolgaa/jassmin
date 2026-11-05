@@ -25,10 +25,24 @@ export const CART_STATUSES = ["active", "converted", "abandoned"] as const;
 
 export type CartStatus = (typeof CART_STATUSES)[number];
 
-/** How the shopper pays: online by card or cash on delivery (`cod`). */
-export const PAYMENT_METHODS = ["card", "cod"] as const;
+/**
+ * How an order is paid: online by card, cash on delivery (`cod`), or entirely by a gift card
+ * (#125). A CHECK constraint limits `orders.payment_method` to these values.
+ */
+export const PAYMENT_METHODS = ["card", "cod", "gift_card"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/**
+ * The methods a shopper picks at checkout. `gift_card` isn't one: the shop sets it when a gift
+ * card covers the whole order.
+ */
+export const SELECTABLE_PAYMENT_METHODS = [
+  "card",
+  "cod",
+] as const satisfies readonly PaymentMethod[];
+
+export type SelectablePaymentMethod = (typeof SELECTABLE_PAYMENT_METHODS)[number];
 
 /**
  * Behavioural events stored in `user_events.event_type`, which a CHECK constraint limits to
@@ -61,7 +75,11 @@ export const USER_ROLES = ["customer", "admin"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
 
-/** Emails queued per order in `order_emails.type` (#45); a CHECK constraint limits it. */
+/**
+ * Emails queued in `order_emails.type` (#45): an order's `confirmation`, and a gift card's code to
+ * its buyer (`gift_card`) and to the recipient they named (`gift_card_recipient`, #125). A CHECK
+ * constraint limits it.
+ */
 export const ORDER_EMAIL_TYPES = ["confirmation"] as const;
 
 export type OrderEmailType = (typeof ORDER_EMAIL_TYPES)[number];
@@ -94,6 +112,15 @@ export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
 export const CMS_SYNC_ENTITIES = ["order", "product"] as const;
 
 export type CmsSyncEntity = (typeof CMS_SYNC_ENTITIES)[number];
+
+/**
+ * A gift card's state (#125): `pending` until its payment succeeds, then `active` until its
+ * balance is spent (`used_up`) or its 12 months run out (`expired`). A CHECK constraint limits
+ * `gift_cards.status` to these values.
+ */
+export const GIFT_CARD_STATUSES = ["pending", "active", "used_up", "expired"] as const;
+
+export type GiftCardStatus = (typeof GIFT_CARD_STATUSES)[number];
 
 /**
  * How a discount rule (#59) takes money off: a percentage of the qualifying lines, a fixed amount

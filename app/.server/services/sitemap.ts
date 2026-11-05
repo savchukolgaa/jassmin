@@ -31,6 +31,7 @@ export const SITEMAP_PAGES = [
   "popular",
   "blog",
   "privacy",
+  "giftCards",
   "product",
   "blogPost",
 ] as const satisfies readonly Page[];

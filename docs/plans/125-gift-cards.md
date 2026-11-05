@@ -163,6 +163,19 @@ Strapi (read-only), and buyers can see them on `/account`.
   exists for gift cards, like cart and checkout. The card visual reuses the shop's generic bottle
   photo / label styling, not a new image (memory: shop bottle photos are generic).
 
+**Implementation notes (deviations from the first draft)**
+
+- The code alphabet is Crockford's base 32 (`0–9`, `A–Z` without `I`, `L`, `O`, `U`), still 80
+  bits in 16 symbols. `normalizeGiftCardCode` reads a typed `O` as `0` and `I` / `L` as `1`, so
+  look-alikes can't cause a wrong-code error.
+- All gift card copy (`giftCards`, `checkout.giftCard`, `giftCardEmail`, `giftCardRecipientEmail`,
+  `account.giftCards`, `payments.giftCardDescription`, `checkout.payment.giftCard*`) was added in
+  step 1, because the typed keys in `~/lib/gift-cards` need it. Step 13 only adjusts it.
+- `ORDER_EMAIL_TYPES` and `CMS_SYNC_ENTITIES` gain their values in the steps that handle them
+  (6 and 11), so every commit typechecks.
+- `robots.ts` blocks a private page with parameters from its static prefix
+  (`/podarunkovi-kartky/uspikh`), since `giftCardSuccess` has no private parent page.
+
 ## Resolved questions
 
 Answered by the owner on 2026-11-05:
@@ -251,7 +264,7 @@ From the codebase and issues:
 
 ## Steps
 
-- [ ] **1. Paths and shared types** — Add `giftCards: { uk: "podarunkovi-kartky", en: "gift-cards",
+- [x] **1. Paths and shared types** — Add `giftCards: { uk: "podarunkovi-kartky", en: "gift-cards",
   indexable: true }` and `giftCardSuccess: { uk: "podarunkovi-kartky/uspikh/:giftCardId", en:
   "gift-cards/success/:giftCardId", indexable: false }` to `PAGES`. Add `giftCards` to
   `SITEMAP_PAGES` and `giftCardSuccess` to `ROBOTS_PRIVATE_PAGES`. Create `app/lib/gift-cards.ts`:

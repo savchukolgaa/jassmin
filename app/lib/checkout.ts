@@ -72,6 +72,7 @@ export function freeShippingInfo(subtotal: string): FreeShippingInfo {
 export const PAYMENT_KEYS: Record<PaymentMethod, { label: TextKey; note: TextKey }> = {
   card: { label: "checkout.payment.card", note: "checkout.payment.cardNote" },
   cod: { label: "checkout.payment.cod", note: "checkout.payment.codNote" },
+  gift_card: { label: "checkout.payment.giftCard", note: "checkout.payment.giftCardNote" },
 };
 
 /** The largest `orders.id` (a PostgreSQL `integer`, serial). */

@@ -39,6 +39,14 @@ export const PAGES = {
   accountOrder: { uk: "kabinet/zamovlennia/:id", en: "account/orders/:id", indexable: false },
   accountProfile: { uk: "kabinet/profil", en: "account/profile", indexable: false },
   privacy: { uk: "konfidentsiinist", en: "privacy", indexable: true },
+  // Gift cards (#125): the purchase page (linked from the offers page, #126) and the page the
+  // payment provider sends the buyer back to.
+  giftCards: { uk: "podarunkovi-kartky", en: "gift-cards", indexable: true },
+  giftCardSuccess: {
+    uk: "podarunkovi-kartky/uspikh/:giftCardId",
+    en: "gift-cards/success/:giftCardId",
+    indexable: false,
+  },
 } as const satisfies Record<string, PageDefinition>;
 
 export type Page = keyof typeof PAGES;

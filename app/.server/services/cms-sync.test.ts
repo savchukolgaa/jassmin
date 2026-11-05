@@ -643,6 +643,57 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect((await variantRow(productId, 10))?.stockQuantity).toBe(8);
   });
 
+  it("gives a gift card's amount back when the order is cancelled, not when it's returned (#125)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { findGiftCard, redeemGiftCard } = await import("../db/queries/gift-cards");
+    const { cmsOutbox, giftCards } = await import("../db/schema");
+    const card = async (code: string) => {
+      const [row] = await testDb.db
+        .insert(giftCards)
+        .values({
+          code,
+          initialAmount: "500.00",
+          balance: "500.00",
+          status: "active",
+          buyerEmail: "buyer@example.com",
+          locale: "uk",
+          activatedAt: new Date(),
+          expiresAt: new Date(Date.now() + 86_400_000),
+        })
+        .returning({ id: giftCards.id });
+      return row?.id ?? 0;
+    };
+    await testDb.db.delete(cmsOutbox);
+    const cancelled = await placed();
+    const cancelledCard = await card("RESTORE000000001");
+    await redeemGiftCard(testDb.db, {
+      giftCardId: cancelledCard,
+      orderId: cancelled.orderId,
+      amount: "500.00",
+    });
+    expect((await findGiftCard(testDb.db, cancelledCard))?.status).toBe("used_up");
+
+    await applyCmsOrderChange(cancelled.orderId, { status: "cancelled" }, testDb.db);
+    expect(await findGiftCard(testDb.db, cancelledCard)).toMatchObject({
+      balance: "500.00",
+      status: "active",
+    });
+    expect(await outbox()).toContainEqual({ entity: "gift_card", entityId: cancelledCard });
+
+    // A returned order keeps what the card paid, like its stock.
+    const returned = await placed();
+    const returnedCard = await card("RESTORE000000002");
+    await redeemGiftCard(testDb.db, {
+      giftCardId: returnedCard,
+      orderId: returned.orderId,
+      amount: "200.00",
+    });
+    for (const status of ["shipped", "completed", "returned"] as const) {
+      await applyCmsOrderChange(returned.orderId, { status }, testDb.db);
+    }
+    expect((await findGiftCard(testDb.db, returnedCard))?.balance).toBe("300.00");
+  });
+
   it("writes nothing for a refused change", async () => {
     const { eq } = await import("drizzle-orm");
     const { orders } = await import("../db/schema");

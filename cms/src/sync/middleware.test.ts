@@ -1,6 +1,13 @@
 import type { Core } from "@strapi/strapi";
 import { describe, expect, it } from "vitest";
-import { applyProductAnswer, componentValues, productPayload } from "./middleware";
+import {
+  applyProductAnswer,
+  componentValues,
+  createSyncMiddleware,
+  GIFT_CARD_UID,
+  productPayload,
+  toOrderData,
+} from "./middleware";
 
 // Without an image the payload never reads from Strapi, so an empty instance is enough.
 const strapi = {} as Core.Strapi;
@@ -192,5 +199,42 @@ describe("productPayload: image (#88)", () => {
       imageHeight: null,
       imageFormats: null,
     });
+  });
+});
+
+describe("gift cards (#125)", () => {
+  /** A Strapi whose current request comes from the admin, as a staff edit does. */
+  const adminStrapi = {
+    requestContext: { get: () => ({ state: { auth: { strategy: { name: "admin" } } } }) },
+  } as unknown as Core.Strapi;
+  type Middleware = (context: unknown, next: () => Promise<unknown>) => Promise<unknown>;
+
+  it("refuses every staff save of a gift card, and lets the app's pushes through", async () => {
+    const middleware = createSyncMiddleware(adminStrapi) as unknown as Middleware;
+    for (const action of ["create", "update", "delete", "clone"]) {
+      let saved = false;
+      await expect(
+        middleware({ uid: GIFT_CARD_UID, action, params: {} }, async () => {
+          saved = true;
+        }),
+      ).rejects.toThrow("Подарункові картки змінюються лише в магазині");
+      expect(saved).toBe(false);
+    }
+
+    const tokenStrapi = {
+      requestContext: { get: () => ({ state: {} }) },
+    } as unknown as Core.Strapi;
+    const push = createSyncMiddleware(tokenStrapi) as unknown as Middleware;
+    let pushed = false;
+    await push({ uid: GIFT_CARD_UID, action: "update", params: {} }, async () => {
+      pushed = true;
+    });
+    expect(pushed).toBe(true);
+  });
+
+  it("saves what a gift card paid of an order as a number", () => {
+    expect(
+      toOrderData({ orderId: 7, status: "paid", giftCardAmount: "500.00", items: [] }),
+    ).toMatchObject({ orderStatus: "paid", giftCardAmount: 500 });
   });
 });

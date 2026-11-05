@@ -1,5 +1,5 @@
 // Pushes app changes to Strapi (#40): orders placed at checkout, paid by card or changed in the
-// admin, and the stock of products sold or restocked. Changes are queued in `cms_outbox` inside
+// admin, the stock of products sold or restocked, and gift cards bought or spent (#125). Changes are queued in `cms_outbox` inside
 // the transaction that made them; this module claims due rows, upserts each entity's current
 // state in Strapi with the `STRAPI_SYNC_TOKEN` and marks the row. The app tries right after a
 // commit, and `pnpm db:sync-cms` retries whatever failed. Nothing here ever fails a request.
@@ -7,7 +7,7 @@
 // It must not import `db/index.ts` (the app pool validates the web app's whole env), so the
 // retry job can use it with its own connection.
 import { z } from "zod";
-import type { CmsOrderState, CmsProductState } from "~/lib/cms-sync";
+import type { CmsGiftCardState, CmsOrderState, CmsProductState } from "~/lib/cms-sync";
 import { cmsWrite } from "../cms/writer";
 import type { Db } from "../db/client";
 import {
@@ -16,6 +16,7 @@ import {
   markCmsSynced,
   markCmsSyncFailed,
 } from "../db/queries/cms-outbox";
+import { findGiftCardSyncState, type GiftCardSyncRow } from "../db/queries/gift-cards";
 import { findOrderSyncState, type OrderSyncRow } from "../db/queries/orders";
 import {
   backfillProductSlugs,
@@ -46,6 +47,7 @@ export function toCmsOrderState({ order, items }: OrderSyncRow): CmsOrderState {
     subtotal: order.subtotal,
     discountAmount: order.discountAmount,
     shippingAmount: order.shippingAmount,
+    giftCardAmount: order.giftCardAmount,
     totalAmount: order.totalAmount,
     currency: order.currency,
     placedAt: order.createdAt.toISOString(),
@@ -55,6 +57,29 @@ export function toCmsOrderState({ order, items }: OrderSyncRow): CmsOrderState {
     shippedAt: iso(order.shippedAt),
     completedAt: iso(order.completedAt),
     items,
+  };
+}
+
+export function toCmsGiftCardState({ card, redemptions }: GiftCardSyncRow): CmsGiftCardState {
+  return {
+    giftCardId: card.id,
+    code: card.code,
+    status: card.status,
+    initialAmount: card.initialAmount,
+    balance: card.balance,
+    currency: card.currency,
+    buyerEmail: card.buyerEmail,
+    recipientEmail: card.recipientEmail,
+    userId: card.buyerUserId,
+    placedAt: card.createdAt.toISOString(),
+    activatedAt: iso(card.activatedAt),
+    expiresAt: iso(card.expiresAt),
+    redemptions: redemptions.map((redemption) => ({
+      orderId: redemption.orderId,
+      amount: redemption.amount,
+      redeemedAt: redemption.createdAt.toISOString(),
+      reversedAt: iso(redemption.reversedAt),
+    })),
   };
 }
 
@@ -88,8 +113,26 @@ export function toStrapiOrderData({ status, ...order }: CmsOrderState) {
     subtotal: Number(order.subtotal),
     discountAmount: Number(order.discountAmount),
     shippingAmount: Number(order.shippingAmount),
+    giftCardAmount: Number(order.giftCardAmount),
     totalAmount: Number(order.totalAmount),
     items: order.items.map((item) => ({ ...item, unitPrice: Number(item.unitPrice) })),
+  };
+}
+
+/**
+ * The `data` of a gift card document in Strapi (#125), where `status` is `giftCardStatus` (Strapi
+ * reserves it). The code is shown there, so staff can answer a customer who lost it.
+ */
+export function toStrapiGiftCardData({ status, ...card }: CmsGiftCardState) {
+  return {
+    ...card,
+    giftCardStatus: status,
+    initialAmount: Number(card.initialAmount),
+    balance: Number(card.balance),
+    redemptions: card.redemptions.map((redemption) => ({
+      ...redemption,
+      amount: Number(redemption.amount),
+    })),
   };
 }
 
@@ -111,6 +154,7 @@ export interface CmsSyncDeps {
   claim(options: { only?: ClaimOnly; limit: number }): Promise<ClaimedCmsSync[]>;
   loadOrder(orderId: number): Promise<CmsOrderState | undefined>;
   loadProduct(productId: number): Promise<CmsProductState | undefined>;
+  loadGiftCard(giftCardId: number): Promise<CmsGiftCardState | undefined>;
   markSynced(id: number, version: number): Promise<void>;
   markFailed(id: number, version: number, error: string): Promise<void>;
 }
@@ -132,6 +176,10 @@ export function cmsSyncDeps(db: Db, env: CmsSyncEnv): CmsSyncDeps {
       const row = await findProductSyncState(db, productId);
       return row && toCmsProductState(row);
     },
+    loadGiftCard: async (giftCardId) => {
+      const row = await findGiftCardSyncState(db, giftCardId);
+      return row && toCmsGiftCardState(row);
+    },
     markSynced: (id, version) => markCmsSynced(db, id, version),
     markFailed: (id, version, error) => markCmsSyncFailed(db, id, version, error),
   };
@@ -143,7 +191,7 @@ const documentOne = z.object({ data: z.object({ documentId: z.string() }) });
 /** Creates the document, or updates the one whose `key` field has this value. */
 async function upsertDocument(
   env: CmsSyncEnv,
-  collection: "orders" | "products",
+  collection: "orders" | "products" | "gift-cards",
   key: { field: string; value: string | number },
   data: unknown,
 ): Promise<void> {
@@ -185,6 +233,16 @@ async function pushOne(row: ClaimedCmsSync, deps: CmsSyncDeps): Promise<void> {
         "products",
         { field: "publicId", value: product.publicId },
         toStrapiProductData(product),
+      );
+    }
+  } else {
+    const card = await deps.loadGiftCard(row.entityId);
+    if (card) {
+      await upsertDocument(
+        deps.env,
+        "gift-cards",
+        { field: "giftCardId", value: card.giftCardId },
+        toStrapiGiftCardData(card),
       );
     }
   }

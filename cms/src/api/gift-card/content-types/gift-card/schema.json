@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "gift_cards",
+  "info": {
+    "singularName": "gift-card",
+    "pluralName": "gift-cards",
+    "displayName": "Gift card",
+    "description": "Gift cards bought in the shop (#125), with their balances. Read only: the shop activates a card when its payment succeeds and takes amounts off it at checkout. (`giftCardStatus`, because Strapi reserves `status`.)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "giftCardId": {
+      "type": "integer",
+      "required": true,
+      "unique": true
+    },
+    "code": {
+      "type": "string"
+    },
+    "giftCardStatus": {
+      "type": "enumeration",
+      "enum": ["pending", "active", "used_up", "expired"],
+      "required": true,
+      "default": "pending"
+    },
+    "initialAmount": {
+      "type": "decimal"
+    },
+    "balance": {
+      "type": "decimal"
+    },
+    "currency": {
+      "type": "string",
+      "default": "UAH"
+    },
+    "buyerEmail": {
+      "type": "email"
+    },
+    "recipientEmail": {
+      "type": "email"
+    },
+    "userId": {
+      "type": "integer"
+    },
+    "placedAt": {
+      "type": "datetime"
+    },
+    "activatedAt": {
+      "type": "datetime"
+    },
+    "expiresAt": {
+      "type": "datetime"
+    },
+    "redemptions": {
+      "type": "component",
+      "repeatable": true,
+      "component": "gift-cards.redemption"
+    }
+  }
+}

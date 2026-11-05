@@ -375,7 +375,7 @@ From the codebase and issues:
   It's shown even when there are no orders, and the empty state stays as it is when there are no
   cards. `account.orders.$id.tsx` and `checkout-success.tsx` pass `giftCardAmount` to
   `OrderSummary`. Tests.
-- [ ] **11. Strapi** — Create the `gift-card` collection type (`draftAndPublish: false`):
+- [x] **11. Strapi** — Create the `gift-card` collection type (`draftAndPublish: false`):
   `giftCardId` (integer, unique), `code`, `initialAmount`, `balance` (decimal), `currency`,
   `giftCardStatus` (enum; Strapi reserves `status`), `buyerEmail`, `recipientEmail`, `userId`,
   `placedAt`,

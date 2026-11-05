@@ -38,11 +38,10 @@ import {
   setCartDiscount,
 } from "../db/queries/discounts";
 import { findCartGiftCardId, setCartGiftCard } from "../db/queries/gift-cards";
-import { findUserById } from "../db/queries/users";
 import { cartItems, carts } from "../db/schema";
-import { getUserId } from "../session";
 import { type PricingLine, priceCart, toDiscountLine } from "./pricing";
 import { productImage } from "./products";
+import { getSessionUser } from "./session-user";
 
 /** Whose cart to read: the logged-in user's, else the guest's (by their visitor cookies). */
 export interface CartOwner extends VisitorCookies {
@@ -58,9 +57,9 @@ export interface CartWriter {
 
 /** The cart owner from the request's cookies, without creating anything. */
 export async function getCartOwner(request: Request, db: Db = defaultDb): Promise<CartOwner> {
-  const [userId, visitor] = await Promise.all([getUserId(request), readVisitor(request)]);
-  // A stale cookie whose user no longer exists counts as a guest, like in the header.
-  const user = userId === undefined ? undefined : await findUserById(db, userId);
+  const [user, visitor] = await Promise.all([getSessionUser(request, db), readVisitor(request)]);
+  // A stale cookie whose user no longer exists, or a session revoked by a password change (#135),
+  // counts as a guest, like in the header.
   return { userId: user?.id ?? null, ...visitor };
 }
 

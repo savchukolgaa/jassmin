@@ -7,6 +7,11 @@ import { SESSION_COOKIE_NAME } from "./session-cookie";
 export interface SessionData {
   /** Set on login (#9). */
   userId?: number;
+  /**
+   * When this session logged in, in epoch ms (#135). A password change after it revokes the
+   * session (`isSessionRevoked`). Cookies from before #135 have none.
+   */
+  authenticatedAt?: number;
   /** Orders placed in this browser (#11), newest first, so a guest can open their success page. */
   orderIds?: number[];
   /** Gift cards bought in this browser (#125), newest first, so a guest can open their page. */
@@ -43,6 +48,37 @@ export async function getUserId(request: Request): Promise<number | undefined> {
   return session.get("userId");
 }
 
+/** The logged-in user's id and when the session logged in, from the cookie only. */
+export async function getSessionAuth(
+  request: Request,
+): Promise<{ userId: number | undefined; authenticatedAt: number | undefined }> {
+  const session = await getSession(request.headers.get("Cookie"));
+  return { userId: session.get("userId"), authenticatedAt: session.get("authenticatedAt") };
+}
+
+/**
+ * Whether a password change revoked this session (#135): the password changed after the session
+ * logged in. A session without `authenticatedAt` (from before #135) is valid until the user's
+ * first password change.
+ */
+export function isSessionRevoked(
+  authenticatedAt: number | undefined,
+  passwordChangedAt: Date | null,
+): boolean {
+  if (passwordChangedAt === null) return false;
+  return authenticatedAt === undefined || authenticatedAt < passwordChangedAt.getTime();
+}
+
+/**
+ * Keeps this session logged in after its own password change (#135): sets `authenticatedAt` to the
+ * change time. Returns the `Set-Cookie` header value.
+ */
+export async function renewSessionAuth(request: Request, authenticatedAt: Date): Promise<string> {
+  const session = await getSession(request.headers.get("Cookie"));
+  session.set("authenticatedAt", authenticatedAt.getTime());
+  return commitSession(session);
+}
+
 /** The orders placed in this browser, newest first. */
 export async function getSessionOrderIds(request: Request): Promise<number[]> {
   const session = await getSession(request.headers.get("Cookie"));
@@ -76,14 +112,21 @@ export async function createUserSession({
   request,
   userId,
   redirectTo,
+  authenticatedAt = new Date(),
 }: {
   request: Request;
   userId: number;
   /** Must already be safe, see `safeRedirect`. */
   redirectTo: string;
+  /**
+   * When the session logs in. After a password reset, pass the time stored in
+   * `users.password_changed_at`, so the new session survives the revocation check.
+   */
+  authenticatedAt?: Date;
 }): Promise<Response> {
   const session = await getSession(request.headers.get("Cookie"));
   session.set("userId", userId);
+  session.set("authenticatedAt", authenticatedAt.getTime());
   return redirect(redirectTo, { headers: { "Set-Cookie": await commitSession(session) } });
 }
 

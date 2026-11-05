@@ -9,25 +9,20 @@ import {
 } from "../analytics";
 import { type Db, db } from "../db";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
-import {
-  findUserByEmail,
-  findUserById,
-  insertUser,
-  type PublicUser,
-  touchLastLogin,
-} from "../db/queries/users";
+import { findUserByEmail, insertUser, type PublicUser, touchLastLogin } from "../db/queries/users";
 import { getDummyPasswordHash, hashPassword, verifyPassword } from "../password";
 import { pageUrl } from "../request-url";
-import { getUserId } from "../session";
 import { mergeGuestCart } from "./cart";
+import { getSessionUser } from "./session-user";
 
 export type { PublicUser } from "../db/queries/users";
 
-/** The logged-in user, or `null` when logged out or the session's user no longer exists. */
+/**
+ * The logged-in user, or `null` when logged out, when the session's user no longer exists, or
+ * when a password change revoked the session (#135).
+ */
 export async function getUser(request: Request, database: Db = db): Promise<PublicUser | null> {
-  const userId = await getUserId(request);
-  if (userId === undefined) return null;
-  return (await findUserById(database, userId)) ?? null;
+  return getSessionUser(request, database);
 }
 
 /**

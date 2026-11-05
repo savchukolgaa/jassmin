@@ -34,6 +34,7 @@ describe.skipIf(!hasDatabase)("user queries", () => {
       fullName: "Olena Petrenko",
       email: "olena@example.com",
       role: "customer",
+      emailVerified: false,
     });
   });
 

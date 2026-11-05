@@ -198,7 +198,7 @@ Each step is small, ordered, and leaves the app in a working state.
   Unit tests: hashing is deterministic, 64 hex characters, and differs from the raw token. DB
   tests: unknown, expired and used tokens are rejected; a second consume returns `used`; two
   concurrent consumes yield exactly one success.
-- [ ] **3. Session revocation.** Add `authenticatedAt?: number` to `SessionData`, and an optional
+- [x] **3. Session revocation.** Add `authenticatedAt?: number` to `SessionData`, and an optional
   `authenticatedAt: Date` to `createUserSession` (default `new Date()`). Add a pure
   `isSessionRevoked(authenticatedAt, passwordChangedAt)` in `session.ts`, and export
   `getSessionAuth(request)` → `{ userId, authenticatedAt }`. Add `findSessionUser` in `users.ts`

@@ -12,7 +12,22 @@ export interface PublicUser {
   email: string;
   /** Read fresh on every request, so demoting an admin takes effect immediately. */
   role: UserRole;
+  /** Whether the user confirmed their email address (#135). */
+  emailVerified: boolean;
 }
+
+/** The session's user, plus what decides whether a password change revoked the session (#135). */
+export interface SessionUser extends PublicUser {
+  passwordChangedAt: Date | null;
+}
+
+const publicUserColumns = {
+  id: users.id,
+  fullName: users.fullName,
+  email: users.email,
+  role: users.role,
+  emailVerified: sql<boolean>`${users.emailVerifiedAt} is not null`,
+};
 
 export interface UserCredentials {
   id: number;
@@ -40,8 +55,14 @@ export async function findUserByEmail(db: Db, email: string): Promise<UserCreden
 }
 
 export async function findUserById(db: Db, id: number): Promise<PublicUser | undefined> {
+  const [user] = await db.select(publicUserColumns).from(users).where(eq(users.id, id)).limit(1);
+  return user;
+}
+
+/** The user a session cookie names, with `password_changed_at` for the revocation check. */
+export async function findSessionUser(db: Db, id: number): Promise<SessionUser | undefined> {
   const [user] = await db
-    .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role })
+    .select({ ...publicUserColumns, passwordChangedAt: users.passwordChangedAt })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);

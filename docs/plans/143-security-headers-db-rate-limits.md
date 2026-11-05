@@ -196,6 +196,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 | create | `app/routes/csp-report.ts` | report endpoint (log only) |
 | create | `app/routes/csp-report.test.ts` | both report formats, size and rate limit, log shape |
 | create | `app/lib/csp-report.schema.ts` | zod schemas for both report bodies |
+| create | `app/.server/csp-report.ts` | parsing, query stripping, `[csp]` logging, the in-memory limiter (route-module state must stay on the server, like `client-events.ts`) |
 | modify | `app/routes.ts` | `route("csp-report", "routes/csp-report.ts")` |
 | modify | `app/.server/env.ts`, `env.test.ts` | `TRUSTED_PROXY_HOPS`, `CSP_MODE` |
 | modify | `.env.example`, `docs/setup.md` | document the new vars and the prune cron |
@@ -249,7 +250,7 @@ the other hardening headers. The rate-limit counters move from process memory in
   the way: `data:` fonts, and the nonce hydration mismatch (above). Note: `vite.config.ts` ignores
   `**/.claude/worktrees/**`, so a dev server started inside a worktree doesn't pick up edits;
   restart it after each change.*
-- [ ] **5. `/csp-report`.** zod schemas in `app/lib/csp-report.schema.ts`, and the route with
+- [x] **5. `/csp-report`.** zod schemas in `app/lib/csp-report.schema.ts`, and the route with
   `readLimitedBody(request, 16 * 1024)`, a memory-store limiter (30/min per
   `getClientIp(request) ?? "anonymous"`), sanitized `console.warn`, and 204. Register it in
   `routes.ts` outside the layout. Test both formats, an oversize body (413), a rate-limited client

@@ -122,6 +122,15 @@ quality numbers and the AI-assisted workflow. The developer setup guide moves, c
   description ("gift ideas") is left to #126, which changes it.
 - **Per-step checks:** the steps change only Markdown, so `pnpm lint` runs per step and the full
   `typecheck`/`test`/`build` run once at the end (and `test` in step 7 for the numbers).
+- **Implementation notes (steps 4–9):** written as one README commit, since the sections only make
+  sense together. Measured numbers: 1,768 tests in 170 files (`pnpm test` with the database
+  configured, 1 skipped). The Mermaid diagram was rendered locally with
+  `@mermaid-js/mermaid-cli@11.4.2` (Edge as the browser). The link check passed every relative link,
+  every anchor in another file (a small script in the scratchpad) and every GitHub URL; the only
+  dead links are the local dev URLs `http://localhost:1337/admin` and `http://localhost:5000` in
+  `docs/setup.md`, which are expected. The quick start no longer says the home page shows "the
+  database time and PostgreSQL version" (that page is gone). `docs/skills/README.md` didn't need a
+  change.
 
 ## Resolved questions
 
@@ -195,7 +204,7 @@ No other files change.
   `app/.server/env.ts`, `package.json` scripts, `cms/src/api/`). Check each claim in the code before
   changing it. Commit: "Bring the setup guide up to date (#141)". Note every fix for the PR
   description.
-- [ ] **4. Header, pitch and badges** — Title, one-line pitch (e.g. "A bilingual, server-rendered
+- [x] **4. Header, pitch and badges** — Title, one-line pitch (e.g. "A bilingual, server-rendered
   e-commerce site for a small perfume shop in Ukraine: React Router v8 SSR, PostgreSQL, Strapi"),
   then the badge row: CI badge (live if #142 is merged, otherwise this exact line in an HTML
   comment: `<!-- CI badge, enable once #142 is merged: [![CI](…/ci.yml/badge.svg?branch=main)](…/actions/workflows/ci.yml) -->`),
@@ -205,15 +214,15 @@ No other files change.
   list (home, catalog, product, cart, checkout × desktop 1440×900 and phone 390×844), file names
   (`<page>-<desktop|phone>.webp`), the 200 KB limit, the "synthetic data only, no personal data"
   rule and the capture steps, so step 11 is mechanical.
-- [ ] **5. Features and tech stack** — A short Features list (Decisions). Keep the existing Stack
+- [x] **5. Features and tech stack** — A short Features list (Decisions). Keep the existing Stack
   table, add rows for i18n (own typed dictionaries, translated URLs), email (Nodemailer + outbox),
   payments (provider interface, simulator) and tests (Vitest, real PostgreSQL integration tests).
   Check each row against `package.json`.
-- [ ] **6. Architecture** — The Mermaid `flowchart` from Decisions, with 3–4 sentences under it
+- [x] **6. Architecture** — The Mermaid `flowchart` from Decisions, with 3–4 sentences under it
   explaining reads/writes, the system of record and the outboxes. Link #133 for the analytics case
   study. Check it renders: `pnpm dlx @mermaid-js/mermaid-cli -i <extracted .mmd> -o <scratch>.svg`
   (scratchpad, not committed), and on GitHub after pushing the branch (step 10).
-- [ ] **7. Engineering decisions, Quality, How it's built** — The 6–7 decision bullets with full
+- [x] **7. Engineering decisions, Quality, How it's built** — The 6–7 decision bullets with full
   issue/PR URLs. Quality: run `pnpm test` in the worktree (with a database configured, so the DB
   tests run) and quote the file and test counts with the date; `pnpm typecheck` and `pnpm lint`
   (strict TS, no `any`, Biome); Lighthouse numbers from PR #97 with how they were measured;
@@ -221,14 +230,14 @@ No other files change.
   motion), no unmeasured claims. Mention CI (#142) with a link to its issue, or to the workflow if
   merged. How it's built: the workflow (Decisions), links to `docs/skills/README.md`,
   `.claude/skills/`, `AGENTS.md`, and to `docs/plans/` as where plans live while an issue is open.
-- [ ] **8. Getting started and LICENSE** — README "Getting started": `### Prerequisites` (as today),
+- [x] **8. Getting started and LICENSE** — README "Getting started": `### Prerequisites` (as today),
   `### Quick start` (as today, including the `pnpm aspire` note), the five everyday commands
   (`dev`, `typecheck`, `lint`, `test`, `build`), and a list of links into `docs/setup.md`
   (environment variables, all scripts, Strapi setup, jobs, payments, migrations, SEO, admin role).
   Add a short "Licence" section linking `LICENSE`. Write `LICENSE` (source available, all rights reserved): copyright line
   (year 2026, holder "Ольга Савчук"), the permitted use (view and evaluate), everything else reserved,
   brand and content excluded, no warranty. If the owner picks MIT, use the standard MIT text.
-- [ ] **9. Link check** — Run `pnpm dlx markdown-link-check README.md docs/setup.md
+- [x] **9. Link check** — Run `pnpm dlx markdown-link-check README.md docs/setup.md
   docs/screenshots/README.md` (or `lychee` if available) from the worktree. Every relative link and
   anchor must resolve. The repo is public, so issue/PR URLs can be checked too; if the checker is rate-limited by GitHub,
   check them with `gh issue view <n>` / `gh pr view <n>` instead and record that they exist. List

@@ -285,7 +285,7 @@ From the codebase and issues:
   write `db/rollbacks/0023_gift_cards.sql` (drop the columns and tables, and restore the old checks
   and NOT NULLs, which fails loudly if gift card rows exist), and update the header comment. Check:
   `migrator.test.ts` (migrate + rollback) passes.
-- [ ] **3. Gift card queries** — `db/queries/gift-cards.ts`: `insertGiftCard` (returns id;
+- [x] **3. Gift card queries** — `db/queries/gift-cards.ts`: `insertGiftCard` (returns id;
   `23505` on the code → the service retries), `findGiftCardByCode`, `lockGiftCard(tx, id)`
   (`FOR UPDATE`), `activateGiftCard(tx, id, paymentId, now)` (conditional on `pending`, returns
   whether it changed), `redeemGiftCard(tx, { giftCardId, orderId, amount })` (insert the

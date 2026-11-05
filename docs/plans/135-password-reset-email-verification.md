@@ -106,7 +106,9 @@ address is confirmed. Verification is soft: unverified users can still log in an
   `buildVerificationEmail`, `authLink` and the injectable `AuthEmailDeps`). The whole copy for
   the feature (`auth.forgot`, `auth.reset`, `auth.verify`, `auth.tokens`,
   `account.verifyBanner`) went in with step 5. `setPasswordChanged` serves both the reset and
-  the profile's password change.
+  the profile's password change. The profile's "saved" messages now say that other devices are
+  logged out and that the new address got a confirmation link. The three new pages are also
+  in `ROBOTS_PRIVATE_PAGES` (`seo/robots.ts`), like login and register.
 - **Existing users** start with `email_verified_at = null` (no backfill), as the issue says. They
   see the banner and can verify from it. Nothing is forced.
 - The banner lives on the account index page (`account._index.tsx`) and its resend button posts to
@@ -288,7 +290,7 @@ Each step is small, ordered, and leaves the app in a working state.
     and sends verification to the new address).
 
   Route tests cover each change.
-- [ ] **9. Translations.** Add every key to `uk.ts` (the source of truth) and `en.ts`: page
+- [x] **9. Translations.** Add every key to `uk.ts` (the source of truth) and `en.ts`: page
   titles, form labels, the generic answer, token errors, the banner, the resend confirmations,
   `auth.errors.tooManyRequests` and the two emails' subject and body. `pnpm typecheck` catches a
   missing key. Component tests render Ukrainian, plus one `<I18nProvider locale="en">` case per

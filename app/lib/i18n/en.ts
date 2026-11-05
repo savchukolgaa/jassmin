@@ -614,7 +614,7 @@ export const en = {
         current: "Current: {email}. If you change it, we'll let the old address know.",
         newEmail: "New email",
         submit: "Change email",
-        saved: "Email changed.",
+        saved: "Email changed. We sent a confirmation link to the new address.",
       },
       password: {
         heading: "Password",
@@ -623,7 +623,7 @@ export const en = {
         confirm: "Confirm new password",
         hint: "At least 8 characters",
         submit: "Change password",
-        saved: "Password changed.",
+        saved: "Password changed. Other devices will need to log in again.",
       },
       errors: {
         currentPasswordRequired: "Enter your current password",

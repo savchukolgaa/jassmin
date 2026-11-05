@@ -76,7 +76,7 @@ const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';
 export function Layout({ children }: { children: React.ReactNode }) {
   // `undefined` when the root loader failed; the error page then renders in the default locale.
   const locale = useRouteLoaderData<typeof loader>("root")?.locale ?? DEFAULT_LOCALE;
-  // The CSP nonce (#143): "" in the browser, where the scripts have already run.
+  // The CSP nonce (#143); see `~/lib/nonce` for how the browser reads it back.
   const nonce = useNonce();
 
   return (
@@ -90,11 +90,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             until hydration there, and their "from" price without JS (#74). */}
         <script
           nonce={nonce}
+          // Browsers hide a script's nonce attribute after parsing, so hydration sees "" here.
+          suppressHydrationWarning
           // biome-ignore lint/security/noDangerouslySetInnerHtml: a constant, no user input; a text child would be HTML-escaped.
           dangerouslySetInnerHTML={{ __html: JS_CLASS_SCRIPT }}
         />
         <Meta />
-        <Links />
+        <Links nonce={nonce} />
       </head>
       <body>
         <I18nProvider locale={locale}>{children}</I18nProvider>

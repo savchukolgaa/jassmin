@@ -48,7 +48,7 @@ describe("buildCsp", () => {
     expect(policy).toMatchObject({
       "default-src": ["'self'"],
       "style-src": ["'self'", "'unsafe-inline'"],
-      "font-src": ["'self'"],
+      "font-src": ["'self'", "data:"],
       "connect-src": ["'self'"],
       "frame-ancestors": ["'none'"],
       "base-uri": ["'self'"],

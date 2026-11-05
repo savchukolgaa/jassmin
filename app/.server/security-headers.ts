@@ -37,7 +37,8 @@ export function buildCsp({ nonce, strapiOrigin, isDev }: CspOptions): string {
     // React `style` attributes (e.g. the order progress bar) and Vite dev's <style> tags.
     ["style-src", "'self'", "'unsafe-inline'"],
     ["img-src", "'self'", "data:", strapiOrigin],
-    ["font-src", "'self'"],
+    // Vite inlines small font subsets (under 4 KB) as `data:` URIs in the stylesheet.
+    ["font-src", "'self'", "data:"],
     ["connect-src", "'self'", ...(isDev ? ["ws:"] : [])],
     ["frame-src", ...FRAME_ORIGINS],
     ["frame-ancestors", "'none'"],

@@ -163,10 +163,10 @@ No other files change.
 
 ## Steps
 
-- [ ] **1. Inventory** — List every `##`/`###` heading of the current `README.md` and every
+- [x] **1. Inventory** — List every `##`/`###` heading of the current `README.md` and every
   internal anchor link (`](#…)`), and decide for each whether it stays in the README or moves to
   `docs/setup.md` (per Decisions). Note the anchors that will change.
-- [ ] **2. Move the setup guide (one commit)** — Create `docs/setup.md` with a title, a one-line
+- [x] **2. Move the setup guide (one commit)** — Create `docs/setup.md` with a title, a one-line
   intro ("Developer setup and operations guide for Jassmin. The project overview is in the
   [README](../README.md).") and a table of contents. Move the sections verbatim, demoting nothing
   except where needed for a consistent tree. Fix internal anchors (`#card-payments-simulator`,

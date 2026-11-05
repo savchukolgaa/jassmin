@@ -6,6 +6,8 @@
 // One discount per order: the rule that saves the shopper the most. A rule with a `code` is a
 // candidate only when the shopper entered it; ties go to that code, then to the older rule.
 // Discounts never touch shipping, and free delivery is decided on the discounted subtotal.
+// Rule kinds: `percent` and `fixed_amount` of the qualifying units, `fixed_price_set` (the tester
+// trio) and `percent_every_nth` (the couple offer, #124: a percent off every n-th unit).
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_AMOUNT } from "~/lib/checkout";
 import type { Discount } from "~/lib/commerce";
 import type { DiscountLine, PromoStatus } from "~/lib/discounts";
@@ -122,6 +124,20 @@ export function discountSaving(lines: readonly PricingLine[], discount: PricingD
         .slice(0, sets * discount.minQuantity)
         .reduce((total, price) => total + price, 0);
       saving = inSets - sets * value;
+      break;
+    }
+    case "percent_every_nth": {
+      // The couple offer (#124): units are grouped dearest first, and the last (cheapest) unit
+      // of each full group gets `value`% off, at most `max_sets` groups. Rounded down once.
+      const groups = Math.min(
+        Math.floor(units.length / discount.minQuantity),
+        discount.maxSets ?? Number.POSITIVE_INFINITY,
+      );
+      let discounted = 0;
+      for (let group = 1; group <= groups; group++) {
+        discounted += units[group * discount.minQuantity - 1] ?? 0;
+      }
+      saving = Math.floor((discounted * value) / 10_000);
       break;
     }
   }

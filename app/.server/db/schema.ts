@@ -523,16 +523,19 @@ export const discounts = pgTable(
     code: varchar({ length: 40 }),
     kind: text().$type<DiscountKind>().notNull(),
     /**
-     * The percent for `percent`, the hryvnias off for `fixed_amount` and the price of one set for
-     * `fixed_price_set`.
+     * The percent for `percent` and `percent_every_nth`, the hryvnias off for `fixed_amount` and
+     * the price of one set for `fixed_price_set`.
      */
     value: numeric({ precision: 10, scale: 2 }).notNull(),
     scopeVolumesMl: integer().array(),
     scopeProductPublicIds: uuid().array(),
     scopePackSize: integer(),
-    /** Qualifying units the cart needs; for `fixed_price_set`, the size of one set. */
+    /**
+     * Qualifying units the cart needs; for `fixed_price_set` the size of one set, and for
+     * `percent_every_nth` the size of one group (2: every second unit is discounted).
+     */
     minQuantity: integer().notNull().default(1),
-    /** For `fixed_price_set`: the most sets one order gets at the set price. */
+    /** For `fixed_price_set` and `percent_every_nth`: the most sets (groups) one order gets. */
     maxSets: integer(),
     /** Start inclusive, end exclusive; `null` means no limit on that side. */
     startsAt: timestamp({ withTimezone: true }),
@@ -551,11 +554,11 @@ export const discounts = pgTable(
     check("discounts_kind_check", oneOf(t.kind, DISCOUNT_KINDS)),
     check(
       "discounts_value_check",
-      sql`${t.value} >= 0 and (${t.kind} <> 'percent' or (${t.value} > 0 and ${t.value} <= 100))`,
+      sql`${t.value} >= 0 and (${t.kind} not in ('percent', 'percent_every_nth') or (${t.value} > 0 and ${t.value} <= 100))`,
     ),
     check(
       "discounts_min_quantity_check",
-      sql`${t.minQuantity} >= 1 and (${t.kind} <> 'fixed_price_set' or ${t.minQuantity} >= 2)`,
+      sql`${t.minQuantity} >= 1 and (${t.kind} not in ('fixed_price_set', 'percent_every_nth') or ${t.minQuantity} >= 2)`,
     ),
     check("discounts_max_sets_check", sql`${t.maxSets} is null or ${t.maxSets} > 0`),
     check(

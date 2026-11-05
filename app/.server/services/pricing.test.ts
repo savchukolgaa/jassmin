@@ -53,6 +53,21 @@ const TRIO = rule({
 
 const TEN_PERCENT_CODE = rule({ id: 20, code: "JASSMIN10" });
 
+/** The couple offer (#124): 15% off every second single full bottle, dearest first. */
+const COUPLE = rule({
+  id: 30,
+  kind: "percent_every_nth",
+  value: "15.00",
+  scopeVolumesMl: [30, 50, 100],
+  scopePackSize: 1,
+  minQuantity: 2,
+});
+
+/** A full bottle at `unitPrice` kopiyky. */
+function bottle(unitPrice: number, overrides: Partial<PricingLine> = {}): PricingLine {
+  return line({ volumeMl: 50, unitPrice, productPublicId: `p-${unitPrice}`, ...overrides });
+}
+
 describe("discountSaving", () => {
   it("takes a percentage of the qualifying lines, rounded down to the kopiyka", () => {
     expect(discountSaving([line({ unitPrice: 79_000, quantity: 2 })], rule())).toBe(15_800);
@@ -113,6 +128,57 @@ describe("discountSaving", () => {
     // Three cheap units cost less than the set price.
     expect(discountSaving([line({ unitPrice: 10_000, quantity: 3 })], TRIO)).toBe(0);
   });
+
+  describe("couple offer", () => {
+    it("needs two full bottles", () => {
+      expect(discountSaving([], COUPLE)).toBe(0);
+      expect(discountSaving([bottle(200_000)], COUPLE)).toBe(0);
+    });
+
+    it("takes 15% off the cheaper of two bottles", () => {
+      // 2000 ₴ + 1500 ₴: 15% of 1500 ₴ = 225 ₴.
+      expect(discountSaving([bottle(200_000), bottle(150_000)], COUPLE)).toBe(22_500);
+      // The order of the lines doesn't matter.
+      expect(discountSaving([bottle(150_000), bottle(200_000)], COUPLE)).toBe(22_500);
+      // Two of the same bottle on one line.
+      expect(discountSaving([bottle(189_000, { quantity: 2 })], COUPLE)).toBe(28_350);
+    });
+
+    it("discounts one of three bottles and two of four, the cheaper of each pair", () => {
+      // 3000, 2000, 1000 ₴: pairs (3000, 2000) and a lone 1000 → 15% of 2000 ₴.
+      expect(discountSaving([bottle(100_000), bottle(300_000), bottle(200_000)], COUPLE)).toBe(
+        30_000,
+      );
+      // 4000, 3000, 2000, 1000 ₴: 15% of 3000 + 1000 ₴.
+      expect(
+        discountSaving(
+          [bottle(100_000), bottle(400_000), bottle(200_000), bottle(300_000)],
+          COUPLE,
+        ),
+      ).toBe(60_000);
+    });
+
+    it("rounds down to the kopiyka", () => {
+      // 15% of 999.99 ₴ is 149.9985 ₴: the shopper gets 149.99 ₴.
+      expect(discountSaving([bottle(99_999, { quantity: 2 })], COUPLE)).toBe(14_999);
+    });
+
+    it("never counts 5 and 10 ml sizes or sets", () => {
+      const tenMl = line({ volumeMl: 10, unitPrice: 79_000, quantity: 4 });
+      const fiveMl = line({ volumeMl: 5, unitPrice: 45_000, quantity: 2 });
+      expect(discountSaving([tenMl, fiveMl], COUPLE)).toBe(0);
+      // One full bottle and a 10 ml size aren't a pair.
+      expect(discountSaving([bottle(200_000), tenMl], COUPLE)).toBe(0);
+      expect(discountSaving([bottle(200_000, { packSize: 2 }), bottle(150_000)], COUPLE)).toBe(0);
+      // Only the full bottles count when both are in the cart.
+      expect(discountSaving([bottle(200_000), bottle(150_000), tenMl], COUPLE)).toBe(22_500);
+    });
+
+    it("discounts at most max_sets pairs", () => {
+      const onePair = rule({ ...COUPLE, maxSets: 1 });
+      expect(discountSaving([bottle(100_000, { quantity: 4 })], onePair)).toBe(15_000);
+    });
+  });
 });
 
 describe("discountAvailability", () => {
@@ -161,6 +227,52 @@ describe("priceCart", () => {
       total: 49_900,
       applied: { discountId: 10, code: null, kind: "fixed_price_set", amount: 187_100 },
     });
+  });
+
+  it("applies the couple offer by itself to two full bottles", () => {
+    const priced = priceCart([bottle(200_000), bottle(150_000)], [TRIO, COUPLE], NOW);
+    expect(priced).toMatchObject({
+      subtotal: 350_000,
+      discount: 22_500,
+      total: 327_500,
+      applied: { discountId: 30, code: null, kind: "percent_every_nth", amount: 22_500 },
+    });
+  });
+
+  it("picks whichever of the trio and the couple offer saves more", () => {
+    const trio = line({ quantity: 3 });
+    // The trio saves 1871 ₴; 15% of a 1500 ₴ bottle is 225 ₴.
+    expect(
+      priceCart([trio, bottle(200_000), bottle(150_000)], [TRIO, COUPLE], NOW).applied?.kind,
+    ).toBe("fixed_price_set");
+    // Three cheap testers save 0; the pair still saves.
+    const cheapTrio = line({ quantity: 3, unitPrice: 10_000 });
+    expect(
+      priceCart([cheapTrio, bottle(200_000), bottle(150_000)], [TRIO, COUPLE], NOW).applied?.kind,
+    ).toBe("percent_every_nth");
+  });
+
+  it("uses a promo code that saves more than the couple offer, else keeps it as not-best", () => {
+    const pair = [bottle(200_000), bottle(150_000)];
+    // 10% of 3500 ₴ = 350 ₴ beats 15% of 1500 ₴ = 225 ₴.
+    expect(priceCart(pair, [COUPLE, TEN_PERCENT_CODE], NOW)).toMatchObject({
+      discount: 35_000,
+      applied: { discountId: 20 },
+      promo: { status: "applied" },
+    });
+    // 100 ₴ off loses to 225 ₴.
+    const hundred = rule({ id: 21, kind: "fixed_amount", value: "100.00", code: "HUNDRED" });
+    expect(priceCart(pair, [COUPLE, hundred], NOW)).toMatchObject({
+      discount: 22_500,
+      applied: { discountId: 30 },
+      promo: { code: "HUNDRED", status: "not-best" },
+    });
+  });
+
+  it("decides free delivery after the couple offer", () => {
+    // 900 + 700 ₴ = 1600 ₴, minus 15% of 700 ₴ = 1495 ₴: below the 1500 ₴ threshold.
+    const priced = priceCart([bottle(90_000), bottle(70_000)], [COUPLE], NOW);
+    expect(priced).toMatchObject({ discount: 10_500, freeShipping: false });
   });
 
   it("applies an entered code and reports it", () => {

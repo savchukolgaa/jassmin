@@ -97,10 +97,16 @@ export type CmsSyncEntity = (typeof CMS_SYNC_ENTITIES)[number];
 
 /**
  * How a discount rule (#59) takes money off: a percentage of the qualifying lines, a fixed amount
- * off them, or a fixed price for each set of `min_quantity` qualifying units. A CHECK constraint
- * limits `discounts.kind` to these values.
+ * off them, a fixed price for each set of `min_quantity` qualifying units, or a percentage off
+ * every `min_quantity`-th qualifying unit, dearest first (the couple offer, #124). A CHECK
+ * constraint limits `discounts.kind` to these values.
  */
-export const DISCOUNT_KINDS = ["percent", "fixed_amount", "fixed_price_set"] as const;
+export const DISCOUNT_KINDS = [
+  "percent",
+  "fixed_amount",
+  "fixed_price_set",
+  "percent_every_nth",
+] as const;
 
 export type DiscountKind = (typeof DISCOUNT_KINDS)[number];
 

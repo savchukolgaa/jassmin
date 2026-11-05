@@ -97,7 +97,7 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
 
 ## Steps
 
-- [ ] **1. Add the kind and its checks** — Add `"percent_every_nth"` to `DISCOUNT_KINDS`. In
+- [x] **1. Add the kind and its checks** — Add `"percent_every_nth"` to `DISCOUNT_KINDS`. In
   `schema.ts` change `discounts_value_check` to
   `value >= 0 and (kind not in ('percent', 'percent_every_nth') or (value > 0 and value <= 100))`
   and `discounts_min_quantity_check` to
@@ -105,7 +105,7 @@ existing one-best-discount rule, and the offers page gets a couple-offer card in
   update the `value`/`minQuantity`/`maxSets` doc comments. `pnpm typecheck` now flags the
   non-exhaustive `switch` in `discountSaving` (the `saving` variable is unassigned), which step 2
   fixes.
-- [ ] **2. Price the new kind** — In `discountSaving`, add:
+- [x] **2. Price the new kind** — In `discountSaving`, add:
   ```ts
   case "percent_every_nth": {
     const groups = Math.min(Math.floor(units.length / discount.minQuantity),

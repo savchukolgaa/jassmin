@@ -102,6 +102,11 @@ address is confirmed. Verification is soft: unverified users can still log in an
   added in the step that uses them (e.g. `auth.errors.passwordMismatch` in step 4), not all in
   step 9. `getUser` and the cart's owner share `getSessionUser` (`services/session-user.ts`),
   because `services/auth.ts` imports the cart service and the cart service can't import it back.
+  Both emails share `services/auth-emails.ts` (`buildPasswordResetEmail`,
+  `buildVerificationEmail`, `authLink` and the injectable `AuthEmailDeps`). The whole copy for
+  the feature (`auth.forgot`, `auth.reset`, `auth.verify`, `auth.tokens`,
+  `account.verifyBanner`) went in with step 5. `setPasswordChanged` serves both the reset and
+  the profile's password change.
 - **Existing users** start with `email_verified_at = null` (no backfill), as the issue says. They
   see the banner and can verify from it. Nothing is forced.
 - The banner lives on the account index page (`account._index.tsx`) and its resend button posts to
@@ -222,7 +227,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `localizedRoute` inside the `_shop` layout. Update the `paths` tests (both languages resolve,
   and none of the three pages is in the sitemap). Add the `rate-limit.ts` limiters and their tests
   (3 per email, 10 per IP and 3 per user, each per hour).
-- [ ] **5. Password reset service.** In `services/password-reset.ts`, with deps injectable like
+- [x] **5. Password reset service.** In `services/password-reset.ts`, with deps injectable like
   `EmailChangedDeps` (`db`, `mailer`, `env`, `now`):
   - `requestPasswordReset({ email, locale, siteUrl })` → when a user exists, inserts a token that
     expires in 60 minutes and sends `buildPasswordResetEmail` (greeting, link, "valid for 1 hour",

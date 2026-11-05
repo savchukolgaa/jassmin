@@ -169,6 +169,13 @@
       "when": 1793889509270,
       "tag": "0023_gift_cards",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793911668797,
+      "tag": "0024_rate_limits",
+      "breakpoints": true
     }
   ]
 }

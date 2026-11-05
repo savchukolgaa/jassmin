@@ -204,6 +204,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 | modify | `app/.server/db/schema.ts` | `rateLimits` table |
 | create | `app/.server/db/migrations/0024_rate_limits.sql` (+ `meta/`) | generated migration |
 | create | `app/.server/db/rollbacks/0024_rate_limits.sql` | `DROP TABLE rate_limits` |
+| modify | `app/.server/db/migrator.test.ts` | the new table and migration in the migrate/rollback tests |
 | create | `app/.server/db/queries/rate-limits.ts`, `.test.ts` | `hitRateLimit`, `readRateLimit`, `deleteRateLimit`, `pruneRateLimits` |
 | create | `app/.server/db/scripts/prune-rate-limits.ts` | `pnpm db:prune-rate-limits` |
 | modify | `package.json` | `db:prune-rate-limits` script |
@@ -265,12 +266,14 @@ the other hardening headers. The rate-limit counters move from process memory in
   once from `entry.server.tsx` when the server loads). `vitest.config.ts` sets
   `TRUSTED_PROXY_HOPS=1` for the test run, so route tests can keep sending `X-Forwarded-For` to
   stand for different clients.
-- [ ] **7. `rate_limits` table.** Add `rateLimits` to `db/schema.ts`, run
+- [x] **7. `rate_limits` table.** Add `rateLimits` to `db/schema.ts`, run
   `pnpm db:generate --name rate_limits`, and write `db/rollbacks/0024_rate_limits.sql`. Put
   `hitRateLimit(db, key, windowMs, now)` (the upsert, `RETURNING count, reset_at`),
   `readRateLimit`, `deleteRateLimit` and `pruneRateLimits` in `db/queries/rate-limits.ts`. Their
   DB tests use `createTestDatabase` and check that 50 parallel `hitRateLimit` calls give
   `count = 50`, an expired window restarts at 1, and prune deletes only expired rows.
+  The table also has a `count > 0` CHECK. `migrator.test.ts` lists it in `ALL_TABLES`, rolls back
+  `0024` first in every rollback chain, and has its own test for the migration.
 - [ ] **8. Async, store-backed limiter.** Rewrite `createRateLimiter` over `RateLimitStore` with
   hashed keys (`name:sha256(key)`), and add `createMemoryRateLimitStore` and
   `createPgRateLimitStore(getDb)`. Rebuild the app limiters on the pg store (lazy `import("./db")`),

@@ -2,7 +2,6 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PRODUCT_IMAGE_SIZES, type ResponsiveImage } from "~/lib/images";
-import { LABEL_PALETTES } from "~/lib/label-art";
 import { SHOP_BOTTLE_IMAGE } from "~/lib/shop-bottle";
 import { ProductImage, type ProductImageProps } from "./ProductImage";
 
@@ -71,11 +70,7 @@ describe("ProductImage (#88)", () => {
     expect(html).not.toContain("<svg");
   });
 
-  it("shows no family strip over an uploaded photo", () => {
-    expect(render()).not.toContain("data-family-strip");
-  });
-
-  it("shows the shop's bottle photo without one, with a strip in the family colour (#118)", () => {
+  it("shows the shop's bottle photo without one, with nothing over it (#118, #120)", () => {
     const html = render({ image: null });
 
     expect(html).toContain(`src="${SHOP_BOTTLE_IMAGE.url}"`);
@@ -86,16 +81,9 @@ describe("ProductImage (#88)", () => {
     expect(html).toContain('loading="lazy"');
     expect(html).toContain('alt="Chanel Coco"');
     expect(html).not.toContain("<svg");
-    expect(html).toMatch(
-      new RegExp(`data-family-strip=""[^>]*background-color:${LABEL_PALETTES.floral.accent}`),
-    );
+    expect(html).not.toContain("data-family-strip");
+    expect(html).not.toContain("background-color");
     expect(html).toContain("aspect-[4/5]");
-  });
-
-  it("uses the neutral strip without a family", () => {
-    const html = render({ image: null, label: { id: "x", brand: "B", title: "T", family: null } });
-
-    expect(html).toContain(`background-color:${LABEL_PALETTES.neutral.accent}`);
   });
 
   it("loads the shop photo first on the product page and keeps an empty alt on cards", () => {
@@ -112,7 +100,6 @@ describe("ProductImage (#88)", () => {
 
     expect(html).toContain("<svg");
     expect(html).not.toContain("<img");
-    expect(html).not.toContain("data-family-strip");
     expect(html).toContain(">CHANEL</text>");
     expect(html).toContain(">Coco</text>");
     expect(html).toContain("aspect-[4/5]");

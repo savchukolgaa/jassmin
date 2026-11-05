@@ -15,6 +15,11 @@ export interface CheckoutFormProps {
   cardAvailable?: boolean;
   /** The total the page shows (#59); the order isn't placed if it came out higher. */
   expectedTotal?: string;
+  /**
+   * A gift card pays the whole order (#125): there's no payment to choose, and the shop places it
+   * as paid by the card.
+   */
+  paidByGiftCard?: boolean;
 }
 
 function Section({ legend, children }: { legend: string; children: ReactNode }) {
@@ -36,6 +41,7 @@ export function CheckoutForm({
   values,
   cardAvailable = true,
   expectedTotal,
+  paidByGiftCard = false,
 }: CheckoutFormProps) {
   const { t } = useT();
   const submitting = useNavigation().state === "submitting";
@@ -93,11 +99,21 @@ export function CheckoutForm({
         />
       </Section>
       <Section legend={t("checkout.sections.payment")}>
-        <PaymentMethodField
-          defaultValue={value("paymentMethod")}
-          error={error("paymentMethod")}
-          cardAvailable={cardAvailable}
-        />
+        {paidByGiftCard ? (
+          <>
+            {/* The shop stores `gift_card`; this only satisfies the form's schema. */}
+            <input type="hidden" name="paymentMethod" value="cod" />
+            <p className="rounded-2xl border-2 border-primary bg-white p-4 font-bold text-ink">
+              {t("checkout.giftCard.covered")}
+            </p>
+          </>
+        ) : (
+          <PaymentMethodField
+            defaultValue={value("paymentMethod")}
+            error={error("paymentMethod")}
+            cardAvailable={cardAvailable}
+          />
+        )}
       </Section>
       <Button type="submit" size="lg" className="rounded-full" loading={submitting}>
         {t("checkout.submit")}

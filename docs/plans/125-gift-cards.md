@@ -341,7 +341,7 @@ From the codebase and issues:
   used-up card at order time (`total-changed`), and two concurrent `createOrder`s on one card
   (`Promise.all`: one gets the balance, the other `total-changed`, and the balance never goes
   below 0).
-- [ ] **8. Checkout route and UI** — `routes/checkout.tsx` loader: add `giftCard`
+- [x] **8. Checkout route and UI** — `routes/checkout.tsx` loader: add `giftCard`
   (`CheckoutGiftCard`: masked code, amount, balance after) and `amountDue`. Free delivery still
   uses `cart.total`. Action: dispatch on `intent` (`apply-gift-card` → rate limit
   `giftCardCodeLimiter`, zod `giftCardCodeSchema`, `applyGiftCard`, return `{ giftCardError }` or

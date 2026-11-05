@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { FREE_SHIPPING_THRESHOLD, type OrderSummaryLine } from "~/lib/checkout";
 import { type DiscountLine, discountLabel } from "~/lib/discounts";
 import { useT } from "~/lib/i18n";
@@ -8,10 +9,15 @@ export interface OrderSummaryProps {
   subtotal: string;
   /** The applied discount (#59); no row without one. */
   discount?: DiscountLine | null;
+  /** What a gift card pays (#125); no row without one. */
+  giftCardAmount?: string | null;
+  /** What is left to pay, after the discount and any gift card. */
   total: string;
   freeShipping: boolean;
   /** How much is missing for free delivery, shown as a hint at checkout. */
   remainingForFreeShipping?: string;
+  /** Shown at the bottom of the summary, e.g. the checkout's gift card field. */
+  children?: ReactNode;
 }
 
 /** The order's lines and amounts, on the checkout page and the order's success page. */
@@ -19,9 +25,11 @@ export function OrderSummary({
   lines,
   subtotal,
   discount,
+  giftCardAmount,
   total,
   freeShipping,
   remainingForFreeShipping,
+  children,
 }: OrderSummaryProps) {
   const translator = useT();
   const { t, formatPrice } = translator;
@@ -80,6 +88,12 @@ export function OrderSummary({
             )}
           </dd>
         </div>
+        {giftCardAmount && Number(giftCardAmount) > 0 && (
+          <div className="flex justify-between gap-4 font-bold text-success">
+            <dt>{t("checkout.giftCard.line")}</dt>
+            <dd className="shrink-0">−{formatPrice(giftCardAmount)}</dd>
+          </div>
+        )}
         <div className="flex justify-between gap-4 text-lg font-extrabold text-ink">
           <dt>{t("checkout.total")}</dt>
           <dd className="font-serif font-bold">{formatPrice(total)}</dd>
@@ -93,6 +107,7 @@ export function OrderSummary({
           })}
         </p>
       )}
+      {children}
     </aside>
   );
 }

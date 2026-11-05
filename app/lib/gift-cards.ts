@@ -2,6 +2,7 @@
 // server imports and no zod (the form schemas are in `gift-cards.schema.ts`).
 import type { GiftCardStatus } from "./enums";
 import type { TextKey } from "./i18n";
+import { fromKopiyky, toKopiyky } from "./money";
 
 /** The only amounts a gift card is sold in, in hryvnias. */
 export const GIFT_CARD_AMOUNTS = [500, 1000, 2000] as const;
@@ -108,4 +109,30 @@ export interface CheckoutGiftCard {
   amount: string;
   /** What's left on the card after this order. */
   balanceAfter: string;
+}
+
+/** The checkout's gift card intents; anything else posted to `/checkout` places the order. */
+export const GIFT_CARD_INTENTS = ["apply-gift-card", "remove-gift-card"] as const;
+
+export type GiftCardIntent = (typeof GIFT_CARD_INTENTS)[number];
+
+export function isGiftCardIntent(value: unknown): value is GiftCardIntent {
+  return (GIFT_CARD_INTENTS as readonly unknown[]).includes(value);
+}
+
+/** The gift card form's fetcher key, shared with the checkout page that shows its result. */
+export const CHECKOUT_GIFT_CARD_FETCHER = "checkout-gift-card";
+
+/**
+ * The checkout action's answer to a gift card intent: the card and what is left to pay, so the
+ * page updates without reloading its loader (which would record `checkout_start` again), or the
+ * message for a refused code.
+ */
+export type CheckoutGiftCardResult =
+  | { ok: true; giftCard: CheckoutGiftCard | null; amountDue: string }
+  | { ok: false; error: TextKey };
+
+/** What is left to pay of `total` after the gift card, as a decimal string. */
+export function amountDueAfter(total: string, giftCard: CheckoutGiftCard | null): string {
+  return giftCard ? fromKopiyky(toKopiyky(total) - toKopiyky(giftCard.amount)) : total;
 }

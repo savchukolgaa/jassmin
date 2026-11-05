@@ -17,6 +17,7 @@ import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import { enqueueCmsSync } from "../db/queries/cms-outbox";
+import { restoreGiftCardRedemptions } from "../db/queries/gift-cards";
 import {
   findOrderSyncState,
   lockOrderLifecycle,
@@ -230,6 +231,8 @@ export async function applyCmsOrderChange(
     await updateOrderLifecycle(tx, orderId, next.patch);
     if (next.restock) {
       await enqueueCmsSync(tx, "product", await restockOrder(tx, orderId));
+      // What a gift card paid goes back on it, like the units go back in stock (#125).
+      await enqueueCmsSync(tx, "gift_card", await restoreGiftCardRedemptions(tx, orderId, now));
     }
 
     const state = await findOrderSyncState(tx, orderId);

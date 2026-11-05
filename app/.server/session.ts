@@ -9,9 +9,11 @@ export interface SessionData {
   userId?: number;
   /** Orders placed in this browser (#11), newest first, so a guest can open their success page. */
   orderIds?: number[];
+  /** Gift cards bought in this browser (#125), newest first, so a guest can open their page. */
+  giftCardIds?: number[];
 }
 
-/** How many placed orders the session remembers. */
+/** How many placed orders (and bought gift cards) the session remembers. */
 const MAX_SESSION_ORDERS = 10;
 
 export interface SessionFlashData {
@@ -52,6 +54,20 @@ export async function rememberOrder(request: Request, orderId: number): Promise<
   const session = await getSession(request.headers.get("Cookie"));
   const others = (session.get("orderIds") ?? []).filter((id) => id !== orderId);
   session.set("orderIds", [orderId, ...others].slice(0, MAX_SESSION_ORDERS));
+  return commitSession(session);
+}
+
+/** The gift cards bought in this browser, newest first (#125). */
+export async function getSessionGiftCardIds(request: Request): Promise<number[]> {
+  const session = await getSession(request.headers.get("Cookie"));
+  return session.get("giftCardIds") ?? [];
+}
+
+/** Remembers a gift card bought in this browser; returns the `Set-Cookie` header value. */
+export async function rememberGiftCard(request: Request, giftCardId: number): Promise<string> {
+  const session = await getSession(request.headers.get("Cookie"));
+  const others = (session.get("giftCardIds") ?? []).filter((id) => id !== giftCardId);
+  session.set("giftCardIds", [giftCardId, ...others].slice(0, MAX_SESSION_ORDERS));
   return commitSession(session);
 }
 

@@ -39,7 +39,7 @@ describe("robotsDisallowPaths", () => {
 
   it("blocks every page that isn't indexable, in both languages and at its path before #84", () => {
     for (const page of PAGE_KEYS.filter((key) => !PAGES[key].indexable)) {
-      const params = { orderId: "42", id: "42" };
+      const params = { orderId: "42", id: "42", giftCardId: "42" };
       for (const pattern of [`/${PAGES[page].uk}`, `/en/${PAGES[page].en}`, `/${PAGES[page].en}`]) {
         const path = pattern.replace(/:(\w+)/g, (_, name: keyof typeof params) => params[name]);
         expect(blocked(path), path).toBe(true);

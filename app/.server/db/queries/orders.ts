@@ -81,15 +81,24 @@ export interface NewOrder {
   discountAmount: string;
   /** The applied rule, or `null`. */
   discountId: number | null;
+  /** What a gift card pays (#125), `"0.00"` without one. */
+  giftCardAmount: string;
 }
 
 /**
  * Inserts the order. The total and `free_shipping` are computed by PostgreSQL as `numeric`, from
- * the subtotal, the discount and the shipping and free-shipping constants.
+ * the subtotal, the discount and the shipping and free-shipping constants; the total is what is
+ * left to pay after the gift card (#125), which never changes free shipping. An order a gift card
+ * paid in full (`gift_card`) is placed already paid.
  */
 export async function insertOrder(db: Executor, order: NewOrder): Promise<number> {
   const subtotal = sql`${order.subtotal}::numeric`;
   const discount = sql`${order.discountAmount}::numeric`;
+  const giftCard = sql`${order.giftCardAmount}::numeric`;
+  const paid =
+    order.paymentMethod === "gift_card"
+      ? { status: "paid" as const, paymentStatus: "paid" as const, paidAt: new Date() }
+      : {};
   const [row] = await db
     .insert(orders)
     .values({
@@ -104,8 +113,10 @@ export async function insertOrder(db: Executor, order: NewOrder): Promise<number
       discountAmount: order.discountAmount,
       discountId: order.discountId,
       shippingAmount: SHIPPING_AMOUNT,
-      totalAmount: sql`(${subtotal} - ${discount} + ${SHIPPING_AMOUNT}::numeric)::numeric(10, 2)`,
+      giftCardAmount: order.giftCardAmount,
+      totalAmount: sql`(${subtotal} - ${discount} + ${SHIPPING_AMOUNT}::numeric - ${giftCard})::numeric(10, 2)`,
       freeShipping: sql`(${subtotal} - ${discount}) >= ${FREE_SHIPPING_THRESHOLD}::numeric`,
+      ...paid,
     })
     .returning({ id: orders.id });
   if (!row) {
@@ -215,6 +226,7 @@ export async function findOrder(db: Executor, orderId: number) {
       subtotal: orders.subtotal,
       ...discountColumns,
       shippingAmount: orders.shippingAmount,
+      giftCardAmount: orders.giftCardAmount,
       totalAmount: orders.totalAmount,
     })
     .from(orders)
@@ -310,6 +322,7 @@ export async function findUserOrder(db: Executor, userId: number, orderId: numbe
       totalAmount: orders.totalAmount,
       subtotal: orders.subtotal,
       ...discountColumns,
+      giftCardAmount: orders.giftCardAmount,
       freeShipping: orders.freeShipping,
       fullName: orders.guestFullName,
       phone: orders.guestPhone,

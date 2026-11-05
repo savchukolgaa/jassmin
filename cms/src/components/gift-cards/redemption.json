@@ -1,0 +1,25 @@
+{
+  "collectionName": "components_gift_cards_redemptions",
+  "info": {
+    "displayName": "Gift card use",
+    "icon": "shoppingCart",
+    "description": "What one order took off the card; given back when the order is cancelled or unclaimed"
+  },
+  "options": {},
+  "attributes": {
+    "orderId": {
+      "type": "integer",
+      "required": true
+    },
+    "amount": {
+      "type": "decimal",
+      "required": true
+    },
+    "redeemedAt": {
+      "type": "datetime"
+    },
+    "reversedAt": {
+      "type": "datetime"
+    }
+  }
+}

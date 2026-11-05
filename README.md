@@ -111,6 +111,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:convert-catalog <path>` | Convert the owner's Markdown perfume list into `catalog-data.ts`, applying `app/.server/db/catalog/fixes.ts` (the list itself isn't committed) |
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin role](#admin-role) |
 | `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
+| `pnpm db:expire-gift-cards` | Mark active gift cards past their 12 months as expired (safe to re-run), see [Gift cards](#gift-cards) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
@@ -146,6 +147,16 @@ Run the job every 5 minutes from an external scheduler, like the abandoned-cart 
 ```
 
 It needs the database URL and the mail variables (`SMTP_URL`, `ORDER_FROM`, `CONTACT_FROM`, `CONTACT_INBOX`), but not `SESSION_SECRET`. Under Aspire, start the `db-send-order-emails` resource from the dashboard; it sends to smtp4dev.
+
+## Gift cards
+
+Customers buy gift cards of 500, 1000 or 2000 ₴ on `/podarunkovi-kartky` (`/en/gift-cards`, #125), by card only. Once the payment succeeds, the card is active for 12 months and its code is emailed to the buyer and, if they gave one, to the recipient (through the order email queue, so `pnpm db:send-order-emails` retries it). The code is entered at checkout and pays what's left after the discount; whatever it doesn't spend stays on the card. A card that covers the whole order needs no payment (the order is stored as paid by `gift_card`). Cancelling an order (or marking it unclaimed) in Strapi puts the amount back on the card. Buyers see their cards on `/account`, and staff see every card and its balance in Strapi, read-only.
+
+`pnpm db:expire-gift-cards` marks active cards past their date as `expired` and queues them for Strapi. Checkout checks the date itself, so the job only keeps Strapi and analytics right; run it daily from cron, for example:
+
+```cron
+15 3 * * * cd /srv/jassmin && pnpm db:expire-gift-cards >> /var/log/jassmin/gift-cards.log 2>&1
+```
 
 ## Card payments (simulator)
 
@@ -327,7 +338,8 @@ There is no admin area in the app any more (#40): staff manage the catalogue and
   - payment: `unpaid` → `paid` → `refunded`
 
   It sets `paid_at`, `shipped_at`, `completed_at`, `cancelled_at` and `refunded_at`. Completing a cash-on-delivery order marks it paid. `cancelled` and `unclaimed` put the units back in stock in the same transaction (`returned` doesn't: the perfume may have been opened). Orders can't be created or deleted in Strapi. Customers see each change on `/account` straight away.
-- **From the app to Strapi:** new orders, card payments and stock changes (checkout, restocks) are queued in `cms_outbox` in the same transaction and pushed with `STRAPI_SYNC_TOKEN` right after it commits. `pnpm db:sync-cms` retries whatever failed (run it every 5 minutes from cron in production; under Aspire it's the `db-sync-cms` resource).
+- **Gift cards** (#125) are read-only in Strapi: the shop pushes each card with its balance and what each order took off it, and refuses every admin save. Orders show what a gift card paid (`giftCardAmount`). The sync token needs the `api::gift-card.gift-card` permissions: re-run `pnpm cms:seed -- --token`, which grants an existing token the permissions it lacks and keeps its key.
+- **From the app to Strapi:** new orders, card payments, stock changes (checkout, restocks) and gift cards are queued in `cms_outbox` in the same transaction and pushed with `STRAPI_SYNC_TOKEN` right after it commits. `pnpm db:sync-cms` retries whatever failed (run it every 5 minutes from cron in production; under Aspire it's the `db-sync-cms` resource).
 
 **Setup:**
 

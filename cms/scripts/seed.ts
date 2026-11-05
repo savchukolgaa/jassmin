@@ -39,6 +39,11 @@ const SYNC_TOKEN_PERMISSIONS = [
   "api::order.order.findOne",
   "api::order.order.create",
   "api::order.order.update",
+  // Gift cards and their balances (#125), pushed like orders.
+  "api::gift-card.gift-card.find",
+  "api::gift-card.gift-card.findOne",
+  "api::gift-card.gift-card.create",
+  "api::gift-card.gift-card.update",
 ];
 
 const SEED_DATA_DIR = path.join(__dirname, "seed-data");

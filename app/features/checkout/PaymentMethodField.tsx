@@ -1,11 +1,7 @@
+import { PAYMENT_KEYS } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
-import { PAYMENT_METHODS, type PaymentMethod } from "~/lib/enums";
-import { type TextKey, useT } from "~/lib/i18n";
-
-const LABELS: Record<PaymentMethod, { label: TextKey; note: TextKey }> = {
-  card: { label: "checkout.payment.card", note: "checkout.payment.cardNote" },
-  cod: { label: "checkout.payment.cod", note: "checkout.payment.codNote" },
-};
+import { SELECTABLE_PAYMENT_METHODS } from "~/lib/enums";
+import { useT } from "~/lib/i18n";
 
 export interface PaymentMethodFieldProps {
   defaultValue?: string;
@@ -25,7 +21,7 @@ export function PaymentMethodField({
 
   return (
     <div className="flex flex-col gap-3">
-      {PAYMENT_METHODS.map((method) => {
+      {SELECTABLE_PAYMENT_METHODS.map((method) => {
         const id = `field-paymentMethod-${method}`;
         const disabled = method === "card" && !cardAvailable;
         return (
@@ -51,9 +47,9 @@ export function PaymentMethodField({
               className="mt-1 size-4 accent-primary"
             />
             <span className="flex flex-col gap-0.5">
-              <span className="font-extrabold text-ink">{t(LABELS[method].label)}</span>
+              <span className="font-extrabold text-ink">{t(PAYMENT_KEYS[method].label)}</span>
               <span id={`${id}-note`} className="text-sm text-muted">
-                {t(disabled ? "checkout.payment.cardUnavailable" : LABELS[method].note)}
+                {t(disabled ? "checkout.payment.cardUnavailable" : PAYMENT_KEYS[method].note)}
               </span>
             </span>
           </label>

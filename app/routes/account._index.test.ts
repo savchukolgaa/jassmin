@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({ requireUser: vi.fn() }));
 const orders = vi.hoisted(() => ({ getAccountOrders: vi.fn() }));
+const giftCards = vi.hoisted(() => ({ getAccountGiftCards: vi.fn() }));
 
 vi.mock("~/.server/services/auth", () => auth);
 vi.mock("~/.server/services/orders", () => orders);
+vi.mock("~/.server/services/gift-cards", () => giftCards);
 
 type LoaderArgs = Parameters<typeof import("./account._index").loader>[0];
 
@@ -20,13 +22,16 @@ beforeEach(() => {
 });
 
 describe("account dashboard loader", () => {
-  it("loads the logged-in user's orders", async () => {
+  it("loads the logged-in user's orders and the gift cards they bought (#125)", async () => {
     const result = { current: [], previous: [] };
+    const cards = [{ id: 12, status: "active" }];
     auth.requireUser.mockResolvedValueOnce({ id: 3, fullName: "Олена Коваль" });
     orders.getAccountOrders.mockResolvedValueOnce(result);
+    giftCards.getAccountGiftCards.mockResolvedValueOnce(cards);
 
-    expect(await load()).toBe(result);
+    expect(await load()).toEqual({ ...result, giftCards: cards });
     expect(orders.getAccountOrders).toHaveBeenCalledWith(3);
+    expect(giftCards.getAccountGiftCards).toHaveBeenCalledWith(3);
   });
 
   it("redirects logged-out visitors to login without loading orders", async () => {
@@ -34,6 +39,7 @@ describe("account dashboard loader", () => {
 
     await expect(load()).rejects.toMatchObject({ status: 302 });
     expect(orders.getAccountOrders).not.toHaveBeenCalled();
+    expect(giftCards.getAccountGiftCards).not.toHaveBeenCalled();
   });
 });
 

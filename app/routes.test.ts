@@ -41,6 +41,10 @@ describe("route config", () => {
       "/en/account",
       "/konfidentsiinist",
       "/en/privacy",
+      "/podarunkovi-kartky",
+      "/en/gift-cards",
+      "/podarunkovi-kartky/uspikh/:giftCardId",
+      "/en/gift-cards/success/:giftCardId",
     ]);
   });
 

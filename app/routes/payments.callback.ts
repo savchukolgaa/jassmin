@@ -1,5 +1,6 @@
 import { redirect } from "react-router";
 import { pushToCms } from "~/.server/services/cms-sync";
+import { deliverGiftCardEmails } from "~/.server/services/gift-cards";
 import { handlePaymentCallback } from "~/.server/services/payments";
 import { DEFAULT_LOCALE } from "~/lib/i18n";
 import { pathFor } from "~/lib/paths";
@@ -21,8 +22,12 @@ export async function action({ request }: Route.ActionArgs) {
       : new Response("Bad request", { status: 400 });
   }
   if (result.result === "paid") {
-    // The paid order was queued for Strapi (#40); not awaited and never rejects.
+    // The paid order or gift card was queued for Strapi (#40); not awaited and never rejects.
     void pushToCms();
+    if (result.giftCardId !== undefined) {
+      // The card's code emails were queued with its activation (#125); never rejects either.
+      void deliverGiftCardEmails(result.giftCardId);
+    }
   }
   return new Response("OK", { status: 200 });
 }

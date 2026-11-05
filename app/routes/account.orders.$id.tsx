@@ -117,6 +117,7 @@ export default function AccountOrder({ loaderData: order }: Route.ComponentProps
         lines={order.lines}
         subtotal={order.subtotal}
         discount={order.discount}
+        giftCardAmount={order.giftCardAmount}
         total={order.totalAmount}
         freeShipping={order.freeShipping}
       />

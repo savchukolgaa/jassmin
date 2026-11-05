@@ -536,6 +536,48 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     });
   });
 
+  describe("gift cards (#125)", () => {
+    it("brings the guest's gift card to the user's cart unless it has its own", async () => {
+      const cart = await import("./cart");
+      const { applyGiftCard } = await import("./gift-cards");
+      const { findCartGiftCardId } = await import("../db/queries/gift-cards");
+      const { giftCards } = await import("../db/schema");
+      const now = new Date();
+      const active = {
+        initialAmount: "500.00",
+        balance: "500.00",
+        status: "active",
+        buyerEmail: "buyer@example.com",
+        locale: "uk",
+        activatedAt: now,
+        expiresAt: new Date(now.getTime() + 86_400_000),
+      } as const;
+      const [first, second] = await testDb.db
+        .insert(giftCards)
+        .values([
+          { ...active, code: "MERGE00000000001" },
+          { ...active, code: "MERGE00000000002" },
+        ])
+        .returning({ id: giftCards.id, code: giftCards.code });
+      const small = await variant(5);
+
+      const visitor = await guest();
+      const userId = await user();
+      await cart.addItem(visitor, small, 1, testDb.db);
+      expect(await applyGiftCard(visitor, first?.code ?? "", testDb.db)).toEqual({ ok: true });
+      await cart.addItem({ ...(await guest()), userId }, small, 1, testDb.db);
+      await cart.mergeGuestCart(userId, visitor.anonymousId, testDb.db);
+      const userCartId = (await cart.getActiveCartId({ userId }, testDb.db)) ?? 0;
+      expect(await findCartGiftCardId(testDb.db, userCartId)).toBe(first?.id);
+
+      const later = await guest();
+      await cart.addItem(later, small, 1, testDb.db);
+      await applyGiftCard(later, second?.code ?? "", testDb.db);
+      await cart.mergeGuestCart(userId, later.anonymousId, testDb.db);
+      expect(await findCartGiftCardId(testDb.db, userCartId)).toBe(first?.id);
+    });
+  });
+
   describe("abandoned carts (#19)", () => {
     /** Marks the cart abandoned the way the job does. */
     async function abandon(cartId: number) {

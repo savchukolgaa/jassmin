@@ -3,7 +3,7 @@
 import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { CmsSyncEntity } from "~/lib/enums";
 import type { Db } from "../client";
-import { cmsOutbox, orders, products } from "../schema";
+import { cmsOutbox, giftCards, orders, products } from "../schema";
 
 /** A `Db` or a transaction, so services can pass `tx` down. */
 type Executor = Pick<Db, "select" | "insert" | "update">;
@@ -37,9 +37,10 @@ export async function enqueueCmsSync(
 
 /** Queues every product and every order, for the first sync of an existing database. */
 export async function enqueueAllForCmsSync(db: Executor): Promise<void> {
-  const [productIds, orderIds] = await Promise.all([
+  const [productIds, orderIds, giftCardIds] = await Promise.all([
     db.select({ id: products.id }).from(products),
     db.select({ id: orders.id }).from(orders),
+    db.select({ id: giftCards.id }).from(giftCards),
   ]);
   await enqueueCmsSync(
     db,
@@ -50,6 +51,11 @@ export async function enqueueAllForCmsSync(db: Executor): Promise<void> {
     db,
     "order",
     orderIds.map((row) => row.id),
+  );
+  await enqueueCmsSync(
+    db,
+    "gift_card",
+    giftCardIds.map((row) => row.id),
   );
 }
 

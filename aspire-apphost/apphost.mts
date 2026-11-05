@@ -78,6 +78,16 @@ await builder
   .withParentRelationship(db)
   .withExplicitStart();
 
+// Marks gift cards past their 12 months as expired (#125, daily cron in production); then start
+// `db-sync-cms` to show it in Strapi.
+await builder
+  .addJavaScriptApp("db-expire-gift-cards", "..", { runScriptName: "db:expire-gift-cards" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
 // Strapi secrets (APP_KEYS, …) come from cms/.env; the variables set here take precedence.
 const cms = builder
   .addJavaScriptApp("cms", "../cms", { runScriptName: "develop" })

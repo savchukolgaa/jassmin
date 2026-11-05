@@ -544,6 +544,53 @@ export interface ApiBlogPostBlogPost extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiGiftCardGiftCard extends Struct.CollectionTypeSchema {
+  collectionName: 'gift_cards';
+  info: {
+    description: 'Gift cards bought in the shop (#125), with their balances. Read only: the shop activates a card when its payment succeeds and takes amounts off it at checkout. (`giftCardStatus`, because Strapi reserves `status`.)';
+    displayName: 'Gift card';
+    pluralName: 'gift-cards';
+    singularName: 'gift-card';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    activatedAt: Schema.Attribute.DateTime;
+    balance: Schema.Attribute.Decimal;
+    buyerEmail: Schema.Attribute.Email;
+    code: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    currency: Schema.Attribute.String & Schema.Attribute.DefaultTo<'UAH'>;
+    expiresAt: Schema.Attribute.DateTime;
+    giftCardId: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    giftCardStatus: Schema.Attribute.Enumeration<
+      ['pending', 'active', 'used_up', 'expired']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    initialAmount: Schema.Attribute.Decimal;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::gift-card.gift-card'
+    > &
+      Schema.Attribute.Private;
+    placedAt: Schema.Attribute.DateTime;
+    publishedAt: Schema.Attribute.DateTime;
+    recipientEmail: Schema.Attribute.Email;
+    redemptions: Schema.Attribute.Component<'gift-cards.redemption', true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userId: Schema.Attribute.Integer;
+  };
+}
+
 export interface ApiHomePageHomePage extends Struct.SingleTypeSchema {
   collectionName: 'home_pages';
   info: {
@@ -783,6 +830,7 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
     customerPhone: Schema.Attribute.String;
     discountAmount: Schema.Attribute.Decimal;
     freeShipping: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    giftCardAmount: Schema.Attribute.Decimal;
     items: Schema.Attribute.Component<'orders.item', true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::order.order'> &
@@ -804,7 +852,7 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'pending'>;
     paidAt: Schema.Attribute.DateTime;
-    paymentMethod: Schema.Attribute.Enumeration<['card', 'cod']> &
+    paymentMethod: Schema.Attribute.Enumeration<['card', 'cod', 'gift_card']> &
       Schema.Attribute.Required;
     paymentStatus: Schema.Attribute.Enumeration<
       ['unpaid', 'paid', 'refunded']
@@ -1498,6 +1546,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::blog-post.blog-post': ApiBlogPostBlogPost;
+      'api::gift-card.gift-card': ApiGiftCardGiftCard;
       'api::home-page.home-page': ApiHomePageHomePage;
       'api::offer.offer': ApiOfferOffer;
       'api::order.order': ApiOrderOrder;

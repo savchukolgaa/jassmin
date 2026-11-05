@@ -348,6 +348,8 @@ export const en = {
       cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       cod: "Cash on delivery",
       codNote: "Pay when you collect the parcel at Nova Poshta.",
+      giftCard: "Gift card",
+      giftCardNote: "The order is paid in full with a gift card.",
     },
     summary: "Your order",
     deletedProduct: "This perfume is no longer sold",
@@ -377,6 +379,23 @@ export const en = {
         "Some perfumes ran low while you were checking out. Check your cart and try again.",
       totalChanged:
         "The total changed while you were checking out: a promo code or offer may have stopped working. Check your order and try again.",
+    },
+    giftCard: {
+      heading: "Gift card",
+      label: "Gift card code",
+      apply: "Apply",
+      remove: "Remove",
+      applied: "Card {code} applied",
+      balanceAfter: "Left on the card after this order: {amount}",
+      line: "Gift card",
+      covered: "Your gift card covers the whole order, so there's nothing to pay.",
+      errors: {
+        unknown: "There's no gift card with this code. Please check it.",
+        notActive: "This card hasn't been paid yet, so it can't be used.",
+        expired: "This card has expired.",
+        usedUp: "There's nothing left on this card.",
+        tooManyAttempts: "Too many attempts. Please wait 15 minutes and try again.",
+      },
     },
     success: {
       title: "Order placed",
@@ -409,7 +428,32 @@ export const en = {
     contact: "Any questions? Reply to this email or write to {email}.",
     signature: "The Jassmin team",
   },
+  giftCardEmail: {
+    subject: "Your Jassmin gift card of {amount}",
+    greeting: "Hello!",
+    intro:
+      "Thank you for your purchase! Your Jassmin gift card of {amount} is paid and ready to use.",
+    recipientCopy: "We've also sent the code to {email}.",
+    code: "Card code: {code}",
+    expires: "The card is valid until {date}.",
+    howTo:
+      "To use the card, add perfumes to the cart and enter the code at checkout. If the order costs less than the balance, the rest stays on the card.",
+    contact: "Any questions? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+  },
+  giftCardRecipientEmail: {
+    subject: "You've been given a Jassmin gift card of {amount}",
+    greeting: "Hello!",
+    intro: "You've been given a Jassmin gift card of {amount}. Pick a scent you love!",
+    code: "Card code: {code}",
+    expires: "The card is valid until {date}.",
+    howTo:
+      "Add perfumes to the cart and enter the code at checkout. If the order costs less than the balance, the rest stays on the card for next time.",
+    contact: "Any questions? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+  },
   payments: {
+    giftCardDescription: "Jassmin gift card of {amount}",
     description: "Jassmin order #{id}",
     simulator: {
       title: "Payment simulator",
@@ -452,6 +496,16 @@ export const en = {
         men: "Men's perfumes",
         offers: "Special offers",
       },
+    },
+    giftCards: {
+      heading: "Gift cards",
+      amount: "{amount} card",
+      balance: "Balance: {amount}",
+      expires: "Valid until {date}",
+      recipient: "For {email}",
+      code: "Code",
+      pay: "Pay for the card",
+      buy: "Buy a gift card",
     },
     status: {
       pending: "Placed",
@@ -665,6 +719,63 @@ export const en = {
       women: "Women's perfumes",
       men: "Men's perfumes",
       blog: "Blog",
+    },
+  },
+  giftCards: {
+    metaTitle: "Jassmin gift cards of 500, 1000 and 2000 ₴",
+    metaDescription:
+      "Give perfume without guessing the scent: a Jassmin gift card of 500, 1000 or 2000 ₴, with its code by email, valid for 12 months.",
+    eyebrow: "A gift without guesswork",
+    heading: "Jassmin gift cards",
+    intro:
+      "Choose an amount, pay by card, and the code arrives by email. The recipient picks the scent and enters the code at checkout.",
+    steps: {
+      heading: "How it works",
+      buy: "Choose an amount and pay by card online.",
+      email: "The card's code is sent to your email and, if you like, to the recipient's.",
+      use: "The recipient enters the code at checkout. Whatever is left stays on the card for next time.",
+    },
+    validity: "The card is valid for {months} months from the day it's paid.",
+    form: {
+      heading: "Buy a card",
+      amount: "Amount",
+      email: "Your email",
+      emailHint: "We'll send the card's code here.",
+      recipientEmail: "Recipient's email (optional)",
+      recipientEmailHint:
+        "If you add it, we'll send the code to the recipient too. Leave it blank to pass the code on yourself.",
+      submit: "Pay {amount}",
+    },
+    unavailable:
+      "Card payment isn't available right now, so gift cards can't be bought. Please try again later.",
+    errors: {
+      amountRequired: "Choose the card's amount",
+    },
+    status: {
+      pending: "Awaiting payment",
+      active: "Active",
+      usedUp: "Used up",
+      expired: "Expired",
+    },
+    success: {
+      title: "Gift card",
+      paidHeading: "Your card is paid!",
+      pendingHeading: "Waiting for the card's payment",
+      failedHeading: "The payment didn't go through",
+      paidText: "The card's code was sent to {email}.",
+      paidTextRecipient: "The card's code was sent to {email} and to {recipient}.",
+      pendingText:
+        "We're waiting for the payment to be confirmed. If you've paid already, refresh the page.",
+      failedText: "No money was taken. Please try paying again.",
+      amount: "Amount",
+      balance: "Balance",
+      code: "Card code",
+      expiresOn: "Valid until {date}",
+      pay: "Pay",
+      retry: "Try again",
+      refresh: "Refresh the page",
+      continue: "Go to the catalog",
+      buyAnother: "Buy another card",
     },
   },
   popular: {

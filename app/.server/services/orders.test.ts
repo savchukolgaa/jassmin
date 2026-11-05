@@ -7,6 +7,8 @@ import { canViewOrder } from "./orders";
 // Coco Mademoiselle (seed data): 5 ml for 990 UAH, 30 ml for 4450 UAH.
 const COCO = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 
+const NOW = new Date("2026-11-05T10:00:00Z");
+
 const customer: CheckoutInput = {
   fullName: "Олена Коваль",
   email: "olena@example.com",
@@ -436,6 +438,8 @@ describe.skipIf(!hasDatabase)("order service", () => {
         discountId: code,
         discountCode: "JASSMIN10",
         discountKind: "percent",
+        giftCardAmount: "0.00",
+        paymentMethod: "cod",
       });
       expect(await allOrders()).toEqual([
         expect.objectContaining({
@@ -622,6 +626,269 @@ describe.skipIf(!hasDatabase)("order service", () => {
     });
   });
 
+  describe("gift cards (#125)", () => {
+    let codes = 0;
+
+    beforeEach(async () => {
+      const { giftCards } = await import("../db/schema");
+      // The outer hook deleted the orders, and with them the redemptions.
+      await testDb.db.delete(giftCards);
+    });
+
+    /** An active card with `balance` left (of `initialAmount`), expiring a year from `NOW`. */
+    async function activeCard(
+      balance: string,
+      values: Partial<typeof import("../db/schema").giftCards.$inferInsert> = {},
+    ) {
+      const { giftCards } = await import("../db/schema");
+      codes += 1;
+      const [row] = await testDb.db
+        .insert(giftCards)
+        .values({
+          code: `GFTC${String(codes).padStart(12, "0")}`,
+          initialAmount: "1000.00",
+          balance,
+          status: "active",
+          buyerEmail: "buyer@example.com",
+          locale: "uk",
+          activatedAt: NOW,
+          expiresAt: new Date("2027-11-05T10:00:00Z"),
+          ...values,
+        })
+        .returning();
+      if (!row) throw new Error("no gift card");
+      return row;
+    }
+
+    async function withGiftCard(cartId: number, giftCardId: number) {
+      const { eq } = await import("drizzle-orm");
+      const { carts } = await import("../db/schema");
+      await testDb.db.update(carts).set({ giftCardId }).where(eq(carts.id, cartId));
+    }
+
+    async function cardOf(giftCardId: number) {
+      const { findGiftCard } = await import("../db/queries/gift-cards");
+      return findGiftCard(testDb.db, giftCardId);
+    }
+
+    async function redemptionsOf(giftCardId: number) {
+      const { eq } = await import("drizzle-orm");
+      const { giftCardRedemptions } = await import("../db/schema");
+      return testDb.db
+        .select({ orderId: giftCardRedemptions.orderId, amount: giftCardRedemptions.amount })
+        .from(giftCardRedemptions)
+        .where(eq(giftCardRedemptions.giftCardId, giftCardId));
+    }
+
+    async function place(
+      cartId: number,
+      extra: { expectedTotal?: string; paymentMethod?: "card" | "cod" } = {},
+    ) {
+      const { createOrder } = await import("./orders");
+      const { paymentMethod = "cod", expectedTotal } = extra;
+      return createOrder(
+        {
+          cartId,
+          userId: null,
+          customer: { ...customer, paymentMethod },
+          locale: "uk",
+          expectedTotal,
+          now: NOW,
+        },
+        testDb.db,
+      );
+    }
+
+    it("takes the whole balance off a dearer order and leaves the rest to pay", async () => {
+      const card = await activeCard("500.00", { initialAmount: "500.00" });
+      const cart = await cartWith([{ variant: await variant(5, 10), quantity: 1 }]);
+      await withGiftCard(cart.id, card.id);
+
+      const result = await place(cart.id, { expectedTotal: "490.00" });
+
+      expect(result).toMatchObject({
+        ok: true,
+        placed: true,
+        subtotal: "990.00",
+        giftCardAmount: "500.00",
+        totalAmount: "490.00",
+        paymentMethod: "cod",
+      });
+      const [order] = await allOrders();
+      expect(order).toMatchObject({
+        giftCardAmount: "500.00",
+        totalAmount: "490.00",
+        paymentMethod: "cod",
+        status: "pending",
+        paymentStatus: "unpaid",
+        freeShipping: false,
+      });
+      expect(await cardOf(card.id)).toMatchObject({ balance: "0.00", status: "used_up" });
+      expect(await redemptionsOf(card.id)).toEqual([{ orderId: order?.id, amount: "500.00" }]);
+    });
+
+    it("pays a cheaper order in full, keeps the rest on the card and needs no payment", async () => {
+      const card = await activeCard("1000.00");
+      const cart = await cartWith([{ variant: await variant(5, 10), quantity: 1 }]);
+      await withGiftCard(cart.id, card.id);
+
+      const result = await place(cart.id, { expectedTotal: "0.00", paymentMethod: "card" });
+
+      expect(result).toMatchObject({
+        ok: true,
+        giftCardAmount: "990.00",
+        totalAmount: "0.00",
+        paymentMethod: "gift_card",
+      });
+      const [order] = await allOrders();
+      expect(order).toMatchObject({
+        paymentMethod: "gift_card",
+        status: "paid",
+        paymentStatus: "paid",
+        totalAmount: "0.00",
+      });
+      expect(order?.paidAt).toBeInstanceOf(Date);
+      expect(await cardOf(card.id)).toMatchObject({ balance: "10.00", status: "active" });
+
+      const { isPayable } = await import("./payments");
+      expect(order && isPayable(order)).toBe(false);
+    });
+
+    it("pays after the discount, without changing free delivery", async () => {
+      const { eq } = await import("drizzle-orm");
+      const { carts, discounts } = await import("../db/schema");
+      const [promo] = await testDb.db
+        .insert(discounts)
+        .values({ slug: "gift-card-test", code: "GIFTTEST10", kind: "percent", value: "10" })
+        .onConflictDoUpdate({ target: discounts.slug, set: { active: true } })
+        .returning({ id: discounts.id });
+      const card = await activeCard("1000.00");
+      // 4450 UAH, 10% off: 4005 UAH, free delivery; the card then pays 1000 UAH of it.
+      const cart = await cartWith([{ variant: await variant(30, 10), quantity: 1 }]);
+      await testDb.db.update(carts).set({ discountId: promo?.id }).where(eq(carts.id, cart.id));
+      await withGiftCard(cart.id, card.id);
+
+      const result = await place(cart.id, { expectedTotal: "3005.00" });
+
+      expect(result).toMatchObject({
+        ok: true,
+        subtotal: "4450.00",
+        discountAmount: "445.00",
+        giftCardAmount: "1000.00",
+        totalAmount: "3005.00",
+      });
+      const [order] = await allOrders();
+      expect(order).toMatchObject({ freeShipping: true, totalAmount: "3005.00" });
+    });
+
+    it("keeps free delivery decided before the gift card", async () => {
+      // 4450 UAH qualifies for free delivery; the card brings what's left to pay below 1500 UAH.
+      const card = await activeCard("2000.00", { initialAmount: "2000.00" });
+      const cart = await cartWith([{ variant: await variant(30, 10), quantity: 1 }]);
+      await withGiftCard(cart.id, card.id);
+
+      await place(cart.id);
+      const [order] = await allOrders();
+      expect(order).toMatchObject({ freeShipping: true, totalAmount: "2450.00" });
+    });
+
+    it("refuses an order whose card expired since the page showed it", async () => {
+      const expired = await activeCard("1000.00", { expiresAt: NOW });
+      const cart = await cartWith([{ variant: await variant(5, 10), quantity: 1 }]);
+      await withGiftCard(cart.id, expired.id);
+
+      expect(await place(cart.id, { expectedTotal: "0.00" })).toEqual({
+        ok: false,
+        error: "total-changed",
+      });
+      expect(await allOrders()).toEqual([]);
+      expect(await cardOf(expired.id)).toMatchObject({ balance: "1000.00" });
+      expect(await redemptionsOf(expired.id)).toEqual([]);
+    });
+
+    it("never lets two orders spend more than the card's balance", async () => {
+      const card = await activeCard("1000.00");
+      const five = await variant(5, 10);
+      const first = await cartWith([{ variant: five, quantity: 1 }]);
+      const second = await cartWith([{ variant: five, quantity: 1 }]);
+      await withGiftCard(first.id, card.id);
+      await withGiftCard(second.id, card.id);
+
+      // Both pages showed the order as fully paid by the card.
+      const results = await Promise.all([
+        place(first.id, { expectedTotal: "0.00" }),
+        place(second.id, { expectedTotal: "0.00" }),
+      ]);
+
+      expect(results.filter((r) => r.ok)).toHaveLength(1);
+      expect(results.filter((r) => !r.ok)).toEqual([{ ok: false, error: "total-changed" }]);
+      expect(await cardOf(card.id)).toMatchObject({ balance: "10.00", status: "active" });
+      expect(await redemptionsOf(card.id)).toHaveLength(1);
+    });
+
+    it("spends what's left on the card on a later order", async () => {
+      const card = await activeCard("1000.00");
+      const five = await variant(5, 10);
+      const first = await cartWith([{ variant: five, quantity: 1 }]);
+      const second = await cartWith([{ variant: five, quantity: 1 }]);
+      await withGiftCard(first.id, card.id);
+      await withGiftCard(second.id, card.id);
+
+      await place(first.id);
+      expect(await place(second.id)).toMatchObject({
+        ok: true,
+        giftCardAmount: "10.00",
+        totalAmount: "980.00",
+        paymentMethod: "cod",
+      });
+      expect(await cardOf(card.id)).toMatchObject({ balance: "0.00", status: "used_up" });
+    });
+
+    it("applies a usable code to the cart, and refuses the rest without writing", async () => {
+      const { applyGiftCard, getCheckoutGiftCard, removeGiftCard } = await import("./gift-cards");
+      const { eq } = await import("drizzle-orm");
+      const { sessions } = await import("../db/schema");
+      const cart = await cartWith([{ variant: await variant(5, 10), quantity: 1 }]);
+      const [session] = await testDb.db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.sessionId, cart.sessionId ?? ""));
+      const owner = { userId: null, anonymousId: session?.anonymousId };
+
+      const pending = await activeCard("1000.00", {
+        status: "pending",
+        activatedAt: null,
+        expiresAt: null,
+      });
+      const expired = await activeCard("1000.00", { status: "expired" });
+      const usedUp = await activeCard("0.00", { status: "used_up" });
+      for (const [code, error] of [
+        ["NNNN-NNNN-NNNN-NNNN", "unknown"],
+        ["too short", "unknown"],
+        [pending.code, "not-active"],
+        [expired.code, "expired"],
+        [usedUp.code, "used-up"],
+      ] as const) {
+        expect(await applyGiftCard(owner, code, testDb.db, NOW)).toEqual({ ok: false, error });
+      }
+      expect((await cartOf(cart.id))?.giftCardId).toBeNull();
+
+      const card = await activeCard("600.00");
+      const typed = card.code.toLowerCase().replace(/(.{4})(?!$)/g, "$1-");
+      expect(await applyGiftCard(owner, typed, testDb.db, NOW)).toEqual({ ok: true });
+      expect((await cartOf(cart.id))?.giftCardId).toBe(card.id);
+      expect(await getCheckoutGiftCard(owner, "990.00", testDb.db, NOW)).toEqual({
+        maskedCode: `••••-••••-••••-${card.code.slice(-4)}`,
+        amount: "600.00",
+        balanceAfter: "0.00",
+      });
+
+      await removeGiftCard(owner, testDb.db);
+      expect((await cartOf(cart.id))?.giftCardId).toBeNull();
+      expect(await getCheckoutGiftCard(owner, "990.00", testDb.db, NOW)).toBeNull();
+    });
+  });
+
   it("never oversells the last unit to concurrent checkouts", async () => {
     const { createOrder } = await import("./orders");
     const hundred = await variant(100, 1);
@@ -669,6 +936,8 @@ describe.skipIf(!hasDatabase)("order service", () => {
       discountId: null,
       discountCode: null,
       discountKind: null,
+      giftCardAmount: "0.00",
+      paymentMethod: "cod",
     });
     const orderId = placed?.ok ? placed.orderId : undefined;
     expect([a, b]).toContainEqual({ ok: true, orderId, placed: false });

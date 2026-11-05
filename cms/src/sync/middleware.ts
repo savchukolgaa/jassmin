@@ -17,6 +17,8 @@ import { AppSyncError, postToApp } from "../utils/app-sync";
 
 export const PRODUCT_UID = "api::product.product";
 export const ORDER_UID = "api::order.order";
+/** Gift cards (#125) are read-only in the admin: only the app's pushes write them. */
+export const GIFT_CARD_UID = "api::gift-card.gift-card";
 
 /** The document actions that change data; reads (and this middleware's own lookups) pass. */
 const WRITE_ACTIONS = new Set(["create", "update", "delete", "clone"]);
@@ -211,6 +213,7 @@ export function toOrderData(answer: unknown): Data {
     discountAmount: toNumber(answer.discountAmount),
     shippingAmount: toNumber(answer.shippingAmount),
     totalAmount: toNumber(answer.totalAmount),
+    giftCardAmount: toNumber(answer.giftCardAmount),
     items: records(answer.items).map((item) => ({ ...item, unitPrice: toNumber(item.unitPrice) })),
   };
 }
@@ -284,13 +287,18 @@ async function syncOrder(strapi: Core.Strapi, context: DocumentContext): Promise
 export function createSyncMiddleware(strapi: Core.Strapi): DocumentMiddleware {
   const middleware = async (context: DocumentContext, next: () => Promise<unknown>) => {
     if (
-      (context.uid !== PRODUCT_UID && context.uid !== ORDER_UID) ||
+      (context.uid !== PRODUCT_UID && context.uid !== ORDER_UID && context.uid !== GIFT_CARD_UID) ||
       !WRITE_ACTIONS.has(context.action) ||
       !isStaffEdit(strapi)
     ) {
       return next();
     }
     try {
+      if (context.uid === GIFT_CARD_UID) {
+        throw new AppSyncError(
+          "Подарункові картки змінюються лише в магазині: тут їх можна тільки переглядати.",
+        );
+      }
       if (context.uid === PRODUCT_UID) {
         await syncProduct(strapi, context);
       } else {

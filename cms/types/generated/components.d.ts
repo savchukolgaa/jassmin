@@ -86,6 +86,21 @@ export interface CatalogVariant extends Struct.ComponentSchema {
   };
 }
 
+export interface GiftCardsRedemption extends Struct.ComponentSchema {
+  collectionName: 'components_gift_cards_redemptions';
+  info: {
+    description: 'What one order took off the card; given back when the order is cancelled or unclaimed';
+    displayName: 'Gift card use';
+    icon: 'shoppingCart';
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    orderId: Schema.Attribute.Integer & Schema.Attribute.Required;
+    redeemedAt: Schema.Attribute.DateTime;
+    reversedAt: Schema.Attribute.DateTime;
+  };
+}
+
 export interface HomeAbout extends Struct.ComponentSchema {
   collectionName: 'components_home_abouts';
   info: {
@@ -287,6 +302,7 @@ declare module '@strapi/strapi' {
       'catalog.fragrance-family': CatalogFragranceFamily;
       'catalog.note': CatalogNote;
       'catalog.variant': CatalogVariant;
+      'gift-cards.redemption': GiftCardsRedemption;
       'home.about': HomeAbout;
       'home.hero': HomeHero;
       'home.location': HomeLocation;

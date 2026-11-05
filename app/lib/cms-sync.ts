@@ -8,6 +8,7 @@ import {
   FRAGRANCE_FAMILIES,
   type FragranceFamily,
   GENDERS,
+  type GIFT_CARD_STATUSES,
   ORDER_STATUSES,
   PAYMENT_STATUSES,
   PERFUME_VOLUMES_ML,
@@ -232,6 +233,8 @@ export interface CmsOrderState {
   subtotal: string;
   discountAmount: string;
   shippingAmount: string;
+  /** What a gift card paid (#125); `totalAmount` is what was left to pay. */
+  giftCardAmount: string;
   totalAmount: string;
   currency: string;
   placedAt: string;
@@ -241,6 +244,33 @@ export interface CmsOrderState {
   shippedAt: string | null;
   completedAt: string | null;
   items: CmsOrderItem[];
+}
+
+/** What one order took off a gift card, as Strapi shows it (#125). */
+export interface CmsGiftCardRedemption {
+  orderId: number;
+  amount: string;
+  redeemedAt: string;
+  /** When the amount went back on the card (the order was cancelled or unclaimed). */
+  reversedAt: string | null;
+}
+
+/** A gift card as the app stores it, for Strapi to show (read-only there). */
+export interface CmsGiftCardState {
+  giftCardId: number;
+  code: string;
+  status: (typeof GIFT_CARD_STATUSES)[number];
+  initialAmount: string;
+  balance: string;
+  currency: string;
+  buyerEmail: string;
+  recipientEmail: string | null;
+  /** `null` for a guest buyer. */
+  userId: number | null;
+  placedAt: string;
+  activatedAt: string | null;
+  expiresAt: string | null;
+  redemptions: CmsGiftCardRedemption[];
 }
 
 /** Why the app refused a change; Strapi shows it to staff (`cms/src/utils/app-sync.ts`). */

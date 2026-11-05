@@ -86,7 +86,14 @@ describe.skipIf(!hasDatabase)("order email queries", () => {
     const orderId = await queued("en");
 
     expect(await claimOrderEmails(testDb.db, { limit: 10, retryDelaysMinutes: delays })).toEqual([
-      { id: expect.any(Number), orderId, type: "confirmation", locale: "en", attempts: 1 },
+      {
+        id: expect.any(Number),
+        orderId,
+        giftCardId: null,
+        type: "confirmation",
+        locale: "en",
+        attempts: 1,
+      },
     ]);
     expect(await minutesUntilDue(orderId)).toBe(1);
     // Not due again until then.

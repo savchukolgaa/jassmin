@@ -415,6 +415,12 @@ export const en = {
       continue: "Continue shopping",
     },
   },
+  // The branded layout every email shares (#134).
+  email: {
+    footer: {
+      note: "This email was sent by Jassmin, a perfume shop in Ukraine.",
+    },
+  },
   orderEmail: {
     subject: "Order №{id} received — Jassmin",
     greeting: "Hello {name},",

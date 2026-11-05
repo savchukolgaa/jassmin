@@ -423,6 +423,12 @@ export const uk = {
       continue: "Продовжити покупки",
     },
   },
+  // The branded layout every email shares (#134).
+  email: {
+    footer: {
+      note: "Цей лист надіслав інтернет-магазин парфумів Jassmin.",
+    },
+  },
   orderEmail: {
     subject: "Замовлення №{id} прийнято — Jassmin",
     greeting: "Вітаємо, {name}!",

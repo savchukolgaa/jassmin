@@ -234,7 +234,7 @@ From the codebase:
   `checkBearerSecret(request, secret | undefined): Response | null` (the body of today's
   `checkCmsSyncAuth`), and make `checkCmsSyncAuth` call it. Its tests cover 503, 401, a token with
   a different length, and success. The existing `cms.*` route tests must still pass.
-- [ ] **3. Layout.** Create `email/layout.ts`:
+- [x] **3. Layout.** Create `email/layout.ts`:
   - `type EmailBlock` (the union above), `escapeHtml`;
   - `renderEmail(blocks, { translator, siteUrl?, inbox, preheader })` → `{ html, text }`;
   - `composeEmail({ from, to, replyTo, subject, blocks, translator, env, headers? })` →

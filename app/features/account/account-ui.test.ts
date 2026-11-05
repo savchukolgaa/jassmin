@@ -4,7 +4,9 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { AccountOrder, AccountOrderLine } from "~/lib/account";
 import type { OrderStatus } from "~/lib/enums";
+import type { GiftCardView } from "~/lib/gift-cards";
 import { createTranslator, I18nProvider, type Locale } from "~/lib/i18n";
+import { AccountGiftCards } from "./AccountGiftCards";
 import { CurrentOrderCard } from "./CurrentOrderCard";
 import { OrderLineThumb } from "./OrderLineItem";
 import { OrderProgress } from "./OrderProgress";
@@ -199,5 +201,51 @@ describe("PreviousOrdersList", () => {
     expect(html).toContain("Chanel · 5 мл · 2 шт.");
     expect(html).toContain("Цей парфум більше не продається");
     expect(html).toContain('href="/kabinet/zamovlennia/7"');
+  });
+});
+
+describe("AccountGiftCards (#125)", () => {
+  const card: GiftCardView = {
+    id: 12,
+    status: "active",
+    initialAmount: "1000.00",
+    balance: "400.00",
+    code: "ABCD2345EFGH6789",
+    buyerEmail: "me@example.com",
+    recipientEmail: "friend@example.com",
+    createdAt: new Date("2026-11-05T10:00:00Z"),
+    expiresAt: new Date("2027-11-05T10:00:00Z"),
+  };
+  const pending: GiftCardView = {
+    ...card,
+    id: 13,
+    status: "pending",
+    balance: "500.00",
+    initialAmount: "500.00",
+    code: null,
+    recipientEmail: null,
+    expiresAt: null,
+  };
+  const normalize = (html: string) => html.replace(/[  ]/g, " ");
+
+  it("shows each card's amount, code, balance, expiry and recipient", () => {
+    const html = normalize(render(createElement(AccountGiftCards, { cards: [card, pending] })));
+    expect(html).toContain("Подарункові картки");
+    expect(html).toContain("Картка на 1 000 ₴");
+    expect(html).toContain("ABCD-2345-EFGH-6789");
+    expect(html).toContain("Залишок: 400 ₴");
+    expect(html).toContain("Діє до 5 листопада 2027 р.");
+    expect(html).toContain("Для friend@example.com");
+    expect(html).toContain("Активна");
+  });
+
+  it("links an unpaid card to its page to pay, without a code or balance", () => {
+    const html = normalize(render(createElement(AccountGiftCards, { cards: [pending] }), "en"));
+    expect(html).toContain("₴500 card");
+    expect(html).toContain("Awaiting payment");
+    expect(html).toContain('href="/en/gift-cards/success/13"');
+    expect(html).toContain("Pay for the card");
+    expect(html).not.toContain("Balance:");
+    expect(html).toContain('href="/en/gift-cards"');
   });
 });

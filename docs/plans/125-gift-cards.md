@@ -368,7 +368,7 @@ From the codebase and issues:
   and the status panel reusing `PaymentStatus` patterns. Register both in `app/routes.ts`. Route
   tests: validation errors, no provider, the redirect to the provider, the 404 for a stranger, and
   pending/failed/active views.
-- [ ] **10. Account** — `routes/account._index.tsx` loader also returns `getAccountGiftCards`
+- [x] **10. Account** — `routes/account._index.tsx` loader also returns `getAccountGiftCards`
   (parallel with orders). `AccountGiftCards` lists amount, balance (`formatPrice`), a status pill,
   `expires_at` (`formatDate`), the recipient's email when set, the code for non-pending cards,
   and a "Pay" link for pending ones.

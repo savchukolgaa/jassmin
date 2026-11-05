@@ -16,6 +16,7 @@ import { localeRedirectMiddleware } from "~/.server/locale-middleware";
 import { securityHeadersMiddleware } from "~/.server/security-headers";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { DEFAULT_LOCALE, I18nProvider, useT } from "~/lib/i18n";
+import { useNonce } from "~/lib/nonce";
 import { crossesLocale } from "~/lib/paths";
 import { describeRouteError } from "~/lib/route-error";
 import { errorMeta } from "~/lib/seo";
@@ -75,6 +76,8 @@ const JS_CLASS_SCRIPT = 'document.documentElement.classList.add("js")';
 export function Layout({ children }: { children: React.ReactNode }) {
   // `undefined` when the root loader failed; the error page then renders in the default locale.
   const locale = useRouteLoaderData<typeof loader>("root")?.locale ?? DEFAULT_LOCALE;
+  // The CSP nonce (#143): "" in the browser, where the scripts have already run.
+  const nonce = useNonce();
 
   return (
     // The inline script changes the class before React hydrates.
@@ -86,6 +89,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Marks pages where JS runs, before first paint: product cards show a price skeleton
             until hydration there, and their "from" price without JS (#74). */}
         <script
+          nonce={nonce}
           // biome-ignore lint/security/noDangerouslySetInnerHtml: a constant, no user input; a text child would be HTML-escaped.
           dangerouslySetInnerHTML={{ __html: JS_CLASS_SCRIPT }}
         />
@@ -94,8 +98,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <I18nProvider locale={locale}>{children}</I18nProvider>
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
   );

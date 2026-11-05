@@ -52,8 +52,9 @@ the other hardening headers. The rate-limit counters move from process memory in
   hydration warning.
 - **Policy** (`buildCsp({ nonce, mode, env })`, a pure function):
   - `default-src 'self'`
-  - `script-src 'self' 'nonce-…' 'strict-dynamic'` (no `unsafe-inline`; `<script type="application/ld+json">`
-    data blocks aren't executed, but they get the nonce anyway for consistency)
+  - `script-src 'self' 'nonce-…' 'strict-dynamic'` (no `unsafe-inline`). `<script type="application/ld+json">`
+    data blocks (`components/JsonLd.tsx`) aren't executed, so CSP doesn't apply to them and they get
+    no nonce (implementation: dropped the earlier "for consistency" idea, it only added noise).
   - `style-src 'self' 'unsafe-inline'`: **kept**. React `style={…}` attributes
     (`features/account/OrderProgress.tsx`'s progress width) and Vite dev's injected `<style>` tags
     need it, and style injection is low risk next to scripts. `docs/security.md` records how to
@@ -186,7 +187,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 | create | `app/.server/security-headers.test.ts` | headers per response type, modes, HSTS rule, nonce uniqueness |
 | create | `app/lib/nonce.tsx` | `NonceProvider`, `useNonce()` (isomorphic) |
 | create | `app/entry.server.tsx` | revealed default, plus the nonce for React, `ServerRouter` and `NonceProvider` |
-| create | `app/entry.server.test.tsx` | full render: every inline `<script>` / `modulepreload` carries the response's nonce |
+| create | `app/entry.server.test.ts` | full render: every inline `<script>` / `modulepreload` carries the response's nonce |
 | modify | `app/root.tsx` | middleware order, `useNonce()` on the theme script, `ScrollRestoration`, `Scripts` |
 | create | `app/routes/csp-report.ts` | report endpoint (log only) |
 | create | `app/routes/csp-report.test.ts` | both report formats, size and rate limit, log shape |
@@ -222,15 +223,14 @@ the other hardening headers. The rate-limit counters move from process memory in
   `Content-Type`. Register it **first** in `root.tsx`'s `middleware`. Test with a fake `next`: an
   HTML page, an XML resource response (no CSP, all other headers), a thrown-`Response` / 500 error
   page, a redirect, and two calls getting different nonces.
-- [ ] **3. Nonce context and `entry.server.tsx`.** Create `app/lib/nonce.tsx`. Run
+- [x] **3. Nonce context and `entry.server.tsx`.** Create `app/lib/nonce.tsx`. Run
   `pnpm react-router reveal entry.server` and pass the nonce to `renderToPipeableStream`,
   `<ServerRouter nonce>` and `<NonceProvider>`. In `root.tsx`'s `Layout`, use `useNonce()` on the
-  `JS_CLASS_SCRIPT` script, `<ScrollRestoration>` and `<Scripts>`, and give the product JSON-LD
-  script the nonce too. `entry.server.test.tsx` renders a stubbed request and checks that every
-  `<script>` and `<link rel="modulepreload">` in the HTML carries the response header's nonce, and
-  that two requests differ. If modulepreload links come out without a nonce, note it: with
-  `'strict-dynamic'` the scripts still load through the nonced bootstrap, so it's only a wasted
-  preload.
+  `JS_CLASS_SCRIPT` script, `<ScrollRestoration>` and `<Scripts>`. `entry.server.test.ts`
+  (Vitest only collects `*.test.ts`) stubs `ServerRouter` and checks that the context's nonce reaches
+  `ServerRouter`, `useNonce()` and every inline `<script>` React streams. The whole-page check
+  (every real `<script>` and `modulepreload` matches the header) is done against the built server
+  in step 4, since a unit test can't render a full server build.
 - [ ] **4. Check the site with the CSP enforced.** `pnpm build && CSP_MODE=enforce pnpm start`,
   and with `pnpm dev`. In the browser console, check for CSP violations and React hydration
   warnings on home (map, theme script, contact form), catalog, product, cart (promo code),
@@ -285,7 +285,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 - Unit: `security-headers.test.ts` (directives, modes, HSTS, per response type, nonce per request),
   `client-ip.test.ts` (0/1/2 hops, spoofed and short headers), `rate-limit.test.ts` (memory store,
   key hashing), `csp-report.test.ts`, `env.test.ts` (new vars and their defaults).
-- Render: `entry.server.test.tsx` checks the nonce on every inline script, matching the header
+- Render: `entry.server.test.ts` checks the nonce on every inline script, matching the header
   and different per request.
 - DB integration (`describe.skipIf(!hasDatabase)`, `createTestDatabase`):
   `db/queries/rate-limits.test.ts` (exact concurrent counting, window restart, prune) and the

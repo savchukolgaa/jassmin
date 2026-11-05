@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/135
 Branch: `issue/135`
 Worktree: `.claude/worktrees/issue-135`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -295,7 +295,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `auth.errors.tooManyRequests` and the two emails' subject and body. `pnpm typecheck` catches a
   missing key. Component tests render Ukrainian, plus one `<I18nProvider locale="en">` case per
   page.
-- [ ] **10. Docs.** Update `app/.server/AGENTS.md`:
+- [x] **10. Docs.** Update `app/.server/AGENTS.md`:
   - a new "Password reset and email verification" section (tokens, hashing, lifetimes, single use,
     limits, the revocation check, best-effort delivery);
   - fix the Profile line about sessions not being revoked;
@@ -331,15 +331,18 @@ Each step is small, ordered, and leaves the app in a working state.
 
 ## Acceptance criteria
 
-- [ ] "Forgot password?" sends a reset link valid for 1 hour, and the link works only once: steps
+- [x] "Forgot password?" sends a reset link valid for 1 hour, and the link works only once: steps
   2, 5, 7, 8
-- [ ] The form gives the same answer whether or not the email is registered: steps 5, 7
-- [ ] After a reset the user is logged in, and their other sessions are logged out: steps 3, 7
-- [ ] New accounts get a verification email, and the account page offers to resend it until it's
+- [x] The form gives the same answer whether or not the email is registered: steps 5, 7
+- [x] After a reset the user is logged in, and their other sessions are logged out: steps 3, 7
+- [x] New accounts get a verification email, and the account page offers to resend it until it's
   confirmed: steps 6, 8
-- [ ] Tokens are stored only as hashes, and the requests are rate-limited: steps 2, 4, 7, 8
-- [ ] All pages and emails work in Ukrainian and English: steps 4, 7, 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 10
+- [x] Tokens are stored only as hashes, and the requests are rate-limited: steps 2, 4, 7, 8
+- [x] All pages and emails work in Ukrainian and English: steps 4, 7, 9
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 10
+
+Verified by automated tests only. The manual run under `pnpm aspire run` with smtp4dev (see
+Testing & verification) wasn't done in this session.
 
 ## Out of scope
 

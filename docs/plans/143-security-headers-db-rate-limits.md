@@ -216,7 +216,7 @@ the other hardening headers. The rate-limit counters move from process memory in
 | modify | `app/.server/client-events.ts`, `services/contact.ts` (+ tests) | DB-backed limiters, `await` |
 | modify | `app/routes/login.tsx`, `account.profile.tsx`, `cart.tsx`, `checkout.tsx`, `api.events.ts`, `home.tsx` (+ their tests) | `await` the limiter calls |
 | create | `docs/security.md` | headers, adding an origin, reading CSP reports, switching `CSP_MODE`, proxy hops |
-| modify | `app/.server/AGENTS.md`, `README.md` | rate-limit and auth notes (no longer per process), link to `docs/security.md` |
+| modify | `AGENTS.md`, `app/.server/AGENTS.md`, `README.md` | rate-limit and auth notes (no longer per process), link to `docs/security.md` |
 
 ## Steps
 
@@ -297,7 +297,7 @@ the other hardening headers. The rate-limit counters move from process memory in
   example in `docs/setup.md` (daily). *Not verified:* `pnpm aspire:build` can't run in this
   worktree (the git-ignored `aspire-apphost/.aspire/modules` that the Aspire CLI generates are
   missing). The new resource copies the `db-expire-gift-cards` block.
-- [ ] **11. Docs.** Write `docs/security.md`: what each header does and why; the CSP directives and
+- [x] **11. Docs.** Write `docs/security.md`: what each header does and why; the CSP directives and
   how to add an allowed origin in `buildCsp` (map provider, payment provider, image CDN);
   report-only vs `enforce` and when to switch; reading `[csp]` log lines and which ones are noise
   (browser extensions); `TRUSTED_PROXY_HOPS` per hosting setup; and the static-file and

@@ -102,6 +102,7 @@ flowchart LR
 - **1,768 tests in 170 files** (Vitest, November 2026), from pure pricing functions to route actions and components. The database tests run against a real PostgreSQL, each file in its own throwaway database.
 - **Strict TypeScript and Biome:** `strict` with `noUncheckedIndexedAccess`, no `any` (a Biome error), `import type` enforced. `pnpm typecheck`, `pnpm lint` and `pnpm test` pass before every commit, and `pnpm build` before every merge. GitHub Actions runs all four on every pull request, with the database tests on a PostgreSQL service and a check that fails the run if any test was skipped; a PR merges only when they pass ([docs/ci.md](docs/ci.md), [#142](https://github.com/savchukolgaa/jassmin/issues/142)).
 - **Lighthouse (mobile):** Performance 90 on the home page, 94 on a catalog page and 92 on a product page; SEO 100 and CLS 0 on every page measured; Accessibility 90 on the home page and 95–96 on the others. Measured locally on a production build with Lighthouse 12.6.1, median of 3 runs ([PR #97](https://github.com/savchukolgaa/jassmin/pull/97)).
+- **Security headers and durable rate limits:** a per-request nonce-based Content-Security-Policy (report-only first, then enforced), HSTS and the other hardening headers on every response, and login and form rate limits kept in PostgreSQL so a restart can't reset them ([docs/security.md](docs/security.md), [#143](https://github.com/savchukolgaa/jassmin/issues/143)).
 - **Accessibility basics:** a visible `focus-visible` ring on every interactive element and motion that respects `prefers-reduced-motion`, defined in the design system ([docs/design.md](docs/design.md)).
 
 ## How it's built
@@ -167,6 +168,7 @@ Open the Aspire dashboard and click the `web` resource's endpoint. Until you've 
 - [Products and orders in Strapi](docs/setup.md#products-and-orders-in-strapi)
 - [Order emails](docs/setup.md#order-emails), [abandoned carts](docs/setup.md#abandoned-carts) and [gift cards](docs/setup.md#gift-cards), with their cron jobs
 - [Card payments (simulator)](docs/setup.md#card-payments-simulator)
+- [Security headers, CSP and rate limits](docs/security.md)
 - [Database migrations](docs/setup.md#database-migrations)
 - [Project structure](docs/setup.md#project-structure)
 - [SEO and submitting the sitemap](docs/setup.md#seo)

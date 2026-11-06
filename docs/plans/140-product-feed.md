@@ -69,7 +69,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   `feed.fallbackDescription`: "Оригінальний аромат {brand} {title}, розлитий у флакон JASSMIN…".
 - **Condition and identifiers.** `g:condition` = `new`, and `g:identifier_exists` = `no`
   (decants have no GTIN or MPN).
-- **Brand.** `g:brand` is the perfume house (`products.brand`) **(unconfirmed, Q1)**. The title says
+- **Brand.** `g:brand` is the perfume house (`products.brand`). The title says
   "розпив / decant" and the description states that the perfume is decanted into the shop's
   JASSMIN bottle, so the listing doesn't claim a sealed original. The choice is one constant/function
   (`feedBrand(row)`) in the service, so switching to `JASSMIN` is a one-line change.
@@ -86,7 +86,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   `male`/`female`/`unisex`, a cheap and useful extra for Google.
 - **Size.** `g:size` is `formatVolume` in the feed's locale (`10 мл` / `10 ml`).
 - **Shipping.** `g:free_shipping_threshold` is `UA:1500.00 UAH`, from `FREE_SHIPPING_THRESHOLD`.
-  `g:shipping` is **left out of the feed (unconfirmed, Q2)**. The recipient pays Nova Poshta's rate
+  `g:shipping` is **left out of the feed**. The recipient pays Nova Poshta's rate
   on receipt, and the shop doesn't know that rate per item. So shipping is set up once as a Merchant
   Center account-level shipping service (Nova Poshta, an estimated rate, free over 1500 UAH), as
   documented in `docs/product-feeds.md`. A fake `0 UAH` in the feed would break Google's shipping
@@ -108,33 +108,18 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   which use the product JSON-LD from #86 to fix price and availability between fetches, and to set
   Meta's schedule to hourly.
 
-## Open questions
-
-- [ ] **Q1: Should `g:brand` be the perfume house (e.g. "Dior") or `JASSMIN`?** Why it matters:
-  Google and Meta both match `brand` against brand and trademark policies. With the house's brand,
-  a repackaged decant might be flagged as "counterfeit" or "misrepresentation" (Meta especially);
-  with `JASSMIN`, the item might be flagged for using another brand's trademark in the title, and it
-  loses brand search matching. Neither platform documents decants explicitly. Recommended default:
-  the perfume house, plus explicit "розпив / decant" wording in the title and description and
-  `identifier_exists=no`. If items get disapproved, switch `feedBrand` to `JASSMIN`. The docs
-  explain how to spot this. Affects steps: 4, 8.
-- [ ] **Q2: Should the feed carry `g:shipping` with a price, or should shipping be set in the
-  Merchant Center account?** Why it matters: the store charges nothing, and the recipient pays Nova
-  Poshta on receipt. Google needs some shipping cost for Ukraine, either in the feed or in the
-  account. Recommended default: no `g:shipping` in the feed. Add `g:free_shipping_threshold`, and
-  set up an account-level shipping service in Merchant Center with Nova Poshta's typical rate
-  (documented). If the owner prefers it in the feed, the default becomes `g:shipping` =
-  `UA::Нова пошта:<estimate> UAH` from a constant. Affects steps: 3, 4, 8.
-- [ ] **Q3: Are Google free listings and Instagram Shopping product tags available to a store in
-  Ukraine?** Why it matters: the feed can be technically valid while Instagram Shopping
-  (Commerce Manager shops and product tags) isn't offered in the shop's country, and that is an
-  account and eligibility question the code can't answer. Recommended default: build the feed as
-  specified. The docs include a "check eligibility first" step for both platforms, and the Meta
-  catalog stays useful for Facebook/Instagram catalog ads later even without tags. Affects steps:
-  8.
-
 ## Resolved questions
 
+- **Q1: Should `g:brand` be the perfume house or JASSMIN?** The perfume house (`products.brand`).
+  The title and description say plainly that it's a decant ("розпив / decant") poured into a
+  JASSMIN bottle, and `identifier_exists=no`. If listings are rejected under the brand rules,
+  switch `feedBrand` to `JASSMIN` (source: owner, 2026-11-06).
+- **Q2: Should the feed carry a shipping price?** No. There is no `g:shipping`; the feed carries
+  `g:free_shipping_threshold` (`UA`, 1500.00 UAH), and the owner sets Nova Poshta shipping once in
+  the Merchant Center account settings, as documented (source: owner, 2026-11-06).
+- **Q3: Are Google free listings and Instagram Shopping available in Ukraine?** Build the feed as
+  planned. `docs/product-feeds.md` starts with an eligibility check for both platforms (source:
+  owner, 2026-11-06).
 - **How do I get a "price" for each size?** From `product_variants.price` (`numeric`, an exact
   string). `products.price` is deprecated (source: `app/.server/db/schema.ts`, #26).
 - **How is stock decided for untracked sizes?** With the `variantStock` SQL expression: untracked
@@ -234,16 +219,16 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   seeded catalog (number of items = active slugged variants with a price).
 - [ ] **8. Docs.** Write `docs/product-feeds.md`, in the style of `docs/email.md`:
   - The feed URLs and what each field comes from.
-  - Eligibility checks for Ukraine (Q3).
+  - Eligibility checks for Ukraine .
   - Merchant Center: create the account, verify and claim the domain (the HTML tag or DNS TXT
     record; the DNS route needs no code change), add a "scheduled fetch" data source per language
-    (uk primary, en optional), set up shipping (Q2), turn on automatic item updates, and set up free
+    (uk primary, en optional), set up shipping , turn on automatic item updates, and set up free
     listings.
   - Meta Commerce Manager: create a catalog, verify the domain in Business Settings, add a data
     feed with a scheduled hourly fetch on the uk URL, and connect the catalog to the Instagram
     account (Shopping).
   - Reading feed errors in both tools, the common ones (images, brand or trademark disapprovals and
-    what to change, Q1), and the `curl -I` checks.
+    what to change), and the `curl -I` checks.
 
   Link the page from `README.md` and `docs/setup.md`.
 - [ ] **9. Final checks.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.

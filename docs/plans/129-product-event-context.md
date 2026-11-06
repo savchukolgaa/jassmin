@@ -215,7 +215,7 @@ events carry list context, position, price and stock. Three new client events ar
   `db/rollbacks/0029_product_event_types.sql`: delete `user_events` rows of the new types, then
   restore the old check. Update `enums.test.ts` / `schema.test.ts`. Check: `migrator.test.ts`
   applies and rolls back.
-- [ ] **4. `/api/events` accepts product events** — Add `findProductIdsByPublicIds(db, ids)`. In
+- [x] **4. `/api/events` accepts product events** — Add `findProductIdsByPublicIds(db, ids)`. In
   the action, map each event to an `EventInput` with its `properties`. For product events, set
   `productId` from the lookup and drop events whose product is unknown. Check:
   `api.events.test.ts` covers an impression batch recorded with `product_id`, an unknown product

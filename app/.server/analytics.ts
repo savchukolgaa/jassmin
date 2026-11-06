@@ -26,6 +26,7 @@ import { db as defaultDb } from "./db";
 import type { Db } from "./db/client";
 import {
   fillFirstTouch,
+  findProductIdsByPublicIds,
   insertEvents,
   insertSession,
   linkAnonymousRows,
@@ -304,6 +305,14 @@ export async function trackEvent<T extends EventType>(
   } catch (error: unknown) {
     console.error(`Recording the ${type} event failed`, error);
   }
+}
+
+/** `products.id` by `public_id`, for the products client events name (#129). */
+export function findEventProductIds(
+  publicIds: readonly string[],
+  db: Db = defaultDb,
+): Promise<Map<string, number>> {
+  return findProductIdsByPublicIds(db, publicIds);
 }
 
 /**

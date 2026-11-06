@@ -445,6 +445,40 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
     });
   });
 
+  describe("findEventProductIds (#129)", () => {
+    it("maps the public ids of existing products, archived ones too", async () => {
+      const { findEventProductIds } = await import("./analytics");
+      const { products } = await import("./db/schema");
+      const [listed, archived] = await testDb.db
+        .insert(products)
+        .values([
+          { title: "Listed", brand: "B", gender: "women", price: "100.00", volumeMl: 50 },
+          {
+            title: "Archived",
+            brand: "B",
+            gender: "women",
+            price: "100.00",
+            volumeMl: 50,
+            active: false,
+          },
+        ])
+        .returning({ id: products.id, publicId: products.publicId });
+      if (!listed || !archived) throw new Error("no products");
+      const unknown = "01a1652b-6e25-7c03-ae47-000000000000";
+
+      const ids = await findEventProductIds(
+        [listed.publicId, archived.publicId, listed.publicId, unknown],
+        testDb.db,
+      );
+
+      expect(Object.fromEntries(ids)).toEqual({
+        [listed.publicId]: listed.id,
+        [archived.publicId]: archived.id,
+      });
+      expect(await findEventProductIds([], testDb.db)).toEqual(new Map());
+    });
+  });
+
   describe("linkVisitorToUser", () => {
     it("gives the visitor's anonymous rows to the user and stores the first touch once", async () => {
       const { getVisitor, linkVisitorToUser, trackEvents } = await import("./analytics");

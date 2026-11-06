@@ -43,6 +43,22 @@ describe("cmsProductChangeSchema: tracked stock (#98)", () => {
   });
 });
 
+describe("cmsProductChangeSchema: stock reason (#130)", () => {
+  it("takes adjustment or receipt, leaves it out when Strapi sends none, and refuses others", () => {
+    const reason = (stockReason: unknown) => {
+      const result = parse({ variants: [{ volumeMl: 50, price: 3200, stock: 1, stockReason }] });
+      return result.success && result.data.action !== "delete"
+        ? result.data.variants[0]?.stockReason
+        : "refused";
+    };
+
+    expect(reason("receipt")).toBe("receipt");
+    expect(reason("adjustment")).toBe("adjustment");
+    expect(reason(undefined)).toBeUndefined();
+    expect(reason("theft")).toBe("refused");
+  });
+});
+
 describe("cmsProductChangeSchema: slug (#83)", () => {
   it("refuses a slug that is a UUID, whatever its case", () => {
     const uuid = "01a1652b-6e25-7c03-ae47-25b57131fb06";

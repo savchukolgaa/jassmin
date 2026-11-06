@@ -56,12 +56,12 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     await testDb.db.delete(carts);
   });
 
-  /** A new product with the sample sizes, under a fresh slug. */
-  async function created() {
+  /** A new product with the sample sizes (or `variants`), under a fresh slug. */
+  async function created(variants: CmsProductFields["variants"] = fields.variants) {
     const { applyCmsProductChange } = await import("./cms-sync");
     slugCounter += 1;
     const result = await applyCmsProductChange(
-      { action: "create", ...fields, slug: `gypsy-water-${slugCounter}` },
+      { action: "create", ...fields, variants, slug: `gypsy-water-${slugCounter}` },
       testDb.db,
     );
     if (!result.ok) throw new Error(result.error);
@@ -411,7 +411,11 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     const { eq } = await import("drizzle-orm");
     const { cartItems, carts, orderItems } = await import("../db/schema");
     const { applyCmsProductChange } = await import("./cms-sync");
-    const product = await created();
+    // The 10 ml size never tracked stock, so it has no ledger rows and can go (#130).
+    const product = await created([
+      { volumeMl: 50, price: "7200.00", trackStock: true, stock: 3 },
+      { volumeMl: 10, price: "1900.00", trackStock: false, stock: 0 },
+    ]);
     const { id } = await productRow(product.publicId);
     const small = await variantRow(id, 10);
     const [cart] = await testDb.db.insert(carts).values({}).returning();
@@ -449,6 +453,151 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect(line).toMatchObject({ productId: id, variantId: null, volumeMl: 10 });
     // The deprecated columns follow the new smallest size.
     expect(await productRow(product.publicId)).toMatchObject({ volumeMl: 50, price: "7200.00" });
+  });
+
+  describe("inventory ledger (#130)", () => {
+    async function ledger(productId: number, volumeMl: number) {
+      const { listInventoryMovements } = await import("../db/queries/inventory");
+      const size = await variantRow(productId, volumeMl);
+      return (await listInventoryMovements(testDb.db, size?.id ?? 0)).map(
+        ({ reason, quantityDelta, stockAfter, source }) => ({
+          reason,
+          quantityDelta,
+          stockAfter,
+          source,
+        }),
+      );
+    }
+
+    async function update(
+      product: { publicId: string; slug: string },
+      variants: CmsProductFields["variants"],
+    ) {
+      const { applyCmsProductChange } = await import("./cms-sync");
+      return applyCmsProductChange(
+        { action: "update", ...fields, publicId: product.publicId, slug: product.slug, variants },
+        testDb.db,
+      );
+    }
+
+    it("opens the ledger of each tracked size a new product has", async () => {
+      const product = await created([
+        { volumeMl: 50, price: "7200.00", trackStock: true, stock: 3 },
+        { volumeMl: 30, price: "5200.00", trackStock: true, stock: 0 },
+        { volumeMl: 10, price: "1900.00", trackStock: false, stock: 0 },
+      ]);
+      const { id } = await productRow(product.publicId);
+
+      expect(await ledger(id, 50)).toEqual([
+        { reason: "opening_balance", quantityDelta: 3, stockAfter: 3, source: "cms" },
+      ]);
+      // A size with no stock, or one that doesn't track it, has nothing to log.
+      expect(await ledger(id, 30)).toEqual([]);
+      expect(await ledger(id, 10)).toEqual([]);
+    });
+
+    it("logs receipts and corrections with the change actually applied", async () => {
+      const product = await created();
+      const { id } = await productRow(product.publicId);
+      const small = { volumeMl: 10, price: "1900.00", trackStock: true } as const;
+      const large = { volumeMl: 50, price: "7200.00", trackStock: true } as const;
+
+      // A delivery of 4 to the 10 ml size; the 50 ml one is saved unchanged.
+      expect(
+        await update(product, [
+          { ...small, stock: 10, expectedStock: 6, stockReason: "receipt" },
+          { ...large, stock: 3, expectedStock: 3 },
+        ]),
+      ).toMatchObject({ ok: true });
+      // A correction typed while 2 units sold: −1 applies to the real stock (10 − 2 → 7).
+      const smallId = (await variantRow(id, 10))?.id ?? 0;
+      const orderId = await orderWith(id, smallId, { quantity: 2 });
+      const { eq } = await import("drizzle-orm");
+      const { productVariants } = await import("../db/schema");
+      const { decrementVariantStock } = await import("../db/queries/orders");
+      await decrementVariantStock(testDb.db, {
+        variantId: smallId,
+        quantity: 2,
+        orderId,
+        now: new Date(),
+      });
+      expect(
+        await update(product, [
+          { ...small, stock: 9, expectedStock: 10 },
+          { ...large, stock: 3, expectedStock: 3 },
+        ]),
+      ).toMatchObject({ ok: true });
+
+      expect(await ledger(id, 10)).toEqual([
+        { reason: "opening_balance", quantityDelta: 6, stockAfter: 6, source: "cms" },
+        { reason: "receipt", quantityDelta: 4, stockAfter: 10, source: "cms" },
+        { reason: "sale", quantityDelta: -2, stockAfter: 8, source: "checkout" },
+        { reason: "adjustment", quantityDelta: -1, stockAfter: 7, source: "cms" },
+      ]);
+      expect(await ledger(id, 50)).toHaveLength(1);
+      const [row] = await testDb.db
+        .select({ stock: productVariants.stockQuantity })
+        .from(productVariants)
+        .where(eq(productVariants.id, smallId));
+      expect(row?.stock).toBe(7);
+    });
+
+    it("refuses a receipt that adds no units, and writes nothing", async () => {
+      const product = await created();
+      const { id } = await productRow(product.publicId);
+
+      expect(
+        await update(product, [
+          { volumeMl: 50, price: "7300.00", trackStock: true, stock: 3, expectedStock: 3 },
+          {
+            volumeMl: 10,
+            price: "1900.00",
+            trackStock: true,
+            stock: 5,
+            expectedStock: 6,
+            stockReason: "receipt",
+          },
+        ]),
+      ).toEqual({ ok: false, error: "receipt-not-positive", volumeMl: 10 });
+      expect(await variantRow(id, 10)).toMatchObject({ stockQuantity: 6 });
+      expect(await variantRow(id, 50)).toMatchObject({ price: "7200.00" });
+      expect(await ledger(id, 10)).toHaveLength(1);
+    });
+
+    it("refuses to remove a size with stock history, and writes nothing", async () => {
+      const product = await created();
+      const { id } = await productRow(product.publicId);
+
+      expect(
+        await update(product, [
+          { volumeMl: 50, price: "7300.00", trackStock: true, stock: 3, expectedStock: 3 },
+        ]),
+      ).toEqual({ ok: false, error: "size-has-stock-history", volumeMl: 10 });
+      expect(await variantRow(id, 10)).toBeDefined();
+      expect(await variantRow(id, 50)).toMatchObject({ price: "7200.00" });
+    });
+
+    it("brings the ledger to the typed stock when tracking is switched back on", async () => {
+      const product = await created();
+      const { id } = await productRow(product.publicId);
+      const large = { volumeMl: 50, price: "7200.00", trackStock: true, stock: 3 } as const;
+
+      // Off: nothing logged, whatever the stock says meanwhile.
+      await update(product, [
+        large,
+        { volumeMl: 10, price: "1900.00", trackStock: false, stock: 6, expectedStock: 6 },
+      ]);
+      // On again with 4 on the shelf: the ledger had 6, so −2.
+      await update(product, [
+        large,
+        { volumeMl: 10, price: "1900.00", trackStock: true, stock: 4, expectedStock: 6 },
+      ]);
+
+      expect(await ledger(id, 10)).toEqual([
+        { reason: "opening_balance", quantityDelta: 6, stockAfter: 6, source: "cms" },
+        { reason: "opening_balance", quantityDelta: -2, stockAfter: 4, source: "cms" },
+      ]);
+    });
   });
 
   it("archives a deleted product and keeps it for order history", async () => {
@@ -625,7 +774,9 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect((await variantRow(productId, 10))?.stockQuantity).toBe(6);
     expect((await outbox()).filter((row) => row.entity === "product")).toEqual([]);
     const { listInventoryMovements } = await import("../db/queries/inventory");
-    expect(await listInventoryMovements(testDb.db, variantId)).toEqual([]);
+    expect(
+      (await listInventoryMovements(testDb.db, variantId)).filter((m) => m.orderId === orderId),
+    ).toEqual([]);
   });
 
   it("cancels an order and puts its units back in stock exactly once", async () => {

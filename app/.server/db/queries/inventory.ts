@@ -2,7 +2,7 @@
 // transaction that changed `product_variants.stock_quantity`, with the stock right after it. A
 // trigger refuses updates and deletes, so these functions only insert and read. For every tracked
 // size the movements add up to its `stock_quantity` (`inventoryBalance`).
-import { and, asc, between, eq, sql } from "drizzle-orm";
+import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
 import type { InventoryDay, InventoryMovement } from "~/lib/commerce";
 import type { InventoryMovementReason, InventoryMovementSource } from "~/lib/enums";
 import type { Db } from "../client";
@@ -46,6 +46,20 @@ export async function inventoryBalance(db: Executor, variantId: number): Promise
     .from(inventoryMovements)
     .where(eq(inventoryMovements.variantId, variantId));
   return row?.balance ?? 0;
+}
+
+/** Which of these sizes have ledger rows; those can't be deleted (`on delete restrict`). */
+export async function variantsWithMovements(
+  db: Executor,
+  variantIds: readonly number[],
+): Promise<Set<number>> {
+  if (variantIds.length === 0) return new Set();
+  const rows = await db
+    .select({ variantId: inventoryMovements.variantId })
+    .from(inventoryMovements)
+    .where(inArray(inventoryMovements.variantId, [...variantIds]))
+    .groupBy(inventoryMovements.variantId);
+  return new Set(rows.map((row) => row.variantId));
 }
 
 /** The size's movements, oldest first. */

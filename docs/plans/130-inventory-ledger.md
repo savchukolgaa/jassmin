@@ -79,6 +79,11 @@ variant and day.
   drizzle-kit 0.31 mangles the SQL, write it by hand in the migration and declare it with
   `.existing()`. Implemented: the view and the trigger are hand-written in migration 0029 and
   the view is declared with `.existing()`, so drizzle-kit never regenerates them.
+- `stockReason` is optional in `cmsVariantSchema` (a missing one means `adjustment`) rather than
+  defaulted, so existing callers and tests of `CmsVariantInput` don't all need the field. The
+  CMS checks both refusals (receipt, removed size with history) before any write, instead of
+  mapping the FK error: returning a refusal inside the transaction would otherwise commit
+  earlier writes.
 - `ON DELETE RESTRICT` raises `23001` (`restrict_violation`), not `23503`; the CMS maps that code.
 - `quantity_delta <> 0` and `stock_after >= 0` are CHECKs; index on `(variant_id, occurred_at)`.
 - These columns are ML features: add them to the "never drop or rename" list in `AGENTS.md`.
@@ -186,7 +191,7 @@ All three were answered on 2026-11-06: the user accepted the recommended default
   patch.status === "unclaimed" ? "return" : "cancellation"` and its `source` (`cms` / `job`;
   `ORDER_STATUS_SOURCES` → `INVENTORY_MOVEMENT_SOURCES`, only those two can restock). Update
   `services/orders.test.ts` and `cancel-unpaid-orders.test.ts` to assert the rows.
-- [ ] **6. CMS product edits** — `cmsVariantSchema.stockReason: z.enum(["adjustment",
+- [x] **6. CMS product edits** — `cmsVariantSchema.stockReason: z.enum(["adjustment",
   "receipt"]).default("adjustment")`. In `applyCmsProductChange`, collect movements while applying
   sizes: tracked → tracked with `stored ≠ current` → `adjustment` / `receipt` with `stored −
   current` (refuse a non-positive receipt, Q2: return before any write, so check all sizes first);
@@ -194,7 +199,7 @@ All three were answered on 2026-11-06: the user accepted the recommended default
   inventoryBalance` (new sizes: `stored`) after the insert gives them an id; insert them all with
   `source: "cms"`. Map a `23503` from `deleteVariants` on `inventory_movements_variant_id_…_fk` to
   `size-has-stock-history` (Q1). Extend `CmsProductResult` and `cms-sync.test.ts`.
-- [ ] **7. Strapi** — `variant.json`: `stockReason` enumeration (`коригування`, `надходження`,
+- [x] **7. Strapi** — `variant.json`: `stockReason` enumeration (`коригування`, `надходження`,
   default `коригування`, visible when `trackStock`), described in the component. `middleware.ts`:
   send `stockReason` mapped to English, write `коригування` back when saving the app's answer.
   `app-sync.ts`: messages for the new errors. Update `middleware.test.ts`.

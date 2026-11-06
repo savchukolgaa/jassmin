@@ -72,6 +72,13 @@ export interface CatalogVariant extends Struct.ComponentSchema {
         number
       > &
       Schema.Attribute.DefaultTo<0>;
+    stockReason: Schema.Attribute.Enumeration<
+      [
+        '\u043A\u043E\u0440\u0438\u0433\u0443\u0432\u0430\u043D\u043D\u044F',
+        '\u043D\u0430\u0434\u0445\u043E\u0434\u0436\u0435\u043D\u043D\u044F',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'\u043A\u043E\u0440\u0438\u0433\u0443\u0432\u0430\u043D\u043D\u044F'>;
     trackStock: Schema.Attribute.Boolean &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<false>;

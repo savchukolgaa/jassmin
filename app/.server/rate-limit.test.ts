@@ -4,8 +4,11 @@ import {
   createMemoryRateLimitStore,
   createPgRateLimitStore,
   createRateLimiter,
+  passwordResetLimiters,
+  type RateLimiter,
   type RateLimitStore,
   storedKey,
+  verificationEmailLimiter,
 } from "./rate-limit";
 
 function setup(store: RateLimitStore = createMemoryRateLimitStore()) {
@@ -139,5 +142,26 @@ describe.skipIf(!hasDatabase)("rate limiter on PostgreSQL", () => {
       (row) => row.key,
     );
     expect(keys.some((key) => key.includes("plain"))).toBe(false);
+  });
+});
+
+describe("password reset and verification limits (#135)", () => {
+  async function hitsUntilBlocked(limiter: RateLimiter): Promise<number> {
+    const key = `test-${Math.random()}`;
+    let hits = 0;
+    while (!(await limiter.isBlocked(key)) && hits < 100) {
+      await limiter.hit(key);
+      hits += 1;
+    }
+    return hits;
+  }
+
+  it("allows 3 reset emails per address and 10 per IP", async () => {
+    expect(await hitsUntilBlocked(passwordResetLimiters.byEmail)).toBe(3);
+    expect(await hitsUntilBlocked(passwordResetLimiters.byIp)).toBe(10);
+  });
+
+  it("allows 3 verification emails per user", async () => {
+    expect(await hitsUntilBlocked(verificationEmailLimiter)).toBe(3);
   });
 });

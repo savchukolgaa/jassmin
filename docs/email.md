@@ -1,8 +1,8 @@
 # Email delivery: provider, DNS and bounces
 
 The shop sends every email over SMTP from `no-reply@jassmin.ua`, with replies going to
-`hello@jassmin.ua` (#134). That covers order confirmations, gift card codes, contact form messages
-and the email-changed notice. In production the SMTP server is **Brevo**, a transactional email
+`hello@jassmin.ua` (#134). That covers order confirmations, gift card codes, contact form messages,
+the email-changed notice, and the password reset and email verification links (#135). In production the SMTP server is **Brevo**, a transactional email
 provider. Locally it's smtp4dev, which catches everything.
 
 Mail from a domain without SPF, DKIM and DMARC lands in spam, or is rejected by Gmail, Yahoo and

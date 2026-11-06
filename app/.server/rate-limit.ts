@@ -188,5 +188,41 @@ export const giftCardCodeLimiter: RateLimiter = createRateLimiter({
   store: appRateLimitStore,
 });
 
+const HOUR_MS = 60 * 60 * 1000;
+
+interface PasswordResetLimiters {
+  /** Reset emails asked for per normalised email, registered or not. */
+  byEmail: RateLimiter;
+  /** Reset emails asked for per client IP. */
+  byIp: RateLimiter;
+}
+
+/**
+ * "Forgot password" requests (#135): 3 per email and 10 per IP per hour. Every request counts,
+ * whether the email is registered or not, so the limit reveals nothing about accounts.
+ */
+export const passwordResetLimiters: PasswordResetLimiters = {
+  byEmail: createRateLimiter({
+    name: "password-reset-email",
+    limit: 3,
+    windowMs: HOUR_MS,
+    store: appRateLimitStore,
+  }),
+  byIp: createRateLimiter({
+    name: "password-reset-ip",
+    limit: 10,
+    windowMs: HOUR_MS,
+    store: appRateLimitStore,
+  }),
+};
+
+/** Verification emails resent from the account page (#135): 3 per user id per hour. */
+export const verificationEmailLimiter: RateLimiter = createRateLimiter({
+  name: "verification-email",
+  limit: 3,
+  windowMs: HOUR_MS,
+  store: appRateLimitStore,
+});
+
 // The per-IP limits' key: `X-Forwarded-For` as far as `TRUSTED_PROXY_HOPS` allows (#143).
 export { getClientIp } from "./client-ip";

@@ -137,6 +137,14 @@ export const GIFT_CARD_STATUSES = ["pending", "active", "used_up", "expired"] as
 export type GiftCardStatus = (typeof GIFT_CARD_STATUSES)[number];
 
 /**
+ * What a one-time emailed link in `auth_tokens` is for (#135): setting a new password or
+ * confirming the email address. A CHECK constraint limits `auth_tokens.purpose` to these values.
+ */
+export const AUTH_TOKEN_PURPOSES = ["password_reset", "email_verification"] as const;
+
+export type AuthTokenPurpose = (typeof AUTH_TOKEN_PURPOSES)[number];
+
+/**
  * How a discount rule (#59) takes money off: a percentage of the qualifying lines, a fixed amount
  * off them, a fixed price for each set of `min_quantity` qualifying units, or a percentage off
  * every `min_quantity`-th qualifying unit, dearest first (the couple offer, #124). A CHECK

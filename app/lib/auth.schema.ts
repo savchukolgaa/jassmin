@@ -58,6 +58,29 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/**
+ * The token in an emailed link (#135): 32 bytes in base64url. Anything else can't be one of ours,
+ * and the page treats it like an unknown token.
+ */
+export const authTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+/** A new password set through a reset link: the registration rules, typed twice. */
+export const resetPasswordSchema = z
+  .object({ password: newPasswordSchema, confirmPassword: z.string() })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: msg("auth.errors.passwordMismatch"),
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+/** The account page's "send it again" button (#135). */
+export const resendVerificationSchema = z.object({ intent: z.literal("resend-verification") });
+
 export const profileIntentSchema = z.enum(PROFILE_INTENTS);
 
 const currentPasswordSchema = z

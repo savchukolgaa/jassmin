@@ -3,15 +3,19 @@ import { EN_PREFIX, PAGES, type Page } from "~/lib/paths";
 // Builds `/robots.txt` (#87).
 
 /**
- * The private pages: cart, checkout (with its success and payment pages), login, register and
- * the account (with its orders and profile), and a gift card's result page (#125). Each one's path is a prefix of its sub-pages' paths,
- * so these cover every page that isn't indexable; a test checks that.
+ * The private pages: cart, checkout (with its success and payment pages), login, register, the
+ * password reset and email verification pages (#135), the account (with its orders and profile),
+ * and a gift card's result page (#125). Each one's path is a prefix of its sub-pages' paths, so
+ * these cover every page that isn't indexable; a test checks that.
  */
 export const ROBOTS_PRIVATE_PAGES = [
   "cart",
   "checkout",
   "login",
   "register",
+  "forgotPassword",
+  "resetPassword",
+  "verifyEmail",
   "account",
   // The gift card purchase page is indexable, so only its result pages are blocked (#125).
   "giftCardSuccess",

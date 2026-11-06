@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  AUTH_TOKEN_PURPOSES,
   CART_STATUSES,
   EVENT_TYPES,
   GENDERS,
@@ -11,6 +12,10 @@ import {
 } from "./enums";
 
 describe("enum values", () => {
+  it("lists the auth token purposes", () => {
+    expect(AUTH_TOKEN_PURPOSES).toEqual(["password_reset", "email_verification"]);
+  });
+
   it("lists the genders", () => {
     expect(GENDERS).toEqual(["women", "men", "unisex"]);
   });

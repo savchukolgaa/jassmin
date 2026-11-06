@@ -127,6 +127,26 @@ describe("renderEmail", () => {
     expect(text).toContain(`<script>alert("x")</script> & <b>bold</b>`);
   });
 
+  it("renders a button link with its URL written out, and the same words as text (#135)", () => {
+    const url = "https://jassmin.ua/novyi-parol/abc?x=1&y=2";
+    const body: EmailBlock[] = [{ type: "button", label: "Задати новий пароль", url }];
+    const { html, text } = render("uk", body);
+    const content = htmlSection(html, "content");
+
+    expect(content).toContain('href="https://jassmin.ua/novyi-parol/abc?x=1&amp;y=2"');
+    expect(content.match(/<a /g)).toHaveLength(2);
+    expect(text).toContain(`Задати новий пароль:\n${url}`);
+    expect(htmlWords(content)).toEqual(words(text.split("\n-- \n")[0] ?? ""));
+  });
+
+  it("never links a button to a non-http URL", () => {
+    const { html } = render("uk", [
+      { type: "button", label: "Click", url: 'javascript:alert("x")' },
+    ]);
+    expect(htmlSection(html, "content")).not.toContain("<a ");
+    expect(html).toContain("javascript:alert(&quot;x&quot;)");
+  });
+
   it("adds a hidden preheader to the HTML only", () => {
     const { html, text } = renderEmail(blocks, {
       translator: createTranslator("uk"),

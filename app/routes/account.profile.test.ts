@@ -13,6 +13,16 @@ const profile = vi.hoisted(() => ({
 vi.mock("~/.server/services/auth", () => auth);
 vi.mock("~/.server/services/profile", () => profile);
 vi.mock("~/.server/locale", () => ({ getLocale: vi.fn(async () => "en") }));
+const verification = vi.hoisted(() => ({ sendVerificationEmail: vi.fn() }));
+const session = vi.hoisted(() => ({
+  renewSessionAuth: vi.fn(async (_request: Request, at: Date) => `auth=${at.getTime()}`),
+}));
+vi.mock("~/.server/services/email-verification", () => verification);
+vi.mock("~/.server/session", () => session);
+vi.mock("~/.server/env", () => ({
+  getEnv: () => ({}),
+  getSiteUrl: () => "https://jassmin.ua",
+}));
 
 type LoaderArgs = Parameters<typeof import("./account.profile").loader>[0];
 type ActionArgs = Parameters<typeof import("./account.profile").action>[0];
@@ -33,6 +43,13 @@ async function act(fields: Record<string, string>) {
   const result = await action(post(fields));
   const { data, init } = result as unknown as { data: unknown; init?: { status?: number } };
   return { status: init?.status ?? 200, body: data };
+}
+
+/** The headers of an action's `data()` result. */
+async function actHeaders(fields: Record<string, string>): Promise<Headers> {
+  const { action } = await import("./account.profile");
+  const result = await action(post(fields));
+  return new Headers((result as unknown as { init?: { headers?: HeadersInit } }).init?.headers);
 }
 
 const correctPassword = {
@@ -145,6 +162,12 @@ describe("account profile action", () => {
       fullName: "Олена Коваль",
       locale: "en",
     });
+    // The new address starts unverified and gets a confirmation link (#135).
+    expect(verification.sendVerificationEmail).toHaveBeenCalledWith({
+      userId: 7,
+      locale: "en",
+      siteUrl: "https://jassmin.ua",
+    });
   });
 
   it("sends no notice when the email didn't change", async () => {
@@ -152,6 +175,7 @@ describe("account profile action", () => {
 
     await act({ intent: "email", email: "olena@example.com", currentPassword: "correct horse" });
     expect(profile.notifyEmailChanged).not.toHaveBeenCalled();
+    expect(verification.sendVerificationEmail).not.toHaveBeenCalled();
   });
 
   it("reports a wrong current password and a taken email next to the fields", async () => {
@@ -188,13 +212,20 @@ describe("account profile action", () => {
   });
 
   it("changes the password without sending any password back", async () => {
-    profile.changePassword.mockResolvedValueOnce({ ok: true });
+    const changedAt = new Date("2026-11-05T12:00:00Z");
+    profile.changePassword.mockResolvedValueOnce({ ok: true, changedAt });
 
     const result = await act({ intent: "password", ...correctPassword });
 
     expect(result).toEqual({ status: 200, body: { ok: true, intent: "password" } });
     expect(profile.changePassword).toHaveBeenCalledWith(7, "correct horse", "brand new secret");
     expect(JSON.stringify(result.body)).not.toContain("secret");
+    // Other sessions are logged out (#135); this one is renewed at the change time.
+    expect(session.renewSessionAuth).toHaveBeenCalledWith(expect.any(Request), changedAt);
+    profile.changePassword.mockResolvedValueOnce({ ok: true, changedAt });
+    expect((await actHeaders({ intent: "password", ...correctPassword })).get("Set-Cookie")).toBe(
+      `auth=${changedAt.getTime()}`,
+    );
   });
 
   it("rejects a mismatched confirmation before checking the password", async () => {

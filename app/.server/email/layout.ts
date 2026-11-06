@@ -44,6 +44,11 @@ export type EmailBlock =
   | { type: "amounts"; rows: EmailAmount[] }
   /** A code to copy (a gift card's), with an optional line under it. */
   | { type: "code"; label: string; code: string; note?: string }
+  /**
+   * A link styled as a button, with the URL written out under it for clients that hide styled
+   * links (#135). Only `http(s)` URLs become links; anything else is shown as text.
+   */
+  | { type: "button"; label: string; url: string }
   | { type: "signature"; text: string };
 
 /** What the footer shows: the shop's inbox and, when known, the site. */
@@ -107,6 +112,22 @@ function blockHtml(block: EmailBlock): string {
           : "",
         "</td></tr></table>",
       ].join("");
+    case "button": {
+      if (!/^https?:\/\//i.test(block.url)) {
+        return paragraph(`${escapeHtml(block.label)}: ${escapeHtml(block.url)}`);
+      }
+      const href = escapeHtml(block.url);
+      return [
+        `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 16px;border-collapse:separate;">`,
+        `<tr><td align="center" style="border-radius:999px;background:${EMAIL_COLORS.primary};">`,
+        `<a href="${href}" style="display:inline-block;padding:14px 28px;font-family:${SANS};font-size:16px;font-weight:bold;color:${EMAIL_COLORS.white};text-decoration:none;border-radius:999px;">${escapeHtml(block.label)}</a>`,
+        "</td></tr></table>",
+        paragraph(
+          `<a href="${href}" style="color:${EMAIL_COLORS.primary};word-break:break-all;">${href}</a>`,
+          `font-size:14px;color:${EMAIL_COLORS.muted};`,
+        ),
+      ].join("");
+    }
     case "signature":
       return paragraph(escapeLines(block.text), `margin-top:24px;color:${EMAIL_COLORS.ink};`);
   }
@@ -124,6 +145,8 @@ function blockText(block: EmailBlock): string {
       return block.rows.map(({ label, value }) => `${label}: ${value}`).join("\n");
     case "code":
       return [`${block.label}: ${block.code}`, ...(block.note ? [block.note] : [])].join("\n");
+    case "button":
+      return `${block.label}:\n${block.url}`;
   }
 }
 

@@ -23,6 +23,7 @@ const sampleOrder = {
 } as const;
 
 const ALL_TABLES = [
+  "auth_tokens",
   "cart_items",
   "carts",
   "cms_outbox",
@@ -701,6 +702,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { db } = testDb;
 
     // 0007 to 0025 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -746,6 +748,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { db } = testDb;
 
     // 0004 to 0025 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -863,6 +866,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -911,6 +915,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     expect(updated.rows[0]?.image_formats).toEqual(formats);
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -944,6 +949,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await trio()).toEqual([{ value: "499.00", redemption_count: 0 }]);
 
     // A rule that was there already (e.g. seeded) keeps its values and redemptions.
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -959,6 +965,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await trio()).toEqual([{ value: "450.00", redemption_count: 7 }]);
 
     await db.execute(sql`delete from discounts where slug = 'tester-trio'`);
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -984,6 +991,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ]);
 
     // After the rollback the rule is gone and the old checks reject the kind again.
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -1014,6 +1022,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
           values ('Poured', 'Test', 'women', '119.00', 5) returning id`,
     );
     const productId = product.rows[0]?.id;
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -1031,6 +1040,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     expect(variants.rows).toEqual([{ track_stock: false }]);
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -1062,6 +1072,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       sql`update products set description_en = 'A description' where id = ${row?.id}`,
     );
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -1088,6 +1099,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -1161,6 +1173,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -1250,6 +1263,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(db)).toBe("0023_gift_cards");
@@ -1339,6 +1353,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       totalAmount: "0.00",
     });
 
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     // The rollback refuses while gift cards were bought or used.
@@ -1353,11 +1368,60 @@ describe.skipIf(!hasDatabase)("migrations", () => {
           t !== "gift_cards" &&
           t !== "gift_card_redemptions" &&
           t !== "email_suppressions" &&
-          t !== "rate_limits",
+          t !== "rate_limits" &&
+          t !== "auth_tokens",
       ),
     );
     const columns = await db.execute(
       sql`select 1 from information_schema.columns where column_name in ('gift_card_id', 'gift_card_amount')`,
+    );
+    expect(columns.rows).toEqual([]);
+
+    await migrateLatest(db);
+    expect(await listTables()).toEqual(ALL_TABLES);
+  });
+
+  it("adds auth tokens and the users' verification columns, and rolls them back (#135)", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { pgErrorCode } = await import("./test-utils");
+    const { authTokens, users } = await import("./schema");
+    const { db } = testDb;
+
+    const [user] = await db
+      .insert(users)
+      .values({ fullName: "Token Test", email: "token-test@example.com", passwordHash: "x" })
+      .returning({ id: users.id, emailVerifiedAt: users.emailVerifiedAt });
+    if (!user) throw new Error("no user");
+    // Users start unverified, with no password change.
+    expect(user.emailVerifiedAt).toBeNull();
+
+    const token = {
+      userId: user.id,
+      purpose: "password_reset",
+      tokenHash: "a".repeat(64),
+      expiresAt: new Date("2030-01-01T00:00:00Z"),
+    } as const;
+    await db.insert(authTokens).values(token);
+    // 23505: a hash is stored once. 23514: only the known purposes.
+    expect(await pgErrorCode(db.insert(authTokens).values(token))).toBe("23505");
+    expect(
+      await pgErrorCode(
+        db.execute(
+          sql`insert into auth_tokens (user_id, purpose, token_hash, expires_at)
+              values (${user.id}, 'other', ${"b".repeat(64)}, now())`,
+        ),
+      ),
+    ).toBe("23514");
+
+    // Deleting the user deletes their tokens.
+    await db.execute(sql`delete from users where id = ${user.id}`);
+    expect(await db.select().from(authTokens)).toEqual([]);
+
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
+    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "auth_tokens"));
+    const columns = await db.execute(
+      sql`select 1 from information_schema.columns where table_name = 'users'
+          and column_name in ('email_verified_at', 'password_changed_at')`,
     );
     expect(columns.rows).toEqual([]);
 
@@ -1384,10 +1448,14 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23505");
 
+    // 0025 and 0026 sit on top of 0024; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(db)).toBe("0024_email_suppressions");
     expect(await listTables()).toEqual(
-      ALL_TABLES.filter((t) => t !== "email_suppressions" && t !== "rate_limits"),
+      ALL_TABLES.filter(
+        (t) => t !== "email_suppressions" && t !== "rate_limits" && t !== "auth_tokens",
+      ),
     );
     const columns = await db.execute(
       sql`select 1 from information_schema.columns where table_name = 'order_emails' and column_name = 'message_id'`,
@@ -1415,8 +1483,12 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23505");
 
+    // 0026 sits on top of 0025; migrateLatest below reapplies it.
+    expect(await rollbackLatest(db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(db)).toBe("0025_rate_limits");
-    expect(await listTables()).toEqual(ALL_TABLES.filter((t) => t !== "rate_limits"));
+    expect(await listTables()).toEqual(
+      ALL_TABLES.filter((t) => t !== "rate_limits" && t !== "auth_tokens"),
+    );
 
     await migrateLatest(db);
     expect(await listTables()).toEqual(ALL_TABLES);
@@ -1425,6 +1497,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0026_auth_tokens");
     expect(await rollbackLatest(testDb.db)).toBe("0025_rate_limits");
     expect(await rollbackLatest(testDb.db)).toBe("0024_email_suppressions");
     expect(await rollbackLatest(testDb.db)).toBe("0023_gift_cards");
@@ -1455,7 +1528,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
         t !== "gift_cards" &&
         t !== "gift_card_redemptions" &&
         t !== "email_suppressions" &&
-        t !== "rate_limits",
+        t !== "rate_limits" &&
+        t !== "auth_tokens",
     );
     expect(await listTables()).toEqual(tablesBefore0012);
     const syncColumns = await testDb.db.execute(

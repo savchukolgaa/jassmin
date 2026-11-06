@@ -52,6 +52,10 @@ export default [
     ...localizedRoute("popular", "routes/popular.tsx"),
     ...localizedRoute("login", "routes/login.tsx"),
     ...localizedRoute("register", "routes/register.tsx"),
+    // Password reset and email verification (#135).
+    ...localizedRoute("forgotPassword", "routes/forgot-password.tsx"),
+    ...localizedRoute("resetPassword", "routes/reset-password.tsx"),
+    ...localizedRoute("verifyEmail", "routes/verify-email.tsx"),
     ...localizedRoute("cart", "routes/cart.tsx"),
     ...localizedRoute("checkout", "routes/checkout.tsx"),
     ...localizedRoute("checkoutSuccess", "routes/checkout-success.tsx"),

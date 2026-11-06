@@ -6,9 +6,9 @@ import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import {
   findUserCredentialsById,
   findUserProfile,
+  setPasswordChanged,
   updateUserContact,
   updateUserEmail,
-  updateUserPasswordHash,
 } from "../db/queries/users";
 import { composeEmail } from "../email/layout";
 import { type Env, getEnv } from "../env";
@@ -78,20 +78,28 @@ export async function changeEmail(
   return { ok: true, previousEmail: profile.email };
 }
 
-export type ChangePasswordResult = { ok: true } | { ok: false; error: "wrong-password" };
+export type ChangePasswordResult =
+  /** `changedAt` is stored as `password_changed_at`: renew this session's login time with it. */
+  { ok: true; changedAt: Date } | { ok: false; error: "wrong-password" };
 
-/** Stores the argon2id hash of a new password, after checking the current one. */
+/**
+ * Stores the argon2id hash of a new password, after checking the current one. Records the change
+ * time, which logs out the user's other sessions (#135).
+ */
 export async function changePassword(
   userId: number,
   currentPassword: string,
   newPassword: string,
   database: Db = db,
+  now: () => Date = () => new Date(),
 ): Promise<ChangePasswordResult> {
   if (!(await isCurrentPassword(database, userId, currentPassword))) {
     return { ok: false, error: "wrong-password" };
   }
-  await updateUserPasswordHash(database, userId, await hashPassword(newPassword));
-  return { ok: true };
+  const passwordHash = await hashPassword(newPassword);
+  const changedAt = now();
+  await setPasswordChanged(database, userId, { passwordHash, changedAt, verifyEmail: false });
+  return { ok: true, changedAt };
 }
 
 export interface EmailChangedNotice {

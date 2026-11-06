@@ -35,6 +35,10 @@ export const PAGES = {
   checkoutPay: { uk: "oformlennia/oplata/:orderId", en: "checkout/pay/:orderId", indexable: false },
   login: { uk: "vkhid", en: "login", indexable: false },
   register: { uk: "reiestratsiia", en: "register", indexable: false },
+  // Password reset and email verification (#135): the token is the emailed one-time link's.
+  forgotPassword: { uk: "zabuly-parol", en: "forgot-password", indexable: false },
+  resetPassword: { uk: "novyi-parol/:token", en: "reset-password/:token", indexable: false },
+  verifyEmail: { uk: "pidtverdzhennia/:token", en: "verify-email/:token", indexable: false },
   account: { uk: "kabinet", en: "account", indexable: false },
   accountOrder: { uk: "kabinet/zamovlennia/:id", en: "account/orders/:id", indexable: false },
   accountProfile: { uk: "kabinet/profil", en: "account/profile", indexable: false },

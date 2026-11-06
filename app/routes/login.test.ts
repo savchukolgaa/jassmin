@@ -1,4 +1,8 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { I18nProvider, type Locale } from "~/lib/i18n";
 
 const auth = vi.hoisted(() => ({
   getUser: vi.fn(),
@@ -149,5 +153,28 @@ describe("login loader", () => {
     const thrown = await loader(args).catch((error: unknown) => error);
 
     expect((thrown as Response).headers.get("Location")).toBe("/cart");
+  });
+});
+
+describe("login page", () => {
+  async function render(locale: Locale) {
+    const { default: Login } = await import("./login");
+    const element = createElement(Login as never, { loaderData: {}, actionData: undefined });
+    return renderToStaticMarkup(
+      createElement(
+        I18nProvider,
+        { locale },
+        createElement(RouterProvider, {
+          router: createMemoryRouter([{ path: "/", element }], { initialEntries: ["/"] }),
+        }),
+      ),
+    );
+  }
+
+  it("links to the forgot password page (#135)", async () => {
+    const uk = await render("uk");
+    expect(uk).toContain('href="/zabuly-parol"');
+    expect(uk).toContain("Забули пароль?");
+    expect(await render("en")).toContain('href="/en/forgot-password"');
   });
 });

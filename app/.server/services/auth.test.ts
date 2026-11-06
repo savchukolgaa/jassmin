@@ -24,10 +24,11 @@ afterAll(() => {
   vi.unstubAllEnvs();
 });
 
-async function cookieFor(userId: number): Promise<string> {
+async function cookieFor(userId: number, authenticatedAt?: Date): Promise<string> {
   const { commitSession, getSession } = await import("../session");
   const session = await getSession();
   session.set("userId", userId);
+  if (authenticatedAt) session.set("authenticatedAt", authenticatedAt.getTime());
   return (await commitSession(session)).split(";")[0] ?? "";
 }
 
@@ -261,8 +262,43 @@ describe.skipIf(!hasDatabase)("auth service", () => {
       fullName: "Session",
       email: "session@example.com",
       role: "customer",
+      emailVerified: false,
     });
     expect(await getUser(request(await cookieFor(999_999)), testDb.db)).toBeNull();
+  });
+
+  it("rejects sessions that logged in before the password changed (#135)", async () => {
+    const { getUser, registerUser } = await import("./auth");
+    const { users } = await import("../db/schema");
+    const { eq } = await import("drizzle-orm");
+    const registered = await registerUser(testDb.db, {
+      fullName: "Revoked",
+      email: "revoked@example.com",
+      password: "correct horse",
+    });
+    if (!registered.ok) throw new Error("registration failed");
+    const request = (cookie: string) =>
+      new Request("http://localhost/", { headers: { Cookie: cookie } });
+    const before = new Date("2026-11-05T10:00:00.123Z");
+    const changedAt = new Date("2026-11-05T11:00:00.456Z");
+    const legacyCookie = await cookieFor(registered.userId);
+    const oldCookie = await cookieFor(registered.userId, before);
+
+    // Without a password change, every cookie is valid, including one from before #135.
+    expect(await getUser(request(legacyCookie), testDb.db)).not.toBeNull();
+    expect(await getUser(request(oldCookie), testDb.db)).not.toBeNull();
+
+    await testDb.db
+      .update(users)
+      .set({ passwordChangedAt: changedAt })
+      .where(eq(users.id, registered.userId));
+
+    expect(await getUser(request(legacyCookie), testDb.db)).toBeNull();
+    expect(await getUser(request(oldCookie), testDb.db)).toBeNull();
+    // The session issued at the change (the reset's own) survives, to the millisecond.
+    expect(
+      await getUser(request(await cookieFor(registered.userId, changedAt)), testDb.db),
+    ).toMatchObject({ id: registered.userId });
   });
 
   it("lets admins through and answers 403 to customers", async () => {

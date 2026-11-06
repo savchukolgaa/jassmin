@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { AccountProfile } from "~/lib/account";
 import type { CheckoutPrefill } from "~/lib/checkout";
 import type { UserRole } from "~/lib/enums";
@@ -12,7 +12,22 @@ export interface PublicUser {
   email: string;
   /** Read fresh on every request, so demoting an admin takes effect immediately. */
   role: UserRole;
+  /** Whether the user confirmed their email address (#135). */
+  emailVerified: boolean;
 }
+
+/** The session's user, plus what decides whether a password change revoked the session (#135). */
+export interface SessionUser extends PublicUser {
+  passwordChangedAt: Date | null;
+}
+
+const publicUserColumns = {
+  id: users.id,
+  fullName: users.fullName,
+  email: users.email,
+  role: users.role,
+  emailVerified: sql<boolean>`${users.emailVerifiedAt} is not null`,
+};
 
 export interface UserCredentials {
   id: number;
@@ -40,8 +55,14 @@ export async function findUserByEmail(db: Db, email: string): Promise<UserCreden
 }
 
 export async function findUserById(db: Db, id: number): Promise<PublicUser | undefined> {
+  const [user] = await db.select(publicUserColumns).from(users).where(eq(users.id, id)).limit(1);
+  return user;
+}
+
+/** The user a session cookie names, with `password_changed_at` for the revocation check. */
+export async function findSessionUser(db: Db, id: number): Promise<SessionUser | undefined> {
   const [user] = await db
-    .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role })
+    .select({ ...publicUserColumns, passwordChangedAt: users.passwordChangedAt })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);
@@ -131,28 +152,88 @@ export async function updateUserContact(
 }
 
 /**
- * Sets an (already normalised) email. Rejects with PostgreSQL error `23505` when another user has
- * it. `false` when no user has this id.
+ * Sets an (already normalised) email and marks it unverified (#135). Rejects with PostgreSQL
+ * error `23505` when another user has it. `false` when no user has this id.
  */
 export async function updateUserEmail(db: Db, id: number, email: string): Promise<boolean> {
   const updated = await db
     .update(users)
-    .set({ email })
+    // A new address isn't confirmed yet (#135).
+    .set({ email, emailVerifiedAt: null })
     .where(eq(users.id, id))
     .returning({ id: users.id });
   return updated.length > 0;
 }
 
-/** Stores a new password hash. `false` when no user has this id. */
-export async function updateUserPasswordHash(
-  db: Db,
+/** Who an account email goes to (#135): the user's id, name and current address. */
+export interface UserRecipient {
+  id: number;
+  fullName: string;
+  email: string;
+  emailVerified: boolean;
+}
+
+const recipientColumns = {
+  id: users.id,
+  fullName: users.fullName,
+  email: users.email,
+  emailVerified: sql<boolean>`${users.emailVerifiedAt} is not null`,
+};
+
+/** The recipient with this (already normalised) email, for a password reset email. */
+export async function findUserRecipientByEmail(
+  db: Pick<Db, "select">,
+  email: string,
+): Promise<UserRecipient | undefined> {
+  const [user] = await db
+    .select(recipientColumns)
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  return user;
+}
+
+/** The recipient with this id, for a verification email. */
+export async function findUserRecipientById(
+  db: Pick<Db, "select">,
   id: number,
-  passwordHash: string,
-): Promise<boolean> {
-  const updated = await db
+): Promise<UserRecipient | undefined> {
+  const [user] = await db.select(recipientColumns).from(users).where(eq(users.id, id)).limit(1);
+  return user;
+}
+
+/**
+ * Stores a new password hash set through a password reset (or the profile, #135) and records the
+ * change time, which revokes every session that logged in before it. A reset link proves the
+ * address is the user's, so `verifyEmail` also confirms an unverified email.
+ */
+export async function setPasswordChanged(
+  db: Pick<Db, "update">,
+  id: number,
+  values: { passwordHash: string; changedAt: Date; verifyEmail: boolean },
+): Promise<{ email: string } | undefined> {
+  const [user] = await db
     .update(users)
-    .set({ passwordHash })
+    .set({
+      passwordHash: values.passwordHash,
+      passwordChangedAt: values.changedAt,
+      ...(values.verifyEmail
+        ? { emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, ${values.changedAt})` }
+        : {}),
+    })
     .where(eq(users.id, id))
-    .returning({ id: users.id });
-  return updated.length > 0;
+    .returning({ email: users.email });
+  return user;
+}
+
+/** Confirms the user's email (#135), keeping the first confirmation time. */
+export async function markEmailVerified(
+  db: Pick<Db, "update">,
+  id: number,
+  at: Date,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({ emailVerifiedAt: at })
+    .where(and(eq(users.id, id), isNull(users.emailVerifiedAt)));
 }

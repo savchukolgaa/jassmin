@@ -200,9 +200,13 @@ describe.skipIf(!hasDatabase)("profile service", () => {
     });
     expect(await readHash(id)).toBe(before);
 
-    expect(await changePassword(id, "correct horse", "brand new secret", testDb.db)).toEqual({
-      ok: true,
-    });
+    const changedAt = new Date("2026-11-05T12:00:00Z");
+    expect(
+      await changePassword(id, "correct horse", "brand new secret", testDb.db, () => changedAt),
+    ).toEqual({ ok: true, changedAt });
+    // Recorded, so every session that logged in before it is logged out (#135).
+    const { findSessionUser } = await import("../db/queries/users");
+    expect((await findSessionUser(testDb.db, id))?.passwordChangedAt).toEqual(changedAt);
     const hash = await readHash(id);
     expect(hash).toMatch(/^\$argon2id\$/);
     expect(hash).not.toContain("brand new secret");

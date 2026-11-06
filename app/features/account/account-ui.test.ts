@@ -12,6 +12,7 @@ import { OrderLineThumb } from "./OrderLineItem";
 import { OrderProgress } from "./OrderProgress";
 import { OrderStatusPill } from "./OrderStatusPill";
 import { PreviousOrdersList } from "./PreviousOrdersList";
+import { RESEND_VERIFICATION_INTENT, VerifyEmailBanner } from "./VerifyEmailBanner";
 
 // Links need a router.
 const render = (element: ReactElement, locale: Locale = "uk") =>
@@ -247,5 +248,28 @@ describe("AccountGiftCards (#125)", () => {
     expect(html).toContain("Pay for the card");
     expect(html).not.toContain("Balance:");
     expect(html).toContain('href="/en/gift-cards"');
+  });
+});
+
+describe("VerifyEmailBanner (#135)", () => {
+  const props = { email: "o@e.com", resent: false, submitting: false };
+
+  it("asks to confirm the email, with a resend button", () => {
+    const html = render(createElement(VerifyEmailBanner, props));
+    expect(html).toContain("Підтвердіть свій email");
+    expect(html).toContain("o@e.com");
+    expect(html).toContain(`name="intent" value="${RESEND_VERIFICATION_INTENT}"`);
+    expect(html).toMatch(/<form[^>]*method="post"/);
+    expect(render(createElement(VerifyEmailBanner, props), "en")).toContain("Send it again");
+  });
+
+  it("confirms a resend and shows errors", () => {
+    expect(render(createElement(VerifyEmailBanner, { ...props, resent: true }), "en")).toContain(
+      "We sent a new link to o@e.com.",
+    );
+    const html = render(
+      createElement(VerifyEmailBanner, { ...props, error: "auth.errors.tooManyRequests" }),
+    );
+    expect(html).toContain('role="alert"');
   });
 });

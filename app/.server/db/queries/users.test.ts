@@ -34,6 +34,7 @@ describe.skipIf(!hasDatabase)("user queries", () => {
       fullName: "Olena Petrenko",
       email: "olena@example.com",
       role: "customer",
+      emailVerified: false,
     });
   });
 
@@ -142,7 +143,8 @@ describe.skipIf(!hasDatabase)("user queries", () => {
       insertUser,
       updateUserContact,
       updateUserEmail,
-      updateUserPasswordHash,
+      setPasswordChanged,
+      findSessionUser,
     } = await import("./users");
     const { id } = await insertUser(testDb.db, {
       fullName: "Before",
@@ -153,7 +155,21 @@ describe.skipIf(!hasDatabase)("user queries", () => {
 
     expect(await updateUserContact(testDb.db, id, { fullName: "After", phone: null })).toBe(true);
     expect(await updateUserEmail(testDb.db, id, "after@example.com")).toBe(true);
-    expect(await updateUserPasswordHash(testDb.db, id, "new")).toBe(true);
+    const changedAt = new Date("2026-11-05T12:00:00Z");
+    expect(
+      await setPasswordChanged(testDb.db, id, {
+        passwordHash: "new",
+        changedAt,
+        verifyEmail: false,
+      }),
+    ).toEqual({ email: "after@example.com" });
+    // A profile change records the time but doesn't confirm the email; a reset does.
+    expect(await findSessionUser(testDb.db, id)).toMatchObject({
+      emailVerified: false,
+      passwordChangedAt: changedAt,
+    });
+    await setPasswordChanged(testDb.db, id, { passwordHash: "new", changedAt, verifyEmail: true });
+    expect(await findSessionUser(testDb.db, id)).toMatchObject({ emailVerified: true });
 
     expect(await findUserContact(testDb.db, id)).toEqual({
       fullName: "After",

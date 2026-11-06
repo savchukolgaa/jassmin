@@ -552,6 +552,25 @@ export const en = {
       card: "Banks usually take 3–7 working days to show the money on your card.",
     },
   },
+  cartReminderEmail: {
+    subject: "Your perfumes are waiting in your cart — Jassmin",
+    preheader: "We've kept the fragrances you picked.",
+    greeting: "Hello, {name}!",
+    intro:
+      "You left some fragrances you liked in your cart. We've kept them for you, so come back whenever you're ready.",
+    itemsHeading: "In your cart",
+    itemDetails: "{volume} × {quantity}",
+    more: {
+      one: "And {count} more fragrance in your cart.",
+      other: "And {count} more fragrances in your cart.",
+    },
+    total: "Total at today's prices",
+    button: "Back to your cart",
+    loginNote: "To see your cart, log in with the address this email was sent to.",
+    contact: "Questions about a fragrance? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+    why: "You're getting this email because you agreed to receive news and offers from Jassmin.",
+  },
   giftCardEmail: {
     subject: "Your Jassmin gift card of {amount}",
     greeting: "Hello!",

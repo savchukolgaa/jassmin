@@ -56,6 +56,8 @@ export function toCmsOrderState({ order, items }: OrderSyncRow): CmsOrderState {
     refundedAt: iso(order.refundedAt),
     shippedAt: iso(order.shippedAt),
     completedAt: iso(order.completedAt),
+    returnedAt: iso(order.returnedAt),
+    cancelReason: order.cancelReason,
     items,
   };
 }

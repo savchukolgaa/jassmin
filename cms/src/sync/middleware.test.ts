@@ -5,6 +5,7 @@ import {
   componentValues,
   createSyncMiddleware,
   GIFT_CARD_UID,
+  orderChange,
   productPayload,
   toOrderData,
 } from "./middleware";
@@ -230,6 +231,22 @@ describe("gift cards (#125)", () => {
       pushed = true;
     });
     expect(pushed).toBe(true);
+  });
+
+  it("sends the statuses and the cancel reason of an order edit (#128)", () => {
+    expect(
+      orderChange({
+        orderStatus: "cancelled",
+        paymentStatus: "unpaid",
+        cancelReason: "no_answer",
+        customerName: "ignored",
+      }),
+    ).toEqual({ status: "cancelled", paymentStatus: "unpaid", cancelReason: "no_answer" });
+    expect(orderChange({ orderStatus: "shipped", cancelReason: null })).toEqual({
+      status: "shipped",
+      paymentStatus: undefined,
+      cancelReason: undefined,
+    });
   });
 
   it("saves what a gift card paid of an order as a number", () => {

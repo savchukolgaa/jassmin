@@ -34,6 +34,8 @@ const order: CmsOrderState = {
   refundedAt: null,
   shippedAt: null,
   completedAt: null,
+  returnedAt: null,
+  cancelReason: null,
   items: [
     {
       productPublicId: "01a1652b-6e25-7c03-ae47-25b57131fb06",

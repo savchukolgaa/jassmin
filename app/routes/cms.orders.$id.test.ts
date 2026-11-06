@@ -92,4 +92,39 @@ describe("cms orders sync route", () => {
       to: "shipped",
     });
   });
+
+  it("passes the cancel reason on and refuses an unknown one (#128)", async () => {
+    const { action } = await import("./cms.orders.$id");
+
+    await action(post("7", JSON.stringify({ status: "cancelled", cancelReason: "no_answer" })));
+    expect(applyCmsOrderChange).toHaveBeenCalledWith(7, {
+      status: "cancelled",
+      cancelReason: "no_answer",
+    });
+
+    const unknown = await action(
+      post("7", JSON.stringify({ status: "cancelled", cancelReason: "bored" })),
+    );
+    expect(unknown.status).toBe(422);
+    expect(await unknown.json()).toMatchObject({ error: "invalid-input" });
+  });
+
+  it("answers 422 when a cancellation has no reason (#128)", async () => {
+    applyCmsOrderChange.mockResolvedValueOnce({
+      ok: false,
+      error: "cancel-reason-required",
+      from: "pending",
+      to: "cancelled",
+    });
+    const { action } = await import("./cms.orders.$id");
+
+    const response = await action(post("7", JSON.stringify({ status: "cancelled" })));
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: "cancel-reason-required",
+      from: "pending",
+      to: "cancelled",
+    });
+  });
 });

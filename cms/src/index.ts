@@ -79,8 +79,8 @@ async function ensureLocales(strapi: Core.Strapi): Promise<void> {
   }
 }
 
-/** The only order fields staff change; the shop owns the rest (#40). */
-const EDITABLE_ORDER_FIELDS = new Set(["orderStatus", "paymentStatus"]);
+/** The only order fields staff change; the shop owns the rest (#40). The reason goes with a cancel (#128). */
+const EDITABLE_ORDER_FIELDS = new Set(["orderStatus", "paymentStatus", "cancelReason"]);
 
 interface EditMetadata {
   edit?: { editable?: boolean; label?: string; description?: string };
@@ -248,11 +248,26 @@ const PRODUCT_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string
       },
     },
   },
+  {
+    kind: "content-types",
+    uid: "api::order.order",
+    fields: {
+      cancelReason: {
+        label: "Причина скасування",
+        description:
+          "Обов’язкова, коли ставите статус «Скасоване»: на прохання клієнта (customer_request), немає в наявності (out_of_stock), клієнт не відповідає (no_answer), оплата не пройшла (payment_failed), інше (other). Після скасування не змінюється.",
+      },
+      returnedAt: {
+        label: "Повернено",
+        description: "Коли посилка повернулася: «Повернене» або «Не забране». Ставить магазин.",
+      },
+    },
+  },
 ];
 
 /**
- * Labels and describes the shared, per-language and alt image fields and the product
- * descriptions in the edit views.
+ * Labels and describes the shared, per-language and alt image fields, the product descriptions
+ * and the order's cancel reason and return time in the edit views.
  */
 async function describeFields(strapi: Core.Strapi): Promise<void> {
   for (const { kind, uid, fields } of [...IMAGE_FIELD_HINTS, ...PRODUCT_FIELD_HINTS]) {

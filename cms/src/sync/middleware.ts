@@ -275,13 +275,21 @@ async function syncOrder(strapi: Core.Strapi, context: DocumentContext): Promise
   if (typeof stored?.orderId !== "number") {
     throw new AppSyncError("Цього замовлення немає в базі магазину.");
   }
-  const data = params.data ?? {};
-  const answer = await postToApp(`/cms/orders/${stored.orderId}`, {
-    status: data.orderStatus ?? undefined,
-    paymentStatus: data.paymentStatus ?? undefined,
-  });
+  const answer = await postToApp(`/cms/orders/${stored.orderId}`, orderChange(params.data ?? {}));
   // Every other field is the shop's: whatever the form sent, Strapi stores the app's values.
   params.data = toOrderData(answer);
+}
+
+/**
+ * What staff changed on an order, as the app's `/cms/orders/:id` takes it: the statuses and the
+ * cancel reason (#128), which a cancel needs and the app ignores with any other status.
+ */
+export function orderChange(data: Data) {
+  return {
+    status: data.orderStatus ?? undefined,
+    paymentStatus: data.paymentStatus ?? undefined,
+    cancelReason: data.cancelReason ?? undefined,
+  };
 }
 
 export function createSyncMiddleware(strapi: Core.Strapi): DocumentMiddleware {

@@ -399,6 +399,8 @@ export async function lockOrderLifecycle(db: Executor, orderId: number) {
       refundedAt: orders.refundedAt,
       shippedAt: orders.shippedAt,
       completedAt: orders.completedAt,
+      returnedAt: orders.returnedAt,
+      cancelReason: orders.cancelReason,
     })
     .from(orders)
     .where(eq(orders.id, orderId))

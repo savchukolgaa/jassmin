@@ -20,6 +20,8 @@ function order(overrides: Partial<OrderLifecycle> = {}): OrderLifecycle {
     refundedAt: null,
     shippedAt: null,
     completedAt: null,
+    returnedAt: null,
+    cancelReason: null,
     ...overrides,
   };
 }
@@ -118,13 +120,20 @@ describe("nextOrderState", () => {
 
   it("cancels with restock and refunds in one change", () => {
     const paid = order({ status: "paid", paymentStatus: "paid", paidAt: EARLIER });
-    expect(nextOrderState(paid, { status: "cancelled", paymentStatus: "refunded" }, NOW)).toEqual({
+    expect(
+      nextOrderState(
+        paid,
+        { status: "cancelled", paymentStatus: "refunded", cancelReason: "customer_request" },
+        NOW,
+      ),
+    ).toEqual({
       ok: true,
       patch: {
         status: "cancelled",
         paymentStatus: "refunded",
         refundedAt: NOW,
         cancelledAt: NOW,
+        cancelReason: "customer_request",
       },
       restock: true,
     });
@@ -140,6 +149,44 @@ describe("nextOrderState", () => {
       ok: true,
       restock: false,
     });
+  });
+
+  it("sets returned_at when a parcel comes back returned or unclaimed (#128)", () => {
+    const shipped = order({ status: "shipped", shippedAt: EARLIER });
+    expect(nextOrderState(shipped, { status: "unclaimed" }, NOW)).toMatchObject({
+      patch: { status: "unclaimed", returnedAt: NOW },
+    });
+    const completed = order({ status: "completed", shippedAt: EARLIER, completedAt: EARLIER });
+    expect(nextOrderState(completed, { status: "returned" }, NOW)).toMatchObject({
+      patch: { status: "returned", returnedAt: NOW },
+    });
+    expect(nextOrderState(shipped, { status: "completed" }, NOW)).toEqual({
+      ok: true,
+      patch: { status: "completed", paymentStatus: "paid", paidAt: NOW, completedAt: NOW },
+      restock: false,
+    });
+  });
+
+  it("refuses to cancel without a reason and stores the reason given (#128)", () => {
+    expect(nextOrderState(order(), { status: "cancelled" }, NOW)).toEqual({
+      ok: false,
+      error: "cancel-reason-required",
+      from: "pending",
+      to: "cancelled",
+    });
+    expect(
+      nextOrderState(order(), { status: "cancelled", cancelReason: "no_answer" }, NOW),
+    ).toEqual({
+      ok: true,
+      patch: { status: "cancelled", cancelledAt: NOW, cancelReason: "no_answer" },
+      restock: true,
+    });
+  });
+
+  it("ignores a cancel reason sent with any other status (#128)", () => {
+    expect(
+      nextOrderState(order(), { status: "shipped", cancelReason: "out_of_stock" }, NOW),
+    ).toEqual({ ok: true, patch: { status: "shipped", shippedAt: NOW }, restock: false });
   });
 
   it("rejects leaving a final status", () => {

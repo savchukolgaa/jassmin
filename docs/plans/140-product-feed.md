@@ -167,7 +167,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   `shop-bottle-1280.jpg` (1280×1600, quality ~85, metadata stripped; any local tool such as
   ImageMagick or Squoosh), and commit it. In `app/lib/shop-bottle.ts`, import it and export
   `SHOP_BOTTLE_FEED_IMAGE_URL`. Check: `pnpm build` fingerprints it under `build/client/assets/`.
-- [ ] **2. XML helpers.** Create `app/.server/seo/xml.ts` with `escapeXml` (moved unchanged) and
+- [x] **2. XML helpers.** Create `app/.server/seo/xml.ts` with `escapeXml` (moved unchanged) and
   `xmlText(value)`, which strips the forbidden characters and then escapes. `seo/sitemap.ts`
   imports `escapeXml` from it. Move the `escapeXml` test to `xml.test.ts` and add cases for control
   characters and lone surrogates. Check: the sitemap tests still pass.

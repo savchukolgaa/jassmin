@@ -148,6 +148,8 @@ export const en = {
       submit: "Create account",
       privacyNotice: "By creating an account you agree to the",
       privacyLink: "privacy policy",
+      marketingOptIn: "Send me new arrivals and offers",
+      marketingOptInHint: "Emails at most once a week. Unsubscribe any time in your profile.",
     },
     tabs: {
       label: "Account",

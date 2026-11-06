@@ -27,7 +27,8 @@ export const EMAIL_VERIFICATION_TTL_HOURS = 7 * 24;
 export const AUTH_TOKEN_ERRORS = ["unknown", "used", "expired"] as const;
 export type AuthTokenError = (typeof AUTH_TOKEN_ERRORS)[number];
 
-export type RegisterField = "fullName" | "email" | "password" | "phone";
+/** `marketingOptIn` (#128) is a checkbox: refilled as `on` or blank, never an error. */
+export type RegisterField = "fullName" | "email" | "password" | "phone" | "marketingOptIn";
 export type LoginField = "email" | "password";
 export type ForgotPasswordField = "email";
 export type ResetPasswordField = "password" | "confirmPassword";

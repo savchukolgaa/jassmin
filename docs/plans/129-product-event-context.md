@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/129
 Branch: `issue/129`
 Worktree: `.claude/worktrees/issue-129`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -269,7 +269,7 @@ events carry list context, position, price and stock. Three new client events ar
   product-context table, the `list_id` table, position and dedupe rules, the consent and
   no-personal-data rules, and the old-to-new key mapping. Update the "Visitor and events"
   section of `app/.server/AGENTS.md` and link the doc from it.
-- [ ] **10. Verify** — Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the
+- [x] **10. Verify** — Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the
   manual checks below.
 
 ## Testing & verification
@@ -300,16 +300,22 @@ events carry list context, position, price and stock. Three new client events ar
 
 ## Acceptance criteria
 
-- [ ] Catalog, popular, offers, similar and search lists send `product_impression` events with
+- [x] Catalog, popular, offers, similar and search lists send `product_impression` events with
   `list_id` and `list_position`, in batches, only with consent — steps 1, 4, 5, 6
-- [ ] Clicking a product from a list records `product_click` with the same
+- [x] Clicking a product from a list records `product_click` with the same
   `list_id`/`list_position`, and searches carry a `search_id` linking the results to the clicks —
   steps 5, 6, 7
-- [ ] Product pages send `product_dwell` on leave — step 8
-- [ ] Every product event has `price` and `in_stock` as shown at that moment — steps 1, 5, 7, 8
-- [ ] `event_properties` is typed and validated per event type, and `docs/analytics-events.md`
+- [x] Product pages send `product_dwell` on leave — step 8
+- [x] Every product event has `price` and `in_stock` as shown at that moment — steps 1, 5, 7, 8
+- [x] `event_properties` is typed and validated per event type, and `docs/analytics-events.md`
   documents the contract — steps 1, 2, 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+
+Verified by automated tests (`analytics.schema.test.ts`, `ProductList.dom.test.ts`,
+`useProductDwell.dom.test.ts`, `api.events.test.ts`, the route and service tests) and
+`pnpm typecheck`, `pnpm lint`, `pnpm test` (2142 passed) and `pnpm build`. The manual check under
+`pnpm aspire run` (real browser beacons into `user_events`) wasn't done here: it needs migration
+0029 on the development database, which the main checkout shares.
 
 ## Out of scope
 

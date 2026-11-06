@@ -35,6 +35,8 @@ describe("route config", () => {
       "/en/reset-password/:token",
       "/pidtverdzhennia/:token",
       "/en/verify-email/:token",
+      "/vidpysatysia/:token",
+      "/en/unsubscribe/:token",
       "/koshyk",
       "/en/cart",
       "/oformlennia",

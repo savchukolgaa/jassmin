@@ -32,6 +32,11 @@ import {
   touchCart,
 } from "../db/queries/cart";
 import {
+  findRestorableCart,
+  markCartRestored,
+  type RestorableCart,
+} from "../db/queries/cart-reminders";
+import {
   findCartDiscountId,
   findDiscountByCode,
   listCandidateDiscounts,
@@ -417,24 +422,7 @@ export async function mergeGuestCart(
     if (!(await lockCart(tx, guestCartId))) {
       return;
     }
-    for (const line of await listCartItemsWithStock(tx, guestCartId)) {
-      if (line.stockQuantity <= 0) continue;
-      await tx
-        .insert(cartItems)
-        .values({
-          cartId: userCartId,
-          productId: line.productId,
-          variantId: line.variantId,
-          quantity: Math.min(line.quantity, line.stockQuantity),
-        })
-        .onConflictDoUpdate({
-          target: [cartItems.cartId, cartItems.variantId],
-          // Never lower what the user already had, even if stock dropped below it.
-          set: {
-            quantity: sql`greatest(least(${cartItems.quantity} + excluded.quantity, ${line.stockQuantity}), ${cartItems.quantity})`,
-          },
-        });
-    }
+    await mergeCartLines(tx, guestCartId, userCartId);
     // The guest's promo code comes along unless the user's cart has its own.
     const guestDiscountId = await findCartDiscountId(tx, guestCartId);
     if (guestDiscountId !== null && (await findCartDiscountId(tx, userCartId)) === null) {
@@ -448,4 +436,107 @@ export async function mergeGuestCart(
     await tx.delete(carts).where(eq(carts.id, guestCartId));
     await touchCart(tx, userCartId);
   });
+}
+
+/** A `Db` or a transaction, for helpers shared by several cart transactions. */
+type CartExecutor = Pick<Db, "select" | "insert" | "update" | "delete">;
+
+/**
+ * Adds `fromCartId`'s lines to `toCartId`'s: the same size's quantities add up, capped at stock,
+ * and sold-out sizes (or archived products) are dropped. Call it with both carts locked.
+ */
+async function mergeCartLines(
+  tx: CartExecutor,
+  fromCartId: number,
+  toCartId: number,
+): Promise<void> {
+  for (const line of await listCartItemsWithStock(tx, fromCartId)) {
+    if (line.stockQuantity <= 0) continue;
+    await tx
+      .insert(cartItems)
+      .values({
+        cartId: toCartId,
+        productId: line.productId,
+        variantId: line.variantId,
+        quantity: Math.min(line.quantity, line.stockQuantity),
+      })
+      .onConflictDoUpdate({
+        target: [cartItems.cartId, cartItems.variantId],
+        // Never lower what the cart already had, even if stock dropped below it.
+        set: {
+          quantity: sql`greatest(least(${cartItems.quantity} + excluded.quantity, ${line.stockQuantity}), ${cartItems.quantity})`,
+        },
+      });
+  }
+}
+
+/**
+ * The user's abandoned cart that a reminder email offered back (#139), for the cart page's
+ * banner; `null` for a guest or when there is none.
+ */
+export async function getRestorableCart(
+  owner: Pick<CartOwner, "userId">,
+  db: Db = defaultDb,
+): Promise<RestorableCart | null> {
+  if (owner.userId === null) {
+    return null;
+  }
+  return (await findRestorableCart(db, owner.userId)) ?? null;
+}
+
+export type RestoreCartResult = { ok: true } | { ok: false; error: "not-restorable" };
+
+/**
+ * Brings a reminded abandoned cart back (#139): its available lines are added to the user's
+ * active cart (created if needed), like a guest cart at login, and so is its promo code when the
+ * active cart has none. The abandoned cart keeps its status and `abandoned_at` (ML features) and
+ * gets `restored_at`, so the banner goes away and a second restore does nothing.
+ */
+export async function restoreAbandonedCart(
+  writer: CartWriter,
+  cartId: number,
+  db: Db = defaultDb,
+): Promise<RestoreCartResult> {
+  const refused = { ok: false, error: "not-restorable" } as const;
+  if (writer.userId === null) {
+    return refused;
+  }
+  const userId = writer.userId;
+  // Only the cart the page offers: the user's, reminded lately, not restored yet.
+  if ((await findRestorableCart(db, userId))?.cartId !== cartId) {
+    return refused;
+  }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const activeCartId = await getOrCreateActiveCart(writer, db);
+    const result = await db.transaction(async (tx): Promise<RestoreCartResult | "retry"> => {
+      const [abandoned] = await tx
+        .select({ userId: carts.userId, status: carts.status, restoredAt: carts.restoredAt })
+        .from(carts)
+        .where(eq(carts.id, cartId))
+        .for("update");
+      if (
+        abandoned?.userId !== userId ||
+        abandoned.status !== "abandoned" ||
+        abandoned.restoredAt !== null
+      ) {
+        return refused;
+      }
+      // The abandoned-cart job may have marked the active cart meanwhile: use a new one.
+      if (!(await lockCart(tx, activeCartId))) {
+        return "retry";
+      }
+      await mergeCartLines(tx, cartId, activeCartId);
+      const discountId = await findCartDiscountId(tx, cartId);
+      if (discountId !== null && (await findCartDiscountId(tx, activeCartId)) === null) {
+        await setCartDiscount(tx, activeCartId, discountId);
+      }
+      await markCartRestored(tx, cartId);
+      await touchCart(tx, activeCartId);
+      return { ok: true };
+    });
+    if (result !== "retry") {
+      return result;
+    }
+  }
+  return refused;
 }

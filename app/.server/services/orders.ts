@@ -62,7 +62,7 @@ import {
   lockCartLinesForOrder,
   markCartConverted,
 } from "../db/queries/orders";
-import { findUserContact, setUserCity } from "../db/queries/users";
+import { findUserContact, setUserCity, setUserLocale } from "../db/queries/users";
 import { getEnv } from "../env";
 import { checkGiftCard, giftCardAmountFor } from "./gift-cards";
 import { getMailer } from "./mailer";
@@ -200,6 +200,8 @@ export async function createOrder(
       });
       if (userId !== null) {
         await setUserCity(tx, userId, customer.city);
+        // The language reminders and other later emails use (#139).
+        await setUserLocale(tx, userId, locale);
       }
       if (giftCard.id !== null && giftCard.amount > 0) {
         await redeemGiftCard(tx, { giftCardId: giftCard.id, orderId, amount: giftCardAmount });

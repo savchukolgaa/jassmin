@@ -751,4 +751,127 @@ describe.skipIf(!hasDatabase)("cart service", () => {
       ).toHaveLength(1);
     });
   });
+
+  describe("restoring a reminded cart (#139)", () => {
+    /** The user's cart with `lines`, abandoned and reminded the way the jobs do it. */
+    async function remindedCart(
+      writer: { userId: number; anonymousId: string; sessionId: string },
+      lines: [Awaited<ReturnType<typeof variant>>, number][],
+    ) {
+      const { sql } = await import("drizzle-orm");
+      const cart = await import("./cart");
+      for (const [size, quantity] of lines) {
+        await cart.addItem(writer, size, quantity, testDb.db);
+      }
+      const cartId = await cart.getActiveCartId(writer, testDb.db);
+      await testDb.db.execute(sql`update carts set status = 'abandoned',
+        updated_at = now() - interval '30 hours', abandoned_at = now() - interval '6 hours',
+        reminder_sent_at = now() - interval '5 hours' where id = ${cartId}`);
+      return cartId ?? 0;
+    }
+
+    async function cartRow(id: number) {
+      const { eq } = await import("drizzle-orm");
+      const { carts } = await import("../db/schema");
+      const [row] = await testDb.db.select().from(carts).where(eq(carts.id, id));
+      return row;
+    }
+
+    it("offers the reminded cart to its user only", async () => {
+      const cart = await import("./cart");
+      const userId = await user();
+      const writer = { ...(await guest()), userId };
+      const cartId = await remindedCart(writer, [[await variant(5), 2]]);
+
+      expect(await cart.getRestorableCart({ userId }, testDb.db)).toMatchObject({
+        cartId,
+        itemCount: 2,
+      });
+      expect(await cart.getRestorableCart({ userId: null }, testDb.db)).toBeNull();
+      expect(await cart.getRestorableCart({ userId: await user() }, testDb.db)).toBeNull();
+    });
+
+    it("brings the lines back into a new active cart, once, keeping the abandoned cart", async () => {
+      const cart = await import("./cart");
+      const userId = await user();
+      const writer = { ...(await guest()), userId };
+      const cartId = await remindedCart(writer, [
+        [await variant(5), 2],
+        [await variant(30), 1],
+      ]);
+      const before = await cartRow(cartId);
+
+      expect(await cart.restoreAbandonedCart(writer, cartId, testDb.db)).toEqual({ ok: true });
+
+      const view = await cart.getCartView({ userId }, testDb.db);
+      expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([
+        [5, 2],
+        [30, 1],
+      ]);
+      const after = await cartRow(cartId);
+      expect(after).toMatchObject({ status: "abandoned", abandonedAt: before?.abandonedAt });
+      expect(after?.updatedAt).toEqual(before?.updatedAt);
+      expect(after?.restoredAt).toBeInstanceOf(Date);
+      expect(await cart.getRestorableCart({ userId }, testDb.db)).toBeNull();
+      expect(await cart.restoreAbandonedCart(writer, cartId, testDb.db)).toEqual({
+        ok: false,
+        error: "not-restorable",
+      });
+      expect(await cart.getCartCount({ userId }, testDb.db)).toBe(3);
+    });
+
+    it("adds to an existing active cart, capped at stock, and drops sold-out sizes", async () => {
+      const { eq } = await import("drizzle-orm");
+      const { productVariants } = await import("../db/schema");
+      const cart = await import("./cart");
+      const userId = await user();
+      const writer = { ...(await guest()), userId };
+      const thirty = await variant(30);
+      const sauvage = await variant(10, SAUVAGE);
+      const cartId = await remindedCart(writer, [
+        [thirty, 2],
+        [sauvage, 1],
+      ]);
+      await cart.addItem(writer, thirty, 2, testDb.db);
+      await testDb.db
+        .update(productVariants)
+        .set({ stockQuantity: 0 })
+        .where(eq(productVariants.id, sauvage.id));
+
+      try {
+        expect(await cart.restoreAbandonedCart(writer, cartId, testDb.db)).toEqual({ ok: true });
+        const view = await cart.getCartView({ userId }, testDb.db);
+        // 2 + 2 capped at the 3 in stock; Sauvage sold out meanwhile.
+        expect(view.lines.map((l) => [l.volumeMl, l.quantity])).toEqual([[30, 3]]);
+      } finally {
+        await testDb.db
+          .update(productVariants)
+          .set({ stockQuantity: sauvage.stockQuantity })
+          .where(eq(productVariants.id, sauvage.id));
+      }
+    });
+
+    it("refuses another user's cart and a cart nobody was reminded about", async () => {
+      const { sql } = await import("drizzle-orm");
+      const cart = await import("./cart");
+      const owner = await user();
+      const ownerWriter = { ...(await guest()), userId: owner };
+      const cartId = await remindedCart(ownerWriter, [[await variant(5), 1]]);
+      const other = await user();
+
+      expect(
+        await cart.restoreAbandonedCart({ ...(await guest()), userId: other }, cartId, testDb.db),
+      ).toEqual({ ok: false, error: "not-restorable" });
+      expect(
+        await cart.restoreAbandonedCart({ ...(await guest()), userId: null }, cartId, testDb.db),
+      ).toEqual({ ok: false, error: "not-restorable" });
+
+      await testDb.db.execute(sql`update carts set reminder_sent_at = null where id = ${cartId}`);
+      expect(await cart.restoreAbandonedCart(ownerWriter, cartId, testDb.db)).toEqual({
+        ok: false,
+        error: "not-restorable",
+      });
+      expect(await cart.getCartCount({ userId: owner }, testDb.db)).toBe(0);
+    });
+  });
 });

@@ -39,6 +39,8 @@ export const PAGES = {
   forgotPassword: { uk: "zabuly-parol", en: "forgot-password", indexable: false },
   resetPassword: { uk: "novyi-parol/:token", en: "reset-password/:token", indexable: false },
   verifyEmail: { uk: "pidtverdzhennia/:token", en: "verify-email/:token", indexable: false },
+  // The unsubscribe link in marketing emails (#139): the token is a signed user id.
+  unsubscribe: { uk: "vidpysatysia/:token", en: "unsubscribe/:token", indexable: false },
   account: { uk: "kabinet", en: "account", indexable: false },
   accountOrder: { uk: "kabinet/zamovlennia/:id", en: "account/orders/:id", indexable: false },
   accountProfile: { uk: "kabinet/profil", en: "account/profile", indexable: false },

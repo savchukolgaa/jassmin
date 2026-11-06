@@ -34,6 +34,10 @@ export interface Cart {
   discountId: number | null;
   /** The gift card applied at checkout (`gift_cards.id`, #125). */
   giftCardId: number | null;
+  /** When the abandoned-cart reminder was queued (#139); `null` without one. */
+  reminderSentAt: Date | null;
+  /** When the user restored the cart's lines from the reminder (#139); `null` otherwise. */
+  restoredAt: Date | null;
 }
 
 export interface ProductVariant {

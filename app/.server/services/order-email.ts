@@ -10,12 +10,14 @@ import type { OrderConfirmation, OrderStatusEmail } from "~/lib/checkout";
 import { NOVA_POSHTA_FREE_STORAGE_DAYS, novaPoshtaTrackingUrl, PAYMENT_KEYS } from "~/lib/checkout";
 import type { GiftCard } from "~/lib/commerce";
 import { discountLabel } from "~/lib/discounts";
+import type { OrderEmailType } from "~/lib/enums";
 import { formatGiftCardCode } from "~/lib/gift-cards";
 import { createTranslator, type Translator } from "~/lib/i18n";
 import { isOrderStatusEmailType, type OrderStatusEmailType } from "~/lib/order-status-emails";
 import { pathFor } from "~/lib/paths";
 import { formatVolume } from "~/lib/products";
 import type { Db } from "../db/client";
+import { type CartReminder, findCartReminder } from "../db/queries/cart-reminders";
 import { findGiftCard } from "../db/queries/gift-cards";
 import {
   type ClaimedOrderEmail,
@@ -27,6 +29,7 @@ import { findOrderConfirmation, findOrderStatusEmail } from "../db/queries/order
 import { composeEmail, type EmailAmount, type EmailBlock } from "../email/layout";
 import type { MailEnv } from "../env";
 import { type MailSender, SuppressedRecipientError, stripLineBreaks } from "../mail";
+import { buildCartReminderEmail } from "./cart-reminder-email";
 
 /**
  * Minutes to wait before retrying after the 1st, 2nd, … failed attempt: about two days in all.
@@ -39,7 +42,9 @@ export const MAX_ORDER_EMAIL_ATTEMPTS = ORDER_EMAIL_RETRY_DELAYS_MINUTES.length;
 export type OrderEmailEnv = Pick<
   MailEnv,
   "ORDER_FROM" | "CONTACT_FROM" | "CONTACT_INBOX" | "PUBLIC_SITE_URL"
->;
+> &
+  // Signs the unsubscribe link of a cart reminder (#139); optional for every other email.
+  Partial<Pick<MailEnv, "EMAIL_UNSUBSCRIBE_SECRET">>;
 
 /** A message from the shared layout (#134): HTML and text parts and a Message-ID. */
 export type OrderEmailMessage = Mail.Options & { messageId: string };
@@ -471,12 +476,15 @@ export interface OrderEmailDeps {
   claim(options: {
     orderId?: number;
     giftCardId?: number;
+    type?: OrderEmailType;
     limit: number;
   }): Promise<ClaimedOrderEmail[]>;
   loadOrder(orderId: number): Promise<OrderConfirmation | undefined>;
   /** The order as its status emails show it (#138). */
   loadOrderStatus(orderId: number): Promise<OrderStatusEmail | undefined>;
   loadGiftCard(giftCardId: number): Promise<GiftCard | undefined>;
+  /** An abandoned cart's reminder (#139), read when it is sent. */
+  loadCartReminder(cartId: number): Promise<CartReminder | undefined>;
   /** `messageId` is the Message-ID it went out with (#134), to match a later bounce. */
   markSent(id: number, messageId: string): Promise<void>;
   markFailed(id: number, failure: { error: string; final: boolean }): Promise<void>;
@@ -496,6 +504,7 @@ export function orderEmailDeps(
     loadOrder: (orderId) => findOrderConfirmation(db, orderId),
     loadOrderStatus: (orderId) => findOrderStatusEmail(db, orderId),
     loadGiftCard: (giftCardId) => findGiftCard(db, giftCardId),
+    loadCartReminder: (cartId) => findCartReminder(db, cartId),
     markSent: (id, messageId) => markOrderEmailSent(db, id, messageId),
     markFailed: (id, failure) => markOrderEmailFailed(db, id, failure),
   };
@@ -516,11 +525,53 @@ function errorMessage(error: unknown): string {
   return message.slice(0, MAX_ERROR_LENGTH);
 }
 
-/** The queued email's message, or `null` when its order or gift card is gone. */
+/** A queued email that mustn't go out any more, and why (a cart reminder, #139). */
+interface NotEligible {
+  notEligible: string;
+}
+
+/**
+ * Why a cart reminder may no longer be sent, or `undefined`: it was queued an hour or more ago,
+ * or is a retry, so the rules are checked again (#139).
+ */
+function reminderNotEligible(reminder: CartReminder): string | undefined {
+  if (!reminder.marketingOptIn) return "the user unsubscribed";
+  if (reminder.orderedSince) return "the user ordered since";
+  if (reminder.availableLineCount === 0) return "nothing in the cart is available";
+  return undefined;
+}
+
+/** A cart reminder (#139): the message, `null` when the cart is gone, or why it isn't sent. */
+async function buildCartReminder(
+  email: ClaimedOrderEmail,
+  translator: Translator,
+  deps: OrderEmailDeps,
+): Promise<OrderEmailMessage | NotEligible | null> {
+  const reminder = email.cartId === null ? undefined : await deps.loadCartReminder(email.cartId);
+  if (!reminder) {
+    return null;
+  }
+  const reason = reminderNotEligible(reminder);
+  if (reason) {
+    return { notEligible: reason };
+  }
+  const { PUBLIC_SITE_URL: siteUrl, EMAIL_UNSUBSCRIBE_SECRET: unsubscribeSecret } = deps.env;
+  if (!siteUrl || !unsubscribeSecret) {
+    // No link back and no unsubscribe: the reminder job doesn't queue any then, so only a
+    // misconfigured retry job gets here.
+    return { notEligible: "PUBLIC_SITE_URL or EMAIL_UNSUBSCRIBE_SECRET is not set" };
+  }
+  return buildCartReminderEmail(reminder, translator, deps.env, { siteUrl, unsubscribeSecret });
+}
+
+/**
+ * The queued email's message, `null` when its order, gift card or cart is gone, or why a cart
+ * reminder isn't sent any more.
+ */
 async function buildEmail(
   email: ClaimedOrderEmail,
   deps: OrderEmailDeps,
-): Promise<OrderEmailMessage | null> {
+): Promise<OrderEmailMessage | NotEligible | null> {
   const translator = createTranslator(email.locale);
   if (email.type === "confirmation") {
     const order = email.orderId === null ? undefined : await deps.loadOrder(email.orderId);
@@ -529,6 +580,9 @@ async function buildEmail(
   if (isOrderStatusEmailType(email.type)) {
     const order = email.orderId === null ? undefined : await deps.loadOrderStatus(email.orderId);
     return order ? ORDER_STATUS_BUILDERS[email.type](order, translator, deps.env) : null;
+  }
+  if (email.type === "cart_reminder") {
+    return buildCartReminder(email, translator, deps);
   }
   const card = email.giftCardId === null ? undefined : await deps.loadGiftCard(email.giftCardId);
   return card ? GIFT_CARD_BUILDERS[email.type](card, translator, deps.env) : null;
@@ -541,24 +595,44 @@ async function deliverOne(
   report: OrderEmailReport,
 ): Promise<void> {
   const label =
-    email.giftCardId === null
-      ? `order ${email.orderId}'s ${email.type} email`
-      : `gift card ${email.giftCardId}'s ${email.type} email`;
+    email.cartId !== null
+      ? `cart ${email.cartId}'s ${email.type} email`
+      : email.giftCardId === null
+        ? `order ${email.orderId}'s ${email.type} email`
+        : `gift card ${email.giftCardId}'s ${email.type} email`;
   let messageId: string;
   try {
     const message = await buildEmail(email, deps);
     if (!message) {
       // Deleted orders and cards cascade to their emails, so this only happens in a race.
-      console.error(`[order-email] Not sending ${label}: its order or gift card doesn't exist`);
-      await deps.markFailed(email.id, { error: "Order or gift card not found", final: true });
+      console.error(
+        `[order-email] Not sending ${label}: its order, gift card or cart doesn't exist`,
+      );
+      await deps.markFailed(email.id, {
+        error: "Order, gift card or cart not found",
+        final: true,
+      });
+      report.gaveUp += 1;
+      return;
+    }
+    if ("notEligible" in message) {
+      console.info(`[order-email] Not sending ${label}: ${message.notEligible}`);
+      await deps.markFailed(email.id, {
+        error: `not eligible: ${message.notEligible}`,
+        final: true,
+      });
       report.gaveUp += 1;
       return;
     }
     messageId = message.messageId;
-    // Brevo echoes this tag in its webhook events, so a bounce finds its row (#134).
+    // Brevo echoes this tag in its webhook events, so a bounce finds its row (#134). The email's
+    // own headers (a reminder's `List-Unsubscribe`, #139) are kept.
     await mailer.sendMail({
       ...message,
-      headers: orderEmailTagHeader(email.id),
+      headers: {
+        ...(message.headers as Record<string, string> | undefined),
+        ...orderEmailTagHeader(email.id),
+      },
     });
   } catch (error) {
     if (error instanceof SuppressedRecipientError) {
@@ -608,8 +682,9 @@ export async function deliverOrderEmails(
   {
     orderId,
     giftCardId,
+    type,
     limit = ORDER_EMAIL_BATCH_SIZE,
-  }: { orderId?: number; giftCardId?: number; limit?: number },
+  }: { orderId?: number; giftCardId?: number; type?: OrderEmailType; limit?: number },
   deps: OrderEmailDeps | (() => OrderEmailDeps),
 ): Promise<OrderEmailReport> {
   const report: OrderEmailReport = { sent: 0, retrying: 0, gaveUp: 0, skipped: false };
@@ -628,7 +703,7 @@ export async function deliverOrderEmails(
     }
     // Claimed rows aren't due again until their retry time, so this loop ends.
     for (;;) {
-      const batch = await resolved.claim({ orderId, giftCardId, limit });
+      const batch = await resolved.claim({ orderId, giftCardId, type, limit });
       for (const email of batch) {
         await deliverOne(email, mailer, resolved, report);
       }

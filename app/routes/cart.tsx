@@ -1,21 +1,26 @@
-import { data } from "react-router";
+import { data, redirect } from "react-router";
 import { ensureVisitor, type RequestArgs, trackEvent } from "~/.server/analytics";
 import { getClientIp, promoCodeLimiter } from "~/.server/rate-limit";
+import { pageUrl } from "~/.server/request-url";
 import {
   addItem,
   applyPromoCode,
   type CartChangeResult,
   getCartOwner,
   getCartView,
+  getRestorableCart,
   removeItem,
   removePromoCode,
+  restoreAbandonedCart,
   updateQuantity,
 } from "~/.server/services/cart";
 import { checkVariantForCart } from "~/.server/services/products";
 import { CartLineItem } from "~/features/cart/CartLineItem";
 import { CartSummary } from "~/features/cart/CartSummary";
 import { EmptyCart } from "~/features/cart/EmptyCart";
+import { RestoreCartBanner } from "~/features/cart/RestoreCartBanner";
 import type { ListContext, ListId } from "~/lib/analytics";
+import { loginRedirectPath } from "~/lib/auth";
 import { type CartActionResult, type CartIntent, cartErrorMessage } from "~/lib/cart";
 import { parseCartAction } from "~/lib/cart.schema";
 import { metaTranslator, useT } from "~/lib/i18n";
@@ -32,7 +37,14 @@ export function meta({ matches, error }: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  return getCartView(await getCartOwner(request));
+  const owner = await getCartOwner(request);
+  // The cart reminder's link (#139): only a logged-in user's cart can be brought back, so a
+  // visitor who isn't logged in logs in first and comes back here, UTM tags and all.
+  if (owner.userId === null && new URL(request.url).searchParams.get("restore") === "1") {
+    throw redirect(loginRedirectPath(pageUrl(request)));
+  }
+  const [cart, restorable] = await Promise.all([getCartView(owner), getRestorableCart(owner)]);
+  return { ...cart, restorable };
 }
 
 function respond(result: CartChangeResult, intent: CartIntent) {
@@ -154,10 +166,26 @@ export async function action({ request, context }: Route.ActionArgs) {
       await removePromoCode(owner);
       return data<CartActionResult>({ ok: true, intent: "remove-promo" });
     }
+    case "restore": {
+      if (owner.userId === null) {
+        return data<CartActionResult>({ ok: false, error: "not-restorable" }, { status: 409 });
+      }
+      // The active cart it goes into may not exist yet, which needs the analytics session.
+      const visitor = await ensureVisitor(args);
+      const result = await restoreAbandonedCart(
+        { userId: owner.userId, anonymousId: visitor.anonymousId, sessionId: visitor.sessionId },
+        input.data.cartId,
+      );
+      if (!result.ok) {
+        return data<CartActionResult>(result, { status: 409 });
+      }
+      return data<CartActionResult>({ ok: true, intent: "restore" });
+    }
   }
 }
 
-export default function Cart({ loaderData: cart, actionData }: Route.ComponentProps) {
+export default function Cart({ loaderData, actionData }: Route.ComponentProps) {
+  const { restorable, ...cart } = loaderData;
   const translator = useT();
   const { t } = translator;
   // Only set after a plain form post without JS; fetchers show their errors on the line.
@@ -175,6 +203,13 @@ export default function Cart({ loaderData: cart, actionData }: Route.ComponentPr
         >
           {error}
         </p>
+      )}
+      {restorable && (
+        <RestoreCartBanner
+          cartId={restorable.cartId}
+          abandonedAt={restorable.abandonedAt}
+          itemCount={restorable.itemCount}
+        />
       )}
       {cart.lines.length === 0 ? (
         <EmptyCart />

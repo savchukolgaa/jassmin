@@ -53,6 +53,8 @@ export interface ClaimedOrderEmail {
   orderId: number | null;
   /** The gift card's email (#125); `null` for an order's. */
   giftCardId: number | null;
+  /** The abandoned cart's reminder (#139); `null` for every other email. */
+  cartId: number | null;
   type: OrderEmailType;
   locale: Locale;
   attempts: number;
@@ -63,6 +65,8 @@ export interface ClaimOptions {
   orderId?: number;
   /** Only this gift card's emails (the attempt right after its payment, #125). */
   giftCardId?: number;
+  /** Only emails of this type (the cart reminder job sends its own right away, #139). */
+  type?: OrderEmailType;
   limit: number;
   /**
    * Minutes to wait before retrying after attempt 1, 2, …; the last value repeats. Whole
@@ -79,7 +83,7 @@ export interface ClaimOptions {
  */
 export function claimOrderEmails(
   db: Executor,
-  { orderId, giftCardId, limit, retryDelaysMinutes }: ClaimOptions,
+  { orderId, giftCardId, type, limit, retryDelaysMinutes }: ClaimOptions,
 ): Promise<ClaimedOrderEmail[]> {
   const delays = retryDelaysMinutes.map((minutes) => {
     if (!Number.isInteger(minutes) || minutes <= 0) {
@@ -99,6 +103,7 @@ export function claimOrderEmails(
         lte(orderEmails.nextAttemptAt, sql`now()`),
         orderId === undefined ? undefined : eq(orderEmails.orderId, orderId),
         giftCardId === undefined ? undefined : eq(orderEmails.giftCardId, giftCardId),
+        type === undefined ? undefined : eq(orderEmails.type, type),
       ),
     )
     .orderBy(asc(orderEmails.nextAttemptAt), asc(orderEmails.id))
@@ -116,6 +121,7 @@ export function claimOrderEmails(
       id: orderEmails.id,
       orderId: orderEmails.orderId,
       giftCardId: orderEmails.giftCardId,
+      cartId: orderEmails.cartId,
       type: orderEmails.type,
       locale: orderEmails.locale,
       attempts: orderEmails.attempts,

@@ -218,6 +218,13 @@
       "when": 1793996544785,
       "tag": "0030_product_event_types",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793998802876,
+      "tag": "0031_cart_reminders",
+      "breakpoints": true
     }
   ]
 }

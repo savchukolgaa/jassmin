@@ -376,11 +376,21 @@ export const en = {
     checkout: "Proceed to checkout",
     stockOut: "This volume is now out of stock. Remove it to check out.",
     stockLow: "Only {count} left. Lower the quantity to check out.",
+    restore: {
+      heading: "Your cart from {date}",
+      body: {
+        one: "It has {count} perfume you can still order.",
+        other: "It has {count} perfumes you can still order.",
+      },
+      submit: "Put them back in my cart",
+      form: "Bring back your saved cart",
+    },
     errors: {
       invalid: "This perfume could not be added to the cart.",
       invalidVariant: "Please choose one of the available volumes.",
       outOfStock: "This volume is out of stock.",
       exceedsStock: "There isn't enough of this volume in stock.",
+      notRestorable: "This cart can't be brought back any more. Add the perfumes from the catalog.",
       notInCart: "This perfume is no longer in your cart.",
       onlyAvailable: "Only {count} available in this volume.",
       promoInvalid: "There's no such promo code. Check that it's typed correctly.",
@@ -494,6 +504,7 @@ export const en = {
   email: {
     footer: {
       note: "This email was sent by Jassmin, a perfume shop in Ukraine.",
+      unsubscribe: "Unsubscribe from news and offers",
     },
   },
   orderEmail: {
@@ -551,6 +562,25 @@ export const en = {
       card: "Banks usually take 3–7 working days to show the money on your card.",
     },
   },
+  cartReminderEmail: {
+    subject: "Your perfumes are waiting in your cart — Jassmin",
+    preheader: "We've kept the fragrances you picked.",
+    greeting: "Hello, {name}!",
+    intro:
+      "You left some fragrances you liked in your cart. We've kept them for you, so come back whenever you're ready.",
+    itemsHeading: "In your cart",
+    itemDetails: "{volume} × {quantity}",
+    more: {
+      one: "And {count} more fragrance in your cart.",
+      other: "And {count} more fragrances in your cart.",
+    },
+    total: "Total at today's prices",
+    button: "Back to your cart",
+    loginNote: "To see your cart, log in with the address this email was sent to.",
+    contact: "Questions about a fragrance? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+    why: "You're getting this email because you agreed to receive news and offers from Jassmin.",
+  },
   giftCardEmail: {
     subject: "Your Jassmin gift card of {amount}",
     greeting: "Hello!",
@@ -590,6 +620,19 @@ export const en = {
       leave: "Return without paying",
       hint: "These buttons play the bank: the shop gets a signed confirmation, just as from a real payment provider.",
     },
+  },
+  unsubscribe: {
+    title: "Unsubscribe",
+    headline: "Unsubscribe from news and offers?",
+    sub: "We'll stop sending you emails about new arrivals, offers and carts you left behind. Emails about your orders will still arrive as usual.",
+    form: "Unsubscribe",
+    submit: "Unsubscribe",
+    doneHeadline: "You've unsubscribed",
+    doneSub: "Done: we won't send you news and offers any more.",
+    changeLater: "Changed your mind? You can turn them back on in your account, under Profile.",
+    toShop: "Back to the shop",
+    invalid: "This link doesn't work. You can unsubscribe in your account, under Profile.",
+    toProfile: "Go to your profile",
   },
   account: {
     title: "My account",

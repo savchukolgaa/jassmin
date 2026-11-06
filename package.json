@@ -28,6 +28,7 @@
     "db:cancel-unpaid-orders": "tsx app/.server/db/scripts/cancel-unpaid-orders.ts",
     "db:prune-rate-limits": "tsx app/.server/db/scripts/prune-rate-limits.ts",
     "db:send-order-emails": "tsx app/.server/db/scripts/send-order-emails.ts",
+    "db:send-cart-reminders": "tsx app/.server/db/scripts/send-cart-reminders.ts",
     "db:sync-cms": "tsx app/.server/db/scripts/sync-cms.ts",
     "db:convert-catalog": "tsx app/.server/db/scripts/convert-catalog.ts",
     "db:import-catalog": "tsx app/.server/db/scripts/import-catalog.ts",

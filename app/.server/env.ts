@@ -22,6 +22,10 @@ const mailEnvSchema = z.object({
     .url({ protocol: /^https?$/ })
     .transform((url) => url.replace(/\/+$/, ""))
     .optional(),
+  // Signs the unsubscribe links in marketing emails (#139, `unsubscribe-token.ts`). Optional:
+  // without it no cart reminders are sent and production logs a warning. Changing it breaks the
+  // links in emails already sent.
+  EMAIL_UNSUBSCRIBE_SECRET: z.string().min(32).optional(),
 });
 
 /** Production needs a real SMTP server (#134): without one no email would ever go out. */
@@ -94,6 +98,7 @@ function mailSource(source: NodeJS.ProcessEnv) {
     CONTACT_FROM: source.CONTACT_FROM || undefined,
     ORDER_FROM: source.ORDER_FROM || undefined,
     PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
+    EMAIL_UNSUBSCRIBE_SECRET: source.EMAIL_UNSUBSCRIBE_SECRET || undefined,
   };
 }
 
@@ -185,6 +190,11 @@ export function getEnv(): Env {
     if (cached.NODE_ENV === "production" && !cached.EMAIL_WEBHOOK_SECRET) {
       console.warn(
         "[env] EMAIL_WEBHOOK_SECRET is not set: bounces and spam complaints aren't recorded (see docs/email.md)",
+      );
+    }
+    if (cached.NODE_ENV === "production" && !cached.EMAIL_UNSUBSCRIBE_SECRET) {
+      console.warn(
+        "[env] EMAIL_UNSUBSCRIBE_SECRET is not set: no cart reminders are sent and unsubscribe links don't work (see docs/email.md)",
       );
     }
   }

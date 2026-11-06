@@ -123,6 +123,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       "products_slug_unique",
       "products_stock_quantity_check",
       "users_email_unique",
+      "users_locale_check",
     ]);
 
     const indexes = await testDb.db.execute<{ indexdef: string }>(
@@ -704,7 +705,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0007 to 0030 sit on top of 0006; migrateLatest below reapplies them.
+    // 0007 to 0031 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -754,7 +756,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
-    // 0004 to 0030 sit on top of 0003; migrateLatest below reapplies them.
+    // 0004 to 0031 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -877,6 +880,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -931,6 +935,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     expect(updated.rows[0]?.image_formats).toEqual(formats);
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -970,6 +975,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await trio()).toEqual([{ value: "499.00", redemption_count: 0 }]);
 
     // A rule that was there already (e.g. seeded) keeps its values and redemptions.
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -990,6 +996,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await trio()).toEqual([{ value: "450.00", redemption_count: 7 }]);
 
     await db.execute(sql`delete from discounts where slug = 'tester-trio'`);
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -1020,6 +1027,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ]);
 
     // After the rollback the rule is gone and the old checks reject the kind again.
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -1055,6 +1063,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
           values ('Poured', 'Test', 'women', '119.00', 5) returning id`,
     );
     const productId = product.rows[0]?.id;
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -1077,6 +1086,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     expect(variants.rows).toEqual([{ track_stock: false }]);
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1114,6 +1124,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       sql`update products set description_en = 'A description' where id = ${row?.id}`,
     );
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1146,6 +1157,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1225,6 +1237,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1320,6 +1333,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1415,6 +1429,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       totalAmount: "0.00",
     });
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1487,6 +1502,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db.execute(sql`delete from users where id = ${user.id}`);
     expect(await db.select().from(authTokens)).toEqual([]);
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1531,7 +1547,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23505");
 
-    // 0025 to 0030 sit on top of 0024; migrateLatest below reapplies them.
+    // 0025 to 0031 sit on top of 0024; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -1576,7 +1593,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23505");
 
-    // 0026 to 0030 sit on top of 0025; migrateLatest below reapplies them.
+    // 0026 to 0031 sit on top of 0025; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
     expect(await rollbackLatest(db)).toBe("0028_order_lifecycle_ml");
@@ -1603,6 +1621,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1758,6 +1777,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1795,6 +1815,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { inventoryMovements, orders, products, productVariants } = await import("./schema");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(db)).toBe("0029_inventory_movements");
@@ -1921,6 +1942,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     });
     await db.insert(userEvents).values([event("page_view"), event("product_impression")]);
 
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(db)).toBe("0030_product_event_types");
     // The product list events are gone and their types are refused again; the page view stays.
     const types = await db.execute(
@@ -1939,9 +1961,67 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db.insert(userEvents).values(event("product_impression"));
   });
 
+  it("adds cart reminders, the restore time and the user's locale, and rolls them back (#139)", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { pgErrorCode } = await import("./test-utils");
+    const { carts, orderEmails, users } = await import("./schema");
+    const { db } = testDb;
+
+    const [user] = await db
+      .insert(users)
+      .values({ fullName: "Reminder", email: "reminder-0029@example.com", passwordHash: "x" })
+      .returning({ id: users.id });
+    if (!user) throw new Error("no user");
+    const [cart] = await db
+      .insert(carts)
+      .values({ userId: user.id, status: "abandoned", reminderSentAt: new Date() })
+      .returning({ id: carts.id });
+    if (!cart) throw new Error("no cart");
+    await db.insert(orderEmails).values({ cartId: cart.id, type: "cart_reminder", locale: "en" });
+    // 23505: one reminder per cart.
+    expect(
+      await pgErrorCode(
+        db.insert(orderEmails).values({ cartId: cart.id, type: "cart_reminder", locale: "uk" }),
+      ),
+    ).toBe("23505");
+    // 23514: exactly one target, and only supported locales.
+    expect(
+      await pgErrorCode(
+        db.execute(sql`insert into order_emails (type, locale) values ('cart_reminder', 'uk')`),
+      ),
+    ).toBe("23514");
+    expect(
+      await pgErrorCode(
+        db
+          .update(users)
+          .set({ locale: "de" as "uk" })
+          .where(eq(users.id, user.id)),
+      ),
+    ).toBe("23514");
+
+    expect(await rollbackLatest(db)).toBe("0031_cart_reminders");
+    const columns = await db.execute(
+      sql`select table_name, column_name from information_schema.columns
+          where (table_name = 'carts' and column_name in ('reminder_sent_at', 'restored_at'))
+             or (table_name = 'order_emails' and column_name = 'cart_id')
+             or (table_name = 'users' and column_name = 'locale')`,
+    );
+    expect(columns.rows).toEqual([]);
+    const reminders = await db.execute(
+      sql`select 1 from order_emails where type = 'cart_reminder'`,
+    );
+    expect(reminders.rows).toEqual([]);
+
+    await migrateLatest(db);
+    await db.update(users).set({ locale: "en" }).where(eq(users.id, user.id));
+    await db.delete(carts).where(eq(carts.id, cart.id));
+    await db.delete(users).where(eq(users.id, user.id));
+  });
+
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
 
+    expect(await rollbackLatest(testDb.db)).toBe("0031_cart_reminders");
     expect(await rollbackLatest(testDb.db)).toBe("0030_product_event_types");
 
     expect(await rollbackLatest(testDb.db)).toBe("0029_inventory_movements");

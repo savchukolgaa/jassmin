@@ -108,6 +108,7 @@ describe("users", () => {
       passwordChangedAt: ["timestamp with time zone", false, false],
       city: ["text", false, false],
       marketingOptIn: ["boolean", true, true],
+      locale: ["text", false, false],
     });
   });
 
@@ -118,6 +119,7 @@ describe("users", () => {
     expect(columns.find((c) => c.name === "acquisitionChannel")?.default).toBe("direct");
     expect(columns.find((c) => c.name === "role")?.default).toBe("customer");
     expect(columns.find((c) => c.name === "marketingOptIn")?.default).toBe(false);
+    expect(describeConstraints(users).checks).toEqual(["users_locale_check"]);
   });
 });
 
@@ -212,6 +214,8 @@ describe("carts", () => {
       abandonedAt: ["timestamp with time zone", false, false],
       discountId: ["integer", false, false],
       giftCardId: ["integer", false, false],
+      reminderSentAt: ["timestamp with time zone", false, false],
+      restoredAt: ["timestamp with time zone", false, false],
     });
   });
 
@@ -231,6 +235,7 @@ describe("carts", () => {
         "carts_session_id_idx",
         "carts_status_updated_at_idx",
         "carts_user_id_idx",
+        "carts_user_id_reminder_sent_at_idx",
       ],
     });
   });
@@ -422,6 +427,7 @@ describe("order_emails", () => {
       id: ["serial", true, true],
       orderId: ["integer", false, false],
       giftCardId: ["integer", false, false],
+      cartId: ["integer", false, false],
       type: ["text", true, false],
       locale: ["text", true, false],
       status: ["text", true, true],
@@ -439,6 +445,7 @@ describe("order_emails", () => {
     expect(describeForeignKeys(orderEmails)).toEqual({
       orderId: ["orders", "cascade"],
       giftCardId: ["gift_cards", "cascade"],
+      cartId: ["carts", "cascade"],
     });
     expect(describeConstraints(orderEmails)).toEqual({
       checks: [
@@ -448,7 +455,11 @@ describe("order_emails", () => {
         "order_emails_target_check",
         "order_emails_type_check",
       ],
-      uniques: ["order_emails_gift_card_id_type_unique", "order_emails_order_id_type_unique"],
+      uniques: [
+        "order_emails_cart_id_type_unique",
+        "order_emails_gift_card_id_type_unique",
+        "order_emails_order_id_type_unique",
+      ],
       indexes: ["order_emails_status_next_attempt_at_idx"],
     });
   });

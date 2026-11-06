@@ -2,6 +2,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import type { AccountProfile } from "~/lib/account";
 import type { CheckoutPrefill } from "~/lib/checkout";
 import type { UserRole } from "~/lib/enums";
+import type { Locale } from "~/lib/i18n/locales";
 import type { Db } from "../client";
 import { users } from "../schema";
 
@@ -133,6 +134,18 @@ export async function touchLastLogin(db: Db, id: number): Promise<void> {
  */
 export async function setUserCity(db: Pick<Db, "update">, id: number, city: string): Promise<void> {
   await db.update(users).set({ city }).where(eq(users.id, id));
+}
+
+/**
+ * Remembers the language the user last logged in, registered or checked out in (#139), for the
+ * emails sent outside a request (cart reminders).
+ */
+export async function setUserLocale(
+  db: Pick<Db, "update">,
+  id: number,
+  locale: Locale,
+): Promise<void> {
+  await db.update(users).set({ locale }).where(eq(users.id, id));
 }
 
 /** Gives or withdraws the user's consent to marketing emails (#128). `false` for no such user. */

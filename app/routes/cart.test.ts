@@ -7,6 +7,8 @@ const cart = vi.hoisted(() => ({
   addItem: vi.fn(),
   getCartOwner: vi.fn(),
   getCartView: vi.fn(),
+  getRestorableCart: vi.fn(),
+  restoreAbandonedCart: vi.fn(),
   removeItem: vi.fn(),
   updateQuantity: vi.fn(),
   applyPromoCode: vi.fn(),
@@ -90,6 +92,7 @@ const add = { intent: "add", productId: PRODUCT_ID, variantId: VARIANT_ID };
 beforeEach(() => {
   vi.clearAllMocks();
   cart.getCartOwner.mockResolvedValue(owner);
+  cart.getRestorableCart.mockResolvedValue(null);
 });
 
 describe("cart loader", () => {
@@ -99,9 +102,86 @@ describe("cart loader", () => {
     const { loader } = await import("./cart");
     const request = new Request("http://localhost/cart");
 
-    expect(await loader({ request, params: {}, context: {} } as unknown as LoaderArgs)).toBe(view);
+    expect(await loader({ request, params: {}, context: {} } as unknown as LoaderArgs)).toEqual({
+      ...view,
+      restorable: null,
+    });
     expect(cart.getCartOwner).toHaveBeenCalledWith(request);
     expect(cart.getCartView).toHaveBeenCalledWith(owner);
+    expect(cart.getRestorableCart).toHaveBeenCalledWith(owner);
+  });
+
+  it("offers a logged-in user the cart a reminder was about (#139)", async () => {
+    const restorable = { cartId: 9, abandonedAt: new Date("2026-11-01T10:00:00Z"), itemCount: 2 };
+    cart.getCartOwner.mockResolvedValueOnce({ ...owner, userId: 4 });
+    cart.getCartView.mockResolvedValueOnce({ lines: [] });
+    cart.getRestorableCart.mockResolvedValueOnce(restorable);
+    const { loader } = await import("./cart");
+    const request = new Request("http://localhost/koshyk?restore=1&utm_source=email");
+
+    expect(
+      await loader({ request, params: {}, context: {} } as unknown as LoaderArgs),
+    ).toMatchObject({ restorable });
+  });
+
+  it("sends a logged-out visitor from the reminder's link to log in, keeping the UTM tags (#139)", async () => {
+    const { loader } = await import("./cart");
+    const search = "?restore=1&utm_source=email&utm_medium=email&utm_campaign=abandoned_cart";
+    for (const [url, login] of [
+      [`http://localhost/koshyk${search}`, "/vkhid"],
+      [`http://localhost/en/cart${search}`, "/en/login"],
+    ] as const) {
+      const thrown = await Promise.resolve(
+        loader({ request: new Request(url), params: {}, context: {} } as unknown as LoaderArgs),
+      ).catch((error: unknown) => error);
+      expect(thrown).toBeInstanceOf(Response);
+      const location = (thrown as Response).headers.get("Location") ?? "";
+      const target = new URL(location, "http://localhost");
+      expect(target.pathname).toBe(login);
+      expect(target.searchParams.get("redirectTo")).toBe(`${new URL(url).pathname}${search}`);
+    }
+    expect(cart.getCartView).not.toHaveBeenCalled();
+  });
+});
+
+describe("cart action: restore (#139)", () => {
+  it("brings the reminded cart back for a logged-in user", async () => {
+    cart.getCartOwner.mockResolvedValueOnce({ ...owner, userId: 4 });
+    analytics.ensureVisitor.mockResolvedValueOnce({
+      anonymousId: ANONYMOUS_ID,
+      sessionId: SESSION_ID,
+    });
+    cart.restoreAbandonedCart.mockResolvedValueOnce({ ok: true });
+    const { action } = await import("./cart");
+
+    expect(unwrap(await action(post({ intent: "restore", cartId: "9" })))).toEqual({
+      status: 200,
+      body: { ok: true, intent: "restore" },
+    });
+    expect(cart.restoreAbandonedCart).toHaveBeenCalledWith(
+      { userId: 4, anonymousId: ANONYMOUS_ID, sessionId: SESSION_ID },
+      9,
+    );
+  });
+
+  it("refuses a guest, a refused cart and a malformed id", async () => {
+    const { action } = await import("./cart");
+    expect(unwrap(await action(post({ intent: "restore", cartId: "9" })))).toEqual({
+      status: 409,
+      body: { ok: false, error: "not-restorable" },
+    });
+    expect(unwrap(await action(post({ intent: "restore", cartId: "x" }))).status).toBe(400);
+
+    cart.getCartOwner.mockResolvedValueOnce({ ...owner, userId: 4 });
+    analytics.ensureVisitor.mockResolvedValueOnce({
+      anonymousId: ANONYMOUS_ID,
+      sessionId: SESSION_ID,
+    });
+    cart.restoreAbandonedCart.mockResolvedValueOnce({ ok: false, error: "not-restorable" });
+    expect(unwrap(await action(post({ intent: "restore", cartId: "9" })))).toEqual({
+      status: 409,
+      body: { ok: false, error: "not-restorable" },
+    });
   });
 });
 

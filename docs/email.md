@@ -3,7 +3,8 @@
 The shop sends every email over SMTP from `no-reply@jassmin.ua`, with replies going to
 `hello@jassmin.ua` (#134). That covers order confirmations, the order status emails (shipped,
 arrived at the branch, cancelled, refunded; #138), gift card codes, contact form messages, the
-email-changed notice, and the password reset and email verification links (#135). In production the SMTP server is **Brevo**, a transactional email
+email-changed notice, the password reset and email verification links (#135), and the one
+abandoned-cart reminder for customers who agreed to marketing email (#139). In production the SMTP server is **Brevo**, a transactional email
 provider. Locally it's smtp4dev, which catches everything.
 
 Mail from a domain without SPF, DKIM and DMARC lands in spam, or is rejected by Gmail, Yahoo and
@@ -22,8 +23,10 @@ whoever controls the `jassmin.ua` DNS zone (the registrar's or the DNS host's co
 7. [Check that it works](#6-check-that-it-works)
 8. [Tighten DMARC after two weeks](#7-tighten-dmarc-after-two-weeks)
 9. [Suppressed addresses](#suppressed-addresses)
-10. [Local development](#local-development)
-11. [Switching providers](#switching-providers)
+10. [Order status emails](#order-status-emails)
+11. [Cart reminders](#cart-reminders)
+12. [Local development](#local-development)
+13. [Switching providers](#switching-providers)
 
 ## Why Brevo
 
@@ -107,6 +110,7 @@ SMTP_URL=smtps://xxxxxx%40smtp-brevo.com:<smtp-key>@smtp-relay.brevo.com:465
 CONTACT_FROM=Jassmin <no-reply@jassmin.ua>     # the default is "Jassmin website <…>"
 CONTACT_INBOX=hello@jassmin.ua                 # replies and contact messages go here
 EMAIL_WEBHOOK_SECRET=<64 hex characters, see below>
+EMAIL_UNSUBSCRIBE_SECRET=<64 hex characters: openssl rand -hex 32>   # cart reminders, see below
 PUBLIC_SITE_URL=https://jassmin.ua
 ```
 
@@ -248,12 +252,119 @@ one save sends both emails. The shop tries them right after the save and `pnpm d
 retries failures, like the confirmation. `paid`, `completed`, `returned` and `unclaimed` send no
 email.
 
+## Cart reminders
+
+A registered customer who left perfumes in the cart gets **one** friendly reminder (#139), if they
+ticked "Надсилайте мені новинки й пропозиції" at registration or on their profile
+(`users.marketing_opt_in`). Guests get none: their address is only known after checkout.
+
+### The job
+
+`pnpm db:mark-abandoned-carts` (hourly, #19) marks carts idle for 24 h as `abandoned`. Run
+`pnpm db:send-cart-reminders` hourly right after it. Each run queues a `cart_reminder` row in
+`order_emails` (with `cart_id`) and sets `carts.reminder_sent_at` for every cart where all of these
+hold, then sends them; `pnpm db:send-order-emails` retries failures:
+
+- the cart is `abandoned`, belongs to a registered user and was abandoned **in the last 72 hours**
+  (older carts are never dug up);
+- the user agreed to marketing email and their address isn't [suppressed](#suppressed-addresses);
+- the user got **no reminder in the last 7 days** (the profile promises "не частіше ніж раз на
+  тиждень");
+- the user **hasn't ordered** since the cart's last activity, and isn't shopping in a newer cart;
+- at least one of its perfumes can still be bought (an active product, a size in stock or untracked).
+
+Only the user's latest such cart counts, and a cart is reminded at most once. The rules are checked
+again just before sending (a retry can come hours later): a reminder for someone who unsubscribed
+or ordered meanwhile is marked `failed` with `not eligible: …` and isn't sent.
+
+Without `SMTP_URL`, `PUBLIC_SITE_URL` or `EMAIL_UNSUBSCRIBE_SECRET` the job queues nothing and
+says which is missing, so reminders never pile up and go out days late.
+
+### The email
+
+In the customer's language (`users.locale`: the language they last logged in or checked out in;
+else their last order email's; else Ukrainian), from `ORDER_FROM`: up to three perfumes with a
+photo (the product's own, or the shop's bottle, `public/email/shop-bottle.jpg`), name and size,
+"and N more", the total at today's prices, and the button **Повернутися до кошика**. No discount:
+the plain effect is measured first.
+
+The button links to
+`/koshyk?restore=1&utm_source=email&utm_medium=email&utm_campaign=abandoned_cart` (`/en/cart?…` in
+English). A visitor who isn't logged in is sent to log in first and comes back there. The cart page
+then offers "Ваш кошик від …" with a **Повернути в кошик** button, which adds the reminded cart's
+perfumes to the current cart (capped at stock) and sets `carts.restored_at`. The abandoned cart
+itself stays `abandoned`.
+
+### Unsubscribing
+
+Every reminder has a one-click unsubscribe (RFC 8058): the headers `List-Unsubscribe:
+<https://jassmin.ua/vidpysatysia/<token>>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
+so Gmail and others show their own "Unsubscribe" button, and the same link in the footer. The token
+is the user id signed with `EMAIL_UNSUBSCRIBE_SECRET` (HMAC-SHA256): nothing is stored, the link
+never expires and works any number of times. **Changing the secret breaks the links in every email
+already sent**, so set it once.
+
+Opening the link only shows a confirm button (a mail scanner opening it changes nothing); the button,
+or the mail client's one-click POST, sets `marketing_opt_in = false`. Order emails keep coming. The
+customer can subscribe again on their profile. To check the one-click POST:
+
+```bash
+curl -i -X POST -d "List-Unsubscribe=One-Click" "https://jassmin.ua/vidpysatysia/<token>"
+# HTTP/1.1 200
+```
+
+### Measuring it
+
+Visits from the button are attributed to the `abandoned_cart` campaign (`sessions.traffic_campaign`,
+#18), but only for visitors who accepted cookies. The **recovery rate** doesn't depend on consent:
+it counts reminded carts whose user placed an order (not cancelled) within 7 days of the reminder.
+
+```sql
+-- Recovery rate of cart reminders, overall and per week of sending.
+with reminded as (
+  select e.sent_at, c.id as cart_id, c.user_id, c.restored_at
+  from order_emails e
+  join carts c on c.id = e.cart_id
+  where e.type = 'cart_reminder' and e.status = 'sent'
+),
+recovered as (
+  select r.*, exists (
+    select 1 from orders o
+    where o.user_id = r.user_id
+      and o.created_at > r.sent_at
+      and o.created_at <= r.sent_at + interval '7 days'
+      and o.status <> 'cancelled'
+  ) as ordered
+  from reminded r
+)
+select
+  coalesce(to_char(date_trunc('week', sent_at), 'YYYY-MM-DD'), 'all') as week,
+  count(*) as reminded,
+  count(*) filter (where restored_at is not null) as restored,
+  count(*) filter (where ordered) as ordered_within_7_days,
+  round(100.0 * count(*) filter (where ordered) / nullif(count(*), 0), 1) as recovery_rate_pct
+from recovered
+group by rollup (date_trunc('week', sent_at))
+order by date_trunc('week', sent_at) nulls last;
+```
+
+```sql
+-- Orders from visits that came through the reminder's button (consented visitors only).
+select count(distinct (e.event_properties ->> 'orderId')) as orders,
+       sum((e.event_properties ->> 'totalAmount')::numeric) as revenue
+from user_events e
+where e.event_type = 'purchase' and e.campaign = 'abandoned_cart';
+```
+
 ## Local development
 
 Nothing changes locally: `pnpm aspire run` passes smtp4dev as `SMTP_URL`, and without Aspire you
 run `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev:v3` with
 `SMTP_URL=smtp://localhost:2525` (see [Home page and contact form](setup.md#home-page-and-contact-form)).
-smtp4dev shows both the HTML and the text part of each message. The webhook can't reach a local
+smtp4dev shows both the HTML and the text part of each message. To see a cart reminder, add
+`PUBLIC_SITE_URL=http://localhost:5173` and an `EMAIL_UNSUBSCRIBE_SECRET` to `.env`, put perfumes in
+the cart of a user who opted in, set the cart's `updated_at` back 25 hours in SQL, then run
+`pnpm db:mark-abandoned-carts` and `pnpm db:send-cart-reminders`. The webhook can't reach a local
 machine; its behaviour is covered by tests (`app/routes/hooks.email.test.ts`), and you can try it
 with curl:
 

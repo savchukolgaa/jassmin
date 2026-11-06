@@ -16,6 +16,7 @@ import {
   discounts,
   orderItems,
   orders,
+  payments,
   products,
   productVariants,
 } from "../schema";
@@ -406,6 +407,44 @@ export async function lockOrderLifecycle(db: Executor, orderId: number) {
     .where(eq(orders.id, orderId))
     .for("update");
   return row;
+}
+
+/** When a card order counts as abandoned unpaid (#128). */
+export interface UnpaidCardOrderCutoffs {
+  /** Placed before this. */
+  placedBefore: Date;
+  /** And no payment attempt started at or after this (the shopper may still be paying). */
+  noAttemptSince: Date;
+}
+
+/**
+ * Card orders still `pending` / `unpaid` that were placed before `placedBefore` and have had no
+ * payment attempt since `noAttemptSince`, oldest first; `orderId` limits it to that one order (to
+ * check again under its lock). The unpaid-order job cancels them.
+ */
+export async function listUnpaidCardOrderIds(
+  db: Executor,
+  { placedBefore, noAttemptSince }: UnpaidCardOrderCutoffs,
+  orderId?: number,
+): Promise<number[]> {
+  const rows = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(
+      and(
+        orderId === undefined ? undefined : eq(orders.id, orderId),
+        eq(orders.paymentMethod, "card"),
+        eq(orders.status, "pending"),
+        eq(orders.paymentStatus, "unpaid"),
+        sql`${orders.createdAt} < ${placedBefore}`,
+        sql`not exists (
+          select 1 from ${payments}
+          where ${payments.orderId} = ${orders.id} and ${payments.createdAt} >= ${noAttemptSince}
+        )`,
+      ),
+    )
+    .orderBy(asc(orders.id));
+  return rows.map((row) => row.id);
 }
 
 /** Writes the status, payment status and timestamps; `$onUpdate` bumps `updated_at`. */

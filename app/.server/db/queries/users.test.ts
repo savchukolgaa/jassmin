@@ -111,6 +111,30 @@ describe.skipIf(!hasDatabase)("user queries", () => {
     expect(await setUserRole(testDb.db, "nobody@example.com", "admin")).toBe(false);
   });
 
+  it("stores the delivery city and the marketing consent (#128)", async () => {
+    const { eq } = await import("drizzle-orm");
+    const { users } = await import("../schema");
+    const { insertUser, setMarketingOptIn, setUserCity } = await import("./users");
+    const { id } = await insertUser(testDb.db, {
+      fullName: "City",
+      email: "city-128@example.com",
+      passwordHash: "x",
+    });
+    const read = async () =>
+      (
+        await testDb.db
+          .select({ city: users.city, marketingOptIn: users.marketingOptIn })
+          .from(users)
+          .where(eq(users.id, id))
+      )[0];
+
+    expect(await read()).toEqual({ city: null, marketingOptIn: false });
+    await setUserCity(testDb.db, id, "Дніпро");
+    expect(await setMarketingOptIn(testDb.db, id, true)).toBe(true);
+    expect(await read()).toEqual({ city: "Дніпро", marketingOptIn: true });
+    expect(await setMarketingOptIn(testDb.db, 999_999, true)).toBe(false);
+  });
+
   it("reads the profile and credentials by id", async () => {
     const { findUserCredentialsById, findUserProfile, insertUser } = await import("./users");
     const { id } = await insertUser(testDb.db, {
@@ -126,6 +150,7 @@ describe.skipIf(!hasDatabase)("user queries", () => {
       email: "profile@example.com",
       phone: "+380 67 123 45 67",
       createdAt: expect.any(Date),
+      marketingOptIn: false,
     });
     expect(profile).not.toHaveProperty("passwordHash");
     expect(await findUserCredentialsById(testDb.db, id)).toEqual({

@@ -26,7 +26,7 @@ outbox, in the same transaction as the change and in the order's language. The e
 - **#137 Nova Poshta waybills and tracking**: **closed as not planned** (postponed by the owner on
   2026-11-05). So the app has no waybill number, no `arrived_at` and no tracking job. This plan adds
   the two order fields itself (staff fill them in Strapi), so #137 can later write the same columns
-  from its job. See Q1 and Q2.
+  from its job (confirmed by the owner, see Resolved questions).
 - **#136 branch picker**: **closed as not planned**. The branch is only in the free-text
   `orders.shipping_address` (built by `formatShippingAddress` at checkout), so "the branch" in the
   emails is that text.
@@ -45,7 +45,7 @@ outbox, in the same transaction as the change and in the order's language. The e
   - `patch.paymentStatus === "refunded"` → `refunded`
   - nothing for `paid`, `completed`, `returned`, `unclaimed`, or edits that change nothing
     (`nextOrderState` returns an empty patch for "asking for the current value").
-  Cancelling a paid card order and refunding it in one save queues both emails **(unconfirmed, Q3)**.
+  Cancelling a paid card order and refunding it in one save queues both emails (owner: two emails).
 - **At most once per order.** Queuing uses `insert … on conflict (order_id, type) do nothing`. A
   status that goes back and forth, or a second save, never queues a second row, even if the first
   one `failed`.
@@ -67,12 +67,11 @@ outbox, in the same transaction as the change and in the order's language. The e
   - `orders.waybill_number` `varchar(20)`, nullable, CHECK `waybill_number ~ '^[0-9]{14}$'`
     (Nova Poshta ТТН is 14 digits). Edited in Strapi as `waybillNumber`; the app strips spaces
     before validating and refuses anything else (`invalid-waybill`, Ukrainian message in Strapi).
-    **(unconfirmed, Q1)**
   - `orders.arrived_at` `timestamptz`, nullable: a delivery-time ML feature next to `shipped_at` /
     `completed_at` (never drop or rename). Staff tick a boolean `arrivedAtBranch` in Strapi; the
     app sets `arrived_at = now` when it's ticked and still `null`. Allowed only while the order is
     (or in the same save becomes) `shipped`; otherwise `arrived-not-shipped`. Unticking clears it
-    (a staff mistake) but never sends anything. **(unconfirmed, Q2)**
+    (a staff mistake) but never sends anything.
 - **Templates** live in `services/order-email.ts` beside the confirmation, built with
   `composeEmail` in the row's locale, from `ORDER_FROM ?? CONTACT_FROM`, reply-to `CONTACT_INBOX`.
   Subjects contain only the order number. Each has: greeting, a one-line status, the order number,
@@ -82,7 +81,7 @@ outbox, in the same transaction as the change and in the order's language. The e
     `https://novaposhta.ua/tracking/?cargo_number=<ttn>` when known. Without one it promises no
     later number: it says the parcel is on its way and to expect a Nova Poshta SMS.
   - **arrived**: the branch (`shipping_address`), the ТТН if known, "kept free for
-    `NOVA_POSHTA_FREE_STORAGE_DAYS` days" (constant = 7, **unconfirmed, Q4**), bring the ТТН or ID,
+    `NOVA_POSHTA_FREE_STORAGE_DAYS` days" (constant = 7), bring the ТТН or ID,
     and for `cod` the amount to pay at the branch (`total_amount`, plus "Nova Poshta's delivery fee"
     when `free_shipping` is false).
   - **cancelled**: the order is cancelled; for a paid card order "the money will be returned to
@@ -98,31 +97,6 @@ outbox, in the same transaction as the change and in the order's language. The e
 - **Not shown in the storefront.** The waybill isn't added to the account order page here (that was
   #137's scope).
 
-## Open questions
-
-- [ ] **Q1: Should staff enter the Nova Poshta waybill number (ТТН) in Strapi now?** #137 (which
-  would create it through the API) is postponed. Why it matters: the acceptance criterion "the
-  shipped email has the waybill number and a tracking link when the order has one" is only reachable
-  if the order can have one. Recommended default: add `orders.waybill_number` and an editable
-  `waybillNumber` field on the Strapi order, validated as 14 digits, and tell staff to fill it in the
-  same save as "Shipped". Affects steps: 1, 2, 4, 5, 6.
-- [ ] **Q2: How do staff mark "arrived at the branch"?** There's no `arrived` status (and adding one
-  would change `ORDER_STATUSES`, the Strapi enum, account status lists and #137's mapping, which
-  says arrived = `shipped` + `arrived_at`). Why it matters: without a field, the `arrived` email can
-  never be queued. Recommended default: `orders.arrived_at` (set by the app) and a checkbox
-  `arrivedAtBranch` on the Strapi order, allowed only while the order is `shipped`. Affects steps:
-  1, 2, 4, 5, 6.
-- [ ] **Q3: Cancel + refund in one save: one email or two?** Why it matters: a paid card order that
-  staff cancel and refund at once would get "cancelled" and "refunded" within seconds. Recommended
-  default: send both (each says something different: the cancellation, then the money); the
-  cancelled email for a paid card order says the refund will follow. Alternative: skip `refunded`
-  when it's queued together with `cancelled` and put the refund line into the cancelled email.
-  Affects steps: 3, 6.
-- [ ] **Q4: How many days does Nova Poshta keep a parcel for free?** The issue says 7; Nova
-  Poshta's current tariff may differ (and differ for postomats). Why it matters: a wrong promise in
-  the email. Recommended default: the issue's 7, as the constant `NOVA_POSHTA_FREE_STORAGE_DAYS` in
-  `app/lib/checkout.ts`, so it's one change. Affects steps: 6, 7.
-
 ## Resolved questions
 
 - **Does the `(order_id, type)` unique index exist?** Yes, `order_emails_order_id_type_unique`
@@ -131,7 +105,17 @@ outbox, in the same transaction as the change and in the order's language. The e
   (`PAYMENT_STATUS_TRANSITIONS` `paid → refunded`, `app/lib/order-status.ts`); the payment
   callback has no refund path (source: `app/.server/services/payments.ts`, #44).
 - **Is #137 available for `arrived_at` / the ТТН?** No: closed as not planned on 2026-11-05
-  ("Postponed by the owner", #137 comment). Hence Q1/Q2.
+  ("Postponed by the owner", #137 comment).
+- **Do staff enter the ТТН in Strapi now?** Yes: `orders.waybill_number` and an editable
+  `waybillNumber` on the Strapi order, 14 digits, filled in the same save as "Shipped" (owner,
+  2026-11-06).
+- **How do staff mark "arrived at the branch"?** A checkbox `arrivedAtBranch` on the Strapi order
+  that sets `orders.arrived_at`, allowed only while the order is `shipped`; no new order status
+  (owner, 2026-11-06).
+- **Cancel + refund in one save?** Two emails, `cancelled` then `refunded`; the cancelled email for
+  a paid card order says the refund will follow (owner, 2026-11-06).
+- **Free storage days at the branch?** 7, as the constant `NOVA_POSHTA_FREE_STORAGE_DAYS` in
+  `app/lib/checkout.ts` (owner, 2026-11-06).
 - **What is "the branch"?** The free-text `orders.shipping_address`; #136's branch ids were not
   built (closed as not planned, #136; `app/.server/services/orders.ts:163`).
 - **What language?** The `locale` stored on the order's `confirmation` row; orders have no locale

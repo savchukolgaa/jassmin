@@ -91,7 +91,15 @@ describe("PrivacyPolicy", () => {
 
     expect(html).toContain("Visit statistics for 26 months.");
     expect(html).toContain("Only with your consent, statistics");
-    expect(html).toMatch(/<time datetime="2026-10-24">Updated 24 October 2026<\/time>/i);
+    expect(html).toMatch(/<time datetime="2026-11-06">Updated 6 November 2026<\/time>/i);
+  });
+
+  it("explains the newsletter consent and the delivery city (#128)", () => {
+    const html = renderPolicy(contacts);
+
+    expect(html).toContain("agreed to the newsletter");
+    expect(html).toContain("unsubscribe at any time");
+    expect(html).toContain("the delivery city of your latest order");
   });
 
   it("lets the visitor change their cookie choice", () => {

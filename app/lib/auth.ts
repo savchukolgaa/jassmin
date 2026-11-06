@@ -13,8 +13,9 @@ export type {
   ResetPasswordInput,
 } from "./auth.schema";
 
-// The three forms of the account profile page (#54), told apart by a hidden `intent` field.
-export const PROFILE_INTENTS = ["contact", "email", "password"] as const;
+// The forms of the account profile page (#54), told apart by a hidden `intent` field; `marketing`
+// gives or withdraws the marketing emails consent (#128).
+export const PROFILE_INTENTS = ["contact", "email", "password", "marketing"] as const;
 export type ProfileIntent = (typeof PROFILE_INTENTS)[number];
 
 /** How long a password reset link works (#135). */
@@ -33,6 +34,7 @@ export type LoginField = "email" | "password";
 export type ForgotPasswordField = "email";
 export type ResetPasswordField = "password" | "confirmPassword";
 export type ContactField = "fullName" | "phone";
+export type MarketingField = "marketingOptIn";
 export type ChangeEmailField = "email" | "currentPassword";
 export type ChangePasswordField = "currentPassword" | "newPassword" | "confirmNewPassword";
 
@@ -40,6 +42,7 @@ export interface ProfileFields {
   contact: ContactField;
   email: ChangeEmailField;
   password: ChangePasswordField;
+  marketing: MarketingField;
 }
 
 /** What the profile page's `action` returns, for the form named by `intent`. */

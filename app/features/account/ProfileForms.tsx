@@ -1,13 +1,14 @@
 import { type ReactNode, type Ref, useEffect, useRef } from "react";
 import { Form } from "react-router";
 import { Button } from "~/components/ui/Button";
+import { CheckboxField } from "~/components/ui/CheckboxField";
 import { TextField } from "~/components/ui/TextField";
 import { FormAlert } from "~/features/auth/AuthLayout";
 import type { AccountProfile } from "~/lib/account";
 import type { AuthFormErrors, ProfileFields, ProfileIntent } from "~/lib/auth";
 import { type TextKey, useT } from "~/lib/i18n";
 
-// The three forms of `/account/profile` (#54). Each posts on its own with a hidden `intent`, so
+// The forms of `/account/profile` (#54; marketing emails, #128). Each posts on its own with a hidden `intent`, so
 // they work without JavaScript; the route passes a panel only the action result for its intent.
 
 /** The action's result for one panel: saved, or the errors to show. */
@@ -209,6 +210,38 @@ export function PasswordPanel({ profile, result, submitting }: PanelProps<"passw
         type="password"
         autoComplete="new-password"
         error={fieldError(t, errors?.fieldErrors?.confirmNewPassword)}
+      />
+    </Panel>
+  );
+}
+
+/** Gives or withdraws the consent to marketing emails (#128); no password needed. */
+export function MarketingPanel({ profile, result, submitting }: PanelProps<"marketing">) {
+  const { t } = useT();
+
+  return (
+    <Panel
+      intent="marketing"
+      heading={t("account.profile.marketing.heading")}
+      description={t("account.profile.marketing.description")}
+      saved={
+        result?.ok
+          ? t(
+              profile.marketingOptIn
+                ? "account.profile.marketing.subscribed"
+                : "account.profile.marketing.unsubscribed",
+            )
+          : undefined
+      }
+      formError={result?.ok === false ? result.formError : undefined}
+      submit={t("account.profile.marketing.submit")}
+      submitting={submitting}
+    >
+      <CheckboxField
+        name="marketingOptIn"
+        id="field-marketing-marketingOptIn"
+        label={t("auth.register.marketingOptIn")}
+        defaultChecked={profile.marketingOptIn}
       />
     </Panel>
   );

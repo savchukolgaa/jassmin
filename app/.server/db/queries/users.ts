@@ -95,6 +95,7 @@ export async function findUserProfile(db: Db, id: number): Promise<AccountProfil
       email: users.email,
       phone: users.phone,
       createdAt: users.createdAt,
+      marketingOptIn: users.marketingOptIn,
     })
     .from(users)
     .where(eq(users.id, id))

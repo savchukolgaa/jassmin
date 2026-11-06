@@ -17,7 +17,7 @@ export function isConsentValue(value: unknown): value is ConsentValue {
 export type { ConsentFormInput } from "./consent.schema";
 
 /** When the privacy policy last changed (ISO date), shown on the page. */
-export const PRIVACY_POLICY_UPDATED_AT = "2026-10-24";
+export const PRIVACY_POLICY_UPDATED_AT = "2026-11-06";
 
 /** A cookie the site sets, as the privacy policy lists it. Copy are message keys. */
 export interface CookieInfo {

@@ -8,6 +8,7 @@ const profile = vi.hoisted(() => ({
   changeEmail: vi.fn(),
   changePassword: vi.fn(),
   notifyEmailChanged: vi.fn(),
+  updateMarketingOptIn: vi.fn(),
 }));
 
 vi.mock("~/.server/services/auth", () => auth);
@@ -123,6 +124,20 @@ describe("account profile action", () => {
       status: 400,
       body: { ok: false, intent: null, formError: "account.profile.errors.invalidIntent" },
     });
+  });
+
+  it("gives and withdraws the marketing consent (#128)", async () => {
+    expect(await act({ intent: "marketing", marketingOptIn: "on" })).toEqual({
+      status: 200,
+      body: { ok: true, intent: "marketing" },
+    });
+    expect(profile.updateMarketingOptIn).toHaveBeenLastCalledWith(7, true);
+    // An unticked box posts nothing.
+    expect(await act({ intent: "marketing" })).toEqual({
+      status: 200,
+      body: { ok: true, intent: "marketing" },
+    });
+    expect(profile.updateMarketingOptIn).toHaveBeenLastCalledWith(7, false);
   });
 
   it("saves the contact details and clears a blank phone", async () => {

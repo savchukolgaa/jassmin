@@ -96,4 +96,6 @@ export interface AccountProfile {
   email: string;
   phone: string | null;
   createdAt: Date;
+  /** Agreed to marketing emails (#128); changed on the profile page. */
+  marketingOptIn: boolean;
 }

@@ -100,6 +100,9 @@ const currentPasswordSchema = z
 
 export const contactSchema = z.object({ fullName: fullNameSchema, phone: phoneSchema });
 
+/** The profile's marketing emails form (#128): an unticked box withdraws the consent. */
+export const marketingSchema = z.object({ marketingOptIn: checkboxSchema });
+
 export type ContactInput = z.infer<typeof contactSchema>;
 
 export const changeEmailSchema = z.object({

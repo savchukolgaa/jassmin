@@ -10,11 +10,13 @@ import {
   getProfile,
   notifyEmailChanged,
   updateContact,
+  updateMarketingOptIn,
 } from "~/.server/services/profile";
 import { renewSessionAuth } from "~/.server/session";
 import {
   ContactPanel,
   EmailPanel,
+  MarketingPanel,
   type PanelResult,
   PasswordPanel,
 } from "~/features/account/ProfileForms";
@@ -30,6 +32,7 @@ import {
   changeEmailSchema,
   changePasswordSchema,
   contactSchema,
+  marketingSchema,
   profileIntentSchema,
   toFieldErrors,
 } from "~/lib/auth.schema";
@@ -85,7 +88,18 @@ export async function action({ request }: Route.ActionArgs) {
       return saveEmail(user, formData, request);
     case "password":
       return savePassword(user, formData, request);
+    case "marketing":
+      return saveMarketing(user, formData);
   }
+}
+
+async function saveMarketing(user: PublicUser, formData: FormData) {
+  // A checkbox can't be invalid: anything but a ticked box withdraws the consent.
+  const { marketingOptIn } = marketingSchema.parse({
+    marketingOptIn: formData.get("marketingOptIn") ?? undefined,
+  });
+  await updateMarketingOptIn(user.id, marketingOptIn);
+  return reply({ ok: true, intent: "marketing" });
 }
 
 async function saveContact(user: PublicUser, formData: FormData) {
@@ -248,6 +262,11 @@ export default function AccountProfile({ loaderData, actionData }: Route.Compone
         profile={profile}
         result={resultFor(actionData, "password")}
         submitting={sending("password")}
+      />
+      <MarketingPanel
+        profile={profile}
+        result={resultFor(actionData, "marketing")}
+        submitting={sending("marketing")}
       />
     </div>
   );

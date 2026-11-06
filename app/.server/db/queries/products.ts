@@ -233,6 +233,40 @@ export function listSitemapProducts(db: Db) {
 
 export type SitemapProductRow = Awaited<ReturnType<typeof listSitemapProducts>>[number];
 
+/**
+ * Every size for the product feeds (#140): one row per variant of a listed product with a slug
+ * (as in the sitemap) and a price above 0, which Google requires. `stock` is the selling stock, so
+ * untracked sizes (#98) are always in stock. Ordered by slug and volume, so the feed is stable.
+ */
+export function listFeedVariants(db: Db) {
+  return db
+    .select({
+      productId: products.publicId,
+      slug: products.slug,
+      title: products.title,
+      brand: products.brand,
+      gender: products.gender,
+      fragranceFamily: products.fragranceFamily,
+      packSize: products.packSize,
+      description: products.description,
+      descriptionEn: products.descriptionEn,
+      imageUrl: products.imageUrl,
+      imageWidth: products.imageWidth,
+      imageHeight: products.imageHeight,
+      imageFormats: products.imageFormats,
+      variantId: productVariants.publicId,
+      volumeMl: productVariants.volumeMl,
+      price: productVariants.price,
+      stock: variantStock,
+    })
+    .from(products)
+    .innerJoin(productVariants, eq(productVariants.productId, products.id))
+    .where(and(isListed, isNotNull(products.slug), sql`${productVariants.price} > 0`))
+    .orderBy(asc(products.slug), asc(productVariants.volumeMl));
+}
+
+export type FeedVariantRow = Awaited<ReturnType<typeof listFeedVariants>>[number];
+
 export interface PopularFilters {
   /** Products with **any** of these families (the trio builder's picks); none means no filter. */
   fragranceFamilies?: readonly string[];

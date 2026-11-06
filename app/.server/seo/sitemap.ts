@@ -1,4 +1,5 @@
 import { DEFAULT_LOCALE, LOCALES, type Locale } from "~/lib/i18n";
+import { escapeXml } from "./xml";
 
 // Builds `/sitemap.xml` (#87): one `<url>` per page and locale, each with the `hreflang`
 // alternates of every language version of the page, as Google expects for multilingual sites.
@@ -9,19 +10,6 @@ export interface SitemapPage {
   paths: Partial<Record<Locale, string>>;
   /** When the page last changed: an ISO datetime or a `YYYY-MM-DD` date; unknown when absent. */
   lastmod?: string;
-}
-
-const XML_ESCAPES: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&apos;",
-};
-
-/** Escapes text for an XML element or a quoted attribute. */
-export function escapeXml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => XML_ESCAPES[char] ?? char);
 }
 
 /** `siteUrl` (no trailing slash) plus a path; `/` stays the bare origin with its slash. */

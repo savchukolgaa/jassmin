@@ -99,6 +99,10 @@ export default [
   // Files for search engines (#87), generated per request: resource routes outside the layout.
   route("sitemap.xml", "routes/sitemap.xml.ts"),
   route("robots.txt", "routes/robots.txt.ts"),
+  // Product feeds for Google Merchant Center and Meta Commerce Manager (#140), in Ukrainian and
+  // English; one module, the language from the path. Resource routes outside the layout.
+  route("feeds/products.xml", "routes/feeds.products.xml.ts", { id: "feed-products.uk" }),
+  route("en/feeds/products.xml", "routes/feeds.products.xml.ts", { id: "feed-products.en" }),
   // Share images of products without their own photo (#105): `/og/products/<handle>.png`, the
   // `.png` checked by the loader. Language-neutral; a resource route outside the layout.
   route("og/products/:file", "routes/og.products.$file.ts"),

@@ -829,6 +829,42 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect(await emails(orderId)).toEqual(["confirmation:uk", "cancelled:uk", "refunded:uk"]);
   });
 
+  it("sends a queued shipped email through the outbox with the waybill (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { deliverOrderEmails, orderEmailDeps } = await import("./order-email");
+    const { orderId } = await placed();
+    await confirmed(orderId, "en");
+    const sent: { subject?: unknown; text?: unknown }[] = [];
+    const mailer = {
+      sendMail: async (message: { subject?: unknown; text?: unknown }) => {
+        sent.push(message);
+        return {};
+      },
+    };
+    const env = {
+      ORDER_FROM: undefined,
+      CONTACT_FROM: "Jassmin <no-reply@example.com>",
+      CONTACT_INBOX: "shop@example.com",
+      PUBLIC_SITE_URL: undefined,
+    };
+
+    await applyCmsOrderChange(
+      orderId,
+      { status: "shipped", waybillNumber: "20450000000001" },
+      testDb.db,
+    );
+    // The confirmation goes out too: it was still pending in this test.
+    const report = await deliverOrderEmails({ orderId }, orderEmailDeps(testDb.db, mailer, env));
+
+    expect(report).toMatchObject({ sent: 2, retrying: 0, gaveUp: 0 });
+    const shipped = sent.find((message) => String(message.subject).includes("on its way"));
+    expect(shipped?.subject).toBe(`Order №${orderId} is on its way — Jassmin`);
+    expect(String(shipped?.text)).toContain("Waybill number: 20450000000001");
+    expect(String(shipped?.text)).toContain(
+      "https://novaposhta.ua/tracking/?cargo_number=20450000000001",
+    );
+  });
+
   it("queues no email for a refused change (#138)", async () => {
     const { applyCmsOrderChange } = await import("./cms-sync");
     const { orderId } = await placed({ paymentMethod: "card" });

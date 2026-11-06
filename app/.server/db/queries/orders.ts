@@ -3,6 +3,7 @@ import type { AccountOrderLine } from "~/lib/account";
 import {
   FREE_SHIPPING_THRESHOLD,
   type OrderConfirmation,
+  type OrderStatusEmail,
   type OrderSummaryLine,
   SHIPPING_AMOUNT,
 } from "~/lib/checkout";
@@ -280,6 +281,32 @@ export async function findOrderConfirmation(
   }
   const { userId: _userId, ...confirmation } = order;
   return { ...confirmation, lines: await listOrderLines(db, orderId) };
+}
+
+/**
+ * The order as its status emails (#138) show it: the confirmation plus its current status,
+ * payment status and waybill. Like the confirmation, it goes to the order's own address.
+ */
+export async function findOrderStatusEmail(
+  db: Executor,
+  orderId: number,
+): Promise<OrderStatusEmail | undefined> {
+  const order = await findOrder(db, orderId);
+  if (!order) {
+    return undefined;
+  }
+  const [state] = await db
+    .select({
+      status: orders.status,
+      paymentStatus: orders.paymentStatus,
+      waybillNumber: orders.waybillNumber,
+    })
+    .from(orders)
+    .where(eq(orders.id, orderId));
+  if (!state) {
+    return undefined;
+  }
+  return { ...order, ...state, lines: await listOrderLines(db, orderId) };
 }
 
 // Account dashboard (#12). Every query filters by `user_id`, so a user only ever loads their own

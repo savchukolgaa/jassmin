@@ -4,7 +4,7 @@
 import type { AuthFormErrors } from "./auth";
 import type { CartLine } from "./cart";
 import type { DiscountLine } from "./discounts";
-import type { PaymentMethod } from "./enums";
+import type { OrderStatus, PaymentMethod, PaymentStatus } from "./enums";
 import type { TextKey } from "./i18n";
 import { fromKopiyky, toKopiyky } from "./money";
 
@@ -138,6 +138,30 @@ export interface OrderConfirmation {
   giftCardAmount: string;
   totalAmount: string;
   lines: OrderSummaryLine[];
+}
+
+/**
+ * Days Nova Poshta keeps a parcel at the branch for free, promised in the "arrived" email (#138).
+ * Change it here when the carrier's terms change.
+ */
+export const NOVA_POSHTA_FREE_STORAGE_DAYS = 7;
+
+/** Nova Poshta's public tracking page for a waybill number (ТТН, #138). */
+export function novaPoshtaTrackingUrl(waybillNumber: string): string {
+  return `https://novaposhta.ua/tracking/?cargo_number=${encodeURIComponent(waybillNumber)}`;
+}
+
+/**
+ * An order as its status emails (#138) show it: the confirmation's details plus where it
+ * stands now, read when the email is sent.
+ */
+export interface OrderStatusEmail extends OrderConfirmation {
+  /** `null` for guests, who get no link to the account. */
+  userId: number | null;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  /** The Nova Poshta waybill number (ТТН), when staff entered one. */
+  waybillNumber: string | null;
 }
 
 /**

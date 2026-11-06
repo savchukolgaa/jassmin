@@ -200,7 +200,7 @@ Each step is small, ordered, and leaves the app in a working state.
   for `invalid-waybill` / `arrived-not-shipped`. Update the middleware tests. In the route
   `cms.orders.$id.ts`, after the commit, `void deliverOrderStatusEmails(orderId)` when
   `emailsQueued`, next to `void pushToCms()`.
-- [ ] **6. Templates.** In `app/lib/checkout.ts` add `NOVA_POSHTA_FREE_STORAGE_DAYS = 7`,
+- [x] **6. Templates.** In `app/lib/checkout.ts` add `NOVA_POSHTA_FREE_STORAGE_DAYS = 7`,
   `novaPoshtaTrackingUrl(ttn)` and the `OrderStatusEmail` DTO (`OrderConfirmation` + `status`,
   `paymentStatus`, `waybillNumber`, `userId`, `paidByCard`). Add `findOrderStatusEmail(db, id)` in
   `db/queries/orders.ts` (reuse `findOrderConfirmation`'s lines query). In
@@ -211,7 +211,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `tsc`); make the "SMTP_URL is not set" log say "order N's emails". Add
   `deliverOrderStatusEmails` to `services/orders.ts`. Add `orderStatusEmail.*` to `uk.ts` (source)
   and `en.ts` (plural-free; days via `{ one, few, many, other }` if counted).
-- [ ] **7. Template tests.** In `order-email.test.ts`, for each type in uk and en: subject with the
+- [x] **7. Template tests.** In `order-email.test.ts`, for each type in uk and en: subject with the
   order number only, the status line, the items, the ТТН `code` block and tracking `button` only
   when `waybillNumber` is set, the branch and the storage days in `arrived`, the cod amount only for
   cod, the gift-card line in `cancelled`, the account link only with a `user_id`, and HTML/text

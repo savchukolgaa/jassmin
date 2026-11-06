@@ -3,7 +3,7 @@
   "info": {
     "displayName": "Size",
     "icon": "shoppingCart",
-    "description": "One size of a perfume: volume (5, 10, 30, 50 or 100 ml) and price in UAH. Always available unless Track stock is on; then units in stock limit sales"
+    "description": "One size of a perfume: volume (5, 10, 30, 50 or 100 ml) and price in UAH. Always available unless Track stock is on; then units in stock limit sales, and Stock reason says why you changed the stock: надходження (a delivery) or коригування (a correction)"
   },
   "options": {},
   "attributes": {
@@ -26,6 +26,16 @@
       "type": "integer",
       "default": 0,
       "min": 0,
+      "conditions": {
+        "visible": {
+          "==": [{ "var": "trackStock" }, true]
+        }
+      }
+    },
+    "stockReason": {
+      "type": "enumeration",
+      "enum": ["коригування", "надходження"],
+      "default": "коригування",
       "conditions": {
         "visible": {
           "==": [{ "var": "trackStock" }, true]

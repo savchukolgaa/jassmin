@@ -15,6 +15,15 @@ describe("describeAppSyncError", () => {
     );
   });
 
+  it("explains the inventory ledger's refusals (#130)", () => {
+    expect(describeAppSyncError(422, { error: "receipt-not-positive", volumeMl: 50 })).toBe(
+      "Надходження має збільшити залишок (розмір 50 мл). Щоб зменшити залишок, виберіть «коригування». [receipt-not-positive]",
+    );
+    expect(describeAppSyncError(422, { error: "size-has-stock-history", volumeMl: 10 })).toBe(
+      "Розмір 10 мл уже має історію складу, тому його не можна видалити. Вимкніть «Track stock» або поставте залишок 0. [size-has-stock-history]",
+    );
+  });
+
   it("lists the fields of invalid input", () => {
     const message = describeAppSyncError(422, {
       error: "invalid-input",

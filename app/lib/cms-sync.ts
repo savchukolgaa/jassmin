@@ -27,6 +27,11 @@ const priceSchema = z
 /** The longest product description the app takes, in characters (#100): a sanity cap. */
 export const MAX_PRODUCT_DESCRIPTION = 5000;
 
+/** The stock reasons staff pick in Strapi (#130), as the app names them in the inventory ledger. */
+export const CMS_STOCK_REASONS = ["adjustment", "receipt"] as const;
+
+export type CmsStockReason = (typeof CMS_STOCK_REASONS)[number];
+
 /** A product description in one language: plain text, a blank line between paragraphs. */
 const descriptionText = z
   .string()
@@ -52,6 +57,12 @@ export const cmsVariantSchema = z.object({
    * difference, so sales made while the form was open aren't overwritten.
    */
   expectedStock: z.number().int().min(0).nullish(),
+  /**
+   * Why staff changed a tracked size's stock (#130): a correction (`adjustment`, also when left
+   * out) or a delivery from the supplier (`receipt`, which must add units). Logged in the
+   * inventory ledger.
+   */
+  stockReason: z.enum(CMS_STOCK_REASONS).optional(),
 });
 
 export type CmsVariantInput = z.infer<typeof cmsVariantSchema>;
@@ -310,7 +321,11 @@ export type CmsSyncError =
       to: string;
     }
   | { error: "invalid-payment-transition"; from: string; to: string }
-  | { error: "arrived-not-shipped"; status: string };
+  | { error: "arrived-not-shipped"; status: string }
+  /** A receipt (#130) that doesn't add units to the size. */
+  | { error: "receipt-not-positive"; volumeMl: number }
+  /** A removed size that already has inventory ledger rows (#130), which keep it. */
+  | { error: "size-has-stock-history"; volumeMl: number };
 
 /** Zod issues as `{ path, message }` pairs, e.g. `variants.0.volumeMl`. */
 export function toSyncIssues(error: z.ZodError): { path: string; message: string }[] {

@@ -230,7 +230,26 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const after = await cartOf(cart.id);
     expect(after?.status).toBe("converted");
     expect(after?.updatedAt.getTime()).toBeGreaterThan(cart.updatedAt.getTime());
+    // Each tracked line is a `sale` in the inventory ledger, with the stock after it (#130).
+    expect(await salesOf(five.id, result.orderId)).toEqual([
+      { reason: "sale", quantityDelta: -2, stockAfter: 8, source: "checkout" },
+    ]);
+    expect(await salesOf(thirty.id, result.orderId)).toEqual([
+      { reason: "sale", quantityDelta: -1, stockAfter: 2, source: "checkout" },
+    ]);
   });
+
+  async function salesOf(variantId: number, orderId: number) {
+    const { listInventoryMovements } = await import("../db/queries/inventory");
+    return (await listInventoryMovements(testDb.db, variantId))
+      .filter((m) => m.orderId === orderId)
+      .map(({ reason, quantityDelta, stockAfter, source }) => ({
+        reason,
+        quantityDelta,
+        stockAfter,
+        source,
+      }));
+  }
 
   async function historyOf(orderId: number) {
     const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
@@ -374,6 +393,10 @@ describe.skipIf(!hasDatabase)("order service", () => {
       .from(cmsOutbox)
       .where(eq(cmsOutbox.entityId, poured.productId));
     expect(queued.filter((row) => row.entity === "product")).toEqual([]);
+    // Only the tracked size is logged (#130).
+    if (!result.ok) throw new Error(result.error);
+    expect(await salesOf(poured.id, result.orderId)).toEqual([]);
+    expect(await salesOf(five.id, result.orderId)).toHaveLength(1);
   });
 
   it("changes nothing when a line asks for more than is in stock", async () => {
@@ -1046,6 +1069,12 @@ describe.skipIf(!hasDatabase)("order service", () => {
     ]);
     expect(await allOrders()).toHaveLength(1);
     expect(await stockOf(hundred.id)).toBe(0);
+    // One sale in the ledger, ending at 0 (#130).
+    const placed = results.find((r) => r.ok);
+    if (!placed?.ok) throw new Error("no order");
+    expect(await salesOf(hundred.id, placed.orderId)).toEqual([
+      { reason: "sale", quantityDelta: -1, stockAfter: 0, source: "checkout" },
+    ]);
   });
 
   it("returns the same order when the same cart is submitted twice", async () => {

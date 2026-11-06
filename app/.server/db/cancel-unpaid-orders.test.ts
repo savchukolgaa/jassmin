@@ -132,6 +132,19 @@ describe.skipIf(!hasDatabase)("cancelUnpaidOrders", () => {
       cancelledAt: NOW,
     });
     expect(await stock()).toBe(7);
+    // The units going back are logged as a cancellation by the job (#130).
+    const { listInventoryMovements } = await import("./queries/inventory");
+    const ledger = async () =>
+      (await listInventoryMovements(testDb.db, variantId)).filter((m) => m.orderId === stale);
+    expect(await ledger()).toEqual([
+      expect.objectContaining({
+        reason: "cancellation",
+        quantityDelta: 2,
+        stockAfter: 7,
+        source: "job",
+        occurredAt: NOW,
+      }),
+    ]);
     expect(
       (await listOrderStatusHistory(testDb.db, stale)).map(({ status, source, changedAt }) => ({
         status,
@@ -162,6 +175,7 @@ describe.skipIf(!hasDatabase)("cancelUnpaidOrders", () => {
     expect((await cancelUnpaidOrders(testDb.db, { hours: 48, now: NOW })).cancelled).toEqual([]);
     expect(await stock()).toBe(7);
     expect(await listOrderStatusHistory(testDb.db, stale)).toHaveLength(1);
+    expect(await ledger()).toHaveLength(1);
   });
 
   it("leaves recent, retried, paid and cash-on-delivery orders alone", async () => {

@@ -127,8 +127,22 @@ describe("productPayload: tracked stock (#98)", () => {
       ],
     };
     expect((await productPayload(strapi, merged, stored)).variants).toEqual([
-      { volumeMl: 50, price: 3200, trackStock: true, stock: 2, expectedStock: 2 },
-      { volumeMl: 10, price: 240, trackStock: false, stock: 0, expectedStock: null },
+      {
+        volumeMl: 50,
+        price: 3200,
+        trackStock: true,
+        stock: 2,
+        expectedStock: 2,
+        stockReason: "adjustment",
+      },
+      {
+        volumeMl: 10,
+        price: 240,
+        trackStock: false,
+        stock: 0,
+        expectedStock: null,
+        stockReason: "adjustment",
+      },
     ]);
   });
 
@@ -138,11 +152,37 @@ describe("productPayload: tracked stock (#98)", () => {
       variants: [{ id: 5, volumeMl: 50, price: 3200, trackStock: false }],
     };
     expect((await productPayload(strapi, hidden, stored)).variants).toEqual([
-      { volumeMl: 50, price: 3200, trackStock: false, stock: 2, expectedStock: 2 },
+      {
+        volumeMl: 50,
+        price: 3200,
+        trackStock: false,
+        stock: 2,
+        expectedStock: 2,
+        stockReason: "adjustment",
+      },
     ]);
   });
 
-  it("saves the app's tracking and stock", () => {
+  it("sends a delivery as a receipt and anything else as a correction (#130)", async () => {
+    const merged = {
+      ...stored,
+      variants: [
+        {
+          id: 5,
+          volumeMl: 50,
+          price: 3200,
+          stock: 6,
+          trackStock: true,
+          stockReason: "надходження",
+        },
+        { volumeMl: 10, price: 240, stock: 1, trackStock: true, stockReason: "коригування" },
+      ],
+    };
+    const variants = (await productPayload(strapi, merged, stored)).variants;
+    expect(variants.map((v) => v.stockReason)).toEqual(["receipt", "adjustment"]);
+  });
+
+  it("saves the app's tracking and stock, and resets the stock reason (#130)", () => {
     const data = applyProductAnswer(stored, {
       publicId: "01a1652b-6e25-7c03-ae47-25b57131fb06",
       active: true,
@@ -153,7 +193,7 @@ describe("productPayload: tracked stock (#98)", () => {
       variants: [{ volumeMl: 50, price: "3200.00", stock: 2, trackStock: false }],
     });
     expect(data.variants).toEqual([
-      { id: 5, volumeMl: 50, price: 3200, stock: 2, trackStock: false },
+      { id: 5, volumeMl: 50, price: 3200, stock: 2, trackStock: false, stockReason: "коригування" },
     ]);
   });
 });

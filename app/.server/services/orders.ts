@@ -207,10 +207,16 @@ export async function createOrder(
         await enqueueCmsSync(tx, "gift_card", [giftCard.id]);
       }
       await insertOrderEmail(tx, { orderId, type: "confirmation", locale });
-      // Only sizes that track stock lose units; the rest are poured to order (#98).
+      // Only sizes that track stock lose units, each logged as a `sale` (#130); the rest are
+      // poured to order (#98).
       const tracked = lines.filter((line) => line.trackStock);
       for (const line of tracked) {
-        await decrementVariantStock(tx, line.variantId, line.quantity);
+        await decrementVariantStock(tx, {
+          variantId: line.variantId,
+          quantity: line.quantity,
+          orderId,
+          now,
+        });
       }
       await markCartConverted(tx, cartId);
       // Strapi shows the new order and the products' lower stock (#40); pushed after the commit.

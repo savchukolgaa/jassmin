@@ -8,7 +8,7 @@ import {
   SHIPPING_AMOUNT,
 } from "~/lib/checkout";
 import type { DiscountLine } from "~/lib/discounts";
-import type { CartStatus, PaymentMethod } from "~/lib/enums";
+import type { CartStatus, InventoryMovementSource, PaymentMethod } from "~/lib/enums";
 import type { OrderLifecyclePatch } from "~/lib/order-status";
 import type { Db } from "../client";
 import {
@@ -21,6 +21,7 @@ import {
   products,
   productVariants,
 } from "../schema";
+import { insertInventoryMovements } from "./inventory";
 import { availableStock } from "./products";
 
 /** A `Db` or a transaction, so the order service can pass `tx` down. */
@@ -181,18 +182,37 @@ export async function insertOrderItems(
 }
 
 /**
- * Takes the bought units off the variant's stock (the CHECK keeps it from going negative). A size
- * that doesn't track stock (#98) is left alone.
+ * Takes the bought units off the variant's stock (the CHECK keeps it from going negative) and
+ * records the `sale` in the inventory ledger (#130). A size that doesn't track stock (#98) is left
+ * alone and logs nothing. Call it with the variant's row locked (checkout's
+ * `lockCartLinesForOrder`).
  */
 export async function decrementVariantStock(
   db: Executor,
-  variantId: number,
-  quantity: number,
+  {
+    variantId,
+    quantity,
+    orderId,
+    now,
+  }: { variantId: number; quantity: number; orderId: number; now: Date },
 ): Promise<void> {
-  await db
+  const [row] = await db
     .update(productVariants)
     .set({ stockQuantity: sql`${productVariants.stockQuantity} - ${quantity}` })
-    .where(and(eq(productVariants.id, variantId), eq(productVariants.trackStock, true)));
+    .where(and(eq(productVariants.id, variantId), eq(productVariants.trackStock, true)))
+    .returning({ stockAfter: productVariants.stockQuantity });
+  if (!row) return;
+  await insertInventoryMovements(db, [
+    {
+      variantId,
+      reason: "sale",
+      quantityDelta: -quantity,
+      stockAfter: row.stockAfter,
+      orderId,
+      source: "checkout",
+      occurredAt: now,
+    },
+  ]);
 }
 
 /** Marks the cart `converted`; `$onUpdate` bumps its `updated_at`. */
@@ -508,10 +528,19 @@ export async function updateOrderLifecycle(
 
 /**
  * Puts the order's units back on their sizes' stock, locking those rows in id order like
- * checkout does. Lines whose size was deleted, or doesn't track stock (#98), are skipped.
- * Returns the touched products' ids.
+ * checkout does, and records each line in the inventory ledger (#130) as `reason` (`cancellation`
+ * or `return`). Lines whose size was deleted, or doesn't track stock (#98), are skipped. Returns
+ * the touched products' ids.
  */
-export async function restockOrder(db: Executor, orderId: number): Promise<number[]> {
+export async function restockOrder(
+  db: Executor,
+  orderId: number,
+  {
+    reason,
+    source,
+    now,
+  }: { reason: "cancellation" | "return"; source: InventoryMovementSource; now: Date },
+): Promise<number[]> {
   const lines = await db
     .select({
       variantId: productVariants.id,
@@ -524,10 +553,23 @@ export async function restockOrder(db: Executor, orderId: number): Promise<numbe
     .orderBy(asc(productVariants.id))
     .for("update", { of: productVariants });
   for (const line of lines) {
-    await db
+    const [row] = await db
       .update(productVariants)
       .set({ stockQuantity: sql`${productVariants.stockQuantity} + ${line.quantity}` })
-      .where(eq(productVariants.id, line.variantId));
+      .where(eq(productVariants.id, line.variantId))
+      .returning({ stockAfter: productVariants.stockQuantity });
+    if (!row) continue;
+    await insertInventoryMovements(db, [
+      {
+        variantId: line.variantId,
+        reason,
+        quantityDelta: line.quantity,
+        stockAfter: row.stockAfter,
+        orderId,
+        source,
+        occurredAt: now,
+      },
+    ]);
   }
   return [...new Set(lines.map((line) => line.productId))];
 }

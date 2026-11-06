@@ -1,5 +1,5 @@
 {
-  "id": "59686e62-932e-4309-938d-9d9784b68f85",
+  "id": "d69eb0e8-543d-4361-8cc8-7ad8f67a732f",
   "prevId": "cae9591b-d745-49eb-81b0-b16f55afb508",
   "version": "7",
   "dialect": "postgresql",
@@ -1059,6 +1059,140 @@
         "gift_cards_activation_check": {
           "name": "gift_cards_activation_check",
           "value": "\"gift_cards\".\"status\" = 'pending' or (\"gift_cards\".\"activated_at\" is not null and \"gift_cards\".\"expires_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.inventory_movements": {
+      "name": "inventory_movements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "variant_id": {
+          "name": "variant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity_delta": {
+          "name": "quantity_delta",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stock_after": {
+          "name": "stock_after",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "inventory_movements_variant_id_occurred_at_idx": {
+          "name": "inventory_movements_variant_id_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "variant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inventory_movements_variant_id_product_variants_id_fk": {
+          "name": "inventory_movements_variant_id_product_variants_id_fk",
+          "tableFrom": "inventory_movements",
+          "tableTo": "product_variants",
+          "columnsFrom": [
+            "variant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "inventory_movements_order_id_orders_id_fk": {
+          "name": "inventory_movements_order_id_orders_id_fk",
+          "tableFrom": "inventory_movements",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "inventory_movements_reason_check": {
+          "name": "inventory_movements_reason_check",
+          "value": "\"inventory_movements\".\"reason\" in ('opening_balance', 'sale', 'cancellation', 'return', 'receipt', 'adjustment')"
+        },
+        "inventory_movements_source_check": {
+          "name": "inventory_movements_source_check",
+          "value": "\"inventory_movements\".\"source\" in ('checkout', 'cms', 'job', 'migration')"
+        },
+        "inventory_movements_quantity_delta_check": {
+          "name": "inventory_movements_quantity_delta_check",
+          "value": "\"inventory_movements\".\"quantity_delta\" <> 0"
+        },
+        "inventory_movements_stock_after_check": {
+          "name": "inventory_movements_stock_after_check",
+          "value": "\"inventory_movements\".\"stock_after\" >= 0"
         }
       },
       "isRLSEnabled": false
@@ -2769,7 +2903,7 @@
       "checkConstraints": {
         "user_events_event_type_check": {
           "name": "user_events_event_type_check",
-          "value": "\"user_events\".\"event_type\" in ('page_view', 'product_view', 'search', 'add_to_cart', 'remove_from_cart', 'checkout_start', 'purchase', 'login', 'review_submit', 'product_impression', 'product_click', 'product_dwell')"
+          "value": "\"user_events\".\"event_type\" in ('page_view', 'product_view', 'search', 'add_to_cart', 'remove_from_cart', 'checkout_start', 'purchase', 'login', 'review_submit')"
         }
       },
       "isRLSEnabled": false
@@ -2951,7 +3085,46 @@
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
+  "views": {
+    "public.inventory_daily": {
+      "columns": {
+        "variantId": {
+          "name": "variantId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unitsSold": {
+          "name": "unitsSold",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "closingStock": {
+          "name": "closingStock",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wasOutOfStock": {
+          "name": "wasOutOfStock",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "name": "inventory_daily",
+      "schema": "public",
+      "isExisting": true,
+      "materialized": false
+    }
+  },
   "_meta": {
     "columns": {},
     "schemas": {},

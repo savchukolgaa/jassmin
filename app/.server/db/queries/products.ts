@@ -615,13 +615,17 @@ export interface VariantWrite {
   trackStock: boolean;
 }
 
+/** Inserts the product's sizes and returns their ids (for the inventory ledger, #130). */
 export async function insertVariants(
   db: Executor,
   productId: number,
   variants: readonly VariantWrite[],
-): Promise<void> {
-  if (variants.length === 0) return;
-  await db.insert(productVariants).values(variants.map((v) => ({ productId, ...v })));
+): Promise<{ id: number; volumeMl: number }[]> {
+  if (variants.length === 0) return [];
+  return db
+    .insert(productVariants)
+    .values(variants.map((v) => ({ productId, ...v })))
+    .returning({ id: productVariants.id, volumeMl: productVariants.volumeMl });
 }
 
 export async function updateVariant(

@@ -84,6 +84,14 @@ export function describeAppSyncError(status: number, body: unknown): string {
       return withCode(
         `«Прибуло у відділення» можна позначити лише для відправленого замовлення (зараз ${label(data.status)}).`,
       );
+    case "receipt-not-positive":
+      return withCode(
+        `Надходження має збільшити залишок (розмір ${String(data.volumeMl)} мл). Щоб зменшити залишок, виберіть «коригування».`,
+      );
+    case "size-has-stock-history":
+      return withCode(
+        `Розмір ${String(data.volumeMl)} мл уже має історію складу, тому його не можна видалити. Вимкніть «Track stock» або поставте залишок 0.`,
+      );
     case "unauthorized":
     case "not-configured":
       return withCode(

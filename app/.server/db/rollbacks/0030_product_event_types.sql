@@ -1,4 +1,4 @@
--- Rolls back 0029_product_event_types.sql (#129). Deletes the product list events (their types no
+-- Rolls back 0030_product_event_types.sql (#129). Deletes the product list events (their types no
 -- longer pass the CHECK) and restores the old type list.
 DELETE FROM "user_events" WHERE "event_type" IN ('product_impression', 'product_click', 'product_dwell');--> statement-breakpoint
 ALTER TABLE "user_events" DROP CONSTRAINT "user_events_event_type_check";--> statement-breakpoint

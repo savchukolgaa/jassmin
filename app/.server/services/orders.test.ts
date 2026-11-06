@@ -235,6 +235,16 @@ describe.skipIf(!hasDatabase)("order service", () => {
     );
   }
 
+  async function localeOf(userId: number) {
+    const { eq } = await import("drizzle-orm");
+    const { users } = await import("../db/schema");
+    const [row] = await testDb.db
+      .select({ locale: users.locale })
+      .from(users)
+      .where(eq(users.id, userId));
+    return row?.locale;
+  }
+
   async function cityOf(userId: number) {
     const { eq } = await import("drizzle-orm");
     const { users } = await import("../db/schema");
@@ -268,6 +278,7 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const [order] = await allOrders();
     expect(order?.createdAt).toEqual(NOW);
     expect(await cityOf(userId)).toBe("Одеса");
+    expect(await localeOf(userId)).toBe("uk");
 
     // The latest order's city wins; a guest order leaves every user alone.
     await createOrder(
@@ -275,11 +286,13 @@ describe.skipIf(!hasDatabase)("order service", () => {
         cartId: (await cartWith([{ variant: five, quantity: 1 }], userId)).id,
         userId,
         customer: { ...customer, city: "Львів" },
-        locale: "uk",
+        locale: "en",
       },
       testDb.db,
     );
     expect(await cityOf(userId)).toBe("Львів");
+    // The latest checkout's language too (#139).
+    expect(await localeOf(userId)).toBe("en");
     await createOrder(
       {
         cartId: (await cartWith([{ variant: five, quantity: 1 }])).id,

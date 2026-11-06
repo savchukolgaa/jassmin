@@ -9,7 +9,13 @@ const analytics = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
+const userQueries = vi.hoisted(() => ({ setUserLocale: vi.fn() }));
+
 vi.mock("./cart", () => cart);
+vi.mock("../db/queries/users", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../db/queries/users")>()),
+  ...userQueries,
+}));
 vi.mock("../analytics", async () => ({
   ...analytics,
   visitorContext: (await import("react-router")).createContext(null),
@@ -55,6 +61,27 @@ describe("onUserAuthenticated", () => {
       userId: 5,
       properties: { method: "login" },
     });
+    expect(userQueries.setUserLocale).toHaveBeenCalledWith(expect.anything(), 5, "uk");
+  });
+
+  it("remembers the language of the page the user logged in on (#139)", async () => {
+    analytics.readVisitor.mockResolvedValueOnce({ anonymousId: ANONYMOUS_ID });
+    userQueries.setUserLocale.mockRejectedValueOnce(new Error("db down"));
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { onUserAuthenticated } = await import("./auth");
+    const english = new Request("http://localhost/en/login", { method: "POST" });
+
+    await onUserAuthenticated(
+      { request: english, context: new RouterContextProvider() },
+      7,
+      "login",
+    );
+
+    expect(userQueries.setUserLocale).toHaveBeenCalledWith(expect.anything(), 7, "en");
+    // A failure doesn't stop the rest.
+    expect(error).toHaveBeenCalledWith("Saving the user's language failed", expect.any(Error));
+    expect(cart.mergeGuestCart).toHaveBeenCalledWith(7, ANONYMOUS_ID);
+    error.mockRestore();
   });
 
   it("uses the visitor from the middleware and marks a registration", async () => {

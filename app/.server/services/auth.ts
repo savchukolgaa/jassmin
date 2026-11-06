@@ -9,7 +9,14 @@ import {
 } from "../analytics";
 import { type Db, db } from "../db";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
-import { findUserByEmail, insertUser, type PublicUser, touchLastLogin } from "../db/queries/users";
+import {
+  findUserByEmail,
+  insertUser,
+  type PublicUser,
+  setUserLocale,
+  touchLastLogin,
+} from "../db/queries/users";
+import { getLocale } from "../locale";
 import { getDummyPasswordHash, hashPassword, verifyPassword } from "../password";
 import { pageUrl } from "../request-url";
 import { mergeGuestCart } from "./cart";
@@ -120,10 +127,11 @@ export async function verifyLogin(
 }
 
 /**
- * Runs after every successful login or registration, before the session cookie is set: merges
- * the guest cart into the user's (#10), gives the visitor's anonymous analytics sessions and
- * events to the user (with their first-touch source) and records the `login` event (#18). Each
- * part catches its own errors: none of them may make logging in fail.
+ * Runs after every successful login or registration, before the session cookie is set: remembers
+ * the page's language for later emails (#139), merges the guest cart into the user's (#10), gives
+ * the visitor's anonymous analytics sessions and events to the user (with their first-touch
+ * source) and records the `login` event (#18). Each part catches its own errors: none of them may
+ * make logging in fail.
  */
 export async function onUserAuthenticated(
   args: RequestArgs,
@@ -132,6 +140,11 @@ export async function onUserAuthenticated(
   kind: "login" | "register" | "password_reset",
 ): Promise<void> {
   const { request, context } = args;
+  try {
+    await setUserLocale(db, userId, await getLocale(request));
+  } catch (error: unknown) {
+    console.error("Saving the user's language failed", error);
+  }
   let anonymousId: string | undefined;
   try {
     anonymousId =

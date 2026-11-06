@@ -135,6 +135,23 @@ describe.skipIf(!hasDatabase)("user queries", () => {
     expect(await setMarketingOptIn(testDb.db, 999_999, true)).toBe(false);
   });
 
+  it("stores the user's language (#139)", async () => {
+    const { eq } = await import("drizzle-orm");
+    const { users } = await import("../schema");
+    const { insertUser, setUserLocale } = await import("./users");
+    const { id } = await insertUser(testDb.db, {
+      fullName: "Locale",
+      email: "locale-139@example.com",
+      passwordHash: "x",
+    });
+    const read = async () =>
+      (await testDb.db.select({ locale: users.locale }).from(users).where(eq(users.id, id)))[0];
+
+    expect(await read()).toEqual({ locale: null });
+    await setUserLocale(testDb.db, id, "en");
+    expect(await read()).toEqual({ locale: "en" });
+  });
+
   it("reads the profile and credentials by id", async () => {
     const { findUserCredentialsById, findUserProfile, insertUser } = await import("./users");
     const { id } = await insertUser(testDb.db, {

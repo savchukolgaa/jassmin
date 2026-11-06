@@ -6,6 +6,7 @@ import {
   createSyncMiddleware,
   GIFT_CARD_UID,
   productPayload,
+  toOrderChange,
   toOrderData,
 } from "./middleware";
 
@@ -236,5 +237,34 @@ describe("gift cards (#125)", () => {
     expect(
       toOrderData({ orderId: 7, status: "paid", giftCardAmount: "500.00", items: [] }),
     ).toMatchObject({ orderStatus: "paid", giftCardAmount: 500 });
+  });
+});
+
+describe("toOrderChange (#138)", () => {
+  it("sends the statuses, the waybill and the arrival checkbox", () => {
+    expect(
+      toOrderChange({
+        orderStatus: "shipped",
+        paymentStatus: "unpaid",
+        waybillNumber: "2045 0000 0000 01",
+        arrivedAtBranch: true,
+        customerName: "ignored",
+      }),
+    ).toEqual({
+      status: "shipped",
+      paymentStatus: "unpaid",
+      waybillNumber: "2045 0000 0000 01",
+      arrivedAtBranch: true,
+    });
+  });
+
+  it("removes a cleared waybill and leaves fields the form didn't send", () => {
+    expect(toOrderChange({ waybillNumber: null, arrivedAtBranch: null })).toEqual({
+      status: undefined,
+      paymentStatus: undefined,
+      waybillNumber: null,
+      arrivedAtBranch: undefined,
+    });
+    expect(toOrderChange({})).toMatchObject({ waybillNumber: undefined });
   });
 });

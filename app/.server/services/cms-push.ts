@@ -56,6 +56,9 @@ export function toCmsOrderState({ order, items }: OrderSyncRow): CmsOrderState {
     refundedAt: iso(order.refundedAt),
     shippedAt: iso(order.shippedAt),
     completedAt: iso(order.completedAt),
+    arrivedAt: iso(order.arrivedAt),
+    arrivedAtBranch: order.arrivedAt !== null,
+    waybillNumber: order.waybillNumber,
     items,
   };
 }

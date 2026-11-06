@@ -731,6 +731,152 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect(refunded.order.cancelledAt).not.toBeNull();
   });
 
+  it("stores the waybill and the arrival and returns them for Strapi (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed();
+    const now = new Date("2026-11-06T10:00:00Z");
+
+    const shipped = await applyCmsOrderChange(
+      orderId,
+      { status: "shipped", waybillNumber: "20450000000001" },
+      testDb.db,
+      now,
+    );
+    expect(shipped).toMatchObject({
+      ok: true,
+      order: { status: "shipped", waybillNumber: "20450000000001", arrivedAtBranch: false },
+    });
+    expect(
+      await applyCmsOrderChange(orderId, { arrivedAtBranch: true }, testDb.db, now),
+    ).toMatchObject({
+      ok: true,
+      order: { arrivedAt: now.toISOString(), arrivedAtBranch: true },
+    });
+  });
+
+  it("refuses an arrival for an order that isn't shipped and writes nothing (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed();
+
+    expect(
+      await applyCmsOrderChange(
+        orderId,
+        { arrivedAtBranch: true, waybillNumber: "20450000000001" },
+        testDb.db,
+      ),
+    ).toEqual({ ok: false, error: "arrived-not-shipped", status: "pending" });
+    expect(await applyCmsOrderChange(orderId, {}, testDb.db)).toMatchObject({
+      ok: true,
+      order: { arrivedAt: null, waybillNumber: null },
+    });
+  });
+
+  /** The order's emails as `type:locale`, oldest first. */
+  async function emails(orderId: number) {
+    const { asc, eq } = await import("drizzle-orm");
+    const { orderEmails } = await import("../db/schema");
+    const rows = await testDb.db
+      .select({ type: orderEmails.type, locale: orderEmails.locale })
+      .from(orderEmails)
+      .where(eq(orderEmails.orderId, orderId))
+      .orderBy(asc(orderEmails.id));
+    return rows.map((row) => `${row.type}:${row.locale}`);
+  }
+
+  async function confirmed(orderId: number, locale: "uk" | "en") {
+    const { insertOrderEmail } = await import("../db/queries/order-emails");
+    await insertOrderEmail(testDb.db, { orderId, type: "confirmation", locale });
+  }
+
+  it("queues each order status email once, in the order's language (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed();
+    await confirmed(orderId, "en");
+
+    const shipped = await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db);
+    expect(shipped).toMatchObject({ ok: true, emailsQueued: true });
+    // The same status again, a waybill edit or a completed order sends nothing.
+    for (const change of [{ status: "shipped" }, { waybillNumber: "20450000000001" }] as const) {
+      expect(await applyCmsOrderChange(orderId, change, testDb.db)).toMatchObject({
+        ok: true,
+        emailsQueued: false,
+      });
+    }
+    // Arrived, unticked and ticked again: one arrived email.
+    await applyCmsOrderChange(orderId, { arrivedAtBranch: true }, testDb.db);
+    await applyCmsOrderChange(orderId, { arrivedAtBranch: false }, testDb.db);
+    expect(await applyCmsOrderChange(orderId, { arrivedAtBranch: true }, testDb.db)).toMatchObject({
+      ok: true,
+      emailsQueued: false,
+    });
+    await applyCmsOrderChange(orderId, { status: "completed" }, testDb.db);
+
+    expect(await emails(orderId)).toEqual(["confirmation:en", "shipped:en", "arrived:en"]);
+  });
+
+  it("queues cancelled and refunded for a paid card order cancelled with a refund (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed({ paymentMethod: "card" });
+    await confirmed(orderId, "uk");
+
+    await applyCmsOrderChange(orderId, { paymentStatus: "paid" }, testDb.db);
+    await applyCmsOrderChange(
+      orderId,
+      { status: "cancelled", paymentStatus: "refunded" },
+      testDb.db,
+    );
+
+    expect(await emails(orderId)).toEqual(["confirmation:uk", "cancelled:uk", "refunded:uk"]);
+  });
+
+  it("sends a queued shipped email through the outbox with the waybill (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { deliverOrderEmails, orderEmailDeps } = await import("./order-email");
+    const { orderId } = await placed();
+    await confirmed(orderId, "en");
+    const sent: { subject?: unknown; text?: unknown }[] = [];
+    const mailer = {
+      sendMail: async (message: { subject?: unknown; text?: unknown }) => {
+        sent.push(message);
+        return {};
+      },
+    };
+    const env = {
+      ORDER_FROM: undefined,
+      CONTACT_FROM: "Jassmin <no-reply@example.com>",
+      CONTACT_INBOX: "shop@example.com",
+      PUBLIC_SITE_URL: undefined,
+    };
+
+    await applyCmsOrderChange(
+      orderId,
+      { status: "shipped", waybillNumber: "20450000000001" },
+      testDb.db,
+    );
+    // The confirmation goes out too: it was still pending in this test.
+    const report = await deliverOrderEmails({ orderId }, orderEmailDeps(testDb.db, mailer, env));
+
+    expect(report).toMatchObject({ sent: 2, retrying: 0, gaveUp: 0 });
+    const shipped = sent.find((message) => String(message.subject).includes("on its way"));
+    expect(shipped?.subject).toBe(`Order №${orderId} is on its way — Jassmin`);
+    expect(String(shipped?.text)).toContain("Waybill number: 20450000000001");
+    expect(String(shipped?.text)).toContain(
+      "https://novaposhta.ua/tracking/?cargo_number=20450000000001",
+    );
+  });
+
+  it("queues no email for a refused change (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed({ paymentMethod: "card" });
+    await confirmed(orderId, "uk");
+
+    expect(await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db)).toMatchObject({
+      ok: false,
+      error: "card-not-paid",
+    });
+    expect(await emails(orderId)).toEqual(["confirmation:uk"]);
+  });
+
   it("answers unknown-order for a missing order", async () => {
     const { applyCmsOrderChange } = await import("./cms-sync");
 

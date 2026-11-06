@@ -13,11 +13,13 @@ import type {
   CmsVariantInput,
 } from "~/lib/cms-sync";
 import { nextOrderState } from "~/lib/order-status";
+import { orderStatusEmailTypes } from "~/lib/order-status-emails";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import { enqueueCmsSync } from "../db/queries/cms-outbox";
 import { restoreGiftCardRedemptions } from "../db/queries/gift-cards";
+import { queueOrderStatusEmails } from "../db/queries/order-emails";
 import {
   findOrderSyncState,
   lockOrderLifecycle,
@@ -201,9 +203,14 @@ export async function applyCmsProductChange(
 }
 
 export type CmsOrderResult =
-  | { ok: true; order: CmsOrderState }
+  /** `emailsQueued`: order status emails (#138) to send after the commit. */
+  | { ok: true; order: CmsOrderState; emailsQueued: boolean }
   | Failure<
-      "unknown-order" | "invalid-transition" | "card-not-paid" | "invalid-payment-transition"
+      | "unknown-order"
+      | "invalid-transition"
+      | "card-not-paid"
+      | "invalid-payment-transition"
+      | "arrived-not-shipped"
     >;
 
 /**
@@ -229,6 +236,12 @@ export async function applyCmsOrderChange(
       return next;
     }
     await updateOrderLifecycle(tx, orderId, next.patch);
+    // The customer hears about it once per type, in the same transaction (#138).
+    const emailsQueued = await queueOrderStatusEmails(
+      tx,
+      orderId,
+      orderStatusEmailTypes(next.patch),
+    );
     if (next.restock) {
       await enqueueCmsSync(tx, "product", await restockOrder(tx, orderId));
       // What a gift card paid goes back on it, like the units go back in stock (#125).
@@ -239,7 +252,7 @@ export async function applyCmsOrderChange(
     if (!state) {
       throw new Error(`Order ${orderId} vanished inside its transaction`);
     }
-    return { ok: true, order: toCmsOrderState(state) };
+    return { ok: true, order: toCmsOrderState(state), emailsQueued: emailsQueued.length > 0 };
   });
 }
 

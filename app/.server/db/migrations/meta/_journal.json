@@ -180,8 +180,15 @@
     {
       "idx": 25,
       "version": "7",
-      "when": 1793916095223,
-      "tag": "0025_auth_tokens",
+      "when": 1793916180323,
+      "tag": "0025_rate_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793916590205,
+      "tag": "0026_auth_tokens",
       "breakpoints": true
     }
   ]

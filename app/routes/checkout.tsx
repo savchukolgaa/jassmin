@@ -116,7 +116,7 @@ async function giftCardAction(
   if (intent === "apply-gift-card") {
     // Refused codes count against the client, so codes can't be guessed one after another.
     const key = getClientIp(request) ?? owner.anonymousId ?? "anonymous";
-    if (giftCardCodeLimiter.isBlocked(key)) {
+    if (await giftCardCodeLimiter.isBlocked(key)) {
       return data<CheckoutGiftCardResult>(
         { ok: false, error: GIFT_CARD_ERROR_KEYS["too-many-attempts"] },
         { status: 429 },
@@ -130,7 +130,7 @@ async function giftCardAction(
       if (result.error === "no-cart") {
         return redirect(pathFor(await getLocale(request), "cart"));
       }
-      giftCardCodeLimiter.hit(key);
+      await giftCardCodeLimiter.hit(key);
       return data<CheckoutGiftCardResult>(
         { ok: false, error: GIFT_CARD_ERROR_KEYS[result.error] },
         { status: result.error === "unknown" ? 400 : 409 },

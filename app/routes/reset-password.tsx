@@ -67,7 +67,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   await touchLastLogin(db, result.userId);
-  loginLimiters.byEmail.reset(result.email);
+  await loginLimiters.byEmail.reset(result.email);
   await onUserAuthenticated({ request, context }, result.userId, "password_reset");
   return createUserSession({
     request,

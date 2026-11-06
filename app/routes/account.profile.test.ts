@@ -62,7 +62,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   auth.requireUser.mockResolvedValue(user);
   const { profilePasswordLimiter } = await import("~/.server/rate-limit");
-  profilePasswordLimiter.reset(String(user.id));
+  await profilePasswordLimiter.reset(String(user.id));
 });
 
 describe("account profile loader", () => {

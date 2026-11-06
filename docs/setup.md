@@ -48,6 +48,8 @@ pnpm dev                    # http://localhost:5173
 | `CMS_SYNC_SECRET` | no* | Shared secret (32+ characters) that Strapi sends to the app's `/cms/*` sync routes; the same value goes in `cms/.env`. *Without it, saving a product or an order in the Strapi admin fails. |
 | `PAYMENT_PROVIDER` | no* | Where card payments go. Only `simulator` for now, a local fake payment page that's refused when `NODE_ENV=production` (see [Card payments](#card-payments-simulator)). *Without it the app still starts, but card payment is unavailable at checkout. |
 | `ROBOTS_DISALLOW_ALL` | no | `true` makes `/robots.txt` answer `Disallow: /`, for a staging or preview server running with `NODE_ENV=production`. Outside production that is always the case (see [SEO](#seo)). |
+| `CSP_MODE` | no | `report-only` (default) sends the Content-Security-Policy as `Content-Security-Policy-Report-Only`, so violations are only logged; `enforce` blocks them (#143, see [Security](security.md)). |
+| `TRUSTED_PROXY_HOPS` | prod* | How many reverse proxies in front of the app append to `X-Forwarded-For` (default `0`, #143). The per-IP rate limits take the client IP that many entries from the right, so a client can't spoof one. *With `0` the header is ignored and the IP is unknown, so behind a hosting proxy set it to `1`; production logs a warning at startup when it's `0` (see [Security](security.md#client-ip)). |
 | `SMTP_URL` | prod | SMTP server for every email (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container; in production it's the transactional provider (see [docs/email.md](email.md)). Required when `NODE_ENV=production`, for the app and `pnpm db:send-order-emails`. Without it, development logs contact messages instead of sending them, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `EMAIL_WEBHOOK_SECRET` | no* | Bearer secret (32+ characters) the email provider sends to `/hooks/email` with hard bounces and spam complaints (#134, see [docs/email.md](email.md)). *Without it the webhook answers 503, nothing is recorded, and production logs a warning at startup. |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
@@ -86,6 +88,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin role](#admin-role) |
 | `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
 | `pnpm db:expire-gift-cards` | Mark active gift cards past their 12 months as expired (safe to re-run), see [Gift cards](#gift-cards) |
+| `pnpm db:prune-rate-limits` | Delete ended rate-limit windows (safe to re-run), see [Rate limits](#rate-limits) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
@@ -137,6 +140,18 @@ Customers buy gift cards of 500, 1000 or 2000 ₴ on `/podarunkovi-kartky` (`/en
 ```cron
 15 3 * * * cd /srv/jassmin && pnpm db:expire-gift-cards >> /var/log/jassmin/gift-cards.log 2>&1
 ```
+
+## Rate limits
+
+Failed logins, wrong profile passwords, refused promo and gift card codes, contact messages and analytics beacons are rate-limited per email, user or client IP (#143). The counters live in the `rate_limits` table, so they survive restarts and deploys and every app instance shares them; keys are stored as SHA-256 hashes, never as emails or IPs. Per-IP limits need the right `TRUSTED_PROXY_HOPS` (see [Security](security.md#client-ip)).
+
+A window whose time is up is harmless (the next hit restarts it), so `pnpm db:prune-rate-limits` only keeps the table small. Run it daily from cron, for example:
+
+```cron
+30 3 * * * cd /srv/jassmin && pnpm db:prune-rate-limits >> /var/log/jassmin/rate-limits.log 2>&1
+```
+
+It needs only the database URL. Under Aspire, start the `db-prune-rate-limits` resource from the dashboard.
 
 ## Card payments (simulator)
 

@@ -40,13 +40,13 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const key = String(user.id);
-  if (verificationEmailLimiter.isBlocked(key)) {
+  if (await verificationEmailLimiter.isBlocked(key)) {
     return data<ResendVerificationActionData>(
       { error: "auth.errors.tooManyRequests" },
       { status: 429 },
     );
   }
-  verificationEmailLimiter.hit(key);
+  await verificationEmailLimiter.hit(key);
   void sendVerificationEmail({
     userId: user.id,
     locale: await getLocale(request),

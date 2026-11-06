@@ -50,18 +50,21 @@ export async function action({ request }: Route.ActionArgs) {
 
   const { email } = parsed.data;
   const ip = getClientIp(request);
-  if (
-    passwordResetLimiters.byEmail.isBlocked(email) ||
-    (ip && passwordResetLimiters.byIp.isBlocked(ip))
-  ) {
+  const [emailBlocked, ipBlocked] = await Promise.all([
+    passwordResetLimiters.byEmail.isBlocked(email),
+    ip ? passwordResetLimiters.byIp.isBlocked(ip) : false,
+  ]);
+  if (emailBlocked || ipBlocked) {
     return data<ForgotPasswordActionData>(
       { formError: "auth.errors.tooManyRequests", values },
       { status: 429 },
     );
   }
   // Counted for every email, registered or not, so the limit says nothing about accounts.
-  passwordResetLimiters.byEmail.hit(email);
-  if (ip) passwordResetLimiters.byIp.hit(ip);
+  await Promise.all([
+    passwordResetLimiters.byEmail.hit(email),
+    ip ? passwordResetLimiters.byIp.hit(ip) : undefined,
+  ]);
 
   const locale = await getLocale(request);
   // Not awaited: looking the account up and sending happen after the answer.

@@ -38,9 +38,9 @@ beforeEach(async () => {
   vi.clearAllMocks();
   const { passwordResetLimiters } = await import("~/.server/rate-limit");
   for (const email of ["olena@example.com", "nobody@example.com", "a@example.com"]) {
-    passwordResetLimiters.byEmail.reset(email);
+    await passwordResetLimiters.byEmail.reset(email);
   }
-  passwordResetLimiters.byIp.reset(IP);
+  await passwordResetLimiters.byIp.reset(IP);
 });
 
 describe("forgot password action", () => {
@@ -93,7 +93,7 @@ describe("forgot password action", () => {
     const { passwordResetLimiters } = await import("~/.server/rate-limit");
     for (let i = 0; i < 10; i++) {
       const email = `ip${i}@example.com`;
-      passwordResetLimiters.byEmail.reset(email);
+      await passwordResetLimiters.byEmail.reset(email);
       expect(unwrap(await action(post({ email }))).status).toBe(200);
     }
     expect(unwrap(await action(post({ email: "olena@example.com" }))).status).toBe(429);

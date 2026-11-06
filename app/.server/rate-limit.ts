@@ -1,63 +1,137 @@
-// In-memory fixed-window rate limiting. Counters live in this Node process only: they reset on
-// restart and aren't shared between instances, which is enough for a single-instance shop.
+// Fixed-window rate limiting (#143). The app's limiters keep their counters in PostgreSQL
+// (`rate_limits`), so they survive restarts and deploys and are shared by every instance. An
+// in-memory store remains for `/csp-report`, where a flood of reports mustn't become a flood of
+// writes, and for unit tests.
+import { createHash } from "node:crypto";
+import type { Db } from "./db/client";
+import { deleteRateLimit, hitRateLimit, readRateLimit } from "./db/queries/rate-limits";
+
+/** Where a limiter keeps its windows. Keys arrive already prefixed and hashed. */
+export interface RateLimitStore {
+  /** Counts one hit; a missing or ended window restarts at 1 and ends `windowMs` after `now`. */
+  hit(key: string, windowMs: number, now: Date): Promise<void>;
+  /** The key's window, possibly ended, or `undefined`. */
+  read(key: string): Promise<{ count: number; resetAt: Date } | undefined>;
+  delete(key: string): Promise<void>;
+}
 
 export interface RateLimiterOptions {
+  /** Keeps the limiters apart in a shared store, e.g. `login-email`. */
+  name: string;
   /** Hits allowed per key within one window. */
   limit: number;
   windowMs: number;
+  store: RateLimitStore;
   /** Clock, injectable for tests. */
   now?: () => number;
 }
 
 export interface RateLimiter {
   /** Whether the key has used up its hits in the current window. */
-  isBlocked(key: string): boolean;
+  isBlocked(key: string): Promise<boolean>;
   /** Counts one hit (e.g. a failed login) for the key. */
-  hit(key: string): void;
+  hit(key: string): Promise<void>;
   /** Forgets the key's hits (e.g. after a successful login). */
-  reset(key: string): void;
+  reset(key: string): Promise<void>;
 }
 
-interface Window {
-  count: number;
-  resetAt: number;
+/**
+ * The stored key: the limiter's name and a SHA-256 of the key, so emails and IPs never sit in the
+ * table in plain text.
+ */
+export function storedKey(name: string, key: string): string {
+  return `${name}:${createHash("sha256").update(key).digest("hex")}`;
 }
 
 export function createRateLimiter({
+  name,
   limit,
   windowMs,
+  store,
   now = Date.now,
 }: RateLimiterOptions): RateLimiter {
-  const windows = new Map<string, Window>();
+  return {
+    async isBlocked(key) {
+      const window = await store.read(storedKey(name, key));
+      return window !== undefined && window.resetAt.getTime() > now() && window.count >= limit;
+    },
+    async hit(key) {
+      await store.hit(storedKey(name, key), windowMs, new Date(now()));
+    },
+    async reset(key) {
+      await store.delete(storedKey(name, key));
+    },
+  };
+}
+
+/** Windows in this process only: they reset on restart and aren't shared between instances. */
+export function createMemoryRateLimitStore(): RateLimitStore {
+  const windows = new Map<string, { count: number; resetAt: Date }>();
 
   function prune(time: number): void {
     for (const [key, window] of windows) {
-      if (window.resetAt <= time) windows.delete(key);
+      if (window.resetAt.getTime() <= time) windows.delete(key);
     }
   }
 
   return {
-    isBlocked(key) {
-      const window = windows.get(key);
-      return window !== undefined && window.resetAt > now() && window.count >= limit;
-    },
-    hit(key) {
-      const time = now();
-      prune(time);
+    async hit(key, windowMs, now) {
+      prune(now.getTime());
       const window = windows.get(key);
       if (window) {
         window.count += 1;
       } else {
-        windows.set(key, { count: 1, resetAt: time + windowMs });
+        windows.set(key, { count: 1, resetAt: new Date(now.getTime() + windowMs) });
       }
     },
-    reset(key) {
+    async read(key) {
+      const window = windows.get(key);
+      return window && { ...window };
+    },
+    async delete(key) {
       windows.delete(key);
     },
   };
 }
 
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+/**
+ * Windows in the `rate_limits` table. `getDb` is called on first use, so importing this module
+ * doesn't open the app's pool (or validate its env).
+ */
+export function createPgRateLimitStore(getDb: () => Promise<Db>): RateLimitStore {
+  return {
+    async hit(key, windowMs, now) {
+      await hitRateLimit(await getDb(), key, windowMs, now);
+    },
+    async read(key) {
+      return readRateLimit(await getDb(), key);
+    },
+    async delete(key) {
+      await deleteRateLimit(await getDb(), key);
+    },
+  };
+}
+
+let appStore: RateLimitStore = createPgRateLimitStore(() =>
+  import("./db").then((module) => module.db),
+);
+
+/** The app limiters' store: the shared `rate_limits` table on the app pool. */
+export const appRateLimitStore: RateLimitStore = {
+  hit: (key, windowMs, now) => appStore.hit(key, windowMs, now),
+  read: (key) => appStore.read(key),
+  delete: (key) => appStore.delete(key),
+};
+
+/**
+ * Tests only: puts the app limiters on another store. `vitest.setup.ts` gives every test file a
+ * fresh in-memory one, so tests never write counters to the development database.
+ */
+export function setAppRateLimitStore(store: RateLimitStore): void {
+  appStore = store;
+}
+
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
 interface LoginLimiters {
   /** Failed logins per normalised email. */
@@ -66,64 +140,53 @@ interface LoginLimiters {
   byIp: RateLimiter;
 }
 
-// Keep the counters across Vite HMR reloads in development, like the `db` pool.
-const globalForLimiters = globalThis as typeof globalThis & {
-  __jassminLoginLimiters?: LoginLimiters;
+export const loginLimiters: LoginLimiters = {
+  byEmail: createRateLimiter({
+    name: "login-email",
+    limit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+    store: appRateLimitStore,
+  }),
+  byIp: createRateLimiter({
+    name: "login-ip",
+    limit: 20,
+    windowMs: FIFTEEN_MINUTES_MS,
+    store: appRateLimitStore,
+  }),
 };
-
-globalForLimiters.__jassminLoginLimiters ??= {
-  byEmail: createRateLimiter({ limit: 5, windowMs: LOGIN_WINDOW_MS }),
-  byIp: createRateLimiter({ limit: 20, windowMs: LOGIN_WINDOW_MS }),
-};
-
-export const loginLimiters: LoginLimiters = globalForLimiters.__jassminLoginLimiters;
-
-const globalForProfileLimiter = globalThis as typeof globalThis & {
-  __jassminProfilePasswordLimiter?: RateLimiter;
-};
-
-globalForProfileLimiter.__jassminProfilePasswordLimiter ??= createRateLimiter({
-  limit: 5,
-  windowMs: LOGIN_WINDOW_MS,
-});
 
 /**
  * Wrong current passwords on the profile page (#54), per user id: the email and password forms
  * share it, so a stolen session can't guess the password through either.
  */
-export const profilePasswordLimiter: RateLimiter =
-  globalForProfileLimiter.__jassminProfilePasswordLimiter;
-
-const globalForPromoLimiter = globalThis as typeof globalThis & {
-  __jassminPromoCodeLimiter?: RateLimiter;
-};
-
-globalForPromoLimiter.__jassminPromoCodeLimiter ??= createRateLimiter({
-  limit: 10,
-  windowMs: LOGIN_WINDOW_MS,
+export const profilePasswordLimiter: RateLimiter = createRateLimiter({
+  name: "profile-password",
+  limit: 5,
+  windowMs: FIFTEEN_MINUTES_MS,
+  store: appRateLimitStore,
 });
 
 /**
  * Promo codes the cart refused (#59), per client IP (or visitor id), so codes can't be guessed by
  * trying them one after another.
  */
-export const promoCodeLimiter: RateLimiter = globalForPromoLimiter.__jassminPromoCodeLimiter;
-
-const globalForGiftCardLimiter = globalThis as typeof globalThis & {
-  __jassminGiftCardCodeLimiter?: RateLimiter;
-};
-
-globalForGiftCardLimiter.__jassminGiftCardCodeLimiter ??= createRateLimiter({
+export const promoCodeLimiter: RateLimiter = createRateLimiter({
+  name: "promo-code",
   limit: 10,
-  windowMs: LOGIN_WINDOW_MS,
+  windowMs: FIFTEEN_MINUTES_MS,
+  store: appRateLimitStore,
 });
 
 /**
  * Gift card codes checkout refused (#125), per client IP (or visitor id), so codes can't be
  * guessed by trying them one after another.
  */
-export const giftCardCodeLimiter: RateLimiter =
-  globalForGiftCardLimiter.__jassminGiftCardCodeLimiter;
+export const giftCardCodeLimiter: RateLimiter = createRateLimiter({
+  name: "gift-card-code",
+  limit: 10,
+  windowMs: FIFTEEN_MINUTES_MS,
+  store: appRateLimitStore,
+});
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -134,34 +197,32 @@ interface PasswordResetLimiters {
   byIp: RateLimiter;
 }
 
-const globalForResetLimiters = globalThis as typeof globalThis & {
-  __jassminPasswordResetLimiters?: PasswordResetLimiters;
-  __jassminVerificationEmailLimiter?: RateLimiter;
-};
-
-globalForResetLimiters.__jassminPasswordResetLimiters ??= {
-  byEmail: createRateLimiter({ limit: 3, windowMs: HOUR_MS }),
-  byIp: createRateLimiter({ limit: 10, windowMs: HOUR_MS }),
-};
-
 /**
  * "Forgot password" requests (#135): 3 per email and 10 per IP per hour. Every request counts,
  * whether the email is registered or not, so the limit reveals nothing about accounts.
  */
-export const passwordResetLimiters: PasswordResetLimiters =
-  globalForResetLimiters.__jassminPasswordResetLimiters;
-
-globalForResetLimiters.__jassminVerificationEmailLimiter ??= createRateLimiter({
-  limit: 3,
-  windowMs: HOUR_MS,
-});
+export const passwordResetLimiters: PasswordResetLimiters = {
+  byEmail: createRateLimiter({
+    name: "password-reset-email",
+    limit: 3,
+    windowMs: HOUR_MS,
+    store: appRateLimitStore,
+  }),
+  byIp: createRateLimiter({
+    name: "password-reset-ip",
+    limit: 10,
+    windowMs: HOUR_MS,
+    store: appRateLimitStore,
+  }),
+};
 
 /** Verification emails resent from the account page (#135): 3 per user id per hour. */
-export const verificationEmailLimiter: RateLimiter =
-  globalForResetLimiters.__jassminVerificationEmailLimiter;
+export const verificationEmailLimiter: RateLimiter = createRateLimiter({
+  name: "verification-email",
+  limit: 3,
+  windowMs: HOUR_MS,
+  store: appRateLimitStore,
+});
 
-/** The client IP from the first `X-Forwarded-For` entry, or `undefined` when there is none. */
-export function getClientIp(request: Request): string | undefined {
-  const forwarded = request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim();
-  return forwarded || undefined;
-}
+// The per-IP limits' key: `X-Forwarded-For` as far as `TRUSTED_PROXY_HOPS` allows (#143).
+export { getClientIp } from "./client-ip";

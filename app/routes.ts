@@ -81,6 +81,8 @@ export default [
   route("consent", "routes/consent.ts"),
   // Action-only (POST) endpoint for the client tracker's beacons (#18).
   route("api/events", "routes/api.events.ts"),
+  // Action-only (POST) Content-Security-Policy violation reports from browsers (#143); logged only.
+  route("csp-report", "routes/csp-report.ts"),
   // Action-only (POST) callback from the card payment provider (#44); no layout, session or consent.
   route("payments/callback", "routes/payments.callback.ts"),
   // Dev only: the local payment simulator's hosted page (#44), a 404 unless

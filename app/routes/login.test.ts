@@ -44,9 +44,9 @@ beforeEach(async () => {
   vi.clearAllMocks();
   const { loginLimiters } = await import("~/.server/rate-limit");
   for (const email of ["olena@example.com", "blocked@example.com"]) {
-    loginLimiters.byEmail.reset(email);
+    await loginLimiters.byEmail.reset(email);
   }
-  loginLimiters.byIp.reset("203.0.113.9");
+  await loginLimiters.byIp.reset("203.0.113.9");
 });
 
 describe("login action", () => {

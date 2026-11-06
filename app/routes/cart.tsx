@@ -115,12 +115,12 @@ export async function action({ request, context }: Route.ActionArgs) {
     case "apply-promo": {
       // Refused codes count against the client, so codes can't be guessed one after another.
       const key = getClientIp(request) ?? owner.anonymousId ?? "anonymous";
-      if (promoCodeLimiter.isBlocked(key)) {
+      if (await promoCodeLimiter.isBlocked(key)) {
         return data<CartActionResult>({ ok: false, error: "promo-rate-limited" }, { status: 429 });
       }
       const result = await applyPromoCode(owner, input.data.code);
       if (!result.ok) {
-        promoCodeLimiter.hit(key);
+        await promoCodeLimiter.hit(key);
         return data<CartActionResult>(result, {
           status: result.error === "promo-invalid" ? 400 : 409,
         });

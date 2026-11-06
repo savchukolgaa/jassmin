@@ -49,7 +49,11 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const { email, password, redirectTo } = parsed.data;
   const ip = getClientIp(request);
-  if (loginLimiters.byEmail.isBlocked(email) || (ip && loginLimiters.byIp.isBlocked(ip))) {
+  const [emailBlocked, ipBlocked] = await Promise.all([
+    loginLimiters.byEmail.isBlocked(email),
+    ip ? loginLimiters.byIp.isBlocked(ip) : false,
+  ]);
+  if (emailBlocked || ipBlocked) {
     return data<AuthFormErrors<LoginField>>(
       { formError: "auth.errors.tooManyAttempts", values },
       { status: 429 },
@@ -58,8 +62,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const result = await verifyLogin(db, email, password);
   if (!result.ok) {
-    loginLimiters.byEmail.hit(email);
-    if (ip) loginLimiters.byIp.hit(ip);
+    await Promise.all([
+      loginLimiters.byEmail.hit(email),
+      ip ? loginLimiters.byIp.hit(ip) : undefined,
+    ]);
     // The same message for an unknown email and a wrong password.
     return data<AuthFormErrors<LoginField>>(
       { formError: "auth.errors.invalidCredentials", values },
@@ -67,7 +73,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
 
-  loginLimiters.byEmail.reset(email);
+  await loginLimiters.byEmail.reset(email);
   await onUserAuthenticated({ request, context }, result.userId, "login");
   return createUserSession({
     request,

@@ -61,6 +61,13 @@ const envSchema = z
     // `/robots.txt` answers `Disallow: /` when this is set, or whenever NODE_ENV isn't production
     // (#87): for a staging or preview server that runs in production mode. `true`/`1`/`yes`/`on`.
     ROBOTS_DISALLOW_ALL: z.stringbool().optional(),
+    // Content-Security-Policy mode (#143): `report-only` sends `Content-Security-Policy-Report-Only`
+    // (violations are only logged), `enforce` sends `Content-Security-Policy`. See docs/security.md.
+    CSP_MODE: z.enum(["report-only", "enforce"]).default("report-only"),
+    // How many reverse proxies in front of the app append to `X-Forwarded-For` (#143). The client IP
+    // is the entry that many places from the right; 0 ignores the header (it can't be spoofed, but
+    // then the IP is unknown). Set it to 1 behind a single hosting proxy. See docs/security.md.
+    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
     ...mailEnvSchema.shape,
   })
   .refine(hasSmtpInProduction, SMTP_REQUIRED)
@@ -126,6 +133,8 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
     EMAIL_WEBHOOK_SECRET: source.EMAIL_WEBHOOK_SECRET || undefined,
     ROBOTS_DISALLOW_ALL: source.ROBOTS_DISALLOW_ALL || undefined,
+    CSP_MODE: source.CSP_MODE || undefined,
+    TRUSTED_PROXY_HOPS: source.TRUSTED_PROXY_HOPS || undefined,
     ...mailSource(source),
   });
 

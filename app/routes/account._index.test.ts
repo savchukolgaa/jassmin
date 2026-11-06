@@ -76,7 +76,7 @@ describe("resending the verification email (#135)", () => {
 
   beforeEach(async () => {
     const { verificationEmailLimiter } = await import("~/.server/rate-limit");
-    verificationEmailLimiter.reset(String(unverified.id));
+    await verificationEmailLimiter.reset(String(unverified.id));
     auth.requireUser.mockResolvedValue(unverified);
   });
 

@@ -34,6 +34,7 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 - Shared enums and DTO types go in `app/lib/` (isomorphic, with no server imports).
 - Shared UI goes in `app/components/`, feature UI in `app/features/<feature>/`.
 - UI work follows the Option C+ design in `docs/design.md` (tokens, typeface, buttons, focus rings, motion).
+- Every response gets security headers and HTML a nonce-based Content-Security-Policy (#143): an inline `<script>` needs `nonce={useNonce()}`, and a new external origin (images, frames, a payment page) must be added to the CSP. See `docs/security.md`.
 
 ## Code rules
 

@@ -55,6 +55,13 @@ describe("robotsDisallowPaths", () => {
     expect(paths).toEqual(expect.arrayContaining([...ROBOTS_SYSTEM_PATHS]));
   });
 
+  it("never blocks the product feeds, which Google and Meta must fetch (#140)", () => {
+    for (const path of ["/feeds/products.xml", "/en/feeds/products.xml"]) {
+      expect(blocked(path), path).toBe(false);
+      expect(paths.some((rule) => path.startsWith(rule)), path).toBe(false);
+    }
+  });
+
   it("never blocks an indexable page", () => {
     for (const page of PAGE_KEYS.filter((key) => PAGES[key].indexable)) {
       for (const locale of ["uk", "en"] as const) {

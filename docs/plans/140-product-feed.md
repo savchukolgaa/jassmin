@@ -215,7 +215,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   a comment. Run `pnpm typecheck` to generate `+types`. Route test: mock the service (or inject
   rows) and check the status, the three headers, that the English path gives English titles, and
   that the body text equals `buildProductFeedXml` for the same items.
-- [ ] **7. Check robots and redirects.** Add a test in `app/.server/seo/robots.test.ts` that
+- [x] **7. Check robots and redirects.** Add a test in `app/.server/seo/robots.test.ts` that
   `/feeds/products.xml` and `/en/feeds/products.xml` aren't blocked by `robotsDisallowPaths()`.
   Check that `redirects.test.ts` still passes. Run the app (`pnpm aspire run`), open
   `/feeds/products.xml` and `/en/feeds/products.xml` in the browser, and check them against the

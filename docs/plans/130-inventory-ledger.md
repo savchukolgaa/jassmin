@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/130
 Branch: `issue/130`
 Worktree: `.claude/worktrees/issue-130`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -231,16 +231,20 @@ All three were answered on 2026-11-06: the user accepted the recommended default
   reason; `cancellation`, 3), add 5 as "надходження" (`receipt`, 8) and check the field resets,
   correct to 6 (`adjustment`, −2); `select * from inventory_daily where variant_id = …`.
 - Run `pnpm db:rollback` and `pnpm db:migrate` once to check the rollback.
+- Done: typecheck, lint, test (2072 passed, including the DB tests) and build pass. Migrate and
+  rollback are covered by `migrator.test.ts` on a throwaway database; the manual Strapi run and a
+  migration of the development database were not done (the dev database is shared with the main
+  checkout, which doesn't have migration 0029).
 
 ## Acceptance criteria
 
-- [ ] Every change to a tracked variant's stock (checkout, cancellation, return, Strapi edit)
+- [x] Every change to a tracked variant's stock (checkout, cancellation, return, Strapi edit)
   writes one `inventory_movements` row in the same transaction — steps 4, 5, 6, 7 (tests in 5, 6, 9)
-- [ ] For every tracked variant, `sum(quantity_delta)` = `stock_quantity` — steps 2, 5, 6, 8, 9
-- [ ] `inventory_daily` gives units sold, closing stock and an out-of-stock flag per variant per
+- [x] For every tracked variant, `sum(quantity_delta)` = `stock_quantity` — steps 2, 5, 6, 8, 9
+- [x] `inventory_daily` gives units sold, closing stock and an out-of-stock flag per variant per
   day — steps 2, 3, 9
-- [ ] Existing stock is recorded as `opening_balance` by the migration — step 2 (test in 9)
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
+- [x] Existing stock is recorded as `opening_balance` by the migration — step 2 (test in 9)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
 
 ## Out of scope
 

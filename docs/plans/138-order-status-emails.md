@@ -36,7 +36,8 @@ outbox, in the same transaction as the change and in the order's language. The e
 
 - **Email types.** `ORDER_EMAIL_TYPES` (`app/lib/enums.ts`) gains `shipped`, `arrived`,
   `cancelled`, `refunded`. The migration rewrites `order_emails_type_check`.
-- **Which change queues what.** A pure function `orderStatusEmailTypes(before, patch)` in a new
+- **Which change queues what.** A pure function `orderStatusEmailTypes(patch)` (the patch alone
+  is enough: `nextOrderState` only puts changed fields in it) in a new
   isomorphic module `app/lib/order-status-emails.ts` (no zod, no server imports) maps a lifecycle
   patch to email types:
   - `patch.status === "shipped"` → `shipped`
@@ -180,7 +181,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `msg(…)` key) and `CmsOrderState`. Update `lockOrderLifecycle`, `updateOrderLifecycle`,
   `findOrderSyncState`, `toCmsOrderState` and `toStrapiOrderData`. Tests in `order-status.test.ts`
   and the cms-sync tests.
-- [ ] **3. Which emails.** Create `app/lib/order-status-emails.ts` with
+- [x] **3. Which emails.** Create `app/lib/order-status-emails.ts` with
   `orderStatusEmailTypes(before: OrderLifecycle, patch: OrderLifecyclePatch): OrderEmailType[]`
   (rules in Decisions). Unit-test every transition in the table, cod `pending → shipped`, a
   waybill-only edit, an empty patch, and cancel + refund together.

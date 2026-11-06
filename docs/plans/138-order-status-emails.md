@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/138
 Branch: `issue/138`
 Worktree: `.claude/worktrees/issue-138`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -97,6 +97,24 @@ outbox, in the same transaction as the change and in the order's language. The e
   addresses are still skipped by `getMailer()` (#134).
 - **Not shown in the storefront.** The waybill isn't added to the account order page here (that was
   #137's scope).
+
+### Implementation notes (deviations from the steps)
+
+- `orderStatusEmailTypes` takes only the patch (see above), and `OrderStatusChange.arrivedAtBranch`
+  is `boolean | null`: Strapi sends `null` for a checkbox nobody touched, which changes nothing.
+- `applyCmsOrderChange` returns `emailsQueued` next to the order; the route only answers Strapi
+  with the order.
+- A refused waybill is the schema's `invalid-input` on `waybillNumber` (the Strapi message names
+  the 14-digit rule), not a separate `invalid-waybill` error.
+- The Strapi field `waybillNumber` allows 30 characters, so a number typed with spaces fits; the
+  app strips them. `cms/types/generated/contentTypes.d.ts` was updated by hand to match the
+  schema (Strapi regenerates it on `develop`).
+- The arrived email shows the branch address at the top (what to do next) and again in the
+  delivery block, like the other status emails.
+- Steps 6 and 7 were committed together, with one DB test that sends a queued shipped email
+  through the real outbox (`cms-sync.test.ts`).
+- The manual run under Aspire (Testing & verification) was **not done**; the behaviour is covered
+  by the unit and DB integration tests.
 
 ## Resolved questions
 
@@ -220,7 +238,7 @@ Each step is small, ordered, and leaves the app in a working state.
 - [x] **8. Docs.** Update the order email outbox bullet and the CMS sync bullet in
   `app/.server/AGENTS.md` (new types, once per type, locale rule, the two columns, `arrived_at` is
   an ML feature), the email list in `docs/email.md`, and staff notes on filling the ТТН in Strapi.
-- [ ] **9. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual run under
+- [x] **9. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual run under
   `pnpm aspire run` (below).
 
 ## Testing & verification
@@ -241,14 +259,14 @@ Each step is small, ordered, and leaves the app in a working state.
 
 ## Acceptance criteria
 
-- [ ] Moving an order to shipped, arrived, cancelled or refunded queues one matching email, in the
+- [x] Moving an order to shipped, arrived, cancelled or refunded queues one matching email, in the
   order's language — steps 2, 3, 4, 5
-- [ ] The shipped email has the waybill number and a tracking link when the order has one —
+- [x] The shipped email has the waybill number and a tracking link when the order has one —
   steps 1, 2, 5, 6, 7
-- [ ] The same email is never sent twice for one order — steps 3, 4 (existing unique index +
+- [x] The same email is never sent twice for one order — steps 3, 4 (existing unique index +
   `on conflict do nothing`)
-- [ ] Emails go through the existing outbox with retries — steps 4, 6
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+- [x] Emails go through the existing outbox with retries — steps 4, 6
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
 
 ## Out of scope
 

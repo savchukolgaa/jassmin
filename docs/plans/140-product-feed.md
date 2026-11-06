@@ -65,8 +65,11 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   is truncated to 150 characters, Google's limit.
 - **Description.** `pickDescription(row, locale)` (falls back to the other language), plain text
   with whitespace collapsed to single spaces, then truncated to 5000 characters on a word
-  boundary. `description` is required, so a product without one gets the i18n fallback
-  `feed.fallbackDescription`: "Оригінальний аромат {brand} {title}, розлитий у флакон JASSMIN…".
+  boundary. *Changed during implementation:* every description now starts with the i18n note
+  `feed.decantNote` ("Оригінальний аромат {brand} {title}, розлитий у флакон JASSMIN, {size}."),
+  followed by the product's text. This one key covers both the decant wording that the brand
+  decision relies on and the required description for products without one, so there's no separate
+  `feed.fallbackDescription`. If the title already starts with the brand, the brand isn't repeated.
 - **Condition and identifiers.** `g:condition` = `new`, and `g:identifier_exists` = `no`
   (decants have no GTIN or MPN).
 - **Brand.** `g:brand` is the perfume house (`products.brand`). The title says
@@ -191,7 +194,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   `listSitemapProducts`): archived, slugless and zero-priced rows are left out, there is one row per
   variant, an untracked size with `stock_quantity = 0` reports a positive stock, and a tracked size
   with 0 reports 0.
-- [ ] **5. Service.** Create `app/.server/services/product-feed.ts`:
+- [x] **5. Service.** Create `app/.server/services/product-feed.ts`:
   - `feedItems(rows, { locale, siteUrl })` builds the translator with `createTranslator(locale)`
     and maps each row to a `FeedItem` using the rules in Decisions (`productHref`, `formatVolume`,
     `pickDescription` plus collapse and truncation to 5000, the fallback description, the title

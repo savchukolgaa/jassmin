@@ -73,34 +73,44 @@ export const paymentStatusType = pgEnum("payment_status_type", PAYMENT_STATUSES)
 export const cartStatusType = pgEnum("cart_status_type", CART_STATUSES);
 export const userRoleType = pgEnum("user_role", USER_ROLES);
 
-export const users = pgTable("users", {
-  id: serial().primaryKey(),
-  fullName: varchar({ length: 255 }).notNull(),
-  email: varchar({ length: 255 }).notNull().unique(),
-  passwordHash: varchar({ length: 255 }).notNull(),
-  phone: varchar({ length: 50 }),
-  acquisitionChannel: text().notNull().default("direct"),
-  // Read from the database on every admin request, never cached in the session cookie.
-  role: userRoleType().notNull().default("customer"),
-  lastLoginAt: timestamp({ withTimezone: true }),
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  // First-touch attribution (#18): how the person first came to the site, copied once from their
-  // earliest analytics session when they log in or register. `null` until then.
-  firstTouchSource: text(),
-  firstTouchMedium: text(),
-  firstTouchCampaign: text(),
-  // Password reset and email verification (#135). `null` until the user confirms their email;
-  // users from before #135 start unverified. Verification is soft: nothing requires it.
-  emailVerifiedAt: timestamp({ withTimezone: true }),
-  // When the password was last set by a reset or a profile change: session cookies issued before
-  // it are rejected, which logs out every other session (`isSessionRevoked`).
-  passwordChangedAt: timestamp({ withTimezone: true }),
-  // Customer attributes for segmentation and churn (#128); ML features, never drop or rename.
-  /** The delivery city of the user's latest order; `null` before their first order. */
-  city: text(),
-  /** Agreed to marketing emails at registration or on the profile; withdrawable any time. */
-  marketingOptIn: boolean().notNull().default(false),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: serial().primaryKey(),
+    fullName: varchar({ length: 255 }).notNull(),
+    email: varchar({ length: 255 }).notNull().unique(),
+    passwordHash: varchar({ length: 255 }).notNull(),
+    phone: varchar({ length: 50 }),
+    acquisitionChannel: text().notNull().default("direct"),
+    // Read from the database on every admin request, never cached in the session cookie.
+    role: userRoleType().notNull().default("customer"),
+    lastLoginAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    // First-touch attribution (#18): how the person first came to the site, copied once from their
+    // earliest analytics session when they log in or register. `null` until then.
+    firstTouchSource: text(),
+    firstTouchMedium: text(),
+    firstTouchCampaign: text(),
+    // Password reset and email verification (#135). `null` until the user confirms their email;
+    // users from before #135 start unverified. Verification is soft: nothing requires it.
+    emailVerifiedAt: timestamp({ withTimezone: true }),
+    // When the password was last set by a reset or a profile change: session cookies issued before
+    // it are rejected, which logs out every other session (`isSessionRevoked`).
+    passwordChangedAt: timestamp({ withTimezone: true }),
+    // Customer attributes for segmentation and churn (#128); ML features, never drop or rename.
+    /** The delivery city of the user's latest order; `null` before their first order. */
+    city: text(),
+    /** Agreed to marketing emails at registration or on the profile; withdrawable any time. */
+    marketingOptIn: boolean().notNull().default(false),
+    /**
+     * The language the user last logged in, registered or checked out in (#139), for emails sent
+     * outside a request (cart reminders). `null` until then.
+     */
+    locale: text().$type<Locale>(),
+  },
+  // A null locale passes the CHECK (`null in (…)` is unknown).
+  (t) => [check("users_locale_check", oneOf(t.locale, LOCALES))],
+);
 
 /**
  * One-time links emailed for a password reset or an email verification (#135). Only the SHA-256
@@ -350,9 +360,24 @@ export const carts = pgTable(
      * taken, when the order is placed.
      */
     giftCardId: integer().references((): AnyPgColumn => giftCards.id, { onDelete: "set null" }),
+    /**
+     * When the reminder email for this abandoned cart was queued (#139); `null` without one. The
+     * reminder job sets it without touching `updated_at`. At most one reminder per user every 7
+     * days counts these.
+     */
+    reminderSentAt: timestamp({ withTimezone: true }),
+    /**
+     * When the user copied this abandoned cart's lines back into their active cart from the
+     * reminder (#139); `null` otherwise. The cart itself stays `abandoned`.
+     */
+    restoredAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     index("carts_user_id_idx").on(t.userId),
+    // For the reminder job's 7-day limit per user (#139).
+    index("carts_user_id_reminder_sent_at_idx")
+      .on(t.userId, t.reminderSentAt)
+      .where(sql`${t.reminderSentAt} is not null`),
     index("carts_session_id_idx").on(t.sessionId),
     // For the abandoned-cart job (#19): active carts not updated for a while.
     index("carts_status_updated_at_idx").on(t.status, t.updatedAt),
@@ -554,8 +579,10 @@ export const orderEmails = pgTable(
     orderId: integer().references(() => orders.id, { onDelete: "cascade" }),
     /** The gift card whose code this email sends (#125); `null` for an order's email. */
     giftCardId: integer().references((): AnyPgColumn => giftCards.id, { onDelete: "cascade" }),
+    /** The abandoned cart a reminder is about (#139); `null` for every other email. */
+    cartId: integer().references((): AnyPgColumn => carts.id, { onDelete: "cascade" }),
     type: text().$type<OrderEmailType>().notNull(),
-    /** The language the shopper checked out (or bought the gift card) in. */
+    /** The language the shopper checked out (or bought the gift card) in; a reminder's user's. */
     locale: text().$type<Locale>().notNull(),
     status: text().$type<OrderEmailStatus>().notNull().default("pending"),
     /** Send attempts so far, counted when a sender claims the row. */
@@ -577,7 +604,12 @@ export const orderEmails = pgTable(
     check("order_emails_attempts_check", sql`${t.attempts} >= 0`),
     unique("order_emails_order_id_type_unique").on(t.orderId, t.type),
     unique("order_emails_gift_card_id_type_unique").on(t.giftCardId, t.type),
-    check("order_emails_target_check", sql`(${t.orderId} is null) <> (${t.giftCardId} is null)`),
+    unique("order_emails_cart_id_type_unique").on(t.cartId, t.type),
+    // Exactly one target: an order, a gift card (#125) or an abandoned cart (#139).
+    check(
+      "order_emails_target_check",
+      sql`num_nonnulls(${t.orderId}, ${t.giftCardId}, ${t.cartId}) = 1`,
+    ),
     index("order_emails_status_next_attempt_at_idx").on(t.status, t.nextAttemptAt),
   ],
 );

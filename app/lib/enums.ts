@@ -111,6 +111,8 @@ export const ORDER_EMAIL_TYPES = [
   "arrived",
   "cancelled",
   "refunded",
+  // The one reminder for an abandoned cart (#139); its row's target is `cart_id`.
+  "cart_reminder",
 ] as const;
 
 export type OrderEmailType = (typeof ORDER_EMAIL_TYPES)[number];

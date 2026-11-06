@@ -530,6 +530,10 @@ async function buildEmail(
     const order = email.orderId === null ? undefined : await deps.loadOrderStatus(email.orderId);
     return order ? ORDER_STATUS_BUILDERS[email.type](order, translator, deps.env) : null;
   }
+  if (email.type === "cart_reminder") {
+    // Cart reminders (#139) are built once their builder exists; nothing queues them yet.
+    return null;
+  }
   const card = email.giftCardId === null ? undefined : await deps.loadGiftCard(email.giftCardId);
   return card ? GIFT_CARD_BUILDERS[email.type](card, translator, deps.env) : null;
 }

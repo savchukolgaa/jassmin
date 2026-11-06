@@ -220,7 +220,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   Check that `redirects.test.ts` still passes. Run the app (`pnpm aspire run`), open
   `/feeds/products.xml` and `/en/feeds/products.xml` in the browser, and check them against the
   seeded catalog (number of items = active slugged variants with a price).
-- [ ] **8. Docs.** Write `docs/product-feeds.md`, in the style of `docs/email.md`:
+- [x] **8. Docs.** Write `docs/product-feeds.md`, in the style of `docs/email.md`:
   - The feed URLs and what each field comes from.
   - Eligibility checks for Ukraine .
   - Merchant Center: create the account, verify and claim the domain (the HTML tag or DNS TXT

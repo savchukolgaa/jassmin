@@ -8,7 +8,8 @@
 //   its code emails; a failed one leaves it `pending`.
 // - The callback is idempotent: it locks the attempt row, ignores attempts that already
 //   succeeded, and marks the order paid only while it is `pending` and `unpaid`
-//   (`markOrderPaid`), so a repeated callback never changes the order twice.
+//   (`markOrderPaid`), so a repeated callback never changes the order twice. That change is
+//   recorded in `order_status_history` (`payment`, #128) in the same transaction.
 // - A failed attempt leaves the order `unpaid`; the shopper can start another one.
 //
 // The provider and the database are injectable for tests.
@@ -22,6 +23,7 @@ import type { Db } from "../db/client";
 import { enqueueCmsSync } from "../db/queries/cms-outbox";
 import { activateGiftCard, findGiftCard } from "../db/queries/gift-cards";
 import { insertOrderEmail } from "../db/queries/order-emails";
+import { insertOrderStatusHistory } from "../db/queries/order-status-history";
 import {
   countPayments,
   findLatestPaymentStatus,
@@ -246,7 +248,15 @@ export async function handlePaymentCallback(
           await enqueueCmsSync(tx, "gift_card", [card.id]);
           return { ok: true, result: "paid", giftCardId: card.id };
         }
-        if (payment.orderId !== null && (await markOrderPaid(tx, payment.orderId))) {
+        const paidAt = new Date();
+        if (payment.orderId !== null && (await markOrderPaid(tx, payment.orderId, paidAt))) {
+          // The order's path (#128): `pending` → `paid`, at the time stored in `paid_at`.
+          await insertOrderStatusHistory(tx, {
+            orderId: payment.orderId,
+            status: "paid",
+            source: "payment",
+            changedAt: paidAt,
+          });
           // Strapi shows the order as paid (#40); the callback route pushes it after the commit.
           await enqueueCmsSync(tx, "order", [payment.orderId]);
           return { ok: true, result: "paid" };

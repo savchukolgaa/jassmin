@@ -195,6 +195,11 @@ describe.skipIf(!hasDatabase)("payments service", () => {
       const paid = await orderRow(orderId);
       expect(paid).toMatchObject({ paymentStatus: "paid", status: "paid" });
       expect(paid?.paidAt).toBeInstanceOf(Date);
+      // The change is recorded at the payment time (#128).
+      const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
+      expect(await listOrderStatusHistory(testDb.db, orderId)).toEqual([
+        expect.objectContaining({ status: "paid", source: "payment", changedAt: paid?.paidAt }),
+      ]);
       const [payment] = await paymentRows(orderId);
       expect(payment).toMatchObject({ status: "succeeded", lastCallback: { status: "success" } });
       expect(payment?.providerPaymentId).toMatch(/^sim_/);
@@ -230,6 +235,9 @@ describe.skipIf(!hasDatabase)("payments service", () => {
       const again = await orderRow(orderId);
       expect(again?.paidAt).toEqual(first?.paidAt);
       expect(again?.updatedAt).toEqual(first?.updatedAt);
+      // One history row for the one change (#128).
+      const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
+      expect(await listOrderStatusHistory(testDb.db, orderId)).toHaveLength(1);
     });
 
     it("rejects an invalid signature and changes nothing", async () => {
@@ -302,6 +310,8 @@ describe.skipIf(!hasDatabase)("payments service", () => {
         paymentStatus: "unpaid",
       });
       expect(await paymentRows(orderId)).toMatchObject([{ status: "succeeded" }]);
+      const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
+      expect(await listOrderStatusHistory(testDb.db, orderId)).toEqual([]);
     });
   });
 

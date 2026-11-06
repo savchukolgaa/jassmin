@@ -502,7 +502,12 @@ export async function findVariantForProduct(
   variantPublicId: string,
 ) {
   const [row] = await db
-    .select({ ...variantColumns, id: productVariants.id, productId: productVariants.productId })
+    .select({
+      ...variantColumns,
+      id: productVariants.id,
+      productId: productVariants.productId,
+      productPublicId: products.publicId,
+    })
     .from(productVariants)
     .innerJoin(products, eq(products.id, productVariants.productId))
     .where(

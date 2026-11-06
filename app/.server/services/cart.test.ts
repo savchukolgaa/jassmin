@@ -47,6 +47,7 @@ describe.skipIf(!hasDatabase)("cart service", () => {
         id: productVariants.id,
         publicId: productVariants.publicId,
         productId: productVariants.productId,
+        productPublicId: products.publicId,
         volumeMl: productVariants.volumeMl,
         stockQuantity: productVariants.stockQuantity,
         price: productVariants.price,
@@ -85,12 +86,21 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     const visitor = await guest();
     const small = await variant(5);
 
-    const added = (quantityDelta: number) => ({
+    const added = (quantityDelta: number, cartValueAfter: string) => ({
       ok: true,
-      change: { productId: small.productId, volumeMl: 5, quantityDelta },
+      change: {
+        productId: small.productId,
+        productPublicId: COCO,
+        variantPublicId: small.publicId,
+        volumeMl: 5,
+        price: "990.00",
+        inStock: true,
+        quantityDelta,
+        cartValueAfter,
+      },
     });
-    expect(await cart.addItem(visitor, small, 1, testDb.db)).toEqual(added(1));
-    expect(await cart.addItem(visitor, small, 2, testDb.db)).toEqual(added(2));
+    expect(await cart.addItem(visitor, small, 1, testDb.db)).toEqual(added(1, "990.00"));
+    expect(await cart.addItem(visitor, small, 2, testDb.db)).toEqual(added(2, "2970.00"));
 
     const rows = await cartRows();
     expect(rows).toEqual([
@@ -143,7 +153,11 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     });
     expect(await cart.updateQuantity(visitor, thirty.publicId, 3, testDb.db)).toEqual({
       ok: true,
-      change: { productId: thirty.productId, volumeMl: 30, quantityDelta: 1 },
+      change: expect.objectContaining({
+        productId: thirty.productId,
+        volumeMl: 30,
+        quantityDelta: 1,
+      }),
     });
     expect(await cart.getCartCount(visitor, testDb.db)).toBe(3);
   });
@@ -181,16 +195,32 @@ describe.skipIf(!hasDatabase)("cart service", () => {
     const cart = await import("./cart");
     const visitor = await guest();
     const small = await variant(5);
-    const change = (quantityDelta: number) => ({
+    // With the size's price and stock, and the cart's subtotal after the change (#129).
+    const change = (quantityDelta: number, cartValueAfter: string) => ({
       ok: true,
-      change: { productId: small.productId, volumeMl: 5, quantityDelta },
+      change: {
+        productId: small.productId,
+        productPublicId: COCO,
+        variantPublicId: small.publicId,
+        volumeMl: 5,
+        price: "990.00",
+        inStock: true,
+        quantityDelta,
+        cartValueAfter,
+      },
     });
     await cart.addItem(visitor, small, 2, testDb.db);
 
-    expect(await cart.updateQuantity(visitor, small.publicId, 5, testDb.db)).toEqual(change(3));
-    expect(await cart.updateQuantity(visitor, small.publicId, 1, testDb.db)).toEqual(change(-4));
-    expect(await cart.updateQuantity(visitor, small.publicId, 1, testDb.db)).toEqual(change(0));
-    expect(await cart.removeItem(visitor, small.publicId, testDb.db)).toEqual(change(-1));
+    expect(await cart.updateQuantity(visitor, small.publicId, 5, testDb.db)).toEqual(
+      change(3, "4950.00"),
+    );
+    expect(await cart.updateQuantity(visitor, small.publicId, 1, testDb.db)).toEqual(
+      change(-4, "990.00"),
+    );
+    expect(await cart.updateQuantity(visitor, small.publicId, 1, testDb.db)).toEqual(
+      change(0, "990.00"),
+    );
+    expect(await cart.removeItem(visitor, small.publicId, testDb.db)).toEqual(change(-1, "0.00"));
   });
 
   it("only changes lines in the owner's own cart", async () => {
@@ -671,7 +701,11 @@ describe.skipIf(!hasDatabase)("cart service", () => {
 
       expect(result).toEqual({
         ok: true,
-        change: { productId: small.productId, volumeMl: 5, quantityDelta: 2 },
+        change: expect.objectContaining({
+          productId: small.productId,
+          volumeMl: 5,
+          quantityDelta: 2,
+        }),
       });
       const rows = await cartRows();
       expect(rows.find((r) => r.id === oldId)?.status).toBe("abandoned");

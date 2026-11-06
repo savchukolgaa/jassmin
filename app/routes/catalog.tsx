@@ -9,7 +9,7 @@ import { focusRing } from "~/components/layout/nav";
 import { Pagination } from "~/components/ui/Pagination";
 import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { ProductCard } from "~/features/catalog/ProductCard";
-import { shouldRevalidateView } from "~/lib/analytics";
+import { MAX_SEARCH_RESULT_IDS, shouldRevalidateView } from "~/lib/analytics";
 import { catalogBreadcrumbs } from "~/lib/breadcrumbs";
 import {
   CATALOG_META_DESCRIPTION_KEYS,
@@ -57,12 +57,28 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   }
   const search = parseCatalogSearch(new URL(request.url).searchParams);
   const page = await getCatalogPage(gender, search);
+  // A filtered or sorted catalog is a search (#18). Its id links the results' impressions, clicks
+  // and cart adds to it (#129).
+  let searchId: string | null = null;
   if (hasActiveFilters(search)) {
+    searchId = crypto.randomUUID();
     void trackEvent({ request, context }, "search", {
-      properties: { gender, ...search, total: page.total },
+      properties: {
+        search_id: searchId,
+        query: null,
+        gender,
+        fragrance_family: search.fragranceFamily ?? null,
+        brand: search.brand ?? null,
+        sort: search.sort,
+        page: page.page,
+        result_count: page.total,
+        product_public_ids: page.products
+          .slice(0, MAX_SEARCH_RESULT_IDS)
+          .map((product) => product.id),
+      },
     });
   }
-  return { gender, search, ...page };
+  return { gender, search, searchId, ...page };
 }
 
 // Adding to the cart doesn't change the catalog, and reloading would record a second search.

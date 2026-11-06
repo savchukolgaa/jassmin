@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseEventProperties } from "~/lib/analytics.schema";
 import { type CartLine, type CartView, EMPTY_CART } from "~/lib/cart";
 
 const cart = vi.hoisted(() => ({
@@ -136,9 +137,9 @@ describe("checkout loader", () => {
       {
         properties: {
           subtotal: "900.00",
-          itemCount: 2,
-          discountAmount: "0.00",
-          discountCode: null,
+          item_count: 2,
+          discount_amount: "0.00",
+          discount_code: null,
         },
       },
     );
@@ -179,9 +180,9 @@ describe("checkout loader", () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "checkout_start", {
       properties: {
         subtotal: "1350.00",
-        itemCount: 3,
-        discountAmount: "405.00",
-        discountCode: "SAVE30",
+        item_count: 3,
+        discount_amount: "405.00",
+        discount_code: "SAVE30",
       },
     });
   });
@@ -353,7 +354,15 @@ describe("checkout action", () => {
     expect((response as Response).headers.get("Location")).toBe("/en/checkout/success/42");
   });
 
-  it("records purchase for the placed order", async () => {
+  it("records purchase for the placed order, with its lines (#129)", async () => {
+    const items = [
+      {
+        variant_id: "01a1652b-6e25-7d00-8000-000000000050",
+        quantity: 2,
+        unit_price: "450.00",
+        discount_allocated: "90.00",
+      },
+    ];
     const { action } = await import("./checkout");
     orders.createOrder.mockResolvedValueOnce({
       ok: true,
@@ -367,6 +376,8 @@ describe("checkout action", () => {
       discountKind: "percent",
       giftCardAmount: "0.00",
       paymentMethod: "cod",
+      items,
+      isFirstOrder: true,
     });
     const args = post(valid);
 
@@ -378,17 +389,21 @@ describe("checkout action", () => {
       "purchase",
       {
         properties: {
-          orderId: 42,
+          order_id: 42,
           subtotal: "900.00",
-          totalAmount: "810.00",
-          discountAmount: "90.00",
-          discountId: 3,
-          discountCode: "JASSMIN10",
-          giftCardAmount: "0.00",
-          paymentMethod: "cod",
+          total_amount: "810.00",
+          discount_amount: "90.00",
+          discount_id: 3,
+          discount_code: "JASSMIN10",
+          gift_card_amount: "0.00",
+          payment_method: "cod",
+          items,
+          is_first_order: true,
         },
       },
     );
+    const [, , options] = analytics.trackEvent.mock.calls[0] ?? [];
+    expect(parseEventProperties("purchase", options?.properties)).not.toBeNull();
   });
 
   it("doesn't record purchase again for a double submit", async () => {
@@ -493,7 +508,10 @@ describe("checkout action", () => {
     expect(response.headers.get("Location")).toBe("/oformlennia/uspikh/42");
     expect(payments.startPayment).not.toHaveBeenCalled();
     expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "purchase", {
-      properties: expect.objectContaining({ giftCardAmount: "900.00", paymentMethod: "gift_card" }),
+      properties: expect.objectContaining({
+        gift_card_amount: "900.00",
+        payment_method: "gift_card",
+      }),
     });
   });
 

@@ -1,5 +1,6 @@
 import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseEventProperties } from "~/lib/analytics.schema";
 
 const products = vi.hoisted(() => ({ getCatalogPage: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
@@ -53,20 +54,49 @@ beforeEach(() => {
 });
 
 describe("catalog loader", () => {
-  it("records a search when the shopper filters or sorts", async () => {
-    await load("women", "?brand=Chanel&sort=price_asc");
+  it("records a search with its id and the results shown when the shopper filters or sorts", async () => {
+    const ids = Array.from(
+      { length: 30 },
+      (_, index) => `01a1652b-6e25-7c03-ae47-${String(index).padStart(12, "0")}`,
+    );
+    products.getCatalogPage.mockResolvedValueOnce({
+      ...page,
+      products: ids.map((id) => ({ id })),
+    });
 
+    const data = await load("women", "?brand=Chanel&sort=price_asc");
+
+    // The id goes to the page, so its impressions and clicks link to the search (#129).
+    expect(data.searchId).toMatch(/^[0-9a-f-]{36}$/);
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ context }),
       "search",
       {
-        properties: { gender: "women", brand: "Chanel", sort: "price_asc", page: 1, total: 3 },
+        properties: {
+          search_id: data.searchId,
+          query: null,
+          gender: "women",
+          fragrance_family: null,
+          brand: "Chanel",
+          sort: "price_asc",
+          page: 1,
+          result_count: 3,
+          product_public_ids: ids.slice(0, 24),
+        },
       },
     );
+    const [, , options] = analytics.trackEvent.mock.calls[0] ?? [];
+    expect(parseEventProperties("search", options?.properties)).not.toBeNull();
+  });
+
+  it("gives every search its own id", async () => {
+    const first = await load("women", "?sort=price_asc");
+    const second = await load("women", "?sort=price_asc");
+    expect(first.searchId).not.toBe(second.searchId);
   });
 
   it("records nothing for the plain catalog", async () => {
-    expect(await load("men")).toMatchObject({ gender: "men", total: 3 });
+    expect(await load("men")).toMatchObject({ gender: "men", total: 3, searchId: null });
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 

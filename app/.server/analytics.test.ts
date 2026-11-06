@@ -341,10 +341,8 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
 
       await trackEvent(
         { request: later, context },
-        "search",
-        {
-          properties: { query: "rose" },
-        },
+        "page_view",
+        { properties: { path: "/catalog/women" } },
         testDb.db,
       );
 
@@ -352,9 +350,9 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
         expect.objectContaining({
           sessionId: visitor.sessionId,
           userId: null,
-          eventType: "search",
+          eventType: "page_view",
           productId: null,
-          eventProperties: { query: "rose" },
+          eventProperties: { path: "/catalog/women" },
           source: "instagram",
           medium: "cpc",
           campaign: null,
@@ -369,15 +367,39 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
       const context = new RouterContextProvider();
       const visitor = await visitorIn(context, request());
 
-      await trackEvent({ request: request(), context }, "page_view", {}, testDb.db);
+      const properties = { path: "/" };
+      await trackEvent({ request: request(), context }, "page_view", { properties }, testDb.db);
       await trackEvent(
         { request: request(await grantedCookie()), context: new RouterContextProvider() },
         "page_view",
-        {},
+        { properties },
         testDb.db,
       );
 
       expect(await eventsOf(visitor.anonymousId)).toEqual([]);
+    });
+
+    it("drops an event whose properties break its contract and records the rest (#129)", async () => {
+      const { getVisitor, trackEvents } = await import("./analytics");
+      const visitor = await getVisitor(request(), testDb.db);
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const bad = { path: "/", email: "someone@example.com" } as unknown as { path: string };
+
+      await trackEvents(
+        visitor,
+        request(),
+        [
+          { type: "page_view", properties: bad },
+          { type: "page_view", properties: { path: "/kept" } },
+        ],
+        { db: testDb.db },
+      );
+
+      expect((await eventsOf(visitor.anonymousId)).map((event) => event.eventProperties)).toEqual([
+        { path: "/kept" },
+      ]);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("page_view"));
+      error.mockRestore();
     });
 
     it("stores a client-sent previous page as the referrer", async () => {
@@ -388,7 +410,10 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
       await trackEvents(
         visitor,
         beacon,
-        [{ type: "page_view", referrer: "http://localhost/" }, { type: "page_view" }],
+        [
+          { type: "page_view", properties: { path: "/" }, referrer: "http://localhost/" },
+          { type: "page_view", properties: { path: "/" } },
+        ],
         { db: testDb.db },
       );
 
@@ -411,7 +436,7 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
         trackEvent(
           { request: request(await grantedCookie()), context },
           "page_view",
-          {},
+          { properties: { path: "/" } },
           testDb.db,
         ),
       ).resolves.toBeUndefined();
@@ -433,9 +458,13 @@ describe.skipIf(!hasDatabase)("analytics with a database", () => {
         request(cookiesFrom(first.headers), { url: "http://localhost/?utm_source=google" }),
         testDb.db,
       );
-      await trackEvents(second, request(), [{ type: "page_view" }], { db: testDb.db });
+      await trackEvents(second, request(), [{ type: "page_view", properties: { path: "/" } }], {
+        db: testDb.db,
+      });
       const stranger = await getVisitor(request(), testDb.db);
-      await trackEvents(stranger, request(), [{ type: "page_view" }], { db: testDb.db });
+      await trackEvents(stranger, request(), [{ type: "page_view", properties: { path: "/" } }], {
+        db: testDb.db,
+      });
 
       await linkVisitorToUser(first.anonymousId, userId, testDb.db);
 

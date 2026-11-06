@@ -98,6 +98,23 @@ export interface NewOrder {
  * left to pay after the gift card (#125), which never changes free shipping. An order a gift card
  * paid in full (`gift_card`) is placed already paid.
  */
+/**
+ * Whether the customer placed an order before, for the `purchase` event's `is_first_order` (#129):
+ * any order of the user or, whoever placed it, with the same email (any case), in any status.
+ */
+export async function hasEarlierOrder(
+  db: Executor,
+  { userId, email }: { userId: number | null; email: string },
+): Promise<boolean> {
+  const sameEmail = sql`lower(${orders.guestEmail}) = lower(${email})`;
+  const [row] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(userId === null ? sameEmail : sql`(${orders.userId} = ${userId} or ${sameEmail})`)
+    .limit(1);
+  return row !== undefined;
+}
+
 export async function insertOrder(db: Executor, order: NewOrder): Promise<number> {
   const subtotal = sql`${order.subtotal}::numeric`;
   const discount = sql`${order.discountAmount}::numeric`;

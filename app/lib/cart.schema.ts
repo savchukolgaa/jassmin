@@ -1,6 +1,7 @@
 // The cart form's zod schema, used by the cart route's `action`. Imported only by route actions,
 // server code and tests, so zod stays out of the client bundle (#96).
 import { z } from "zod";
+import { LIST_IDS } from "./analytics";
 import { MAX_LINE_QUANTITY } from "./cart";
 import { promoCodeSchema } from "./discounts.schema";
 
@@ -13,6 +14,11 @@ export const cartActionSchema = z.discriminatedUnion("intent", [
     /** The chosen size's `public_id`; the action checks it belongs to the product. */
     variantId: z.uuid(),
     quantity: quantity.default(1),
+    // The product list the card was in, for the `add_to_cart` event (#129). Analytics only: a bad
+    // value is dropped, never an error.
+    listId: z.enum(LIST_IDS).optional().catch(undefined),
+    listPosition: z.coerce.number().int().min(1).max(100_000).optional().catch(undefined),
+    searchId: z.uuid().optional().catch(undefined),
   }),
   /** `variantId` identifies the line; the stepper posts the new quantity. */
   z.object({ intent: z.literal("update"), variantId: z.uuid(), quantity }),

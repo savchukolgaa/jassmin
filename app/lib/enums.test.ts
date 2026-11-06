@@ -71,6 +71,9 @@ describe("enum values", () => {
       "purchase",
       "login",
       "review_submit",
+      "product_impression",
+      "product_click",
+      "product_dwell",
     ]);
   });
 

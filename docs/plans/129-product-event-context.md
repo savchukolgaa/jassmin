@@ -112,6 +112,19 @@ events carry list context, position, price and stock. Three new client events ar
     from `lines` and `priced.allocation` and returned in `PlacedOrderTotals`.
   - `is_first_order`: no earlier order with the same `user_id` or, for a guest, the same
     lower-cased email, checked inside the order transaction. (confirmed by the owner)
+- **Steps 1, 2, 3 and 7 landed in one commit.** Typing `trackEvent` by event type breaks every
+  existing caller at compile time, and moving the callers to the new shapes needs step 7's data
+  (price, stock, cart value, purchase lines). Splitting them would have left commits that don't
+  typecheck.
+- **`parseEventProperties` returns the union of all shapes**, not a generic `EventProperties<T>`.
+  Indexing the schema map by a generic `T` would need a double cast, and `trackEvents` only needs
+  the union for the `jsonb` column. `satisfies` on `eventPropertiesSchemas` still checks each schema
+  against its type.
+- **The cart form's list fields use `.catch(undefined)`**, so a malformed `listId`,
+  `listPosition` or `searchId` is dropped instead of failing the add: analytics never blocks the
+  cart.
+- **`search_id` comes from `crypto.randomUUID()`** (the global), so the catalog route module doesn't
+  import `node:crypto`.
 - **Everything else follows existing patterns.** No new user-facing strings, so no i18n keys, and
   no zod in client code: `app/features/analytics/*` imports only types and constants from
   `~/lib/analytics`, which `client-bundle.guard.test.ts` already enforces.
@@ -180,7 +193,7 @@ events carry list context, position, price and stock. Three new client events ar
 
 ## Steps
 
-- [ ] **1. Typed contract and zod schemas** — In `app/lib/analytics.ts`, add `LIST_IDS` / `ListId`,
+- [x] **1. Typed contract and zod schemas** — In `app/lib/analytics.ts`, add `LIST_IDS` / `ListId`,
   `ProductEventContext`, `EventPropertiesMap` for all event types, `MAX_DWELL_MS = 30 * 60_000` and
   `MIN_IMPRESSION_VISIBLE_MS = 1000`,
   `absoluteListPosition(page, pageSize, index)`. Add the three new types to `EVENT_TYPES` and
@@ -191,13 +204,13 @@ events carry list context, position, price and stock. Three new client events ar
   `clientEventBatchSchema` as `z.discriminatedUnion("type", …)` with `path`, an optional `referrer`
   and `properties`. Check: new `analytics.schema.test.ts` cases accept and reject each shape,
   including unknown keys and an email-looking extra field.
-- [ ] **2. Server tracking uses the contract** — Make `trackEvent<T>` / `EventInput<T>` generic in
+- [x] **2. Server tracking uses the contract** — Make `trackEvent<T>` / `EventInput<T>` generic in
   `app/.server/analytics.ts`, and have `trackEvents` validate each row with
   `parseEventProperties`, dropping and logging invalid ones. Type `schema.ts`'s `eventProperties`
   with the union. Move the current callers to snake_case: `page_view` (middleware, `consent.ts`,
   `api.events.ts`) and `login` (`auth.ts`). Check: `pnpm typecheck` and the existing analytics,
   consent and auth tests, updated for the new keys.
-- [ ] **3. Migration** — Add the three types to the drizzle `check(...)` in `schema.ts`, run
+- [x] **3. Migration** — Add the three types to the drizzle `check(...)` in `schema.ts`, run
   `pnpm db:generate --name product_event_types`, and write
   `db/rollbacks/0029_product_event_types.sql`: delete `user_events` rows of the new types, then
   restore the old check. Update `enums.test.ts` / `schema.test.ts`. Check: `migrator.test.ts`
@@ -230,7 +243,7 @@ events carry list context, position, price and stock. Three new client events ar
 
   Check: the component tests still pass, and in the running app (consent accepted) scrolling the
   catalog sends `product_impression` beacons with the right positions on page 2.
-- [ ] **7. Server product events get price, stock and list** — Do each of these:
+- [x] **7. Server product events get price, stock and list** — Do each of these:
   - Catalog loader: make `searchId`, record the new `search` shape, and return `searchId`.
   - Product loader: `product_view` with the default size's context.
   - `cart.schema.ts`: optional `listId` (enum), `listPosition` and `searchId` on `add`.

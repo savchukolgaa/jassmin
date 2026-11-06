@@ -218,13 +218,21 @@ export async function getCartCount(owner: CartOwner, db: Db = defaultDb): Promis
   return cartId === undefined ? 0 : (await cartTotals(db, cartId)).itemCount;
 }
 
-/** What a successful change did, for the `add_to_cart` / `remove_from_cart` events (#18). */
+/** What a successful change did, for the `add_to_cart` / `remove_from_cart` events (#18, #129). */
 export interface CartChange {
   /** `products.id`. */
   productId: number;
+  productPublicId: string;
+  variantPublicId: string;
   volumeMl: number;
+  /** The size's price at the time of the change. */
+  price: string;
+  /** Whether the size was in stock before the change. */
+  inStock: boolean;
   /** Units added (positive) or removed (negative). */
   quantityDelta: number;
+  /** The cart's subtotal after the change, before discounts. */
+  cartValueAfter: string;
 }
 
 export type CartChangeResult =
@@ -235,8 +243,11 @@ export type CartChangeResult =
 /** The variant to add, as returned by `checkVariantForCart`. */
 export interface CartVariant {
   id: number;
+  publicId: string;
   productId: number;
+  productPublicId: string;
   volumeMl: number;
+  price: string;
   stockQuantity: number;
 }
 
@@ -293,17 +304,41 @@ function addToCart(
     await touchCart(tx, cartId);
     return {
       ok: true,
-      change: { productId: variant.productId, volumeMl: variant.volumeMl, quantityDelta: quantity },
+      change: await changeOf(
+        tx,
+        cartId,
+        { ...variant, variantPublicId: variant.publicId },
+        quantity,
+      ),
     };
   });
 }
 
-/** The change to an existing line. */
-function changeOf(
-  line: { productId: number; volumeMl: number },
+/** The change to a line, with the cart's subtotal after it (in the same transaction). */
+async function changeOf(
+  tx: Parameters<typeof cartTotals>[0],
+  cartId: number,
+  line: {
+    productId: number;
+    productPublicId: string;
+    variantPublicId: string;
+    volumeMl: number;
+    price: string;
+    stockQuantity: number;
+  },
   quantityDelta: number,
-): CartChange {
-  return { productId: line.productId, volumeMl: line.volumeMl, quantityDelta };
+): Promise<CartChange> {
+  const { subtotal } = await cartTotals(tx, cartId);
+  return {
+    productId: line.productId,
+    productPublicId: line.productPublicId,
+    variantPublicId: line.variantPublicId,
+    volumeMl: line.volumeMl,
+    price: line.price,
+    inStock: line.stockQuantity > 0,
+    quantityDelta,
+    cartValueAfter: subtotal,
+  };
 }
 
 /** Sets the quantity of the owner's line for this variant (`public_id`), up to its stock. */
@@ -329,7 +364,7 @@ export async function updateQuantity(
     }
     await tx.update(cartItems).set({ quantity }).where(eq(cartItems.id, line.id));
     await touchCart(tx, cartId);
-    return { ok: true, change: changeOf(line, quantity - line.quantity) };
+    return { ok: true, change: await changeOf(tx, cartId, line, quantity - line.quantity) };
   });
 }
 
@@ -352,7 +387,7 @@ export async function removeItem(
     }
     await tx.delete(cartItems).where(eq(cartItems.id, line.id));
     await touchCart(tx, cartId);
-    return { ok: true, change: changeOf(line, -line.quantity) };
+    return { ok: true, change: await changeOf(tx, cartId, line, -line.quantity) };
   });
 }
 

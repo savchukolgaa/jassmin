@@ -19,6 +19,7 @@ import {
   resolveDeviceType,
   resolveTrafficAttribution,
 } from "~/lib/analytics";
+import { parseEventProperties } from "~/lib/analytics.schema";
 import type { EventType } from "~/lib/enums";
 import { getConsent } from "./consent";
 import { db as defaultDb } from "./db";
@@ -220,24 +221,28 @@ export async function ensureVisitor(
   return visitor;
 }
 
-export interface TrackEventOptions {
+export interface TrackEventOptions<T extends EventType = EventType> {
   /** `products.id`, for events about one product. */
   productId?: number;
-  properties?: EventProperties;
+  /** The event's details, as its type's contract says (`EventPropertiesMap`, #129). */
+  properties: EventProperties<T>;
   /** The user, when the auth cookie isn't on this request yet (right after logging in). */
   userId?: number;
 }
 
 /** One event to record with `trackEvents`. */
-export interface EventInput extends Omit<TrackEventOptions, "userId"> {
-  type: EventType;
+export interface EventInput<T extends EventType = EventType>
+  extends Omit<TrackEventOptions<T>, "userId"> {
+  type: T;
   /** The previous page, when the request's `Referer` isn't it (beacons from the client tracker). */
   referrer?: string;
 }
 
 /**
- * Records events for a visitor without checking consent (callers do). Never throws: tracking must
- * not break a page, the cart or login.
+ * Records events for a visitor without checking consent (callers do). Each event's properties are
+ * checked against its type's contract (`parseEventProperties`); an event that doesn't match is
+ * logged and dropped, and the others are still recorded. Never throws: tracking must not break a
+ * page, the cart or login.
  */
 export async function trackEvents(
   visitor: Visitor,
@@ -257,16 +262,24 @@ export async function trackEvents(
       deviceType: resolveDeviceType(request.headers.get("User-Agent")),
       referrer: request.headers.get("Referer")?.slice(0, MAX_URL_LENGTH) ?? null,
     };
-    const rows = events.map(
-      (event): NewUserEvent => ({
+    const rows: NewUserEvent[] = [];
+    for (const event of events) {
+      const properties = parseEventProperties(event.type, event.properties);
+      if (properties === null) {
+        console.error(`Dropping a ${event.type} event whose properties don't match its contract`);
+        continue;
+      }
+      rows.push({
         ...shared,
         eventType: event.type,
         productId: event.productId ?? null,
-        eventProperties: event.properties ?? null,
+        eventProperties: properties,
         ...(event.referrer && { referrer: event.referrer.slice(0, MAX_URL_LENGTH) }),
-      }),
-    );
-    await insertEvents(db, rows);
+      });
+    }
+    if (rows.length > 0) {
+      await insertEvents(db, rows);
+    }
   } catch (error: unknown) {
     console.error("Recording analytics events failed", error);
   }
@@ -276,10 +289,10 @@ export async function trackEvents(
  * Records one event for the request's visitor, if tracking is allowed. Never throws; call it with
  * `void trackEvent(…)` so the response doesn't wait for the insert.
  */
-export async function trackEvent(
+export async function trackEvent<T extends EventType>(
   { request, context }: RequestArgs,
-  type: EventType,
-  { userId, ...event }: TrackEventOptions = {},
+  type: T,
+  { userId, ...event }: TrackEventOptions<T>,
   db: Db = defaultDb,
 ): Promise<void> {
   try {

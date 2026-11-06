@@ -80,6 +80,10 @@ export const EVENT_TYPES = [
   "purchase",
   "login",
   "review_submit",
+  // Product lists and pages (#129): sent by the client tracker.
+  "product_impression",
+  "product_click",
+  "product_dwell",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

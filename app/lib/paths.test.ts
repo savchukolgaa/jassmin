@@ -27,6 +27,7 @@ const SAMPLE_PARAMS: Partial<Record<Page, Record<string, string>>> = {
   giftCardSuccess: { giftCardId: "3" },
   resetPassword: { token: "abc" },
   verifyEmail: { token: "abc" },
+  unsubscribe: { token: "1.abc" },
 };
 
 const build = pathFor as (

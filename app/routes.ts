@@ -56,6 +56,8 @@ export default [
     ...localizedRoute("forgotPassword", "routes/forgot-password.tsx"),
     ...localizedRoute("resetPassword", "routes/reset-password.tsx"),
     ...localizedRoute("verifyEmail", "routes/verify-email.tsx"),
+    // The unsubscribe link in marketing emails (#139), also the RFC 8058 one-click POST target.
+    ...localizedRoute("unsubscribe", "routes/unsubscribe.tsx"),
     ...localizedRoute("cart", "routes/cart.tsx"),
     ...localizedRoute("checkout", "routes/checkout.tsx"),
     ...localizedRoute("checkoutSuccess", "routes/checkout-success.tsx"),

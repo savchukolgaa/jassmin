@@ -972,5 +972,16 @@ export const uk = {
       filteredHeading: "Немає популярних ароматів цих родин",
       filteredText: "Спробуйте інші родини, перегляньте всі популярні аромати або весь каталог.",
     },
+  }, // Product feeds for Google Merchant Center and Meta Commerce Manager (#140).
+  feed: {
+    channelTitle: "JASSMIN — парфуми на розпив",
+    channelDescription: "Оригінальні парфуми на розпив у флаконах JASSMIN.",
+    itemTitle: "{brand} {title} — розпив, {size}",
+    decantNote: "Оригінальний аромат {brand} {title}, розлитий у флакон JASSMIN, {size}.",
+    gender: {
+      women: "Жіночі парфуми",
+      men: "Чоловічі парфуми",
+      unisex: "Унісекс парфуми",
+    },
   },
 };

@@ -7,6 +7,7 @@ import shopBottle320 from "~/assets/shop-bottle/shop-bottle-320.webp";
 import shopBottle480 from "~/assets/shop-bottle/shop-bottle-480.webp";
 import shopBottle640 from "~/assets/shop-bottle/shop-bottle-640.webp";
 import shopBottle960 from "~/assets/shop-bottle/shop-bottle-960.webp";
+import shopBottle1280Jpeg from "~/assets/shop-bottle/shop-bottle-1280.jpg";
 import shopBottle1280 from "~/assets/shop-bottle/shop-bottle-1280.webp";
 import { buildSrcSet, type ResponsiveImage } from "./images";
 
@@ -23,3 +24,9 @@ export const SHOP_BOTTLE_IMAGE: ResponsiveImage = {
   width: 1280,
   height: 1600,
 };
+
+/**
+ * The 1280px photo as a JPEG, for the product feeds (#140): Google accepts WebP, but Meta's
+ * catalog only documents JPEG and PNG. 1280×1600, like the WebP.
+ */
+export const SHOP_BOTTLE_FEED_IMAGE_URL: string = shopBottle1280Jpeg;

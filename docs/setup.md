@@ -20,6 +20,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Home page and contact form](#home-page-and-contact-form)
 - [Products and orders in Strapi](#products-and-orders-in-strapi)
 - [SEO](#seo)
+- [Product feeds](#product-feeds)
 - [Admin role](#admin-role)
 - [Conventions](#conventions)
 
@@ -379,6 +380,10 @@ Do this once after the first production deploy; the search engines re-read the s
 1. **Google Search Console** (https://search.google.com/search-console): add the site as a *Domain* property and verify it with the DNS record it shows. Open **Indexing → Sitemaps**, enter `sitemap.xml` and click **Submit**. The status should turn to *Success* with the number of discovered URLs.
 2. **Bing Webmaster Tools** (https://www.bing.com/webmasters): sign in and choose **Import** to copy the verified site from Google Search Console, which also imports its sitemaps. Otherwise, add the site, verify it, and submit `https://<domain>/sitemap.xml` under **Sitemaps**.
 3. To check a single page, paste its URL into **URL Inspection** in Search Console. It shows whether the page is indexed, and **Request indexing** queues a new product right away.
+
+## Product feeds
+
+`/feeds/products.xml` (Ukrainian) and `/en/feeds/products.xml` (English) list every perfume size on sale, with its price, stock and photo, in Google's RSS format, for Google Merchant Center (free listings in Google Shopping) and Meta Commerce Manager (Instagram Shopping product tags) (#140). They are cached for an hour and marked `noindex`. [docs/product-feeds.md](product-feeds.md) covers the fields and the owner's account setup step by step.
 
 ## Admin role
 

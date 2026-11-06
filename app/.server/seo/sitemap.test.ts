@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { buildSitemapXml, escapeXml, type SitemapPage } from "./sitemap";
+import { buildSitemapXml, type SitemapPage } from "./sitemap";
 
 const SITE = "https://jassmin.ua";
 const SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9";
@@ -31,12 +31,6 @@ const offers: SitemapPage = {
   paths: { uk: "/aktsii", en: "/en/offers" },
   lastmod: "2026-10-01T10:00:00.000Z",
 };
-
-describe("escapeXml", () => {
-  it("escapes the five XML special characters", () => {
-    expect(escapeXml(`a&b<c>d"e'f`)).toBe("a&amp;b&lt;c&gt;d&quot;e&apos;f");
-  });
-});
 
 describe("buildSitemapXml", () => {
   it("is well-formed XML in the sitemap namespace", () => {

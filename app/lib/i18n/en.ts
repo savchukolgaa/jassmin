@@ -946,5 +946,16 @@ export const en = {
       filteredHeading: "No popular perfumes with these families yet",
       filteredText: "Try other families, see every popular perfume, or browse the whole catalog.",
     },
+  }, // Product feeds for Google Merchant Center and Meta Commerce Manager (#140).
+  feed: {
+    channelTitle: "JASSMIN — perfume decants",
+    channelDescription: "Original perfumes decanted into JASSMIN bottles.",
+    itemTitle: "{brand} {title} — decant, {size}",
+    decantNote: "Original {brand} {title} perfume, decanted into a JASSMIN bottle, {size}.",
+    gender: {
+      women: "Women's perfume",
+      men: "Men's perfume",
+      unisex: "Unisex perfume",
+    },
   },
 } satisfies Dictionary;

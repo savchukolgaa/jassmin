@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/128
 Branch: `issue/128`
 Worktree: `.claude/worktrees/issue-128`
-Status: Planned (open questions answered 2026-11-06)
+Status: Implemented
 
 ## Goal
 As a data analyst, I want the order lifecycle, discounts and customer attributes stored explicitly
@@ -142,6 +142,22 @@ existing rows.
   history writers, allocation rule), root `AGENTS.md` feature-column list, and the privacy page
   copy if Q5 says so.
 
+### Implementation notes (deviations from the plan)
+- The shared status-change logic is `changeOrderStatus` in `app/.server/services/order-lifecycle.ts`
+  (lock, `nextOrderState`, patch, history row, restock and gift card restore), used by
+  `applyCmsOrderChange` and the job; it doesn't import `db/index.ts`, so the CLI job can use it.
+- `insertOrder` takes `placedAt` and stores it as `created_at` (and `paid_at` for gift card orders), so
+  the checkout history row has exactly the order's creation time.
+- A new shared `CheckboxField` (`app/components/ui/`) serves the registration and profile checkboxes,
+  styled like the checkout's payment options; there was no checkbox component before.
+- Strapi's order middleware builds its payload with an exported `orderChange(data)`, so it is unit
+  tested. `cancelReason` is editable in the admin and labelled in Ukrainian (`cms/src/index.ts`);
+  `returnedAt` is a read-only datetime there. The generated Strapi types were edited by hand to match
+  the schema (no Strapi run).
+- The privacy page's date moved to 2026-11-06 for the new marketing and city text.
+- The unpaid-order job queues the cancelled order for Strapi itself (a Strapi edit doesn't need to,
+  since Strapi saves the app's answer).
+
 ## Resolved questions
 - **Q1: Add a job that changes order status?** — Yes, now: `pnpm db:cancel-unpaid-orders` cancels stale unpaid card orders with `payment_failed`, source `job` (user, 2026-11-06).
 - **Q2: Require a cancel reason in Strapi?** — Yes, `cancel-reason-required` (user).
@@ -197,7 +213,7 @@ Exact route file names for `/cms/orders/:id` are taken from `app/routes.ts` duri
 - [x] **9b. Opt-in on the profile and the privacy page** — `intent=marketing` form on `/account/profile` (checkbox prefilled, `setMarketingOptIn`, success message); privacy page entry (uk/en).
 - [x] **9c. Unpaid card order job** — Extract the cancel side effects (restock, gift card restore, outbox) from `applyCmsOrderChange` into a shared helper; add `cancelUnpaidOrders`, its script and the `UNPAID_ORDER_HOURS` parser (default 48); `package.json` script; Aspire resource (read `aspire-apphost/AGENTS.md` first); `.env.example`, `docs/setup.md`, README table.
 - [x] **10. Docs** — `app/.server/AGENTS.md`: Database section (new ML columns, history table and its writers, the `job` source contract, backfill approximations), Orders/CMS sync/Payments/Discounts bullets; root `AGENTS.md` ML-column list (`orders.returned_at`, `order_items.discount_allocated`, `users.city`, `users.marketing_opt_in`, `order_status_history`).
-- [ ] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; run the migration against the dev DB (`pnpm db:migrate` or Aspire) and the manual checks below.
+- [x] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test` (1981 passed, 1 skipped as before), `pnpm build` and `pnpm aspire:build` pass. The migration and backfill were verified by the integration tests on throwaway databases; it was **not** applied to the shared development database, and the manual checks in the running app (Aspire, Strapi admin) were not done.
 
 ## Testing & verification
 - `pricing.test.ts`: allocation sums exactly to `discount` for every kind (percent with odd kopiyky, fixed amount larger than a line, tester trio with a leftover 4th unit getting 0, couple offer allocating only to the cheaper bottle's line, `max_sets`), remainder lands on the largest line, no discount → all zeros, allocation length = lines length.
@@ -214,12 +230,12 @@ Exact route file names for `/cms/orders/:id` are taken from `app/routes.ts` duri
 - Manual: under `pnpm aspire run`, place a COD order with a promo (check `order_items` and history), pay a card order in the simulator, then in Strapi move an order to shipped → unclaimed and another to cancelled with and without a reason; register with the box checked.
 
 ## Acceptance criteria
-- [ ] A returned or unclaimed order has `returned_at`, and a cancelled one has a `cancel_reason` — steps 2, 6, 7
-- [ ] For every order, the sum of `order_items.discount_allocated` = `orders.discount_amount` — steps 2 (backfill), 3, 4
-- [ ] Every status change (checkout, payment, Strapi edit, job) adds an `order_status_history` row — steps 5, 7, 8, 9c
-- [ ] `users.city` and `users.marketing_opt_in` are filled for new registrations and orders — steps 5, 9, 9b
-- [ ] No existing column is renamed or dropped, and the migration backfills existing rows — step 2
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
+- [x] A returned or unclaimed order has `returned_at`, and a cancelled one has a `cancel_reason` — steps 2, 6, 7
+- [x] For every order, the sum of `order_items.discount_allocated` = `orders.discount_amount` — steps 2 (backfill), 3, 4
+- [x] Every status change (checkout, payment, Strapi edit, job) adds an `order_status_history` row — steps 5, 7, 8, 9c
+- [x] `users.city` and `users.marketing_opt_in` are filled for new registrations and orders — steps 5, 9, 9b
+- [x] No existing column is renamed or dropped, and the migration backfills existing rows — step 2
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
 
 ## Out of scope
 - Inventory history (#130), event tracking changes, the analytics warehouse (#132), the synthetic

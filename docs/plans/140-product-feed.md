@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/140
 Branch: `issue/140`
 Worktree: `.claude/worktrees/issue-140`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -234,7 +234,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
     what to change), and the `curl -I` checks.
 
   Link the page from `README.md` and `docs/setup.md`.
-- [ ] **9. Final checks.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
+- [x] **9. Final checks.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`.
   Validate a sample of the generated XML with Google's feed specification (the Merchant Center
   "Test" upload, or a manual check of the required fields) and record the result in the PR.
 
@@ -255,16 +255,28 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
 
 ## Acceptance criteria
 
-- [ ] `/feeds/products.xml` lists every available perfume size with id, group id, title, link,
+- [x] `/feeds/products.xml` lists every available perfume size with id, group id, title, link,
   image, price, availability, size and category — steps 3, 4, 5, 6
 - [ ] The feed validates in Google Merchant Center's feed checker without errors — steps 3, 5, 9
   (the final check is the owner's, after deployment and account setup)
 - [ ] The same URL can be used as a Meta Commerce Manager scheduled data feed — steps 1 (JPEG
   image), 3, 8
-- [ ] Prices and stock in the feed match the shop within an hour — steps 4, 6 (live query,
+- [x] Prices and stock in the feed match the shop within an hour — steps 4, 6 (live query,
   `max-age=3600`), 8 (fetch schedule, automatic item updates)
-- [ ] `docs/product-feeds.md` explains the account setup — step 8
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+- [x] `docs/product-feeds.md` explains the account setup — step 8
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 9
+
+**Verification notes (implementation):**
+
+- I generated the feed from a throwaway database seeded with `seedProducts` (slugs filled in, one
+  brand set to "Dolce & Gabbana", one product archived). Both the uk and en feeds were well-formed,
+  with 28 items each; the archived product was left out, and `&` was escaped.
+- `curl` against the dev server showed the headers `application/xml; charset=utf-8`,
+  `public, max-age=3600` and `X-Robots-Tag: noindex`. The local dev database is empty, so the live
+  feed had no items there.
+- The build emits `shop-bottle-1280-<hash>.jpg` to `build/client/assets`.
+- Left unchecked: "validates in Merchant Center" and "usable as a Meta scheduled feed". Both need
+  the owner's accounts and a deployed URL; follow `docs/product-feeds.md` after deploying.
 
 ## Out of scope
 

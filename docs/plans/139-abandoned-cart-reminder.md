@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/139
 Branch: `issue/139`
 Worktree: `.claude/worktrees/issue-139`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -158,7 +158,7 @@ The store owner wants customers who left perfumes in their cart to get one frien
 - [x] **11. Docs.**
   - `docs/email.md`: a "Cart reminders" section covering the rules, the hourly cron `pnpm db:send-cart-reminders`, `EMAIL_UNSUBSCRIBE_SECRET`, how one-click unsubscribe works, and how to check it in smtp4dev. It also has the recovery-rate SQL: reminded (`order_emails` `cart_reminder` `sent`) → non-cancelled order by the same user within 7 days of `sent_at`, overall and by `date_trunc('week', sent_at)`; restores (`carts.restored_at`); and the campaign query on `sessions.traffic_campaign = 'abandoned_cart'`.
   - `app/.server/AGENTS.md`: update the Order email outbox, Abandoned carts, Cart and `users.marketing_opt_in` ("nothing sends marketing email yet" is no longer true) entries.
-- [ ] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the manual checks below.
+- [x] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then the manual checks below.
 
 ## Testing & verification
 
@@ -176,12 +176,14 @@ The store owner wants customers who left perfumes in their cart to get one frien
 
 ## Acceptance criteria
 
-- [ ] An abandoned cart of a user with marketing consent gets one reminder email with its items and a link back to the cart — steps 1, 3, 5, 6, 7, 9
-- [ ] Users without consent, users who ordered since, and users reminded in the last 7 days get nothing — steps 3, 6 (re-check at send time)
-- [ ] Every reminder has a working one-click unsubscribe — steps 2, 4, 5, 6, 8
-- [ ] Visits from the email are attributed to the `abandoned_cart` campaign, and the recovery rate can be queried — steps 5, 9 (UTM kept through login), 11
-- [ ] Emails are in the customer's language — steps 5, 10
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
+- [x] An abandoned cart of a user with marketing consent gets one reminder email with its items and a link back to the cart — steps 1, 3, 5, 6, 7, 9
+- [x] Users without consent, users who ordered since, and users reminded in the last 7 days get nothing — steps 3, 6 (re-check at send time)
+- [x] Every reminder has a working one-click unsubscribe — steps 2, 4, 5, 6, 8
+- [x] Visits from the email are attributed to the `abandoned_cart` campaign, and the recovery rate can be queried — steps 5, 9 (UTM kept through login), 11
+- [x] Emails are in the customer's language — steps 5, 10
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
+
+Verified by automated tests (DB integration tests included) and, for the recovery-rate SQL, by running both queries on the development database. The manual run under `pnpm aspire run` (smtp4dev, a real mail client's one-click button) was not done in this session.
 
 ## Out of scope
 

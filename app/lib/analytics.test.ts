@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { MAX_CLIENT_EVENTS, resolveDeviceType, resolveTrafficAttribution } from "./analytics";
+import {
+  absoluteListPosition,
+  MAX_CLIENT_EVENTS,
+  productEventContext,
+  resolveDeviceType,
+  resolveTrafficAttribution,
+} from "./analytics";
 import { clientEventBatchSchema } from "./analytics.schema";
 
 const IPHONE =
@@ -92,5 +98,50 @@ describe("clientEventBatchSchema", () => {
     }
     const tooLong = { type: "page_view", path: `/${"a".repeat(2048)}` };
     expect(clientEventBatchSchema.safeParse({ events: [tooLong] }).success).toBe(false);
+  });
+});
+
+describe("absoluteListPosition (#129)", () => {
+  it("counts from 1 across pages", () => {
+    expect(absoluteListPosition(1, 12, 0)).toBe(1);
+    expect(absoluteListPosition(1, 12, 11)).toBe(12);
+    expect(absoluteListPosition(2, 12, 0)).toBe(13);
+    expect(absoluteListPosition(0, 12, 3)).toBe(4);
+  });
+});
+
+describe("productEventContext (#129)", () => {
+  const variants = [
+    { id: "v5", volumeMl: 5, price: "290.00", inStock: false },
+    { id: "v10", volumeMl: 10, price: "490.00", inStock: true },
+    { id: "v50", volumeMl: 50, price: "1890.00", inStock: true },
+  ];
+  const product = { id: "p1", variants };
+
+  it("describes the preselected size: the smallest one in stock", () => {
+    expect(productEventContext(product)).toEqual({
+      product_public_id: "p1",
+      variant_id: "v10",
+      volume_ml: 10,
+      price: "490.00",
+      in_stock: true,
+    });
+  });
+
+  it("describes the picked size and the list it was shown in", () => {
+    expect(
+      productEventContext(product, "v50", { list_id: "home", list_position: 3 }),
+    ).toMatchObject({ variant_id: "v50", price: "1890.00", list_id: "home", list_position: 3 });
+    expect(productEventContext(product, "unknown")).toMatchObject({ variant_id: "v10" });
+  });
+
+  it("has no size, price or stock for a product without sizes", () => {
+    expect(productEventContext({ id: "p2", variants: [] })).toEqual({
+      product_public_id: "p2",
+      variant_id: null,
+      volume_ml: null,
+      price: null,
+      in_stock: false,
+    });
   });
 });

@@ -15,6 +15,7 @@ import { checkVariantForCart } from "~/.server/services/products";
 import { CartLineItem } from "~/features/cart/CartLineItem";
 import { CartSummary } from "~/features/cart/CartSummary";
 import { EmptyCart } from "~/features/cart/EmptyCart";
+import type { ListContext, ListId } from "~/lib/analytics";
 import { type CartActionResult, type CartIntent, cartErrorMessage } from "~/lib/cart";
 import { parseCartAction } from "~/lib/cart.schema";
 import { metaTranslator, useT } from "~/lib/i18n";
@@ -42,26 +43,48 @@ function respond(result: CartChangeResult, intent: CartIntent) {
 }
 
 // Records `add_to_cart` / `remove_from_cart` (#18) for a change that moved the quantity; the
-// stepper's +/− count too, marked `source: "stepper"`. Not awaited: the cart doesn't wait.
+// stepper's +/− count too, marked `source: "stepper"`. A card in a product list also posts its
+// list (#129). Not awaited: the cart doesn't wait.
 function trackChange(
   args: RequestArgs,
   result: CartChangeResult,
-  variantId: string,
-  source?: "stepper",
+  { source, list }: { source?: "stepper"; list?: Partial<ListContext> } = {},
 ) {
   if (!result.ok || result.change.quantityDelta === 0) {
     return;
   }
-  const { productId, volumeMl, quantityDelta } = result.change;
-  void trackEvent(args, quantityDelta > 0 ? "add_to_cart" : "remove_from_cart", {
-    productId,
+  const change = result.change;
+  void trackEvent(args, change.quantityDelta > 0 ? "add_to_cart" : "remove_from_cart", {
+    productId: change.productId,
     properties: {
-      variantId,
-      volumeMl,
-      quantity: Math.abs(quantityDelta),
+      product_public_id: change.productPublicId,
+      variant_id: change.variantPublicId,
+      volume_ml: change.volumeMl,
+      price: change.price,
+      in_stock: change.inStock,
+      quantity: Math.abs(change.quantityDelta),
+      cart_value_after: change.cartValueAfter,
       ...(source && { source }),
+      ...list,
     },
   });
+}
+
+/** The list fields an add-to-cart form posted, without the ones it didn't. */
+function listOf({
+  listId,
+  listPosition,
+  searchId,
+}: {
+  listId?: ListId;
+  listPosition?: number;
+  searchId?: string;
+}): Partial<ListContext> {
+  return {
+    ...(listId && { list_id: listId }),
+    ...(listPosition && { list_position: listPosition }),
+    ...(searchId && { search_id: searchId }),
+  };
 }
 
 // Posted by `fetcher.Form`s (add-to-cart buttons, the cart page's stepper and remove buttons), or
@@ -98,18 +121,18 @@ export async function action({ request, context }: Route.ActionArgs) {
         sessionId: visitor.sessionId,
       };
       const result = await addItem(writer, check.variant, quantity);
-      trackChange(args, result, variantId);
+      trackChange(args, result, { list: listOf(input.data) });
       return respond(result, "add");
     }
     case "update": {
       const { variantId, quantity } = input.data;
       const result = await updateQuantity(owner, variantId, quantity);
-      trackChange(args, result, variantId, "stepper");
+      trackChange(args, result, { source: "stepper" });
       return respond(result, "update");
     }
     case "remove": {
       const result = await removeItem(owner, input.data.variantId);
-      trackChange(args, result, input.data.variantId);
+      trackChange(args, result);
       return respond(result, "remove");
     }
     case "apply-promo": {

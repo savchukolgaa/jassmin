@@ -3,6 +3,7 @@ import { Link, useFetcher } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import type { ButtonSize } from "~/components/ui/button-styles";
+import type { ListContext } from "~/lib/analytics";
 import { type CartActionResult, cartErrorMessage } from "~/lib/cart";
 import { cn } from "~/lib/cn";
 import { usePathFor, useT } from "~/lib/i18n";
@@ -23,6 +24,8 @@ export interface AddToCartFormProps {
    */
   appearance?: "button" | "icon";
   className?: string;
+  /** The product list the card is in, posted for the `add_to_cart` event (#129). */
+  list?: ListContext;
   /** Fields rendered inside the form, before the button. */
   children?: ReactNode;
 }
@@ -36,6 +39,7 @@ export function AddToCartForm({
   size = "md",
   appearance = "button",
   className,
+  list,
   children,
 }: AddToCartFormProps) {
   const translator = useT();
@@ -50,6 +54,13 @@ export function AddToCartForm({
       <input type="hidden" name="intent" value="add" />
       <input type="hidden" name="productId" value={productId} />
       {variantId && <input type="hidden" name="variantId" value={variantId} />}
+      {list && (
+        <>
+          <input type="hidden" name="listId" value={list.list_id} />
+          <input type="hidden" name="listPosition" value={list.list_position} />
+          {list.search_id && <input type="hidden" name="searchId" value={list.search_id} />}
+        </>
+      )}
       {children}
       {icon ? (
         <QuickAddButton

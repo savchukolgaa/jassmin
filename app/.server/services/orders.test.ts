@@ -66,7 +66,11 @@ describe.skipIf(!hasDatabase)("order service", () => {
     const { and, eq } = await import("drizzle-orm");
     const { products, productVariants } = await import("../db/schema");
     const [row] = await testDb.db
-      .select({ id: productVariants.id, productId: productVariants.productId })
+      .select({
+        id: productVariants.id,
+        productId: productVariants.productId,
+        publicId: productVariants.publicId,
+      })
       .from(productVariants)
       .innerJoin(products, eq(products.id, productVariants.productId))
       .where(and(eq(products.publicId, COCO), eq(productVariants.volumeMl, volumeMl)));
@@ -510,7 +514,8 @@ describe.skipIf(!hasDatabase)("order service", () => {
 
     it("writes the code's discount and rule on the order and counts the redemption", async () => {
       const code = await insertDiscount({ slug: "welcome", code: "JASSMIN10" });
-      const cart = await cartWith([{ variant: await variant(30, 3), quantity: 1 }]);
+      const thirty = await variant(30, 3);
+      const cart = await cartWith([{ variant: thirty, quantity: 1 }]);
       await withCode(cart.id, code);
 
       const result = await place(cart.id, { expectedTotal: "4005.00" });
@@ -527,6 +532,16 @@ describe.skipIf(!hasDatabase)("order service", () => {
         discountKind: "percent",
         giftCardAmount: "0.00",
         paymentMethod: "cod",
+        // The line's share of the discount, for the purchase event (#129).
+        items: [
+          {
+            variant_id: thirty.publicId,
+            quantity: 1,
+            unit_price: "4450.00",
+            discount_allocated: "445.00",
+          },
+        ],
+        isFirstOrder: true,
       });
       expect(await allOrders()).toEqual([
         expect.objectContaining({
@@ -1088,6 +1103,15 @@ describe.skipIf(!hasDatabase)("order service", () => {
       discountKind: null,
       giftCardAmount: "0.00",
       paymentMethod: "cod",
+      items: [
+        {
+          variant_id: five.publicId,
+          quantity: 3,
+          unit_price: "990.00",
+          discount_allocated: "0.00",
+        },
+      ],
+      isFirstOrder: true,
     });
     const orderId = placed?.ok ? placed.orderId : undefined;
     expect([a, b]).toContainEqual({ ok: true, orderId, placed: false });
@@ -1095,6 +1119,29 @@ describe.skipIf(!hasDatabase)("order service", () => {
     expect(await allOrders()).toHaveLength(1);
     expect(await queuedEmails()).toEqual([expect.objectContaining({ orderId })]);
     expect(await stockOf(five.id)).toBe(7);
+  });
+
+  it("tells a customer's first order from a repeat, by user or by email in any case (#129)", async () => {
+    const { createOrder } = await import("./orders");
+    const five = await variant(5, 20);
+    const firstOf = async (userId: number | null, email: string) => {
+      const cart = await cartWith([{ variant: five, quantity: 1 }], userId);
+      const result = await createOrder(
+        { cartId: cart.id, userId, customer: { ...customer, email }, locale: "uk" },
+        testDb.db,
+      );
+      return result.ok && result.placed ? result.isFirstOrder : undefined;
+    };
+    const buyer = await user();
+
+    expect(await firstOf(null, "guest@example.com")).toBe(true);
+    expect(await firstOf(null, "Guest@Example.com")).toBe(false);
+    // A registered user's first order, even after someone else's.
+    expect(await firstOf(buyer, "new@example.com")).toBe(true);
+    // The same user with another email.
+    expect(await firstOf(buyer, "other@example.com")).toBe(false);
+    // A guest using the email of an earlier guest order.
+    expect(await firstOf(null, "other@example.com")).toBe(false);
   });
 
   it("reports an empty or missing cart", async () => {

@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseEventProperties } from "~/lib/analytics.schema";
+import type { EventType } from "~/lib/enums";
 
 const products = vi.hoisted(() => ({ checkVariantForCart: vi.fn() }));
 const cart = vi.hoisted(() => ({
@@ -45,13 +47,40 @@ function unwrap(result: unknown): { status: number; body: unknown } {
 
 /** A successful change of `quantityDelta` units of the 50 ml variant. */
 function changed(quantityDelta: number) {
-  return { ok: true, change: { productId: 2, volumeMl: 50, quantityDelta } };
+  return {
+    ok: true,
+    change: {
+      productId: 2,
+      productPublicId: PRODUCT_ID,
+      variantPublicId: VARIANT_ID,
+      volumeMl: 50,
+      price: "1890.00",
+      inStock: true,
+      quantityDelta,
+      cartValueAfter: "3780.00",
+    },
+  };
 }
 
-/** The event the action recorded, as `[type, options]`. */
+/** The `add_to_cart` / `remove_from_cart` properties of a change of `quantity` units. */
+function cartEvent(quantity: number, extra: Record<string, unknown> = {}) {
+  return {
+    product_public_id: PRODUCT_ID,
+    variant_id: VARIANT_ID,
+    volume_ml: 50,
+    price: "1890.00",
+    in_stock: true,
+    quantity,
+    cart_value_after: "3780.00",
+    ...extra,
+  };
+}
+
+/** The events the action recorded, as `[type, options]`; each must match its contract (#129). */
 function trackedEvents() {
   return analytics.trackEvent.mock.calls.map(([args, type, options]) => {
     expect(args).toMatchObject({ context });
+    expect(parseEventProperties(type as EventType, options.properties)).not.toBeNull();
     return [type, options];
   });
 }
@@ -159,10 +188,47 @@ describe("cart action", () => {
         2,
       );
       expect(trackedEvents()).toEqual([
+        ["add_to_cart", { productId: 2, properties: cartEvent(2) }],
+      ]);
+    });
+
+    it("records the product list a card posted with add_to_cart (#129)", async () => {
+      products.checkVariantForCart.mockResolvedValueOnce({ ok: true, variant });
+      analytics.ensureVisitor.mockResolvedValueOnce({ ...owner, headers: new Headers() });
+      cart.addItem.mockResolvedValueOnce(changed(1));
+      const { action } = await import("./cart");
+      const searchId = "0b6f1b8e-3f7e-4a52-9a43-3c1f7f1f2c99";
+
+      await action(post({ ...add, listId: "search", listPosition: "14", searchId }));
+
+      expect(trackedEvents()).toEqual([
         [
           "add_to_cart",
-          { productId: 2, properties: { variantId: VARIANT_ID, volumeMl: 50, quantity: 2 } },
+          {
+            productId: 2,
+            properties: cartEvent(1, {
+              list_id: "search",
+              list_position: 14,
+              search_id: searchId,
+            }),
+          },
         ],
+      ]);
+    });
+
+    it("ignores malformed list fields and still adds (#129)", async () => {
+      products.checkVariantForCart.mockResolvedValueOnce({ ok: true, variant });
+      analytics.ensureVisitor.mockResolvedValueOnce({ ...owner, headers: new Headers() });
+      cart.addItem.mockResolvedValueOnce(changed(1));
+      const { action } = await import("./cart");
+
+      const result = unwrap(
+        await action(post({ ...add, listId: "wishlist", listPosition: "-1", searchId: "x" })),
+      );
+
+      expect(result).toMatchObject({ status: 200, body: { ok: true, intent: "add" } });
+      expect(trackedEvents()).toEqual([
+        ["add_to_cart", { productId: 2, properties: cartEvent(1) }],
       ]);
     });
 
@@ -206,10 +272,10 @@ describe("cart action", () => {
       await action(post(update));
       await action(post(update));
 
-      const properties = { variantId: VARIANT_ID, volumeMl: 50, source: "stepper" };
+      const stepper = { source: "stepper" };
       expect(trackedEvents()).toEqual([
-        ["add_to_cart", { productId: 2, properties: { ...properties, quantity: 1 } }],
-        ["remove_from_cart", { productId: 2, properties: { ...properties, quantity: 2 } }],
+        ["add_to_cart", { productId: 2, properties: cartEvent(1, stepper) }],
+        ["remove_from_cart", { productId: 2, properties: cartEvent(2, stepper) }],
       ]);
     });
 
@@ -244,10 +310,7 @@ describe("cart action", () => {
       });
       expect(cart.removeItem).toHaveBeenCalledWith(owner, VARIANT_ID);
       expect(trackedEvents()).toEqual([
-        [
-          "remove_from_cart",
-          { productId: 2, properties: { variantId: VARIANT_ID, volumeMl: 50, quantity: 3 } },
-        ],
+        ["remove_from_cart", { productId: 2, properties: cartEvent(3) }],
       ]);
     });
 

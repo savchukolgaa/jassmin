@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
+import { useListedProduct } from "~/features/analytics/ProductList";
 import { AddToCartForm } from "~/features/cart/AddToCartForm";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { cn } from "~/lib/cn";
@@ -19,17 +20,38 @@ type ProductCardProps = {
    * and a round quick-add button.
    */
   variant?: "default" | "compact";
+  /**
+   * The card's 0-based place on this page of the surrounding `ProductListProvider`, for its
+   * impressions, clicks and cart adds (#129). Without it the card isn't tracked.
+   */
+  listIndex?: number;
 };
 
-export function ProductCard({ product, headingLevel = 2, variant = "default" }: ProductCardProps) {
+export function ProductCard({
+  product,
+  headingLevel = 2,
+  variant = "default",
+  listIndex,
+}: ProductCardProps) {
   return variant === "compact" ? (
-    <CompactProductCard product={product} headingLevel={headingLevel} />
+    <CompactProductCard product={product} headingLevel={headingLevel} listIndex={listIndex} />
   ) : (
-    <CatalogProductCard product={product} headingLevel={headingLevel} />
+    <CatalogProductCard product={product} headingLevel={headingLevel} listIndex={listIndex} />
   );
 }
 
-type CardProps = Required<Pick<ProductCardProps, "product" | "headingLevel">>;
+type CardProps = Required<Pick<ProductCardProps, "product" | "headingLevel">> &
+  Pick<ProductCardProps, "listIndex">;
+
+/** Click handlers for a card's links: a left or middle click follows them (#129). */
+function clickTracking(track: () => void) {
+  return {
+    onClick: track,
+    onAuxClick: (event: { button: number }) => {
+      if (event.button === 1) track();
+    },
+  };
+}
 
 /** The size picked on a card, and whether the page has hydrated so its price can follow it. */
 function useCardSize(product: ProductSummary) {
@@ -109,17 +131,22 @@ function SizePicker({
   );
 }
 
-function CatalogProductCard({ product, headingLevel }: CardProps) {
+function CatalogProductCard({ product, headingLevel, listIndex }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
   const href = productHref(translator.locale, product);
   const { selectedId, setSelectedId, hydrated } = useCardSize(product);
   const single = product.variants.length < 2;
+  const listed = useListedProduct(product, listIndex);
+  const clicks = clickTracking(() => listed.trackClick(selectedId));
 
   return (
-    <article className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line">
+    <article
+      ref={listed.ref}
+      className="lift flex w-full flex-col rounded-card bg-white p-3 ring-1 ring-line"
+    >
       {/* Hidden duplicate of the title link, so its photo needs no alt text (#88). */}
-      <Link to={href} tabIndex={-1} aria-hidden="true">
+      <Link to={href} tabIndex={-1} aria-hidden="true" {...clicks}>
         <ProductImage image={product.image} alt="" layout="card" />
       </Link>
       <div className="flex flex-1 flex-col gap-1 px-2 pt-4">
@@ -127,7 +154,7 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
           {product.brand}
         </p>
         <Heading className="text-xl font-bold leading-tight tracking-[-0.01em] text-ink">
-          <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
+          <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`} {...clicks}>
             {product.title}
           </Link>
         </Heading>
@@ -157,6 +184,7 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
         inStock={product.inStock}
         size="sm"
         className="flex flex-col gap-3 px-2 pt-3"
+        list={listed.list}
       >
         <SizePicker product={product} onChange={setSelectedId} />
       </AddToCartForm>
@@ -164,21 +192,27 @@ function CatalogProductCard({ product, headingLevel }: CardProps) {
   );
 }
 
-function CompactProductCard({ product, headingLevel }: CardProps) {
+function CompactProductCard({ product, headingLevel, listIndex }: CardProps) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
   const { t } = translator;
   const href = productHref(translator.locale, product);
   const { selectedId, setSelectedId, hydrated } = useCardSize(product);
   const single = product.variants.length < 2;
+  const listed = useListedProduct(product, listIndex);
+  const clicks = clickTracking(() => listed.trackClick(selectedId));
 
   return (
-    <article className="card-tilt flex w-full flex-col gap-3 rounded-card bg-card p-3">
+    <article
+      ref={listed.ref}
+      className="card-tilt flex w-full flex-col gap-3 rounded-card bg-card p-3"
+    >
       <Link
         to={href}
         tabIndex={-1}
         aria-hidden="true"
         className="relative block overflow-hidden rounded-2xl"
+        {...clicks}
       >
         <div data-zoom>
           <ProductImage image={product.image} alt="" layout="compact" className="rounded-2xl" />
@@ -196,7 +230,7 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
             ` · ${formatVolume({ volumeMl: product.defaultVariant.volumeMl, packSize: product.packSize }, translator)}`}
         </p>
         <Heading className="text-lg leading-tight font-bold text-ink">
-          <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`}>
+          <Link to={href} className={`rounded hover:underline ${focusRing("onLight")}`} {...clicks}>
             {product.title}
           </Link>
         </Heading>
@@ -209,6 +243,7 @@ function CompactProductCard({ product, headingLevel }: CardProps) {
         label={t("product.quickAdd", { title: product.title })}
         appearance="icon"
         className="mt-auto grid grid-cols-[1fr_auto] items-center gap-3 px-2 pb-2"
+        list={listed.list}
       >
         <SizePicker product={product} onChange={setSelectedId} className="col-span-2" />
         <CardPrice

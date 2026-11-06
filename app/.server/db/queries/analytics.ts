@@ -1,10 +1,28 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { SESSION_TIMEOUT_MINUTES } from "~/lib/analytics";
 import type { Db } from "../client";
-import { sessions, userEvents } from "../schema";
+import { products, sessions, userEvents } from "../schema";
 
 /** A `Db` or a transaction, so `linkVisitorToUser` can pass `tx` down. */
 type Executor = Pick<Db, "update" | "execute">;
+
+/**
+ * `products.id` by `public_id` for the products client events name (#129); unknown ids are
+ * missing. Archived products count: a list may still show one.
+ */
+export async function findProductIdsByPublicIds(
+  db: Db,
+  publicIds: readonly string[],
+): Promise<Map<string, number>> {
+  if (publicIds.length === 0) {
+    return new Map();
+  }
+  const rows = await db
+    .select({ id: products.id, publicId: products.publicId })
+    .from(products)
+    .where(inArray(products.publicId, [...new Set(publicIds)]));
+  return new Map(rows.map((row) => [row.publicId, row.id]));
+}
 
 /** The attribution columns of a session, as `touchActiveSession` returns them. */
 export interface SessionAttribution {

@@ -1,5 +1,6 @@
 import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parseEventProperties } from "~/lib/analytics.schema";
 import type { ProductDetail } from "~/lib/products";
 
 const products = vi.hoisted(() => ({ resolveProductHandle: vi.fn(), getSimilarProducts: vi.fn() }));
@@ -15,6 +16,8 @@ type MetaArgs = Parameters<typeof meta>[0];
 
 const PUBLIC_ID = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 const SLUG = "coco-mademoiselle";
+const SMALL_ID = "01a1652b-6e25-7d00-8000-000000000005";
+const BIG_ID = "01a1652b-6e25-7d00-8000-000000000050";
 const context = {};
 
 function load(handle: string, search = "") {
@@ -40,7 +43,12 @@ beforeEach(() => {
 
 describe("product loader", () => {
   it("renders the product by slug without its serial id and records product_view", async () => {
-    const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco" };
+    // The page preselects the smallest size in stock, so the view records that one (#129).
+    const variants = [
+      { id: SMALL_ID, volumeMl: 5, price: "290.00", inStock: false },
+      { id: BIG_ID, volumeMl: 50, price: "1890.00", inStock: true },
+    ];
+    const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco", variants };
     products.resolveProductHandle.mockResolvedValueOnce({
       kind: "product",
       id: 42,
@@ -54,8 +62,19 @@ describe("product loader", () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ context }),
       "product_view",
-      { productId: 42, properties: { publicId: PUBLIC_ID } },
+      {
+        productId: 42,
+        properties: {
+          product_public_id: PUBLIC_ID,
+          variant_id: BIG_ID,
+          volume_ml: 50,
+          price: "1890.00",
+          in_stock: true,
+        },
+      },
     );
+    const [, , options] = analytics.trackEvent.mock.calls[0] ?? [];
+    expect(parseEventProperties("product_view", options?.properties)).not.toBeNull();
   });
 
   it("answers 301 to the slug URL for an old link, keeping the query, without an event", async () => {
@@ -77,7 +96,7 @@ describe("product loader", () => {
   });
 
   it("keeps an archived product's page (200) with similar perfumes (#88)", async () => {
-    const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco", gender: "women" };
+    const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco", gender: "women", variants: [] };
     const similar = [{ id: "other" }];
     products.resolveProductHandle.mockResolvedValueOnce({
       kind: "product",
@@ -89,6 +108,17 @@ describe("product loader", () => {
 
     expect(await load(SLUG)).toEqual({ product, available: false, similar });
     expect(products.getSimilarProducts).toHaveBeenCalledWith(42, product);
+    // Without sizes there's no size, price or stock to record (#129).
+    expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "product_view", {
+      productId: 42,
+      properties: {
+        product_public_id: PUBLIC_ID,
+        variant_id: null,
+        volume_ml: null,
+        price: null,
+        in_stock: false,
+      },
+    });
   });
 
   it("asks for the description in the URL's language (#100)", async () => {

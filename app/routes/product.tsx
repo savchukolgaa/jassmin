@@ -5,11 +5,12 @@ import { getSimilarProducts, resolveProductHandle } from "~/.server/services/pro
 import { JsonLd } from "~/components/JsonLd";
 import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
+import { useProductDwell } from "~/features/analytics/useProductDwell";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { ProductUnavailable, SimilarProducts } from "~/features/product/ProductArchived";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
 import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
-import { shouldRevalidateView } from "~/lib/analytics";
+import { productEventContext, shouldRevalidateView } from "~/lib/analytics";
 import { productBreadcrumbs } from "~/lib/breadcrumbs";
 import type { CatalogGender } from "~/lib/catalog";
 import type { Gender } from "~/lib/enums";
@@ -108,7 +109,8 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   const { product, available } = found;
   void trackEvent({ request, context }, "product_view", {
     productId: found.id,
-    properties: { publicId: product.id },
+    // The preselected size, as the page first shows it (#129).
+    properties: productEventContext(product),
   });
   // An archived product (#88) suggests listed perfumes like it instead.
   const similar = available ? [] : await getSimilarProducts(found.id, product);
@@ -123,6 +125,8 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const { t } = translator;
   const siteUrl = useSiteUrl();
   const { product, available, similar } = loaderData;
+  // How long the page is read and how far down, sent when the visitor leaves (#129).
+  useProductDwell(product);
   const catalog = catalogOf(product.gender);
   const breadcrumbs = productBreadcrumbs(translator, catalog, product);
   const descriptionLang = useContentLang(product.descriptionLocale);

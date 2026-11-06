@@ -1,4 +1,5 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
+import { ProductListProvider } from "~/features/analytics/ProductList";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import { usePathFor, useT } from "~/lib/i18n";
@@ -37,13 +38,15 @@ export function SimilarProducts({ products }: { products: ProductSummary[] }) {
       >
         {t("product.similar")}
       </h2>
-      <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.map((product) => (
-          <li key={product.id} className="flex">
-            <ProductCard product={product} headingLevel={3} />
-          </li>
-        ))}
-      </ul>
+      <ProductListProvider listId="similar" productIds={products.map((product) => product.id)}>
+        <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {products.map((product, index) => (
+            <li key={product.id} className="flex">
+              <ProductCard product={product} headingLevel={3} listIndex={index} />
+            </li>
+          ))}
+        </ul>
+      </ProductListProvider>
     </section>
   );
 }

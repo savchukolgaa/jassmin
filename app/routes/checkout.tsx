@@ -66,9 +66,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   void trackEvent({ request, context }, "checkout_start", {
     properties: {
       subtotal: cart.subtotal,
-      itemCount: cart.itemCount,
-      discountAmount: cart.discount?.amount ?? "0.00",
-      discountCode: cart.promo?.status === "applied" ? cart.promo.code : null,
+      item_count: cart.itemCount,
+      discount_amount: cart.discount?.amount ?? "0.00",
+      discount_code: cart.promo?.status === "applied" ? cart.promo.code : null,
     },
   });
   const [prefill, giftCard] = await Promise.all([
@@ -209,15 +209,19 @@ export async function action({ request, context }: Route.ActionArgs) {
     void pushToCms();
     void trackEvent({ request, context }, "purchase", {
       properties: {
-        orderId: result.orderId,
+        order_id: result.orderId,
         subtotal: result.subtotal,
-        totalAmount: result.totalAmount,
-        discountAmount: result.discountAmount,
-        discountId: result.discountId,
-        discountCode: result.discountCode,
-        giftCardAmount: result.giftCardAmount,
+        total_amount: result.totalAmount,
+        discount_amount: result.discountAmount,
+        discount_id: result.discountId,
+        discount_code: result.discountCode,
+        gift_card_amount: result.giftCardAmount,
         // `gift_card` when the card paid the whole order (#125).
-        paymentMethod: result.paymentMethod,
+        payment_method: result.paymentMethod,
+        // Each line's price and share of the discount, and whether it's the customer's first
+        // order (#129).
+        items: result.items,
+        is_first_order: result.isFirstOrder,
       },
     });
   }

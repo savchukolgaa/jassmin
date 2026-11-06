@@ -1,6 +1,8 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { Pagination } from "~/components/ui/Pagination";
+import { ProductListProvider } from "~/features/analytics/ProductList";
 import { ProductCard } from "~/features/catalog/ProductCard";
+import { CATALOG_PAGE_SIZE } from "~/lib/catalog";
 import { usePathFor, useT } from "~/lib/i18n";
 import { type PopularPageView, popularHref } from "~/lib/popular";
 import { PopularEmpty } from "./PopularEmpty";
@@ -27,16 +29,29 @@ export function PopularPage({ view }: { view: PopularPageView }) {
               <p className="text-sm font-bold text-muted">
                 {t("catalog.count", { count: view.total })}
               </p>
-              <ul
-                aria-label={t("popular.list")}
-                className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+              {/* The trio builder's picks (#67) are the `trio` list (#129). */}
+              <ProductListProvider
+                listId={view.families.length > 0 ? "trio" : "popular"}
+                page={view.page}
+                pageSize={CATALOG_PAGE_SIZE}
+                productIds={view.products.map((product) => product.id)}
               >
-                {view.products.map((product) => (
-                  <li key={product.id} className="flex">
-                    <ProductCard product={product} headingLevel={2} variant="compact" />
-                  </li>
-                ))}
-              </ul>
+                <ul
+                  aria-label={t("popular.list")}
+                  className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+                >
+                  {view.products.map((product, index) => (
+                    <li key={product.id} className="flex">
+                      <ProductCard
+                        product={product}
+                        headingLevel={2}
+                        variant="compact"
+                        listIndex={index}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </ProductListProvider>
             </div>
             <Pagination
               page={view.page}

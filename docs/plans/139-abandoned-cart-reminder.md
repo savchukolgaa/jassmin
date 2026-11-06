@@ -62,6 +62,7 @@ The store owner wants customers who left perfumes in their cart to get one frien
 13. **Quiet hours:** none. The job runs hourly, so a reminder goes out about 24–25 h after the last activity, at about the same time of day the customer was shopping.
 14. **Deviation (step 2): `EMAIL_UNSUBSCRIBE_SECRET` is optional, also in production**, like `EMAIL_WEBHOOK_SECRET`, instead of required: making it required in `mailEnvSchema` would stop `pnpm db:send-order-emails` (and the app) in production until it is set. Without it the reminder job sends nothing and the unsubscribe page answers 404, and `getEnv()` warns once in production. The env table lives in `docs/setup.md`, not the README, so it is documented there.
 15. **Order (steps 5 and 8):** the unsubscribe page (step 8) was built before the email builder (step 5), because `pathFor(locale, "unsubscribe")` needs the page in `PAGES` and every page there must be registered in `app/routes.ts`. The one-click POST gets the page's normal 200 response (any 2xx satisfies RFC 8058), so the action needs no special case.
+16. **Deviation (step 9):** `restorable` comes from its own `getRestorableCart(owner)`, which the cart loader calls next to `getCartView`, instead of a new field on `CartView`: `CartView` is shared by the header, checkout and `EMPTY_CART`, which don't need it. The reminder job also skips a user who is already shopping in a newer active cart with lines (`queueCartReminders`), since a reminder would only repeat what they are doing.
 
 ## Resolved questions
 
@@ -146,7 +147,7 @@ The store owner wants customers who left perfumes in their cart to get one frien
   - the headers are `no-referrer` and `no-store`, and `meta` sets noindex.
 
   The UI uses C+ tokens and buttons and the `unsubscribe.*` copy in both languages. Route tests cover: GET doesn't change the opt-in, the form POST clears it, the one-click POST with no cookies clears it, a bad token gives the error and no write, and a second POST is still OK.
-- [ ] **9. Restoring the cart.**
+- [x] **9. Restoring the cart.**
   - In `services/cart.ts`, move `mergeGuestCart`'s line loop into `mergeCartLines(tx, fromCartId, toCartId)`, so the merge behaviour stays the same and the existing tests still pass.
   - Add `restoreAbandonedCart(userId, cartId, db)`. In one transaction it locks the abandoned cart, checks it is the user's, still `abandoned` and `restored_at IS NULL`, gets or creates the active cart, runs `mergeCartLines`, brings the promo code along if the active cart has none, runs `markCartRestored` (raw SQL, `updated_at` kept) and `touchCart`. It returns `{ ok: true } | { ok: false, error: "not-restorable" }`.
   - `getCartView` for a user adds `restorable: { cartId, abandonedAt, itemCount } | null` (`findRestorableCart`), and the DTO gets the type in `~/lib/cart`.

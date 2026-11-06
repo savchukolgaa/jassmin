@@ -376,11 +376,21 @@ export const en = {
     checkout: "Proceed to checkout",
     stockOut: "This volume is now out of stock. Remove it to check out.",
     stockLow: "Only {count} left. Lower the quantity to check out.",
+    restore: {
+      heading: "Your cart from {date}",
+      body: {
+        one: "It has {count} perfume you can still order.",
+        other: "It has {count} perfumes you can still order.",
+      },
+      submit: "Put them back in my cart",
+      form: "Bring back your saved cart",
+    },
     errors: {
       invalid: "This perfume could not be added to the cart.",
       invalidVariant: "Please choose one of the available volumes.",
       outOfStock: "This volume is out of stock.",
       exceedsStock: "There isn't enough of this volume in stock.",
+      notRestorable: "This cart can't be brought back any more. Add the perfumes from the catalog.",
       notInCart: "This perfume is no longer in your cart.",
       onlyAvailable: "Only {count} available in this volume.",
       promoInvalid: "There's no such promo code. Check that it's typed correctly.",

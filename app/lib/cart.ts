@@ -64,6 +64,8 @@ export type CartActionError =
   | "out-of-stock"
   | "exceeds-stock"
   | "not-in-cart"
+  /** The reminded cart can't be brought back any more (#139). */
+  | "not-restorable"
   | PromoError;
 
 /** Why a promo code couldn't be applied (#59). */
@@ -85,6 +87,7 @@ export const CART_ERROR_KEYS: Record<CartActionError, TextKey> = {
   "out-of-stock": "cart.errors.outOfStock",
   "exceeds-stock": "cart.errors.exceedsStock",
   "not-in-cart": "cart.errors.notInCart",
+  "not-restorable": "cart.errors.notRestorable",
   "promo-invalid": "cart.errors.promoInvalid",
   "promo-expired": "cart.errors.promoExpired",
   "promo-used-up": "cart.errors.promoUsedUp",

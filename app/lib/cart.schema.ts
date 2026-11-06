@@ -20,13 +20,15 @@ export const cartActionSchema = z.discriminatedUnion("intent", [
   /** Promo codes (#59): the code is trimmed and uppercased. */
   z.object({ intent: z.literal("apply-promo"), code: promoCodeSchema }),
   z.object({ intent: z.literal("remove-promo") }),
+  /** Brings back the abandoned cart a reminder email offered (#139); the action checks it. */
+  z.object({ intent: z.literal("restore"), cartId: z.coerce.number().int().positive() }),
 ]);
 
 export type CartActionInput = z.infer<typeof cartActionSchema>;
 
 export type CartIntent = CartActionInput["intent"];
 
-/** Validates a cart form submission (`add`, `update` or `remove`). */
+/** Validates a cart form submission (any of the intents above). */
 export function parseCartAction(formData: FormData) {
   return cartActionSchema.safeParse(Object.fromEntries(formData));
 }

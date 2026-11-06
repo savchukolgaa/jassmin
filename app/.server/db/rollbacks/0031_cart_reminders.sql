@@ -1,4 +1,4 @@
--- Rolls back 0029_cart_reminders.sql (#139): the queued and sent cart reminders, the reminder and
+-- Rolls back 0031_cart_reminders.sql (#139): the queued and sent cart reminders, the reminder and
 -- restore times and the users' languages are lost.
 DELETE FROM "order_emails" WHERE "cart_id" IS NOT NULL OR "type" = 'cart_reminder';--> statement-breakpoint
 ALTER TABLE "order_emails" DROP CONSTRAINT "order_emails_type_check";--> statement-breakpoint

@@ -7,12 +7,14 @@ import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { focusRing } from "~/components/layout/nav";
 import { Pagination } from "~/components/ui/Pagination";
+import { ProductListProvider } from "~/features/analytics/ProductList";
 import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { ProductCard } from "~/features/catalog/ProductCard";
-import { shouldRevalidateView } from "~/lib/analytics";
+import { MAX_SEARCH_RESULT_IDS, shouldRevalidateView } from "~/lib/analytics";
 import { catalogBreadcrumbs } from "~/lib/breadcrumbs";
 import {
   CATALOG_META_DESCRIPTION_KEYS,
+  CATALOG_PAGE_SIZE,
   CATALOG_TITLE_KEYS,
   catalogHref,
   hasActiveFilters,
@@ -57,12 +59,28 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   }
   const search = parseCatalogSearch(new URL(request.url).searchParams);
   const page = await getCatalogPage(gender, search);
+  // A filtered or sorted catalog is a search (#18). Its id links the results' impressions, clicks
+  // and cart adds to it (#129).
+  let searchId: string | null = null;
   if (hasActiveFilters(search)) {
+    searchId = crypto.randomUUID();
     void trackEvent({ request, context }, "search", {
-      properties: { gender, ...search, total: page.total },
+      properties: {
+        search_id: searchId,
+        query: null,
+        gender,
+        fragrance_family: search.fragranceFamily ?? null,
+        brand: search.brand ?? null,
+        sort: search.sort,
+        page: page.page,
+        result_count: page.total,
+        product_public_ids: page.products
+          .slice(0, MAX_SEARCH_RESULT_IDS)
+          .map((product) => product.id),
+      },
     });
   }
-  return { gender, search, ...page };
+  return { gender, search, searchId, ...page };
 }
 
 // Adding to the cart doesn't change the catalog, and reloading would record a second search.
@@ -71,7 +89,7 @@ export const shouldRevalidate = shouldRevalidateView;
 export default function Catalog({ loaderData }: Route.ComponentProps) {
   const translator = useT();
   const { t } = translator;
-  const { gender, search, products, total, page, pageCount, filterOptions } = loaderData;
+  const { gender, search, searchId, products, total, page, pageCount, filterOptions } = loaderData;
   const { pathname } = useLocation();
   const siteUrl = useSiteUrl();
   const breadcrumbs = catalogBreadcrumbs(translator, gender);
@@ -100,13 +118,22 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
         className={cn("mt-8 transition-opacity duration-200", busy && "opacity-60")}
       >
         {products.length > 0 ? (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => (
-              <li key={product.id} className="flex">
-                <ProductCard product={product} />
-              </li>
-            ))}
-          </ul>
+          // A filtered or sorted catalog is a search, linked to its `search` event (#129).
+          <ProductListProvider
+            listId={searchId ? "search" : "catalog"}
+            searchId={searchId}
+            page={page}
+            pageSize={CATALOG_PAGE_SIZE}
+            productIds={products.map((product) => product.id)}
+          >
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {products.map((product, index) => (
+                <li key={product.id} className="flex">
+                  <ProductCard product={product} listIndex={index} />
+                </li>
+              ))}
+            </ul>
+          </ProductListProvider>
         ) : (
           <div className="rounded-card-lg bg-blush p-8 text-center">
             <p className="text-lg font-bold text-ink">{t("catalog.empty")}</p>

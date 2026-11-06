@@ -26,8 +26,10 @@
 // `purchase` event (#18) and makes the first delivery attempt for an order this call `placed`,
 // after the transaction committed. The order and its products' stock are queued for Strapi
 // (#40) in the same transaction, and the caller pushes them after the commit (`pushToCms`).
+
 import type { AccountOrderDetail, AccountOrderLine, AccountOrders } from "~/lib/account";
 import { isCurrentOrder } from "~/lib/account";
+import type { PurchaseItem } from "~/lib/analytics";
 import type { CheckoutInput, CheckoutPrefill, OrderConfirmation } from "~/lib/checkout";
 import { formatShippingAddress } from "~/lib/checkout";
 import type { DiscountKind, PaymentMethod } from "~/lib/enums";
@@ -51,6 +53,7 @@ import {
   findOrder,
   findOrderIdByCartId,
   findUserOrder,
+  hasEarlierOrder,
   insertOrder,
   insertOrderItems,
   listOrderLines,
@@ -107,6 +110,10 @@ export interface PlacedOrderTotals {
   giftCardAmount: string;
   /** As placed: `gift_card` when the card paid the whole order, else the shopper's choice. */
   paymentMethod: PaymentMethod;
+  /** The order's lines, for the `purchase` event (#129). */
+  items: PurchaseItem[];
+  /** No earlier order of the user, or with the same email (`hasEarlierOrder`). */
+  isFirstOrder: boolean;
 }
 
 export type CreateOrderResult =
@@ -160,6 +167,7 @@ export async function createOrder(
       const giftCardAmount = fromKopiyky(giftCard.amount);
       const paymentMethod: PaymentMethod =
         amountDue === 0 && giftCard.amount > 0 ? "gift_card" : customer.paymentMethod;
+      const isFirstOrder = !(await hasEarlierOrder(tx, { userId, email: customer.email }));
       const orderId = await insertOrder(tx, {
         cartId,
         userId,
@@ -178,14 +186,11 @@ export async function createOrder(
         // Never expected: `priceCart` allocates the discount exactly. Thrown, so nothing is kept.
         throw new Error(`The discount of order ${orderId} doesn't add up over its lines`);
       }
-      await insertOrderItems(
-        tx,
-        orderId,
-        lines.map((line, index) => ({
-          ...line,
-          discountAllocated: fromKopiyky(priced.allocation[index] ?? 0),
-        })),
-      );
+      const items = lines.map((line, index) => ({
+        ...line,
+        discountAllocated: fromKopiyky(priced.allocation[index] ?? 0),
+      }));
+      await insertOrderItems(tx, orderId, items);
       // The status `insertOrder` placed it in: `paid` when a gift card paid it all (#128).
       await insertOrderStatusHistory(tx, {
         orderId,
@@ -204,10 +209,16 @@ export async function createOrder(
         await enqueueCmsSync(tx, "gift_card", [giftCard.id]);
       }
       await insertOrderEmail(tx, { orderId, type: "confirmation", locale });
-      // Only sizes that track stock lose units; the rest are poured to order (#98).
+      // Only sizes that track stock lose units, each logged as a `sale` (#130); the rest are
+      // poured to order (#98).
       const tracked = lines.filter((line) => line.trackStock);
       for (const line of tracked) {
-        await decrementVariantStock(tx, line.variantId, line.quantity);
+        await decrementVariantStock(tx, {
+          variantId: line.variantId,
+          quantity: line.quantity,
+          orderId,
+          now,
+        });
       }
       await markCartConverted(tx, cartId);
       // Strapi shows the new order and the products' lower stock (#40); pushed after the commit.
@@ -229,6 +240,13 @@ export async function createOrder(
         discountKind: priced.applied?.kind ?? null,
         giftCardAmount,
         paymentMethod,
+        items: items.map((item) => ({
+          variant_id: item.variantPublicId,
+          quantity: item.quantity,
+          unit_price: item.price,
+          discount_allocated: item.discountAllocated,
+        })),
+        isFirstOrder,
       };
     })
     .catch((error: unknown) => {

@@ -113,6 +113,15 @@ async function imageData(strapi: Core.Strapi, image: unknown): Promise<ImageData
   return toImageData(file) ?? toImageData(image);
 }
 
+/** The admin's stock reason values (#130), as staff read them. */
+export const STOCK_REASON_ADJUSTMENT = "коригування";
+const STOCK_REASON_RECEIPT = "надходження";
+
+/** The app's stock reason for the admin's value: a delivery is a `receipt`, anything else a correction. */
+function stockReason(value: unknown): "adjustment" | "receipt" {
+  return value === STOCK_REASON_RECEIPT ? "receipt" : "adjustment";
+}
+
 /** The product as the app's `cmsProductChangeSchema` expects it (without `action`). */
 export async function productPayload(strapi: Core.Strapi, merged: Data, stored: Data | null) {
   const storedStock = new Map(
@@ -157,6 +166,7 @@ export async function productPayload(strapi: Core.Strapi, merged: Data, stored: 
             ? (expectedStock ?? 0)
             : toNumber(variant.stock),
         expectedStock,
+        stockReason: stockReason(variant.stockReason),
       };
     }),
   };
@@ -191,6 +201,8 @@ export function applyProductAnswer(data: Data, answer: unknown): Data {
             price: toNumber(stored.price),
             stock: stored.stock,
             trackStock: stored.trackStock === true,
+            // Each save starts from a correction again, so a delivery isn't logged twice (#130).
+            stockReason: STOCK_REASON_ADJUSTMENT,
           }
         : variant;
     }),

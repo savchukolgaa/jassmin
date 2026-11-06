@@ -8,6 +8,7 @@ import { ErrorContent } from "~/components/layout/ErrorContent";
 import { Footer } from "~/components/layout/Footer";
 import { Header } from "~/components/layout/Header";
 import { LanguageHint } from "~/components/layout/LanguageHint";
+import { TrackingProvider } from "~/features/analytics/tracking";
 import { useClientPageViews } from "~/features/analytics/useClientPageViews";
 import { CookieBanner } from "~/features/consent/CookieBanner";
 import { LOGGED_OUT_HEADER } from "~/lib/header";
@@ -36,17 +37,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 /** Layout for every page. Products and orders are managed in the Strapi admin (#40). */
 export default function ShopLayout({ loaderData }: Route.ComponentProps) {
   const { header, consent, suggestEnglish, socialLinks } = loaderData;
-  useClientPageViews(consent === "granted");
+  const tracking = consent === "granted";
+  useClientPageViews(tracking);
   return (
-    <div className="flex min-h-dvh flex-col">
-      {suggestEnglish && <LanguageHint />}
-      <Header {...header} socialLinks={socialLinks} />
-      <div className="flex-1">
-        <Outlet />
+    <TrackingProvider enabled={tracking}>
+      <div className="flex min-h-dvh flex-col">
+        {suggestEnglish && <LanguageHint />}
+        <Header {...header} socialLinks={socialLinks} />
+        <div className="flex-1">
+          <Outlet />
+        </div>
+        <Footer socialLinks={socialLinks} />
+        {consent === null && <CookieBanner />}
       </div>
-      <Footer socialLinks={socialLinks} />
-      {consent === null && <CookieBanner />}
-    </div>
+    </TrackingProvider>
   );
 }
 

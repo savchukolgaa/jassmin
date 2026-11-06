@@ -7,6 +7,8 @@ import type {
   CartStatus,
   DiscountKind,
   GiftCardStatus,
+  InventoryMovementReason,
+  InventoryMovementSource,
   OrderStatus,
   OrderStatusSource,
   PaymentAttemptStatus,
@@ -126,6 +128,36 @@ export interface OrderStatusHistoryEntry {
   changedAt: Date;
   /** What changed it: checkout, the payment callback, a Strapi edit or a job. */
   source: OrderStatusSource;
+}
+
+/**
+ * One change of a tracked size's stock (#130). The ledger is append-only: the movements of a
+ * tracked size add up to its `stockQuantity`.
+ */
+export interface InventoryMovement {
+  id: number;
+  variantId: number;
+  occurredAt: Date;
+  reason: InventoryMovementReason;
+  /** Units added (positive) or taken off (negative); never 0. */
+  quantityDelta: number;
+  /** The size's stock right after this change. */
+  stockAfter: number;
+  /** The order that sold or gave back the units; `null` otherwise or once it's deleted. */
+  orderId: number | null;
+  source: InventoryMovementSource;
+  note: string | null;
+}
+
+/** One size on one day (Europe/Kyiv) in the `inventory_daily` view (#130). */
+export interface InventoryDay {
+  variantId: number;
+  /** `YYYY-MM-DD`. */
+  day: string;
+  unitsSold: number;
+  closingStock: number;
+  /** The size had no stock at some point that day (zero sales are censored demand). */
+  wasOutOfStock: boolean;
 }
 
 /** One attempt at paying a card order online (#44). */

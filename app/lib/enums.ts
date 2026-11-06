@@ -48,6 +48,30 @@ export const ORDER_STATUS_SOURCES = ["checkout", "payment", "cms", "job"] as con
 export type OrderStatusSource = (typeof ORDER_STATUS_SOURCES)[number];
 
 /**
+ * Why a tracked size's stock changed (#130), stored in `inventory_movements.reason` (a CHECK):
+ * the stock when logging started, a checkout, a cancelled order's units put back, an unclaimed
+ * parcel's units put back, a delivery from the supplier entered in Strapi, or a staff correction.
+ */
+export const INVENTORY_MOVEMENT_REASONS = [
+  "opening_balance",
+  "sale",
+  "cancellation",
+  "return",
+  "receipt",
+  "adjustment",
+] as const;
+
+export type InventoryMovementReason = (typeof INVENTORY_MOVEMENT_REASONS)[number];
+
+/**
+ * What wrote a stock change (#130), stored in `inventory_movements.source` (a CHECK): checkout, a
+ * staff edit in Strapi, a scheduled job or CLI script, or a migration.
+ */
+export const INVENTORY_MOVEMENT_SOURCES = ["checkout", "cms", "job", "migration"] as const;
+
+export type InventoryMovementSource = (typeof INVENTORY_MOVEMENT_SOURCES)[number];
+
+/**
  * How an order is paid: online by card, cash on delivery (`cod`), or entirely by a gift card
  * (#125). A CHECK constraint limits `orders.payment_method` to these values.
  */
@@ -80,6 +104,10 @@ export const EVENT_TYPES = [
   "purchase",
   "login",
   "review_submit",
+  // Product lists and pages (#129): sent by the client tracker.
+  "product_impression",
+  "product_click",
+  "product_dwell",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

@@ -4,12 +4,12 @@
 // against the lifecycle rules (`nextOrderState`), writes the patch and its timestamps, records the
 // new status in `order_status_history`, queues the customer's status emails (#138: shipped,
 // arrived, cancelled, refunded; sent after the commit or by `pnpm db:send-order-emails`) and,
-// when the order is cancelled or comes back unclaimed, puts its units back in stock and what a
-// gift card paid back on the card, queuing those products and cards for Strapi. A refused change
-// writes nothing.
+// when the order is cancelled or comes back unclaimed, puts its units back in stock (each line
+// logged in the inventory ledger, #130) and what a gift card paid back on the card, queuing those
+// products and cards for Strapi. A refused change writes nothing.
 //
 // It must not import `db/index.ts`: the job runs from the CLI without the web app's env.
-import type { OrderStatusSource } from "~/lib/enums";
+import type { InventoryMovementSource, OrderStatusSource } from "~/lib/enums";
 import {
   type NextOrderState,
   nextOrderState,
@@ -32,6 +32,11 @@ export type ChangeOrderStatusResult =
   | { ok: true; patch: OrderLifecyclePatch; emailsQueued: boolean }
   | { ok: false; error: "unknown-order" }
   | Extract<NextOrderState, { ok: false }>;
+
+/** The inventory ledger's source for a status change (#130); payment callbacks never restock. */
+function inventorySource(source: OrderStatusSource): InventoryMovementSource {
+  return source === "payment" ? "job" : source;
+}
 
 /** Applies `change` to the order under its row lock; see the module comment. */
 export async function changeOrderStatus(
@@ -60,7 +65,13 @@ export async function changeOrderStatus(
   // The customer hears about it once per type, in the same transaction (#138).
   const emailsQueued = await queueOrderStatusEmails(tx, orderId, orderStatusEmailTypes(next.patch));
   if (next.restock) {
-    await enqueueCmsSync(tx, "product", await restockOrder(tx, orderId));
+    // Each line goes in the inventory ledger (#130): an unclaimed parcel is a `return`.
+    const restocked = await restockOrder(tx, orderId, {
+      reason: next.patch.status === "unclaimed" ? "return" : "cancellation",
+      source: inventorySource(source),
+      now,
+    });
+    await enqueueCmsSync(tx, "product", restocked);
     // What a gift card paid goes back on it, like the units go back in stock (#125).
     await enqueueCmsSync(tx, "gift_card", await restoreGiftCardRedemptions(tx, orderId, now));
   }

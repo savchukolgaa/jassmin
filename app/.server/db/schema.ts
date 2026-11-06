@@ -4,7 +4,7 @@
 // discount rules (#59), the Strapi catalog and order sync (#40) and several fragrance families,
 // notes and a store code per product (#65), gift cards with their redemptions (#125), email
 // suppressions (#134), the shared rate-limit counters (#143), and password reset and email
-// verification tokens (#135).
+// verification tokens (#135), and the inventory ledger with its daily view (#130).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -14,12 +14,14 @@ import {
   type AnyPgColumn,
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
   numeric,
   pgEnum,
   pgTable,
+  pgView,
   serial,
   text,
   timestamp,
@@ -46,6 +48,10 @@ import {
   GENDERS,
   GIFT_CARD_STATUSES,
   type GiftCardStatus,
+  INVENTORY_MOVEMENT_REASONS,
+  INVENTORY_MOVEMENT_SOURCES,
+  type InventoryMovementReason,
+  type InventoryMovementSource,
   ORDER_EMAIL_STATUSES,
   ORDER_EMAIL_TYPES,
   ORDER_STATUS_SOURCES,
@@ -556,6 +562,51 @@ export const orderStatusHistory = pgTable(
     index("order_status_history_order_id_changed_at_idx").on(t.orderId, t.changedAt),
   ],
 );
+
+/**
+ * Append-only ledger of every change to a tracked size's stock (#130), written in the transaction
+ * that changed `product_variants.stock_quantity`: a sale at checkout, units put back by a cancel or
+ * an unclaimed parcel, a receipt or correction in Strapi, or the opening balance. A trigger
+ * (`inventory_movements_append_only`, migration 0029) refuses updates and deletes, except the
+ * order FK's `set null`. For every tracked size, `sum(quantity_delta) = stock_quantity`.
+ * ML features for demand forecasting: never drop or rename these columns.
+ */
+export const inventoryMovements = pgTable(
+  "inventory_movements",
+  {
+    id: serial().primaryKey(),
+    variantId: integer()
+      .notNull()
+      .references(() => productVariants.id, { onDelete: "restrict" }),
+    occurredAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    reason: text().$type<InventoryMovementReason>().notNull(),
+    quantityDelta: integer().notNull(),
+    stockAfter: integer().notNull(),
+    orderId: integer().references(() => orders.id, { onDelete: "set null" }),
+    source: text().$type<InventoryMovementSource>().notNull(),
+    note: text(),
+  },
+  (t) => [
+    check("inventory_movements_reason_check", oneOf(t.reason, INVENTORY_MOVEMENT_REASONS)),
+    check("inventory_movements_source_check", oneOf(t.source, INVENTORY_MOVEMENT_SOURCES)),
+    check("inventory_movements_quantity_delta_check", sql`${t.quantityDelta} <> 0`),
+    check("inventory_movements_stock_after_check", sql`${t.stockAfter} >= 0`),
+    index("inventory_movements_variant_id_occurred_at_idx").on(t.variantId, t.occurredAt),
+  ],
+);
+
+/**
+ * One row per currently tracked size and day (Europe/Kyiv) from its first movement to today
+ * (#130): units sold, the stock at the end of the day and whether it ran out that day. Defined by
+ * hand in migration 0029, so drizzle-kit leaves it alone (`.existing()`).
+ */
+export const inventoryDaily = pgView("inventory_daily", {
+  variantId: integer().notNull(),
+  day: date().notNull(),
+  unitsSold: integer().notNull(),
+  closingStock: integer().notNull(),
+  wasOutOfStock: boolean().notNull(),
+}).existing();
 
 /** `<column> in ('a', 'b', …)` for a CHECK constraint over a fixed list of values. */
 function oneOf(column: AnyPgColumn, values: readonly string[]) {

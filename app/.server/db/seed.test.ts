@@ -136,12 +136,28 @@ describe.skipIf(!hasDatabase)("seedProducts", () => {
     expect(await testDb.db.$count(productVariants)).toBe(VARIANT_COUNT);
   });
 
+  it("opens the inventory ledger of every sample size with stock (#130)", async () => {
+    const { sql } = await import("drizzle-orm");
+    const drift = await testDb.db.execute(
+      sql`select v.id from product_variants v
+          left join inventory_movements m on m.variant_id = v.id
+          where v.track_stock group by v.id
+          having v.stock_quantity <> coalesce(sum(m.quantity_delta), 0)`,
+    );
+    expect(drift.rows).toEqual([]);
+    const sources = await testDb.db.execute(
+      sql`select distinct reason, source from inventory_movements`,
+    );
+    expect(sources.rows).toEqual([{ reason: "opening_balance", source: "job" }]);
+  });
+
   it("adds missing sizes to products that already exist", async () => {
     const { seedProducts } = await import("./seed");
     const { productVariants } = await import("./schema");
-    const { inArray } = await import("drizzle-orm");
+    const { eq } = await import("drizzle-orm");
 
-    await testDb.db.delete(productVariants).where(inArray(productVariants.volumeMl, [5, 10]));
+    // Sold-out sizes: they have no inventory ledger rows, which would keep them (#130).
+    await testDb.db.delete(productVariants).where(eq(productVariants.stockQuantity, 0));
     const missing = VARIANT_COUNT - (await testDb.db.$count(productVariants));
 
     expect(missing).toBeGreaterThan(0);

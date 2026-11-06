@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MAX_CLIENT_EVENTS } from "~/lib/analytics";
 
 const analytics = vi.hoisted(() => ({
+  findEventProductIds: vi.fn(),
   getVisitor: vi.fn(),
   isTrackingAllowed: vi.fn(),
   readVisitor: vi.fn(async () => ({})),
@@ -40,7 +41,21 @@ beforeEach(() => {
   vi.clearAllMocks();
   analytics.isTrackingAllowed.mockResolvedValue(true);
   analytics.getVisitor.mockResolvedValue(visitor);
+  analytics.findEventProductIds.mockResolvedValue(new Map([[PRODUCT, 7]]));
 });
+
+const PRODUCT = "01a1652b-6e25-7c03-ae47-25b57131fb06";
+const UNKNOWN = "01a1652b-6e25-7c03-ae47-000000000000";
+const shown = {
+  product_public_id: PRODUCT,
+  variant_id: "01a1652b-6e25-7d00-8000-000000000050",
+  volume_ml: 50,
+  price: "1890.00",
+  in_stock: true,
+  list_id: "catalog",
+  list_position: 3,
+};
+const impression = { type: "product_impression", path: "/zhinochi", properties: shown };
 
 describe("client events endpoint", () => {
   it("records the page views of a batch for the visitor", async () => {
@@ -64,6 +79,97 @@ describe("client events endpoint", () => {
         referrer: "http://localhost/catalog/women?sort=newest",
       },
     ]);
+  });
+
+  it("records product impressions, clicks and dwell with their product (#129)", async () => {
+    const click = { type: "product_click", path: "/zhinochi", properties: shown };
+    const dwell = {
+      type: "product_dwell",
+      path: "/parfumy/coco",
+      referrer: "/zhinochi",
+      properties: {
+        ...shown,
+        list_id: undefined,
+        list_position: undefined,
+        dwell_ms: 5000,
+        max_scroll_pct: 40,
+      },
+    };
+
+    const response = await beacon(JSON.stringify({ events: [impression, click, dwell] }));
+
+    expect(response.status).toBe(204);
+    expect(analytics.findEventProductIds).toHaveBeenCalledWith([PRODUCT, PRODUCT, PRODUCT]);
+    const [, , inputs] = analytics.trackEvents.mock.calls[0] ?? [];
+    expect(inputs).toEqual([
+      { type: "product_impression", productId: 7, properties: shown },
+      { type: "product_click", productId: 7, properties: shown },
+      {
+        type: "product_dwell",
+        productId: 7,
+        properties: {
+          ...shown,
+          list_id: undefined,
+          list_position: undefined,
+          dwell_ms: 5000,
+          max_scroll_pct: 40,
+        },
+        referrer: "http://localhost/zhinochi",
+      },
+    ]);
+  });
+
+  it("drops events about products that don't exist (#129)", async () => {
+    const unknown = { ...impression, properties: { ...shown, product_public_id: UNKNOWN } };
+
+    expect((await beacon(JSON.stringify({ events: [unknown, impression] }))).status).toBe(204);
+    const [, , inputs] = analytics.trackEvents.mock.calls[0] ?? [];
+    expect(inputs).toEqual([{ type: "product_impression", productId: 7, properties: shown }]);
+
+    vi.clearAllMocks();
+    analytics.isTrackingAllowed.mockResolvedValue(true);
+    analytics.getVisitor.mockResolvedValue(visitor);
+    analytics.findEventProductIds.mockResolvedValue(new Map());
+    expect((await beacon(JSON.stringify({ events: [unknown] }))).status).toBe(204);
+    expect(analytics.trackEvents).not.toHaveBeenCalled();
+  });
+
+  it("refuses product events with the wrong shape (#129)", async () => {
+    for (const bad of [
+      { ...impression, properties: undefined },
+      { ...impression, properties: { ...shown, list_position: 0 } },
+      { ...impression, properties: { ...shown, email: "olena@example.com" } },
+      { type: "product_view", path: "/", properties: shown },
+    ]) {
+      expect((await beacon(JSON.stringify({ events: [bad] }))).status).toBe(400);
+    }
+    expect(analytics.trackEvents).not.toHaveBeenCalled();
+  });
+
+  it("records no product events without consent (#129)", async () => {
+    analytics.isTrackingAllowed.mockResolvedValueOnce(false);
+
+    expect((await beacon(JSON.stringify({ events: [impression] }))).status).toBe(204);
+    expect(analytics.findEventProductIds).not.toHaveBeenCalled();
+    expect(analytics.trackEvents).not.toHaveBeenCalled();
+  });
+
+  it("takes a full batch of impressions within the body limit (#129)", async () => {
+    const events = Array.from({ length: MAX_CLIENT_EVENTS }, (_, index) => ({
+      ...impression,
+      path: "/en/catalog/women?fragrance_family=%D0%9A%D0%B2%D1%96%D1%82%D0%BA%D0%BE%D0%B2%D1%96",
+      properties: {
+        ...shown,
+        list_id: "search",
+        list_position: index + 1,
+        search_id: "0b6f1b8e-3f7e-4a52-9a43-3c1f7f1f2c11",
+      },
+    }));
+    const body = JSON.stringify({ events });
+
+    expect(new TextEncoder().encode(body).byteLength).toBeLessThan(MAX_EVENTS_BODY_BYTES);
+    expect((await beacon(body)).status).toBe(204);
+    expect(analytics.trackEvents.mock.calls[0]?.[2]).toHaveLength(MAX_CLIENT_EVENTS);
   });
 
   it("refuses events only the server may record", async () => {

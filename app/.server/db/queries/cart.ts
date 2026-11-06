@@ -143,13 +143,16 @@ export async function cartTotals(
   return row ?? { itemCount: 0, subtotal: "0.00" };
 }
 
-/** The cart's line for this variant (`public_id`), with the variant's stock. */
+/** The cart's line for this variant (`public_id`), with the variant's price and stock. */
 export async function findCartLine(db: Executor, cartId: number, variantPublicId: string) {
   const [row] = await db
     .select({
       id: cartItems.id,
       productId: cartItems.productId,
+      productPublicId: products.publicId,
+      variantPublicId: productVariants.publicId,
       volumeMl: productVariants.volumeMl,
+      price: productVariants.price,
       quantity: cartItems.quantity,
       stockQuantity: availableStock,
     })

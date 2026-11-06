@@ -1,0 +1,2 @@
+ALTER TABLE "user_events" DROP CONSTRAINT "user_events_event_type_check";--> statement-breakpoint
+ALTER TABLE "user_events" ADD CONSTRAINT "user_events_event_type_check" CHECK ("user_events"."event_type" in ('page_view', 'product_view', 'search', 'add_to_cart', 'remove_from_cart', 'checkout_start', 'purchase', 'login', 'review_submit', 'product_impression', 'product_click', 'product_dwell'));

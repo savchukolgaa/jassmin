@@ -1,5 +1,5 @@
 {
-  "id": "1e9f3ed2-9965-48b1-8345-9e17a6c061d3",
+  "id": "d69eb0e8-543d-4361-8cc8-7ad8f67a732f",
   "prevId": "cae9591b-d745-49eb-81b0-b16f55afb508",
   "version": "7",
   "dialect": "postgresql",
@@ -275,18 +275,6 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
-        },
-        "reminder_sent_at": {
-          "name": "reminder_sent_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "restored_at": {
-          "name": "restored_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -301,28 +289,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "carts_user_id_reminder_sent_at_idx": {
-          "name": "carts_user_id_reminder_sent_at_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "reminder_sent_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"carts\".\"reminder_sent_at\" is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1097,6 +1063,140 @@
       },
       "isRLSEnabled": false
     },
+    "public.inventory_movements": {
+      "name": "inventory_movements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "variant_id": {
+          "name": "variant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity_delta": {
+          "name": "quantity_delta",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stock_after": {
+          "name": "stock_after",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "inventory_movements_variant_id_occurred_at_idx": {
+          "name": "inventory_movements_variant_id_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "variant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inventory_movements_variant_id_product_variants_id_fk": {
+          "name": "inventory_movements_variant_id_product_variants_id_fk",
+          "tableFrom": "inventory_movements",
+          "tableTo": "product_variants",
+          "columnsFrom": [
+            "variant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "inventory_movements_order_id_orders_id_fk": {
+          "name": "inventory_movements_order_id_orders_id_fk",
+          "tableFrom": "inventory_movements",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "inventory_movements_reason_check": {
+          "name": "inventory_movements_reason_check",
+          "value": "\"inventory_movements\".\"reason\" in ('opening_balance', 'sale', 'cancellation', 'return', 'receipt', 'adjustment')"
+        },
+        "inventory_movements_source_check": {
+          "name": "inventory_movements_source_check",
+          "value": "\"inventory_movements\".\"source\" in ('checkout', 'cms', 'job', 'migration')"
+        },
+        "inventory_movements_quantity_delta_check": {
+          "name": "inventory_movements_quantity_delta_check",
+          "value": "\"inventory_movements\".\"quantity_delta\" <> 0"
+        },
+        "inventory_movements_stock_after_check": {
+          "name": "inventory_movements_stock_after_check",
+          "value": "\"inventory_movements\".\"stock_after\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.order_emails": {
       "name": "order_emails",
       "schema": "",
@@ -1115,12 +1215,6 @@
         },
         "gift_card_id": {
           "name": "gift_card_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cart_id": {
-          "name": "cart_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -1240,19 +1334,6 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
-        },
-        "order_emails_cart_id_carts_id_fk": {
-          "name": "order_emails_cart_id_carts_id_fk",
-          "tableFrom": "order_emails",
-          "tableTo": "carts",
-          "columnsFrom": [
-            "cart_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1272,21 +1353,13 @@
             "gift_card_id",
             "type"
           ]
-        },
-        "order_emails_cart_id_type_unique": {
-          "name": "order_emails_cart_id_type_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "cart_id",
-            "type"
-          ]
         }
       },
       "policies": {},
       "checkConstraints": {
         "order_emails_type_check": {
           "name": "order_emails_type_check",
-          "value": "\"order_emails\".\"type\" in ('confirmation', 'gift_card', 'gift_card_recipient', 'shipped', 'arrived', 'cancelled', 'refunded', 'cart_reminder')"
+          "value": "\"order_emails\".\"type\" in ('confirmation', 'gift_card', 'gift_card_recipient', 'shipped', 'arrived', 'cancelled', 'refunded')"
         },
         "order_emails_locale_check": {
           "name": "order_emails_locale_check",
@@ -1302,7 +1375,7 @@
         },
         "order_emails_target_check": {
           "name": "order_emails_target_check",
-          "value": "num_nonnulls(\"order_emails\".\"order_id\", \"order_emails\".\"gift_card_id\", \"order_emails\".\"cart_id\") = 1"
+          "value": "(\"order_emails\".\"order_id\" is null) <> (\"order_emails\".\"gift_card_id\" is null)"
         }
       },
       "isRLSEnabled": false
@@ -2939,12 +3012,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "locale": {
-          "name": "locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -2960,12 +3027,7 @@
         }
       },
       "policies": {},
-      "checkConstraints": {
-        "users_locale_check": {
-          "name": "users_locale_check",
-          "value": "\"users\".\"locale\" in ('uk', 'en')"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },
@@ -3023,7 +3085,46 @@
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
+  "views": {
+    "public.inventory_daily": {
+      "columns": {
+        "variantId": {
+          "name": "variantId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unitsSold": {
+          "name": "unitsSold",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "closingStock": {
+          "name": "closingStock",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wasOutOfStock": {
+          "name": "wasOutOfStock",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "name": "inventory_daily",
+      "schema": "public",
+      "isExisting": true,
+      "materialized": false
+    }
+  },
   "_meta": {
     "columns": {},
     "schemas": {},

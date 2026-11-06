@@ -49,13 +49,30 @@ export type EmailBlock =
    * links (#135). Only `http(s)` URLs become links; anything else is shown as text.
    */
   | { type: "button"; label: string; url: string }
+  /**
+   * Products with a small photo, e.g. a cart reminder's lines (#139). Only `http(s)` image URLs
+   * are shown; the text part lists each item on its own line.
+   */
+  | { type: "products"; items: EmailProduct[] }
   | { type: "signature"; text: string };
+
+/** A product in a `products` block: its name, a details line and an optional photo. */
+export interface EmailProduct {
+  name: string;
+  details: string;
+  imageUrl?: string | undefined;
+}
 
 /** What the footer shows: the shop's inbox and, when known, the site. */
 export interface EmailFooter {
   inbox: string;
   /** The site's origin (`PUBLIC_SITE_URL`); the link is left out when unset. */
   siteUrl?: string | undefined;
+  /**
+   * The recipient's unsubscribe link, for marketing emails (#139); shown in the footer of both
+   * parts. Left out when unset or not `http(s)`.
+   */
+  unsubscribeUrl?: string | undefined;
 }
 
 export interface RenderedEmail {
@@ -76,6 +93,11 @@ export function escapeHtml(value: string): string {
 /** Escaped text with its line breaks as `<br>`. */
 function escapeLines(value: string): string {
   return escapeHtml(value.replace(/\r\n?/g, "\n")).replaceAll("\n", "<br>");
+}
+
+/** Whether `url` may become a link or an image: only `http(s)`, never `javascript:` and co. */
+function isWebUrl(url: string | undefined): url is string {
+  return url !== undefined && /^https?:\/\//i.test(url);
 }
 
 function paragraph(content: string, style = ""): string {
@@ -113,7 +135,7 @@ function blockHtml(block: EmailBlock): string {
         "</td></tr></table>",
       ].join("");
     case "button": {
-      if (!/^https?:\/\//i.test(block.url)) {
+      if (!isWebUrl(block.url)) {
         return paragraph(`${escapeHtml(block.label)}: ${escapeHtml(block.url)}`);
       }
       const href = escapeHtml(block.url);
@@ -127,6 +149,23 @@ function blockHtml(block: EmailBlock): string {
           `font-size:14px;color:${EMAIL_COLORS.muted};`,
         ),
       ].join("");
+    }
+    case "products": {
+      const rows = block.items
+        .map(({ name, details, imageUrl }) => {
+          const photo = isWebUrl(imageUrl)
+            ? `<img src="${escapeHtml(imageUrl)}" width="64" height="80" alt="" style="display:block;width:64px;height:80px;object-fit:cover;border:0;background:${EMAIL_COLORS.card};">`
+            : "";
+          return [
+            `<tr><td width="64" valign="top" style="padding:8px 16px 8px 0;">${photo}</td>`,
+            `<td valign="middle" style="padding:8px 0;">`,
+            `<p style="margin:0;font-weight:bold;color:${EMAIL_COLORS.ink};">${escapeHtml(name)}</p>`,
+            `<p style="margin:4px 0 0;font-size:14px;color:${EMAIL_COLORS.muted};">${escapeHtml(details)}</p>`,
+            "</td></tr>",
+          ].join("");
+        })
+        .join("");
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;border-collapse:collapse;">${rows}</table>`;
     }
     case "signature":
       return paragraph(escapeLines(block.text), `margin-top:24px;color:${EMAIL_COLORS.ink};`);
@@ -147,6 +186,8 @@ function blockText(block: EmailBlock): string {
       return [`${block.label}: ${block.code}`, ...(block.note ? [block.note] : [])].join("\n");
     case "button":
       return `${block.label}:\n${block.url}`;
+    case "products":
+      return block.items.map(({ name, details }) => `${name}\n${details}`).join("\n");
   }
 }
 
@@ -189,6 +230,8 @@ export function renderEmail(
   const siteLink = footer.siteUrl
     ? `<a href="${escapeHtml(footer.siteUrl)}" style="color:${EMAIL_COLORS.white};text-decoration:underline;">${escapeHtml(siteLabel(footer.siteUrl))}</a>`
     : null;
+  const unsubscribeUrl = isWebUrl(footer.unsubscribeUrl) ? footer.unsubscribeUrl : undefined;
+  const unsubscribe = t("email.footer.unsubscribe");
 
   const html = [
     "<!doctype html>",
@@ -217,6 +260,9 @@ export function renderEmail(
     "<!--footer-->",
     `<p style="margin:0 0 4px;">Jassmin · ${[inboxLink, siteLink].filter(Boolean).join(" · ")}</p>`,
     `<p style="margin:0;">${escapeHtml(note)}</p>`,
+    unsubscribeUrl
+      ? `<p style="margin:4px 0 0;"><a href="${escapeHtml(unsubscribeUrl)}" style="color:${EMAIL_COLORS.white};text-decoration:underline;">${escapeHtml(unsubscribe)}</a></p>`
+      : "",
     "<!--/footer-->",
     "</td></tr>",
     "</table>",
@@ -233,6 +279,7 @@ export function renderEmail(
     "-- ",
     ["Jassmin", footer.inbox, footer.siteUrl].filter(Boolean).join(" · "),
     note,
+    ...(unsubscribeUrl ? [`${unsubscribe}: ${unsubscribeUrl}`] : []),
   ].join("\n");
 
   return { html, text };

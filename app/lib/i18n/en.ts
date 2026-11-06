@@ -494,6 +494,7 @@ export const en = {
   email: {
     footer: {
       note: "This email was sent by Jassmin, a perfume shop in Ukraine.",
+      unsubscribe: "Unsubscribe from news and offers",
     },
   },
   orderEmail: {

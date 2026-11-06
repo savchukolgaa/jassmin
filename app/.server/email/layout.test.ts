@@ -139,6 +139,72 @@ describe("renderEmail", () => {
     expect(htmlWords(content)).toEqual(words(text.split("\n-- \n")[0] ?? ""));
   });
 
+  it("lists products with their photos, and the same words as text (#139)", () => {
+    const body: EmailBlock[] = [
+      {
+        type: "products",
+        items: [
+          {
+            name: "Chanel Coco",
+            details: "10 мл × 2",
+            imageUrl: "https://cdn.example/a.jpg?w=1&h=2",
+          },
+          { name: "Dior <Sauvage>", details: "5 мл × 1" },
+        ],
+      },
+    ];
+    const { html, text } = render("uk", body);
+    const content = htmlSection(html, "content");
+
+    expect(content.match(/<img /g)).toHaveLength(1);
+    expect(content).toContain('src="https://cdn.example/a.jpg?w=1&amp;h=2"');
+    expect(content).toContain("Dior &lt;Sauvage&gt;");
+    expect(text).toContain("Chanel Coco\n10 мл × 2\nDior <Sauvage>\n5 мл × 1");
+    expect(htmlWords(content)).toEqual(words(text.split("\n-- \n")[0] ?? ""));
+  });
+
+  it("never shows a product photo from a non-http URL", () => {
+    const { html } = render("uk", [
+      {
+        type: "products",
+        items: [
+          { name: "A", details: "1", imageUrl: 'javascript:alert("x")' },
+          { name: "B", details: "2", imageUrl: "data:image/png;base64,AAAA" },
+        ],
+      },
+    ]);
+    expect(html).not.toContain("<img");
+  });
+
+  it("adds the unsubscribe link to both footers only when given (#139)", () => {
+    const url = "https://jassmin.ua/vidpysatysia/1.abc";
+    const { html, text } = renderEmail(blocks, {
+      translator: createTranslator("uk"),
+      footer: { ...footer, unsubscribeUrl: url },
+      subject: "Тема",
+    });
+    expect(htmlSection(html, "footer")).toContain(`<a href="${url}"`);
+    expect(htmlSection(html, "footer")).toContain("Відписатися від новинок і пропозицій");
+    expect(text.endsWith(`\nВідписатися від новинок і пропозицій: ${url}`)).toBe(true);
+
+    const english = renderEmail(blocks, {
+      translator: createTranslator("en"),
+      footer: { ...footer, unsubscribeUrl: url },
+      subject: "Subject",
+    });
+    expect(english.text).toContain(`Unsubscribe from news and offers: ${url}`);
+
+    const plain = render("uk");
+    expect(plain.html).not.toContain("Відписатися");
+    expect(plain.text).not.toContain("Відписатися");
+    const unsafe = renderEmail(blocks, {
+      translator: createTranslator("uk"),
+      footer: { ...footer, unsubscribeUrl: "javascript:alert(1)" },
+      subject: "Тема",
+    });
+    expect(unsafe.html).not.toContain("javascript:");
+  });
+
   it("never links a button to a non-http URL", () => {
     const { html } = render("uk", [
       { type: "button", label: "Click", url: 'javascript:alert("x")' },

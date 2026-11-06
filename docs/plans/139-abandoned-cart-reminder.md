@@ -124,7 +124,7 @@ The store owner wants customers who left perfumes in their cart to get one frien
   - `findCartReminder(db, cartId)`: the user (name, email, `marketing_opt_in`), whether they ordered since, up to 3 available lines (title, `image_url`, `volume_ml`, quantity) with the count of available lines, and the total of the available lines in SQL.
 
   Integration tests on `createTestDatabase()` cover each rule: consent on/off, the 7-day limit, ordered since, every line unavailable (archived product, or a tracked size out of stock), a suppressed address, older than 72 h, a guest cart, two abandoned carts (only the latest), running twice (one row), and `updated_at` unchanged.
-- [ ] **4. Email layout.** Add the `products` block and `EmailFooter.unsubscribeUrl` to `email/layout.ts`, both parts and escaped, with `https`-only images. Add tests with `htmlWords` / `words` and a test that `javascript:` / `http:` image URLs are dropped.
+- [x] **4. Email layout.** Add the `products` block and `EmailFooter.unsubscribeUrl` to `email/layout.ts`, both parts and escaped, with images only from `http(s)` URLs (like buttons, so a local `http://localhost` site shows them in smtp4dev). Add tests with `htmlWords` / `words` and a test that `javascript:` / `data:` image URLs are dropped.
 - [ ] **5. Reminder email builder.** Write `services/cart-reminder-email.ts`:
   - `buildCartReminderEmail(reminder, translator, env)` returns `composeEmail(…)` with `headers: listUnsubscribeHeaders(url)`;
   - `cartReminderUrl(siteUrl, locale)` builds the cart URL with `restore=1` and the UTM tags;

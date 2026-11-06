@@ -503,6 +503,7 @@ export const uk = {
   email: {
     footer: {
       note: "Цей лист надіслав інтернет-магазин парфумів Jassmin.",
+      unsubscribe: "Відписатися від новинок і пропозицій",
     },
   },
   orderEmail: {

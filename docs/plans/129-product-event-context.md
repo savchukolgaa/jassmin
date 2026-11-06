@@ -31,7 +31,7 @@ events carry list context, position, price and stock. Three new client events ar
   (`product_public_id`, `list_position`, …). That includes the existing events: `page_view`
   `{ path }`, `login` `{ method }`, `checkout_start` and `purchase` (`order_id`, `subtotal`,
   `total_amount`, …). Rows recorded before this change keep their camelCase keys, and
-  `docs/analytics-events.md` lists the old-to-new mapping. **(unconfirmed, Q1)**
+  `docs/analytics-events.md` lists the old-to-new mapping. (confirmed by the owner)
 - **One typed map.** `app/lib/analytics.ts` replaces `EventProperties = Record<string, unknown>`
   with `interface EventPropertiesMap { [T in EventType]: … }` and
   `type EventProperties<T extends EventType = EventType> = EventPropertiesMap[T]`.
@@ -74,8 +74,10 @@ events carry list context, position, price and stock. Three new client events ar
   `product_public_ids` of the results shown (at most 24; a catalog page holds 12,
   `CATALOG_PAGE_SIZE`).
 - **Impressions** are client events, sent only when `_shop`'s `consent === "granted"`:
-  - A card counts once at least 50% of it is visible (one `IntersectionObserver` per list,
-    threshold 0.5).
+  - A card counts once at least 50% of it has been visible for 1 s without a break
+    (`MIN_IMPRESSION_VISIBLE_MS = 1000` in `app/lib/analytics.ts`; one `IntersectionObserver` per
+    list, threshold 0.5). A timer starts when the card crosses 50% and is cancelled when it drops
+    below, the page is hidden or the card unmounts, so scrolling past doesn't count.
   - Duplicates are dropped per list render. The key is `renderKey:product_public_id`, and
     `renderKey` is new whenever the list's product ids, page or `search_id` change.
   - They go into the existing queue and are flushed every 5 s, when the queue reaches
@@ -109,28 +111,21 @@ events carry list context, position, price and stock. Three new client events ar
   - `items`: `[{ variant_id, quantity, unit_price, discount_allocated }]`, built in `createOrder`
     from `lines` and `priced.allocation` and returned in `PlacedOrderTotals`.
   - `is_first_order`: no earlier order with the same `user_id` or, for a guest, the same
-    lower-cased email, checked inside the order transaction. **(unconfirmed, Q2)**
+    lower-cased email, checked inside the order transaction. (confirmed by the owner)
 - **Everything else follows existing patterns.** No new user-facing strings, so no i18n keys, and
   no zod in client code: `app/features/analytics/*` imports only types and constants from
   `~/lib/analytics`, which `client-bundle.guard.test.ts` already enforces.
 
-## Open questions
-
-- [ ] **Q1: Rename the existing camelCase property keys to snake_case, and backfill old rows?** —
-  Why it matters: the issue names snake_case keys, but today's rows use `publicId`, `variantId`,
-  `orderId`, … One contract is cleaner for the ETL, while a rename leaves two key styles in
-  history. A jsonb backfill migration would fix the history but adds a data migration and its
-  rollback. Recommended default: snake_case for every event type from now on, **no backfill**,
-  and an old-to-new key table in `docs/analytics-events.md`. Affects steps: 1, 2, 7, 10.
-- [ ] **Q2: How should `is_first_order` identify a returning guest?** — Why it matters: guests have
-  no `user_id`. Matching only by user misses repeat guests, and matching by email links a guest to
-  their registered history. Recommended default: an earlier order with the same `user_id`, or with
-  the same lower-cased `orders.email`, counting every status (cancelled ones too). Affects step: 7.
-- [ ] **Q3: What threshold makes an impression?** — Why it matters: it decides which "negatives"
-  the model learns from. Recommended default: 50% of the card visible, with no minimum time. A
-  1-second dwell (the IAB standard) can be added later. Affects step: 5.
-
 ## Resolved questions
+
+- **Rename the existing camelCase property keys to snake_case, and backfill old rows?** — Yes to
+  snake_case for every event type from now on. No backfill: `docs/analytics-events.md` gets an
+  old-to-new key table (source: the owner, answering the plan's Q1).
+- **How does `is_first_order` identify a returning guest?** — An earlier order with the same
+  `user_id`, or with the same lower-cased `orders.email`, counting every status, cancelled ones
+  too (source: the owner, answering the plan's Q2).
+- **What makes an impression?** — At least 50% of the card visible for at least 1 second (the IAB
+  viewability standard) (source: the owner, answering the plan's Q3).
 
 - **Is there a DB CHECK on `event_type`?** — Yes, `user_events_event_type_check` (migration
   `0002_analytics_schema.sql`). Adding a type is a migration that rewrites it (source:
@@ -187,6 +182,7 @@ events carry list context, position, price and stock. Three new client events ar
 
 - [ ] **1. Typed contract and zod schemas** — In `app/lib/analytics.ts`, add `LIST_IDS` / `ListId`,
   `ProductEventContext`, `EventPropertiesMap` for all event types, `MAX_DWELL_MS = 30 * 60_000` and
+  `MIN_IMPRESSION_VISIBLE_MS = 1000`,
   `absoluteListPosition(page, pageSize, index)`. Add the three new types to `EVENT_TYPES` and
   extend `CLIENT_EVENT_TYPES` to `page_view`, `product_impression`, `product_click` and
   `product_dwell`. In `analytics.schema.ts`, add `eventPropertiesSchemas` (strict objects;
@@ -217,9 +213,11 @@ events carry list context, position, price and stock. Three new client events ar
   `{ listId, searchId?, page, pageSize, renderKey, enabled }`, where `enabled` is `_shop`'s
   consent read through `useRouteLoaderData("routes/_shop")`. Add `useProductImpression(ref,
   product, position)`, which uses one shared `IntersectionObserver` (threshold 0.5) per provider
-  and a dedupe set keyed by `renderKey`. Add `trackProductClick(context, product, position,
+  and a 1 s visible timer per card (cancelled when it leaves view or the page is hidden), with
+  a dedupe set keyed by `renderKey`. Add `trackProductClick(context, product, position,
   variantId)`. Outside a provider, or without consent, everything is a no-op. Check: unit tests
-  show impressions deduplicated per render and sent again after `renderKey` changes, nothing
+  show a card counted only after 1 s at ≥ 50% (not when it
+  scrolls out sooner), impressions deduplicated per render and sent again after `renderKey` changes, nothing
   queued without consent, and batches capped at `MAX_CLIENT_EVENTS`.
 - [ ] **6. Wire the lists** — Give `ProductCard` a `position` prop, attach the impression ref to
   the `<article>`, and add click handlers on both links (reporting the selected size).
@@ -239,7 +237,7 @@ events carry list context, position, price and stock. Three new client events ar
   - `services/cart.ts`: carry `productPublicId`, `variantPublicId`, `price`, `inStock` (before
     the change) and `cartValueAfter` (`cartTotals(tx, cartId).subtotal`) in `CartChange`.
   - `cart.tsx` `trackChange`: send them, plus the list fields when posted.
-  - `createOrder`: return `items` and `isFirstOrder` (Q2), via a query in `queries/orders.ts` run
+  - `createOrder`: return `items` and `isFirstOrder`, via a query in `queries/orders.ts` run
     in the transaction.
   - `checkout.tsx`: snake_case `checkout_start` and `purchase` with `items` and `is_first_order`.
 
@@ -253,7 +251,7 @@ events carry list context, position, price and stock. Three new client events ar
 - [ ] **9. Docs** — Write `docs/analytics-events.md`. For each event type it gives: who records it
   (server or client), when it fires, a property table, and an example. Add the shared
   product-context table, the `list_id` table, position and dedupe rules, the consent and
-  no-personal-data rules, and the old-to-new key mapping (Q1). Update the "Visitor and events"
+  no-personal-data rules, and the old-to-new key mapping. Update the "Visitor and events"
   section of `app/.server/AGENTS.md` and link the doc from it.
 - [ ] **10. Verify** — Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`, then do the
   manual checks below.
@@ -264,7 +262,8 @@ events carry list context, position, price and stock. Three new client events ar
   - `analytics.schema.test.ts`: each event's valid and invalid shapes, and the client batch union.
   - `analytics.test.ts`: `absoluteListPosition`.
   - `client-events.test.ts`: the timed and hidden flushes.
-  - `product-tracking.test.ts`: dedupe per list render, no consent, batching.
+  - `product-tracking.test.ts`: 1 s visibility threshold, dedupe per list render, no
+    consent, batching.
   - `useProductDwell.test.ts`: visible time only, the cap, sending once.
 - Integration tests (DB):
   - `api.events.test.ts`: product events, unknown product, consent, limits.
@@ -300,7 +299,7 @@ events carry list context, position, price and stock. Three new client events ar
 
 - The recommendation model, and showing recommendations on the site.
 - The ETL / export of events (a later issue that reads `docs/analytics-events.md`).
-- Backfilling or rewriting the properties of rows recorded before this change (see Q1).
+- Backfilling or rewriting the properties of rows recorded before this change (the owner chose no backfill).
 - A free-text product search (`query` is reserved as `null`).
 - Wishlist events: the TLDR mentions "wishlist-style signals", but the site has no wishlist and the
   Technical section defines none.

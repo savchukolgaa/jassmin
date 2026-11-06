@@ -203,7 +203,7 @@ All three were answered on 2026-11-06: the user accepted the recommended default
   default `коригування`, visible when `trackStock`), described in the component. `middleware.ts`:
   send `stockReason` mapped to English, write `коригування` back when saving the app's answer.
   `app-sync.ts`: messages for the new errors. Update `middleware.test.ts`.
-- [ ] **8. Seed** — In `db/seed.ts` take `returning({ id, stockQuantity })` from the variant insert
+- [x] **8. Seed** — In `db/seed.ts` take `returning({ id, stockQuantity })` from the variant insert
   and write `opening_balance` rows (`source: "job"`) for inserted sizes with stock > 0, in the same
   transaction (wrap the seed's writes in one if they aren't). Extend `seed.test.ts`.
 - [ ] **9. Invariant and view tests** (`inventory.test.ts`, on `createTestDatabase`):

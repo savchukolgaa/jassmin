@@ -5,7 +5,13 @@ import { clientEvents } from "./client-events";
 
 const TrackingContext = createContext(false);
 
-export function TrackingProvider({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+export function TrackingProvider({
+  enabled,
+  children,
+}: {
+  enabled: boolean;
+  children?: ReactNode;
+}) {
   return <TrackingContext value={enabled}>{children}</TrackingContext>;
 }
 

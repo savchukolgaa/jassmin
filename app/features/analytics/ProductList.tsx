@@ -54,7 +54,7 @@ export interface ProductListProviderProps {
   pageSize?: number;
   /** The products shown, in order: a new set (or page, or search) is a new list render. */
   productIds: readonly string[];
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 export function ProductListProvider({

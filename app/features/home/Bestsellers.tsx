@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
+import { ProductListProvider } from "~/features/analytics/ProductList";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { usePathFor, useT } from "~/lib/i18n";
 import type { ProductSummary } from "~/lib/products";
@@ -32,13 +33,20 @@ export function Bestsellers({ products }: { products: ProductSummary[] }) {
             <span aria-hidden="true">&nbsp;→</span>
           </Link>
         </div>
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((product) => (
-            <li key={product.id} className="flex">
-              <ProductCard product={product} headingLevel={3} variant="compact" />
-            </li>
-          ))}
-        </ul>
+        <ProductListProvider listId="home" productIds={products.map((product) => product.id)}>
+          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {products.map((product, index) => (
+              <li key={product.id} className="flex">
+                <ProductCard
+                  product={product}
+                  headingLevel={3}
+                  variant="compact"
+                  listIndex={index}
+                />
+              </li>
+            ))}
+          </ul>
+        </ProductListProvider>
       </div>
     </section>
   );

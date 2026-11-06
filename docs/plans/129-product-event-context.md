@@ -232,7 +232,7 @@ events carry list context, position, price and stock. Three new client events ar
   show a card counted only after 1 s at ≥ 50% (not when it
   scrolls out sooner), impressions deduplicated per render and sent again after `renderKey` changes, nothing
   queued without consent, and batches capped at `MAX_CLIENT_EVENTS`.
-- [ ] **6. Wire the lists** — Give `ProductCard` a `position` prop, attach the impression ref to
+- [x] **6. Wire the lists** — Give `ProductCard` a `position` prop, attach the impression ref to
   the `<article>`, and add click handlers on both links (reporting the selected size).
   `AddToCartForm` takes an optional `list` prop for the hidden fields. Wrap the lists:
   - `catalog.tsx`: `search` with `search_id` when filtered, else `catalog`.

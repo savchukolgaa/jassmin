@@ -1,5 +1,6 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
 import { RichText } from "~/components/ui/RichText";
+import { ProductListProvider } from "~/features/analytics/ProductList";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { cn } from "~/lib/cn";
 import { useContentLang, useT } from "~/lib/i18n";
@@ -73,16 +74,21 @@ export function OfferCard({ offer }: { offer: OfferView }) {
       </div>
 
       {offer.products.length > 0 && (
-        <ul
-          aria-label={t("offers.products")}
-          className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        <ProductListProvider
+          listId="offers"
+          productIds={offer.products.map((product) => product.id)}
         >
-          {offer.products.map((product) => (
-            <li key={product.id} className="flex">
-              <ProductCard product={product} headingLevel={4} />
-            </li>
-          ))}
-        </ul>
+          <ul
+            aria-label={t("offers.products")}
+            className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {offer.products.map((product, index) => (
+              <li key={product.id} className="flex">
+                <ProductCard product={product} headingLevel={4} listIndex={index} />
+              </li>
+            ))}
+          </ul>
+        </ProductListProvider>
       )}
     </article>
   );

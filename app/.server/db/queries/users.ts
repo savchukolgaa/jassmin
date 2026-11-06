@@ -42,6 +42,8 @@ export interface NewUser {
   phone?: string | null;
   acquisitionChannel?: string;
   lastLoginAt?: Date;
+  /** Agreed to marketing emails at registration (#128); the column defaults to `false`. */
+  marketingOptIn?: boolean;
 }
 
 /** Looks up the login credentials for an (already normalised) email. */
@@ -122,6 +124,24 @@ export async function insertUser(db: Db, values: NewUser): Promise<{ id: number 
 /** Records a successful login (`last_login_at` is a churn-model feature). */
 export async function touchLastLogin(db: Db, id: number): Promise<void> {
   await db.update(users).set({ lastLoginAt: sql`now()` }).where(eq(users.id, id));
+}
+
+/**
+ * Records the delivery city of the user's latest order (#128, a segmentation feature). Takes a
+ * transaction, so checkout sets it with the order.
+ */
+export async function setUserCity(db: Pick<Db, "update">, id: number, city: string): Promise<void> {
+  await db.update(users).set({ city }).where(eq(users.id, id));
+}
+
+/** Gives or withdraws the user's consent to marketing emails (#128). `false` for no such user. */
+export async function setMarketingOptIn(db: Db, id: number, optIn: boolean): Promise<boolean> {
+  const updated = await db
+    .update(users)
+    .set({ marketingOptIn: optIn })
+    .where(eq(users.id, id))
+    .returning({ id: users.id });
+  return updated.length > 0;
 }
 
 /**

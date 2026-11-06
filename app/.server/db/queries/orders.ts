@@ -83,6 +83,11 @@ export interface NewOrder {
   discountId: number | null;
   /** What a gift card pays (#125), `"0.00"` without one. */
   giftCardAmount: string;
+  /**
+   * When it's placed (`created_at`, and `paid_at` of an order a gift card paid in full), so its
+   * first status history row has the same time (#128). Defaults to now.
+   */
+  placedAt?: Date;
 }
 
 /**
@@ -95,9 +100,10 @@ export async function insertOrder(db: Executor, order: NewOrder): Promise<number
   const subtotal = sql`${order.subtotal}::numeric`;
   const discount = sql`${order.discountAmount}::numeric`;
   const giftCard = sql`${order.giftCardAmount}::numeric`;
+  const placedAt = order.placedAt ?? new Date();
   const paid =
     order.paymentMethod === "gift_card"
-      ? { status: "paid" as const, paymentStatus: "paid" as const, paidAt: new Date() }
+      ? { status: "paid" as const, paymentStatus: "paid" as const, paidAt: placedAt }
       : {};
   const [row] = await db
     .insert(orders)
@@ -116,6 +122,7 @@ export async function insertOrder(db: Executor, order: NewOrder): Promise<number
       giftCardAmount: order.giftCardAmount,
       totalAmount: sql`(${subtotal} - ${discount} + ${SHIPPING_AMOUNT}::numeric - ${giftCard})::numeric(10, 2)`,
       freeShipping: sql`(${subtotal} - ${discount}) >= ${FREE_SHIPPING_THRESHOLD}::numeric`,
+      createdAt: placedAt,
       ...paid,
     })
     .returning({ id: orders.id });
@@ -125,7 +132,10 @@ export async function insertOrder(db: Executor, order: NewOrder): Promise<number
   return row.id;
 }
 
-/** Inserts the order's lines with the variant's price at purchase and a size snapshot. */
+/**
+ * Inserts the order's lines with the variant's price at purchase, a size snapshot and the line's
+ * share of the discount (#128; `"0.00"` when it has none).
+ */
 export async function insertOrderItems(
   db: Executor,
   orderId: number,
@@ -135,6 +145,7 @@ export async function insertOrderItems(
     volumeMl: number;
     quantity: number;
     price: string;
+    discountAllocated: string;
   }[],
 ): Promise<void> {
   await db.insert(orderItems).values(
@@ -145,6 +156,7 @@ export async function insertOrderItems(
       volumeMl: line.volumeMl,
       quantity: line.quantity,
       priceAtPurchase: line.price,
+      discountAllocated: line.discountAllocated,
     })),
   );
 }

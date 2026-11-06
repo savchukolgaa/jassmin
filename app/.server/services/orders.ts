@@ -16,6 +16,11 @@
 // in the same transaction, so two orders can never spend more than its balance. An order the card
 // pays in full is placed `gift_card` and already paid.
 //
+// Order lifecycle (#128): each line stores its share of the discount (`priceCart`'s
+// `allocation`, which adds up to the order's discount), the order's first status goes into
+// `order_status_history` (`checkout`), and a logged-in buyer's `users.city` becomes this order's
+// delivery city, all in the same transaction.
+//
 // The order's confirmation email (#45) is queued in the same transaction (`order_emails`), so an
 // order never exists without it and a rolled-back order sends nothing. The caller records the
 // `purchase` event (#18) and makes the first delivery attempt for an order this call `placed`,
@@ -39,6 +44,7 @@ import {
 } from "../db/queries/discounts";
 import { findCartGiftCardId, findGiftCard, redeemGiftCard } from "../db/queries/gift-cards";
 import { insertOrderEmail } from "../db/queries/order-emails";
+import { insertOrderStatusHistory } from "../db/queries/order-status-history";
 import {
   decrementVariantStock,
   findCartStatus,
@@ -53,7 +59,7 @@ import {
   lockCartLinesForOrder,
   markCartConverted,
 } from "../db/queries/orders";
-import { findUserContact } from "../db/queries/users";
+import { findUserContact, setUserCity } from "../db/queries/users";
 import { getEnv } from "../env";
 import { checkGiftCard, giftCardAmountFor } from "./gift-cards";
 import { getMailer } from "./mailer";
@@ -166,8 +172,30 @@ export async function createOrder(
         discountAmount,
         discountId: priced.applied?.discountId ?? null,
         giftCardAmount,
+        placedAt: now,
       });
-      await insertOrderItems(tx, orderId, lines);
+      if (priced.allocation.reduce((sum, share) => sum + share, 0) !== priced.discount) {
+        // Never expected: `priceCart` allocates the discount exactly. Thrown, so nothing is kept.
+        throw new Error(`The discount of order ${orderId} doesn't add up over its lines`);
+      }
+      await insertOrderItems(
+        tx,
+        orderId,
+        lines.map((line, index) => ({
+          ...line,
+          discountAllocated: fromKopiyky(priced.allocation[index] ?? 0),
+        })),
+      );
+      // The status `insertOrder` placed it in: `paid` when a gift card paid it all (#128).
+      await insertOrderStatusHistory(tx, {
+        orderId,
+        status: paymentMethod === "gift_card" ? "paid" : "pending",
+        source: "checkout",
+        changedAt: now,
+      });
+      if (userId !== null) {
+        await setUserCity(tx, userId, customer.city);
+      }
       if (giftCard.id !== null && giftCard.amount > 0) {
         await redeemGiftCard(tx, { giftCardId: giftCard.id, orderId, amount: giftCardAmount });
         // Strapi shows the card's lower balance (#40); pushed after the commit.

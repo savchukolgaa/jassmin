@@ -217,7 +217,7 @@ Each step is small, ordered, and leaves the app in a working state.
   cod, the gift-card line in `cancelled`, the account link only with a `user_id`, and HTML/text
   parity via `htmlWords` / `words`. A `deliverOrderEmails` test with fake deps sends a `shipped`
   row and marks it sent.
-- [ ] **8. Docs.** Update the order email outbox bullet and the CMS sync bullet in
+- [x] **8. Docs.** Update the order email outbox bullet and the CMS sync bullet in
   `app/.server/AGENTS.md` (new types, once per type, locale rule, the two columns, `arrived_at` is
   an ML feature), the email list in `docs/email.md`, and staff notes on filling the ТТН in Strapi.
 - [ ] **9. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual run under

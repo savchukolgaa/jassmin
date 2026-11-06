@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrderConfirmation, OrderStatusEmail } from "~/lib/checkout";
 import type { GiftCard } from "~/lib/commerce";
 import { createTranslator } from "~/lib/i18n";
+import type { CartReminder } from "../db/queries/cart-reminders";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
 import { htmlSection, htmlWords, words } from "../email/test-helpers";
 import { withSuppressions } from "../mail";
+import { verifyUnsubscribeToken } from "../unsubscribe-token";
 import {
   buildGiftCardEmail,
   buildGiftCardRecipientEmail,
@@ -254,11 +256,12 @@ function fakeDeps(
     sendMail,
     mailer: { sendMail },
     env,
-    claim: vi.fn(async ({ orderId, giftCardId, limit }) => {
+    claim: vi.fn(async ({ orderId, giftCardId, type, limit }) => {
       const matching = due.filter(
         (e) =>
           (orderId === undefined || e.orderId === orderId) &&
-          (giftCardId === undefined || e.giftCardId === giftCardId),
+          (giftCardId === undefined || e.giftCardId === giftCardId) &&
+          (type === undefined || e.type === type),
       );
       const batch = matching.slice(0, limit);
       for (const email of batch) due.splice(due.indexOf(email), 1);
@@ -273,16 +276,48 @@ function fakeDeps(
     loadGiftCard: vi.fn(async (giftCardId: number) =>
       giftCardId === giftCard.id ? giftCard : undefined,
     ),
+    loadCartReminder: vi.fn(async (cartId: number) =>
+      cartId === cartReminder.cartId ? cartReminder : undefined,
+    ),
     markSent: vi.fn(async () => {}),
     markFailed: vi.fn(async () => {}),
     ...overrides,
   };
 }
 
+const cartReminder: CartReminder = {
+  cartId: 55,
+  userId: 9,
+  fullName: "Олена Коваль",
+  email: "olena@example.com",
+  marketingOptIn: true,
+  suppressed: false,
+  orderedSince: false,
+  lines: [
+    { title: "Coco", brand: "Chanel", imageUrl: null, volumeMl: 10, packSize: 1, quantity: 1 },
+  ],
+  availableLineCount: 1,
+  subtotal: "450.00",
+};
+
+const UNSUBSCRIBE_SECRET = "u".repeat(32);
+
+/** A queued reminder for `cartReminder`'s cart (#139). */
+const reminderRow = (id: number, cartId = cartReminder.cartId): ClaimedOrderEmail => ({
+  id,
+  orderId: null,
+  giftCardId: null,
+  cartId,
+  type: "cart_reminder",
+  locale: "en",
+  attempts: 1,
+});
+
 const queued = (id: number, orderId: number, attempts = 1): ClaimedOrderEmail => ({
   id,
   orderId,
   giftCardId: null,
+  cartId: null,
   type: "confirmation",
   locale: "uk",
   attempts,
@@ -689,7 +724,7 @@ describe("deliverOrderEmails", () => {
 
     expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
     expect(deps.markFailed).toHaveBeenCalledWith(4, {
-      error: "Order or gift card not found",
+      error: "Order, gift card or cart not found",
       final: true,
     });
   });
@@ -699,6 +734,7 @@ describe("deliverOrderEmails", () => {
       id,
       orderId: null,
       giftCardId: giftCard.id,
+      cartId: null,
       type,
       locale: "en",
       attempts: 1,
@@ -725,6 +761,7 @@ describe("deliverOrderEmails", () => {
       id: 1,
       orderId: null,
       giftCardId: 999,
+      cartId: null,
       type: "gift_card",
       locale: "uk",
       attempts: 1,
@@ -772,7 +809,7 @@ describe("deliverOrderEmails", () => {
 
     expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
     expect(deps.markFailed).toHaveBeenCalledWith(1, {
-      error: "Order or gift card not found",
+      error: "Order, gift card or cart not found",
       final: true,
     });
     expect(deps.sendMail).not.toHaveBeenCalled();
@@ -849,6 +886,106 @@ describe("deliverOrderEmails", () => {
     });
     await expect(deliverOrderEmails({}, failingMarks)).resolves.toMatchObject({ sent: 1 });
     expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe("deliverOrderEmails: cart reminders (#139)", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "info").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const withSecret = { env: { ...env, EMAIL_UNSUBSCRIBE_SECRET: UNSUBSCRIBE_SECRET } };
+
+  it("sends a reminder with its one-click unsubscribe headers and the bounce tag", async () => {
+    const deps = fakeDeps([queued(1, codOrder.id), reminderRow(2)], withSecret);
+
+    const report = await deliverOrderEmails({ type: "cart_reminder" }, deps);
+
+    expect(report).toEqual({ sent: 1, retrying: 0, gaveUp: 0, skipped: false });
+    expect(deps.sendMail).toHaveBeenCalledTimes(1);
+    const message = deps.sendMail.mock.calls[0]?.[0] as Mail.Options;
+    const headers = message.headers as Record<string, string>;
+    expect(message.subject).toBe("Your perfumes are waiting in your cart — Jassmin");
+    expect(headers["X-Mailin-custom"]).toBe("order-email:2");
+    expect(headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+    const token = /\/en\/unsubscribe\/([^>]+)>$/.exec(headers["List-Unsubscribe"] ?? "")?.[1];
+    expect(verifyUnsubscribeToken(token ?? "", UNSUBSCRIBE_SECRET)).toBe(cartReminder.userId);
+    expect(deps.markSent).toHaveBeenCalledWith(2, expect.stringMatching(/@example\.com>$/));
+  });
+
+  it("gives the same unsubscribe link on a retry", async () => {
+    const first = fakeDeps([reminderRow(2)], withSecret);
+    const retry = fakeDeps([{ ...reminderRow(2), attempts: 2 }], withSecret);
+    await deliverOrderEmails({}, first);
+    await deliverOrderEmails({}, retry);
+
+    const link = (deps: typeof first) =>
+      (deps.sendMail.mock.calls[0]?.[0]?.headers as Record<string, string> | undefined)?.[
+        "List-Unsubscribe"
+      ];
+    expect(link(retry)).toBe(link(first));
+  });
+
+  const notEligible: [Partial<CartReminder>, string][] = [
+    [{ marketingOptIn: false }, "the user unsubscribed"],
+    [{ orderedSince: true }, "the user ordered since"],
+    [{ availableLineCount: 0, lines: [] }, "nothing in the cart is available"],
+  ];
+
+  it.each(notEligible)(
+    "doesn't send a reminder that is no longer eligible: %o",
+    async (change, reason) => {
+      const deps = fakeDeps([reminderRow(3)], {
+        ...withSecret,
+        loadCartReminder: vi.fn(
+          async (): Promise<CartReminder> => ({ ...cartReminder, ...change }),
+        ),
+      });
+
+      expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
+      expect(deps.sendMail).not.toHaveBeenCalled();
+      expect(deps.markFailed).toHaveBeenCalledWith(3, {
+        error: `not eligible: ${reason}`,
+        final: true,
+      });
+    },
+  );
+
+  it("doesn't send a reminder without the unsubscribe secret, and gives up on a gone cart", async () => {
+    const deps = fakeDeps([reminderRow(4), reminderRow(5, 999)]);
+
+    expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 2 });
+    expect(deps.sendMail).not.toHaveBeenCalled();
+    expect(deps.markFailed).toHaveBeenCalledWith(4, {
+      error: "not eligible: PUBLIC_SITE_URL or EMAIL_UNSUBSCRIBE_SECRET is not set",
+      final: true,
+    });
+    expect(deps.markFailed).toHaveBeenCalledWith(5, {
+      error: "Order, gift card or cart not found",
+      final: true,
+    });
+  });
+
+  it("drops a reminder to a suppressed address (#134)", async () => {
+    const deps = fakeDeps([reminderRow(6)], withSecret);
+    const mailer = deps.mailer;
+    if (!mailer) throw new Error("fakeDeps has a mailer");
+    deps.mailer = withSuppressions(
+      mailer,
+      async () => new Map([["olena@example.com", "complaint" as const]]),
+    );
+
+    expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
+    expect(deps.sendMail).not.toHaveBeenCalled();
+    expect(deps.markFailed).toHaveBeenCalledWith(6, {
+      error: "suppressed: complaint",
+      final: true,
+    });
   });
 });
 

@@ -130,6 +130,7 @@ describe.skipIf(!hasDatabase)("order email queries", () => {
         id: expect.any(Number),
         orderId,
         giftCardId: null,
+        cartId: null,
         type: "confirmation",
         locale: "en",
         attempts: 1,

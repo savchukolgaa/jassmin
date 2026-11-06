@@ -132,7 +132,7 @@ The store owner wants customers who left perfumes in their cart to get one frien
   - `unsubscribeUrl(siteUrl, locale, token)` uses `pathFor(locale, "unsubscribe", { token })`.
 
   Add the copy to both i18n files (the `cartReminderEmail` namespace and `email.footer.unsubscribe`). Unit tests cover: Ukrainian and English, the 3-item limit with "and N more", the photo fallback to `/email/shop-bottle.jpg`, the button URL exactly as in the issue (plus `restore=1`), and both headers. Add the `public/email/shop-bottle.jpg` file (resized from `app/assets/shop-bottle/shop-bottle-1280.jpg`, metadata stripped).
-- [ ] **6. Delivery through the outbox.** In `services/order-email.ts`:
+- [x] **6. Delivery through the outbox.** In `services/order-email.ts`:
   - add `loadCartReminder` to `OrderEmailDeps` / `orderEmailDeps`, and `cartId` to `ClaimedOrderEmail` and the `claimOrderEmails` returning list, with an optional `type` filter;
   - in `buildEmail`, add a `cart_reminder` branch that returns a "not eligible" result (opt-out, ordered since, nothing available) which `deliverOne` marks `failed` with `final: true` and doesn't send;
   - in `deliverOne`, merge the headers instead of replacing them, and label the email `cart <id>'s cart_reminder email`;

@@ -217,7 +217,7 @@ All three were answered on 2026-11-06: the user accepted the recommended default
     right `units_sold`; the next day without movements carries `closing_stock` forward; a restock
     day after it shows the new stock;
   - the trigger refuses `update` and `delete`, and deleting an order nulls `order_id`.
-- [ ] **10. Docs** — `app/.server/AGENTS.md` (Database: an "Inventory ledger (#130)" bullet with
+- [x] **10. Docs** — `app/.server/AGENTS.md` (Database: an "Inventory ledger (#130)" bullet with
   writers, invariant, append-only trigger, view; Orders / CMS sync bullets mention the rows),
   `AGENTS.md` ML list (`inventory_movements`, `inventory_daily`), `docs/setup.md` (Strapi restart
   for the new field; the unpaid-order job also logs returns of stock).

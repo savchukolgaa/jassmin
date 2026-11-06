@@ -1,8 +1,9 @@
 # Email delivery: provider, DNS and bounces
 
 The shop sends every email over SMTP from `no-reply@jassmin.ua`, with replies going to
-`hello@jassmin.ua` (#134). That covers order confirmations, gift card codes, contact form messages,
-the email-changed notice, and the password reset and email verification links (#135). In production the SMTP server is **Brevo**, a transactional email
+`hello@jassmin.ua` (#134). That covers order confirmations, the order status emails (shipped,
+arrived at the branch, cancelled, refunded; #138), gift card codes, contact form messages, the
+email-changed notice, and the password reset and email verification links (#135). In production the SMTP server is **Brevo**, a transactional email
 provider. Locally it's smtp4dev, which catches everything.
 
 Mail from a domain without SPF, DKIM and DMARC lands in spam, or is rejected by Gmail, Yahoo and
@@ -227,6 +228,25 @@ WHERE id = <id>;
 
 If Brevo itself also blocked the address, remove it from Brevo's list too, under
 **Transactional → Contacts → Blocked contacts**.
+
+## Order status emails
+
+Staff change an order in the Strapi admin (#40), and the shop queues an email in `order_emails`
+in the same transaction (#138), in the language of the order's confirmation:
+
+| Staff do this in Strapi | The customer gets |
+|---|---|
+| Order status → **Відправлене** (shipped) | `shipped`: the parcel is on its way, with the ТТН and a Nova Poshta tracking link when **Номер ТТН** is filled in |
+| Tick **Прибуло у відділення** (only for a shipped order) | `arrived`: the branch, the free storage days (`NOVA_POSHTA_FREE_STORAGE_DAYS`, 7), what to bring and what's left to pay |
+| Order status → **Скасоване** (cancelled) | `cancelled`: says a card payment will be refunded and a gift card's amount is back on the card |
+| Payment status → **Кошти повернено** (refunded) | `refunded`: the amount and, for a card, the bank's 3–7 working days |
+
+Each type is sent **at most once per order** (unique `order_id, type`): saving the same status
+again, or setting it back and forth, sends nothing new. So fill in the ТТН in the same save as
+"Shipped": a number added after the shipped email went out isn't sent. Cancelling with a refund in
+one save sends both emails. The shop tries them right after the save and `pnpm db:send-order-emails`
+retries failures, like the confirmation. `paid`, `completed`, `returned` and `unclaimed` send no
+email.
 
 ## Local development
 

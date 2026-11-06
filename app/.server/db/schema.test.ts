@@ -287,6 +287,8 @@ describe("orders", () => {
       refundedAt: ["timestamp with time zone", false, false],
       shippedAt: ["timestamp with time zone", false, false],
       completedAt: ["timestamp with time zone", false, false],
+      arrivedAt: ["timestamp with time zone", false, false],
+      waybillNumber: ["varchar(20)", false, false],
       discountId: ["integer", false, false],
     });
   });
@@ -302,6 +304,7 @@ describe("orders", () => {
         "orders_amounts_check",
         "orders_gift_card_payment_check",
         "orders_payment_method_check",
+        "orders_waybill_number_check",
       ],
       uniques: [],
       indexes: [

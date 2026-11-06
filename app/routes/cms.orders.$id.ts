@@ -1,5 +1,6 @@
 import { checkCmsSyncAuth, readJsonBody } from "~/.server/cms/sync-auth";
 import { applyCmsOrderChange, pushToCms } from "~/.server/services/cms-sync";
+import { deliverOrderStatusEmails } from "~/.server/services/orders";
 import { parseOrderId } from "~/lib/checkout";
 import { cmsOrderChangeSchema, toSyncIssues } from "~/lib/cms-sync";
 import type { Route } from "./+types/cms.orders.$id";
@@ -35,6 +36,10 @@ export async function action({ request, params }: Route.ActionArgs) {
   }
   // A cancellation queued its products' restored stock for Strapi; never rejects.
   void pushToCms();
+  // The order status emails (#138) the change queued; the retry job sends what fails.
+  if (result.emailsQueued) {
+    void deliverOrderStatusEmails(orderId);
+  }
   return Response.json(result.order);
 }
 

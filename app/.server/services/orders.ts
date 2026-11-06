@@ -309,6 +309,17 @@ export function deliverOrderConfirmation(
   return deliverOrderEmails({ orderId }, () => orderEmailDeps(db, getMailer(), getEnv()));
 }
 
+/**
+ * Sends an order's due emails (the status emails a Strapi change queued, #138) right after the
+ * commit. Never rejects; `pnpm db:send-order-emails` retries what fails.
+ */
+export function deliverOrderStatusEmails(
+  orderId: number,
+  db: Db = defaultDb,
+): Promise<OrderEmailReport> {
+  return deliverOrderEmails({ orderId }, () => orderEmailDeps(db, getMailer(), getEnv()));
+}
+
 /** The user's orders for the account dashboard (#12), split into current and previous. */
 export async function getAccountOrders(userId: number, db: Db = defaultDb): Promise<AccountOrders> {
   const orders = await listUserOrders(db, userId);

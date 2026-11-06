@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { cmsProductChangeSchema, MAX_PRODUCT_DESCRIPTION, MAX_PRODUCT_NOTES } from "./cms-sync";
+import {
+  cmsOrderChangeSchema,
+  cmsProductChangeSchema,
+  MAX_PRODUCT_DESCRIPTION,
+  MAX_PRODUCT_NOTES,
+} from "./cms-sync";
 
 const create = {
   action: "create",
@@ -168,5 +173,33 @@ describe("cmsProductChangeSchema: image size and formats (#88)", () => {
       "imageFormats.0.height",
     );
     expect(issues({ imageFormats: Array(9).fill(formats[0]) })[0]?.[0]).toBe("imageFormats");
+  });
+});
+
+describe("cmsOrderChangeSchema (#138)", () => {
+  it("normalises the waybill number and removes a blank one", () => {
+    expect(cmsOrderChangeSchema.parse({ waybillNumber: " 2045 0000 0000 01 " })).toEqual({
+      waybillNumber: "20450000000001",
+    });
+    expect(cmsOrderChangeSchema.parse({ waybillNumber: "  " })).toEqual({ waybillNumber: null });
+    expect(cmsOrderChangeSchema.parse({ waybillNumber: null })).toEqual({ waybillNumber: null });
+    expect(cmsOrderChangeSchema.parse({})).toEqual({});
+  });
+
+  it("refuses a waybill number that isn't 14 digits", () => {
+    for (const waybillNumber of ["2045000000000", "204500000000012", "2045000000000A"]) {
+      expect(cmsOrderChangeSchema.safeParse({ waybillNumber }).success).toBe(false);
+    }
+  });
+
+  it("takes the arrival checkbox, null when untouched", () => {
+    expect(cmsOrderChangeSchema.parse({ status: "shipped", arrivedAtBranch: true })).toEqual({
+      status: "shipped",
+      arrivedAtBranch: true,
+    });
+    expect(cmsOrderChangeSchema.parse({ arrivedAtBranch: null })).toEqual({
+      arrivedAtBranch: null,
+    });
+    expect(cmsOrderChangeSchema.safeParse({ arrivedAtBranch: "yes" }).success).toBe(false);
   });
 });

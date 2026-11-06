@@ -11,13 +11,16 @@ const applyCmsOrderChange = vi.hoisted(() =>
     async (_orderId: number, _change: CmsOrderChange): Promise<CmsOrderResult> => ({
       ok: true,
       order,
+      emailsQueued: false,
     }),
   ),
 );
 
 const pushToCms = vi.hoisted(() => vi.fn());
+const deliverOrderStatusEmails = vi.hoisted(() => vi.fn());
 
 vi.mock("~/.server/services/cms-sync", () => ({ applyCmsOrderChange, pushToCms }));
+vi.mock("~/.server/services/orders", () => ({ deliverOrderStatusEmails }));
 vi.mock("~/.server/env", () => ({ getEnv: () => ({ CMS_SYNC_SECRET: SECRET }) }));
 
 type ActionArgs = Parameters<typeof import("./cms.orders.$id").action>[0];
@@ -35,6 +38,38 @@ describe("cms orders sync route", () => {
   beforeEach(() => {
     applyCmsOrderChange.mockClear();
     pushToCms.mockClear();
+    deliverOrderStatusEmails.mockClear();
+  });
+
+  it("sends the order status emails a change queued, after the commit (#138)", async () => {
+    const { action } = await import("./cms.orders.$id");
+
+    applyCmsOrderChange.mockResolvedValueOnce({ ok: true, order, emailsQueued: true });
+    const response = await action(
+      post("7", JSON.stringify({ status: "shipped", waybillNumber: "2045 0000 0000 01" })),
+    );
+
+    expect(response.status).toBe(200);
+    // Strapi gets the order only, not the email flag.
+    expect(await response.json()).toEqual(order);
+    expect(applyCmsOrderChange).toHaveBeenCalledWith(7, {
+      status: "shipped",
+      waybillNumber: "20450000000001",
+    });
+    expect(deliverOrderStatusEmails).toHaveBeenCalledWith(7);
+  });
+
+  it("answers 422 for a waybill number that isn't 14 digits (#138)", async () => {
+    const { action } = await import("./cms.orders.$id");
+
+    const response = await action(post("7", JSON.stringify({ waybillNumber: "12345" })));
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      error: "invalid-input",
+      issues: [{ path: "waybillNumber" }],
+    });
+    expect(applyCmsOrderChange).not.toHaveBeenCalled();
   });
 
   it("applies a status change and answers with the stored order", async () => {
@@ -46,6 +81,8 @@ describe("cms orders sync route", () => {
     expect(await response.json()).toEqual(order);
     expect(applyCmsOrderChange).toHaveBeenCalledWith(7, { status: "shipped" });
     expect(pushToCms).toHaveBeenCalledOnce();
+    // Nothing was queued, so nothing to send.
+    expect(deliverOrderStatusEmails).not.toHaveBeenCalled();
   });
 
   it("rejects a wrong secret", async () => {

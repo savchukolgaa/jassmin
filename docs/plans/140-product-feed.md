@@ -171,7 +171,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   `xmlText(value)`, which strips the forbidden characters and then escapes. `seo/sitemap.ts`
   imports `escapeXml` from it. Move the `escapeXml` test to `xml.test.ts` and add cases for control
   characters and lone surrogates. Check: the sitemap tests still pass.
-- [ ] **3. Feed builder.** In `app/.server/seo/product-feed.ts`, define
+- [x] **3. Feed builder.** In `app/.server/seo/product-feed.ts`, define
   `FeedChannel { title; link; description }` and `FeedItem { id; groupId; title; description; link;
   imageLink; additionalImageLinks; price; availability: "in_stock" | "out_of_stock"; brand;
   condition: "new"; productType; googleProductCategory: "479"; gender; size }` and the constants

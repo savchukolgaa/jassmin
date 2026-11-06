@@ -54,6 +54,10 @@ export function describeAppSyncError(status: number, body: unknown): string {
       const descriptionHint = fields.some((field) => field.startsWith("description"))
         ? " Опис — до 5000 символів."
         : "";
+      if (fields.includes("waybillNumber")) {
+        // An order's fields (#138): the product rules below don't apply.
+        return withCode("Номер ТТН Нової пошти — 14 цифр (пробіли можна), або порожнє поле.");
+      }
       return withCode(
         `Магазин не прийняв дані. Перевірте поля: ${fields.join(", ") || "—"}. ` +
           "Об’єм — 7, 10, 30, 50 або 100 мл, кожен лише раз; ціна більша за 0; залишок не від’ємний. " +

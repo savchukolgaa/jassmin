@@ -218,6 +218,20 @@ export function toOrderData(answer: unknown): Data {
   };
 }
 
+/**
+ * What staff changed on an order, for `/cms/orders/:id`: the statuses, the waybill number and
+ * the "arrived at the branch" checkbox (#138). A field the form didn't send stays as it is; a
+ * cleared waybill is sent as `null`, which removes it.
+ */
+export function toOrderChange(data: Data): Data {
+  return {
+    status: data.orderStatus ?? undefined,
+    paymentStatus: data.paymentStatus ?? undefined,
+    arrivedAtBranch: typeof data.arrivedAtBranch === "boolean" ? data.arrivedAtBranch : undefined,
+    waybillNumber: "waybillNumber" in data ? (data.waybillNumber ?? null) : undefined,
+  };
+}
+
 async function findStored(strapi: Core.Strapi, uid: string, documentId: string | undefined) {
   if (!documentId) return null;
   const documents = strapi.documents(uid as typeof PRODUCT_UID);
@@ -275,11 +289,7 @@ async function syncOrder(strapi: Core.Strapi, context: DocumentContext): Promise
   if (typeof stored?.orderId !== "number") {
     throw new AppSyncError("Цього замовлення немає в базі магазину.");
   }
-  const data = params.data ?? {};
-  const answer = await postToApp(`/cms/orders/${stored.orderId}`, {
-    status: data.orderStatus ?? undefined,
-    paymentStatus: data.paymentStatus ?? undefined,
-  });
+  const answer = await postToApp(`/cms/orders/${stored.orderId}`, toOrderChange(params.data ?? {}));
   // Every other field is the shop's: whatever the form sent, Strapi stores the app's values.
   params.data = toOrderData(answer);
 }

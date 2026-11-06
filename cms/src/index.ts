@@ -80,7 +80,13 @@ async function ensureLocales(strapi: Core.Strapi): Promise<void> {
 }
 
 /** The only order fields staff change; the shop owns the rest (#40). */
-const EDITABLE_ORDER_FIELDS = new Set(["orderStatus", "paymentStatus"]);
+const EDITABLE_ORDER_FIELDS = new Set([
+  "orderStatus",
+  "paymentStatus",
+  // #138: the Nova Poshta waybill and the parcel's arrival at the branch.
+  "waybillNumber",
+  "arrivedAtBranch",
+]);
 
 interface EditMetadata {
   edit?: { editable?: boolean; label?: string; description?: string };
@@ -250,12 +256,40 @@ const PRODUCT_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string
   },
 ];
 
+/** The order fields staff fill in for the customer's emails (#138). */
+const ORDER_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string, FieldHint> }[] = [
+  {
+    kind: "content-types",
+    uid: ORDER_UID,
+    fields: {
+      waybillNumber: {
+        label: "Номер ТТН Нової пошти",
+        description:
+          "14 цифр (пробіли можна). Заповніть разом зі статусом «Відправлене»: номер і посилання на відстеження потраплять у лист клієнту.",
+      },
+      arrivedAtBranch: {
+        label: "Прибуло у відділення",
+        description:
+          "Позначте, коли посилка у відділенні: клієнт отримає лист з адресою відділення. Лише для відправленого замовлення; лист надсилається один раз.",
+      },
+      arrivedAt: {
+        label: "Прибуло у відділення (дата)",
+        description: "Ставить магазин, коли позначено «Прибуло у відділення».",
+      },
+    },
+  },
+];
+
 /**
- * Labels and describes the shared, per-language and alt image fields and the product
- * descriptions in the edit views.
+ * Labels and describes the shared, per-language and alt image fields, the product descriptions
+ * and the order's delivery fields in the edit views.
  */
 async function describeFields(strapi: Core.Strapi): Promise<void> {
-  for (const { kind, uid, fields } of [...IMAGE_FIELD_HINTS, ...PRODUCT_FIELD_HINTS]) {
+  for (const { kind, uid, fields } of [
+    ...IMAGE_FIELD_HINTS,
+    ...PRODUCT_FIELD_HINTS,
+    ...ORDER_FIELD_HINTS,
+  ]) {
     try {
       await updateEditMetadata(strapi, kind, uid, (field, edit) => {
         const hint = fields[field];

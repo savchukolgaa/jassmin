@@ -194,7 +194,7 @@ Each step is small, ordered, and leaves the app in a working state.
   (`createTestDatabase`): shipped → one `shipped` row with the confirmation's locale;
   `paid → cancelled` and repeated saves → still one row;
   refused transition → no row; a `failed` row is not re-queued.
-- [ ] **5. Strapi.** Add `waybillNumber`, `arrivedAtBranch` and `arrivedAt` to the order content
+- [x] **5. Strapi.** Add `waybillNumber`, `arrivedAtBranch` and `arrivedAt` to the order content
   type (descriptions in Ukrainian), send the first two from `syncOrder` in
   `cms/src/sync/middleware.ts`, map the app's answer back (`toOrderData`), and add Ukrainian texts
   for `invalid-waybill` / `arrived-not-shipped`. Update the middleware tests. In the route

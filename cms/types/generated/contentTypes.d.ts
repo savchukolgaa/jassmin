@@ -810,7 +810,7 @@ export interface ApiOfferOffer extends Struct.CollectionTypeSchema {
 export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
   collectionName: 'orders';
   info: {
-    description: 'Orders placed in the shop (#40). Only Order status and Payment status can be changed here; the shop checks every change, sets the dates and restores stock on cancellation. (`orderStatus`, because Strapi reserves `status`.)';
+    description: 'Orders placed in the shop (#40). Only Order status, Payment status, the waybill number and "arrived at the branch" can be changed here (#138); the shop checks every change, sets the dates, restores stock on cancellation and emails the customer. (`orderStatus`, because Strapi reserves `status`.)';
     displayName: 'Order';
     pluralName: 'orders';
     singularName: 'order';
@@ -819,6 +819,8 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    arrivedAt: Schema.Attribute.DateTime;
+    arrivedAtBranch: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     cancelledAt: Schema.Attribute.DateTime;
     completedAt: Schema.Attribute.DateTime;
     createdAt: Schema.Attribute.DateTime;
@@ -871,6 +873,10 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     userId: Schema.Attribute.Integer;
+    waybillNumber: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
   };
 }
 

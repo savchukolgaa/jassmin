@@ -610,7 +610,7 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     const { applyCmsOrderChange } = await import("./cms-sync");
     const { cmsOutbox } = await import("../db/schema");
     await testDb.db.delete(cmsOutbox);
-    const { productId, orderId } = await placed({ quantity: 2, trackStock: false });
+    const { productId, variantId, orderId } = await placed({ quantity: 2, trackStock: false });
 
     const result = await applyCmsOrderChange(
       orderId,
@@ -624,13 +624,15 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     });
     expect((await variantRow(productId, 10))?.stockQuantity).toBe(6);
     expect((await outbox()).filter((row) => row.entity === "product")).toEqual([]);
+    const { listInventoryMovements } = await import("../db/queries/inventory");
+    expect(await listInventoryMovements(testDb.db, variantId)).toEqual([]);
   });
 
   it("cancels an order and puts its units back in stock exactly once", async () => {
     const { applyCmsOrderChange } = await import("./cms-sync");
     const { cmsOutbox } = await import("../db/schema");
     await testDb.db.delete(cmsOutbox);
-    const { productId, orderId } = await placed({ quantity: 2 });
+    const { productId, variantId, orderId } = await placed({ quantity: 2 });
 
     const result = await applyCmsOrderChange(
       orderId,
@@ -643,6 +645,18 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     });
     expect((await variantRow(productId, 10))?.stockQuantity).toBe(8);
     expect(await outbox()).toEqual([{ entity: "product", entityId: productId }]);
+    // Logged once in the inventory ledger, with the stock after it (#130).
+    const { listInventoryMovements } = await import("../db/queries/inventory");
+    const ledger = async () =>
+      (await listInventoryMovements(testDb.db, variantId)).filter((m) => m.orderId === orderId);
+    expect(await ledger()).toEqual([
+      expect.objectContaining({
+        reason: "cancellation",
+        quantityDelta: 2,
+        stockAfter: 8,
+        source: "cms",
+      }),
+    ]);
 
     // A repeat of the same change is no change; leaving `cancelled` is refused.
     expect(
@@ -661,6 +675,7 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       to: "shipped",
     });
     expect((await variantRow(productId, 10))?.stockQuantity).toBe(8);
+    expect(await ledger()).toHaveLength(1);
   });
 
   it("gives a gift card's amount back when the order is cancelled, not when it's returned (#125)", async () => {
@@ -758,7 +773,7 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
   it("records each status change in the history and nothing for a refusal (#128)", async () => {
     const { applyCmsOrderChange } = await import("./cms-sync");
     const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
-    const { orderId } = await placed({ paymentMethod: "card" });
+    const { orderId, variantId } = await placed({ paymentMethod: "card" });
     const at = (hour: number) => new Date(`2026-10-25T${String(hour).padStart(2, "0")}:00:00Z`);
     const history = async () =>
       (await listOrderStatusHistory(testDb.db, orderId)).map((row) => [
@@ -791,6 +806,18 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
       ["paid", "cms", at(10)],
       ["shipped", "cms", at(11)],
       ["unclaimed", "cms", at(12)],
+    ]);
+    // The parcel's units went back on the shelf once, logged as a `return` (#130).
+    const { listInventoryMovements } = await import("../db/queries/inventory");
+    expect(
+      (await listInventoryMovements(testDb.db, variantId)).filter((m) => m.orderId === orderId),
+    ).toEqual([
+      expect.objectContaining({
+        reason: "return",
+        quantityDelta: 1,
+        source: "cms",
+        occurredAt: at(12),
+      }),
     ]);
   });
 

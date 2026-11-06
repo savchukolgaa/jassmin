@@ -175,11 +175,11 @@ All three were answered on 2026-11-06: the user accepted the recommended default
   last `stock_after` by `occurred_at, id`), and a carry-forward of the closing stock (`last
   value` over a running group, or a lateral `order by occurred_at desc limit 1`). Apply the Q3
   default.
-- [ ] **4. Ledger queries** — `app/.server/db/queries/inventory.ts`: `insertInventoryMovements(tx,
+- [x] **4. Ledger queries** — `app/.server/db/queries/inventory.ts`: `insertInventoryMovements(tx,
   rows)` (the only writer), `inventoryBalance(tx, variantId)` (`coalesce(sum(quantity_delta), 0)`),
   `listInventoryMovements(db, variantId)` and `listInventoryDaily(db, variantId, from, to)` for
   tests and future exports. Module comment states the append-only rule.
-- [ ] **5. Checkout and order lifecycle** — `decrementVariantStock(tx, { variantId, quantity,
+- [x] **5. Checkout and order lifecycle** — `decrementVariantStock(tx, { variantId, quantity,
   orderId, now })`: `update … where track_stock returning stock_quantity`, then a `sale` row
   (`-quantity`, `stock_after`) when a row came back. `restockOrder(tx, orderId, { reason, source,
   now })`: `.returning()` on each update and one row per line. `changeOrderStatus` passes `reason =

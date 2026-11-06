@@ -91,6 +91,9 @@ events carry list context, position, price and stock. Three new client events ar
 - **Dwell** (`product_dwell`) is sent once per product page view, from a
   `useProductDwell(product, enabled)` hook:
   - It counts only time while the page is visible and is capped at 30 min (`MAX_DWELL_MS`).
+    Because it's sent the first time the page is hidden, "visible time" means: the clock starts at
+    mount, or at the first `visibilitychange` → visible for a page opened in a background tab,
+    and a page that's never shown sends nothing.
   - It is sent on the first of `visibilitychange` → hidden, `pagehide`, or unmount (a client-side
     navigation away).
   - `max_scroll_pct` is 0–100, rounded.
@@ -256,7 +259,7 @@ events carry list context, position, price and stock. Three new client events ar
 
   Check: route tests assert the recorded properties, and `orders.test.ts` covers a first order and
   a second one.
-- [ ] **8. Product dwell** — Add `useProductDwell(product, enabled)`. It tracks visible time with
+- [x] **8. Product dwell** — Add `useProductDwell(product, enabled)`. It tracks visible time with
   `performance.now()` across visibility changes, tracks max scroll depth with a passive `scroll`
   listener, and sends once on the first of hidden, `pagehide` or unmount, capped at
   `MAX_DWELL_MS`. Call it in `routes/product.tsx`. Check: fake-timer tests cover visible time

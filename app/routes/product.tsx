@@ -5,6 +5,7 @@ import { getSimilarProducts, resolveProductHandle } from "~/.server/services/pro
 import { JsonLd } from "~/components/JsonLd";
 import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
+import { useProductDwell } from "~/features/analytics/useProductDwell";
 import { ProductImage } from "~/features/catalog/ProductImage";
 import { ProductUnavailable, SimilarProducts } from "~/features/product/ProductArchived";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
@@ -124,6 +125,8 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const { t } = translator;
   const siteUrl = useSiteUrl();
   const { product, available, similar } = loaderData;
+  // How long the page is read and how far down, sent when the visitor leaves (#129).
+  useProductDwell(product);
   const catalog = catalogOf(product.gender);
   const breadcrumbs = productBreadcrumbs(translator, catalog, product);
   const descriptionLang = useContentLang(product.descriptionLocale);

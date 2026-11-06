@@ -208,7 +208,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   and link (`/parfumy/…` vs `/en/perfumes/…`), the English description falling back to Ukrainian,
   the fallback description when both are empty, truncation at 5000, own photo vs bottle JPEG with
   absolute URLs, product_type with and without a family, and a pack size of 3 giving `3 × 2 мл`.
-- [ ] **6. Route.** Create `app/routes/feeds.products.xml.ts`. The `loader({ request })` reads the
+- [x] **6. Route.** Create `app/routes/feeds.products.xml.ts`. The `loader({ request })` reads the
   locale from the URL (`/en/` prefix → `en`, else `uk`, using `EN_PREFIX`), awaits the rows, and
   returns `new Response(stream, { headers })` with the headers from Decisions. The `ReadableStream`
   pulls from the chunk iterator through a `TextEncoder`. Register both paths in `app/routes.ts` with

@@ -171,7 +171,7 @@ Each step is small, ordered, and leaves the app in a working state.
   (`delete from order_emails where type in (…new…)`, restore the old CHECK, drop the CHECK and the
   two columns). Run `pnpm db:migrate`, then `pnpm db:rollback` and migrate again.
   `schema.test.ts` passes.
-- [ ] **2. Lifecycle rules.** In `app/lib/order-status.ts`, add `arrivedAt` and `waybillNumber` to
+- [x] **2. Lifecycle rules.** In `app/lib/order-status.ts`, add `arrivedAt` and `waybillNumber` to
   `OrderLifecycle` and `arrivedAtBranch?: boolean`, `waybillNumber?: string | null` to
   `OrderStatusChange`. `nextOrderState`: a changed waybill goes into the patch; `arrivedAtBranch:
   true` sets `arrivedAt = now` when it's `null` and the resulting status is `shipped`, otherwise

@@ -203,7 +203,11 @@ export async function applyCmsProductChange(
 export type CmsOrderResult =
   | { ok: true; order: CmsOrderState }
   | Failure<
-      "unknown-order" | "invalid-transition" | "card-not-paid" | "invalid-payment-transition"
+      | "unknown-order"
+      | "invalid-transition"
+      | "card-not-paid"
+      | "invalid-payment-transition"
+      | "arrived-not-shipped"
     >;
 
 /**

@@ -74,6 +74,10 @@ export function describeAppSyncError(status: number, body: unknown): string {
       return withCode("Замовлення з оплатою карткою можна відправити лише після оплати.");
     case "invalid-payment-transition":
       return withCode(`Не можна змінити статус оплати ${label(data.from)} на ${label(data.to)}.`);
+    case "arrived-not-shipped":
+      return withCode(
+        `«Прибуло у відділення» можна позначити лише для відправленого замовлення (зараз ${label(data.status)}).`,
+      );
     case "unauthorized":
     case "not-configured":
       return withCode(

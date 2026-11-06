@@ -387,6 +387,8 @@ export async function lockOrderLifecycle(db: Executor, orderId: number) {
       refundedAt: orders.refundedAt,
       shippedAt: orders.shippedAt,
       completedAt: orders.completedAt,
+      arrivedAt: orders.arrivedAt,
+      waybillNumber: orders.waybillNumber,
     })
     .from(orders)
     .where(eq(orders.id, orderId))
@@ -394,7 +396,10 @@ export async function lockOrderLifecycle(db: Executor, orderId: number) {
   return row;
 }
 
-/** Writes the status, payment status and timestamps; `$onUpdate` bumps `updated_at`. */
+/**
+ * Writes the status, payment status, timestamps and waybill number; `$onUpdate` bumps
+ * `updated_at`.
+ */
 export async function updateOrderLifecycle(
   db: Executor,
   orderId: number,

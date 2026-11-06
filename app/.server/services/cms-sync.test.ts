@@ -731,6 +731,46 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect(refunded.order.cancelledAt).not.toBeNull();
   });
 
+  it("stores the waybill and the arrival and returns them for Strapi (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed();
+    const now = new Date("2026-11-06T10:00:00Z");
+
+    const shipped = await applyCmsOrderChange(
+      orderId,
+      { status: "shipped", waybillNumber: "20450000000001" },
+      testDb.db,
+      now,
+    );
+    expect(shipped).toMatchObject({
+      ok: true,
+      order: { status: "shipped", waybillNumber: "20450000000001", arrivedAtBranch: false },
+    });
+    expect(
+      await applyCmsOrderChange(orderId, { arrivedAtBranch: true }, testDb.db, now),
+    ).toMatchObject({
+      ok: true,
+      order: { arrivedAt: now.toISOString(), arrivedAtBranch: true },
+    });
+  });
+
+  it("refuses an arrival for an order that isn't shipped and writes nothing (#138)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { orderId } = await placed();
+
+    expect(
+      await applyCmsOrderChange(
+        orderId,
+        { arrivedAtBranch: true, waybillNumber: "20450000000001" },
+        testDb.db,
+      ),
+    ).toEqual({ ok: false, error: "arrived-not-shipped", status: "pending" });
+    expect(await applyCmsOrderChange(orderId, {}, testDb.db)).toMatchObject({
+      ok: true,
+      order: { arrivedAt: null, waybillNumber: null },
+    });
+  });
+
   it("answers unknown-order for a missing order", async () => {
     const { applyCmsOrderChange } = await import("./cms-sync");
 

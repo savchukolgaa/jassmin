@@ -163,7 +163,7 @@ outbox, in the same transaction as the change and in the order's language. The e
 
 Each step is small, ordered, and leaves the app in a working state.
 
-- [ ] **1. Schema and migration.** Extend `ORDER_EMAIL_TYPES`; add `orders.waybillNumber`
+- [x] **1. Schema and migration.** Extend `ORDER_EMAIL_TYPES`; add `orders.waybillNumber`
   (`varchar({ length: 20 })`, CHECK `orders_waybill_number_check`) and `orders.arrivedAt`
   (`timestamp({ withTimezone: true })`) with doc comments (ML feature note on `arrived_at`). Mirror
   them in `~/lib/commerce`. `pnpm db:generate --name order_status_emails`; check the SQL rewrites

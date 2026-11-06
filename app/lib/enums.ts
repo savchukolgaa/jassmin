@@ -77,10 +77,19 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 /**
  * Emails queued in `order_emails.type` (#45): an order's `confirmation`, and a gift card's code to
- * its buyer (`gift_card`) and to the recipient they named (`gift_card_recipient`, #125). A CHECK
- * constraint limits it.
+ * its buyer (`gift_card`) and to the recipient they named (`gift_card_recipient`, #125), and the
+ * order status emails (#138): `shipped`, `arrived` (at the Nova Poshta branch), `cancelled` and
+ * `refunded`. A CHECK constraint limits it.
  */
-export const ORDER_EMAIL_TYPES = ["confirmation", "gift_card", "gift_card_recipient"] as const;
+export const ORDER_EMAIL_TYPES = [
+  "confirmation",
+  "gift_card",
+  "gift_card_recipient",
+  "shipped",
+  "arrived",
+  "cancelled",
+  "refunded",
+] as const;
 
 export type OrderEmailType = (typeof ORDER_EMAIL_TYPES)[number];
 

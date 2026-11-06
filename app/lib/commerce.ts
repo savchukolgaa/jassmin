@@ -84,6 +84,10 @@ export interface Order {
   refundedAt: Date | null;
   shippedAt: Date | null;
   completedAt: Date | null;
+  /** When the parcel arrived at the Nova Poshta branch (#138). */
+  arrivedAt: Date | null;
+  /** The Nova Poshta waybill number (ТТН, #138). */
+  waybillNumber: string | null;
   /** The discount rule applied at checkout (#59). */
   discountId: number | null;
 }

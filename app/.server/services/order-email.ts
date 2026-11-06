@@ -310,6 +310,10 @@ async function buildEmail(
     const order = email.orderId === null ? undefined : await deps.loadOrder(email.orderId);
     return order ? buildOrderConfirmationEmail(order, translator, deps.env) : null;
   }
+  if (email.type !== "gift_card" && email.type !== "gift_card_recipient") {
+    // The order status emails' templates come in a later step of #138; until then they wait.
+    throw new Error(`No template for ${email.type} emails yet`);
+  }
   const card = email.giftCardId === null ? undefined : await deps.loadGiftCard(email.giftCardId);
   return card ? GIFT_CARD_BUILDERS[email.type](card, translator, deps.env) : null;
 }

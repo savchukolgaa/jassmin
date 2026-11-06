@@ -204,6 +204,13 @@
       "when": 1793976921258,
       "tag": "0028_order_lifecycle_ml",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793986831955,
+      "tag": "0029_inventory_movements",
+      "breakpoints": true
     }
   ]
 }

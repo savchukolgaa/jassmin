@@ -8,6 +8,8 @@ import type {
   Discount,
   GiftCard,
   GiftCardRedemption,
+  InventoryDay,
+  InventoryMovement,
   Order,
   OrderItem,
   OrderStatusHistoryEntry,
@@ -25,6 +27,8 @@ import {
   genderType,
   giftCardRedemptions,
   giftCards,
+  type inventoryDaily,
+  inventoryMovements,
   orderEmails,
   orderItems,
   orderStatusHistory,
@@ -382,6 +386,36 @@ describe("order_status_history", () => {
   });
 });
 
+describe("inventory_movements", () => {
+  it("has the specified columns, restricts variant deletes and indexes (variant_id, occurred_at)", () => {
+    expect(describeColumns(inventoryMovements)).toEqual({
+      id: ["serial", true, true],
+      variantId: ["integer", true, false],
+      occurredAt: ["timestamp with time zone", true, true],
+      reason: ["text", true, false],
+      quantityDelta: ["integer", true, false],
+      stockAfter: ["integer", true, false],
+      orderId: ["integer", false, false],
+      source: ["text", true, false],
+      note: ["text", false, false],
+    });
+    expect(describeForeignKeys(inventoryMovements)).toEqual({
+      variantId: ["product_variants", "restrict"],
+      orderId: ["orders", "set null"],
+    });
+    expect(describeConstraints(inventoryMovements)).toEqual({
+      checks: [
+        "inventory_movements_quantity_delta_check",
+        "inventory_movements_reason_check",
+        "inventory_movements_source_check",
+        "inventory_movements_stock_after_check",
+      ],
+      uniques: [],
+      indexes: ["inventory_movements_variant_id_occurred_at_idx"],
+    });
+  });
+});
+
 describe("order_emails", () => {
   it("has the specified columns", () => {
     expect(describeColumns(orderEmails)).toEqual({
@@ -616,6 +650,8 @@ describe("shared commerce types", () => {
     expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();
     expectTypeOf<typeof orderItems.$inferSelect>().toEqualTypeOf<OrderItem>();
     expectTypeOf<typeof orderStatusHistory.$inferSelect>().toEqualTypeOf<OrderStatusHistoryEntry>();
+    expectTypeOf<typeof inventoryMovements.$inferSelect>().toEqualTypeOf<InventoryMovement>();
+    expectTypeOf<typeof inventoryDaily.$inferSelect>().toEqualTypeOf<InventoryDay>();
     expectTypeOf<typeof payments.$inferSelect>().toEqualTypeOf<Payment>();
     expectTypeOf<typeof giftCards.$inferSelect>().toEqualTypeOf<GiftCard>();
     expectTypeOf<typeof giftCardRedemptions.$inferSelect>().toEqualTypeOf<GiftCardRedemption>();

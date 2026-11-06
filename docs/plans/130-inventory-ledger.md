@@ -57,12 +57,12 @@ variant and day.
   `stockReason` per variant (`cmsVariantSchema` defaults a missing one to `adjustment`). When it
   saves the app's answer it resets the field to `коригування`, so the next edit doesn't inherit a
   stale "receipt". A `receipt` whose applied delta isn't positive is refused with a 422
-  `receipt-not-positive` (Ukrainian message in `cms/src/utils/app-sync.ts`) **(unconfirmed, Q2)**.
+  `receipt-not-positive` (Ukrainian message in `cms/src/utils/app-sync.ts`) (Q2, confirmed).
 - **Clamping**: `editedStock` clamps at 0; the ledger records the delta actually applied
   (`stored − current`), never the typed one, so the sum stays exact. A zero delta writes no row.
 - **Append-only at the database level**: a trigger `inventory_movements_append_only` raises on
   `DELETE` and on any `UPDATE` except the FK's `order_id → null`. `variant_id` is `on delete
-  restrict` as the issue says **(unconfirmed, Q1)**; `order_id` is `on delete set null`.
+  restrict` as the issue says (Q1, confirmed); `order_id` is `on delete set null`.
 - **`occurred_at`** is the transaction's `now` the caller already uses (`createOrder`'s `now`,
   `changeOrderStatus`'s `now`); the CMS and the migration use `now()`.
 - **`source`** reuses `ORDER_STATUS_SOURCES`' style: a new `INVENTORY_MOVEMENT_SOURCES` =
@@ -77,13 +77,18 @@ variant and day.
   `was_out_of_stock` (`true` when the previous day's closing stock was 0 or any `stock_after` that
   day was 0). Defined in Drizzle with `pgView(...).as(sql…)` so drizzle-kit generates it; if
   drizzle-kit 0.31 mangles the SQL, write it by hand in the migration and declare it with
-  `.existing()`.
+  `.existing()`. Implemented: the view and the trigger are hand-written in migration 0029 and
+  the view is declared with `.existing()`, so drizzle-kit never regenerates them.
+- `ON DELETE RESTRICT` raises `23001` (`restrict_violation`), not `23503`; the CMS maps that code.
 - `quantity_delta <> 0` and `stock_after >= 0` are CHECKs; index on `(variant_id, occurred_at)`.
 - These columns are ML features: add them to the "never drop or rename" list in `AGENTS.md`.
 
 ## Open questions
 
-- [ ] **Q1: What happens when staff remove a tracked size that has ledger rows?** — Why it
+All three were answered on 2026-11-06: the user accepted the recommended defaults.
+
+
+- [x] **Q1: What happens when staff remove a tracked size that has ledger rows?** — Why it
   matters: `variant_id … on delete restrict` (from the issue) makes `deleteVariants` in
   `applyCmsProductChange` fail with `23503`, so Strapi can no longer remove such a size, while
   `cascade` / `set null` would destroy or orphan the audit trail. Recommended default: keep
@@ -91,11 +96,11 @@ variant and day.
   «Цей розмір уже має історію складу, його не можна видалити. Вимкніть «Track stock» або
   поставте залишок 0.» Sizes that never tracked stock have no rows and can still be removed.
   Affects steps: 2, 6, 7.
-- [ ] **Q2: A "receipt" (надходження) that doesn't increase stock** — Why it matters: data quality
+- [x] **Q2: A "receipt" (надходження) that doesn't increase stock** — Why it matters: data quality
   of restock dates and sizes vs. friction for staff. Recommended default: refuse with 422
   `receipt-not-positive` («Надходження має збільшити залишок.»). Alternative: record it as an
   `adjustment` silently. Affects steps: 6, 7.
-- [ ] **Q3: Should `inventory_daily` cover days on which a size wasn't tracked?** — Why it matters:
+- [x] **Q3: Should `inventory_daily` cover days on which a size wasn't tracked?** — Why it matters:
   while `track_stock` is off the size is always available, but the view would carry the last
   tracked stock forward (and may flag those days out of stock). Recommended default: only list
   days while the size has an unbroken tracked history, approximated by listing days up to today
@@ -148,11 +153,11 @@ variant and day.
 
 ## Steps
 
-- [ ] **1. Enums and types** — Add `INVENTORY_MOVEMENT_REASONS = ["opening_balance", "sale",
+- [x] **1. Enums and types** — Add `INVENTORY_MOVEMENT_REASONS = ["opening_balance", "sale",
   "cancellation", "return", "receipt", "adjustment"]` and `INVENTORY_MOVEMENT_SOURCES =
   ["checkout", "cms", "job", "migration"]` (+ types) to `app/lib/enums.ts`; `InventoryMovement`
   (and `InventoryDay`) in `app/lib/commerce.ts`. `pnpm typecheck`.
-- [ ] **2. Schema and migration** — In `schema.ts` add `inventoryMovements`: `id` serial,
+- [x] **2. Schema and migration** — In `schema.ts` add `inventoryMovements`: `id` serial,
   `variantId` (FK `product_variants`, restrict), `occurredAt` timestamptz default now, `reason`,
   `quantityDelta` int, `stockAfter` int, `orderId` (FK `orders`, set null, nullable), `source`,
   `note` text nullable; checks `inventory_movements_reason_check`, `…_source_check`,
@@ -164,7 +169,7 @@ variant and day.
   stock_quantity, 'migration', 'Залишок на момент запуску журналу' from product_variants where
   track_stock and stock_quantity > 0`. Write the rollback. Extend `schema.test.ts`. Check with
   `pnpm db:migrate` and `pnpm db:rollback` on a dev database.
-- [ ] **3. View SQL** — Write `inventory_daily` (see Decisions): a `days` CTE with
+- [x] **3. View SQL** — Write `inventory_daily` (see Decisions): a `days` CTE with
   `generate_series(min(occurred_at at time zone 'Europe/Kyiv')::date, (now() at time zone
   'Europe/Kyiv')::date, '1 day')` per variant, a per-day aggregate (`units_sold`, `min(stock_after)`,
   last `stock_after` by `occurred_at, id`), and a carry-forward of the closing stock (`last

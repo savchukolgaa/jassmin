@@ -83,6 +83,8 @@ async function ensureLocales(strapi: Core.Strapi): Promise<void> {
 const EDITABLE_ORDER_FIELDS = new Set([
   "orderStatus",
   "paymentStatus",
+  // #128: the reason goes with a cancel.
+  "cancelReason",
   // #138: the Nova Poshta waybill and the parcel's arrival at the branch.
   "waybillNumber",
   "arrivedAtBranch",
@@ -256,12 +258,22 @@ const PRODUCT_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string
   },
 ];
 
-/** The order fields staff fill in for the customer's emails (#138). */
+/** The order fields staff fill in: for the customer's emails (#138) and a cancel (#128). */
 const ORDER_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string, FieldHint> }[] = [
   {
     kind: "content-types",
     uid: ORDER_UID,
     fields: {
+      cancelReason: {
+        label: "Причина скасування",
+        description:
+          "Обов’язкова, коли ставите статус «Скасоване»: на прохання клієнта (customer_request), немає в наявності (out_of_stock), клієнт не відповідає (no_answer), оплата не пройшла (payment_failed), інше (other). Після скасування не змінюється (#128).",
+      },
+      returnedAt: {
+        label: "Повернено",
+        description:
+          "Коли посилка повернулася: «Повернене» або «Не забране». Ставить магазин (#128).",
+      },
       waybillNumber: {
         label: "Номер ТТН Нової пошти",
         description:
@@ -282,7 +294,7 @@ const ORDER_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string, 
 
 /**
  * Labels and describes the shared, per-language and alt image fields, the product descriptions
- * and the order's delivery fields in the edit views.
+ * and the order's delivery fields, cancel reason and return time in the edit views.
  */
 async function describeFields(strapi: Core.Strapi): Promise<void> {
   for (const { kind, uid, fields } of [

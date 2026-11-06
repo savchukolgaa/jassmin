@@ -185,6 +185,22 @@ describe.skipIf(!hasDatabase)("auth service", () => {
     expect(row?.acquisitionChannel).toBe("instagram");
     expect(row?.phone).toBeNull();
     expect(row?.lastLoginAt).toBeInstanceOf(Date);
+    // Nobody is opted in to marketing without ticking the box (#128).
+    expect(row?.marketingOptIn).toBe(false);
+  });
+
+  it("stores a marketing consent given at registration (#128)", async () => {
+    const { registerUser } = await import("./auth");
+
+    const result = await registerUser(testDb.db, {
+      fullName: "Iryna",
+      email: "iryna@example.com",
+      password: "correct horse",
+      marketingOptIn: true,
+    });
+
+    if (!result.ok) throw new Error(result.error);
+    expect((await readUser(result.userId))?.marketingOptIn).toBe(true);
   });
 
   it("keeps the 'direct' default without a channel", async () => {

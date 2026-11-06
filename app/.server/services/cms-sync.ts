@@ -12,20 +12,10 @@ import type {
   CmsSyncError,
   CmsVariantInput,
 } from "~/lib/cms-sync";
-import { nextOrderState } from "~/lib/order-status";
-import { orderStatusEmailTypes } from "~/lib/order-status-emails";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
-import { enqueueCmsSync } from "../db/queries/cms-outbox";
-import { restoreGiftCardRedemptions } from "../db/queries/gift-cards";
-import { queueOrderStatusEmails } from "../db/queries/order-emails";
-import {
-  findOrderSyncState,
-  lockOrderLifecycle,
-  restockOrder,
-  updateOrderLifecycle,
-} from "../db/queries/orders";
+import { findOrderSyncState } from "../db/queries/orders";
 import { forgetSlug, recordOldSlug } from "../db/queries/product-slugs";
 import {
   deleteVariants,
@@ -47,6 +37,7 @@ import {
   toCmsOrderState,
   toCmsProductState,
 } from "./cms-push";
+import { changeOrderStatus } from "./order-lifecycle";
 
 type Failure<E extends CmsSyncError["error"]> = { ok: false } & Extract<CmsSyncError, { error: E }>;
 
@@ -209,16 +200,18 @@ export type CmsOrderResult =
       | "unknown-order"
       | "invalid-transition"
       | "card-not-paid"
+      | "cancel-reason-required"
       | "invalid-payment-transition"
       | "arrived-not-shipped"
     >;
 
 /**
- * Applies a status or payment change made in the Strapi admin, under the order's row lock:
- * checks it against the lifecycle rules (`nextOrderState`), sets the due timestamps and, when
- * the order is cancelled or comes back unclaimed, puts its units back in stock, all in one
- * transaction. The restocked products are queued for a push, so Strapi shows their new stock.
- * A refused change writes nothing.
+ * Applies a status or payment change made in the Strapi admin, under the order's row lock, with
+ * `changeOrderStatus`: checks it against the lifecycle rules (`nextOrderState`; cancelling needs a
+ * reason, #128), sets the due timestamps, records a status change in `order_status_history`
+ * (`cms`), queues the customer's status emails (#138) and, when the order is cancelled or comes
+ * back unclaimed, puts its units back in stock, all in one transaction. The restocked products are queued for a push, so Strapi shows their new
+ * stock. A refused change writes nothing.
  */
 export async function applyCmsOrderChange(
   orderId: number,
@@ -227,32 +220,16 @@ export async function applyCmsOrderChange(
   now: Date = new Date(),
 ): Promise<CmsOrderResult> {
   return db.transaction(async (tx): Promise<CmsOrderResult> => {
-    const current = await lockOrderLifecycle(tx, orderId);
-    if (!current) {
-      return { ok: false, error: "unknown-order" };
-    }
-    const next = nextOrderState(current, change, now);
-    if (!next.ok) {
-      return next;
-    }
-    await updateOrderLifecycle(tx, orderId, next.patch);
-    // The customer hears about it once per type, in the same transaction (#138).
-    const emailsQueued = await queueOrderStatusEmails(
-      tx,
-      orderId,
-      orderStatusEmailTypes(next.patch),
-    );
-    if (next.restock) {
-      await enqueueCmsSync(tx, "product", await restockOrder(tx, orderId));
-      // What a gift card paid goes back on it, like the units go back in stock (#125).
-      await enqueueCmsSync(tx, "gift_card", await restoreGiftCardRedemptions(tx, orderId, now));
+    const changed = await changeOrderStatus(tx, orderId, change, { source: "cms", now });
+    if (!changed.ok) {
+      return changed;
     }
 
     const state = await findOrderSyncState(tx, orderId);
     if (!state) {
       throw new Error(`Order ${orderId} vanished inside its transaction`);
     }
-    return { ok: true, order: toCmsOrderState(state), emailsQueued: emailsQueued.length > 0 };
+    return { ok: true, order: toCmsOrderState(state), emailsQueued: changed.emailsQueued };
   });
 }
 

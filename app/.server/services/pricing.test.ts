@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  allocateDiscount,
   discountAvailability,
   discountSaving,
   type PricingDiscount,
@@ -215,6 +216,7 @@ describe("priceCart", () => {
       total: 378_000,
       freeShipping: true,
       applied: null,
+      allocation: [0],
       promo: null,
     });
   });
@@ -349,5 +351,127 @@ describe("priceCart", () => {
       total: 150_000,
       freeShipping: true,
     });
+  });
+});
+
+describe("discount allocation (#128)", () => {
+  const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
+
+  it("splits a percent over the qualifying lines and puts the rounding rest on the largest", () => {
+    // 10% of 333.33 + 333.33 + 1000.00 = 166.66 ₴ (rounded down from 166.666).
+    const lines = [
+      line({ unitPrice: 33_333 }),
+      line({ unitPrice: 33_333, productPublicId: "b" }),
+      line({ unitPrice: 50_000, quantity: 2, productPublicId: "c" }),
+    ];
+    const priced = priceCart(lines, [TEN_PERCENT_CODE], NOW);
+    expect(priced.discount).toBe(16_666);
+    // 3333.29… and 9999.4… rounded down; the 2 left over go on the 1000 ₴ line.
+    expect(priced.allocation).toEqual([3_333, 3_333, 10_000]);
+    expect(sum(priced.allocation)).toBe(priced.discount);
+  });
+
+  it("gives nothing to lines outside the rule's scope", () => {
+    const code = rule({ id: 21, code: "TEN30", scopeVolumesMl: [30] });
+    const lines = [line({ volumeMl: 10 }), line({ volumeMl: 30, unitPrice: 189_000 })];
+    const priced = priceCart(lines, [code], NOW);
+    expect(priced.allocation).toEqual([0, 18_900]);
+  });
+
+  it("caps a fixed amount at the qualifying units and allocates it all", () => {
+    const fixed = rule({ id: 22, code: "MINUS", kind: "fixed_amount", value: "5000.00" });
+    const priced = priceCart(
+      [line({ unitPrice: 10_001 }), line({ unitPrice: 20_002 })],
+      [fixed],
+      NOW,
+    );
+    expect(priced.discount).toBe(30_003);
+    expect(priced.allocation).toEqual([10_001, 20_002]);
+  });
+
+  it("splits the tester trio over the units in the set, not a fourth 10 ml unit", () => {
+    // Four 10 ml units, dearest first: 900, 800, 790 make the set; the 700 ₴ one pays in full.
+    const lines = [
+      line({ unitPrice: 70_000, productPublicId: "cheap" }),
+      line({ unitPrice: 90_000, productPublicId: "a" }),
+      line({ unitPrice: 80_000, productPublicId: "b" }),
+      line({ unitPrice: 79_000, productPublicId: "c" }),
+    ];
+    const priced = priceCart(lines, [TRIO], NOW);
+    expect(priced.discount).toBe(249_000 - 49_900);
+    expect(priced.allocation[0]).toBe(0);
+    expect(sum(priced.allocation)).toBe(priced.discount);
+    // 199100 × 900/2490 = 71963.8…, × 800/2490 = 63967.8…, × 790/2490 = 63168.2…; rest on 900.
+    expect(priced.allocation).toEqual([0, 71_965, 63_967, 63_168]);
+  });
+
+  it("puts the couple offer on the cheaper bottle of each pair", () => {
+    const priced = priceCart([bottle(200_000), bottle(150_000)], [COUPLE], NOW);
+    expect(priced.discount).toBe(22_500);
+    expect(priced.allocation).toEqual([0, 22_500]);
+  });
+
+  it("splits the couple offer over the discounted bottles only, across several pairs", () => {
+    // Dearest first: 3000, 2500 | 2000, 1500 | 1000 (no pair). 15% of 2500 + 1500 = 600 ₴.
+    const lines = [
+      bottle(100_000),
+      bottle(300_000),
+      bottle(150_000),
+      bottle(250_000),
+      bottle(200_000),
+    ];
+    const priced = priceCart(lines, [COUPLE], NOW);
+    expect(priced.discount).toBe(60_000);
+    expect(priced.allocation).toEqual([0, 0, 22_500, 37_500, 0]);
+  });
+
+  it("stops at max_sets for the units it allocates", () => {
+    const priced = priceCart([line({ quantity: 10 })], [TRIO], NOW);
+    // Three sets of the one line; the tenth unit pays in full but sits on the same line.
+    expect(priced.allocation).toEqual([priced.discount]);
+  });
+
+  it("allocates nothing without a discount", () => {
+    expect(priceCart([line(), line({ volumeMl: 30 })], [], NOW).allocation).toEqual([0, 0]);
+  });
+
+  it("always adds up exactly, whatever the prices", () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const lines = Array.from({ length: 1 + (seed % 5) }, (_, index) =>
+        line({
+          unitPrice: 10_007 + ((seed * 7_919 + index * 104_729) % 300_000),
+          quantity: 1 + ((seed + index) % 3),
+          productPublicId: `p${index}`,
+        }),
+      );
+      const code = rule({ id: 23, code: "ODD", value: `${(seed % 30) + 1}.37` });
+      const priced = priceCart(lines, [code, TRIO], NOW);
+      expect(sum(priced.allocation)).toBe(priced.discount);
+      expect(priced.allocation.every((share) => share >= 0)).toBe(true);
+    }
+  });
+
+  it("keeps lines in order and breaks a tie for the rest on the first largest line", () => {
+    expect(
+      allocateDiscount(
+        10,
+        [
+          { lineIndex: 0, price: 300 },
+          { lineIndex: 2, price: 300 },
+        ],
+        3,
+      ),
+    ).toEqual([5, 0, 5]);
+    expect(
+      allocateDiscount(
+        7,
+        [
+          { lineIndex: 1, price: 3 },
+          { lineIndex: 2, price: 3 },
+        ],
+        3,
+      ),
+    ).toEqual([0, 4, 3]);
+    expect(allocateDiscount(0, [{ lineIndex: 0, price: 3 }], 2)).toEqual([0, 0]);
   });
 });

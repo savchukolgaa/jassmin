@@ -76,6 +76,8 @@ export function describeAppSyncError(status: number, body: unknown): string {
       return withCode(`Не можна змінити статус ${label(data.from)} на ${label(data.to)}.`);
     case "card-not-paid":
       return withCode("Замовлення з оплатою карткою можна відправити лише після оплати.");
+    case "cancel-reason-required":
+      return withCode("Щоб скасувати замовлення, виберіть «Причину скасування».");
     case "invalid-payment-transition":
       return withCode(`Не можна змінити статус оплати ${label(data.from)} на ${label(data.to)}.`);
     case "arrived-not-shipped":

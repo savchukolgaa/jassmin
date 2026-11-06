@@ -78,6 +78,16 @@ await builder
   .withParentRelationship(db)
   .withExplicitStart();
 
+// Cancels card orders still unpaid after UNPAID_ORDER_HOURS (#128, hourly cron in production);
+// then start `db-sync-cms` to show them in Strapi.
+await builder
+  .addJavaScriptApp("db-cancel-unpaid-orders", "..", { runScriptName: "db:cancel-unpaid-orders" })
+  .withPnpm({ install: false })
+  .withReference(db)
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(db)
+  .withExplicitStart();
+
 // Marks gift cards past their 12 months as expired (#125, daily cron in production); then start
 // `db-sync-cms` to show it in Strapi.
 await builder

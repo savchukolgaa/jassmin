@@ -255,6 +255,17 @@ describe("toOrderChange (#138)", () => {
       paymentStatus: "unpaid",
       waybillNumber: "2045 0000 0000 01",
       arrivedAtBranch: true,
+      cancelReason: undefined,
+    });
+  });
+
+  it("sends the cancel reason of a cancel (#128)", () => {
+    expect(toOrderChange({ orderStatus: "cancelled", cancelReason: "no_answer" })).toMatchObject({
+      status: "cancelled",
+      cancelReason: "no_answer",
+    });
+    expect(toOrderChange({ orderStatus: "shipped", cancelReason: null })).toMatchObject({
+      cancelReason: undefined,
     });
   });
 
@@ -264,6 +275,7 @@ describe("toOrderChange (#138)", () => {
       paymentStatus: undefined,
       waybillNumber: null,
       arrivedAtBranch: undefined,
+      cancelReason: undefined,
     });
     expect(toOrderChange({})).toMatchObject({ waybillNumber: undefined });
   });

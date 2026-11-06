@@ -22,6 +22,8 @@ function order(overrides: Partial<OrderLifecycle> = {}): OrderLifecycle {
     completedAt: null,
     arrivedAt: null,
     waybillNumber: null,
+    returnedAt: null,
+    cancelReason: null,
     ...overrides,
   };
 }
@@ -65,11 +67,16 @@ describe("orderStatusEmailTypes", () => {
   });
 
   it("sends cancelled, and refunded too when the money goes back in the same change", () => {
-    expect(emailsFor(order(), { status: "cancelled" })).toEqual(["cancelled"]);
-    expect(emailsFor(paidCard, { status: "cancelled", paymentStatus: "refunded" })).toEqual([
+    expect(emailsFor(order(), { status: "cancelled", cancelReason: "customer_request" })).toEqual([
       "cancelled",
-      "refunded",
     ]);
+    expect(
+      emailsFor(paidCard, {
+        status: "cancelled",
+        paymentStatus: "refunded",
+        cancelReason: "out_of_stock",
+      }),
+    ).toEqual(["cancelled", "refunded"]);
     expect(
       emailsFor(order({ status: "cancelled", paymentStatus: "paid" }), {
         paymentStatus: "refunded",

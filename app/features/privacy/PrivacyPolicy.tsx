@@ -75,6 +75,7 @@ export function PrivacyPolicy({ contacts }: { contacts: PrivacyContacts | null }
         <Section heading={t("privacy.purpose.heading")}>
           <p>{t("privacy.purpose.contract")}</p>
           <p>{t("privacy.purpose.consent")}</p>
+          <p>{t("privacy.purpose.marketing")}</p>
         </Section>
 
         <Section heading={t("privacy.cookies.heading")}>

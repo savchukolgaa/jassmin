@@ -810,7 +810,7 @@ export interface ApiOfferOffer extends Struct.CollectionTypeSchema {
 export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
   collectionName: 'orders';
   info: {
-    description: 'Orders placed in the shop (#40). Only Order status, Payment status, the waybill number and "arrived at the branch" can be changed here (#138); the shop checks every change, sets the dates, restores stock on cancellation and emails the customer. (`orderStatus`, because Strapi reserves `status`.)';
+    description: 'Orders placed in the shop (#40). Only Order status, Payment status, Cancel reason (#128), the waybill number and "arrived at the branch" can be changed here (#138); the shop checks every change, sets the dates, restores stock on cancellation and emails the customer. Cancelling needs a cancel reason. (`orderStatus`, because Strapi reserves `status`.)';
     displayName: 'Order';
     pluralName: 'orders';
     singularName: 'order';
@@ -822,6 +822,15 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
     arrivedAt: Schema.Attribute.DateTime;
     arrivedAtBranch: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     cancelledAt: Schema.Attribute.DateTime;
+    cancelReason: Schema.Attribute.Enumeration<
+      [
+        'customer_request',
+        'out_of_stock',
+        'no_answer',
+        'payment_failed',
+        'other',
+      ]
+    >;
     completedAt: Schema.Attribute.DateTime;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -864,6 +873,7 @@ export interface ApiOrderOrder extends Struct.CollectionTypeSchema {
     placedAt: Schema.Attribute.DateTime;
     publishedAt: Schema.Attribute.DateTime;
     refundedAt: Schema.Attribute.DateTime;
+    returnedAt: Schema.Attribute.DateTime;
     shippedAt: Schema.Attribute.DateTime;
     shippingAddress: Schema.Attribute.Text;
     shippingAmount: Schema.Attribute.Decimal;

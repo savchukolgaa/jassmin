@@ -4,7 +4,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { AccountProfile } from "~/lib/account";
 import { I18nProvider, type Locale } from "~/lib/i18n";
-import { ContactPanel, EmailPanel, PasswordPanel } from "./ProfileForms";
+import { ContactPanel, EmailPanel, MarketingPanel, PasswordPanel } from "./ProfileForms";
 
 // `<Form>` needs a router.
 const render = (element: ReactElement, locale: Locale = "uk") =>
@@ -25,9 +25,31 @@ const profile: AccountProfile = {
   email: "olena@example.com",
   phone: "+380 67 123 45 67",
   createdAt: new Date("2026-01-15T10:00:00Z"),
+  marketingOptIn: false,
 };
 
 describe("profile forms", () => {
+  it("shows the marketing consent and confirms a subscribe or unsubscribe (#128)", () => {
+    const off = render(createElement(MarketingPanel, { profile, submitting: false }));
+    expect(off).toContain('<input type="hidden" name="intent" value="marketing"/>');
+    expect(off).toContain('id="field-marketing-marketingOptIn"');
+    expect(off).not.toContain('checked=""');
+    expect(off).toContain("Розсилка");
+
+    const on = { ...profile, marketingOptIn: true };
+    const subscribed = render(
+      createElement(MarketingPanel, { profile: on, result: { ok: true }, submitting: false }),
+      "en",
+    );
+    expect(subscribed).toContain('checked=""');
+    expect(subscribed).toContain("we&#x27;ll send you new arrivals");
+    const unsubscribed = render(
+      createElement(MarketingPanel, { profile, result: { ok: true }, submitting: false }),
+      "en",
+    );
+    expect(unsubscribed).toContain("we won&#x27;t send you");
+  });
+
   it("posts each form with its intent and prefills the contact details", () => {
     const html = render(
       createElement("div", null, [

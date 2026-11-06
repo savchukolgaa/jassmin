@@ -37,6 +37,16 @@ describe("describeAppSyncError", () => {
     expect(message).toContain("Опис — до 5000 символів.");
   });
 
+  it("asks for a cancel reason when the app needs one (#128)", () => {
+    expect(
+      describeAppSyncError(422, {
+        error: "cancel-reason-required",
+        from: "pending",
+        to: "cancelled",
+      }),
+    ).toBe("Щоб скасувати замовлення, виберіть «Причину скасування». [cancel-reason-required]");
+  });
+
   it("explains a refused waybill number and an arrival before shipping (#138)", () => {
     expect(
       describeAppSyncError(422, {

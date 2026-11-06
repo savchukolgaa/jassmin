@@ -3,10 +3,12 @@
 //
 // Money is an exact decimal string (e.g. `"2450.00"`), never a float.
 import type {
+  CancelReason,
   CartStatus,
   DiscountKind,
   GiftCardStatus,
   OrderStatus,
+  OrderStatusSource,
   PaymentAttemptStatus,
   PaymentMethod,
   PaymentProvider,
@@ -90,6 +92,10 @@ export interface Order {
   waybillNumber: string | null;
   /** The discount rule applied at checkout (#59). */
   discountId: number | null;
+  /** When the parcel came back: set with `returned` or `unclaimed` (#128). */
+  returnedAt: Date | null;
+  /** Why the order was cancelled (#128); `null` unless cancelled (and for older orders). */
+  cancelReason: CancelReason | null;
 }
 
 export interface OrderItem {
@@ -104,6 +110,18 @@ export interface OrderItem {
   quantity: number;
   /** Unit price when the order was placed. */
   priceAtPurchase: string;
+  /** The line's share of the order's discount (#128); the lines add up to `discountAmount`. */
+  discountAllocated: string;
+}
+
+/** One change of an order's status (#128). */
+export interface OrderStatusHistoryEntry {
+  id: number;
+  orderId: number;
+  status: OrderStatus;
+  changedAt: Date;
+  /** What changed it: checkout, the payment callback, a Strapi edit or a job. */
+  source: OrderStatusSource;
 }
 
 /** One attempt at paying a card order online (#44). */

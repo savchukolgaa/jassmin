@@ -612,9 +612,16 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     await testDb.db.delete(cmsOutbox);
     const { productId, orderId } = await placed({ quantity: 2, trackStock: false });
 
-    const result = await applyCmsOrderChange(orderId, { status: "cancelled" }, testDb.db);
+    const result = await applyCmsOrderChange(
+      orderId,
+      { status: "cancelled", cancelReason: "customer_request" },
+      testDb.db,
+    );
 
-    expect(result).toMatchObject({ ok: true, order: { status: "cancelled" } });
+    expect(result).toMatchObject({
+      ok: true,
+      order: { status: "cancelled", cancelReason: "customer_request" },
+    });
     expect((await variantRow(productId, 10))?.stockQuantity).toBe(6);
     expect((await outbox()).filter((row) => row.entity === "product")).toEqual([]);
   });
@@ -625,13 +632,26 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     await testDb.db.delete(cmsOutbox);
     const { productId, orderId } = await placed({ quantity: 2 });
 
-    const result = await applyCmsOrderChange(orderId, { status: "cancelled" }, testDb.db);
-    expect(result).toMatchObject({ ok: true, order: { status: "cancelled" } });
+    const result = await applyCmsOrderChange(
+      orderId,
+      { status: "cancelled", cancelReason: "customer_request" },
+      testDb.db,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      order: { status: "cancelled", cancelReason: "customer_request" },
+    });
     expect((await variantRow(productId, 10))?.stockQuantity).toBe(8);
     expect(await outbox()).toEqual([{ entity: "product", entityId: productId }]);
 
     // A repeat of the same change is no change; leaving `cancelled` is refused.
-    expect(await applyCmsOrderChange(orderId, { status: "cancelled" }, testDb.db)).toMatchObject({
+    expect(
+      await applyCmsOrderChange(
+        orderId,
+        { status: "cancelled", cancelReason: "customer_request" },
+        testDb.db,
+      ),
+    ).toMatchObject({
       ok: true,
     });
     expect(await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db)).toEqual({
@@ -673,7 +693,11 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     });
     expect((await findGiftCard(testDb.db, cancelledCard))?.status).toBe("used_up");
 
-    await applyCmsOrderChange(cancelled.orderId, { status: "cancelled" }, testDb.db);
+    await applyCmsOrderChange(
+      cancelled.orderId,
+      { status: "cancelled", cancelReason: "customer_request" },
+      testDb.db,
+    );
     expect(await findGiftCard(testDb.db, cancelledCard)).toMatchObject({
       balance: "500.00",
       status: "active",
@@ -718,17 +742,88 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     expect(paid).toMatchObject({ ok: true, order: { status: "paid", paymentStatus: "paid" } });
     const refunded = await applyCmsOrderChange(
       orderId,
-      { status: "cancelled", paymentStatus: "refunded" },
+      { status: "cancelled", paymentStatus: "refunded", cancelReason: "out_of_stock" },
       testDb.db,
     );
     expect(refunded).toMatchObject({
       ok: true,
-      order: { status: "cancelled", paymentStatus: "refunded" },
+      order: { status: "cancelled", paymentStatus: "refunded", cancelReason: "out_of_stock" },
     });
     if (!refunded.ok) throw new Error("expected a refund");
     expect(refunded.order.paidAt).not.toBeNull();
     expect(refunded.order.refundedAt).not.toBeNull();
     expect(refunded.order.cancelledAt).not.toBeNull();
+  });
+
+  it("records each status change in the history and nothing for a refusal (#128)", async () => {
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
+    const { orderId } = await placed({ paymentMethod: "card" });
+    const at = (hour: number) => new Date(`2026-10-25T${String(hour).padStart(2, "0")}:00:00Z`);
+    const history = async () =>
+      (await listOrderStatusHistory(testDb.db, orderId)).map((row) => [
+        row.status,
+        row.source,
+        row.changedAt,
+      ]);
+
+    // A card order can't ship unpaid: refused, nothing recorded.
+    expect(
+      await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db, at(9)),
+    ).toMatchObject({ ok: false, error: "card-not-paid" });
+    // Marking the payment paid moves the order to `paid`: that's a status change too.
+    await applyCmsOrderChange(orderId, { paymentStatus: "paid" }, testDb.db, at(10));
+    await applyCmsOrderChange(orderId, { status: "shipped" }, testDb.db, at(11));
+    const unclaimed = await applyCmsOrderChange(
+      orderId,
+      { status: "unclaimed" },
+      testDb.db,
+      at(12),
+    );
+    // The same status again is no change and records nothing.
+    await applyCmsOrderChange(orderId, { status: "unclaimed" }, testDb.db, at(13));
+
+    expect(unclaimed).toMatchObject({
+      ok: true,
+      order: { status: "unclaimed", returnedAt: at(12).toISOString(), cancelReason: null },
+    });
+    expect(await history()).toEqual([
+      ["paid", "cms", at(10)],
+      ["shipped", "cms", at(11)],
+      ["unclaimed", "cms", at(12)],
+    ]);
+  });
+
+  it("refuses to cancel without a reason and stores the reason given (#128)", async () => {
+    const { eq } = await import("drizzle-orm");
+    const { orders } = await import("../db/schema");
+    const { applyCmsOrderChange } = await import("./cms-sync");
+    const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
+    const { productId, orderId } = await placed({ quantity: 2 });
+
+    expect(await applyCmsOrderChange(orderId, { status: "cancelled" }, testDb.db)).toEqual({
+      ok: false,
+      error: "cancel-reason-required",
+      from: "pending",
+      to: "cancelled",
+    });
+    const [before] = await testDb.db.select().from(orders).where(eq(orders.id, orderId));
+    expect(before).toMatchObject({ status: "pending", cancelledAt: null, cancelReason: null });
+    expect((await variantRow(productId, 10))?.stockQuantity).toBe(6);
+    expect(await listOrderStatusHistory(testDb.db, orderId)).toEqual([]);
+
+    const result = await applyCmsOrderChange(
+      orderId,
+      { status: "cancelled", cancelReason: "no_answer" },
+      testDb.db,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      order: { status: "cancelled", cancelReason: "no_answer" },
+    });
+    expect(await listOrderStatusHistory(testDb.db, orderId)).toEqual([
+      expect.objectContaining({ status: "cancelled", source: "cms" }),
+    ]);
   });
 
   it("stores the waybill and the arrival and returns them for Strapi (#138)", async () => {
@@ -822,7 +917,7 @@ describe.skipIf(!hasDatabase)("cms product sync", () => {
     await applyCmsOrderChange(orderId, { paymentStatus: "paid" }, testDb.db);
     await applyCmsOrderChange(
       orderId,
-      { status: "cancelled", paymentStatus: "refunded" },
+      { status: "cancelled", paymentStatus: "refunded", cancelReason: "out_of_stock" },
       testDb.db,
     );
 

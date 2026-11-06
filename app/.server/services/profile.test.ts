@@ -136,8 +136,19 @@ describe.skipIf(!hasDatabase)("profile service", () => {
       email,
       phone: "+380 67 123 45 67",
       createdAt: expect.any(Date),
+      marketingOptIn: false,
     });
     expect(JSON.stringify(profile)).not.toContain("argon2");
+  });
+
+  it("gives and withdraws the marketing consent (#128)", async () => {
+    const { getProfile, updateMarketingOptIn } = await import("./profile");
+    const { id } = await createUser();
+
+    await updateMarketingOptIn(id, true, testDb.db);
+    expect((await getProfile(id, testDb.db)).marketingOptIn).toBe(true);
+    await updateMarketingOptIn(id, false, testDb.db);
+    expect((await getProfile(id, testDb.db)).marketingOptIn).toBe(false);
   });
 
   it("updates the contact details the checkout prefill reads, and clears the phone", async () => {

@@ -7,6 +7,7 @@ import { sendVerificationEmail } from "~/.server/services/email-verification";
 import { createUserSession } from "~/.server/session";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
+import { CheckboxField } from "~/components/ui/CheckboxField";
 import { TextField } from "~/components/ui/TextField";
 import { AuthLayout, FormAlert } from "~/features/auth/AuthLayout";
 import {
@@ -52,6 +53,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     fullName: String(formData.get("fullName") ?? ""),
     email: String(formData.get("email") ?? ""),
     phone: String(formData.get("phone") ?? ""),
+    marketingOptIn: formData.get("marketingOptIn") === "on" ? "on" : "",
   };
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
 
@@ -134,6 +136,12 @@ export default function Register({ loaderData, actionData }: Route.ComponentProp
           optional
           defaultValue={values?.phone}
           error={errors?.phone && t(errors.phone)}
+        />
+        <CheckboxField
+          name="marketingOptIn"
+          label={t("auth.register.marketingOptIn")}
+          hint={t("auth.register.marketingOptInHint")}
+          defaultChecked={values?.marketingOptIn === "on"}
         />
         <input type="hidden" name="acquisitionChannel" value={loaderData.acquisitionChannel} />
         {loaderData.redirectTo && (

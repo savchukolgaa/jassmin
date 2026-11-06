@@ -32,6 +32,15 @@ export const phoneSchema = optionalText.refine(
   { message: msg("auth.errors.phoneInvalid") },
 );
 
+/**
+ * A consent checkbox (#128): ticked posts `on`, unticked posts nothing. Anything else counts as
+ * not ticked, so a consent is never assumed.
+ */
+export const checkboxSchema = z
+  .string()
+  .optional()
+  .transform((value) => value === "on");
+
 /** A password being set, at registration or in the profile. Not trimmed. */
 export const newPasswordSchema = z
   .string()
@@ -45,6 +54,8 @@ export const registerSchema = z.object({
   phone: phoneSchema,
   // Analytics only: an unusable value falls back to the column default instead of failing.
   acquisitionChannel: z.string().trim().toLowerCase().min(1).max(100).optional().catch(undefined),
+  /** Consent to marketing emails (#128); unticked by default. */
+  marketingOptIn: checkboxSchema,
   redirectTo: optionalText,
 });
 
@@ -88,6 +99,9 @@ const currentPasswordSchema = z
   .min(1, msg("account.profile.errors.currentPasswordRequired"));
 
 export const contactSchema = z.object({ fullName: fullNameSchema, phone: phoneSchema });
+
+/** The profile's marketing emails form (#128): an unticked box withdraws the consent. */
+export const marketingSchema = z.object({ marketingOptIn: checkboxSchema });
 
 export type ContactInput = z.infer<typeof contactSchema>;
 

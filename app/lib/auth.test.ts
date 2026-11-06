@@ -28,8 +28,18 @@ describe("registerSchema", () => {
       password: "correct horse",
       phone: undefined,
       acquisitionChannel: undefined,
+      marketingOptIn: false,
       redirectTo: undefined,
     });
+  });
+
+  it("reads the marketing checkbox as a consent only when ticked (#128)", () => {
+    expect(
+      registerSchema.parse({ ...validRegistration, marketingOptIn: "on" }).marketingOptIn,
+    ).toBe(true);
+    expect(
+      registerSchema.parse({ ...validRegistration, marketingOptIn: "yes" }).marketingOptIn,
+    ).toBe(false);
   });
 
   it("accepts a phone number and a channel", () => {

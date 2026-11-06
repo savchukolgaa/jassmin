@@ -102,13 +102,17 @@ export async function markPayment(
 }
 
 /**
- * Marks the order paid, but only while it is still `pending` and `unpaid`, so a repeated callback
- * changes nothing. Returns whether the order changed.
+ * Marks the order paid at `now`, but only while it is still `pending` and `unpaid`, so a repeated
+ * callback changes nothing. Returns whether the order changed.
  */
-export async function markOrderPaid(db: Executor, orderId: number): Promise<boolean> {
+export async function markOrderPaid(
+  db: Executor,
+  orderId: number,
+  now: Date = new Date(),
+): Promise<boolean> {
   const rows = await db
     .update(orders)
-    .set({ paymentStatus: "paid", status: "paid", paidAt: new Date() })
+    .set({ paymentStatus: "paid", status: "paid", paidAt: now })
     .where(
       and(eq(orders.id, orderId), eq(orders.paymentStatus, "unpaid"), eq(orders.status, "pending")),
     )

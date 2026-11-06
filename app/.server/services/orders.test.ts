@@ -228,6 +228,70 @@ describe.skipIf(!hasDatabase)("order service", () => {
     expect(after?.updatedAt.getTime()).toBeGreaterThan(cart.updatedAt.getTime());
   });
 
+  async function historyOf(orderId: number) {
+    const { listOrderStatusHistory } = await import("../db/queries/order-status-history");
+    return (await listOrderStatusHistory(testDb.db, orderId)).map(
+      ({ status, source, changedAt }) => ({ status, source, changedAt }),
+    );
+  }
+
+  async function cityOf(userId: number) {
+    const { eq } = await import("drizzle-orm");
+    const { users } = await import("../db/schema");
+    const [row] = await testDb.db
+      .select({ city: users.city })
+      .from(users)
+      .where(eq(users.id, userId));
+    return row?.city;
+  }
+
+  it("records the order's first status and the buyer's delivery city (#128)", async () => {
+    const { createOrder } = await import("./orders");
+    const userId = await user();
+    const five = await variant(5, 10);
+
+    const result = await createOrder(
+      {
+        cartId: (await cartWith([{ variant: five, quantity: 1 }], userId)).id,
+        userId,
+        customer: { ...customer, city: "Одеса" },
+        locale: "uk",
+        now: NOW,
+      },
+      testDb.db,
+    );
+    if (!result.ok) throw new Error(result.error);
+
+    expect(await historyOf(result.orderId)).toEqual([
+      { status: "pending", source: "checkout", changedAt: NOW },
+    ]);
+    const [order] = await allOrders();
+    expect(order?.createdAt).toEqual(NOW);
+    expect(await cityOf(userId)).toBe("Одеса");
+
+    // The latest order's city wins; a guest order leaves every user alone.
+    await createOrder(
+      {
+        cartId: (await cartWith([{ variant: five, quantity: 1 }], userId)).id,
+        userId,
+        customer: { ...customer, city: "Львів" },
+        locale: "uk",
+      },
+      testDb.db,
+    );
+    expect(await cityOf(userId)).toBe("Львів");
+    await createOrder(
+      {
+        cartId: (await cartWith([{ variant: five, quantity: 1 }])).id,
+        userId: null,
+        customer: { ...customer, city: "Харків" },
+        locale: "uk",
+      },
+      testDb.db,
+    );
+    expect(await cityOf(userId)).toBe("Львів");
+  });
+
   it("links a registered user's order and only gives free shipping from 1500 UAH", async () => {
     const { createOrder } = await import("./orders");
     const userId = await user();
@@ -451,6 +515,59 @@ describe.skipIf(!hasDatabase)("order service", () => {
         }),
       ]);
       expect(await redemptions(code)).toBe(1);
+    });
+
+    it("splits the discount over the lines it was taken off (#128)", async () => {
+      const { eq } = await import("drizzle-orm");
+      const { orderItems } = await import("../db/schema");
+      const code = await insertDiscount({ slug: "thirty", code: "THIRTY", scopeVolumesMl: [30] });
+      const five = await variant(5, 10);
+      const thirty = await variant(30, 3);
+      const cart = await cartWith([
+        { variant: five, quantity: 2 },
+        { variant: thirty, quantity: 1 },
+      ]);
+      await withCode(cart.id, code);
+
+      const result = await place(cart.id);
+      if (!result.ok) throw new Error(result.error);
+
+      expect(result).toMatchObject({ discountAmount: "445.00" });
+      const lines = await testDb.db
+        .select({ variantId: orderItems.variantId, discount: orderItems.discountAllocated })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, result.orderId));
+      // Only the 30 ml line qualifies for the code, so it carries the whole discount.
+      expect(lines).toEqual(
+        expect.arrayContaining([
+          { variantId: five.id, discount: "0.00" },
+          { variantId: thirty.id, discount: "445.00" },
+        ]),
+      );
+    });
+
+    it("splits a trio's saving over the units in the set (#128)", async () => {
+      const { eq } = await import("drizzle-orm");
+      const { orderItems } = await import("../db/schema");
+      await insertDiscount({
+        slug: "trio",
+        kind: "fixed_price_set",
+        value: "499.00",
+        scopeVolumesMl: [5],
+        minQuantity: 3,
+      });
+      const cart = await cartWith([{ variant: await variant(5, 10), quantity: 3 }]);
+
+      const result = await place(cart.id);
+      if (!result.ok) throw new Error(result.error);
+
+      // 3 × 990 − 499 = 2471 ₴, all on the one line.
+      const lines = await testDb.db
+        .select({ discount: orderItems.discountAllocated })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, result.orderId));
+      expect(lines).toEqual([{ discount: "2471.00" }]);
+      expect(result).toMatchObject({ discountAmount: "2471.00" });
     });
 
     it("shows the discount on the confirmation and the account order page", async () => {
@@ -748,6 +865,10 @@ describe.skipIf(!hasDatabase)("order service", () => {
         totalAmount: "0.00",
       });
       expect(order?.paidAt).toBeInstanceOf(Date);
+      // Placed straight into `paid`: one history row, at the payment time (#128).
+      expect(await historyOf(order?.id ?? 0)).toEqual([
+        { status: "paid", source: "checkout", changedAt: order?.paidAt },
+      ]);
       expect(await cardOf(card.id)).toMatchObject({ balance: "10.00", status: "active" });
 
       const { isPayable } = await import("./payments");

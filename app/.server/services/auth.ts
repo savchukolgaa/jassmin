@@ -59,6 +59,8 @@ export interface Registration {
   phone?: string;
   /** `undefined` keeps the column default `'direct'`. */
   acquisitionChannel?: string;
+  /** Ticked the marketing emails box (#128); `undefined` keeps the column default `false`. */
+  marketingOptIn?: boolean;
 }
 
 export type RegisterResult = { ok: true; userId: number } | { ok: false; error: "email_taken" };
@@ -79,6 +81,7 @@ export async function registerUser(database: Db, input: Registration): Promise<R
       passwordHash: await hashPassword(input.password),
       phone: input.phone ?? null,
       acquisitionChannel: input.acquisitionChannel,
+      marketingOptIn: input.marketingOptIn,
       lastLoginAt: new Date(),
     });
     return { ok: true, userId: id };

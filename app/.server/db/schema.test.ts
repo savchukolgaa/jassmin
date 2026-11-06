@@ -10,6 +10,7 @@ import type {
   GiftCardRedemption,
   Order,
   OrderItem,
+  OrderStatusHistoryEntry,
   Payment,
   ProductVariant,
 } from "~/lib/commerce";
@@ -26,6 +27,7 @@ import {
   giftCards,
   orderEmails,
   orderItems,
+  orderStatusHistory,
   orderStatusType,
   orders,
   paymentStatusType,
@@ -100,6 +102,8 @@ describe("users", () => {
       firstTouchCampaign: ["text", false, false],
       emailVerifiedAt: ["timestamp with time zone", false, false],
       passwordChangedAt: ["timestamp with time zone", false, false],
+      city: ["text", false, false],
+      marketingOptIn: ["boolean", true, true],
     });
   });
 
@@ -109,6 +113,7 @@ describe("users", () => {
     expect(columns.find((c) => c.name === "email")?.isUnique).toBe(true);
     expect(columns.find((c) => c.name === "acquisitionChannel")?.default).toBe("direct");
     expect(columns.find((c) => c.name === "role")?.default).toBe("customer");
+    expect(columns.find((c) => c.name === "marketingOptIn")?.default).toBe(false);
   });
 });
 
@@ -290,6 +295,8 @@ describe("orders", () => {
       arrivedAt: ["timestamp with time zone", false, false],
       waybillNumber: ["varchar(20)", false, false],
       discountId: ["integer", false, false],
+      returnedAt: ["timestamp with time zone", false, false],
+      cancelReason: ["text", false, false],
     });
   });
 
@@ -302,6 +309,7 @@ describe("orders", () => {
     expect(describeConstraints(orders)).toEqual({
       checks: [
         "orders_amounts_check",
+        "orders_cancel_reason_check",
         "orders_gift_card_payment_check",
         "orders_payment_method_check",
         "orders_waybill_number_check",
@@ -334,6 +342,7 @@ describe("order_items", () => {
       volumeMl: ["integer", false, false],
       quantity: ["integer", true, false],
       priceAtPurchase: ["numeric(10, 2)", true, false],
+      discountAllocated: ["numeric(10, 2)", true, true],
     });
   });
 
@@ -344,9 +353,31 @@ describe("order_items", () => {
       variantId: ["product_variants", "set null"],
     });
     expect(describeConstraints(orderItems)).toEqual({
-      checks: ["order_items_price_at_purchase_check", "order_items_quantity_check"],
+      checks: [
+        "order_items_discount_allocated_check",
+        "order_items_price_at_purchase_check",
+        "order_items_quantity_check",
+      ],
       uniques: [],
       indexes: ["order_items_order_id_idx"],
+    });
+  });
+});
+
+describe("order_status_history", () => {
+  it("has the specified columns, cascades order deletes and indexes (order_id, changed_at)", () => {
+    expect(describeColumns(orderStatusHistory)).toEqual({
+      id: ["serial", true, true],
+      orderId: ["integer", true, false],
+      status: ["order_status_type", true, false],
+      changedAt: ["timestamp with time zone", true, true],
+      source: ["text", true, false],
+    });
+    expect(describeForeignKeys(orderStatusHistory)).toEqual({ orderId: ["orders", "cascade"] });
+    expect(describeConstraints(orderStatusHistory)).toEqual({
+      checks: ["order_status_history_source_check"],
+      uniques: [],
+      indexes: ["order_status_history_order_id_changed_at_idx"],
     });
   });
 });
@@ -584,6 +615,7 @@ describe("shared commerce types", () => {
     expectTypeOf<typeof cartItems.$inferSelect>().toEqualTypeOf<CartItem>();
     expectTypeOf<typeof orders.$inferSelect>().toEqualTypeOf<Order>();
     expectTypeOf<typeof orderItems.$inferSelect>().toEqualTypeOf<OrderItem>();
+    expectTypeOf<typeof orderStatusHistory.$inferSelect>().toEqualTypeOf<OrderStatusHistoryEntry>();
     expectTypeOf<typeof payments.$inferSelect>().toEqualTypeOf<Payment>();
     expectTypeOf<typeof giftCards.$inferSelect>().toEqualTypeOf<GiftCard>();
     expectTypeOf<typeof giftCardRedemptions.$inferSelect>().toEqualTypeOf<GiftCardRedemption>();

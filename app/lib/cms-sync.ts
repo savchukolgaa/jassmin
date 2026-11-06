@@ -5,6 +5,7 @@
 // imports. Money is an exact decimal string.
 import { z } from "zod";
 import {
+  CANCEL_REASONS,
   FRAGRANCE_FAMILIES,
   type FragranceFamily,
   GENDERS,
@@ -213,6 +214,8 @@ export const waybillNumberSchema = z
 export const cmsOrderChangeSchema = z.object({
   status: z.enum(ORDER_STATUSES).optional(),
   paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+  /** Required when staff cancel the order (#128); ignored otherwise. */
+  cancelReason: z.enum(CANCEL_REASONS).optional(),
   /** The parcel is at the branch (#138). Strapi sends `null` for an untouched checkbox. */
   arrivedAtBranch: z.boolean().nullish(),
   waybillNumber: waybillNumberSchema.optional(),
@@ -256,6 +259,10 @@ export interface CmsOrderState {
   refundedAt: string | null;
   shippedAt: string | null;
   completedAt: string | null;
+  /** When the parcel came back, returned or unclaimed (#128). */
+  returnedAt: string | null;
+  /** Why the order was cancelled (#128); `null` unless cancelled. */
+  cancelReason: (typeof CANCEL_REASONS)[number] | null;
   /** When the parcel arrived at the branch (#138); `arrivedAtBranch` is the admin's checkbox. */
   arrivedAt: string | null;
   arrivedAtBranch: boolean;
@@ -297,7 +304,11 @@ export type CmsSyncError =
   | { error: "unknown-product" }
   | { error: "unknown-order" }
   | { error: "slug-taken"; slug: string }
-  | { error: "invalid-transition" | "card-not-paid"; from: string; to: string }
+  | {
+      error: "invalid-transition" | "card-not-paid" | "cancel-reason-required";
+      from: string;
+      to: string;
+    }
   | { error: "invalid-payment-transition"; from: string; to: string }
   | { error: "arrived-not-shipped"; status: string };
 

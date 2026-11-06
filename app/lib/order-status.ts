@@ -1,7 +1,7 @@
 // Order lifecycle rules (#40): which status and payment status changes staff may make in the
 // Strapi admin, the timestamps each change sets and when stock goes back on sale. Isomorphic: no
 // server imports. The app applies them in `applyCmsOrderChange`, inside the order's transaction.
-import type { OrderStatus, PaymentMethod, PaymentStatus } from "./enums";
+import type { CancelReason, OrderStatus, PaymentMethod, PaymentStatus } from "./enums";
 
 /** Where an order may go from each status. Final statuses have no way out. */
 export const ORDER_STATUS_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
@@ -42,9 +42,13 @@ export interface OrderLifecycle {
   arrivedAt: Date | null;
   /** The Nova Poshta waybill number (ТТН, 14 digits, #138). */
   waybillNumber: string | null;
+  /** When the parcel came back: `returned` or `unclaimed` (#128). */
+  returnedAt: Date | null;
+  /** Why the order was cancelled (#128). */
+  cancelReason: CancelReason | null;
 }
 
-/** What staff asked for; a missing field stays as it is. */
+/** What staff (or a job) asked for; a missing field stays as it is. */
 export interface OrderStatusChange {
   status?: OrderStatus;
   paymentStatus?: PaymentStatus;
@@ -55,6 +59,8 @@ export interface OrderStatusChange {
   arrivedAtBranch?: boolean | null;
   /** The waybill number, already normalised to 14 digits; `null` removes it. */
   waybillNumber?: string | null;
+  /** Required with `status: "cancelled"` (#128); ignored with any other status. */
+  cancelReason?: CancelReason;
 }
 
 /** The columns to update: only the ones that change. */
@@ -66,11 +72,18 @@ export type OrderTransitionError =
   // A card order has to be paid before it ships; cash on delivery is paid at the door.
   | "card-not-paid"
   // Only a parcel on its way can arrive at the branch (#138).
-  | "arrived-not-shipped";
+  | "arrived-not-shipped"
+  // Cancelling needs a reason (#128).
+  | "cancel-reason-required";
 
 export type NextOrderState =
   | { ok: true; patch: OrderLifecyclePatch; restock: boolean }
-  | { ok: false; error: "invalid-transition" | "card-not-paid"; from: OrderStatus; to: OrderStatus }
+  | {
+      ok: false;
+      error: "invalid-transition" | "card-not-paid" | "cancel-reason-required";
+      from: OrderStatus;
+      to: OrderStatus;
+    }
   | {
       ok: false;
       error: "invalid-payment-transition";
@@ -93,8 +106,10 @@ export function canChangePaymentStatus(from: PaymentStatus, to: PaymentStatus): 
  * - marks the payment `paid` when the order moves to `paid`, or when a cash-on-delivery order is
  *   `completed` (the cash was collected at the door);
  * - moves a `pending` order to `paid` when its payment becomes `paid`;
- * - sets `paid_at`, `refunded_at`, `shipped_at`, `completed_at` and `cancelled_at` when their
- *   state is reached and they're still empty;
+ * - sets `paid_at`, `refunded_at`, `shipped_at`, `completed_at`, `cancelled_at` and
+ *   `returned_at` (for `returned` and `unclaimed`, #128) when their state is reached and they're
+ *   still empty;
+ * - stores the `cancelReason` the change must carry when the order is cancelled (#128);
  * - sets `arrived_at` when staff mark a `shipped` order (after this change) as arrived at the
  *   branch and it's still empty, or clears it when they unmark it (#138);
  * - stores a changed waybill number.
@@ -121,6 +136,9 @@ export function nextOrderState(
       order.paymentStatus !== "paid"
     ) {
       return { ok: false, error: "card-not-paid", from: order.status, to };
+    }
+    if (to === "cancelled" && change.cancelReason === undefined) {
+      return { ok: false, error: "cancel-reason-required", from: order.status, to };
     }
     status = to;
     if (
@@ -164,6 +182,10 @@ export function nextOrderState(
   reached("shippedAt", patch.status === "shipped");
   reached("completedAt", patch.status === "completed");
   reached("cancelledAt", patch.status === "cancelled");
+  reached("returnedAt", patch.status === "returned" || patch.status === "unclaimed");
+  if (patch.status === "cancelled" && change.cancelReason !== undefined) {
+    patch.cancelReason = change.cancelReason;
+  }
 
   const restock =
     patch.status !== undefined &&

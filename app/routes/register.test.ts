@@ -74,6 +74,7 @@ describe("register action", () => {
         password: "correct horse",
         phone: undefined,
         acquisitionChannel: "instagram",
+        marketingOptIn: false,
       },
     );
     expect(auth.onUserAuthenticated).toHaveBeenCalledWith(
@@ -90,6 +91,18 @@ describe("register action", () => {
     });
   });
 
+  it("passes a ticked marketing checkbox on (#128)", async () => {
+    auth.registerUser.mockResolvedValueOnce({ ok: true, userId: 9 });
+    const { action } = await import("./register");
+
+    await action(post({ ...valid, marketingOptIn: "on" }));
+
+    expect(auth.registerUser).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ marketingOptIn: true }),
+    );
+  });
+
   it("reports a taken email and refills the form without the password", async () => {
     auth.registerUser.mockResolvedValueOnce({ ok: false, error: "email_taken" });
     const { action } = await import("./register");
@@ -99,7 +112,12 @@ describe("register action", () => {
     expect(status).toBe(400);
     expect(body).toEqual({
       fieldErrors: { email: "auth.errors.emailTaken" },
-      values: { fullName: "Olena Petrenko", email: "Olena@Example.com", phone: "" },
+      values: {
+        fullName: "Olena Petrenko",
+        email: "Olena@Example.com",
+        phone: "",
+        marketingOptIn: "",
+      },
     });
     expect(JSON.stringify(body)).not.toContain("correct horse");
     expect(verification.sendVerificationEmail).not.toHaveBeenCalled();

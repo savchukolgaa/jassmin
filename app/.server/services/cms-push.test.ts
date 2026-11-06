@@ -34,6 +34,8 @@ const order: CmsOrderState = {
   refundedAt: null,
   shippedAt: null,
   completedAt: null,
+  returnedAt: null,
+  cancelReason: null,
   arrivedAt: null,
   arrivedAtBranch: false,
   waybillNumber: null,

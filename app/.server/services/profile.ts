@@ -6,6 +6,7 @@ import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
 import {
   findUserCredentialsById,
   findUserProfile,
+  setMarketingOptIn,
   setPasswordChanged,
   updateUserContact,
   updateUserEmail,
@@ -26,6 +27,15 @@ export async function getProfile(userId: number, database: Db = db): Promise<Acc
     throw new Error(`User ${userId} not found`);
   }
   return profile;
+}
+
+/** Gives or withdraws the user's consent to marketing emails (#128). */
+export async function updateMarketingOptIn(
+  userId: number,
+  optIn: boolean,
+  database: Db = db,
+): Promise<void> {
+  await setMarketingOptIn(database, userId, optIn);
 }
 
 /** Sets the name and phone. An `undefined` phone clears it. */

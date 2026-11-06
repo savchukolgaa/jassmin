@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   AUTH_TOKEN_PURPOSES,
+  CANCEL_REASONS,
   CART_STATUSES,
   EVENT_TYPES,
   GENDERS,
+  ORDER_STATUS_SOURCES,
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
@@ -30,6 +32,20 @@ describe("enum values", () => {
       "returned",
       "unclaimed",
     ]);
+  });
+
+  it("lists the cancel reasons", () => {
+    expect(CANCEL_REASONS).toEqual([
+      "customer_request",
+      "out_of_stock",
+      "no_answer",
+      "payment_failed",
+      "other",
+    ]);
+  });
+
+  it("lists the order status sources", () => {
+    expect(ORDER_STATUS_SOURCES).toEqual(["checkout", "payment", "cms", "job"]);
   });
 
   it("lists the payment statuses", () => {

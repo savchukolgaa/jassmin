@@ -26,6 +26,28 @@ export const CART_STATUSES = ["active", "converted", "abandoned"] as const;
 export type CartStatus = (typeof CART_STATUSES)[number];
 
 /**
+ * Why an order was cancelled (#128), stored in `orders.cancel_reason` (a CHECK limits it to these
+ * values). Staff pick it in Strapi; the unpaid-order job uses `payment_failed`.
+ */
+export const CANCEL_REASONS = [
+  "customer_request",
+  "out_of_stock",
+  "no_answer",
+  "payment_failed",
+  "other",
+] as const;
+
+export type CancelReason = (typeof CANCEL_REASONS)[number];
+
+/**
+ * What changed an order's status (#128), stored in `order_status_history.source` (a CHECK limits
+ * it to these values): checkout, the payment callback, a staff edit in Strapi, or a scheduled job.
+ */
+export const ORDER_STATUS_SOURCES = ["checkout", "payment", "cms", "job"] as const;
+
+export type OrderStatusSource = (typeof ORDER_STATUS_SOURCES)[number];
+
+/**
  * How an order is paid: online by card, cash on delivery (`cod`), or entirely by a gift card
  * (#125). A CHECK constraint limits `orders.payment_method` to these values.
  */

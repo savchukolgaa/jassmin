@@ -8,6 +8,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Environment variables](#environment-variables)
 - [Scripts](#scripts)
 - [Abandoned carts](#abandoned-carts)
+- [Unpaid card orders](#unpaid-card-orders)
 - [Order emails](#order-emails)
 - [Email delivery in production](#email-delivery-in-production)
 - [Gift cards](#gift-cards)
@@ -57,6 +58,7 @@ pnpm dev                    # http://localhost:5173
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
 | `ORDER_FROM` | no | Sender of order confirmation emails (default: `CONTACT_FROM`). Replies go to `CONTACT_INBOX`. |
 | `ABANDONED_CART_HOURS` | no | Hours without activity after which `pnpm db:mark-abandoned-carts` marks a cart with items `abandoned` (whole number, default `24`). Only the job reads it. |
+| `UNPAID_ORDER_HOURS` | no | Hours after checkout after which `pnpm db:cancel-unpaid-orders` cancels a card order that is still unpaid (whole number, default `48`). Only the job reads it. |
 
 The variables are validated with zod in `app/.server/env.ts`, and the server fails at startup with a readable error if any are missing or invalid. A `.env` file is loaded automatically, but variables already set in the environment take precedence.
 
@@ -88,13 +90,14 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:convert-catalog <path>` | Convert the owner's Markdown perfume list into `catalog-data.ts`, applying `app/.server/db/catalog/fixes.ts` (the list itself isn't committed) |
 | `pnpm db:make-admin <email>` | Give a registered user the admin role (`--revoke` takes it away), see [Admin role](#admin-role) |
 | `pnpm db:mark-abandoned-carts` | Mark inactive carts as abandoned (safe to re-run), see [Abandoned carts](#abandoned-carts) |
+| `pnpm db:cancel-unpaid-orders` | Cancel card orders still unpaid after `UNPAID_ORDER_HOURS` (safe to re-run), see [Unpaid card orders](#unpaid-card-orders) |
 | `pnpm db:expire-gift-cards` | Mark active gift cards past their 12 months as expired (safe to re-run), see [Gift cards](#gift-cards) |
 | `pnpm db:prune-rate-limits` | Delete ended rate-limit windows (safe to re-run), see [Rate limits](#rate-limits) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
-The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-send-order-emails`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
+The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`, `db-send-order-emails`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
 
 The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`, `import-catalog.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration, seed and import tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
 
@@ -111,6 +114,16 @@ The app server only handles requests, so run the job hourly from an external sch
 Like the other `db:*` scripts it runs TypeScript with `tsx`, a dev dependency, so install dev dependencies (plain `pnpm install`) where it runs. Under Aspire, start the `db-mark-abandoned-carts` resource from the dashboard.
 
 A shopper whose cart was abandoned sees an empty cart when they come back, and their next add starts a new cart. The abandoned cart stays as it was, for analytics.
+
+## Unpaid card orders
+
+A card order is placed `pending` and waits for the payment provider. `pnpm db:cancel-unpaid-orders` cancels every card order that is still unpaid `UNPAID_ORDER_HOURS` (default 48) after checkout and had no payment attempt in the last hour, with the cancel reason `payment_failed` (#128). Like a cancel in Strapi, it puts tracked stock back, gives back what a gift card paid, records the change in `order_status_history`, queues the customer's cancellation email (`pnpm db:send-order-emails` sends it) and queues the order for Strapi (`pnpm db:sync-cms` pushes it). A second run changes nothing. Run it hourly from cron, for example:
+
+```cron
+30 * * * * cd /srv/jassmin && pnpm db:cancel-unpaid-orders >> /var/log/jassmin/unpaid-orders.log 2>&1
+```
+
+A payment that still succeeds after the cancel leaves the order cancelled and logs a warning: refund it by hand. Under Aspire, start the `db-cancel-unpaid-orders` resource from the dashboard.
 
 ## Order emails
 

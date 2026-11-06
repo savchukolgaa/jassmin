@@ -45,7 +45,8 @@ export const en = {
     },
     collect: {
       heading: "What data we collect",
-      account: "Your account: name, email, phone (optional) and an encrypted password.",
+      account:
+        "Your account: name, email, phone (optional), an encrypted password, the delivery city of your latest order and whether you agreed to our newsletter.",
       orders: "Your orders: products, amounts, delivery details and payment method.",
       cart: "Your cart: the products you added, even without logging in.",
       analytics:
@@ -58,6 +59,8 @@ export const en = {
         "Your account, cart and order data are needed to fulfil your orders and give you access to your account.",
       consent:
         "We only collect statistics with your consent, to learn how to improve our range and the site. You can withdraw your consent at any time.",
+      marketing:
+        "We only email new arrivals and offers to people who agreed to the newsletter when registering or on their profile. You can unsubscribe at any time under Profile details. Your delivery city helps us understand where our customers live and plan our range.",
     },
     cookies: {
       heading: "Cookies",
@@ -148,6 +151,8 @@ export const en = {
       submit: "Create account",
       privacyNotice: "By creating an account you agree to the",
       privacyLink: "privacy policy",
+      marketingOptIn: "Send me new arrivals and offers",
+      marketingOptInHint: "Emails at most once a week. Unsubscribe any time in your profile.",
     },
     tabs: {
       label: "Account",
@@ -682,6 +687,14 @@ export const en = {
         hint: "At least 8 characters",
         submit: "Change password",
         saved: "Password changed. Other devices will need to log in again.",
+      },
+      marketing: {
+        heading: "Newsletter",
+        description:
+          "Emails about new arrivals and offers, at most once a week. Emails about your orders always arrive.",
+        submit: "Save",
+        subscribed: "Done: we'll send you new arrivals and offers.",
+        unsubscribed: "Done: we won't send you new arrivals and offers any more.",
       },
       errors: {
         currentPasswordRequired: "Enter your current password",

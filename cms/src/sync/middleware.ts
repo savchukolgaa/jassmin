@@ -219,8 +219,9 @@ export function toOrderData(answer: unknown): Data {
 }
 
 /**
- * What staff changed on an order, for `/cms/orders/:id`: the statuses, the waybill number and
- * the "arrived at the branch" checkbox (#138). A field the form didn't send stays as it is; a
+ * What staff changed on an order, for `/cms/orders/:id`: the statuses, the waybill number,
+ * the "arrived at the branch" checkbox (#138) and the cancel reason (#128), which a cancel needs
+ * and the app ignores with any other status. A field the form didn't send stays as it is; a
  * cleared waybill is sent as `null`, which removes it.
  */
 export function toOrderChange(data: Data): Data {
@@ -229,6 +230,7 @@ export function toOrderChange(data: Data): Data {
     paymentStatus: data.paymentStatus ?? undefined,
     arrivedAtBranch: typeof data.arrivedAtBranch === "boolean" ? data.arrivedAtBranch : undefined,
     waybillNumber: "waybillNumber" in data ? (data.waybillNumber ?? null) : undefined,
+    cancelReason: data.cancelReason ?? undefined,
   };
 }
 

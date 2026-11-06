@@ -32,7 +32,9 @@ import type { EventProperties } from "~/lib/analytics";
 import {
   AUTH_TOKEN_PURPOSES,
   type AuthTokenPurpose,
+  CANCEL_REASONS,
   CART_STATUSES,
+  type CancelReason,
   CMS_SYNC_ENTITIES,
   type CmsSyncEntity,
   DISCOUNT_KINDS,
@@ -46,9 +48,11 @@ import {
   type GiftCardStatus,
   ORDER_EMAIL_STATUSES,
   ORDER_EMAIL_TYPES,
+  ORDER_STATUS_SOURCES,
   ORDER_STATUSES,
   type OrderEmailStatus,
   type OrderEmailType,
+  type OrderStatusSource,
   PAYMENT_ATTEMPT_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_PROVIDERS,
@@ -91,6 +95,11 @@ export const users = pgTable("users", {
   // When the password was last set by a reset or a profile change: session cookies issued before
   // it are rejected, which logs out every other session (`isSessionRevoked`).
   passwordChangedAt: timestamp({ withTimezone: true }),
+  // Customer attributes for segmentation and churn (#128); ML features, never drop or rename.
+  /** The delivery city of the user's latest order; `null` before their first order. */
+  city: text(),
+  /** Agreed to marketing emails at registration or on the profile; withdrawable any time. */
+  marketingOptIn: boolean().notNull().default(false),
 });
 
 /**
@@ -436,6 +445,13 @@ export const orders = pgTable(
      * a used rule is deactivated, never deleted.
      */
     discountId: integer().references((): AnyPgColumn => discounts.id, { onDelete: "restrict" }),
+    /**
+     * When the parcel came back (#128): set when the status becomes `returned` or `unclaimed`.
+     * With `shipped_at`, the time-to-return feature; never drop or rename it.
+     */
+    returnedAt: timestamp({ withTimezone: true }),
+    /** Why the order was cancelled (#128); set with `cancelled`, `null` for older orders. */
+    cancelReason: text().$type<CancelReason>(),
   },
   (t) => [
     check(
@@ -461,6 +477,7 @@ export const orders = pgTable(
     // NULLs don't collide, so orders without a cart are fine.
     uniqueIndex("orders_cart_id_unique").on(t.cartId),
     index("orders_discount_id_idx").on(t.discountId),
+    check("orders_cancel_reason_check", oneOf(t.cancelReason, CANCEL_REASONS)),
   ],
 );
 
@@ -480,11 +497,38 @@ export const orderItems = pgTable(
     quantity: integer().notNull(),
     /** Unit price when the order was placed; later price changes don't affect it. */
     priceAtPurchase: numeric({ precision: 10, scale: 2 }).notNull(),
+    /**
+     * This line's share of `orders.discount_amount` (#128), for the whole line (not per unit).
+     * The lines of an order add up to its discount exactly.
+     */
+    discountAllocated: numeric({ precision: 10, scale: 2 }).notNull().default("0"),
   },
   (t) => [
     check("order_items_quantity_check", sql`${t.quantity} > 0`),
     check("order_items_price_at_purchase_check", sql`${t.priceAtPurchase} >= 0`),
+    check("order_items_discount_allocated_check", sql`${t.discountAllocated} >= 0`),
     index("order_items_order_id_idx").on(t.orderId),
+  ],
+);
+
+/**
+ * One row per change of an order's status (#128), written in the transaction that made it:
+ * checkout, the payment callback, a Strapi edit or a job. `orders.status` is only the latest.
+ */
+export const orderStatusHistory = pgTable(
+  "order_status_history",
+  {
+    id: serial().primaryKey(),
+    orderId: integer()
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    status: orderStatusType().notNull(),
+    changedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    source: text().$type<OrderStatusSource>().notNull(),
+  },
+  (t) => [
+    check("order_status_history_source_check", oneOf(t.source, ORDER_STATUS_SOURCES)),
+    index("order_status_history_order_id_changed_at_idx").on(t.orderId, t.changedAt),
   ],
 );
 

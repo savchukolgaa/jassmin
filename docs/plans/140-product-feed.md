@@ -182,7 +182,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
   (jsdom `DOMParser`, as in `seo/sitemap.test.ts`): well-formed, `g:` namespace, `Dolce & Gabbana`
   and `<` in titles round-trip, one `<item>` per input, a control character in a description
   doesn't break parsing, and an empty item list is still a valid channel.
-- [ ] **4. Query.** Add `listFeedVariants(db)` to `app/.server/db/queries/products.ts`: an inner
+- [x] **4. Query.** Add `listFeedVariants(db)` to `app/.server/db/queries/products.ts`: an inner
   join of `products` and `productVariants`, `where isListed and slug is not null and price > 0`.
   It selects the product's `publicId`, `slug`, `title`, `brand`, `gender`, `fragranceFamily`,
   `packSize`, `description`, `descriptionEn` and image columns, plus the variant's `publicId`,

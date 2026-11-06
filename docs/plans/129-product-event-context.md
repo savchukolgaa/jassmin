@@ -264,7 +264,7 @@ events carry list context, position, price and stock. Three new client events ar
   listener, and sends once on the first of hidden, `pagehide` or unmount, capped at
   `MAX_DWELL_MS`. Call it in `routes/product.tsx`. Check: fake-timer tests cover visible time
   only, the cap, sending once, and nothing without consent.
-- [ ] **9. Docs** — Write `docs/analytics-events.md`. For each event type it gives: who records it
+- [x] **9. Docs** — Write `docs/analytics-events.md`. For each event type it gives: who records it
   (server or client), when it fires, a property table, and an example. Add the shared
   product-context table, the `list_id` table, position and dedupe rules, the consent and
   no-personal-data rules, and the old-to-new key mapping. Update the "Visitor and events"

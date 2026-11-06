@@ -11,6 +11,7 @@ const applyCmsOrderChange = vi.hoisted(() =>
     async (_orderId: number, _change: CmsOrderChange): Promise<CmsOrderResult> => ({
       ok: true,
       order,
+      emailsQueued: false,
     }),
   ),
 );

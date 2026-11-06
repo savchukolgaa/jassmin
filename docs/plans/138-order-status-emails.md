@@ -185,7 +185,7 @@ Each step is small, ordered, and leaves the app in a working state.
   `orderStatusEmailTypes(before: OrderLifecycle, patch: OrderLifecyclePatch): OrderEmailType[]`
   (rules in Decisions). Unit-test every transition in the table, cod `pending → shipped`, a
   waybill-only edit, an empty patch, and cancel + refund together.
-- [ ] **4. Queue in the transaction.** Add `queueOrderStatusEmails(db, orderId, types)` to
+- [x] **4. Queue in the transaction.** Add `queueOrderStatusEmails(db, orderId, types)` to
   `db/queries/order-emails.ts`: one `insert into order_emails (order_id, type, locale) select …,
   coalesce((select locale from order_emails where order_id = $1 and type = 'confirmation'), 'uk')
   … on conflict (order_id, type) do nothing`. Call it in `applyCmsOrderChange` after

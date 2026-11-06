@@ -20,6 +20,32 @@ export async function insertOrderEmail(
   await db.insert(orderEmails).values(email);
 }
 
+/**
+ * Queues the order status emails `types` (#138) in the language of the order's confirmation
+ * (Ukrainian when it has none); call it inside the transaction that changed the order. A type
+ * the order already has (sent, pending or failed) is skipped, so each goes out at most once.
+ * Returns the types it queued.
+ */
+export async function queueOrderStatusEmails(
+  db: Pick<Db, "execute">,
+  orderId: number,
+  types: readonly OrderEmailType[],
+): Promise<OrderEmailType[]> {
+  if (types.length === 0) return [];
+  const result = await db.execute<{ type: OrderEmailType }>(sql`
+    insert into ${orderEmails} (order_id, type, locale)
+    select ${orderId}, t.type, coalesce(
+      (select locale from ${orderEmails}
+        where order_id = ${orderId} and type = 'confirmation'),
+      'uk'
+    )
+    from unnest(${`{${types.join(",")}}`}::text[]) with ordinality as t(type, n)
+    order by t.n
+    on conflict (order_id, type) do nothing
+    returning type`);
+  return result.rows.map((row) => row.type);
+}
+
 /** A row this sender now holds until its `next_attempt_at`. `attempts` includes this one. */
 export interface ClaimedOrderEmail {
   id: number;

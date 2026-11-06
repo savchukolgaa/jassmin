@@ -81,6 +81,46 @@ describe.skipIf(!hasDatabase)("order email queries", () => {
     ).rejects.toThrow();
   });
 
+  it("queues status emails once, in the confirmation's language (#138)", async () => {
+    const { asc, eq } = await import("drizzle-orm");
+    const { orderEmails } = await import("../schema");
+    const { queueOrderStatusEmails } = await import("./order-emails");
+    const orderId = await queued("en");
+
+    expect(await queueOrderStatusEmails(testDb.db, orderId, ["cancelled", "refunded"])).toEqual([
+      "cancelled",
+      "refunded",
+    ]);
+    // A second time (sent, pending or failed alike) queues nothing.
+    await testDb.db
+      .update(orderEmails)
+      .set({ status: "failed" })
+      .where(eq(orderEmails.type, "cancelled"));
+    expect(await queueOrderStatusEmails(testDb.db, orderId, ["cancelled", "refunded"])).toEqual([]);
+    expect(await queueOrderStatusEmails(testDb.db, orderId, [])).toEqual([]);
+
+    const rows = await testDb.db
+      .select({ type: orderEmails.type, locale: orderEmails.locale, status: orderEmails.status })
+      .from(orderEmails)
+      .where(eq(orderEmails.orderId, orderId))
+      .orderBy(asc(orderEmails.id));
+    expect(rows).toEqual([
+      { type: "confirmation", locale: "en", status: "pending" },
+      { type: "cancelled", locale: "en", status: "failed" },
+      { type: "refunded", locale: "en", status: "pending" },
+    ]);
+  });
+
+  it("queues status emails in Ukrainian for an order without a confirmation (#138)", async () => {
+    const { orders } = await import("../schema");
+    const { queueOrderStatusEmails } = await import("./order-emails");
+    const [order] = await testDb.db.insert(orders).values(sampleOrder).returning();
+    const orderId = order?.id ?? 0;
+
+    expect(await queueOrderStatusEmails(testDb.db, orderId, ["shipped"])).toEqual(["shipped"]);
+    expect(await row(orderId)).toMatchObject({ type: "shipped", locale: "uk" });
+  });
+
   it("claims due rows, counts the attempt and pushes the next attempt out", async () => {
     const { claimOrderEmails } = await import("./order-emails");
     const orderId = await queued("en");

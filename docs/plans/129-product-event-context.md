@@ -221,7 +221,7 @@ events carry list context, position, price and stock. Three new client events ar
   `api.events.test.ts` covers an impression batch recorded with `product_id`, an unknown product
   dropped, an invalid shape giving 400, no consent giving 204 with nothing stored, and more than
   20 events giving 400.
-- [ ] **5. Client list tracking** — Extend `createEventQueue` with a timed flush (5 s, injectable
+- [x] **5. Client list tracking** — Extend `createEventQueue` with a timed flush (5 s, injectable
   timer for tests) and a flush on `visibilitychange` → hidden. Add a `ProductListProvider` with
   `{ listId, searchId?, page, pageSize, renderKey, enabled }`, where `enabled` is `_shop`'s
   consent read through `useRouteLoaderData("routes/_shop")`. Add `useProductImpression(ref,

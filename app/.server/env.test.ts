@@ -373,3 +373,29 @@ describe("getSiteUrl", () => {
     expect(getSiteUrl({ PUBLIC_SITE_URL: undefined }, request)).toBe("http://evil.example:5173");
   });
 });
+
+describe("EMAIL_UNSUBSCRIBE_SECRET", () => {
+  it("is optional, also in production, and an empty value counts as unset", () => {
+    expect(parseEnv(production).EMAIL_UNSUBSCRIBE_SECRET).toBeUndefined();
+    expect(
+      parseEnv({ ...valid, EMAIL_UNSUBSCRIBE_SECRET: "" }).EMAIL_UNSUBSCRIBE_SECRET,
+    ).toBeUndefined();
+    expect(parseMailEnv({ EMAIL_UNSUBSCRIBE_SECRET: "" }).EMAIL_UNSUBSCRIBE_SECRET).toBeUndefined();
+  });
+
+  it("is read by both schemas and must be 32+ characters", () => {
+    const secret = "u".repeat(32);
+    expect(parseEnv({ ...valid, EMAIL_UNSUBSCRIBE_SECRET: secret }).EMAIL_UNSUBSCRIBE_SECRET).toBe(
+      secret,
+    );
+    expect(parseMailEnv({ EMAIL_UNSUBSCRIBE_SECRET: secret }).EMAIL_UNSUBSCRIBE_SECRET).toBe(
+      secret,
+    );
+    expect(() => parseEnv({ ...valid, EMAIL_UNSUBSCRIBE_SECRET: "short" })).toThrow(
+      /EMAIL_UNSUBSCRIBE_SECRET/,
+    );
+    expect(() => parseMailEnv({ EMAIL_UNSUBSCRIBE_SECRET: "short" })).toThrow(
+      /EMAIL_UNSUBSCRIBE_SECRET/,
+    );
+  });
+});

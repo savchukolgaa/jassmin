@@ -163,7 +163,7 @@ No new packages, env vars or migrations. One new static asset: a JPEG copy of th
 
 ## Steps
 
-- [ ] **1. Bottle photo as JPEG.** Convert `app/assets/shop-bottle/shop-bottle-1280.webp` once to
+- [x] **1. Bottle photo as JPEG.** Convert `app/assets/shop-bottle/shop-bottle-1280.webp` once to
   `shop-bottle-1280.jpg` (1280×1600, quality ~85, metadata stripped; any local tool such as
   ImageMagick or Squoosh), and commit it. In `app/lib/shop-bottle.ts`, import it and export
   `SHOP_BOTTLE_FEED_IMAGE_URL`. Check: `pnpm build` fingerprints it under `build/client/assets/`.

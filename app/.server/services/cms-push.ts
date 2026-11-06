@@ -58,6 +58,9 @@ export function toCmsOrderState({ order, items }: OrderSyncRow): CmsOrderState {
     completedAt: iso(order.completedAt),
     returnedAt: iso(order.returnedAt),
     cancelReason: order.cancelReason,
+    arrivedAt: iso(order.arrivedAt),
+    arrivedAtBranch: order.arrivedAt !== null,
+    waybillNumber: order.waybillNumber,
     items,
   };
 }

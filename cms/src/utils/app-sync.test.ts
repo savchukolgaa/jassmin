@@ -47,6 +47,18 @@ describe("describeAppSyncError", () => {
     ).toBe("Щоб скасувати замовлення, виберіть «Причину скасування». [cancel-reason-required]");
   });
 
+  it("explains a refused waybill number and an arrival before shipping (#138)", () => {
+    expect(
+      describeAppSyncError(422, {
+        error: "invalid-input",
+        issues: [{ path: "waybillNumber", message: "Invalid" }],
+      }),
+    ).toBe("Номер ТТН Нової пошти — 14 цифр (пробіли можна), або порожнє поле. [invalid-input]");
+    expect(describeAppSyncError(422, { error: "arrived-not-shipped", status: "paid" })).toBe(
+      "«Прибуло у відділення» можна позначити лише для відправленого замовлення (зараз «Оплачене» (paid)). [arrived-not-shipped]",
+    );
+  });
+
   it("explains a secret mismatch and an unexpected status", () => {
     expect(describeAppSyncError(401, { error: "unauthorized" })).toContain("CMS_SYNC_SECRET");
     expect(describeAppSyncError(500, undefined)).toBe(

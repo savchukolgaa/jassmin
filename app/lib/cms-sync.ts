@@ -201,11 +201,24 @@ export interface CmsProductState {
   variants: { volumeMl: number; price: string; stock: number; trackStock: boolean }[];
 }
 
+/**
+ * A Nova Poshta waybill number (ТТН, #138) as staff type it: spaces are dropped, a blank field
+ * removes it (`null`), and what's left must be 14 digits.
+ */
+export const waybillNumberSchema = z
+  .string()
+  .nullable()
+  .transform((value) => (value ?? "").replace(/\s+/g, ""))
+  .pipe(z.union([z.literal("").transform(() => null), z.string().regex(/^\d{14}$/)]));
+
 export const cmsOrderChangeSchema = z.object({
   status: z.enum(ORDER_STATUSES).optional(),
   paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
   /** Required when staff cancel the order (#128); ignored otherwise. */
   cancelReason: z.enum(CANCEL_REASONS).optional(),
+  /** The parcel is at the branch (#138). Strapi sends `null` for an untouched checkbox. */
+  arrivedAtBranch: z.boolean().nullish(),
+  waybillNumber: waybillNumberSchema.optional(),
 });
 
 export type CmsOrderChange = z.infer<typeof cmsOrderChangeSchema>;
@@ -250,6 +263,11 @@ export interface CmsOrderState {
   returnedAt: string | null;
   /** Why the order was cancelled (#128); `null` unless cancelled. */
   cancelReason: (typeof CANCEL_REASONS)[number] | null;
+  /** When the parcel arrived at the branch (#138); `arrivedAtBranch` is the admin's checkbox. */
+  arrivedAt: string | null;
+  arrivedAtBranch: boolean;
+  /** The Nova Poshta waybill number (ТТН, #138). */
+  waybillNumber: string | null;
   items: CmsOrderItem[];
 }
 
@@ -291,7 +309,8 @@ export type CmsSyncError =
       from: string;
       to: string;
     }
-  | { error: "invalid-payment-transition"; from: string; to: string };
+  | { error: "invalid-payment-transition"; from: string; to: string }
+  | { error: "arrived-not-shipped"; status: string };
 
 /** Zod issues as `{ path, message }` pairs, e.g. `variants.0.volumeMl`. */
 export function toSyncIssues(error: z.ZodError): { path: string; message: string }[] {

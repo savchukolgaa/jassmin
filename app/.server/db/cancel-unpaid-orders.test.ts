@@ -149,6 +149,15 @@ describe.skipIf(!hasDatabase)("cancelUnpaidOrders", () => {
       ]),
     );
 
+    // The customer is told, in the language they checked out in (#138).
+    const { eq } = await import("drizzle-orm");
+    const { orderEmails } = await import("./schema");
+    const emails = await testDb.db
+      .select({ type: orderEmails.type, locale: orderEmails.locale })
+      .from(orderEmails)
+      .where(eq(orderEmails.orderId, stale));
+    expect(emails).toEqual([{ type: "cancelled", locale: "uk" }]);
+
     // A second run changes nothing.
     expect((await cancelUnpaidOrders(testDb.db, { hours: 48, now: NOW })).cancelled).toEqual([]);
     expect(await stock()).toBe(7);

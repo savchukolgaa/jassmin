@@ -36,6 +36,9 @@ const order: CmsOrderState = {
   completedAt: null,
   returnedAt: null,
   cancelReason: null,
+  arrivedAt: null,
+  arrivedAtBranch: false,
+  waybillNumber: null,
   items: [
     {
       productPublicId: "01a1652b-6e25-7c03-ae47-25b57131fb06",

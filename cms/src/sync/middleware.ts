@@ -218,6 +218,22 @@ export function toOrderData(answer: unknown): Data {
   };
 }
 
+/**
+ * What staff changed on an order, for `/cms/orders/:id`: the statuses, the waybill number,
+ * the "arrived at the branch" checkbox (#138) and the cancel reason (#128), which a cancel needs
+ * and the app ignores with any other status. A field the form didn't send stays as it is; a
+ * cleared waybill is sent as `null`, which removes it.
+ */
+export function toOrderChange(data: Data): Data {
+  return {
+    status: data.orderStatus ?? undefined,
+    paymentStatus: data.paymentStatus ?? undefined,
+    arrivedAtBranch: typeof data.arrivedAtBranch === "boolean" ? data.arrivedAtBranch : undefined,
+    waybillNumber: "waybillNumber" in data ? (data.waybillNumber ?? null) : undefined,
+    cancelReason: data.cancelReason ?? undefined,
+  };
+}
+
 async function findStored(strapi: Core.Strapi, uid: string, documentId: string | undefined) {
   if (!documentId) return null;
   const documents = strapi.documents(uid as typeof PRODUCT_UID);
@@ -275,21 +291,9 @@ async function syncOrder(strapi: Core.Strapi, context: DocumentContext): Promise
   if (typeof stored?.orderId !== "number") {
     throw new AppSyncError("Цього замовлення немає в базі магазину.");
   }
-  const answer = await postToApp(`/cms/orders/${stored.orderId}`, orderChange(params.data ?? {}));
+  const answer = await postToApp(`/cms/orders/${stored.orderId}`, toOrderChange(params.data ?? {}));
   // Every other field is the shop's: whatever the form sent, Strapi stores the app's values.
   params.data = toOrderData(answer);
-}
-
-/**
- * What staff changed on an order, as the app's `/cms/orders/:id` takes it: the statuses and the
- * cancel reason (#128), which a cancel needs and the app ignores with any other status.
- */
-export function orderChange(data: Data) {
-  return {
-    status: data.orderStatus ?? undefined,
-    paymentStatus: data.paymentStatus ?? undefined,
-    cancelReason: data.cancelReason ?? undefined,
-  };
 }
 
 export function createSyncMiddleware(strapi: Core.Strapi): DocumentMiddleware {

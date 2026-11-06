@@ -2,9 +2,11 @@
 // write-through (`applyCmsOrderChange`) and the unpaid-order job (`cancelUnpaidOrders`), so the
 // two can't drift apart. Inside the caller's transaction it locks the order, checks the change
 // against the lifecycle rules (`nextOrderState`), writes the patch and its timestamps, records the
-// new status in `order_status_history`, and, when the order is cancelled or comes back unclaimed,
-// puts its units back in stock and what a gift card paid back on the card, queuing those products
-// and cards for Strapi. A refused change writes nothing.
+// new status in `order_status_history`, queues the customer's status emails (#138: shipped,
+// arrived, cancelled, refunded; sent after the commit or by `pnpm db:send-order-emails`) and,
+// when the order is cancelled or comes back unclaimed, puts its units back in stock and what a
+// gift card paid back on the card, queuing those products and cards for Strapi. A refused change
+// writes nothing.
 //
 // It must not import `db/index.ts`: the job runs from the CLI without the web app's env.
 import type { OrderStatusSource } from "~/lib/enums";
@@ -14,17 +16,20 @@ import {
   type OrderLifecyclePatch,
   type OrderStatusChange,
 } from "~/lib/order-status";
+import { orderStatusEmailTypes } from "~/lib/order-status-emails";
 import type { Db } from "../db/client";
 import { enqueueCmsSync } from "../db/queries/cms-outbox";
 import { restoreGiftCardRedemptions } from "../db/queries/gift-cards";
+import { queueOrderStatusEmails } from "../db/queries/order-emails";
 import { insertOrderStatusHistory } from "../db/queries/order-status-history";
 import { lockOrderLifecycle, restockOrder, updateOrderLifecycle } from "../db/queries/orders";
 
 /** A transaction (or `Db`) the change runs in. */
-type Executor = Pick<Db, "select" | "insert" | "update" | "delete">;
+type Executor = Pick<Db, "select" | "insert" | "update" | "delete" | "execute">;
 
 export type ChangeOrderStatusResult =
-  | { ok: true; patch: OrderLifecyclePatch }
+  /** `emailsQueued`: status emails were queued (#138), to send after the commit. */
+  | { ok: true; patch: OrderLifecyclePatch; emailsQueued: boolean }
   | { ok: false; error: "unknown-order" }
   | Extract<NextOrderState, { ok: false }>;
 
@@ -52,10 +57,12 @@ export async function changeOrderStatus(
       changedAt: now,
     });
   }
+  // The customer hears about it once per type, in the same transaction (#138).
+  const emailsQueued = await queueOrderStatusEmails(tx, orderId, orderStatusEmailTypes(next.patch));
   if (next.restock) {
     await enqueueCmsSync(tx, "product", await restockOrder(tx, orderId));
     // What a gift card paid goes back on it, like the units go back in stock (#125).
     await enqueueCmsSync(tx, "gift_card", await restoreGiftCardRedemptions(tx, orderId, now));
   }
-  return { ok: true, patch: next.patch };
+  return { ok: true, patch: next.patch, emailsQueued: emailsQueued.length > 0 };
 }

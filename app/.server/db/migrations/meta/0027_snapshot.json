@@ -1,5 +1,5 @@
 {
-  "id": "3395a538-0c58-49b6-aa44-733daf4e3ec3",
+  "id": "edfc4229-1d0d-41f1-aeec-51be95715c80",
   "prevId": "b145f9f9-acbe-4b91-b152-e2e6aeff98ee",
   "version": "7",
   "dialect": "postgresql",
@@ -1225,7 +1225,7 @@
       "checkConstraints": {
         "order_emails_type_check": {
           "name": "order_emails_type_check",
-          "value": "\"order_emails\".\"type\" in ('confirmation', 'gift_card', 'gift_card_recipient')"
+          "value": "\"order_emails\".\"type\" in ('confirmation', 'gift_card', 'gift_card_recipient', 'shipped', 'arrived', 'cancelled', 'refunded')"
         },
         "order_emails_locale_check": {
           "name": "order_emails_locale_check",
@@ -1291,13 +1291,6 @@
           "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": true
-        },
-        "discount_allocated": {
-          "name": "discount_allocated",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
         }
       },
       "indexes": {
@@ -1369,96 +1362,6 @@
         "order_items_price_at_purchase_check": {
           "name": "order_items_price_at_purchase_check",
           "value": "\"order_items\".\"price_at_purchase\" >= 0"
-        },
-        "order_items_discount_allocated_check": {
-          "name": "order_items_discount_allocated_check",
-          "value": "\"order_items\".\"discount_allocated\" >= 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.order_status_history": {
-      "name": "order_status_history",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "order_id": {
-          "name": "order_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "order_status_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "changed_at": {
-          "name": "changed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "source": {
-          "name": "source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "order_status_history_order_id_changed_at_idx": {
-          "name": "order_status_history_order_id_changed_at_idx",
-          "columns": [
-            {
-              "expression": "order_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "changed_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "order_status_history_order_id_orders_id_fk": {
-          "name": "order_status_history_order_id_orders_id_fk",
-          "tableFrom": "order_status_history",
-          "tableTo": "orders",
-          "columnsFrom": [
-            "order_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "order_status_history_source_check": {
-          "name": "order_status_history_source_check",
-          "value": "\"order_status_history\".\"source\" in ('checkout', 'payment', 'cms', 'job')"
         }
       },
       "isRLSEnabled": false
@@ -1622,21 +1525,21 @@
           "primaryKey": false,
           "notNull": false
         },
-        "discount_id": {
-          "name": "discount_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "returned_at": {
-          "name": "returned_at",
+        "arrived_at": {
+          "name": "arrived_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
-        "cancel_reason": {
-          "name": "cancel_reason",
-          "type": "text",
+        "waybill_number": {
+          "name": "waybill_number",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discount_id": {
+          "name": "discount_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         }
@@ -1775,9 +1678,9 @@
           "name": "orders_gift_card_payment_check",
           "value": "\"orders\".\"payment_method\" <> 'gift_card' or (\"orders\".\"total_amount\" = 0 and \"orders\".\"gift_card_amount\" > 0)"
         },
-        "orders_cancel_reason_check": {
-          "name": "orders_cancel_reason_check",
-          "value": "\"orders\".\"cancel_reason\" in ('customer_request', 'out_of_stock', 'no_answer', 'payment_failed', 'other')"
+        "orders_waybill_number_check": {
+          "name": "orders_waybill_number_check",
+          "value": "\"orders\".\"waybill_number\" ~ '^[0-9]{14}$'"
         }
       },
       "isRLSEnabled": false
@@ -2849,19 +2752,6 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
-        },
-        "city": {
-          "name": "city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "marketing_opt_in": {
-          "name": "marketing_opt_in",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         }
       },
       "indexes": {},

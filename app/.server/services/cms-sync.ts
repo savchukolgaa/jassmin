@@ -194,21 +194,23 @@ export async function applyCmsProductChange(
 }
 
 export type CmsOrderResult =
-  | { ok: true; order: CmsOrderState }
+  /** `emailsQueued`: order status emails (#138) to send after the commit. */
+  | { ok: true; order: CmsOrderState; emailsQueued: boolean }
   | Failure<
       | "unknown-order"
       | "invalid-transition"
       | "card-not-paid"
       | "cancel-reason-required"
       | "invalid-payment-transition"
+      | "arrived-not-shipped"
     >;
 
 /**
  * Applies a status or payment change made in the Strapi admin, under the order's row lock, with
  * `changeOrderStatus`: checks it against the lifecycle rules (`nextOrderState`; cancelling needs a
  * reason, #128), sets the due timestamps, records a status change in `order_status_history`
- * (`cms`) and, when the order is cancelled or comes back unclaimed, puts its units back in stock,
- * all in one transaction. The restocked products are queued for a push, so Strapi shows their new
+ * (`cms`), queues the customer's status emails (#138) and, when the order is cancelled or comes
+ * back unclaimed, puts its units back in stock, all in one transaction. The restocked products are queued for a push, so Strapi shows their new
  * stock. A refused change writes nothing.
  */
 export async function applyCmsOrderChange(
@@ -227,7 +229,7 @@ export async function applyCmsOrderChange(
     if (!state) {
       throw new Error(`Order ${orderId} vanished inside its transaction`);
     }
-    return { ok: true, order: toCmsOrderState(state) };
+    return { ok: true, order: toCmsOrderState(state), emailsQueued: changed.emailsQueued };
   });
 }
 

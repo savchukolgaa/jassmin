@@ -508,6 +508,49 @@ export const en = {
     contact: "Any questions? Reply to this email or write to {email}.",
     signature: "The Jassmin team",
   },
+  orderStatusEmail: {
+    greeting: "Hello {name},",
+    orderHeading: "Order №{id}",
+    deliveryHeading: "Delivery",
+    waybill: "Waybill number",
+    track: "Track the parcel",
+    account: "View the order",
+    contact: "Any questions? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+    shipped: {
+      subject: "Order №{id} is on its way — Jassmin",
+      intro: "Your order №{id} is on its way: we've handed it to Nova Poshta.",
+      waybillNote: "You can track the parcel with this number on the Nova Poshta website or app.",
+      next: "When the parcel reaches the branch, Nova Poshta will text you and we'll email you.",
+    },
+    arrived: {
+      subject: "Order №{id} is waiting at the branch — Jassmin",
+      intro: "Your order №{id} has arrived at the Nova Poshta branch and is waiting for you.",
+      storage: {
+        one: "The branch keeps the parcel for free for {count} day, so please collect it in time.",
+        other:
+          "The branch keeps the parcel for free for {count} days, so please collect it in time.",
+      },
+      bring: "At the branch, give the waybill number or your phone number and bring an ID.",
+      payCod: "To pay on collection: {amount}.",
+      payCodCarrier: "To pay on collection: {amount}, plus Nova Poshta's delivery fee.",
+      paid: "The order is paid.",
+      paidCarrier: "The order is paid; on collection you only pay Nova Poshta's delivery fee.",
+    },
+    cancelled: {
+      subject: "Order №{id} is cancelled — Jassmin",
+      intro: "Your order №{id} has been cancelled.",
+      refundCard:
+        "We'll return the {amount} you paid by card to that card and email you when it's done.",
+      giftCard: "{amount} is back on your gift card, ready for your next order.",
+      next: "If you didn't cancel the order or would like to place it again, write to us.",
+    },
+    refunded: {
+      subject: "Refund for order №{id} — Jassmin",
+      intro: "We've refunded {amount} for order №{id}.",
+      card: "Banks usually take 3–7 working days to show the money on your card.",
+    },
+  },
   giftCardEmail: {
     subject: "Your Jassmin gift card of {amount}",
     greeting: "Hello!",

@@ -1,4 +1,4 @@
--- Rolls back 0027_order_lifecycle_ml.sql (#128): the status history, return times, cancel
+-- Rolls back 0028_order_lifecycle_ml.sql (#128): the status history, return times, cancel
 -- reasons, per-line discounts, cities and marketing opt-ins are lost.
 DROP TABLE "order_status_history";--> statement-breakpoint
 ALTER TABLE "orders" DROP CONSTRAINT "orders_cancel_reason_check";--> statement-breakpoint

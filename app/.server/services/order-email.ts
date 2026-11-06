@@ -1,16 +1,19 @@
-// Order confirmation emails (#45) and gift card code emails (#125). `createOrder` queues the
-// confirmation in `order_emails` inside the order's transaction, and the payment callback queues a
-// paid gift card's emails inside its transaction; this module renders and sends queued emails.
+// Order confirmation emails (#45), gift card code emails (#125) and order status emails (#138).
+// `createOrder` queues the confirmation in `order_emails` inside the order's transaction, the
+// payment callback queues a paid gift card's emails inside its transaction, and a Strapi status
+// change queues the status emails inside its own; this module renders and sends queued emails.
 // The checkout action (or the callback route) tries them right after the commit, and
 // `pnpm db:send-order-emails` retries whatever failed, with the backoff below. Nothing here ever
 // fails a checkout or a payment.
 import type Mail from "nodemailer/lib/mailer";
-import type { OrderConfirmation } from "~/lib/checkout";
-import { PAYMENT_KEYS } from "~/lib/checkout";
+import type { OrderConfirmation, OrderStatusEmail } from "~/lib/checkout";
+import { NOVA_POSHTA_FREE_STORAGE_DAYS, novaPoshtaTrackingUrl, PAYMENT_KEYS } from "~/lib/checkout";
 import type { GiftCard } from "~/lib/commerce";
 import { discountLabel } from "~/lib/discounts";
 import { formatGiftCardCode } from "~/lib/gift-cards";
 import { createTranslator, type Translator } from "~/lib/i18n";
+import { isOrderStatusEmailType, type OrderStatusEmailType } from "~/lib/order-status-emails";
+import { pathFor } from "~/lib/paths";
 import { formatVolume } from "~/lib/products";
 import type { Db } from "../db/client";
 import { findGiftCard } from "../db/queries/gift-cards";
@@ -20,7 +23,7 @@ import {
   markOrderEmailFailed,
   markOrderEmailSent,
 } from "../db/queries/order-emails";
-import { findOrderConfirmation } from "../db/queries/orders";
+import { findOrderConfirmation, findOrderStatusEmail } from "../db/queries/orders";
 import { composeEmail, type EmailAmount, type EmailBlock } from "../email/layout";
 import type { MailEnv } from "../env";
 import { type MailSender, SuppressedRecipientError, stripLineBreaks } from "../mail";
@@ -46,17 +49,10 @@ function footerOf(env: OrderEmailEnv) {
   return { inbox: env.CONTACT_INBOX, siteUrl: env.PUBLIC_SITE_URL };
 }
 
-/** The confirmation for a placed order, in the translator's language. */
-export function buildOrderConfirmationEmail(
-  order: OrderConfirmation,
-  translator: Translator,
-  env: OrderEmailEnv,
-): OrderEmailMessage {
-  const { t, formatPrice, formatDate } = translator;
-  const fullName = stripLineBreaks(order.fullName);
-  const payment = PAYMENT_KEYS[order.paymentMethod];
-
-  const lines = order.lines.map((line) => {
+/** The order's lines as the emails list them: name, size, quantity × price = total. */
+function orderLineItems(order: OrderConfirmation, translator: Translator): string[] {
+  const { t, formatPrice } = translator;
+  return order.lines.map((line) => {
     const title = line.title ?? t("checkout.deletedProduct");
     const volume =
       line.volumeMl === null
@@ -72,6 +68,31 @@ export function buildOrderConfirmationEmail(
       total: formatPrice(line.lineTotal),
     });
   });
+}
+
+/** The carrier, the recipient and the branch address. */
+function deliveryLines(order: OrderConfirmation, translator: Translator): EmailBlock {
+  const fullName = stripLineBreaks(order.fullName);
+  return {
+    type: "lines",
+    items: [
+      translator.t("orderEmail.deliveryCarrier"),
+      `${fullName}, ${order.phone}`,
+      order.shippingAddress,
+    ],
+  };
+}
+
+/** The confirmation for a placed order, in the translator's language. */
+export function buildOrderConfirmationEmail(
+  order: OrderConfirmation,
+  translator: Translator,
+  env: OrderEmailEnv,
+): OrderEmailMessage {
+  const { t, formatPrice, formatDate } = translator;
+  const fullName = stripLineBreaks(order.fullName);
+  const payment = PAYMENT_KEYS[order.paymentMethod];
+  const lines = orderLineItems(order, translator);
 
   const amounts: EmailAmount[] = [
     { label: t("checkout.subtotal"), value: formatPrice(order.subtotal) },
@@ -110,14 +131,7 @@ export function buildOrderConfirmationEmail(
     { type: "heading", text: t("checkout.success.payment") },
     { type: "lines", items: [t(payment.label), t(payment.note)] },
     { type: "heading", text: t("checkout.success.delivery") },
-    {
-      type: "lines",
-      items: [
-        t("orderEmail.deliveryCarrier"),
-        `${fullName}, ${order.phone}`,
-        order.shippingAddress,
-      ],
-    },
+    deliveryLines(order, translator),
     { type: "paragraph", text: t("orderEmail.contact", { email: env.CONTACT_INBOX }) },
     { type: "signature", text: t("orderEmail.signature") },
   ];
@@ -221,6 +235,205 @@ export function buildGiftCardRecipientEmail(
   });
 }
 
+/** The waybill number to copy and, as a button, its Nova Poshta tracking page. */
+function waybillBlocks(waybillNumber: string, translator: Translator, note?: string): EmailBlock[] {
+  const { t } = translator;
+  return [
+    {
+      type: "code",
+      label: t("orderStatusEmail.waybill"),
+      code: waybillNumber,
+      ...(note ? { note } : {}),
+    },
+    {
+      type: "button",
+      label: t("orderStatusEmail.track"),
+      url: novaPoshtaTrackingUrl(waybillNumber),
+    },
+  ];
+}
+
+/**
+ * A status email in the shared layout: greeting, `body` (the status and what to do next), the
+ * order's lines and delivery, a link to the order for a registered customer, and the contact line.
+ * The subject is the type's, with only the order number in it.
+ */
+function composeStatusEmail(
+  type: OrderStatusEmailType,
+  order: OrderStatusEmail,
+  body: EmailBlock[],
+  translator: Translator,
+  env: OrderEmailEnv,
+): OrderEmailMessage {
+  const { t } = translator;
+  const fullName = stripLineBreaks(order.fullName);
+  const id = String(order.id);
+  // Guests' order pages only open in the browser they ordered in, so they get no link.
+  const accountLink: EmailBlock[] =
+    order.userId !== null && env.PUBLIC_SITE_URL
+      ? [
+          {
+            type: "button",
+            label: t("orderStatusEmail.account"),
+            url: `${env.PUBLIC_SITE_URL}${pathFor(translator.locale, "accountOrder", { id })}`,
+          },
+        ]
+      : [];
+  const blocks: EmailBlock[] = [
+    { type: "paragraph", text: t("orderStatusEmail.greeting", { name: fullName }) },
+    ...body,
+    { type: "heading", text: t("orderStatusEmail.orderHeading", { id }) },
+    { type: "lines", items: orderLineItems(order, translator) },
+    { type: "heading", text: t("orderStatusEmail.deliveryHeading") },
+    deliveryLines(order, translator),
+    ...accountLink,
+    { type: "paragraph", text: t("orderStatusEmail.contact", { email: env.CONTACT_INBOX }) },
+    { type: "signature", text: t("orderStatusEmail.signature") },
+  ];
+  return composeEmail({
+    from: env.ORDER_FROM ?? env.CONTACT_FROM,
+    to: { name: fullName, address: order.email },
+    replyTo: env.CONTACT_INBOX,
+    // Only the order number: no user input in the subject.
+    subject: t(`orderStatusEmail.${type}.subject`, { id }),
+    blocks,
+    translator,
+    footer: footerOf(env),
+  });
+}
+
+/** A paragraph when `text` is given, nothing otherwise. */
+function paragraphIf(text: string | false): EmailBlock[] {
+  return text ? [{ type: "paragraph", text }] : [];
+}
+
+/** The order is on its way (#138), with the waybill and tracking link when staff entered one. */
+export function buildOrderShippedEmail(
+  order: OrderStatusEmail,
+  translator: Translator,
+  env: OrderEmailEnv,
+): OrderEmailMessage {
+  const { t } = translator;
+  return composeStatusEmail(
+    "shipped",
+    order,
+    [
+      { type: "paragraph", text: t("orderStatusEmail.shipped.intro", { id: String(order.id) }) },
+      ...(order.waybillNumber
+        ? waybillBlocks(order.waybillNumber, translator, t("orderStatusEmail.shipped.waybillNote"))
+        : []),
+      { type: "paragraph", text: t("orderStatusEmail.shipped.next") },
+    ],
+    translator,
+    env,
+  );
+}
+
+/**
+ * The parcel is at the branch (#138): the branch, how long it's kept for free, what to bring and
+ * what is left to pay there.
+ */
+export function buildOrderArrivedEmail(
+  order: OrderStatusEmail,
+  translator: Translator,
+  env: OrderEmailEnv,
+): OrderEmailMessage {
+  const { t, formatPrice } = translator;
+  const amount = formatPrice(order.totalAmount);
+  // Cash on delivery pays what's left at the branch; delivery is extra unless the shop pays it.
+  const payment =
+    order.paymentMethod === "cod" && order.paymentStatus === "unpaid"
+      ? order.freeShipping
+        ? t("orderStatusEmail.arrived.payCod", { amount })
+        : t("orderStatusEmail.arrived.payCodCarrier", { amount })
+      : order.freeShipping
+        ? t("orderStatusEmail.arrived.paid")
+        : t("orderStatusEmail.arrived.paidCarrier");
+  return composeStatusEmail(
+    "arrived",
+    order,
+    [
+      { type: "paragraph", text: t("orderStatusEmail.arrived.intro", { id: String(order.id) }) },
+      { type: "lines", items: [order.shippingAddress] },
+      ...(order.waybillNumber ? waybillBlocks(order.waybillNumber, translator) : []),
+      {
+        type: "paragraph",
+        text: t("orderStatusEmail.arrived.storage", { count: NOVA_POSHTA_FREE_STORAGE_DAYS }),
+      },
+      { type: "paragraph", text: t("orderStatusEmail.arrived.bring") },
+      { type: "paragraph", text: payment },
+    ],
+    translator,
+    env,
+  );
+}
+
+/**
+ * The order is cancelled (#138). A card payment will be refunded (its own email follows), and
+ * what a gift card paid is already back on it (`restoreGiftCardRedemptions`, #125).
+ */
+export function buildOrderCancelledEmail(
+  order: OrderStatusEmail,
+  translator: Translator,
+  env: OrderEmailEnv,
+): OrderEmailMessage {
+  const { t, formatPrice } = translator;
+  const paidByCard = order.paymentMethod === "card" && order.paymentStatus !== "unpaid";
+  return composeStatusEmail(
+    "cancelled",
+    order,
+    [
+      { type: "paragraph", text: t("orderStatusEmail.cancelled.intro", { id: String(order.id) }) },
+      ...paragraphIf(
+        paidByCard &&
+          t("orderStatusEmail.cancelled.refundCard", { amount: formatPrice(order.totalAmount) }),
+      ),
+      ...paragraphIf(
+        Number(order.giftCardAmount) > 0 &&
+          t("orderStatusEmail.cancelled.giftCard", { amount: formatPrice(order.giftCardAmount) }),
+      ),
+      { type: "paragraph", text: t("orderStatusEmail.cancelled.next") },
+    ],
+    translator,
+    env,
+  );
+}
+
+/** The payment was refunded (#138): the amount and, for a card, how long the bank takes. */
+export function buildOrderRefundedEmail(
+  order: OrderStatusEmail,
+  translator: Translator,
+  env: OrderEmailEnv,
+): OrderEmailMessage {
+  const { t, formatPrice } = translator;
+  return composeStatusEmail(
+    "refunded",
+    order,
+    [
+      {
+        type: "paragraph",
+        text: t("orderStatusEmail.refunded.intro", {
+          id: String(order.id),
+          amount: formatPrice(order.totalAmount),
+        }),
+      },
+      ...paragraphIf(order.paymentMethod === "card" && t("orderStatusEmail.refunded.card")),
+    ],
+    translator,
+    env,
+  );
+}
+
+const ORDER_STATUS_BUILDERS = {
+  shipped: buildOrderShippedEmail,
+  arrived: buildOrderArrivedEmail,
+  cancelled: buildOrderCancelledEmail,
+  refunded: buildOrderRefundedEmail,
+} as const satisfies Record<
+  OrderStatusEmailType,
+  (order: OrderStatusEmail, translator: Translator, env: OrderEmailEnv) => OrderEmailMessage
+>;
+
 const GIFT_CARD_BUILDERS = {
   gift_card: buildGiftCardEmail,
   gift_card_recipient: buildGiftCardRecipientEmail,
@@ -261,6 +474,8 @@ export interface OrderEmailDeps {
     limit: number;
   }): Promise<ClaimedOrderEmail[]>;
   loadOrder(orderId: number): Promise<OrderConfirmation | undefined>;
+  /** The order as its status emails show it (#138). */
+  loadOrderStatus(orderId: number): Promise<OrderStatusEmail | undefined>;
   loadGiftCard(giftCardId: number): Promise<GiftCard | undefined>;
   /** `messageId` is the Message-ID it went out with (#134), to match a later bounce. */
   markSent(id: number, messageId: string): Promise<void>;
@@ -279,6 +494,7 @@ export function orderEmailDeps(
     claim: (options) =>
       claimOrderEmails(db, { ...options, retryDelaysMinutes: ORDER_EMAIL_RETRY_DELAYS_MINUTES }),
     loadOrder: (orderId) => findOrderConfirmation(db, orderId),
+    loadOrderStatus: (orderId) => findOrderStatusEmail(db, orderId),
     loadGiftCard: (giftCardId) => findGiftCard(db, giftCardId),
     markSent: (id, messageId) => markOrderEmailSent(db, id, messageId),
     markFailed: (id, failure) => markOrderEmailFailed(db, id, failure),
@@ -309,6 +525,10 @@ async function buildEmail(
   if (email.type === "confirmation") {
     const order = email.orderId === null ? undefined : await deps.loadOrder(email.orderId);
     return order ? buildOrderConfirmationEmail(order, translator, deps.env) : null;
+  }
+  if (isOrderStatusEmailType(email.type)) {
+    const order = email.orderId === null ? undefined : await deps.loadOrderStatus(email.orderId);
+    return order ? ORDER_STATUS_BUILDERS[email.type](order, translator, deps.env) : null;
   }
   const card = email.giftCardId === null ? undefined : await deps.loadGiftCard(email.giftCardId);
   return card ? GIFT_CARD_BUILDERS[email.type](card, translator, deps.env) : null;
@@ -399,7 +619,7 @@ export async function deliverOrderEmails(
     if (!mailer) {
       console.info(
         orderId !== undefined
-          ? `[order-email] SMTP_URL is not set; order ${orderId}'s confirmation stays queued`
+          ? `[order-email] SMTP_URL is not set; order ${orderId}'s emails stay queued`
           : giftCardId !== undefined
             ? `[order-email] SMTP_URL is not set; gift card ${giftCardId}'s emails stay queued`
             : "[order-email] SMTP_URL is not set; queued order emails stay queued",

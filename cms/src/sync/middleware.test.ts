@@ -5,8 +5,8 @@ import {
   componentValues,
   createSyncMiddleware,
   GIFT_CARD_UID,
-  orderChange,
   productPayload,
+  toOrderChange,
   toOrderData,
 } from "./middleware";
 
@@ -233,25 +233,50 @@ describe("gift cards (#125)", () => {
     expect(pushed).toBe(true);
   });
 
-  it("sends the statuses and the cancel reason of an order edit (#128)", () => {
-    expect(
-      orderChange({
-        orderStatus: "cancelled",
-        paymentStatus: "unpaid",
-        cancelReason: "no_answer",
-        customerName: "ignored",
-      }),
-    ).toEqual({ status: "cancelled", paymentStatus: "unpaid", cancelReason: "no_answer" });
-    expect(orderChange({ orderStatus: "shipped", cancelReason: null })).toEqual({
-      status: "shipped",
-      paymentStatus: undefined,
-      cancelReason: undefined,
-    });
-  });
-
   it("saves what a gift card paid of an order as a number", () => {
     expect(
       toOrderData({ orderId: 7, status: "paid", giftCardAmount: "500.00", items: [] }),
     ).toMatchObject({ orderStatus: "paid", giftCardAmount: 500 });
+  });
+});
+
+describe("toOrderChange (#138)", () => {
+  it("sends the statuses, the waybill and the arrival checkbox", () => {
+    expect(
+      toOrderChange({
+        orderStatus: "shipped",
+        paymentStatus: "unpaid",
+        waybillNumber: "2045 0000 0000 01",
+        arrivedAtBranch: true,
+        customerName: "ignored",
+      }),
+    ).toEqual({
+      status: "shipped",
+      paymentStatus: "unpaid",
+      waybillNumber: "2045 0000 0000 01",
+      arrivedAtBranch: true,
+      cancelReason: undefined,
+    });
+  });
+
+  it("sends the cancel reason of a cancel (#128)", () => {
+    expect(toOrderChange({ orderStatus: "cancelled", cancelReason: "no_answer" })).toMatchObject({
+      status: "cancelled",
+      cancelReason: "no_answer",
+    });
+    expect(toOrderChange({ orderStatus: "shipped", cancelReason: null })).toMatchObject({
+      cancelReason: undefined,
+    });
+  });
+
+  it("removes a cleared waybill and leaves fields the form didn't send", () => {
+    expect(toOrderChange({ waybillNumber: null, arrivedAtBranch: null })).toEqual({
+      status: undefined,
+      paymentStatus: undefined,
+      waybillNumber: null,
+      arrivedAtBranch: undefined,
+      cancelReason: undefined,
+    });
+    expect(toOrderChange({})).toMatchObject({ waybillNumber: undefined });
   });
 });

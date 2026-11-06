@@ -1,6 +1,6 @@
 import type Mail from "nodemailer/lib/mailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OrderConfirmation } from "~/lib/checkout";
+import type { OrderConfirmation, OrderStatusEmail } from "~/lib/checkout";
 import type { GiftCard } from "~/lib/commerce";
 import { createTranslator } from "~/lib/i18n";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
@@ -9,7 +9,11 @@ import { withSuppressions } from "../mail";
 import {
   buildGiftCardEmail,
   buildGiftCardRecipientEmail,
+  buildOrderArrivedEmail,
+  buildOrderCancelledEmail,
   buildOrderConfirmationEmail,
+  buildOrderRefundedEmail,
+  buildOrderShippedEmail,
   deliverOrderEmails,
   describeOrderEmailReport,
   type OrderEmailDeps,
@@ -263,6 +267,9 @@ function fakeDeps(
     loadOrder: vi.fn(async (orderId: number) =>
       orderId === codOrder.id ? codOrder : orderId === cardOrder.id ? cardOrder : undefined,
     ),
+    loadOrderStatus: vi.fn(async (orderId: number) =>
+      orderId === shippedCod.id ? shippedCod : undefined,
+    ),
     loadGiftCard: vi.fn(async (giftCardId: number) =>
       giftCardId === giftCard.id ? giftCard : undefined,
     ),
@@ -375,6 +382,212 @@ describe("gift card emails (#125)", () => {
   });
 });
 
+/** A shipped cash-on-delivery guest order with a waybill. */
+const shippedCod: OrderStatusEmail = {
+  ...codOrder,
+  userId: null,
+  status: "shipped",
+  paymentStatus: "unpaid",
+  waybillNumber: "20450000000001",
+};
+
+/** A paid card order of a registered customer, delivered for free. */
+const paidCard: OrderStatusEmail = {
+  ...cardOrder,
+  userId: 5,
+  status: "paid",
+  paymentStatus: "paid",
+  waybillNumber: null,
+};
+
+describe("order status emails (#138)", () => {
+  it("sends the shipped email with the waybill and its tracking link, in Ukrainian", () => {
+    const email = buildOrderShippedEmail(shippedCod, createTranslator("uk"), env);
+
+    expect(email).toMatchObject({
+      from: "Jassmin website <no-reply@example.com>",
+      to: { name: "Олена Коваль", address: "olena@example.com" },
+      replyTo: "shop@example.com",
+      subject: "Замовлення №1042 відправлено — Jassmin",
+    });
+    expect(bodyOf(email)).toBe(
+      [
+        "Вітаємо, Олена Коваль!",
+        "",
+        "Ваше замовлення №1042 уже в дорозі: ми передали його Новій Пошті.",
+        "",
+        "Номер ТТН: 20450000000001",
+        "За цим номером посилку можна відстежити на сайті або в застосунку Нової Пошти.",
+        "",
+        "Відстежити посилку:",
+        "https://novaposhta.ua/tracking/?cargo_number=20450000000001",
+        "",
+        "Коли посилка прибуде у відділення, Нова Пошта надішле SMS, а ми — лист.",
+        "",
+        "Замовлення №1042",
+        "• Chanel Coco Mademoiselle, 5 мл, 2 × 450 ₴ = 900 ₴",
+        "",
+        "Доставка",
+        "Нова Пошта",
+        "Олена Коваль, +380671234567",
+        "Київ, Відділення №12",
+        "",
+        "Маєте запитання? Відповідайте на цей лист або пишіть на shop@example.com.",
+        "",
+        "Команда Jassmin",
+      ].join("\n"),
+    );
+    expect(String(email.html)).toContain(
+      'href="https://novaposhta.ua/tracking/?cargo_number=20450000000001"',
+    );
+  });
+
+  it("sends the shipped email without a waybill and with the account link, in English", () => {
+    const email = buildOrderShippedEmail(paidCard, createTranslator("en"), env);
+    const body = bodyOf(email) ?? "";
+
+    expect(email.subject).toBe("Order №1043 is on its way — Jassmin");
+    expect(body).toContain("Your order №1043 is on its way: we've handed it to Nova Poshta.");
+    expect(body).not.toContain("Waybill number");
+    expect(body).not.toContain("novaposhta.ua/tracking");
+    expect(body).toContain("View the order:\nhttps://jassmin.ua/en/account/orders/1043");
+  });
+
+  it("links a registered customer's order in their language, and never a guest's", () => {
+    const uk = bodyOf(buildOrderShippedEmail(paidCard, createTranslator("uk"), env)) ?? "";
+    expect(uk).toContain("Переглянути замовлення:\nhttps://jassmin.ua/kabinet/zamovlennia/1043");
+    // Without PUBLIC_SITE_URL there is no absolute link to give.
+    const noSite = buildOrderShippedEmail(paidCard, createTranslator("en"), {
+      ...env,
+      PUBLIC_SITE_URL: undefined,
+    });
+    expect(bodyOf(noSite)).not.toContain("View the order");
+    expect(bodyOf(buildOrderShippedEmail(shippedCod, createTranslator("en"), env))).not.toContain(
+      "View the order",
+    );
+  });
+
+  it("sends the arrived email with the branch, the free days and the cash to pay", () => {
+    const uk = bodyOf(buildOrderArrivedEmail(shippedCod, createTranslator("uk"), env)) ?? "";
+    expect(uk).toContain(
+      [
+        "Ваше замовлення №1042 прибуло у відділення Нової Пошти й чекає на вас.",
+        "",
+        "Київ, Відділення №12",
+        "",
+        "Номер ТТН: 20450000000001",
+        "",
+        "Відстежити посилку:",
+        "https://novaposhta.ua/tracking/?cargo_number=20450000000001",
+        "",
+        "Посилка безкоштовно зберігається у відділенні 7 днів — заберіть її вчасно, будь ласка.",
+        "",
+        "Назвіть у відділенні номер ТТН або свій номер телефону й візьміть документ, що посвідчує особу.",
+        "",
+        "До сплати при отриманні: 900 ₴ і доставка за тарифами Нової Пошти.",
+      ].join("\n"),
+    );
+
+    const en = buildOrderArrivedEmail(
+      { ...shippedCod, freeShipping: true },
+      createTranslator("en"),
+      env,
+    );
+    expect(en.subject).toBe("Order №1042 is waiting at the branch — Jassmin");
+    expect(bodyOf(en)).toContain(
+      "The branch keeps the parcel for free for 7 days, so please collect it in time.",
+    );
+    expect(bodyOf(en)).toContain("To pay on collection: ₴900.");
+  });
+
+  it("tells a paid order's customer they only pay for delivery, if anything", () => {
+    const shippedCard = { ...paidCard, status: "shipped" as const };
+    expect(bodyOf(buildOrderArrivedEmail(shippedCard, createTranslator("en"), env))).toContain(
+      "The order is paid.",
+    );
+    expect(
+      bodyOf(
+        buildOrderArrivedEmail(
+          { ...shippedCard, freeShipping: false },
+          createTranslator("uk"),
+          env,
+        ),
+      ),
+    ).toContain(
+      "Замовлення оплачене; при отриманні сплатіть лише доставку за тарифами Нової Пошти.",
+    );
+  });
+
+  it("sends the cancelled email with the refund to come and the gift card amount back", () => {
+    const email = buildOrderCancelledEmail(
+      { ...paidCard, status: "cancelled", giftCardAmount: "500.00", totalAmount: "5930.00" },
+      createTranslator("uk"),
+      env,
+    );
+    expect(email.subject).toBe("Замовлення №1043 скасовано — Jassmin");
+    expect(bodyOf(email)).toContain(
+      [
+        "Ваше замовлення №1043 скасовано.",
+        "",
+        "Гроші, сплачені карткою (5 930 ₴), ми повернемо на неї; коли це станеться, надішлемо окремий лист.",
+        "",
+        "500 ₴ повернуто на вашу подарункову картку: їх можна витратити на наступне замовлення.",
+        "",
+        "Якщо ви не скасовували замовлення або хочете оформити його знову, напишіть нам.",
+      ].join("\n"),
+    );
+  });
+
+  it("promises no refund when nothing was paid", () => {
+    const body =
+      bodyOf(
+        buildOrderCancelledEmail(
+          { ...shippedCod, status: "cancelled" },
+          createTranslator("en"),
+          env,
+        ),
+      ) ?? "";
+    expect(body).toContain("Your order №1042 has been cancelled.");
+    expect(body).not.toContain("by card");
+    expect(body).not.toContain("gift card");
+  });
+
+  it("sends the refunded email with the amount and the bank's delay for a card", () => {
+    const refunded = {
+      ...paidCard,
+      status: "cancelled" as const,
+      paymentStatus: "refunded" as const,
+    };
+    const en = buildOrderRefundedEmail(refunded, createTranslator("en"), env);
+    expect(en.subject).toBe("Refund for order №1043 — Jassmin");
+    expect(bodyOf(en)).toContain(
+      "We've refunded ₴6,430 for order №1043.\n\nBanks usually take 3–7 working days to show the money on your card.",
+    );
+
+    const uk =
+      bodyOf(
+        buildOrderRefundedEmail(
+          { ...shippedCod, status: "returned", paymentStatus: "refunded" },
+          createTranslator("uk"),
+          env,
+        ),
+      ) ?? "";
+    expect(uk).toContain("Ми повернули 900 ₴ за замовлення №1042.");
+    expect(uk).not.toContain("банку");
+  });
+
+  it("keeps line breaks in the name out of the headers and the subject", () => {
+    const email = buildOrderCancelledEmail(
+      { ...shippedCod, fullName: "Olena\r\nBcc: spam@example.com" },
+      createTranslator("en"),
+      { ...env, ORDER_FROM: "Jassmin <orders@example.com>" },
+    );
+    expect(email.from).toBe("Jassmin <orders@example.com>");
+    expect(email.to).toEqual({ name: "Olena Bcc: spam@example.com", address: "olena@example.com" });
+    expect(email.subject).toBe("Order №1042 is cancelled — Jassmin");
+  });
+});
+
 describe("order emails in the shared layout (#134)", () => {
   const builders = {
     confirmation: (locale: "uk" | "en") =>
@@ -382,6 +595,14 @@ describe("order emails in the shared layout (#134)", () => {
     giftCard: (locale: "uk" | "en") => buildGiftCardEmail(giftCard, createTranslator(locale), env),
     giftCardRecipient: (locale: "uk" | "en") =>
       buildGiftCardRecipientEmail(giftCard, createTranslator(locale), env),
+    shipped: (locale: "uk" | "en") =>
+      buildOrderShippedEmail(shippedCod, createTranslator(locale), env),
+    arrived: (locale: "uk" | "en") =>
+      buildOrderArrivedEmail(paidCard, createTranslator(locale), env),
+    cancelled: (locale: "uk" | "en") =>
+      buildOrderCancelledEmail(paidCard, createTranslator(locale), env),
+    refunded: (locale: "uk" | "en") =>
+      buildOrderRefundedEmail(paidCard, createTranslator(locale), env),
   };
 
   for (const [name, build] of Object.entries(builders)) {
@@ -447,6 +668,30 @@ describe("deliverOrderEmails", () => {
       subject: "Order №1043 received — Jassmin",
     });
     expect(deps.markSent).toHaveBeenCalledWith(2, expect.stringMatching(/@example\.com>$/));
+  });
+
+  it("sends an order status email in its row's language and marks it sent (#138)", async () => {
+    const deps = fakeDeps([{ ...queued(3, shippedCod.id), type: "shipped", locale: "en" }]);
+
+    const report = await deliverOrderEmails({ orderId: shippedCod.id }, deps);
+
+    expect(report).toEqual({ sent: 1, retrying: 0, gaveUp: 0, skipped: false });
+    expect(deps.loadOrderStatus).toHaveBeenCalledWith(shippedCod.id);
+    expect(deps.sendMail.mock.calls[0]?.[0]).toMatchObject({
+      subject: "Order №1042 is on its way — Jassmin",
+      headers: { "X-Mailin-custom": "order-email:3" },
+    });
+    expect(deps.markSent).toHaveBeenCalledWith(3, expect.stringMatching(/@example\.com>$/));
+  });
+
+  it("gives up on a status email whose order is gone (#138)", async () => {
+    const deps = fakeDeps([{ ...queued(4, 999), type: "refunded" }]);
+
+    expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
+    expect(deps.markFailed).toHaveBeenCalledWith(4, {
+      error: "Order or gift card not found",
+      final: true,
+    });
   });
 
   it("sends a paid gift card's emails right after its payment (#125)", async () => {
@@ -544,7 +789,7 @@ describe("deliverOrderEmails", () => {
     });
     expect(deps.claim).not.toHaveBeenCalled();
     expect(console.info).toHaveBeenCalledWith(
-      "[order-email] SMTP_URL is not set; order 1042's confirmation stays queued",
+      "[order-email] SMTP_URL is not set; order 1042's emails stay queued",
     );
   });
 

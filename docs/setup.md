@@ -116,7 +116,7 @@ A shopper whose cart was abandoned sees an empty cart when they come back, and t
 
 ## Unpaid card orders
 
-A card order is placed `pending` and waits for the payment provider. `pnpm db:cancel-unpaid-orders` cancels every card order that is still unpaid `UNPAID_ORDER_HOURS` (default 48) after checkout and had no payment attempt in the last hour, with the cancel reason `payment_failed` (#128). Like a cancel in Strapi, it puts tracked stock back, gives back what a gift card paid, records the change in `order_status_history` and queues the order for Strapi (`pnpm db:sync-cms` pushes it). A second run changes nothing. Run it hourly from cron, for example:
+A card order is placed `pending` and waits for the payment provider. `pnpm db:cancel-unpaid-orders` cancels every card order that is still unpaid `UNPAID_ORDER_HOURS` (default 48) after checkout and had no payment attempt in the last hour, with the cancel reason `payment_failed` (#128). Like a cancel in Strapi, it puts tracked stock back, gives back what a gift card paid, records the change in `order_status_history`, queues the customer's cancellation email (`pnpm db:send-order-emails` sends it) and queues the order for Strapi (`pnpm db:sync-cms` pushes it). A second run changes nothing. Run it hourly from cron, for example:
 
 ```cron
 30 * * * * cd /srv/jassmin && pnpm db:cancel-unpaid-orders >> /var/log/jassmin/unpaid-orders.log 2>&1

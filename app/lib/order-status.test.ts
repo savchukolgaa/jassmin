@@ -22,6 +22,8 @@ function order(overrides: Partial<OrderLifecycle> = {}): OrderLifecycle {
     completedAt: null,
     returnedAt: null,
     cancelReason: null,
+    arrivedAt: null,
+    waybillNumber: null,
     ...overrides,
   };
 }
@@ -213,5 +215,78 @@ describe("nextOrderState", () => {
     expect(
       nextOrderState(cancelled, { status: "cancelled", paymentStatus: "unpaid" }, NOW),
     ).toEqual({ ok: true, patch: {}, restock: false });
+  });
+});
+
+describe("nextOrderState: arrival at the branch and the waybill (#138)", () => {
+  const shipped = order({ status: "shipped", shippedAt: EARLIER });
+
+  it("sets arrived_at once for a shipped order", () => {
+    expect(nextOrderState(shipped, { arrivedAtBranch: true }, NOW)).toEqual({
+      ok: true,
+      patch: { arrivedAt: NOW },
+      restock: false,
+    });
+    // Already arrived: no change, the first time stays.
+    expect(
+      nextOrderState({ ...shipped, arrivedAt: EARLIER }, { arrivedAtBranch: true }, NOW),
+    ).toEqual({ ok: true, patch: {}, restock: false });
+  });
+
+  it("accepts the arrival in the same change that ships the order", () => {
+    expect(
+      nextOrderState(order({ status: "paid" }), { status: "shipped", arrivedAtBranch: true }, NOW),
+    ).toMatchObject({ ok: true, patch: { status: "shipped", shippedAt: NOW, arrivedAt: NOW } });
+  });
+
+  it("refuses an arrival for an order that isn't shipped", () => {
+    expect(nextOrderState(order(), { arrivedAtBranch: true }, NOW)).toEqual({
+      ok: false,
+      error: "arrived-not-shipped",
+      status: "pending",
+    });
+    expect(nextOrderState(shipped, { status: "completed", arrivedAtBranch: true }, NOW)).toEqual({
+      ok: false,
+      error: "arrived-not-shipped",
+      status: "completed",
+    });
+  });
+
+  it("clears the arrival when it's unticked and ignores an untouched checkbox", () => {
+    const arrived = { ...shipped, arrivedAt: EARLIER };
+    expect(nextOrderState(arrived, { arrivedAtBranch: false }, NOW)).toEqual({
+      ok: true,
+      patch: { arrivedAt: null },
+      restock: false,
+    });
+    expect(nextOrderState(arrived, { arrivedAtBranch: null }, NOW)).toEqual({
+      ok: true,
+      patch: {},
+      restock: false,
+    });
+    expect(nextOrderState(shipped, { arrivedAtBranch: false }, NOW)).toEqual({
+      ok: true,
+      patch: {},
+      restock: false,
+    });
+  });
+
+  it("stores a changed waybill number at any status, and nothing when it's the same", () => {
+    expect(nextOrderState(order(), { waybillNumber: "20450000000001" }, NOW)).toEqual({
+      ok: true,
+      patch: { waybillNumber: "20450000000001" },
+      restock: false,
+    });
+    const withWaybill = { ...shipped, waybillNumber: "20450000000001" };
+    expect(nextOrderState(withWaybill, { waybillNumber: "20450000000001" }, NOW)).toEqual({
+      ok: true,
+      patch: {},
+      restock: false,
+    });
+    expect(nextOrderState(withWaybill, { waybillNumber: null }, NOW)).toEqual({
+      ok: true,
+      patch: { waybillNumber: null },
+      restock: false,
+    });
   });
 });

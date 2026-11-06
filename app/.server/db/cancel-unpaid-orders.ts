@@ -3,7 +3,8 @@
 // `UNPAID_ORDER_HOURS` (default 48) after checkout, and no payment was started in the last
 // `RECENT_PAYMENT_ATTEMPT_MINUTES`, the job cancels it with the reason `payment_failed`. That
 // puts its units back in stock and what a gift card paid back on the card, records the change in
-// `order_status_history` (`job`) and queues the order, products and cards for Strapi
+// `order_status_history` (`job`), queues the customer's `cancelled` email (#138;
+// `pnpm db:send-order-emails` sends it) and queues the order, products and cards for Strapi
 // (`pnpm db:sync-cms` pushes them). Run it hourly from an external scheduler; the CLI wrapper is
 // scripts/cancel-unpaid-orders.ts.
 //

@@ -433,6 +433,14 @@ export const orders = pgTable(
     /** When the order was marked `completed` (#40). */
     completedAt: timestamp({ withTimezone: true }),
     /**
+     * When the parcel arrived at the Nova Poshta branch (#138): set by the app when staff tick
+     * "arrived" in Strapi (later by the tracking job, #137). A delivery-time feature for the
+     * LTV/churn models, like `shipped_at`: never drop or rename it.
+     */
+    arrivedAt: timestamp({ withTimezone: true }),
+    /** The Nova Poshta waybill number (ТТН, 14 digits, #138), entered by staff in Strapi. */
+    waybillNumber: varchar({ length: 20 }),
+    /**
      * The discount rule applied at checkout (#59), for attributing orders to promotions. Restrict:
      * a used rule is deactivated, never deleted.
      */
@@ -462,6 +470,7 @@ export const orders = pgTable(
       "orders_gift_card_payment_check",
       sql`${t.paymentMethod} <> 'gift_card' or (${t.totalAmount} = 0 and ${t.giftCardAmount} > 0)`,
     ),
+    check("orders_waybill_number_check", sql`${t.waybillNumber} ~ '^[0-9]{14}$'`),
     index("orders_guest_email_idx").on(t.guestEmail),
     index("orders_guest_phone_idx").on(t.guestPhone),
     index("orders_user_id_idx").on(t.userId),

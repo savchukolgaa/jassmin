@@ -38,6 +38,10 @@ export interface OrderLifecycle {
   refundedAt: Date | null;
   shippedAt: Date | null;
   completedAt: Date | null;
+  /** When the parcel arrived at the Nova Poshta branch (#138). */
+  arrivedAt: Date | null;
+  /** The Nova Poshta waybill number (ТТН, 14 digits, #138). */
+  waybillNumber: string | null;
   /** When the parcel came back: `returned` or `unclaimed` (#128). */
   returnedAt: Date | null;
   /** Why the order was cancelled (#128). */
@@ -48,6 +52,13 @@ export interface OrderLifecycle {
 export interface OrderStatusChange {
   status?: OrderStatus;
   paymentStatus?: PaymentStatus;
+  /**
+   * The parcel is at the Nova Poshta branch (#138): `true` sets `arrived_at` (only for a
+   * `shipped` order), `false` clears it, `null` (an untouched checkbox) changes nothing.
+   */
+  arrivedAtBranch?: boolean | null;
+  /** The waybill number, already normalised to 14 digits; `null` removes it. */
+  waybillNumber?: string | null;
   /** Required with `status: "cancelled"` (#128); ignored with any other status. */
   cancelReason?: CancelReason;
 }
@@ -60,6 +71,8 @@ export type OrderTransitionError =
   | "invalid-payment-transition"
   // A card order has to be paid before it ships; cash on delivery is paid at the door.
   | "card-not-paid"
+  // Only a parcel on its way can arrive at the branch (#138).
+  | "arrived-not-shipped"
   // Cancelling needs a reason (#128).
   | "cancel-reason-required";
 
@@ -76,7 +89,8 @@ export type NextOrderState =
       error: "invalid-payment-transition";
       from: PaymentStatus;
       to: PaymentStatus;
-    };
+    }
+  | { ok: false; error: "arrived-not-shipped"; status: OrderStatus };
 
 export function canChangeOrderStatus(from: OrderStatus, to: OrderStatus): boolean {
   return ORDER_STATUS_TRANSITIONS[from].includes(to);
@@ -95,7 +109,10 @@ export function canChangePaymentStatus(from: PaymentStatus, to: PaymentStatus): 
  * - sets `paid_at`, `refunded_at`, `shipped_at`, `completed_at`, `cancelled_at` and
  *   `returned_at` (for `returned` and `unclaimed`, #128) when their state is reached and they're
  *   still empty;
- * - stores the `cancelReason` the change must carry when the order is cancelled (#128).
+ * - stores the `cancelReason` the change must carry when the order is cancelled (#128);
+ * - sets `arrived_at` when staff mark a `shipped` order (after this change) as arrived at the
+ *   branch and it's still empty, or clears it when they unmark it (#138);
+ * - stores a changed waybill number.
  *
  * `restock` says whether the order's units go back to stock (see `RESTOCK_STATUSES`).
  */
@@ -144,6 +161,17 @@ export function nextOrderState(
   }
 
   const patch: OrderLifecyclePatch = {};
+  if (change.arrivedAtBranch === true && order.arrivedAt === null) {
+    if (status !== "shipped") {
+      return { ok: false, error: "arrived-not-shipped", status };
+    }
+    patch.arrivedAt = now;
+  } else if (change.arrivedAtBranch === false && order.arrivedAt !== null) {
+    patch.arrivedAt = null;
+  }
+  if (change.waybillNumber !== undefined && change.waybillNumber !== order.waybillNumber) {
+    patch.waybillNumber = change.waybillNumber;
+  }
   if (status !== order.status) patch.status = status;
   if (paymentStatus !== order.paymentStatus) patch.paymentStatus = paymentStatus;
   const reached = (column: keyof OrderLifecyclePatch & `${string}At`, when: boolean) => {

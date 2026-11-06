@@ -1,6 +1,6 @@
 # Plan: Record list, position, price, stock and dwell time on product events for recommendations (#129)
 
-Issue: https://github.com/savchukolga/jassmin/issues/129
+Issue: https://github.com/savchukolgaa/jassmin/issues/129
 Branch: `issue/129`
 Worktree: `.claude/worktrees/issue-129`
 Status: Planned

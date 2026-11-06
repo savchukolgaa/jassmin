@@ -206,7 +206,7 @@ All three were answered on 2026-11-06: the user accepted the recommended default
 - [x] **8. Seed** — In `db/seed.ts` take `returning({ id, stockQuantity })` from the variant insert
   and write `opening_balance` rows (`source: "job"`) for inserted sizes with stock > 0, in the same
   transaction (wrap the seed's writes in one if they aren't). Extend `seed.test.ts`.
-- [ ] **9. Invariant and view tests** (`inventory.test.ts`, on `createTestDatabase`):
+- [x] **9. Invariant and view tests** (`inventory.test.ts`, on `createTestDatabase`):
   - after the migration backfill, a checkout, a cancel, an unclaimed return, a Strapi adjustment
     and a receipt, `sum(quantity_delta) = stock_quantity` for every tracked variant (one SQL
     query over all variants);

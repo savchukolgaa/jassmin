@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "./client";
+import { insertInventoryMovements } from "./queries/inventory";
 import { discounts, products, productVariants } from "./schema";
 import { SAMPLE_DISCOUNTS, SAMPLE_PRODUCTS } from "./seed-data";
 
@@ -7,8 +8,9 @@ import { SAMPLE_DISCOUNTS, SAMPLE_PRODUCTS } from "./seed-data";
  * Inserts the sample products and variants that don't exist yet (matched by `publicId`, and by
  * `(product, volume)` for variants). Existing rows are not changed, except that products seeded
  * before #65 get their families and notes while their notes are still empty, so the seed is safe to
- * run repeatedly. It also adds new sample sizes to products seeded before #26. Returns how many
- * products and variants were added.
+ * run repeatedly. It also adds new sample sizes to products seeded before #26. Each new size's
+ * stock is its opening balance in the inventory ledger (#130). Returns how many products and
+ * variants were added.
  */
 export async function seedProducts(
   db: Db,
@@ -59,7 +61,18 @@ export async function seedProducts(
       .insert(productVariants)
       .values(variants)
       .onConflictDoNothing({ target: [productVariants.productId, productVariants.volumeMl] })
-      .returning({ id: productVariants.id });
+      .returning({ id: productVariants.id, stockQuantity: productVariants.stockQuantity });
+    // Their stock opens the inventory ledger (#130), so it adds up to the stock from the start.
+    await insertInventoryMovements(
+      tx,
+      variantsInserted.map(({ id, stockQuantity }) => ({
+        variantId: id,
+        reason: "opening_balance",
+        quantityDelta: stockQuantity,
+        stockAfter: stockQuantity,
+        source: "job",
+      })),
+    );
 
     return { inserted: inserted.length, variantsInserted: variantsInserted.length };
   });

@@ -15,6 +15,12 @@ import type {
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
+import {
+  insertInventoryMovements,
+  inventoryBalance,
+  type NewInventoryMovement,
+  variantsWithMovements,
+} from "../db/queries/inventory";
 import { findOrderSyncState } from "../db/queries/orders";
 import { forgetSlug, recordOldSlug } from "../db/queries/product-slugs";
 import {
@@ -43,7 +49,7 @@ type Failure<E extends CmsSyncError["error"]> = { ok: false } & Extract<CmsSyncE
 
 export type CmsProductResult =
   | { ok: true; product: CmsProductState }
-  | Failure<"unknown-product" | "slug-taken">;
+  | Failure<"unknown-product" | "slug-taken" | "receipt-not-positive" | "size-has-stock-history">;
 
 /** The product columns for Strapi's fields; the deprecated ones come from the smallest size. */
 function productWrite(fields: CmsProductFields, sizes: readonly VariantWrite[]): ProductWrite {
@@ -94,6 +100,26 @@ function editedStock(
   return Math.max(0, current.stockQuantity + variant.stock - expected);
 }
 
+/** The opening balances of newly inserted sizes that track stock (#130). */
+function openingBalances(
+  inserted: readonly { id: number; volumeMl: number }[],
+  sizes: readonly VariantWrite[],
+): NewInventoryMovement[] {
+  return inserted.flatMap(({ id, volumeMl }) => {
+    const size = sizes.find((s) => s.volumeMl === volumeMl);
+    if (!size?.trackStock) return [];
+    return [
+      {
+        variantId: id,
+        reason: "opening_balance",
+        quantityDelta: size.stockQuantity,
+        stockAfter: size.stockQuantity,
+        source: "cms",
+      },
+    ];
+  });
+}
+
 /**
  * Applies a product edit from the Strapi admin:
  * - `create` inserts the product and its sizes; the answer carries the new `publicId`.
@@ -101,6 +127,12 @@ function editedStock(
  *   missing one deleted (its cart lines go, order lines keep their size snapshot), and an
  *   existing one gets the new price, tracking and stock (`editedStock`).
  * - `delete` only archives (`active = false`): order history keeps the product's title.
+ *
+ * Every change to a tracked size's stock goes in the inventory ledger (#130): a stock edit as the
+ * reason staff picked (`adjustment` or `receipt`, with the change actually applied), and a size
+ * that starts tracking stock (new, or switched on) as an `opening_balance` that brings the ledger
+ * to its stock. A receipt that adds no units (`receipt-not-positive`) and removing a size with
+ * ledger rows (`size-has-stock-history`) are refused before anything is written.
  *
  * A changed slug goes to `product_slug_history`, so `/products/<old slug>` redirects (#83), and
  * the slug a product takes is removed from it, so history never shadows a current slug.
@@ -122,7 +154,8 @@ export async function applyCmsProductChange(
           }),
         );
         ({ id: productId } = await insertProduct(tx, productWrite(change, sizes)));
-        await insertVariants(tx, productId, sizes);
+        const inserted = await insertVariants(tx, productId, sizes);
+        await insertInventoryMovements(tx, openingBalances(inserted, sizes));
         await forgetSlug(tx, change.slug);
       } else {
         const locked = await lockProductByPublicId(tx, change.publicId);
@@ -135,41 +168,87 @@ export async function applyCmsProductChange(
         } else {
           const existing = await lockVariantsByProductId(tx, productId);
           const byVolume = new Map(existing.map((v) => [v.volumeMl, v]));
+          const edits = change.variants.map((variant) => {
+            const current = byVolume.get(variant.volumeMl);
+            return {
+              variant,
+              current,
+              stockQuantity: current ? editedStock(current, variant) : variant.stock,
+            };
+          });
+
+          // Refusals come first, so a refused edit writes nothing (#130).
+          const badReceipt = edits.find(
+            ({ variant, current, stockQuantity }) =>
+              current?.trackStock === true &&
+              variant.trackStock &&
+              variant.stockReason === "receipt" &&
+              stockQuantity <= current.stockQuantity,
+          );
+          if (badReceipt) {
+            return {
+              ok: false,
+              error: "receipt-not-positive",
+              volumeMl: badReceipt.variant.volumeMl,
+            };
+          }
+          const kept = new Set<number>(change.variants.map((v) => v.volumeMl));
+          const removed = existing.filter((v) => !kept.has(v.volumeMl));
+          const withHistory = await variantsWithMovements(
+            tx,
+            removed.map((v) => v.id),
+          );
+          const keptHistory = removed.find((v) => withHistory.has(v.id));
+          if (keptHistory) {
+            return { ok: false, error: "size-has-stock-history", volumeMl: keptHistory.volumeMl };
+          }
+
           const sizes: VariantWrite[] = [];
           const added: VariantWrite[] = [];
-          for (const variant of change.variants) {
-            const current = byVolume.get(variant.volumeMl);
-            const { trackStock } = variant;
-            if (!current) {
-              const size = {
-                volumeMl: variant.volumeMl,
-                price: variant.price,
-                stockQuantity: variant.stock,
-                trackStock,
-              };
-              added.push(size);
-              sizes.push(size);
-              continue;
-            }
-            byVolume.delete(variant.volumeMl);
-            const stockQuantity = editedStock(current, variant);
-            await updateVariant(tx, current.id, {
-              price: variant.price,
-              stockQuantity,
-              trackStock,
-            });
-            sizes.push({
+          const movements: NewInventoryMovement[] = [];
+          for (const { variant, current, stockQuantity } of edits) {
+            const size = {
               volumeMl: variant.volumeMl,
               price: variant.price,
               stockQuantity,
-              trackStock,
+              trackStock: variant.trackStock,
+            };
+            sizes.push(size);
+            if (!current) {
+              added.push(size);
+              continue;
+            }
+            await updateVariant(tx, current.id, {
+              price: size.price,
+              stockQuantity,
+              trackStock: size.trackStock,
             });
+            if (!size.trackStock) continue;
+            if (current.trackStock) {
+              movements.push({
+                variantId: current.id,
+                reason: variant.stockReason ?? "adjustment",
+                quantityDelta: stockQuantity - current.stockQuantity,
+                stockAfter: stockQuantity,
+                source: "cms",
+              });
+            } else {
+              // Tracking starts (again): the ledger catches up with the typed stock.
+              movements.push({
+                variantId: current.id,
+                reason: "opening_balance",
+                quantityDelta: stockQuantity - (await inventoryBalance(tx, current.id)),
+                stockAfter: stockQuantity,
+                source: "cms",
+              });
+            }
           }
           await deleteVariants(
             tx,
-            [...byVolume.values()].map((v) => v.id),
+            removed.map((v) => v.id),
           );
-          await insertVariants(tx, productId, added);
+          const inserted = await insertVariants(tx, productId, added);
+          await insertInventoryMovements(tx, [...movements, ...openingBalances(inserted, added)]);
           await updateProduct(tx, productId, productWrite(change, sizes));
           // The old URL keeps working with a 301 to the new one (#83).
           if (locked.slug !== null && locked.slug !== change.slug) {
@@ -210,8 +289,9 @@ export type CmsOrderResult =
  * `changeOrderStatus`: checks it against the lifecycle rules (`nextOrderState`; cancelling needs a
  * reason, #128), sets the due timestamps, records a status change in `order_status_history`
  * (`cms`), queues the customer's status emails (#138) and, when the order is cancelled or comes
- * back unclaimed, puts its units back in stock, all in one transaction. The restocked products are queued for a push, so Strapi shows their new
- * stock. A refused change writes nothing.
+ * back unclaimed, puts its units back in stock (logged in the inventory ledger, #130), all in one
+ * transaction. The restocked products are queued for a push, so Strapi shows their new stock. A
+ * refused change writes nothing.
  */
 export async function applyCmsOrderChange(
   orderId: number,

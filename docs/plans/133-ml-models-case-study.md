@@ -201,6 +201,16 @@ case study.
     the notebook compares it with the pure top-risk decile. `city` gets a wide SHAP spread without a
     planted effect; dropping it doesn't change validation PR-AUC, which the notebook shows as a
     caution about reading SHAP.
+18. **Recommender findings (step 6).** Test Recall@10: item-item cosine 0.546, ALS 0.519 (tuned on
+    a validation fold), popularity 0.228; coverage 100 % / 72 % / 8 %. 2,721 of the 6,233 eligible
+    customers are cold-start under leave-last-out: all of them bought their perfumes in one order
+    (tester trio, couple offer) with no earlier visit, so they're excluded and the notebook says
+    why. An order's session is the customer's latest session started before the order
+    (`merge_asof`), since `fct_orders` has no session id. The position-bias section found two
+    things the plan didn't foresee: impressions are logged only for the 2–6 cards on screen (deeper
+    cards mostly get one when clicked, so their CTR is ~100 %), and position is confounded with
+    the item in the popularity-sorted lists. The notebook explains both, and recommends full-list
+    impression logging and randomised top slots before using clicks as training signal.
 
 ## Resolved questions
 
@@ -316,7 +326,7 @@ Answered from the codebase:
   needed), SHAP beeswarm + recency dependence (`figures/03_shap_summary.png`), win-back list at the
   latest snapshot with the saved-revenue sensitivity table (Q3). Checks cell: LightGBM PR-AUC >
   logistic PR-AUC on test.
-- [ ] **6. `04_recommendations.ipynb`.** Build the interaction table, leave-last-out split (and the
+- [x] **6. `04_recommendations.ipynb`.** Build the interaction table, leave-last-out split (and the
   validation fold for ALS tuning), popularity / item-item / ALS, Recall@10, NDCG@10, coverage@10
   table (`figures/04_recall_at_10.png`), position-bias chart by `list_position`. Optional extra
   cut: Recall@10 by true `favourite_family` match, showing the models learnt the planted taste.
@@ -366,7 +376,7 @@ Answered from the codebase:
 - [ ] All five notebooks run end to end from a clean environment against `jassmin_synth` — steps 1, 3–8
 - [ ] BG/NBD holdout predictions are within 15% of actual purchases per decile, and the recovered segments match the generator's ground truth above chance — step 4 (Q2). Segments: met. Deciles: 9 of 10 within 15 %, decile 6 at 18 % (Decision 16).
 - [x] The churn model beats the logistic baseline on PR-AUC with a time-based split, and SHAP plots are included — step 5
-- [ ] The recommender beats the popularity baseline on Recall@10 — step 6
+- [x] The recommender beats the popularity baseline on Recall@10 — step 6
 - [ ] The forecast beats the seasonal-naive baseline on WAPE, with stock-out days masked — step 7
 - [ ] `analytics/README.md` presents the architecture, data quality work and results as a portfolio case study — step 9
 

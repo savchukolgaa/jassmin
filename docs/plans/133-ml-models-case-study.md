@@ -165,6 +165,10 @@ case study.
     have wheels. pymc-marketing 1.4 takes the data in `fit(data, method="map")`, not the
     constructor. Without g++ PyTensor runs in Python mode: a MAP fit on 2,000 toy customers takes
     ~25 s, which is acceptable.
+14. **Pytest isolation (step 2).** `uv run --project analytics pytest analytics` walks the whole
+    folder, and pytest visits `notebooks/` before `tests/`, so a `conftest.py` there (the warehouse's
+    trick) would shadow the generator tests' `from conftest import …`. Instead
+    `analytics/pyproject.toml` sets `norecursedirs` (pytest's defaults plus `notebooks`).
 
 ## Resolved questions
 
@@ -256,7 +260,7 @@ Answered from the codebase:
   10-customer BG/NBD MAP fit runs (Q1). If `implicit` has no Windows wheel for the resolved
   version, pin the last version that does; if `pymc-marketing` can't be installed, stop and ask
   (Q1). Update `.gitignore` / `.gitattributes`.
-- [ ] **2. `jassmin_ml` helpers with tests.** Write `db.py` (resolution + guard + read-only session),
+- [x] **2. `jassmin_ml` helpers with tests.** Write `db.py` (resolution + guard + read-only session),
   `truth.py`, `metrics.py`, `splits.py`, `plots.py`, `seed.py`. Tests: the guard refuses
   `jassmindb` / the app's database / any non-`jassmin_synth` name and accepts
   `jassmin_synth_test`; `wape` on a hand example and with masked days; `recall_at_k` / `ndcg_at_k`

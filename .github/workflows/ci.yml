@@ -171,3 +171,8 @@ jobs:
 
       - name: Test the generator
         run: uv run --project analytics --locked pytest analytics
+
+      # The ML notebooks' helpers (#133): unit tests only, no database. The notebooks themselves
+      # need a generated and built jassmin_synth and run locally (analytics/notebooks/README.md).
+      - name: Test the notebook helpers
+        run: uv run --project analytics/notebooks --locked pytest analytics/notebooks

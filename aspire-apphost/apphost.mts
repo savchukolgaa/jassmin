@@ -126,6 +126,26 @@ await builder
   .withParentRelationship(synthDb)
   .withExplicitStart();
 
+// The dbt warehouse (#132) on `jassmin_synth`: `dbt-build` builds and tests raw → staging → marts;
+// `dbt-docs` generates and serves the docs and lineage graph on its `http` endpoint. Run
+// `synth-generate` first. `wh.py` refuses any database but jassmin_synth. Needs `uv` on the PATH.
+const warehouse = ["run", "--project", "analytics/warehouse", "analytics/warehouse/wh.py"];
+await builder
+  .addExecutable("dbt-build", "uv", "..", [...warehouse, "build"])
+  .withReference(synthDb)
+  .withEnvironment("JASSMIN_SYNTH_URI", await synthDb.uriExpression())
+  .waitFor(synthDb)
+  .withParentRelationship(synthDb)
+  .withExplicitStart();
+await builder
+  .addExecutable("dbt-docs", "uv", "..", [...warehouse, "docs", "serve"])
+  .withHttpEndpoint({ env: "WAREHOUSE_DOCS_PORT" })
+  .withReference(synthDb)
+  .withEnvironment("JASSMIN_SYNTH_URI", await synthDb.uriExpression())
+  .waitFor(synthDb)
+  .withParentRelationship(synthDb)
+  .withExplicitStart();
+
 // Strapi secrets (APP_KEYS, …) come from cms/.env; the variables set here take precedence.
 const cms = builder
   .addJavaScriptApp("cms", "../cms", { runScriptName: "develop" })

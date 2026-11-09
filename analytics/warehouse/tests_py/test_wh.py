@@ -4,6 +4,7 @@ from wh import (
     Connection,
     UnsafeDatabaseError,
     dbt_args,
+    docs_serve_args,
     guard_synth,
     parse_url,
     read_dotenv,
@@ -113,6 +114,23 @@ def test_dbt_args_add_the_project_directories_once():
         "x",
         "--profiles-dir",
         "y",
+    ]
+
+
+def test_docs_serve_takes_aspires_port_without_a_browser():
+    assert docs_serve_args(["docs", "serve"], {"WAREHOUSE_DOCS_PORT": "51234"}) == [
+        "docs",
+        "serve",
+        "--port",
+        "51234",
+        "--no-browser",
+    ]
+    assert docs_serve_args(["docs", "serve"], {}) == ["docs", "serve"]
+    assert docs_serve_args(["docs", "serve", "--port", "9000"], {"WAREHOUSE_DOCS_PORT": "1"}) == [
+        "docs",
+        "serve",
+        "--port",
+        "9000",
     ]
 
 

@@ -3,8 +3,10 @@
     uv run --project analytics/warehouse analytics/warehouse/wh.py build
     uv run --project analytics/warehouse analytics/warehouse/wh.py docs generate
     uv run --project analytics/warehouse analytics/warehouse/wh.py build --select staging
+    uv run --project analytics/warehouse analytics/warehouse/wh.py docs serve
 
-Every argument goes to dbt; the project and profiles directories are this folder. The database
+Every argument goes to dbt; the project and profiles directories are this folder. ``docs serve``
+generates the docs first, and takes its port from ``WAREHOUSE_DOCS_PORT`` when set. The database
 comes from, in order (the same rules as #131's generator):
 
 1. ``WAREHOUSE_DATABASE_URL``;
@@ -166,6 +168,15 @@ def dbt_args(args: Sequence[str]) -> list[str]:
     return [*args, *extra]
 
 
+def docs_serve_args(args: Sequence[str], env: Mapping[str, str]) -> list[str]:
+    """``docs serve`` arguments with the port from ``WAREHOUSE_DOCS_PORT`` (set by Aspire's endpoint)
+    and no browser, unless ``--port`` is given."""
+    port = env.get("WAREHOUSE_DOCS_PORT")
+    if not port or "--port" in args:
+        return list(args)
+    return [*args, "--port", port, "--no-browser"]
+
+
 def main(argv: Sequence[str]) -> int:
     if not argv or argv[0] in ("-h", "--help"):
         print(__doc__)
@@ -187,7 +198,13 @@ def main(argv: Sequence[str]) -> int:
     if command not in ("deps", "clean", "debug") and not (PROJECT_DIR / "dbt_packages").is_dir():
         if not runner.invoke(dbt_args(["deps"])).success:
             return 1
-    result = runner.invoke(dbt_args(list(argv)))
+    args = list(argv)
+    if args[:2] == ["docs", "serve"]:
+        # Serve fresh docs: generate them first, for the same target.
+        if not runner.invoke(dbt_args(["docs", "generate", "--target", target])).success:
+            return 1
+        args = docs_serve_args(args, env)
+    result = runner.invoke(dbt_args(args))
     return 0 if result.success else 1
 
 

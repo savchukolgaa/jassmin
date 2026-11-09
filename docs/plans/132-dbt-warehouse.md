@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/132
 Branch: `issue/132`
 Worktree: `.claude/worktrees/issue-132`
-Status: Implemented (the Aspire resources wait for #131 to merge, see step 11)
+Status: Implemented
 
 ## Goal
 As a data analyst, I want a layered warehouse (raw → staging → intermediate → marts) built from
@@ -14,12 +14,10 @@ products, dates, daily inventory) plus a point-in-time ML feature table, and pro
 data tests and `dbt docs`.
 
 ## Dependencies & prerequisites
-- **#131 (synthetic data generator): in progress on `issue/131`, not merged or pushed.** Its raw
-  contract (`analytics/generator/frames.py` `COLUMNS`, every column `text`) and anomaly catalogue
-  (`analytics/README.md`) were read from its worktree, and its generator was run read-only with
-  `--no-db --out` (10,000 customers, seed 42) to load a local `jassmin_synth` for verification.
-  Merging needs nothing from #131 except the Aspire resource (step 11): this branch makes the same
-  edits as #131 to `vite.config.ts` and `biome.json`, so the two merge cleanly.
+- **#131 (synthetic data generator): merged (#157)** while this was implemented, and merged into
+  this branch. Its raw contract (`analytics/generator/frames.py` `COLUMNS`, every column `text`) and
+  anomaly catalogue (`analytics/README.md`) drive staging; its generator, run with `--no-db --out`
+  (10,000 customers, seed 42), loaded a local `jassmin_synth` for verification.
 - **#128, #129, #130**: merged.
 - Python (separate uv project `analytics/warehouse/`): `dbt-core` 1.12, `dbt-postgres` 1.11,
   `psycopg[binary]` 3; dev `pytest`. dbt package `dbt-labs/dbt_utils` 1.4.1 (`package-lock.yml`).
@@ -80,8 +78,9 @@ data tests and `dbt docs`.
 - **Docs coverage**: `scripts/check_docs.py` (models: every column in the catalog; sources: every
   declared column), unit-tested and run in `test_build.py`.
 - **`raw.customer_truth`** is a declared source that no model reads.
-- **Aspire** (step 11): deferred until #131 merges, since `dbt-build` / `dbt-docs` are children of
-  #131's `jassmin-synth` database resource; adding that resource here would conflict.
+- **Aspire** (step 11): `dbt-build` and `dbt-docs` are explicit-start children of #131's
+  `jassmin-synth` database. `dbt-docs` gets its port as `WAREHOUSE_DOCS_PORT`; `wh.py docs serve`
+  regenerates the docs first, then serves them on that port without opening a browser.
 - **CI** (Q4 default): no warehouse job in this issue.
 
 ## Open questions
@@ -148,15 +147,10 @@ deleted products as `product_id` null with the size kept).
   `assert_features_match_history_before_snapshot`, `assert_marts_have_no_personal_data`; each was
   checked to fail on a deliberate leak (features reading 30 days ahead through orders, through
   visits; an email column in a mart; naive timestamps read as Kyiv time).
-- [ ] **11. Docs, docs check, Aspire** — done: every model and column described, `check_docs.py`,
-  `dbt docs generate` lineage, README, `AGENTS.md`. **Left for after #131 merges:** rebase on
-  `origin/main`, then add to `aspire-apphost/apphost.mts` two explicit-start children of #131's
-  `synthDb`: `dbt-build` (`addExecutable("dbt-build", "uv", "..", ["run", "--project",
-  "analytics/warehouse", "analytics/warehouse/wh.py", "build"])`, `.withReference(synthDb)`,
-  `.withEnvironment("JASSMIN_SYNTH_URI", await synthDb.uriExpression())`, `.waitFor(synthDb)`,
-  `.withParentRelationship(synthDb)`, `.withExplicitStart()`) and `dbt-docs` (`wh.py docs serve
-  --port <endpoint>` with an `http` endpoint), documented in `aspire-apphost/AGENTS.md`; check with
-  `pnpm aspire:build`.
+- [x] **11. Docs, docs check, Aspire** — every model and column described, `check_docs.py`,
+  `dbt docs generate` lineage, README, `AGENTS.md`; after #131 merged, `dbt-build` and `dbt-docs`
+  in `aspire-apphost/apphost.mts`, documented in `aspire-apphost/AGENTS.md` (`pnpm aspire:build`
+  passes).
 
 ## Testing & verification
 - **Full generated data:** #131's generator (`--customers 10000 --seed 42 --no-db --out`, 1.2 M raw
@@ -167,14 +161,14 @@ deleted products as `product_id` null with the size kept).
 - **pytest** (`uv run --project analytics/warehouse pytest analytics/warehouse`, with
   `WAREHOUSE_TEST_SERVER_URL`): 32 passed, including the end-to-end fixture build.
 - **Negative checks** (step 10): each guard fails on its deliberate bug, then the clean build passes.
-- **App checks:** `pnpm typecheck`, `pnpm lint` and `pnpm build` pass. `pnpm test`: no local
+- **App checks:** `pnpm typecheck`, `pnpm lint`, `pnpm build` and `pnpm aspire:build` pass. `pnpm test`: no local
   PostgreSQL 18 was available; on a local PostgreSQL 16 with a `uuidv7()` shim, 2,215 of 2,218 pass.
   The 2 failures are migrator tests expecting PostgreSQL 18's `23001` (restrict violation) where 16
   raises `23503`. No app code changed; CI runs them on PostgreSQL 18.
 
 ## Acceptance criteria
-- [x] `dbt build` against `jassmin_synth` passes with all tests green — steps 1–10 (verified on a
-  local `jassmin_synth` loaded from #131's generator; the Aspire-managed database follows step 11)
+- [x] `dbt build` against `jassmin_synth` passes with all tests green — steps 1–11 (verified on a
+  local `jassmin_synth` loaded from the merged #131 generator; `dbt-build` runs it under Aspire)
 - [x] Every anomaly in #131's catalogue is handled by a staging model and covered by a test or a
   documented flag — steps 3–5, 7, 8; README table
 - [x] `mart_customer_features` is point-in-time correct: a test proves no feature uses data after

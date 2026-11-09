@@ -160,6 +160,11 @@ case study.
 12. **Repo tooling.** Biome and `tsc` already ignore `analytics/`. Add
     `/analytics/notebooks/.venv/` and `.ipynb_checkpoints/` to `.gitignore`, and
     `*.ipynb linguist-generated` plus `*.png binary` to `.gitattributes` so PR diffs stay readable.
+13. **Resolved stack (step 1).** uv resolved pymc-marketing 1.4 (PyMC 6, PyTensor 3), LightGBM 4.7,
+    shap 0.54, implicit 0.7.3, pandas 3.1, NumPy 2.5, scikit-learn 1.9 on Windows / Python 3.12; all
+    have wheels. pymc-marketing 1.4 takes the data in `fit(data, method="map")`, not the
+    constructor. Without g++ PyTensor runs in Python mode: a MAP fit on 2,000 toy customers takes
+    ~25 s, which is acceptable.
 
 ## Resolved questions
 
@@ -243,7 +248,7 @@ Answered from the codebase:
 
 ## Steps
 
-- [ ] **1. Scaffold the uv project and check the stack installs.** Create
+- [x] **1. Scaffold the uv project and check the stack installs.** Create
   `analytics/notebooks/pyproject.toml` (`package = false`, `requires-python = ">=3.12,<3.13"`,
   dependencies above, dev group `pytest`; `[tool.pytest.ini_options] testpaths = ["tests"]`,
   `pythonpath = ["."]`), `.python-version`, and run `uv sync --project analytics/notebooks` on

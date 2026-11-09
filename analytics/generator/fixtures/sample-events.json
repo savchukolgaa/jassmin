@@ -1,0 +1,620 @@
+[
+  {
+    "event_type": "page_view",
+    "event_properties": {
+      "path": "/parfumy/23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2"
+    }
+  },
+  {
+    "event_type": "product_view",
+    "event_properties": {
+      "product_public_id": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+      "variant_id": "9733494c-abbe-5d64-a72e-504bfcbeb77c",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true
+    }
+  },
+  {
+    "event_type": "product_dwell",
+    "event_properties": {
+      "product_public_id": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+      "variant_id": "9733494c-abbe-5d64-a72e-504bfcbeb77c",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "dwell_ms": 54466,
+      "max_scroll_pct": 80
+    }
+  },
+  {
+    "event_type": "page_view",
+    "event_properties": {
+      "path": "/parfumy/23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2"
+    }
+  },
+  {
+    "event_type": "product_view",
+    "event_properties": {
+      "product_public_id": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+      "variant_id": "9733494c-abbe-5d64-a72e-504bfcbeb77c",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true
+    }
+  },
+  {
+    "event_type": "product_dwell",
+    "event_properties": {
+      "product_public_id": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+      "variant_id": "9733494c-abbe-5d64-a72e-504bfcbeb77c",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "dwell_ms": 28722,
+      "max_scroll_pct": 20
+    }
+  },
+  {
+    "event_type": "page_view",
+    "event_properties": {
+      "path": "/parfumy/eccce470-8402-804c-be83-d08dedebf8d0"
+    }
+  },
+  {
+    "event_type": "product_view",
+    "event_properties": {
+      "product_public_id": "eccce470-8402-804c-be83-d08dedebf8d0",
+      "variant_id": "a8f76c2b-90b5-5016-8c5f-d4f73e483980",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true
+    }
+  },
+  {
+    "event_type": "product_dwell",
+    "event_properties": {
+      "product_public_id": "eccce470-8402-804c-be83-d08dedebf8d0",
+      "variant_id": "a8f76c2b-90b5-5016-8c5f-d4f73e483980",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "dwell_ms": 18617,
+      "max_scroll_pct": 94
+    }
+  },
+  {
+    "event_type": "page_view",
+    "event_properties": {
+      "path": "/katalog/zhinochi"
+    }
+  },
+  {
+    "event_type": "product_impression",
+    "event_properties": {
+      "product_public_id": "75520cbe-0314-8e11-b569-f9617af72194",
+      "variant_id": "859f01ec-1f17-5084-8484-c95b4f09a309",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 45
+    }
+  },
+  {
+    "event_type": "product_click",
+    "event_properties": {
+      "product_public_id": "75520cbe-0314-8e11-b569-f9617af72194",
+      "variant_id": "859f01ec-1f17-5084-8484-c95b4f09a309",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 45
+    }
+  },
+  {
+    "event_type": "product_view",
+    "event_properties": {
+      "product_public_id": "75520cbe-0314-8e11-b569-f9617af72194",
+      "variant_id": "859f01ec-1f17-5084-8484-c95b4f09a309",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true
+    }
+  },
+  {
+    "event_type": "product_dwell",
+    "event_properties": {
+      "product_public_id": "75520cbe-0314-8e11-b569-f9617af72194",
+      "variant_id": "859f01ec-1f17-5084-8484-c95b4f09a309",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "dwell_ms": 11368,
+      "max_scroll_pct": 11
+    }
+  },
+  {
+    "event_type": "product_impression",
+    "event_properties": {
+      "product_public_id": "2fb31ddb-7085-8534-9892-d1623d673d9d",
+      "variant_id": "a1ca8140-29d0-59e5-bdab-00ae7ddc847d",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 27
+    }
+  },
+  {
+    "event_type": "product_click",
+    "event_properties": {
+      "product_public_id": "2fb31ddb-7085-8534-9892-d1623d673d9d",
+      "variant_id": "a1ca8140-29d0-59e5-bdab-00ae7ddc847d",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 27
+    }
+  },
+  {
+    "event_type": "product_impression",
+    "event_properties": {
+      "product_public_id": "b299c4bc-469f-86f9-9c8b-8bf60fb68f13",
+      "variant_id": "2744b7e3-8991-520f-b343-efbaa2bb0629",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 76
+    }
+  },
+  {
+    "event_type": "product_click",
+    "event_properties": {
+      "product_public_id": "b299c4bc-469f-86f9-9c8b-8bf60fb68f13",
+      "variant_id": "2744b7e3-8991-520f-b343-efbaa2bb0629",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 76
+    }
+  },
+  {
+    "event_type": "product_impression",
+    "event_properties": {
+      "product_public_id": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+      "variant_id": "9733494c-abbe-5d64-a72e-504bfcbeb77c",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 22
+    }
+  },
+  {
+    "event_type": "product_click",
+    "event_properties": {
+      "product_public_id": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+      "variant_id": "9733494c-abbe-5d64-a72e-504bfcbeb77c",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "list_id": "catalog",
+      "list_position": 22
+    }
+  },
+  {
+    "event_type": "add_to_cart",
+    "event_properties": {
+      "product_public_id": "eccce470-8402-804c-be83-d08dedebf8d0",
+      "variant_id": "a7fc36fd-3d19-5abf-8b4d-1cce3dca499d",
+      "volume_ml": 30,
+      "price": "459.00",
+      "in_stock": true,
+      "quantity": 1,
+      "cart_value_after": "459.00"
+    }
+  },
+  {
+    "event_type": "add_to_cart",
+    "event_properties": {
+      "product_public_id": "2fb31ddb-7085-8534-9892-d1623d673d9d",
+      "variant_id": "7a085718-9855-5a9b-9b89-e5f32c1e3d69",
+      "volume_ml": 10,
+      "price": "240.00",
+      "in_stock": true,
+      "quantity": 1,
+      "cart_value_after": "699.00"
+    }
+  },
+  {
+    "event_type": "add_to_cart",
+    "event_properties": {
+      "product_public_id": "e043bf75-27f9-8dae-a38c-8864dccf1483",
+      "variant_id": "697550e7-662c-5a9d-8cbf-4008f70cbb37",
+      "volume_ml": 100,
+      "price": "969.00",
+      "in_stock": true,
+      "quantity": 2,
+      "cart_value_after": "2637.00",
+      "list_id": "popular",
+      "list_position": 11
+    }
+  },
+  {
+    "event_type": "login",
+    "event_properties": {
+      "method": "register"
+    }
+  },
+  {
+    "event_type": "checkout_start",
+    "event_properties": {
+      "subtotal": "2637.00",
+      "item_count": 4,
+      "discount_amount": "0.00",
+      "discount_code": null
+    }
+  },
+  {
+    "event_type": "purchase",
+    "event_properties": {
+      "order_id": 1,
+      "subtotal": "2637.00",
+      "discount_amount": "0.00",
+      "gift_card_amount": "0.00",
+      "total_amount": "2637.00",
+      "discount_id": null,
+      "discount_code": null,
+      "payment_method": "card",
+      "items": [
+        {
+          "variant_id": "a7fc36fd-3d19-5abf-8b4d-1cce3dca499d",
+          "quantity": 1,
+          "unit_price": "459.00",
+          "discount_allocated": "0.00"
+        },
+        {
+          "variant_id": "7a085718-9855-5a9b-9b89-e5f32c1e3d69",
+          "quantity": 1,
+          "unit_price": "240.00",
+          "discount_allocated": "0.00"
+        },
+        {
+          "variant_id": "697550e7-662c-5a9d-8cbf-4008f70cbb37",
+          "quantity": 2,
+          "unit_price": "969.00",
+          "discount_allocated": "0.00"
+        }
+      ],
+      "is_first_order": true
+    }
+  },
+  {
+    "event_type": "add_to_cart",
+    "event_properties": {
+      "product_public_id": "38f4e3fb-a6c9-837a-8b43-95b779c46620",
+      "variant_id": "4e4a4835-0443-584b-8ee6-20806a8e2f3c",
+      "volume_ml": 10,
+      "price": "240.00",
+      "in_stock": true,
+      "quantity": 1,
+      "cart_value_after": "240.00"
+    }
+  },
+  {
+    "event_type": "login",
+    "event_properties": {
+      "method": "register"
+    }
+  },
+  {
+    "event_type": "login",
+    "event_properties": {
+      "method": "register"
+    }
+  },
+  {
+    "event_type": "checkout_start",
+    "event_properties": {
+      "subtotal": "1598.00",
+      "item_count": 2,
+      "discount_amount": "159.80",
+      "discount_code": "JASSMIN10"
+    }
+  },
+  {
+    "event_type": "purchase",
+    "event_properties": {
+      "order_id": 2,
+      "subtotal": "1598.00",
+      "discount_amount": "159.80",
+      "gift_card_amount": "0.00",
+      "total_amount": "1438.20",
+      "discount_id": 3,
+      "discount_code": "JASSMIN10",
+      "payment_method": "cod",
+      "items": [
+        {
+          "variant_id": "697550e7-662c-5a9d-8cbf-4008f70cbb37",
+          "quantity": 1,
+          "unit_price": "969.00",
+          "discount_allocated": "96.90"
+        },
+        {
+          "variant_id": "4d8a56f8-80d4-55e5-bcaf-810216b82cd3",
+          "quantity": 1,
+          "unit_price": "629.00",
+          "discount_allocated": "62.90"
+        }
+      ],
+      "is_first_order": true
+    }
+  },
+  {
+    "event_type": "checkout_start",
+    "event_properties": {
+      "subtotal": "629.00",
+      "item_count": 1,
+      "discount_amount": "0.00",
+      "discount_code": null
+    }
+  },
+  {
+    "event_type": "purchase",
+    "event_properties": {
+      "order_id": 3,
+      "subtotal": "629.00",
+      "discount_amount": "0.00",
+      "gift_card_amount": "0.00",
+      "total_amount": "629.00",
+      "discount_id": null,
+      "discount_code": null,
+      "payment_method": "card",
+      "items": [
+        {
+          "variant_id": "bd833f6e-622f-5d5e-ab73-cf72bddd6f60",
+          "quantity": 1,
+          "unit_price": "629.00",
+          "discount_allocated": "0.00"
+        }
+      ],
+      "is_first_order": false
+    }
+  },
+  {
+    "event_type": "login",
+    "event_properties": {
+      "method": "login"
+    }
+  },
+  {
+    "event_type": "checkout_start",
+    "event_properties": {
+      "subtotal": "1088.00",
+      "item_count": 2,
+      "discount_amount": "0.00",
+      "discount_code": null
+    }
+  },
+  {
+    "event_type": "purchase",
+    "event_properties": {
+      "order_id": 4,
+      "subtotal": "1088.00",
+      "discount_amount": "0.00",
+      "gift_card_amount": "0.00",
+      "total_amount": "1088.00",
+      "discount_id": null,
+      "discount_code": null,
+      "payment_method": "card",
+      "items": [
+        {
+          "variant_id": "66626c9d-7210-5494-a7d2-9b0371ec7089",
+          "quantity": 1,
+          "unit_price": "459.00",
+          "discount_allocated": "0.00"
+        },
+        {
+          "variant_id": "4cc99a89-1cf6-5070-bb2c-9c5ee09e1d0c",
+          "quantity": 1,
+          "unit_price": "629.00",
+          "discount_allocated": "0.00"
+        }
+      ],
+      "is_first_order": false
+    }
+  },
+  {
+    "event_type": "search",
+    "event_properties": {
+      "search_id": "9bb68800-0546-4c4a-bded-b3486941e58a",
+      "query": null,
+      "gender": "men",
+      "fragrance_family": "водяні",
+      "brand": null,
+      "sort": "price_asc",
+      "page": 1,
+      "result_count": 4,
+      "product_public_ids": [
+        "e0128797-9a84-82ed-9ae1-3095aecb29e3",
+        "b160b334-df79-8926-a3dc-bdd7e822453f",
+        "890868e1-41cd-87d4-86ec-a8df338fb584",
+        "e162a3db-2e16-831d-9b41-4a3c3a798e43"
+      ]
+    }
+  },
+  {
+    "event_type": "search",
+    "event_properties": {
+      "search_id": "0a00b837-2d8c-4e98-abf0-21b717401f5c",
+      "query": null,
+      "gender": "men",
+      "fragrance_family": null,
+      "brand": null,
+      "sort": "price_desc",
+      "page": 1,
+      "result_count": 56,
+      "product_public_ids": [
+        "008b03e5-d106-8d91-ade5-8d3adb1256d1",
+        "151ef555-8b04-8cce-a70b-e4fa224ff7ae",
+        "3b27366a-53a4-8f77-ac45-1f456bad16c8",
+        "aa289f49-da0f-8d9f-8f9e-ee624ed8b45a",
+        "e77f429a-7d31-86b0-8c95-f8385b5cdb42",
+        "d6e7d789-b3a1-8030-a64b-9601dd07827f",
+        "01a348b6-ba22-8808-aeb4-51d6e57fac9c",
+        "a3f8431f-2b2b-8556-89f2-0d16a54c6592",
+        "e9f1f3d4-54ab-8d3b-8842-bf20009a13a1",
+        "cefc58b4-bc22-84db-aae5-89d1b6aa381d",
+        "b4c5d12f-cc07-8c93-a6b1-43d318a16f37",
+        "5d4163f1-a7b0-8be9-a228-e4249aeccaf2",
+        "48740e2c-e7fd-8c65-a1f4-fd852da97540",
+        "5532d1c7-db4f-84d8-8572-741bc185fe91",
+        "2a92d6b0-2c25-8f82-b8ce-70737c7473a3",
+        "7074ebdd-10c0-88b2-b4fe-caa1d2838237",
+        "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+        "08de01fb-2be9-8cc3-9888-e354630bf137",
+        "30de4a18-3265-801a-98f9-b26e148c0b4d",
+        "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+        "cdd5dca0-b3b5-8227-90bc-c79fe2a28015",
+        "bbae143e-6aa4-8523-9dd9-98c5dc44422c",
+        "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+        "b0f342aa-06ba-8554-87e2-397c58d61b29"
+      ]
+    }
+  },
+  {
+    "event_type": "search",
+    "event_properties": {
+      "search_id": "56f123f5-2d3a-444a-b5c3-f7a8cde01ebb",
+      "query": null,
+      "gender": "men",
+      "fragrance_family": null,
+      "brand": null,
+      "sort": "price_asc",
+      "page": 1,
+      "result_count": 56,
+      "product_public_ids": [
+        "008b03e5-d106-8d91-ade5-8d3adb1256d1",
+        "151ef555-8b04-8cce-a70b-e4fa224ff7ae",
+        "3b27366a-53a4-8f77-ac45-1f456bad16c8",
+        "aa289f49-da0f-8d9f-8f9e-ee624ed8b45a",
+        "e77f429a-7d31-86b0-8c95-f8385b5cdb42",
+        "d6e7d789-b3a1-8030-a64b-9601dd07827f",
+        "01a348b6-ba22-8808-aeb4-51d6e57fac9c",
+        "a3f8431f-2b2b-8556-89f2-0d16a54c6592",
+        "e9f1f3d4-54ab-8d3b-8842-bf20009a13a1",
+        "cefc58b4-bc22-84db-aae5-89d1b6aa381d",
+        "b4c5d12f-cc07-8c93-a6b1-43d318a16f37",
+        "5d4163f1-a7b0-8be9-a228-e4249aeccaf2",
+        "48740e2c-e7fd-8c65-a1f4-fd852da97540",
+        "5532d1c7-db4f-84d8-8572-741bc185fe91",
+        "2a92d6b0-2c25-8f82-b8ce-70737c7473a3",
+        "7074ebdd-10c0-88b2-b4fe-caa1d2838237",
+        "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+        "08de01fb-2be9-8cc3-9888-e354630bf137",
+        "30de4a18-3265-801a-98f9-b26e148c0b4d",
+        "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+        "cdd5dca0-b3b5-8227-90bc-c79fe2a28015",
+        "bbae143e-6aa4-8523-9dd9-98c5dc44422c",
+        "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+        "b0f342aa-06ba-8554-87e2-397c58d61b29"
+      ]
+    }
+  },
+  {
+    "event_type": "search",
+    "event_properties": {
+      "search_id": "d11f9f26-0c56-4a0e-ab90-6136d4029956",
+      "query": null,
+      "gender": "women",
+      "fragrance_family": null,
+      "brand": null,
+      "sort": "price_asc",
+      "page": 1,
+      "result_count": 83,
+      "product_public_ids": [
+        "5d4163f1-a7b0-8be9-a228-e4249aeccaf2",
+        "48740e2c-e7fd-8c65-a1f4-fd852da97540",
+        "2a92d6b0-2c25-8f82-b8ce-70737c7473a3",
+        "cdd5dca0-b3b5-8227-90bc-c79fe2a28015",
+        "90ed486e-94d1-8296-b203-9f6565a1e47a",
+        "05083541-9890-829f-a30f-248b7e689b2c",
+        "3ced83e8-724a-830e-9bad-6aafc909056e",
+        "a69ed314-ade2-8af4-838d-5806c0741750",
+        "63ce05eb-4858-86a5-925e-b07a2c1913a7",
+        "6dda773e-42cd-8510-b9e1-7c88d6010d53",
+        "7fb46cd1-4d40-8d0e-9407-b34a0679aef0",
+        "ffdadd65-d4e9-80d5-b351-5807fb241296",
+        "f7193041-e75b-8dfd-a24f-62936adc8c5c",
+        "6e289de2-6240-8524-89bb-1bbe59cc2b20",
+        "4168cbc7-0093-8480-abc6-d749fdecd225",
+        "1c8835f6-ddae-8d4e-9e47-c02ac8b94a71",
+        "fcb03800-34cb-84c5-9a60-ceb4ffbbec9f",
+        "7075fa6b-8eb9-8c82-ad84-50b7e72e3560",
+        "bd52e728-ddb9-8925-ae73-b8a779939def",
+        "c9872320-524b-8eee-856c-8605faf46b44",
+        "981dd4f2-f595-8048-8d88-906cc61abefe",
+        "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+        "7a383909-1431-853a-9dbb-b4adc64fdf85",
+        "74d7c289-3393-8a94-9ef4-77868e7cc641"
+      ]
+    }
+  },
+  {
+    "event_type": "remove_from_cart",
+    "event_properties": {
+      "product_public_id": "48740e2c-e7fd-8c65-a1f4-fd852da97540",
+      "variant_id": "c10e1572-ce2e-5904-8f85-82f67bd96efd",
+      "volume_ml": 5,
+      "price": "119.00",
+      "in_stock": true,
+      "quantity": 2,
+      "cart_value_after": "240.00",
+      "source": "stepper"
+    }
+  },
+  {
+    "event_type": "remove_from_cart",
+    "event_properties": {
+      "product_public_id": "63ce05eb-4858-86a5-925e-b07a2c1913a7",
+      "variant_id": "cb268c53-7c7b-5924-a8a0-03afa95d05b4",
+      "volume_ml": 50,
+      "price": "629.00",
+      "in_stock": true,
+      "quantity": 1,
+      "cart_value_after": "238.00",
+      "source": "stepper"
+    }
+  },
+  {
+    "event_type": "remove_from_cart",
+    "event_properties": {
+      "product_public_id": "eccce470-8402-804c-be83-d08dedebf8d0",
+      "variant_id": "a7fc36fd-3d19-5abf-8b4d-1cce3dca499d",
+      "volume_ml": 30,
+      "price": "459.00",
+      "in_stock": true,
+      "quantity": 1,
+      "cart_value_after": "869.00",
+      "source": "stepper"
+    }
+  },
+  {
+    "event_type": "remove_from_cart",
+    "event_properties": {
+      "product_public_id": "d3a64be9-dcf9-87de-ba98-bed9915238fb",
+      "variant_id": "cce975be-4ae6-5c6f-a5ff-9d73d83807b6",
+      "volume_ml": 100,
+      "price": "969.00",
+      "in_stock": true,
+      "quantity": 1,
+      "cart_value_after": "969.00",
+      "source": "stepper"
+    }
+  }
+]

@@ -348,7 +348,7 @@ Answered from the codebase:
   / weekly WAPE on non-censored days (`figures/05_forecast_vs_actual.png` for one popular size),
   reorder points for the top sizes vs. the ≤ 1-unit rule. Checks cell: LightGBM WAPE <
   seasonal-naive WAPE overall, and no censored day in the evaluation set.
-- [ ] **8. `run_all.py` and a clean run.** Implement the runner (executes 01–05 in order, in place,
+- [x] **8. `run_all.py` and a clean run.** Implement the runner (executes 01–05 in order, in place,
   stops at the first failure, prints each notebook's wall time). Against a fresh seed-42 default
   `jassmin_synth`: `uv sync --project analytics/notebooks` from a removed `.venv`, then
   `uv run --project analytics/notebooks analytics/notebooks/run_all.py`. Run it twice and check
@@ -385,7 +385,7 @@ Answered from the codebase:
 
 ## Acceptance criteria
 
-- [ ] All five notebooks run end to end from a clean environment against `jassmin_synth` — steps 1, 3–8
+- [x] All five notebooks run end to end from a clean environment against `jassmin_synth` — steps 1, 3–8 (fresh seed-42 data, `.venv` removed and re-synced with `--locked`; two runs, byte-identical outputs)
 - [ ] BG/NBD holdout predictions are within 15% of actual purchases per decile, and the recovered segments match the generator's ground truth above chance — step 4 (Q2). Segments: met. Deciles: 9 of 10 within 15 %, decile 6 at 18 % (Decision 16).
 - [x] The churn model beats the logistic baseline on PR-AUC with a time-based split, and SHAP plots are included — step 5
 - [x] The recommender beats the popularity baseline on Recall@10 — step 6

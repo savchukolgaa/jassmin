@@ -1,0 +1,7194 @@
+[
+  {
+    "now": "2026-03-02T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "6dda773e-42cd-8510-b9e1-7c88d6010d53",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "d3a64be9-dcf9-87de-ba98-bed9915238fb",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "890868e1-41cd-87d4-86ec-a8df338fb584",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "9e8365d8-f018-8e4a-9865-6bc01e3ce6fa",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "2fb31ddb-7085-8534-9892-d1623d673d9d",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "2a92d6b0-2c25-8f82-b8ce-70737c7473a3",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "238d3f89-2b4d-8d3a-a23e-7c6979d44f10",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "338a2e7d-b953-80ff-963e-5a871d32398d",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "48740e2c-e7fd-8c65-a1f4-fd852da97540",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 384000,
+      "discount": 66300,
+      "total": 317700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        7366,
+        22102,
+        7366,
+        22100,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-08-02T05:35:00.614876+03:00",
+    "lines": [
+      {
+        "productPublicId": "008b03e5-d106-8d91-ade5-8d3adb1256d1",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "cbba8cb7-61f9-8870-826e-64a94433e2ef",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "2cdccdfe-c920-88b8-99be-07b203b70582",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "e0128797-9a84-82ed-9ae1-3095aecb29e3",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 382500,
+      "discount": 0,
+      "total": 382500,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-10-15T23:04:06.988129+03:00",
+    "lines": [
+      {
+        "productPublicId": "4ece67d1-32d0-8e72-be6b-bd64ae49eae0",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "b96b42fd-7f75-851b-912a-72490d10b76c",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "7fb46cd1-4d40-8d0e-9407-b34a0679aef0",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "adffdd0e-db3b-8c86-b89e-653f1892fe6f",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "75520cbe-0314-8e11-b569-f9617af72194",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 391600,
+      "discount": 23970,
+      "total": 367630,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        0,
+        0,
+        14535,
+        9435
+      ]
+    }
+  },
+  {
+    "now": "2024-03-21T03:13:11.813338+02:00",
+    "lines": [
+      {
+        "productPublicId": "151ef555-8b04-8cce-a70b-e4fa224ff7ae",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "56f07946-8c2e-8d86-98ba-c331105e05f7",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "23bb4d67-7a58-8723-a834-1441cee9d956",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "b4c5d12f-cc07-8c93-a6b1-43d318a16f37",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "ffdadd65-d4e9-80d5-b351-5807fb241296",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 379500,
+      "discount": 0,
+      "total": 379500,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-09-25T06:43:22.823273+03:00",
+    "lines": [
+      {
+        "productPublicId": "ffbaf9ae-36d2-8b98-86ff-43b57bf70380",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 11900,
+      "discount": 0,
+      "total": 11900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-03-03T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "cbba8cb7-61f9-8870-826e-64a94433e2ef",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "c2e424d7-f1c1-8979-ae79-559aa243609f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "a39e2df5-e9e7-84c6-b509-4864cb46e815",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7074ebdd-10c0-88b2-b4fe-caa1d2838237",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 3,
+        "code": "JASSMIN10",
+        "kind": "percent",
+        "value": "10.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 321500,
+      "discount": 32150,
+      "total": 289350,
+      "freeShipping": true,
+      "discountId": 3,
+      "allocation": [
+        13770,
+        2400,
+        6290,
+        9690
+      ]
+    }
+  },
+  {
+    "now": "2025-01-24T19:11:03.638018+02:00",
+    "lines": [
+      {
+        "productPublicId": "6e289de2-6240-8524-89bb-1bbe59cc2b20",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "989a2355-4bfb-8716-a19f-44e5b2f95ea7",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "753ca70e-4a73-8fe2-96c2-9260daefd2ba",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "bbae143e-6aa4-8523-9dd9-98c5dc44422c",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "193552cb-02c6-8f90-8db1-dc3f8c8663bf",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 286600,
+      "discount": 22100,
+      "total": 264500,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        14734,
+        7366,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-06-13T16:18:23.200081+03:00",
+    "lines": [
+      {
+        "productPublicId": "26d9421b-c5d3-8672-9699-2f146b51f51c",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "90b13bda-eb4c-8e38-9390-2127afd4e5c8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "05083541-9890-829f-a30f-248b7e689b2c",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "38f4e3fb-a6c9-837a-8b43-95b779c46620",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "981dd4f2-f595-8048-8d88-906cc61abefe",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 240000,
+      "discount": 66300,
+      "total": 173700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        7366,
+        22102,
+        14733,
+        14733
+      ]
+    }
+  },
+  {
+    "now": "2026-06-17T20:34:48.988105+03:00",
+    "lines": [
+      {
+        "productPublicId": "16c4d836-6f51-8b90-a08a-edf451c287e6",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "95f80346-f714-8518-b4c6-d0a5e9d1c5cf",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 159800,
+      "discount": 9435,
+      "total": 150365,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        9435,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-04-24T00:02:59.071337+03:00",
+    "lines": [
+      {
+        "productPublicId": "c7d14b31-b0bc-8ee6-ba7a-4190d3850a46",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "4fdc96c1-fd30-8fbd-bde2-0646bdb9a8b0",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "cbba8cb7-61f9-8870-826e-64a94433e2ef",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 277700,
+      "discount": 22100,
+      "total": 255600,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        0,
+        22100,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-03-06T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 62900,
+      "discount": 9435,
+      "total": 53465,
+      "freeShipping": false,
+      "discountId": 6,
+      "allocation": [
+        9435
+      ]
+    }
+  },
+  {
+    "now": "2024-04-03T06:24:52.022540+03:00",
+    "lines": [
+      {
+        "productPublicId": "b14d4d77-71c1-866d-948a-55346d4a173b",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "1c8835f6-ddae-8d4e-9e47-c02ac8b94a71",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "83695080-2c78-885b-870d-d141b7616be3",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "fec8781f-e866-8a59-9691-1a717bceb372",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 93700,
+      "discount": 0,
+      "total": 93700,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-11-17T23:29:32.030562+02:00",
+    "lines": [
+      {
+        "productPublicId": "27f1fdfa-02cb-877e-aed2-131b480db33a",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 11900,
+      "discount": 0,
+      "total": 11900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-07-25T13:36:10.973353+03:00",
+    "lines": [
+      {
+        "productPublicId": "c9872320-524b-8eee-856c-8605faf46b44",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "2fb31ddb-7085-8534-9892-d1623d673d9d",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 23800,
+      "discount": 0,
+      "total": 23800,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-12-19T22:01:43.768917+02:00",
+    "lines": [
+      {
+        "productPublicId": "4ce5a513-2b90-889c-8b47-bd30def6f0a8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "90b13bda-eb4c-8e38-9390-2127afd4e5c8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "ffbaf9ae-36d2-8b98-86ff-43b57bf70380",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "8587bc6e-9218-809f-a3cf-d75b4b5ea1b8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "e77f429a-7d31-86b0-8c95-f8385b5cdb42",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "cbba8cb7-61f9-8870-826e-64a94433e2ef",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 288000,
+      "discount": 66300,
+      "total": 221700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        22102,
+        14733,
+        7366,
+        14733,
+        7366,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-03-01T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "26d9421b-c5d3-8672-9699-2f146b51f51c",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "f3a57f4c-2936-823f-9c10-9d5391e0efc3",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "16c4d836-6f51-8b90-a08a-edf451c287e6",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "008b03e5-d106-8d91-ade5-8d3adb1256d1",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 491300,
+      "discount": 30855,
+      "total": 460445,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        9435,
+        6885,
+        14535,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-08-20T12:45:42.445069+03:00",
+    "lines": [
+      {
+        "productPublicId": "16c4d836-6f51-8b90-a08a-edf451c287e6",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 96900,
+      "discount": 0,
+      "total": 96900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-04-20T12:52:11.585900+03:00",
+    "lines": [
+      {
+        "productPublicId": "b14d4d77-71c1-866d-948a-55346d4a173b",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "f0482f3c-d633-823c-a2f0-f84e80922641",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "2a92d6b0-2c25-8f82-b8ce-70737c7473a3",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "e162a3db-2e16-831d-9b41-4a3c3a798e43",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 241600,
+      "discount": 16320,
+      "total": 225280,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        9435,
+        0,
+        6885
+      ]
+    }
+  },
+  {
+    "now": "2024-10-21T15:17:24.472558+03:00",
+    "lines": [
+      {
+        "productPublicId": "a3f8431f-2b2b-8556-89f2-0d16a54c6592",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "6fee3f20-a688-89c7-a585-a3ca24b91680",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 137700,
+      "discount": 0,
+      "total": 137700,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-03-14T03:09:01.971760+02:00",
+    "lines": [
+      {
+        "productPublicId": "41dfadb7-cd8c-80e0-a16b-37a610664743",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "41dfadb7-cd8c-80e0-a16b-37a610664743",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "56aa2769-36ba-890a-a4d4-89cc8723df63",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 3,
+        "code": "JASSMIN10",
+        "kind": "percent",
+        "value": "10.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 120700,
+      "discount": 12070,
+      "total": 108630,
+      "freeShipping": false,
+      "discountId": 3,
+      "allocation": [
+        4590,
+        1190,
+        6290
+      ]
+    }
+  },
+  {
+    "now": "2026-03-07T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "5ea3d431-f21b-893c-8a75-9003e538e1b5",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 72000,
+      "discount": 22100,
+      "total": 49900,
+      "freeShipping": false,
+      "discountId": 1,
+      "allocation": [
+        22100
+      ]
+    }
+  },
+  {
+    "now": "2024-08-26T15:23:02.232669+03:00",
+    "lines": [
+      {
+        "productPublicId": "23bb4d67-7a58-8723-a834-1441cee9d956",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "48740e2c-e7fd-8c65-a1f4-fd852da97540",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "aa289f49-da0f-8d9f-8f9e-ee624ed8b45a",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "3c44268b-1b82-8ef1-84da-a78992ad9373",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7fb46cd1-4d40-8d0e-9407-b34a0679aef0",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "8587bc6e-9218-809f-a3cf-d75b4b5ea1b8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "75520cbe-0314-8e11-b569-f9617af72194",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "87d2a746-1b93-87f2-9d35-9df20d6646c0",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 240000,
+      "discount": 66300,
+      "total": 173700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        7366,
+        7366,
+        7366,
+        7366,
+        7366,
+        22104,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-09-02T04:50:13.033888+03:00",
+    "lines": [
+      {
+        "productPublicId": "ac8d5217-6a51-89dd-8c69-cd24bf66ed5e",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "a9772521-20f4-8750-9d26-dcfc22fb6fb3",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "f0482f3c-d633-823c-a2f0-f84e80922641",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 724200,
+      "discount": 50490,
+      "total": 673710,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        14535,
+        14535,
+        6885,
+        14535
+      ]
+    }
+  },
+  {
+    "now": "2026-10-01T07:01:19.943323+03:00",
+    "lines": [
+      {
+        "productPublicId": "30de4a18-3265-801a-98f9-b26e148c0b4d",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 45900,
+      "discount": 0,
+      "total": 45900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-12-18T18:34:11.528654+02:00",
+    "lines": [
+      {
+        "productPublicId": "f3a57f4c-2936-823f-9c10-9d5391e0efc3",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 96900,
+      "discount": 0,
+      "total": 96900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-03-01T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "4168cbc7-0093-8480-abc6-d749fdecd225",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "d4aea1c3-6902-8abe-8eaa-18d5c5b277cf",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 3,
+        "code": "JASSMIN10",
+        "kind": "percent",
+        "value": "10.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 195500,
+      "discount": 19550,
+      "total": 175950,
+      "freeShipping": true,
+      "discountId": 3,
+      "allocation": [
+        3570,
+        9690,
+        6290
+      ]
+    }
+  },
+  {
+    "now": "2024-02-13T03:32:08.897178+02:00",
+    "lines": [
+      {
+        "productPublicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 24000,
+      "discount": 0,
+      "total": 24000,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-02-25T14:17:28.268488+02:00",
+    "lines": [
+      {
+        "productPublicId": "3c44268b-1b82-8ef1-84da-a78992ad9373",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "989a2355-4bfb-8716-a19f-44e5b2f95ea7",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 331500,
+      "discount": 0,
+      "total": 331500,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-04-08T16:22:09.130930+03:00",
+    "lines": [
+      {
+        "productPublicId": "79d20987-c138-8be1-b362-08a5fab511c8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "db09263a-e42c-8654-b973-27c5d50d73d8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "e0128797-9a84-82ed-9ae1-3095aecb29e3",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "151ef555-8b04-8cce-a70b-e4fa224ff7ae",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 192000,
+      "discount": 44200,
+      "total": 147800,
+      "freeShipping": false,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        22101,
+        14733,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-06-21T11:22:08.316136+03:00",
+    "lines": [
+      {
+        "productPublicId": "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "b0f342aa-06ba-8554-87e2-397c58d61b29",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "a9772521-20f4-8750-9d26-dcfc22fb6fb3",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "90b13bda-eb4c-8e38-9390-2127afd4e5c8",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "9a8b57f9-b077-8176-b304-308b193cc70d",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 605200,
+      "discount": 42840,
+      "total": 562360,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        14535,
+        18870,
+        0,
+        0,
+        9435
+      ]
+    }
+  },
+  {
+    "now": "2026-03-03T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "4ece67d1-32d0-8e72-be6b-bd64ae49eae0",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "b96b42fd-7f75-851b-912a-72490d10b76c",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 86700,
+      "discount": 0,
+      "total": 86700,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-01-25T02:28:35.152034+02:00",
+    "lines": [
+      {
+        "productPublicId": "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 96900,
+      "discount": 0,
+      "total": 96900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-04-21T03:17:13.793481+03:00",
+    "lines": [
+      {
+        "productPublicId": "ac8d5217-6a51-89dd-8c69-cd24bf66ed5e",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "cefc58b4-bc22-84db-aae5-89d1b6aa381d",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "c7d14b31-b0bc-8ee6-ba7a-4190d3850a46",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 69700,
+      "discount": 0,
+      "total": 69700,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-02-05T23:16:00.986517+02:00",
+    "lines": [
+      {
+        "productPublicId": "6e289de2-6240-8524-89bb-1bbe59cc2b20",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7e792725-99f1-8e30-b628-8a0ed36c8f34",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "b96b42fd-7f75-851b-912a-72490d10b76c",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "eccce470-8402-804c-be83-d08dedebf8d0",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "b160b334-df79-8926-a3dc-bdd7e822453f",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 3,
+        "code": "JASSMIN10",
+        "kind": "percent",
+        "value": "10.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 326400,
+      "discount": 32640,
+      "total": 293760,
+      "freeShipping": true,
+      "discountId": 3,
+      "allocation": [
+        9690,
+        1190,
+        9690,
+        2380,
+        9690
+      ]
+    }
+  },
+  {
+    "now": "2025-12-06T01:43:16.166834+02:00",
+    "lines": [
+      {
+        "productPublicId": "adffdd0e-db3b-8c86-b89e-653f1892fe6f",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "90ed486e-94d1-8296-b203-9f6565a1e47a",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "79d20987-c138-8be1-b362-08a5fab511c8",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "26d9421b-c5d3-8672-9699-2f146b51f51c",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 583100,
+      "discount": 38505,
+      "total": 544595,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        14535,
+        0,
+        9435,
+        14535
+      ]
+    }
+  },
+  {
+    "now": "2024-03-07T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "1c9299bf-9dcd-840a-92f0-8de81b832549",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "e043bf75-27f9-8dae-a38c-8864dccf1483",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "c2e424d7-f1c1-8979-ae79-559aa243609f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "fec8781f-e866-8a59-9691-1a717bceb372",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "3c44268b-1b82-8ef1-84da-a78992ad9373",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 240000,
+      "discount": 66300,
+      "total": 173700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        14735,
+        14733,
+        14733,
+        7366,
+        14733
+      ]
+    }
+  },
+  {
+    "now": "2024-06-23T06:40:44.273828+03:00",
+    "lines": [
+      {
+        "productPublicId": "c9872320-524b-8eee-856c-8605faf46b44",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "16c4d836-6f51-8b90-a08a-edf451c287e6",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 280500,
+      "discount": 0,
+      "total": 280500,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-08-24T17:22:33.817053+03:00",
+    "lines": [
+      {
+        "productPublicId": "f0482f3c-d633-823c-a2f0-f84e80922641",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 45900,
+      "discount": 0,
+      "total": 45900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-03-12T19:47:51.539432+02:00",
+    "lines": [
+      {
+        "productPublicId": "08de01fb-2be9-8cc3-9888-e354630bf137",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 62900,
+      "discount": 0,
+      "total": 62900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-01-25T11:26:01.006610+02:00",
+    "lines": [
+      {
+        "productPublicId": "08de01fb-2be9-8cc3-9888-e354630bf137",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 24000,
+      "discount": 0,
+      "total": 24000,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-03-04T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "e9f1f3d4-54ab-8d3b-8842-bf20009a13a1",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 23800,
+      "discount": 0,
+      "total": 23800,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-10-28T16:47:08.765680+02:00",
+    "lines": [
+      {
+        "productPublicId": "008b03e5-d106-8d91-ade5-8d3adb1256d1",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "87fd9ab1-e114-875b-b018-d8faeb50ea2a",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 69900,
+      "discount": 0,
+      "total": 69900,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-07-29T05:16:43.991401+03:00",
+    "lines": [
+      {
+        "productPublicId": "6b95f73c-79e4-8e66-aae3-ce452a2ce364",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "5d4163f1-a7b0-8be9-a228-e4249aeccaf2",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "fcb03800-34cb-84c5-9a60-ceb4ffbbec9f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "adffdd0e-db3b-8c86-b89e-653f1892fe6f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "e0128797-9a84-82ed-9ae1-3095aecb29e3",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7fb46cd1-4d40-8d0e-9407-b34a0679aef0",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "6dda773e-42cd-8510-b9e1-7c88d6010d53",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "90ed486e-94d1-8296-b203-9f6565a1e47a",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "30de4a18-3265-801a-98f9-b26e148c0b4d",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "d328f9e5-c4bf-84bf-b52b-98af9e6b0177",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "c2e424d7-f1c1-8979-ae79-559aa243609f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 408000,
+      "discount": 66300,
+      "total": 341700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        14733,
+        7366,
+        22103,
+        7366,
+        7366,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-06-12T02:36:36.991077+03:00",
+    "lines": [
+      {
+        "productPublicId": "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "27f1fdfa-02cb-877e-aed2-131b480db33a",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 234600,
+      "discount": 0,
+      "total": 234600,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-12-24T06:07:05.390287+02:00",
+    "lines": [
+      {
+        "productPublicId": "8587bc6e-9218-809f-a3cf-d75b4b5ea1b8",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "79d20987-c138-8be1-b362-08a5fab511c8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "34218a73-8a98-88fe-aacd-0b911e2c6df5",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "d5516865-27a9-8ac1-907a-0969dd9445bc",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 321500,
+      "discount": 16320,
+      "total": 305180,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        6885,
+        0,
+        9435,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-03-07T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "30de4a18-3265-801a-98f9-b26e148c0b4d",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "f3a57f4c-2936-823f-9c10-9d5391e0efc3",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 348500,
+      "discount": 52275,
+      "total": 296225,
+      "freeShipping": true,
+      "discountId": 6,
+      "allocation": [
+        29070,
+        14535,
+        1785,
+        6885
+      ]
+    }
+  },
+  {
+    "now": "2026-04-27T06:10:06.820220+03:00",
+    "lines": [
+      {
+        "productPublicId": "fdacb16e-ec45-805e-b2fd-19953e5cc753",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "90b13bda-eb4c-8e38-9390-2127afd4e5c8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "92f877bf-a5e9-820e-99ce-2f66cb3addb5",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "7d531029-1360-8a22-9234-fe003dfaed3c",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 349700,
+      "discount": 44200,
+      "total": 305500,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        22100,
+        22100,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-08-31T19:21:50.270651+03:00",
+    "lines": [
+      {
+        "productPublicId": "83695080-2c78-885b-870d-d141b7616be3",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "ffdadd65-d4e9-80d5-b351-5807fb241296",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 3,
+        "code": "JASSMIN10",
+        "kind": "percent",
+        "value": "10.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 173800,
+      "discount": 17380,
+      "total": 156420,
+      "freeShipping": true,
+      "discountId": 3,
+      "allocation": [
+        12580,
+        4800
+      ]
+    }
+  },
+  {
+    "now": "2024-04-13T14:36:55.741697+03:00",
+    "lines": [
+      {
+        "productPublicId": "338452cf-8d5a-81b0-b66d-55bbf7f77880",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "87d2a746-1b93-87f2-9d35-9df20d6646c0",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 411600,
+      "discount": 0,
+      "total": 411600,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-12-16T18:36:00.512942+02:00",
+    "lines": [
+      {
+        "productPublicId": "b96b42fd-7f75-851b-912a-72490d10b76c",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "bbae143e-6aa4-8523-9dd9-98c5dc44422c",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "bd52e728-ddb9-8925-ae73-b8a779939def",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "cefc58b4-bc22-84db-aae5-89d1b6aa381d",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "90b13bda-eb4c-8e38-9390-2127afd4e5c8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "3ced83e8-724a-830e-9bad-6aafc909056e",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 192000,
+      "discount": 44200,
+      "total": 147800,
+      "freeShipping": false,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        22102,
+        7366,
+        7366,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-03-02T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "56f07946-8c2e-8d86-98ba-c331105e05f7",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "7d531029-1360-8a22-9234-fe003dfaed3c",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "b160b334-df79-8926-a3dc-bdd7e822453f",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "6b95f73c-79e4-8e66-aae3-ce452a2ce364",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "338452cf-8d5a-81b0-b66d-55bbf7f77880",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 856800,
+      "discount": 61710,
+      "total": 795090,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        14535,
+        14535,
+        6885,
+        18870,
+        6885
+      ]
+    }
+  },
+  {
+    "now": "2025-05-02T09:17:02.098337+03:00",
+    "lines": [
+      {
+        "productPublicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "6dda773e-42cd-8510-b9e1-7c88d6010d53",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "6e289de2-6240-8524-89bb-1bbe59cc2b20",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "75520cbe-0314-8e11-b569-f9617af72194",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 263700,
+      "discount": 0,
+      "total": 263700,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-02-15T03:45:54.829984+02:00",
+    "lines": [
+      {
+        "productPublicId": "403faf10-bc78-82ed-9690-64c54c7cf416",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "f42b7182-d76a-8b1b-94b6-8a59c4b641d8",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7075fa6b-8eb9-8c82-ad84-50b7e72e3560",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7e792725-99f1-8e30-b628-8a0ed36c8f34",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 430500,
+      "discount": 0,
+      "total": 430500,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-10-14T10:51:52.464045+03:00",
+    "lines": [
+      {
+        "productPublicId": "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "c7d14b31-b0bc-8ee6-ba7a-4190d3850a46",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "63ce05eb-4858-86a5-925e-b07a2c1913a7",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "83695080-2c78-885b-870d-d141b7616be3",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "eccce470-8402-804c-be83-d08dedebf8d0",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 129600,
+      "discount": 0,
+      "total": 129600,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-04-09T11:32:29.001504+03:00",
+    "lines": [
+      {
+        "productPublicId": "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "27f1fdfa-02cb-877e-aed2-131b480db33a",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "01a348b6-ba22-8808-aeb4-51d6e57fac9c",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 377600,
+      "discount": 0,
+      "total": 377600,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-03-06T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "63ce05eb-4858-86a5-925e-b07a2c1913a7",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "7e792725-99f1-8e30-b628-8a0ed36c8f34",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "b96b42fd-7f75-851b-912a-72490d10b76c",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "ffdadd65-d4e9-80d5-b351-5807fb241296",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 291700,
+      "discount": 43755,
+      "total": 247945,
+      "freeShipping": true,
+      "discountId": 6,
+      "allocation": [
+        10800,
+        7200,
+        9435,
+        9435,
+        6885
+      ]
+    }
+  },
+  {
+    "now": "2024-01-16T17:57:33.383337+02:00",
+    "lines": [
+      {
+        "productPublicId": "75520cbe-0314-8e11-b569-f9617af72194",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "c9872320-524b-8eee-856c-8605faf46b44",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "eccce470-8402-804c-be83-d08dedebf8d0",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "63cc02c1-022c-86b8-b0a0-c4e5678ab21e",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "3ced83e8-724a-830e-9bad-6aafc909056e",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 168000,
+      "discount": 44200,
+      "total": 123800,
+      "freeShipping": false,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        7366,
+        7366,
+        22102,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-08-29T07:09:54.678306+03:00",
+    "lines": [
+      {
+        "productPublicId": "8587bc6e-9218-809f-a3cf-d75b4b5ea1b8",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "b14d4d77-71c1-866d-948a-55346d4a173b",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "cdd5dca0-b3b5-8227-90bc-c79fe2a28015",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 205700,
+      "discount": 9435,
+      "total": 196265,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        9435,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-10-09T20:16:57.236037+03:00",
+    "lines": [
+      {
+        "productPublicId": "3c44268b-1b82-8ef1-84da-a78992ad9373",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "9a8b57f9-b077-8176-b304-308b193cc70d",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "05083541-9890-829f-a30f-248b7e689b2c",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "fbe3c840-9a9a-89bd-b8ce-360fa8baff36",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "0a051cc5-ac66-85cf-8a11-7726fa1ab845",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 459200,
+      "discount": 28305,
+      "total": 430895,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        9435,
+        0,
+        0,
+        18870
+      ]
+    }
+  },
+  {
+    "now": "2026-03-26T11:40:59.000564+02:00",
+    "lines": [
+      {
+        "productPublicId": "f0482f3c-d633-823c-a2f0-f84e80922641",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "75520cbe-0314-8e11-b569-f9617af72194",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "761676cd-a4fd-8552-9611-2143e7fffc25",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "0a051cc5-ac66-85cf-8a11-7726fa1ab845",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 185500,
+      "discount": 9435,
+      "total": 176065,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        0,
+        9435,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-03-05T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "4ce5a513-2b90-889c-8b47-bd30def6f0a8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 24000,
+      "discount": 0,
+      "total": 24000,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-06-14T23:02:47.324281+03:00",
+    "lines": [
+      {
+        "productPublicId": "74d7c289-3393-8a94-9ef4-77868e7cc641",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 3
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 3,
+        "code": "JASSMIN10",
+        "kind": "percent",
+        "value": "10.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 188700,
+      "discount": 18870,
+      "total": 169830,
+      "freeShipping": true,
+      "discountId": 3,
+      "allocation": [
+        18870
+      ]
+    }
+  },
+  {
+    "now": "2026-03-26T03:27:03.483249+02:00",
+    "lines": [
+      {
+        "productPublicId": "4ce5a513-2b90-889c-8b47-bd30def6f0a8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "b96b42fd-7f75-851b-912a-72490d10b76c",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "3ced83e8-724a-830e-9bad-6aafc909056e",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 221600,
+      "discount": 22100,
+      "total": 199500,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        22100,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-08-02T04:27:46.377201+03:00",
+    "lines": [
+      {
+        "productPublicId": "505adbab-c55b-8fd5-b11e-02026e20fd2a",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "b299c4bc-469f-86f9-9c8b-8bf60fb68f13",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7fb46cd1-4d40-8d0e-9407-b34a0679aef0",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "981dd4f2-f595-8048-8d88-906cc61abefe",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 120000,
+      "discount": 22100,
+      "total": 97900,
+      "freeShipping": false,
+      "discountId": 1,
+      "allocation": [
+        14734,
+        7366,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-05-06T18:22:18.999607+03:00",
+    "lines": [
+      {
+        "productPublicId": "b0f342aa-06ba-8554-87e2-397c58d61b29",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "2fb31ddb-7085-8534-9892-d1623d673d9d",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "3ced83e8-724a-830e-9bad-6aafc909056e",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 319600,
+      "discount": 0,
+      "total": 319600,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-03-01T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "238d3f89-2b4d-8d3a-a23e-7c6979d44f10",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "b0f342aa-06ba-8554-87e2-397c58d61b29",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "bd52e728-ddb9-8925-ae73-b8a779939def",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "fbe3c840-9a9a-89bd-b8ce-360fa8baff36",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "238d3f89-2b4d-8d3a-a23e-7c6979d44f10",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 447500,
+      "discount": 67125,
+      "total": 380375,
+      "freeShipping": true,
+      "discountId": 6,
+      "allocation": [
+        43605,
+        6885,
+        9435,
+        3600,
+        3600
+      ]
+    }
+  },
+  {
+    "now": "2025-06-13T14:02:48.407599+03:00",
+    "lines": [
+      {
+        "productPublicId": "e625c058-fd99-8eba-b8dc-76b7f01ba3db",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "9e8365d8-f018-8e4a-9865-6bc01e3ce6fa",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 3,
+        "code": "JASSMIN10",
+        "kind": "percent",
+        "value": "10.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 183600,
+      "discount": 18360,
+      "total": 165240,
+      "freeShipping": true,
+      "discountId": 3,
+      "allocation": [
+        13770,
+        4590
+      ]
+    }
+  },
+  {
+    "now": "2025-07-25T17:26:53.825332+03:00",
+    "lines": [
+      {
+        "productPublicId": "78f26be6-2fa3-8c92-97af-01d51d23e1dc",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 91800,
+      "discount": 0,
+      "total": 91800,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-04-27T08:48:26.939673+03:00",
+    "lines": [
+      {
+        "productPublicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "272b0008-bd13-898f-967b-7ca8b0cf46cb",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7074ebdd-10c0-88b2-b4fe-caa1d2838237",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "90ed486e-94d1-8296-b203-9f6565a1e47a",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "b0f342aa-06ba-8554-87e2-397c58d61b29",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 5,
+        "code": "VESNA2025",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2025-03-01T00:00:00+02:00",
+        "endsAt": "2025-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 365500,
+      "discount": 23970,
+      "total": 341530,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        0,
+        14535,
+        9435,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-01-17T18:25:04.934934+02:00",
+    "lines": [
+      {
+        "productPublicId": "8587bc6e-9218-809f-a3cf-d75b4b5ea1b8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "67973fcc-144d-8953-8657-8a7cafed615d",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "75520cbe-0314-8e11-b569-f9617af72194",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 228800,
+      "discount": 22100,
+      "total": 206700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        7366,
+        14734,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-03-05T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "16c4d836-6f51-8b90-a08a-edf451c287e6",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "85619d6d-b701-8d52-a464-39e1411635af",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "adffdd0e-db3b-8c86-b89e-653f1892fe6f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7d531029-1360-8a22-9234-fe003dfaed3c",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "1c9299bf-9dcd-840a-92f0-8de81b832549",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "c2e424d7-f1c1-8979-ae79-559aa243609f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "e625c058-fd99-8eba-b8dc-76b7f01ba3db",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "30de4a18-3265-801a-98f9-b26e148c0b4d",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7075fa6b-8eb9-8c82-ad84-50b7e72e3560",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 336000,
+      "discount": 66300,
+      "total": 269700,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        14733,
+        22103,
+        7366,
+        7366,
+        7366,
+        7366,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-10-25T21:17:08.478168+03:00",
+    "lines": [
+      {
+        "productPublicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "90ed486e-94d1-8296-b203-9f6565a1e47a",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 4,
+        "code": "VESNA2024",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2024-03-01T00:00:00+02:00",
+        "endsAt": "2024-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 108800,
+      "discount": 6885,
+      "total": 101915,
+      "freeShipping": false,
+      "discountId": 2,
+      "allocation": [
+        6885,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-06-24T04:08:52.582567+03:00",
+    "lines": [
+      {
+        "productPublicId": "95f80346-f714-8518-b4c6-d0a5e9d1c5cf",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "505adbab-c55b-8fd5-b11e-02026e20fd2a",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "01a348b6-ba22-8808-aeb4-51d6e57fac9c",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7a383909-1431-853a-9dbb-b4adc64fdf85",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "e0128797-9a84-82ed-9ae1-3095aecb29e3",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 265200,
+      "discount": 14535,
+      "total": 250665,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        0,
+        0,
+        0,
+        14535
+      ]
+    }
+  },
+  {
+    "now": "2024-06-10T02:06:07.188275+03:00",
+    "lines": [
+      {
+        "productPublicId": "4168cbc7-0093-8480-abc6-d749fdecd225",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "e162a3db-2e16-831d-9b41-4a3c3a798e43",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "c9872320-524b-8eee-856c-8605faf46b44",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "403faf10-bc78-82ed-9690-64c54c7cf416",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "cbba8cb7-61f9-8870-826e-64a94433e2ef",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 175700,
+      "discount": 22100,
+      "total": 153600,
+      "freeShipping": true,
+      "discountId": 1,
+      "allocation": [
+        14734,
+        7366,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-12-15T21:11:39.295734+02:00",
+    "lines": [
+      {
+        "productPublicId": "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "eccce470-8402-804c-be83-d08dedebf8d0",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "e82c581f-eeb8-8d62-b074-b48e341f2f77",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 2
+      },
+      {
+        "productPublicId": "ffbaf9ae-36d2-8b98-86ff-43b57bf70380",
+        "volumeMl": 100,
+        "packSize": 1,
+        "unitPrice": 96900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 532100,
+      "discount": 35190,
+      "total": 496910,
+      "freeShipping": true,
+      "discountId": 2,
+      "allocation": [
+        0,
+        13770,
+        14535,
+        6885,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-03-08T12:00:00+02:00",
+    "lines": [
+      {
+        "productPublicId": "d6e7d789-b3a1-8030-a64b-9601dd07827f",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 48000,
+      "discount": 0,
+      "total": 48000,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2026-07-18T13:44:46.955184+03:00",
+    "lines": [
+      {
+        "productPublicId": "d4aea1c3-6902-8abe-8eaa-18d5c5b277cf",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 24000,
+      "discount": 0,
+      "total": 24000,
+      "freeShipping": false,
+      "discountId": null,
+      "allocation": [
+        0
+      ]
+    }
+  },
+  {
+    "now": "2024-06-17T06:10:43.404912+03:00",
+    "lines": [
+      {
+        "productPublicId": "3b27366a-53a4-8f77-ac45-1f456bad16c8",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "7074ebdd-10c0-88b2-b4fe-caa1d2838237",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "193552cb-02c6-8f90-8db1-dc3f8c8663bf",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "83695080-2c78-885b-870d-d141b7616be3",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "5532d1c7-db4f-84d8-8572-741bc185fe91",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "b4c5d12f-cc07-8c93-a6b1-43d318a16f37",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 144000,
+      "discount": 44200,
+      "total": 99800,
+      "freeShipping": false,
+      "discountId": 1,
+      "allocation": [
+        7370,
+        7366,
+        7366,
+        7366,
+        7366,
+        7366
+      ]
+    }
+  },
+  {
+    "now": "2024-05-06T23:34:49.567144+03:00",
+    "lines": [
+      {
+        "productPublicId": "f42b7182-d76a-8b1b-94b6-8a59c4b641d8",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "d328f9e5-c4bf-84bf-b52b-98af9e6b0177",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "db09263a-e42c-8654-b973-27c5d50d73d8",
+        "volumeMl": 30,
+        "packSize": 1,
+        "unitPrice": 45900,
+        "quantity": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 200600,
+      "discount": 0,
+      "total": 200600,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "now": "2025-10-30T14:30:15.020944+02:00",
+    "lines": [
+      {
+        "productPublicId": "3b27366a-53a4-8f77-ac45-1f456bad16c8",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 3
+      },
+      {
+        "productPublicId": "6fee3f20-a688-89c7-a585-a3ca24b91680",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "338a2e7d-b953-80ff-963e-5a871d32398d",
+        "volumeMl": 10,
+        "packSize": 1,
+        "unitPrice": 24000,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "753ca70e-4a73-8fe2-96c2-9260daefd2ba",
+        "volumeMl": 50,
+        "packSize": 1,
+        "unitPrice": 62900,
+        "quantity": 1
+      },
+      {
+        "productPublicId": "d6e7d789-b3a1-8030-a64b-9601dd07827f",
+        "volumeMl": 5,
+        "packSize": 1,
+        "unitPrice": 11900,
+        "quantity": 2
+      }
+    ],
+    "candidates": [
+      {
+        "id": 1,
+        "code": null,
+        "kind": "fixed_price_set",
+        "value": "499.00",
+        "scopeVolumesMl": [
+          10
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 3,
+        "maxSets": 3,
+        "startsAt": null,
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 2,
+        "code": null,
+        "kind": "percent_every_nth",
+        "value": "15.00",
+        "scopeVolumesMl": [
+          30,
+          50,
+          100
+        ],
+        "scopeProductPublicIds": null,
+        "scopePackSize": 1,
+        "minQuantity": 2,
+        "maxSets": null,
+        "startsAt": "2025-09-01T00:00:00+03:00",
+        "endsAt": null,
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      },
+      {
+        "id": 6,
+        "code": "VESNA2026",
+        "kind": "percent",
+        "value": "15.00",
+        "scopeVolumesMl": null,
+        "scopeProductPublicIds": null,
+        "scopePackSize": null,
+        "minQuantity": 1,
+        "maxSets": null,
+        "startsAt": "2026-03-01T00:00:00+02:00",
+        "endsAt": "2026-03-09T00:00:00+02:00",
+        "maxRedemptions": null,
+        "redemptionCount": 0,
+        "active": true
+      }
+    ],
+    "expected": {
+      "subtotal": 158300,
+      "discount": 0,
+      "total": 158300,
+      "freeShipping": true,
+      "discountId": null,
+      "allocation": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  }
+]

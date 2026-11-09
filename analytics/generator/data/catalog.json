@@ -1,0 +1,1551 @@
+{
+  "products": [
+    {
+      "publicId": "adffdd0e-db3b-8c86-b89e-653f1892fe6f",
+      "title": "La Vie Est Belle",
+      "brand": "Lancôme",
+      "gender": "women",
+      "storeCode": "1-L",
+      "fragranceFamilies": [
+        "фруктові",
+        "квіткові"
+      ],
+      "popularRank": 1
+    },
+    {
+      "publicId": "4fdc96c1-fd30-8fbd-bde2-0646bdb9a8b0",
+      "title": "Lolita Lempicka",
+      "brand": "Lolita Lempicka",
+      "gender": "women",
+      "storeCode": "11-L",
+      "fragranceFamilies": [
+        "квіткові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "87d2a746-1b93-87f2-9d35-9df20d6646c0",
+      "title": "Davidoff Cool Water Woman",
+      "brand": "Davidoff",
+      "gender": "women",
+      "storeCode": "1-D",
+      "fragranceFamilies": [
+        "квіткові",
+        "водяні"
+      ],
+      "popularRank": 2
+    },
+    {
+      "publicId": "505adbab-c55b-8fd5-b11e-02026e20fd2a",
+      "title": "D&G Pour Femme",
+      "brand": "Dolce & Gabbana",
+      "gender": "women",
+      "storeCode": "2-D",
+      "fragranceFamilies": [
+        "квіткові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "761676cd-a4fd-8552-9611-2143e7fffc25",
+      "title": "D&G Light Blue",
+      "brand": "Dolce & Gabbana",
+      "gender": "women",
+      "storeCode": "3-D",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "eccce470-8402-804c-be83-d08dedebf8d0",
+      "title": "Dior Miss Dior Cherie",
+      "brand": "Dior",
+      "gender": "women",
+      "storeCode": "10-D",
+      "fragranceFamilies": [
+        "шипрові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "d5516865-27a9-8ac1-907a-0969dd9445bc",
+      "title": "Dolce & Gabbana Anthology L'Imperatrice 3",
+      "brand": "Dolce & Gabbana",
+      "gender": "women",
+      "storeCode": "15-D",
+      "fragranceFamilies": [
+        "квіткові",
+        "водяні"
+      ],
+      "popularRank": 3
+    },
+    {
+      "publicId": "b299c4bc-469f-86f9-9c8b-8bf60fb68f13",
+      "title": "Donna Sergio Tacchini",
+      "brand": "Sergio Tacchini",
+      "gender": "women",
+      "storeCode": "18-D",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 4
+    },
+    {
+      "publicId": "6b95f73c-79e4-8e66-aae3-ce452a2ce364",
+      "title": "Davidoff Echo",
+      "brand": "Davidoff",
+      "gender": "women",
+      "storeCode": "19-D",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 5
+    },
+    {
+      "publicId": "c82e4c9e-f5bf-8ceb-b8b7-41a2ba87bd06",
+      "title": "Donna Karan Be Delicious",
+      "brand": "DKNY",
+      "gender": "women",
+      "storeCode": "21-D",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 6
+    },
+    {
+      "publicId": "f42b7182-d76a-8b1b-94b6-8a59c4b641d8",
+      "title": "Versace Eros",
+      "brand": "Versace",
+      "gender": "women",
+      "storeCode": "1-E",
+      "fragranceFamilies": [
+        "деревні",
+        "мускусні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "95f80346-f714-8518-b4c6-d0a5e9d1c5cf",
+      "title": "Escada Miami Blossom",
+      "brand": "Escada",
+      "gender": "women",
+      "storeCode": "2-E",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 7
+    },
+    {
+      "publicId": "9a8b57f9-b077-8176-b304-308b193cc70d",
+      "title": "Escada Collection",
+      "brand": "Escada",
+      "gender": "women",
+      "storeCode": "3-E",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "338a2e7d-b953-80ff-963e-5a871d32398d",
+      "title": "Escada Magnetism",
+      "brand": "Escada",
+      "gender": "women",
+      "storeCode": "4-E",
+      "fragranceFamilies": [
+        "східні",
+        "гурманські"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "d328f9e5-c4bf-84bf-b52b-98af9e6b0177",
+      "title": "Escada Into The Blue",
+      "brand": "Escada",
+      "gender": "women",
+      "storeCode": "5-E",
+      "fragranceFamilies": [
+        "квіткові",
+        "водяні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "c2e424d7-f1c1-8979-ae79-559aa243609f",
+      "title": "Moon Sparkle",
+      "brand": "Escada",
+      "gender": "women",
+      "storeCode": "12-E",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "f3a57f4c-2936-823f-9c10-9d5391e0efc3",
+      "title": "Gritti Tutu",
+      "brand": "Gritti",
+      "gender": "women",
+      "storeCode": "24-G",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "fdacb16e-ec45-805e-b2fd-19953e5cc753",
+      "title": "Play For Her",
+      "brand": "Givenchy",
+      "gender": "women",
+      "storeCode": "6-G",
+      "fragranceFamilies": [
+        "квіткові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "272b0008-bd13-898f-967b-7ca8b0cf46cb",
+      "title": "Givenchy Absolutely Irresistible",
+      "brand": "Givenchy",
+      "gender": "women",
+      "storeCode": "9-G",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "7d531029-1360-8a22-9234-fe003dfaed3c",
+      "title": "Ange Ou Demon Elixir",
+      "brand": "Givenchy",
+      "gender": "women",
+      "storeCode": "11-G",
+      "fragranceFamilies": [
+        "квіткові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "ac8d5217-6a51-89dd-8c69-cd24bf66ed5e",
+      "title": "Gucci Flora",
+      "brand": "Gucci",
+      "gender": "women",
+      "storeCode": "12-G",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "90b13bda-eb4c-8e38-9390-2127afd4e5c8",
+      "title": "Hot Couture",
+      "brand": "Givenchy",
+      "gender": "women",
+      "storeCode": "1-H",
+      "fragranceFamilies": [
+        "квіткові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "3805a370-ce93-84ff-beab-cd677bfbddf0",
+      "title": "Hugo Boss Woman",
+      "brand": "Hugo Boss",
+      "gender": "women",
+      "storeCode": "2-H",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 8
+    },
+    {
+      "publicId": "56aa2769-36ba-890a-a4d4-89cc8723df63",
+      "title": "Hypnotic Poison",
+      "brand": "Dior",
+      "gender": "women",
+      "storeCode": "3-H",
+      "fragranceFamilies": [
+        "східні",
+        "ванільні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "db09263a-e42c-8654-b973-27c5d50d73d8",
+      "title": "Boss Alive",
+      "brand": "Hugo Boss",
+      "gender": "women",
+      "storeCode": "5-H",
+      "fragranceFamilies": [
+        "деревні",
+        "ароматичні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "9e8365d8-f018-8e4a-9865-6bc01e3ce6fa",
+      "title": "Hugo Boss Nuit",
+      "brand": "Hugo Boss",
+      "gender": "women",
+      "storeCode": "8-H",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": 9
+    },
+    {
+      "publicId": "200c18c7-a15b-8a77-b514-995b3027ea70",
+      "title": "Hugo Boss Orange",
+      "brand": "Hugo Boss",
+      "gender": "women",
+      "storeCode": "9-H",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "4ce5a513-2b90-889c-8b47-bd30def6f0a8",
+      "title": "Jimmy Choo Blossom",
+      "brand": "Jimmy Choo",
+      "gender": "women",
+      "storeCode": "2-J",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 10
+    },
+    {
+      "publicId": "87fd9ab1-e114-875b-b018-d8faeb50ea2a",
+      "title": "Blackberry & Bay",
+      "brand": "Jo Malone London",
+      "gender": "women",
+      "storeCode": "3-J",
+      "fragranceFamilies": [
+        "фруктові",
+        "зелені"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "fec8781f-e866-8a59-9691-1a717bceb372",
+      "title": "Jennifer Lopez Still",
+      "brand": "Jennifer Lopez",
+      "gender": "women",
+      "storeCode": "8-J",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "b14d4d77-71c1-866d-948a-55346d4a173b",
+      "title": "JPG Gaultier 2",
+      "brand": "Jean Paul Gaultier",
+      "gender": "unisex",
+      "storeCode": "9-J",
+      "fragranceFamilies": [
+        "східні",
+        "гурманські"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "fbe3c840-9a9a-89bd-b8ce-360fa8baff36",
+      "title": "Jil Sander",
+      "brand": "Jil Sander",
+      "gender": "women",
+      "storeCode": "10-J",
+      "fragranceFamilies": [
+        "квіткові",
+        "альдегідні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "1c9299bf-9dcd-840a-92f0-8de81b832549",
+      "title": "Marry Me",
+      "brand": "Lanvin",
+      "gender": "women",
+      "storeCode": "7-L",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "85619d6d-b701-8d52-a464-39e1411635af",
+      "title": "Lift",
+      "brand": "Lolita Lempicka",
+      "gender": "women",
+      "storeCode": "11-L",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "f260c06f-9f38-8ca2-8838-b773b5806e8a",
+      "title": "Lancome Hypnose",
+      "brand": "Lancôme",
+      "gender": "women",
+      "storeCode": "12-L",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "56f07946-8c2e-8d86-98ba-c331105e05f7",
+      "title": "Lacoste",
+      "brand": "Lacoste",
+      "gender": "women",
+      "storeCode": "13-L",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "9cfaac7f-702a-8a40-806a-9fdab75b4297",
+      "title": "Eclat D'Arpege",
+      "brand": "Lanvin",
+      "gender": "women",
+      "storeCode": "17-L",
+      "fragranceFamilies": [
+        "квіткові",
+        "зелені"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "0a051cc5-ac66-85cf-8a11-7726fa1ab845",
+      "title": "Moschino Funny",
+      "brand": "Moschino",
+      "gender": "women",
+      "storeCode": "2-M",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "75520cbe-0314-8e11-b569-f9617af72194",
+      "title": "Magie Noire",
+      "brand": "Lancôme",
+      "gender": "women",
+      "storeCode": "3-M",
+      "fragranceFamilies": [
+        "шипрові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "cbba8cb7-61f9-8870-826e-64a94433e2ef",
+      "title": "Marc Jacobs Daisy",
+      "brand": "Marc Jacobs",
+      "gender": "women",
+      "storeCode": "4-M",
+      "fragranceFamilies": [
+        "квіткові",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "5ea3d431-f21b-893c-8a75-9003e538e1b5",
+      "title": "Noa",
+      "brand": "Cacharel",
+      "gender": "women",
+      "storeCode": "1-N",
+      "fragranceFamilies": [
+        "квіткові",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "67973fcc-144d-8953-8657-8a7cafed615d",
+      "title": "Ex Nihilo Fleur Narcotique",
+      "brand": "Ex Nihilo",
+      "gender": "women",
+      "storeCode": "3-N",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "2cdccdfe-c920-88b8-99be-07b203b70582",
+      "title": "Narciso Rodriguez For Her",
+      "brand": "Narciso Rodriguez",
+      "gender": "women",
+      "storeCode": "6-N",
+      "fragranceFamilies": [
+        "квіткові",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "b96b42fd-7f75-851b-912a-72490d10b76c",
+      "title": "Love In Paris",
+      "brand": "Nina Ricci",
+      "gender": "women",
+      "storeCode": "10-N",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "753ca70e-4a73-8fe2-96c2-9260daefd2ba",
+      "title": "Black Opium",
+      "brand": "Yves Saint Laurent",
+      "gender": "women",
+      "storeCode": "2-O",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "34218a73-8a98-88fe-aacd-0b911e2c6df5",
+      "title": "Omnia Bvlgari",
+      "brand": "Bvlgari",
+      "gender": "women",
+      "storeCode": "12-O",
+      "fragranceFamilies": [
+        "квіткові",
+        "водяні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "92f877bf-a5e9-820e-99ce-2f66cb3addb5",
+      "title": "Xs Black",
+      "brand": "Paco Rabanne",
+      "gender": "women",
+      "storeCode": "1-P",
+      "fragranceFamilies": [
+        "квіткові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "38f4e3fb-a6c9-837a-8b43-95b779c46620",
+      "title": "Paris",
+      "brand": "Yves Saint Laurent",
+      "gender": "women",
+      "storeCode": "2-P",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "63cc02c1-022c-86b8-b0a0-c4e5678ab21e",
+      "title": "Fame Paco Rabanne",
+      "brand": "Paco Rabanne",
+      "gender": "women",
+      "storeCode": "4-P",
+      "fragranceFamilies": [
+        "деревні",
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "e043bf75-27f9-8dae-a38c-8864dccf1483",
+      "title": "Lady Million",
+      "brand": "Paco Rabanne",
+      "gender": "women",
+      "storeCode": "7-P",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 11
+    },
+    {
+      "publicId": "78f26be6-2fa3-8c92-97af-01d51d23e1dc",
+      "title": "Premier Jour",
+      "brand": "Nina Ricci",
+      "gender": "women",
+      "storeCode": "9-P",
+      "fragranceFamilies": [
+        "цитрусові",
+        "свіжі"
+      ],
+      "popularRank": 12
+    },
+    {
+      "publicId": "238d3f89-2b4d-8d3a-a23e-7c6979d44f10",
+      "title": "Pure Poison",
+      "brand": "Dior",
+      "gender": "women",
+      "storeCode": "11-P",
+      "fragranceFamilies": [
+        "квіткові",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "79d20987-c138-8be1-b362-08a5fab511c8",
+      "title": "Roberto Cavalli",
+      "brand": "Roberto Cavalli",
+      "gender": "women",
+      "storeCode": "1-R",
+      "fragranceFamilies": [
+        "східні",
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "16c4d836-6f51-8b90-a08a-edf451c287e6",
+      "title": "Rush",
+      "brand": "Gucci",
+      "gender": "women",
+      "storeCode": "5-R",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "9095fe37-75b1-8cd0-a404-a96b06f0d696",
+      "title": "Rush 2",
+      "brand": "Gucci",
+      "gender": "women",
+      "storeCode": "9-R",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "a9772521-20f4-8750-9d26-dcfc22fb6fb3",
+      "title": "Ralph Lauren Ralph",
+      "brand": "Ralph Lauren",
+      "gender": "women",
+      "storeCode": "10-R",
+      "fragranceFamilies": [
+        "цитрусові",
+        "квіткові"
+      ],
+      "popularRank": 13
+    },
+    {
+      "publicId": "2fb31ddb-7085-8534-9892-d1623d673d9d",
+      "title": "Scandal Jean Paul Gaultier",
+      "brand": "Jean Paul Gaultier",
+      "gender": "women",
+      "storeCode": "1-S",
+      "fragranceFamilies": [
+        "квіткові",
+        "шипрові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "e625c058-fd99-8eba-b8dc-76b7f01ba3db",
+      "title": "Sospiro Erba Pura",
+      "brand": "Sospiro",
+      "gender": "unisex",
+      "storeCode": "4-S",
+      "fragranceFamilies": [
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "193552cb-02c6-8f90-8db1-dc3f8c8663bf",
+      "title": "Shiseido Zen",
+      "brand": "Shiseido",
+      "gender": "women",
+      "storeCode": "8-S",
+      "fragranceFamilies": [
+        "квіткові",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "74d7c289-3393-8a94-9ef4-77868e7cc641",
+      "title": "Sexy Graffiti Escada",
+      "brand": "Escada",
+      "gender": "women",
+      "storeCode": "12-S",
+      "fragranceFamilies": [
+        "квіткові",
+        "свіжі"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "7a383909-1431-853a-9dbb-b4adc64fdf85",
+      "title": "Tease Dreamer V&S",
+      "brand": "Victoria's Secret",
+      "gender": "women",
+      "storeCode": "3-T",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "23b91ff9-bbd9-803b-8b17-a92ecb4fc7a2",
+      "title": "Kirke Tiziana Terenzi",
+      "brand": "Tiziana Terenzi",
+      "gender": "women",
+      "storeCode": "7-T",
+      "fragranceFamilies": [
+        "шипрові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "981dd4f2-f595-8048-8d88-906cc61abefe",
+      "title": "Viktor Rolf Flowerbomb",
+      "brand": "Viktor&Rolf",
+      "gender": "women",
+      "storeCode": "1-V",
+      "fragranceFamilies": [
+        "фруктові",
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "c9872320-524b-8eee-856c-8605faf46b44",
+      "title": "Versace Miss Pink",
+      "brand": "Versace",
+      "gender": "women",
+      "storeCode": "2-V",
+      "fragranceFamilies": [
+        "фруктові",
+        "квіткові"
+      ],
+      "popularRank": 14
+    },
+    {
+      "publicId": "bd52e728-ddb9-8925-ae73-b8a779939def",
+      "title": "Victoria's Secret Bombshell",
+      "brand": "Victoria's Secret",
+      "gender": "women",
+      "storeCode": "3-V",
+      "fragranceFamilies": [
+        "фруктові",
+        "квіткові"
+      ],
+      "popularRank": 15
+    },
+    {
+      "publicId": "7075fa6b-8eb9-8c82-ad84-50b7e72e3560",
+      "title": "Very Irresistible",
+      "brand": "Givenchy",
+      "gender": "women",
+      "storeCode": "4-V",
+      "fragranceFamilies": [
+        "квіткові",
+        "фруктові"
+      ],
+      "popularRank": 16
+    },
+    {
+      "publicId": "fcb03800-34cb-84c5-9a60-ceb4ffbbec9f",
+      "title": "Versace Bright Crystal",
+      "brand": "Versace",
+      "gender": "women",
+      "storeCode": "5-V",
+      "fragranceFamilies": [
+        "квіткові"
+      ],
+      "popularRank": 17
+    },
+    {
+      "publicId": "1c8835f6-ddae-8d4e-9e47-c02ac8b94a71",
+      "title": "Versense Versace",
+      "brand": "Versace",
+      "gender": "women",
+      "storeCode": "6-V",
+      "fragranceFamilies": [
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "4168cbc7-0093-8480-abc6-d749fdecd225",
+      "title": "Victoria's Secret Paradise",
+      "brand": "Victoria's Secret",
+      "gender": "women",
+      "storeCode": "2-W",
+      "fragranceFamilies": [
+        "фруктові",
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "6e289de2-6240-8524-89bb-1bbe59cc2b20",
+      "title": "Bombshell Isle V&S",
+      "brand": "Victoria's Secret",
+      "gender": "women",
+      "storeCode": "3-W",
+      "fragranceFamilies": [
+        "свіжі",
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "f7193041-e75b-8dfd-a24f-62936adc8c5c",
+      "title": "Armand Basi In Red",
+      "brand": "Armand Basi",
+      "gender": "women",
+      "storeCode": "3-Z",
+      "fragranceFamilies": [
+        "фруктові",
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "ffdadd65-d4e9-80d5-b351-5807fb241296",
+      "title": "D&G L'Imperatrice 3",
+      "brand": "Dolce & Gabbana",
+      "gender": "women",
+      "storeCode": "14-Z",
+      "fragranceFamilies": [
+        "деревні",
+        "квіткові"
+      ],
+      "popularRank": 18
+    },
+    {
+      "publicId": "7fb46cd1-4d40-8d0e-9407-b34a0679aef0",
+      "title": "Montale Roses Musk",
+      "brand": "Montale",
+      "gender": "women",
+      "storeCode": "29-Z",
+      "fragranceFamilies": [
+        "квіткові",
+        "мускусні"
+      ],
+      "popularRank": 19
+    },
+    {
+      "publicId": "6dda773e-42cd-8510-b9e1-7c88d6010d53",
+      "title": "Montale Vanille Absolu",
+      "brand": "Montale",
+      "gender": "women",
+      "storeCode": "30-Z",
+      "fragranceFamilies": [
+        "східні",
+        "гурманські"
+      ],
+      "popularRank": 20
+    },
+    {
+      "publicId": "63ce05eb-4858-86a5-925e-b07a2c1913a7",
+      "title": "Vanilla Blend",
+      "brand": "Zarkoperfume",
+      "gender": "unisex",
+      "storeCode": "31-Z",
+      "fragranceFamilies": [
+        "деревні",
+        "мускусні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "83695080-2c78-885b-870d-d141b7616be3",
+      "title": "A*Men",
+      "brand": "Mugler",
+      "gender": "men",
+      "storeCode": "1-A",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "e162a3db-2e16-831d-9b41-4a3c3a798e43",
+      "title": "Acqua Di Gio",
+      "brand": "Giorgio Armani",
+      "gender": "men",
+      "storeCode": "2-A",
+      "fragranceFamilies": [
+        "водяні",
+        "фужерні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "ffbaf9ae-36d2-8b98-86ff-43b57bf70380",
+      "title": "Allure Home",
+      "brand": "Chanel",
+      "gender": "men",
+      "storeCode": "3-A",
+      "fragranceFamilies": [
+        "деревні",
+        "фужерні"
+      ],
+      "popularRank": 21
+    },
+    {
+      "publicId": "e82c581f-eeb8-8d62-b074-b48e341f2f77",
+      "title": "Hayati Attar Collection",
+      "brand": "Attar Collection",
+      "gender": "men",
+      "storeCode": "4-A",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "41dfadb7-cd8c-80e0-a16b-37a610664743",
+      "title": "Antonio Banderas Blue",
+      "brand": "Antonio Banderas",
+      "gender": "men",
+      "storeCode": "5-A",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "f0482f3c-d633-823c-a2f0-f84e80922641",
+      "title": "Azzaro Rex",
+      "brand": "Azzaro",
+      "gender": "men",
+      "storeCode": "6-A",
+      "fragranceFamilies": [
+        "деревні",
+        "цитрусові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "989a2355-4bfb-8716-a19f-44e5b2f95ea7",
+      "title": "Armani Code",
+      "brand": "Giorgio Armani",
+      "gender": "men",
+      "storeCode": "7-A",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": 22
+    },
+    {
+      "publicId": "27f1fdfa-02cb-877e-aed2-131b480db33a",
+      "title": "Armani Zeus",
+      "brand": "Giorgio Armani",
+      "gender": "men",
+      "storeCode": "8-A",
+      "fragranceFamilies": [
+        "деревні",
+        "фужерні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "a69ed314-ade2-8af4-838d-5806c0741750",
+      "title": "Baccarat Rouge 540",
+      "brand": "Maison Francis Kurkdjian",
+      "gender": "unisex",
+      "storeCode": "9-A",
+      "fragranceFamilies": [
+        "східні",
+        "деревні"
+      ],
+      "popularRank": 23
+    },
+    {
+      "publicId": "338452cf-8d5a-81b0-b66d-55bbf7f77880",
+      "title": "Boss",
+      "brand": "Hugo Boss",
+      "gender": "men",
+      "storeCode": "10-A",
+      "fragranceFamilies": [
+        "деревні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "3ced83e8-724a-830e-9bad-6aafc909056e",
+      "title": "Bvlgari Elix",
+      "brand": "Bvlgari",
+      "gender": "unisex",
+      "storeCode": "12-A",
+      "fragranceFamilies": [
+        "зелені",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "4ece67d1-32d0-8e72-be6b-bd64ae49eae0",
+      "title": "Carolina Herrera 212",
+      "brand": "Carolina Herrera",
+      "gender": "men",
+      "storeCode": "1-C",
+      "fragranceFamilies": [
+        "фруктові",
+        "шипрові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "6fee3f20-a688-89c7-a585-a3ca24b91680",
+      "title": "Christian Dior Sauvage",
+      "brand": "Dior",
+      "gender": "men",
+      "storeCode": "2-C",
+      "fragranceFamilies": [
+        "фужерні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "7e792725-99f1-8e30-b628-8a0ed36c8f34",
+      "title": "Creed Aventus",
+      "brand": "Creed",
+      "gender": "men",
+      "storeCode": "3-C",
+      "fragranceFamilies": [
+        "цитрусові",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "890868e1-41cd-87d4-86ec-a8df338fb584",
+      "title": "Paco Rabanne Invictus",
+      "brand": "Paco Rabanne",
+      "gender": "men",
+      "storeCode": "4-C",
+      "fragranceFamilies": [
+        "деревні",
+        "водяні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "26d9421b-c5d3-8672-9699-2f146b51f51c",
+      "title": "Clinique Happy For Men",
+      "brand": "Clinique",
+      "gender": "men",
+      "storeCode": "5-C",
+      "fragranceFamilies": [
+        "деревні",
+        "цитрусові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "3c44268b-1b82-8ef1-84da-a78992ad9373",
+      "title": "Calvin Klein Euphoria",
+      "brand": "Calvin Klein",
+      "gender": "men",
+      "storeCode": "6-C",
+      "fragranceFamilies": [
+        "деревні",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "a39e2df5-e9e7-84c6-b509-4864cb46e815",
+      "title": "VIP Men 212 C.K.",
+      "brand": "Carolina Herrera",
+      "gender": "men",
+      "storeCode": "7-C",
+      "fragranceFamilies": [
+        "деревні",
+        "східні"
+      ],
+      "popularRank": 24
+    },
+    {
+      "publicId": "b160b334-df79-8926-a3dc-bdd7e822453f",
+      "title": "Allure Sport",
+      "brand": "Chanel",
+      "gender": "men",
+      "storeCode": "17-C",
+      "fragranceFamilies": [
+        "деревні",
+        "водяні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "c7d14b31-b0bc-8ee6-ba7a-4190d3850a46",
+      "title": "Diesel Only The Brave",
+      "brand": "Diesel",
+      "gender": "men",
+      "storeCode": "1-D",
+      "fragranceFamilies": [
+        "східні",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "e0128797-9a84-82ed-9ae1-3095aecb29e3",
+      "title": "Davidoff Cool Water Man",
+      "brand": "Davidoff",
+      "gender": "men",
+      "storeCode": "2-D",
+      "fragranceFamilies": [
+        "водяні",
+        "фужерні"
+      ],
+      "popularRank": 25
+    },
+    {
+      "publicId": "05083541-9890-829f-a30f-248b7e689b2c",
+      "title": "D&G Pine Apple",
+      "brand": "Dolce & Gabbana",
+      "gender": "unisex",
+      "storeCode": "3-D",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "13496011-5abe-88dc-9d2a-d0de6e0b99e5",
+      "title": "Davidoff Adventure",
+      "brand": "Davidoff",
+      "gender": "men",
+      "storeCode": "4-D",
+      "fragranceFamilies": [
+        "деревні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "8587bc6e-9218-809f-a3cf-d75b4b5ea1b8",
+      "title": "D&G The One",
+      "brand": "Dolce & Gabbana",
+      "gender": "men",
+      "storeCode": "5-D",
+      "fragranceFamilies": [
+        "деревні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "d3a64be9-dcf9-87de-ba98-bed9915238fb",
+      "title": "Diesel Fuel For Life",
+      "brand": "Diesel",
+      "gender": "men",
+      "storeCode": "6-D",
+      "fragranceFamilies": [
+        "деревні",
+        "фужерні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "23bb4d67-7a58-8723-a834-1441cee9d956",
+      "title": "Davidoff Champion",
+      "brand": "Davidoff",
+      "gender": "men",
+      "storeCode": "7-D",
+      "fragranceFamilies": [
+        "цитрусові",
+        "свіжі"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "d4aea1c3-6902-8abe-8eaa-18d5c5b277cf",
+      "title": "Egoiste Platinum",
+      "brand": "Chanel",
+      "gender": "men",
+      "storeCode": "2-E",
+      "fragranceFamilies": [
+        "деревні",
+        "фужерні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "403faf10-bc78-82ed-9690-64c54c7cf416",
+      "title": "Stronger With You",
+      "brand": "Giorgio Armani",
+      "gender": "men",
+      "storeCode": "3-E",
+      "fragranceFamilies": [
+        "східні",
+        "фужерні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "90ed486e-94d1-8296-b203-9f6565a1e47a",
+      "title": "Bois Imperial",
+      "brand": "Essential Parfums",
+      "gender": "unisex",
+      "storeCode": "10-E",
+      "fragranceFamilies": [
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "b0f342aa-06ba-8554-87e2-397c58d61b29",
+      "title": "Fahrenheit",
+      "brand": "Dior",
+      "gender": "men",
+      "storeCode": "1-F",
+      "fragranceFamilies": [
+        "зелені",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "4d406cf4-1652-82ac-b581-7bd6d4ba3f74",
+      "title": "Givenchy II",
+      "brand": "Givenchy",
+      "gender": "men",
+      "storeCode": "1-G",
+      "fragranceFamilies": [
+        "цитрусові",
+        "фруктові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "bbae143e-6aa4-8523-9dd9-98c5dc44422c",
+      "title": "Givenchy Blue Label",
+      "brand": "Givenchy",
+      "gender": "men",
+      "storeCode": "3-G",
+      "fragranceFamilies": [
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "cdd5dca0-b3b5-8227-90bc-c79fe2a28015",
+      "title": "Ganymede",
+      "brand": "Marc-Antoine Barrois",
+      "gender": "unisex",
+      "storeCode": "4-G",
+      "fragranceFamilies": [
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "03112917-fb5e-81c0-9e79-4e9eb4f444bf",
+      "title": "Gucci By Gucci",
+      "brand": "Gucci",
+      "gender": "men",
+      "storeCode": "7-G",
+      "fragranceFamilies": [
+        "цитрусові"
+      ],
+      "popularRank": 26
+    },
+    {
+      "publicId": "30de4a18-3265-801a-98f9-b26e148c0b4d",
+      "title": "Gucci Guilty",
+      "brand": "Gucci",
+      "gender": "men",
+      "storeCode": "8-G",
+      "fragranceFamilies": [
+        "цитрусові",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "08de01fb-2be9-8cc3-9888-e354630bf137",
+      "title": "Hugo Boss Man",
+      "brand": "Hugo Boss",
+      "gender": "men",
+      "storeCode": "1-H",
+      "fragranceFamilies": [
+        "деревні"
+      ],
+      "popularRank": 27
+    },
+    {
+      "publicId": "3d4d45b8-b169-8986-a4a8-3f0984e01a2a",
+      "title": "Terre D'Hermes",
+      "brand": "Hermès",
+      "gender": "men",
+      "storeCode": "3-H",
+      "fragranceFamilies": [
+        "деревні",
+        "східні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "7074ebdd-10c0-88b2-b4fe-caa1d2838237",
+      "title": "Jean Paul Gaultier",
+      "brand": "Jean Paul Gaultier",
+      "gender": "men",
+      "storeCode": "1-J",
+      "fragranceFamilies": [
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "2a92d6b0-2c25-8f82-b8ce-70737c7473a3",
+      "title": "MF Kurkdjian 724",
+      "brand": "Maison Francis Kurkdjian",
+      "gender": "unisex",
+      "storeCode": "7-J",
+      "fragranceFamilies": [
+        "цитрусові",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "5532d1c7-db4f-84d8-8572-741bc185fe91",
+      "title": "Kenzo L'Eau Par",
+      "brand": "Kenzo",
+      "gender": "men",
+      "storeCode": "8-J",
+      "fragranceFamilies": [
+        "східні",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "48740e2c-e7fd-8c65-a1f4-fd852da97540",
+      "title": "Angel's Share",
+      "brand": "Kilian",
+      "gender": "unisex",
+      "storeCode": "9-J",
+      "fragranceFamilies": [
+        "східні",
+        "квіткові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "5d4163f1-a7b0-8be9-a228-e4249aeccaf2",
+      "title": "Lost Cherry",
+      "brand": "Tom Ford",
+      "gender": "unisex",
+      "storeCode": "10-J",
+      "fragranceFamilies": [
+        "цитрусові",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "b4c5d12f-cc07-8c93-a6b1-43d318a16f37",
+      "title": "Eclat D'Arpege Pour Homme",
+      "brand": "Lanvin",
+      "gender": "men",
+      "storeCode": "11-J",
+      "fragranceFamilies": [
+        "цитрусові",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "cefc58b4-bc22-84db-aae5-89d1b6aa381d",
+      "title": "Lacoste Red",
+      "brand": "Lacoste",
+      "gender": "men",
+      "storeCode": "14-J",
+      "fragranceFamilies": [
+        "деревні"
+      ],
+      "popularRank": 28
+    },
+    {
+      "publicId": "e9f1f3d4-54ab-8d3b-8842-bf20009a13a1",
+      "title": "Lacoste Essential",
+      "brand": "Lacoste",
+      "gender": "men",
+      "storeCode": "16-J",
+      "fragranceFamilies": [
+        "деревні",
+        "фужерні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "a3f8431f-2b2b-8556-89f2-0d16a54c6592",
+      "title": "Invictus Platinum",
+      "brand": "Paco Rabanne",
+      "gender": "men",
+      "storeCode": "4-P",
+      "fragranceFamilies": [
+        "деревні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "01a348b6-ba22-8808-aeb4-51d6e57fac9c",
+      "title": "Paco Rabanne One Million",
+      "brand": "Paco Rabanne",
+      "gender": "men",
+      "storeCode": "5-P",
+      "fragranceFamilies": [
+        "пряні",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "d6e7d789-b3a1-8030-a64b-9601dd07827f",
+      "title": "Paco Rabanne XS Black",
+      "brand": "Paco Rabanne",
+      "gender": "men",
+      "storeCode": "10-P",
+      "fragranceFamilies": [
+        "східні",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "e77f429a-7d31-86b0-8c95-f8385b5cdb42",
+      "title": "Sculpture Homme",
+      "brand": "Nikos",
+      "gender": "men",
+      "storeCode": "2-S",
+      "fragranceFamilies": [
+        "східні",
+        "пряні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "aa289f49-da0f-8d9f-8f9e-ee624ed8b45a",
+      "title": "Lordly",
+      "brand": "Versace",
+      "gender": "men",
+      "storeCode": "2-Y",
+      "fragranceFamilies": [
+        "деревні",
+        "цитрусові"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "3b27366a-53a4-8f77-ac45-1f456bad16c8",
+      "title": "Spicebomb",
+      "brand": "Viktor&Rolf",
+      "gender": "men",
+      "storeCode": "4-Y",
+      "fragranceFamilies": [
+        "пряні",
+        "деревні"
+      ],
+      "popularRank": null
+    },
+    {
+      "publicId": "151ef555-8b04-8cce-a70b-e4fa224ff7ae",
+      "title": "Xeryus Rouge",
+      "brand": "Givenchy",
+      "gender": "men",
+      "storeCode": "1-X",
+      "fragranceFamilies": [
+        "цитрусові",
+        "фруктові"
+      ],
+      "popularRank": 29
+    },
+    {
+      "publicId": "008b03e5-d106-8d91-ade5-8d3adb1256d1",
+      "title": "Molecule 02",
+      "brand": "Escentric Molecules",
+      "gender": "men",
+      "storeCode": "8-Z",
+      "fragranceFamilies": [
+        "деревні"
+      ],
+      "popularRank": 30
+    }
+  ],
+  "prices": {
+    "5": "119.00",
+    "10": "240.00",
+    "30": "459.00",
+    "50": "629.00",
+    "100": "969.00"
+  },
+  "volumesMl": [
+    5,
+    10,
+    30,
+    50,
+    100
+  ],
+  "fragranceFamilies": [
+    "квіткові",
+    "фруктові",
+    "східні",
+    "водяні",
+    "шипрові",
+    "деревні",
+    "мускусні",
+    "пряні",
+    "гурманські",
+    "зелені",
+    "ванільні",
+    "ароматичні",
+    "альдегідні",
+    "цитрусові",
+    "свіжі",
+    "фужерні"
+  ],
+  "freeShippingThreshold": "1500.00"
+}

@@ -16,3 +16,9 @@
 
 # Issue worktrees (see AGENTS.md -> Workflow)
 /.claude/worktrees/
+
+# Synthetic data generator (#131): uv virtualenv, caches and CSV output
+/analytics/.venv/
+/analytics/out/
+__pycache__/
+.pytest_cache/

@@ -28,7 +28,8 @@ export default defineConfig(({ isSsrBuild }) => ({
         },
       },
   server: {
-    // Issue worktrees live inside the repo (see AGENTS.md); don't watch their files.
-    watch: { ignored: ["**/.claude/worktrees/**"] },
+    // Issue worktrees live inside the repo (see AGENTS.md), and the Python generator (#131) has
+    // its own virtualenv; don't watch their files.
+    watch: { ignored: ["**/.claude/worktrees/**", "**/analytics/**"] },
   },
 }));

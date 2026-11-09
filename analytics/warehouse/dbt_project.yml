@@ -1,0 +1,42 @@
+# The Jassmin warehouse (#132): raw (#131's generator, or the app's tables) -> staging -> intermediate
+# -> marts. Run it through `wh.py` (see README.md), which resolves the database and guards it.
+name: jassmin_warehouse
+version: "1.0.0"
+config-version: 2
+profile: jassmin_warehouse
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: target
+clean-targets: [target, dbt_packages, logs]
+
+vars:
+  # Every date in the warehouse is a Kyiv calendar date.
+  timezone: Europe/Kyiv
+  # Two events of one session, type and product closer than this are one double-fired event.
+  duplicate_event_seconds: 1
+  # A session is a bot when it has more product views than this within 10 minutes ...
+  bot_max_product_views_10min: 60
+  # ... or at least this many product views with a median gap under bot_median_gap_seconds.
+  bot_min_product_views_for_gap: 10
+  bot_median_gap_seconds: 2
+  # An order total above this multiple of its line items is a price typo.
+  price_outlier_ratio: 5
+  # The churn label: no new order within this many days after the snapshot.
+  churn_horizon_days: 90
+
+models:
+  jassmin_warehouse:
+    +persist_docs:
+      relation: true
+      columns: true
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/131
 Branch: `issue/131`
 Worktree: `.claude/worktrees/issue-131`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -376,7 +376,7 @@ the app's constraints into `public` so the app itself can run on it.
   detect in SQL), raw vs public, `customer_truth` warning, the demo password, the sanity SQL from
   Testing below. Short pointers in `AGENTS.md` (Python in `analytics/`, uv, never writes the app
   DB), `README.md`, `docs/setup.md`.
-- [ ] **14. Full run** — `uv run analytics/generator/generate.py --customers 10000
+- [x] **14. Full run** — `uv run analytics/generator/generate.py --customers 10000
   --load-app-schema`; record runtime and row counts in the README; run the app against
   `jassmin_synth` briefly (catalog, an order page) to confirm `public` is usable.
 
@@ -399,17 +399,29 @@ the app's constraints into `public` so the app itself can run on it.
 
 ## Acceptance criteria
 
-- [ ] `uv run analytics/generator/generate.py --customers 10000` creates and loads `jassmin_synth`
-  and never touches the app's database — steps 3, 9, 11, 14 (PEP 723, guard, env override)
-- [ ] The output covers users, sessions, user_events, carts, cart_items, orders, order_items,
-  payments, discounts, order_status_history and inventory_movements — steps 4–9
-- [ ] The same seed gives identical data — steps 3, 8, 10
-- [ ] Seasonality, abandoned carts, stock-outs and unclaimed parcels are visible in simple SQL
-  counts — steps 6, 7, 13, 14
-- [ ] Every anomaly in the README catalogue is present at roughly its documented rate — steps 8,
-  10, 13
-- [ ] `pytest` passes, and the app's `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`
-  are unaffected — steps 1, 2, 10, 12
+Verified locally on 2026-11-09 against a throwaway `postgres:18` container (the same major
+version as Aspire and CI).
+
+- [x] `uv run analytics/generator/generate.py --customers 10000` creates and loads `jassmin_synth`
+  and never touches the app's database — steps 3, 9, 11, 14. The exact command ran from the repo
+  root (PEP 723 inline deps) and created, migrated (32 migrations) and loaded the database in about
+  3.5 min. The guard is covered by `test_safety.py`. **Not run:** the Aspire `synth-generate`
+  resource itself; the apphost compiles (`pnpm aspire:build`), but Aspire wasn't started.
+- [x] The output covers users, sessions, user_events, carts, cart_items, orders, order_items,
+  payments, discounts, order_status_history and inventory_movements — steps 4–9. All of them are in
+  `raw.*`, and every row passed into `public.*`.
+- [x] The same seed gives identical data — steps 3, 8, 10. `test_determinism.py`, and two 10k runs
+  in different Python environments gave the same digest `b84b507e9602`.
+- [x] Seasonality, abandoned carts, stock-outs and unclaimed parcels are visible in simple SQL
+  counts — steps 6, 7, 13, 14. 10k run: 45.1 orders/day on 1–8 March vs 12.4 in July, 7,040
+  abandoned carts, 2,302 ledger rows at or below zero stock (8,521 out-of-stock days in
+  `inventory_daily`), and 686 unclaimed parcels (599 cash on delivery).
+- [x] Every anomaly in the README catalogue is present at roughly its documented rate — steps 8,
+  10, 13. Checked by `test_anomalies.py` (±30 %; binomial bound for backorders).
+- [x] `pytest` passes, and the app's `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`
+  are unaffected — steps 1, 2, 10, 12. 35 pytest tests pass (2 need a database). Vitest against a
+  real Postgres: 2222 passed, 1 skipped. Without a reachable database, `health.test.ts` fails
+  exactly as it did before this branch. **Not run yet:** the new `analytics` CI job.
 
 ## Out of scope
 

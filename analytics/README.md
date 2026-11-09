@@ -51,7 +51,7 @@ Aspire knows.
 | `--no-db` | off | Don't connect to any database. |
 | `--database-name` | `jassmin_synth` | `jassmin_synth` or `jassmin_synth_<suffix>` only (used by the tests). |
 
-A full run (10,000 customers) takes about 40 s to generate and about a minute more to load.
+A full run (10,000 customers) takes about 40 s to generate and one to two minutes to migrate and load.
 With seed 42 it produces:
 
 | Table | Rows |

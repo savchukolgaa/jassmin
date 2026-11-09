@@ -174,6 +174,24 @@ case study.
     EDA prose: the funnel is flat across devices and channels (~71 % cart → purchase everywhere),
     and February outranks March in the STL seasonal index, so the check asserts December,
     February and March as the top three months.
+16. **LTV model changes (step 4).** Two changes to Decision 5, both justified by how the shop and the
+    generator work rather than by the holdout result, and the plain calendar-clock BG/NBD is kept in
+    the notebook as the reference:
+    - **Seasonally adjusted clock** (`jassmin_ml/clock.py`, tested): on calendar weeks BG/NBD missed
+      the holdout total by −15 % with the November split and +30 % with an April split, because the
+      season the calibration period ends in sets the apparent rate. Time is now measured in
+      expected-demand weeks from a Poisson GLM of daily *repeat* orders per acquired customer (month,
+      gift windows, linear trend), fitted on calibration days only.
+    - **MBG/NBD as the primary model**: classic BG/NBD keeps a customer alive until a repeat purchase,
+      but the generator (and a perfume shop) churns customers after any order, including the first.
+    - Ground truth uses the full-period fit (not the calibration fit), with k-means on log rate, logit
+      P(alive) and log(1 + frequency); "chance" is the 99th percentile of 500 shuffled ARIs and the
+      largest segment's share (35 %).
+    - **Result:** holdout total +1.3 %, 9 of 10 deciles within 15 %, decile 6 at 18 % (no low decile
+      needed merging under Q2). The issue's per-decile criterion is therefore **not fully met**; the
+      notebook prints it and asserts the rest (total within 5 %, better than the calendar clock,
+      ground truth above chance). Ground truth: Spearman 0.46, P(alive) ROC-AUC 0.74, ARI 0.14 vs.
+      0.004, matched accuracy 45 % vs. 35 %.
 
 ## Resolved questions
 
@@ -278,7 +296,7 @@ Answered from the codebase:
   the summer dip, compare with the generator's multipliers), funnel by device and by traffic
   source. Save `figures/01_cohort_retention.png`. Checks cell: seasonality peak in March and
   December present.
-- [ ] **4. `02_ltv_bgnbd_gg.ipynb`.** RFM summary in weeks for calibration/holdout, fit BG/NBD,
+- [x] **4. `02_ltv_bgnbd_gg.ipynb`.** RFM summary in weeks for calibration/holdout, fit BG/NBD,
   decile table of predicted vs. actual holdout purchases (`figures/02_holdout_deciles.png`),
   Gamma-Gamma on repeat buyers (+ correlation check), 12-month CLV per customer and per
   acquisition channel, ground-truth comparison (Spearman ρ, per-segment means, k-means 4 clusters
@@ -337,7 +355,7 @@ Answered from the codebase:
 ## Acceptance criteria
 
 - [ ] All five notebooks run end to end from a clean environment against `jassmin_synth` — steps 1, 3–8
-- [ ] BG/NBD holdout predictions are within 15% of actual purchases per decile, and the recovered segments match the generator's ground truth above chance — step 4 (Q2)
+- [ ] BG/NBD holdout predictions are within 15% of actual purchases per decile, and the recovered segments match the generator's ground truth above chance — step 4 (Q2). Segments: met. Deciles: 9 of 10 within 15 %, decile 6 at 18 % (Decision 16).
 - [ ] The churn model beats the logistic baseline on PR-AUC with a time-based split, and SHAP plots are included — step 5
 - [ ] The recommender beats the popularity baseline on Recall@10 — step 6
 - [ ] The forecast beats the seasonal-naive baseline on WAPE, with stock-out days masked — step 7

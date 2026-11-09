@@ -50,7 +50,9 @@ def run(path: Path) -> bool:
     except CellExecutionError as error:
         print(error, file=sys.stderr)
         ok = False
-    nbformat.write(nb, path)
+    # LF on every platform (.gitattributes), not Windows' CRLF.
+    with path.open("w", encoding="utf-8", newline="\n") as file:
+        nbformat.write(nb, file)
     status = "ok" if ok else "FAILED"
     print(f"{path.name}: {status} in {time.perf_counter() - started:.0f} s", flush=True)
     return ok

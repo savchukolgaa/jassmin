@@ -1,0 +1,516 @@
+version: 2
+
+# Staging: one model per raw table. Types cast, values normalised, anomalies cleaned or flagged.
+# Personal data (names, emails, phones, addresses) exists only here.
+
+models:
+  - name: stg_users
+    description: >
+      Registered customers with normalised emails. @example.com test accounts are kept and flagged
+      (`is_test_account`); every model downstream drops them.
+    columns:
+      - name: user_id
+        description: The user's id.
+        data_tests: [unique, not_null]
+      - name: full_name
+        description: Name (personal data; never selected downstream).
+      - name: email_normalised
+        description: lower(trim(email)) (personal data; never selected downstream).
+        data_tests: [unique, not_null]
+      - name: had_unnormalised_email
+        description: The raw email had stray spaces or capitals (anomaly flag).
+      - name: phone
+        description: Phone (personal data); null when missing.
+      - name: acquisition_channel
+        description: Where the customer came from at signup; 'direct' when missing.
+        data_tests: [not_null]
+      - name: first_touch_source
+        description: utm_source (or referrer host) of the user's first session.
+      - name: first_touch_medium
+        description: utm_medium of the user's first session.
+      - name: first_touch_campaign
+        description: utm_campaign of the user's first session.
+      - name: city
+        description: Delivery city of the user's latest order.
+      - name: marketing_opt_in
+        description: Agreed to marketing emails.
+      - name: locale
+        description: The language the user last used (uk or en).
+      - name: created_at
+        description: Signup time (UTC timestamptz).
+        data_tests: [not_null]
+      - name: last_login_at
+        description: Last login time.
+      - name: email_verified_at
+        description: When the user confirmed their email; null until then.
+      - name: has_phone
+        description: The user gave a phone (about 12% don't).
+      - name: is_test_account
+        description: An @example.com test account (anomaly flag); excluded downstream.
+
+  - name: stg_products
+    description: The catalog, one row per perfume.
+    columns:
+      - name: product_id
+        description: The product's id.
+        data_tests: [unique, not_null]
+      - name: product_public_id
+        description: The product's stable UUID (as in event properties).
+        data_tests: [unique, not_null]
+      - name: title
+        description: The perfume's title.
+      - name: brand
+        description: The perfume's brand.
+      - name: gender
+        description: women, men or unisex.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [women, men, unisex]
+      - name: fragrance_family
+        description: The primary fragrance family.
+      - name: fragrance_families
+        description: Every fragrance family of the perfume, primary first.
+      - name: pack_size
+        description: Units in the product (3 for a set of three testers).
+      - name: popular_rank
+        description: Position on the popular page; null when not listed.
+      - name: is_active
+        description: false once archived.
+      - name: created_at
+        description: When the product was added.
+
+  - name: stg_product_variants
+    description: The sizes of each perfume with price and stock.
+    columns:
+      - name: variant_id
+        description: The variant's id.
+        data_tests: [unique, not_null]
+      - name: variant_public_id
+        description: The variant's stable UUID (as in event properties).
+      - name: product_id
+        description: The perfume.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_products')
+                field: product_id
+      - name: volume_ml
+        description: The size in ml.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [5, 10, 30, 50, 100]
+                quote: false
+      - name: price
+        description: Price in UAH.
+      - name: stock_quantity
+        description: Current stock; only meaningful when track_stock.
+      - name: track_stock
+        description: Whether stock limits sales of this size.
+      - name: created_at
+        description: When the size was added.
+
+  - name: stg_discounts
+    description: Discount rules and promo codes.
+    columns:
+      - name: discount_id
+        description: The rule's id.
+        data_tests: [unique, not_null]
+      - name: discount_slug
+        description: The rule's stable name (e.g. tester-trio).
+      - name: promo_code
+        description: The promo code, upper-cased; null for automatic rules.
+      - name: discount_kind
+        description: How the rule discounts.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [percent, fixed_amount, fixed_price_set, percent_every_nth]
+      - name: discount_value
+        description: Percent or amount, depending on the kind.
+      - name: starts_at
+        description: When the rule starts; null for always.
+      - name: ends_at
+        description: When the rule ends; null for never.
+      - name: is_active
+        description: Whether the rule can still be used.
+      - name: created_at
+        description: When the rule was created.
+
+  - name: stg_carts
+    description: Shopping carts.
+    columns:
+      - name: cart_id
+        description: The cart's id.
+        data_tests: [unique, not_null]
+      - name: user_id
+        description: The owner; null for a guest.
+      - name: session_id
+        description: The session the cart was created in.
+      - name: status
+        description: active, converted or abandoned.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [active, converted, abandoned]
+      - name: discount_id
+        description: The promo code applied, if any.
+      - name: created_at
+        description: When the cart was created.
+      - name: updated_at
+        description: The shopper's last activity.
+      - name: abandoned_at
+        description: When the cart was marked abandoned.
+      - name: reminder_sent_at
+        description: When the abandoned-cart reminder was queued (#139).
+      - name: restored_at
+        description: When the shopper restored the cart from the reminder.
+
+  - name: stg_cart_items
+    description: Cart lines, one per size.
+    columns:
+      - name: cart_item_id
+        description: The line's id.
+        data_tests: [unique, not_null]
+      - name: cart_id
+        description: The cart.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_carts')
+                field: cart_id
+      - name: product_id
+        description: The perfume.
+      - name: variant_id
+        description: The size.
+      - name: quantity
+        description: Units in the cart.
+      - name: added_at
+        description: When the line was added.
+
+  - name: stg_payments
+    description: Card payment attempts, currency upper-cased.
+    columns:
+      - name: payment_id
+        description: The attempt's id.
+        data_tests: [unique, not_null]
+      - name: order_id
+        description: The order paid for.
+      - name: provider
+        description: The payment provider.
+      - name: status
+        description: pending, succeeded or failed.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pending, succeeded, failed]
+      - name: amount
+        description: Amount in UAH.
+      - name: currency
+        description: Always UAH after cleaning.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [UAH]
+      - name: had_lowercase_currency
+        description: The raw currency was lowercase (anomaly flag).
+      - name: created_at
+        description: When the attempt started.
+      - name: completed_at
+        description: When the provider answered.
+
+  - name: stg_order_status_history
+    description: Every change of an order's status.
+    columns:
+      - name: status_change_id
+        description: The change's id.
+        data_tests: [unique, not_null]
+      - name: order_id
+        description: The order.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_orders')
+                field: order_id
+      - name: status
+        description: The new status.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pending, paid, shipped, completed, cancelled, returned, unclaimed]
+      - name: changed_at
+        description: When it changed.
+        data_tests: [not_null]
+      - name: source
+        description: What changed it.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [checkout, payment, cms, job]
+
+  - name: stg_inventory_movements
+    description: The stock ledger; negative stock (backorders) kept and flagged.
+    columns:
+      - name: movement_id
+        description: The movement's id.
+        data_tests: [unique, not_null]
+      - name: variant_id
+        description: The size whose stock changed.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_product_variants')
+                field: variant_id
+      - name: occurred_at
+        description: When the stock changed.
+        data_tests: [not_null]
+      - name: reason
+        description: Why the stock changed.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [opening_balance, sale, cancellation, return, receipt, adjustment]
+      - name: quantity_delta
+        description: Units added (positive) or removed (negative).
+      - name: stock_after
+        description: Stock after the movement; negative during a backorder.
+      - name: order_id
+        description: The order behind a sale, cancellation or return.
+      - name: source
+        description: What wrote the movement.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [checkout, cms, job, migration]
+      - name: is_backorder
+        description: Stock went negative (anomaly flag).
+      - name: backorder_units
+        description: How far below zero the stock was (0 when not negative).
+
+  - name: stg_user_events
+    description: >
+      The event stream: double-fired events (same session, visitor, type, product and properties
+      within duplicate_event_seconds) dropped, naive timestamps read as UTC (and flagged),
+      missing device_type set to 'unknown'. Bot sessions are flagged on stg_sessions.
+    columns:
+      - name: event_id
+        description: The event's id.
+        data_tests: [unique, not_null]
+      - name: user_id
+        description: The logged-in user; null for an anonymous visitor.
+      - name: anonymous_id
+        description: The visitor's cookie id.
+      - name: session_id
+        description: The visit.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_sessions')
+                field: session_id
+      - name: event_type
+        description: What happened.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [page_view, product_view, search, add_to_cart, remove_from_cart, checkout_start, purchase, login, review_submit, product_impression, product_click, product_dwell]
+      - name: product_id
+        description: The product, for product events.
+      - name: event_properties
+        description: The typed properties of the event (#129, docs/analytics-events.md).
+      - name: source
+        description: utm_source of the visit.
+      - name: medium
+        description: utm_medium of the visit.
+      - name: campaign
+        description: utm_campaign of the visit.
+      - name: device_type
+        description: mobile, tablet, desktop or unknown.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [mobile, tablet, desktop, unknown]
+      - name: created_at
+        description: When it happened (UTC timestamptz).
+        data_tests: [not_null]
+      - name: had_naive_timestamp
+        description: The raw timestamp had no UTC offset and was read as UTC (anomaly flag).
+
+  - name: stg_sessions
+    description: Visits, with event counts and the bot flag.
+    columns:
+      - name: session_id
+        description: The session's id.
+        data_tests: [unique, not_null]
+      - name: user_id
+        description: The logged-in user; null for an anonymous visit.
+      - name: anonymous_id
+        description: The visitor's cookie id.
+      - name: started_at
+        description: When the visit started.
+        data_tests: [not_null]
+      - name: ended_at
+        description: The visit's last request.
+      - name: landing_page
+        description: The first page of the visit.
+      - name: traffic_source
+        description: utm_source or referrer host; 'direct' when missing.
+      - name: traffic_medium
+        description: utm_medium.
+      - name: traffic_campaign
+        description: utm_campaign.
+      - name: device_type
+        description: mobile, tablet, desktop or unknown.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [mobile, tablet, desktop, unknown]
+      - name: event_count
+        description: Events in the visit (after de-duplication).
+      - name: product_view_count
+        description: Product views in the visit.
+      - name: max_product_views_10min
+        description: The most product views within any 10 minutes of the visit.
+      - name: median_view_gap_seconds
+        description: Median seconds between consecutive product views; null with fewer than two.
+      - name: is_bot
+        description: A bot visit (anomaly flag); excluded downstream.
+
+  - name: stg_order_items
+    description: Order lines; lines of deleted products flagged.
+    columns:
+      - name: order_item_id
+        description: The line's id.
+        data_tests: [unique, not_null]
+      - name: order_id
+        description: The order.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_orders')
+                field: order_id
+      - name: product_id
+        description: The perfume, recovered from the size when the line's product was deleted; null when neither is known.
+      - name: variant_id
+        description: The size; null when it was deleted.
+      - name: volume_ml
+        description: The size bought, in ml.
+      - name: quantity
+        description: Units bought.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+      - name: unit_price
+        description: Unit price paid before discounts, in UAH.
+      - name: discount_allocated
+        description: The line's share of the order's discount.
+      - name: gross_line_revenue
+        description: quantity x unit_price.
+      - name: is_orphan_product
+        description: The line's product_id was missing or not in the catalog (anomaly flag).
+      - name: product_recovered_from_variant
+        description: The product of an orphan line was recovered from its size.
+
+  - name: stg_orders
+    description: >
+      Orders with normalised currency, a customer key, price typos recomputed and impossible
+      timelines fixed from order_status_history.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "shipped_at <= completed_at"
+          config:
+            where: "shipped_at is not null and completed_at is not null"
+    columns:
+      - name: order_id
+        description: The order's id.
+        data_tests: [unique, not_null]
+      - name: user_id
+        description: The registered customer; null for a guest.
+      - name: is_test_account
+        description: Placed with an @example.com email (anomaly flag); excluded downstream.
+      - name: customer_key
+        description: Surrogate key of the customer (the user, or the guest's normalised email).
+        data_tests: [not_null]
+      - name: cart_id
+        description: The cart the order was placed from.
+      - name: discount_id
+        description: The discount rule applied, if any.
+      - name: status
+        description: The order's latest status.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pending, paid, shipped, completed, cancelled, returned, unclaimed]
+      - name: payment_status
+        description: unpaid, paid or refunded.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [unpaid, paid, refunded]
+      - name: payment_method
+        description: card, cod (cash on delivery) or gift_card.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [card, cod, gift_card]
+      - name: cancel_reason
+        description: Why the order was cancelled.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [customer_request, out_of_stock, no_answer, payment_failed, other]
+      - name: free_shipping
+        description: The shop paid for delivery.
+      - name: subtotal
+        description: Sum of the lines before discounts, UAH.
+      - name: discount_amount
+        description: Total discount, UAH.
+      - name: shipping_amount
+        description: Delivery charged, UAH.
+      - name: gift_card_amount
+        description: Paid by gift card, UAH.
+      - name: total_amount
+        description: What was left to pay, UAH; recomputed for price typos.
+        data_tests: [not_null]
+      - name: raw_total_amount
+        description: total_amount as written in the raw layer.
+      - name: is_price_outlier
+        description: The raw total was more than price_outlier_ratio x the lines (anomaly flag).
+      - name: currency
+        description: Always UAH after cleaning.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [UAH]
+      - name: had_lowercase_currency
+        description: The raw currency was lowercase (anomaly flag).
+      - name: created_at
+        description: When the order was placed.
+        data_tests: [not_null]
+      - name: paid_at
+        description: When it was paid.
+      - name: shipped_at
+        description: When it was shipped; fixed from the status history for impossible timelines.
+      - name: arrived_at
+        description: When the parcel reached the Nova Poshta branch.
+      - name: completed_at
+        description: When it was completed.
+      - name: cancelled_at
+        description: When it was cancelled.
+      - name: returned_at
+        description: When the parcel came back (returned or unclaimed).
+      - name: refunded_at
+        description: When the payment was refunded.
+      - name: has_impossible_timeline
+        description: The raw shipped_at was after completed_at (anomaly flag).
+      - name: timeline_fixed_from_history
+        description: The impossible timeline was fixed from order_status_history.

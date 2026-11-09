@@ -1,0 +1,22 @@
+[project]
+name = "jassmin-analytics"
+version = "0.1.0"
+description = "Synthetic shop data generator for the Jassmin analytics work (#131)."
+readme = "README.md"
+requires-python = ">=3.12"
+# Keep in sync with the PEP 723 block in generator/generate.py (tests/test_fixtures.py checks it).
+dependencies = [
+    "numpy>=2.1",
+    "psycopg[binary]>=3.2",
+    "tzdata>=2024.1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["generator"]
+testpaths = ["tests"]

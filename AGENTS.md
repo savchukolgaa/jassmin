@@ -28,6 +28,8 @@ pnpm aspire run     # never plain `aspire run`, see aspire-apphost/AGENTS.md
 
 The dbt warehouse (#132) is a separate Python project in `analytics/warehouse/` (uv, not pnpm): `uv run --project analytics/warehouse analytics/warehouse/wh.py build` builds and tests raw → staging → marts in `jassmin_synth`, never the app's database. BI and ML read its `marts` schema, never the app's tables. See `analytics/warehouse/README.md`.
 
+The ML notebooks (#133) are a third uv project in `analytics/notebooks/`: `uv run --project analytics/notebooks analytics/notebooks/run_all.py` runs the five notebooks against the marts (read-only, `jassmin_synth` only) and saves them with their outputs; `uv run --project analytics/notebooks pytest analytics/notebooks` tests their helpers. `analytics/README.md` is the portfolio case study. See `analytics/notebooks/README.md`.
+
 Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Before finishing an issue, `pnpm build` must pass too.
 
 ## Architecture rules

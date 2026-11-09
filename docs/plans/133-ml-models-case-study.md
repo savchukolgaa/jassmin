@@ -354,7 +354,7 @@ Answered from the codebase:
   `uv run --project analytics/notebooks analytics/notebooks/run_all.py`. Run it twice and check
   that the metrics in the outputs are identical (determinism). Commit notebooks with outputs and
   the figures.
-- [ ] **9. Write the case study and docs.** Top of `analytics/README.md`: the problem; architecture
+- [x] **9. Write the case study and docs.** Top of `analytics/README.md`: the problem; architecture
   Mermaid flowchart (app → `user_events`/OLTP → `raw` → dbt staging → intermediate → marts →
   notebooks); star-schema `erDiagram` (facts `fct_orders`, `fct_order_items`, `fct_sessions`,
   `fct_events`, `fct_inventory_daily` around `dim_customers`, `dim_products`, `dim_date`, plus
@@ -390,7 +390,7 @@ Answered from the codebase:
 - [x] The churn model beats the logistic baseline on PR-AUC with a time-based split, and SHAP plots are included — step 5
 - [x] The recommender beats the popularity baseline on Recall@10 — step 6
 - [x] The forecast beats the seasonal-naive baseline on WAPE, with stock-out days masked — step 7 (per size and week, and on daily units per size class and for the shop; per size and day the two tie, see Decision 19)
-- [ ] `analytics/README.md` presents the architecture, data quality work and results as a portfolio case study — step 9
+- [x] `analytics/README.md` presents the architecture, data quality work and results as a portfolio case study — step 9
 
 ## Out of scope
 

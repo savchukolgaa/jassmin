@@ -1,4 +1,293 @@
-# Analytics: synthetic shop data
+# Analytics: from event tracking to business decisions
+
+A portfolio case study built on Jassmin, a small Ukrainian perfume shop: how the app's
+event-driven behavioural tracking becomes a tested warehouse and then four models with a business
+decision attached to each. Everything here runs on reproducible synthetic data, so every number in
+this page can be regenerated, and the models can be checked against a known truth.
+
+| Part | Where | Issue |
+|------|-------|-------|
+| Event contract and OLTP schema | `app/`, `docs/analytics-events.md` | #128, #129, #130 |
+| Synthetic shop data with a planted customer model | `generator/` ([below](#the-synthetic-data-generator-131)) | #131 |
+| Layered ELT warehouse with data tests (dbt) | [`warehouse/`](warehouse/README.md) | #132 |
+| EDA and four models (Jupyter) | [`notebooks/`](notebooks/README.md) | #133 |
+
+## The problem
+
+A small online shop has the questions every retailer has, with very little data to answer them:
+
+- **Who are our valuable customers,** and how much will they spend next year (customer lifetime
+  value, CLV)?
+- **Who is about to stop buying,** and is a win-back promo worth its discount (churn)?
+- **What should we show each customer** next to the perfume they're looking at (recommendations)?
+- **How much stock of each bottle** should we hold, when demand spikes around 8 March and December
+  and the supplier takes up to three weeks (demand forecasting)?
+
+The real shop is too new to have the history these need, so #131 simulates three years of it
+(10,000 customers, about a million events) with a *known* customer model: each customer has a
+segment, a purchase rate and a churn probability that the models never see. That turns the work
+from "the model looks plausible" into "the model recovers the truth", and the generator also plants
+a catalogue of data-quality anomalies for the warehouse to catch.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph App["Shop app (OLTP, PostgreSQL)"]
+        UI["React Router SSR<br/>loaders and actions"] --> EV["user_events<br/>typed, validated contract (#129)"]
+        UI --> OLTP["orders, order_items, carts,<br/>status history (#128),<br/>inventory ledger (#130)"]
+    end
+    GEN["Synthetic data generator (#131)<br/>planted customer model + anomalies"] -.->|same schema| RAW
+    EV --> RAW
+    OLTP --> RAW
+    subgraph WH["Warehouse (dbt, jassmin_synth) (#132)"]
+        RAW["raw<br/>text, untouched"] --> STG["staging<br/>cast, clean, flag"]
+        STG --> INT["intermediate<br/>no bots, no tests,<br/>no personal data"]
+        INT --> MARTS["marts<br/>star schema + ML features"]
+    end
+    MARTS --> NB["Notebooks (#133)<br/>EDA, CLV, churn,<br/>recommendations, demand"]
+    NB --> ACT["Business actions"]
+```
+
+The **OLTP vs. analytical layer** split is strict: the app's tables serve checkout and stay
+normalised; nothing analytical reads them. The warehouse is **layered (medallion) ELT**: raw data
+lands untouched (every column `text`, so every anomaly survives), staging casts and cleans it, and
+marts are built for questions, not transactions. The models read only `marts.*`, through a
+read-only connection that refuses any database except `jassmin_synth`.
+
+## Data model
+
+The marts are a star schema around three dimensions, plus one wide table for the churn model:
+
+```mermaid
+erDiagram
+    dim_customers ||--o{ fct_orders : places
+    dim_customers ||--o{ fct_order_items : buys
+    dim_customers ||--o{ fct_sessions : visits
+    dim_customers ||--o{ fct_events : triggers
+    dim_customers ||--o{ mart_customer_features : "monthly snapshot"
+    dim_products ||--o{ fct_order_items : "sold as"
+    dim_products ||--o{ fct_events : "viewed as"
+    dim_products ||--o{ fct_inventory_daily : "stocked as"
+    dim_date ||--o{ fct_orders : "order_date"
+    dim_date ||--o{ fct_sessions : "session_date"
+    dim_date ||--o{ fct_inventory_daily : day
+    fct_orders ||--|{ fct_order_items : contains
+    fct_sessions ||--o{ fct_events : contains
+
+    dim_customers {
+        text customer_key PK "md5 surrogate, no personal data"
+    }
+    dim_products {
+        int product_key PK "-1 = deleted product"
+    }
+    dim_date {
+        date date_day PK "Kyiv day, gift-season flags"
+    }
+    fct_orders {
+        bigint order_id PK
+    }
+    fct_order_items {
+        bigint order_item_id PK "net revenue after discount"
+    }
+    fct_sessions {
+        uuid session_id PK "funnel flags"
+    }
+    fct_events {
+        uuid event_id PK "list, position, price, dwell"
+    }
+    fct_inventory_daily {
+        int variant_id PK "size x day, censored-demand flag"
+    }
+    mart_customer_features {
+        text customer_key PK "point-in-time RFM, churn label"
+    }
+```
+
+`mart_customer_features` is **point-in-time feature engineering**: one row per customer and month,
+and every feature reads only data from before the snapshot (an order returned later still counts as
+a sale at the snapshot, because that's what was known then). Two dbt tests enforce it, and both were
+checked to fail when a feature peeks 30 days ahead.
+
+## Data quality: from anomaly catalogue to tests
+
+The app's analytics events follow a typed **data contract** (#129): every event type has a zod
+schema, and the generator's events are checked against the same schemas in the app's test suite.
+Downstream, the generator plants 12 kinds of anomaly, and the warehouse must find each one, clean or
+flag it, and prove it with a **data test**. A selection (all 12 are in the [warehouse
+README](warehouse/README.md#anomaly-handling)):
+
+| Planted anomaly | Found | Handling in staging | Data test |
+|-----------------|-------|---------------------|-----------|
+| Double-fired events | 1.50 % extra rows | dropped (same session, type, product, properties within 1 s) | `assert_no_double_fired_events` |
+| Bot sessions | 25 | flagged by view rate, excluded downstream | `assert_no_bot_sessions_in_marts` |
+| Price typo (× 10 total) | 0.20 % of orders | recomputed from the lines, raw value kept | `assert_order_totals_reconcile` |
+| Shipped after completion | 0.41 % | fixed from the status history | `assert_order_timeline_consistent` |
+| Deleted product on a line | 0.50 % of lines | recovered from the size, else unknown member `-1` | `relationships` to `dim_products` |
+| Backorders (negative stock) | 684 movements | kept; stock floored at 0, day marked as censored demand | `assert_ledger_sums_to_stock` |
+| Test accounts, messy emails, naive timestamps, lowercase currency, missing phone or device | as planted | excluded, normalised or flagged | `accepted_values`, `unique`, custom tests |
+
+A full build runs 29 models and 150 data tests. The models then inherit clean inputs: no bots
+inflating views, no ×10 orders inflating CLV, and stock-outs marked so the demand forecast can
+treat them as **censored demand**.
+
+## Results
+
+All five notebooks run top to bottom from a clean `uv sync` in about two minutes, with fixed seeds;
+two runs give byte-identical outputs. Each ends with a cell that asserts its own success criteria.
+Numbers are for the generator's default run (seed 42).
+
+### 1. Exploration ([`01_eda_rfm_cohorts`](notebooks/01_eda_rfm_cohorts.ipynb))
+
+RFM segments, cohort retention, an STL seasonality decomposition and the session funnel. Champions
+(20 % of customers) bring 41 % of revenue. About 8 % of a cohort orders again in any of its first six
+months. December, February and March lead the seasonality. The funnel is the same on every device
+and channel (about 71 % of carts become orders), so differences in customer value come from repeat
+behaviour, not from the first visit.
+
+![Cohort retention heatmap](notebooks/figures/01_cohort_retention.png)
+
+### 2. Probabilistic CLV ([`02_ltv_bgnbd_gg`](notebooks/02_ltv_bgnbd_gg.ipynb))
+
+**Probabilistic CLV** with the BG/NBD family plus Gamma-Gamma, fitted on purchases before November
+2025 and checked on the following 12 months. Two choices made it work, both derived from how the
+shop behaves rather than from the holdout:
+
+- **A seasonally adjusted clock.** On calendar weeks BG/NBD missed the holdout year by −15 % (the
+  calibration period ended after a slow summer; ending it in April instead gives +30 %). Measuring
+  time in expected-demand weeks, from a Poisson GLM of the repeat-purchase rate, removes the bias.
+- **MBG/NBD**, which allows a customer to leave after their *first* order. Classic BG/NBD keeps
+  every one-time buyer alive forever.
+
+| Model | Holdout total | Deciles within 15 % | Worst decile |
+|-------|---------------|---------------------|--------------|
+| BG/NBD, calendar clock | −15.4 % | 6 / 10 | 31 % |
+| BG/NBD, seasonal clock | +3.5 % | 6 / 10 | 41 % |
+| **MBG/NBD, seasonal clock** | **+1.3 %** | **9 / 10** | **18 %** |
+
+![Predicted vs. actual holdout purchases per decile](notebooks/figures/02_holdout_deciles.png)
+
+Against the ground truth, the model recovers the segment order: recovered purchase rates of 5.0 /
+3.0 / 2.1 / 1.8 orders a year against 6.3 / 3.1 / 1.4 / 0.6 for the loyal, regular, occasional and
+one-time segments, shrunk towards the mean as a Bayesian model should. Spearman ρ with the true rate
+is 0.46, P(alive) has a ROC-AUC of 0.74 for "still active", and four clusters on the model's outputs
+match the planted segments well above chance (ARI 0.14 against 0.004 for shuffled labels; 45 %
+matched accuracy against 35 %). One-time and occasional buyers stay mixed: with a single order there
+is nothing to tell them apart.
+
+**Business action.** Existing customers are worth about 4.4 million ₴ over the next 12 months, and
+the top 10 % of them hold 46 % of it. Mean CLV barely differs between acquisition channels, so the
+acquisition budget should follow each channel's volume × CLV, and retention effort should go to the
+top CLV decile ranked by the model (which discounts big spenders who have gone quiet), not by past
+spend.
+
+### 3. Churn ([`03_churn`](notebooks/03_churn.ipynb))
+
+Will a customer place no order in the next 90 days? Trained on the point-in-time monthly snapshots,
+with a time-based split (train to August 2025, tune September–December, test January–August 2026).
+
+| Test, Jan–Aug 2026 | ROC-AUC | PR-AUC (churn) | PR-AUC (retained) | Brier |
+|--------------------|---------|----------------|-------------------|-------|
+| Base rate | 0.500 | 0.871 | 0.129 | 0.112 |
+| Logistic regression | 0.786 | 0.957 | 0.405 | 0.094 |
+| **LightGBM** | **0.807** | **0.961** | **0.427** | **0.092** |
+
+With 87 % of customer-months churning, the retained-class PR-AUC is the informative one. A
+bootstrap over customers puts LightGBM ahead in all 300 resamples. Both models are already well
+**calibrated** (reliability curves on the diagonal, and isotonic recalibration doesn't lower the
+Brier score), so the probabilities can be used as probabilities.
+
+![SHAP summary](notebooks/figures/03_shap_summary.png)
+
+SHAP shows recency rising steeply to about 300 days and then flattening, purchase history
+protecting, and a recent visit pulling risk down. It also gives `city` a wide spread although the
+generator plants no city effect: dropping it doesn't change validation PR-AUC. A high SHAP value is
+not proof that a feature matters.
+
+**Business action.** A 15 %-off win-back promo for the top decile: ranking by expected net gain
+(risk × order value × uplift, minus the discount given to customers who would have ordered anyway)
+instead of by risk alone picks customers with twice the order value, and about 89,000 ₴ of
+expected net gain against 49,000 ₴ at an assumed 10 % uplift. The uplift is an assumption, so the
+promo should run as an A/B test on this list.
+
+### 4. Recommendations ([`04_recommendations`](notebooks/04_recommendations.ipynb))
+
+Implicit feedback (views, dwell, cart adds, purchases), evaluated leave-last-out. Each customer's
+last purchased perfume is hidden, with everything from the visit that led to it.
+
+| Model | Recall@10 | NDCG@10 | Catalogue coverage |
+|-------|-----------|---------|--------------------|
+| Popularity | 22.8 % | 0.103 | 8 % |
+| **Item-item cosine** (co-views, co-purchases) | **54.6 %** | **0.335** | **100 %** |
+| Implicit ALS (tuned on a validation fold) | 51.9 % | 0.292 | 72 % |
+
+![Recall@10](notebooks/figures/04_recall_at_10.png)
+
+Both personalised models put almost three times as many perfumes from the customer's (hidden) true
+favourite family in the top 10 as popularity does: they learned the planted taste from behaviour.
+On position bias, the data shows two traps. Impressions are logged only for the cards on screen, so
+deeper positions look like 100 % click-through. In the popularity-sorted lists, position and appeal
+are confounded. Clicks shouldn't train a ranker until the shop logs full-list impressions and
+randomises its top slots.
+
+**Business action.** Ship the item-item model: it is the most accurate and a 128 × 128 similarity
+table is trivial to serve. Customers who bought several perfumes in one order (the tester trio)
+are cold-start and need the popularity or in-cart fallback.
+
+### 5. Demand forecasting ([`05_demand_forecast`](notebooks/05_demand_forecast.ipynb))
+
+Daily units per full bottle (384 sizes), with stock-out days treated as **censored demand**: masked
+from training, evaluation and lag features. The day a size sells out always has a sale, so they
+aren't zeros either. Without masking the forecast drifts +6 %; with it, −1 %. LightGBM with calendar
+features against a seasonal-naive baseline, 7 days ahead, over three 13-week rolling origins:
+
+| WAPE (lower is better) | Seasonal naive | LightGBM |
+|------------------------|----------------|----------|
+| Per size and week (the decision horizon) | 1.38 | **1.21** |
+| Daily units per bottle size class | 0.54 | **0.37** |
+| Daily units, whole shop | 0.38 | **0.23** |
+| Per size and day | 1.82 | 1.81 |
+
+A single bottle sells on 4 % of days, and WAPE rewards the median, so per size and day "always 0"
+(1.0) beats any honest rate forecast. That row is reported, but WAPE is only used where it can rank
+forecasts. There LightGBM wins in every origin, and on all of the 20 best-selling sizes.
+
+![Forecast vs. actual for one size](notebooks/figures/05_forecast_vs_actual.png)
+
+**Business action.** With a 5–21 day supplier lead time, the best sellers need a reorder point of
+8–14 units for a 95 % service level, not the current "reorder at 1". The last 13 weeks show why:
+those sizes were out of stock on 42–62 of 91 days.
+
+## Limitations, and what changes with real data
+
+- **The data is synthetic.** The generator's customer model is close to the models' own assumptions:
+  churn after each order is exactly MBG/NBD's dropout process, and purchases are Poisson. Real
+  customers will fit worse, so the ground-truth checks show the *pipeline* is right, not that these
+  models are right for the real shop.
+- **Short history.** Three years of data and two observations of most calendar weeks. The seasonal
+  index (notebook 02) and the 8 March response (notebook 05, which under-reacts at the size level)
+  would both improve with more years, or with a top-down forecast of the shop's total split by size.
+- **Assumed economics.** The win-back uplift, the promo cost and the discount rate are assumptions.
+  Real decisions need an A/B test, and later an uplift model that targets *persuadable* customers.
+- **Offline only.** Nothing is served yet. Serving the recommendations on the site, scoring churn
+  monthly and feeding reorder points to the Strapi admin would be follow-up issues.
+- **With real data** the same marts should work unchanged: the dbt `prod` target is defined to read
+  the app's tables (not run yet). The first steps would be to rerun the anomaly profiling, expect new anomaly types, retrain on a
+  rolling window, and monitor calibration and data drift.
+
+## Running it
+
+```bash
+uv run analytics/generator/generate.py --customers 10000               # synthetic data (#131)
+uv run --project analytics/warehouse analytics/warehouse/wh.py build   # warehouse + data tests (#132)
+uv run --project analytics/notebooks analytics/notebooks/run_all.py    # the five notebooks (#133)
+```
+
+See [`notebooks/README.md`](notebooks/README.md) for JupyterLab and the tests.
+
+---
+
+## The synthetic data generator (#131)
 
 The real shop is new, so there's too little history for LTV, churn or demand forecasting. The
 generator in `generator/` (#131) simulates about three years of this shop: about 10,000

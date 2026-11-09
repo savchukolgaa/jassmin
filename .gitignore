@@ -22,3 +22,7 @@
 /analytics/out/
 __pycache__/
 .pytest_cache/
+
+# ML notebooks (#133): uv virtualenv and Jupyter checkpoints
+/analytics/notebooks/.venv/
+.ipynb_checkpoints/

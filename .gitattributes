@@ -1,2 +1,5 @@
 * text=auto eol=lf
 *.ico binary
+# Notebooks are saved with outputs (#133): collapse them in PR diffs.
+*.ipynb linguist-generated
+*.png binary

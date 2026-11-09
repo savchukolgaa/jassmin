@@ -9,8 +9,9 @@ on each PR's **Checks** section.
 | Job | When | Steps |
 |-----|------|-------|
 | `check` | Every PR and push to `main` | `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (with PostgreSQL), skipped-test check, `pnpm build` |
-| `changes` | Every run | Decides whether `cms` has to run |
+| `changes` | Every run | Decides whether `cms` and `analytics` have to run |
 | `cms` | Only when `cms/**`, `pnpm-lock.yaml` or `pnpm-workspace.yaml` changed | `pnpm install --frozen-lockfile`, `pnpm cms:build` |
+| `analytics` | Only when `analytics/**`, the catalog, the migrations, the pricing, the event schemas or the workflow changed | `pnpm install --frozen-lockfile`, `uv run --project analytics --locked pytest analytics` (with PostgreSQL) |
 
 - **Runner:** `ubuntu-latest`. Node comes from `.nvmrc`, pnpm from `packageManager` in
   `package.json`, so CI uses the same versions as local development.
@@ -20,7 +21,7 @@ on each PR's **Checks** section.
   are never cancelled.
 - **Permissions:** the workflow token can only read the repo (`contents: read`; the `changes` job also
   reads the PR's file list). CI uses no secrets: the Strapi build gets dummy values.
-- **Required check:** only `check` is required for merging (see below). `cms` is skipped on most PRs,
+- **Required check:** only `check` is required for merging (see below). `cms` and `analytics` are skipped on most PRs,
   and a skipped required check would block them; when it runs and fails, it still shows red on the PR.
 
 ## The database tests

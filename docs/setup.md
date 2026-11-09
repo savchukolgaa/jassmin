@@ -22,6 +22,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [SEO](#seo)
 - [Product feeds](#product-feeds)
 - [Admin role](#admin-role)
+- [Synthetic analytics data](#synthetic-analytics-data)
 - [Conventions](#conventions)
 
 ## Without Aspire
@@ -96,6 +97,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:prune-rate-limits` | Delete ended rate-limit windows (safe to re-run), see [Rate limits](#rate-limits) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
+| `pnpm analytics:export-catalog` | Write the catalog and price table to `analytics/generator/data/catalog.json` for the synthetic data generator (#131); a test fails until you run it after changing either |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
 The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`, `db-send-order-emails`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
@@ -214,6 +216,7 @@ app/
 cms/                   Strapi v5 CMS (content types in src/api, components in src/components,
                        product and order write-through in src/sync)
 aspire-apphost/        Aspire TypeScript AppHost (local dev orchestration)
+analytics/             synthetic shop data generator (Python, uv), see analytics/README.md
 scripts/aspire.mjs     Aspire CLI wrapper for pnpm
 docs/plans/            implementation plans while an issue is in progress
 ```
@@ -404,6 +407,10 @@ The in-app `/admin` area was removed in #40. Every user still has a role, `custo
      JASSMINDB_URI='postgresql://…' pnpm db:make-admin you@example.com
      ```
 `pnpm db:make-admin you@example.com --revoke` turns an admin back into a customer. The email is matched case-insensitively, and the command fails with a message if no account has it.
+
+## Synthetic analytics data
+
+`analytics/generator/` (#131, Python with [uv](https://docs.astral.sh/uv/)) fills a separate `jassmin_synth` database on the same server with about three years of simulated shop data for the ETL and ML work: `raw.*` with deliberate anomalies, and with `--load-app-schema` also the app's own tables. It never writes to the app's database. Run `uv run analytics/generator/generate.py --customers 10000` from the repo root (it uses `SYNTH_DATABASE_URL`, else `DATABASE_URL` from `.env`, with the database name replaced), or start `synth-generate` from the Aspire dashboard. The customer model and the anomaly catalogue are in [analytics/README.md](../analytics/README.md).
 
 ## Conventions
 

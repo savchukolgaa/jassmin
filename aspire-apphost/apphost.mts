@@ -21,6 +21,8 @@ const cmsSyncSecret = builder.addParameterWithGeneratedValue(
 );
 const db = postgres.addDatabase("jassmindb");
 const strapiDb = postgres.addDatabase("strapidb");
+// Synthetic shop data for the analytics work (#131): a separate database that the app never uses.
+const synthDb = postgres.addDatabase("jassmin-synth", { databaseName: "jassmin_synth" });
 
 // Applies pending app migrations (`pnpm db:migrate`) on every run; `web` starts only after it
 // completes. It owns the root `pnpm install`, which also installs the cms workspace package,
@@ -105,6 +107,23 @@ await builder
   .withReference(db)
   .waitForCompletion(dbMigrate)
   .withParentRelationship(db)
+  .withExplicitStart();
+
+// Fills `jassmin_synth` with generated data (#131): `uv run analytics/generator/generate.py
+// --load-app-schema` migrates it with the app's migrations (`pnpm db:migrate`, hence waiting for
+// the root install of `db-migrate`) and loads `raw.*` and `public.*`. It gets only the synth
+// database, never `jassmindb`, and refuses any other database name. Needs `uv` on the PATH.
+await builder
+  .addExecutable("synth-generate", "uv", "..", [
+    "run",
+    "analytics/generator/generate.py",
+    "--load-app-schema",
+  ])
+  .withReference(synthDb)
+  .withEnvironment("JASSMIN_SYNTH_URI", await synthDb.uriExpression())
+  .waitFor(synthDb)
+  .waitForCompletion(dbMigrate)
+  .withParentRelationship(synthDb)
   .withExplicitStart();
 
 // Strapi secrets (APP_KEYS, …) come from cms/.env; the variables set here take precedence.

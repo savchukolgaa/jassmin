@@ -169,6 +169,11 @@ case study.
     folder, and pytest visits `notebooks/` before `tests/`, so a `conftest.py` there (the warehouse's
     trick) would shadow the generator tests' `from conftest import …`. Instead
     `analytics/pyproject.toml` sets `norecursedirs` (pytest's defaults plus `notebooks`).
+15. **`run_all.py` lands with step 3** (not step 8), since every notebook step runs its notebook
+    through it. It sets the selector event loop on Windows for pyzmq. Findings that changed the
+    EDA prose: the funnel is flat across devices and channels (~71 % cart → purchase everywhere),
+    and February outranks March in the STL seasonal index, so the check asserts December,
+    February and March as the top three months.
 
 ## Resolved questions
 
@@ -268,7 +273,7 @@ Answered from the codebase:
   the target's session; `censor_mask` makes lags reading a censored day NaN; `customer_key`
   matches `md5('u:' || id)`. Add the CI step and `docs/ci.md` row. Check:
   `uv run --project analytics/notebooks pytest analytics/notebooks`.
-- [ ] **3. `01_eda_rfm_cohorts.ipynb`.** Load marts via `read_mart`, RFM quintiles and segment
+- [x] **3. `01_eda_rfm_cohorts.ipynb`.** Load marts via `read_mart`, RFM quintiles and segment
   table, cohort retention heatmap, STL on daily orders (annotate 8 March and December peaks and
   the summer dip, compare with the generator's multipliers), funnel by device and by traffic
   source. Save `figures/01_cohort_retention.png`. Checks cell: seasonality peak in March and

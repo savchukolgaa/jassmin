@@ -31,7 +31,7 @@ def use_style() -> None:
             "grid.linewidth": 0.8,
             "axes.axisbelow": True,
             "axes.titlesize": 12,
-            "axes.titleweight": "semibold",
+            "axes.titleweight": "bold",
             "axes.titlelocation": "left",
             "axes.labelsize": 10,
             "axes.prop_cycle": mpl.cycler(color=PALETTE),

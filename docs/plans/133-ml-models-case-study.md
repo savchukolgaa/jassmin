@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/133
 Branch: `issue/133`
 Worktree: `.claude/worktrees/issue-133`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -367,7 +367,7 @@ Answered from the codebase:
   ELT, point-in-time feature engineering, data contracts and data tests, censored demand,
   probabilistic CLV, model calibration). Write `analytics/notebooks/README.md` (how to run), add the
   line to `AGENTS.md`.
-- [ ] **10. Final checks.** `uv run --project analytics/notebooks --locked pytest analytics/notebooks`,
+- [x] **10. Final checks.** `uv run --project analytics/notebooks --locked pytest analytics/notebooks`,
   `uv run --project analytics --locked pytest analytics` (unchanged generator still green),
   `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` (repo rule before finishing an issue).
 

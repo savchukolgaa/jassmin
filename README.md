@@ -30,7 +30,7 @@ _Screenshots coming soon. They'll be taken on synthetic shop data ([#131](https:
 
 **For the owner**
 
-- Privacy-aware analytics (nothing is tracked before consent) and a schema designed for LTV, churn and demand models. The analytics case study is in progress in [#133](https://github.com/savchukolgaa/jassmin/issues/133).
+- Privacy-aware analytics (nothing is tracked before consent) and a schema designed for LTV, churn and demand models. The analytics case study is in progress in [#133](https://github.com/savchukolgaa/jassmin/issues/133), on synthetic shop data from [`analytics/`](analytics/README.md) (#131).
 
 ## Architecture
 

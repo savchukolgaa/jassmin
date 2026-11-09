@@ -186,24 +186,50 @@ the app's constraints into `public` so the app itself can run on it.
   `app/.server/db/catalog-data.ts`, `app/.server/db/migrations/**`): `astral-sh/setup-uv`,
   `uv run --project analytics pytest` with a `postgres:18` service. Not a required check.
 
+**Deviations during implementation** (recorded here so nothing diverges silently)
+- **Open questions answered with the defaults** (user, 2026-11-09): Q1 constraint-filtered raw
+  rows, Q2 all-`text` raw columns, Q3 couple offer from 2025-09-01, Q4 track 30/50/100 ml.
+- **No pandas.** Rows are dicts and CSV is written with the `csv` module: a million event rows
+  in DataFrames plus copies for the anomalies used far more memory for no benefit. numpy stays for
+  the bulk draws (Beta signups, Gamma rates, popularity); scalar draws use seeded
+  `random.Random` streams (numpy scalar calls are ~50× slower). All streams come from
+  `SeedSequence(seed).spawn(...)`.
+- **Simulation order.** Visits are planned per person, then run in time order with stock events
+  (receipts, units coming back) in a heap, so serial ids grow with time and shoppers see the stock
+  of the moment. Out-of-stock adds: 85 % switch to 10 ml, 15 % backorder (a probability, so its
+  test uses a binomial bound; every other anomaly is an exact count).
+- **Clean ledger.** The simulation keeps a second ledger where each backorder shortfall gets an
+  `adjustment`; `--load-app-schema` loads it (and the matching stock) through temp tables instead of
+  `raw.inventory_movements`, which keeps its negative `stock_after`.
+- **Public load is generic.** `db.py` reads the column types, defaults, CHECKs and single-column
+  FKs from the catalog and builds one `insert … select … where` per table (`pg_input_is_valid`
+  for casts, `check is not false`), instead of a hand-written `sql/load_public.sql`.
+- **Fixtures** are written by `generator/fixtures.py`; `tests/test_fixtures.py` checks freshness.
+- **Test accounts** are 15 extra users (no orders) instead of overwriting real customers.
+- **Guest orders:** ~2 % of anonymous visitors check out as guests (`user_id` null), for
+  identity resolution in #132.
+- **Aspire** passes the URI explicitly (`JASSMIN_SYNTH_URI` from `uriExpression()`), so it doesn't
+  depend on the generated env-var name for a hyphenated resource.
+- **CI:** the load tests fail instead of skipping when `CI` is set without a database URL.
+
 ## Open questions
 
-- [ ] **Q1: Should `--load-app-schema` load the anomalous-but-valid rows, or the clean
+- [x] **Q1: Should `--load-app-schema` load the anomalous-but-valid rows, or the clean
   pre-anomaly data?** — Why it matters: the issue says "rows that pass the app's constraints",
   which keeps test accounts, padded emails, bot sessions and ×10 totals in the app's tables; a
   clean load would make the app demo and Metabase-on-`public` nicer, while `raw` keeps the dirty
   copy for #132. Recommended default: follow the issue literally (constraint-filtered raw rows).
   Affects steps: 9.
-- [ ] **Q2: Are `raw.*` columns all `text`, or typed like the app's (timestamptz, numeric, int)?** —
+- [x] **Q2: Are `raw.*` columns all `text`, or typed like the app's (timestamptz, numeric, int)?** —
   Why it matters: typed columns would silently fix the naive-UTC timestamp anomaly (cast in the
   session time zone) and reject unparseable values, but are easier to query; #132's staging layer
   depends on the choice. Recommended default: all `text` (a true landing zone, every anomaly
   survives). Affects steps: 8, 9, 10.
-- [ ] **Q3: When does the couple offer (#124) start in the synthetic history?** — Why it matters:
+- [x] **Q3: When does the couple offer (#124) start in the synthetic history?** — Why it matters:
   the prototype gates it after 2026-11-15, i.e. after `--end`, so it never appears; the issue lists
   it among the discount rules. Recommended default: `2025-09-01`, giving a before/after for a
   promotion-uplift analysis. Affects steps: 4.
-- [ ] **Q4: Should the synthetic shop track stock on full bottles (30/50/100 ml)?** — Why it
+- [x] **Q4: Should the synthetic shop track stock on full bottles (30/50/100 ml)?** — Why it
   matters: the real catalog tracks no size (`track_stock = false`, #98), so a faithful copy would
   have no ledger, no stock-outs and nothing for demand forecasting, which the issue asks for.
   Recommended default: track 30/50/100 ml, keep 5/10 ml untracked. Affects steps: 3, 7.
@@ -246,7 +272,7 @@ the app's constraints into `public` so the app itself can run on it.
 
 | Action | Path | Purpose |
 |--------|------|---------|
-| create | `analytics/pyproject.toml` | uv project: numpy, pandas, psycopg[binary], tzdata; dev pytest; pytest config |
+| create | `analytics/pyproject.toml` | uv project: numpy, psycopg[binary], tzdata; dev pytest; pytest config |
 | create | `analytics/uv.lock` | Locked dependencies |
 | create | `analytics/.python-version` | `3.12` |
 | create | `analytics/README.md` | How to run, customer model, anomaly catalogue, raw/public layout |
@@ -259,8 +285,8 @@ the app's constraints into `public` so the app itself can run on it.
 | create | `analytics/generator/anomalies.py` | Deliberate anomalies, each with its configured rate |
 | create | `analytics/generator/frames.py` | Rows → deterministic CSV/COPY payloads per table |
 | create | `analytics/generator/db.py` | URL resolution, guard, create DB, migrate, raw DDL, COPY, public load |
-| create | `analytics/generator/sql/load_public.sql` | Constraint-filtered `INSERT … SELECT` per table + `setval` |
 | create | `analytics/generator/data/catalog.json` | Exported real catalog (generated, committed) |
+| create | `analytics/generator/fixtures.py` | Writes the two fixture files |
 | create | `analytics/generator/fixtures/sample-events.json` | One generated event per type, for the zod contract test |
 | create | `analytics/generator/fixtures/pricing-cases.json` | Generated carts with expected pricing, for the parity test |
 | create | `analytics/tests/conftest.py` | Small-run fixture (e.g. 300 customers), throwaway DB helper |
@@ -285,39 +311,39 @@ the app's constraints into `public` so the app itself can run on it.
 
 ## Steps
 
-- [ ] **1. Repo plumbing** — `.gitignore`, `biome.json` (`!analytics`), `vite.config.ts` watch
+- [x] **1. Repo plumbing** — `.gitignore`, `biome.json` (`!analytics`), `vite.config.ts` watch
   ignore. Check: `pnpm lint`, `pnpm typecheck` unchanged.
-- [ ] **2. Catalog export** — `synthetic-catalog.ts` (`buildSyntheticCatalog()` returning
+- [x] **2. Catalog export** — `synthetic-catalog.ts` (`buildSyntheticCatalog()` returning
   `{ products, prices, fragranceFamilies, freeShippingThreshold }` from `CATALOG_PRODUCTS`,
   `CATALOG_PRICES`, `FRAGRANCE_FAMILIES`, `FREE_SHIPPING_THRESHOLD`), the tsx script and
   `pnpm analytics:export-catalog`; write the JSON with sorted keys and a trailing newline; Vitest
   test compares the committed file to `buildSyntheticCatalog()`.
-- [ ] **3. Python project skeleton** — `pyproject.toml`, `.python-version`, `uv lock`;
+- [x] **3. Python project skeleton** — `pyproject.toml`, `.python-version`, `uv lock`;
   `generate.py` with PEP 723 metadata and argparse (`--customers 10000 --visitors 15000 --start
   2024-01-01 --end 2026-11-01 --seed 42 --load-app-schema --out <dir> --database-name`);
   `config.py` from the prototype (segments, channels, devices, cities, names, `HOUR_P`,
   seasonality with Kyiv dates, track-stock volumes per Q4); `ids.py`; `catalog.py` reading
   `catalog.json` (products with real ids/families/`popular_rank`, 5 variants each at
   `CATALOG_PRICES`, derived variant ids). Check: `uv run analytics/generator/generate.py --help`.
-- [ ] **4. Pricing port** — `pricing.py` mirroring `discountedUnits`, `priceCart`,
+- [x] **4. Pricing port** — `pricing.py` mirroring `discountedUnits`, `priceCart`,
   `allocateDiscount` and the tie rules in kopiyky; discount rows per the decisions (couple offer
   start per Q3, yearly `VESNA15`). Generate `fixtures/pricing-cases.json`; add the parity part of
   `synthetic-data.contract.test.ts`. Check: `pnpm test` passes on the parity cases.
-- [ ] **5. People and ground truth** — port `build_users`: signup growth (Beta), segment +
+- [x] **5. People and ground truth** — port `build_users`: signup growth (Beta), segment +
   Gamma-distributed rate, churn probability, favourite family (65 % of views), usual device by
   channel, city, channel → `first_touch_*`, `locale`, `marketing_opt_in`, demo `password_hash`;
   `customer_truth` rows kept separately.
-- [ ] **6. Sessions, events, carts, orders** — port `simulate`/`session`/`place_order`/`lifecycle`
+- [x] **6. Sessions, events, carts, orders** — port `simulate`/`session`/`place_order`/`lifecycle`
   with the fixes listed in Decisions: #129 event properties and funnel, one active cart per owner,
   merged cart lines, `abandoned_at`, reminders for opted-in users, `discount_allocated`, payments
   with attempts, status history with sources, waybill + `arrived_at`, COD `unclaimed` (~7 %),
   returns, cancellations; churned customers keep browsing. Generate
   `fixtures/sample-events.json` and add the contract part of `synthetic-data.contract.test.ts`.
-- [ ] **7. Inventory** — port `run_inventory`: opening balances, sales in time order, reorder point
+- [x] **7. Inventory** — port `run_inventory`: opening balances, sales in time order, reorder point
   and supplier lead time, receipts, cancellation/unclaimed/return units put back; backorders let
   stock go negative (raw anomaly) and the clean ledger used for `public` inserts `adjustment` rows
   instead. `product_variants.stock_quantity` = final ledger sum.
-- [ ] **8. Anomalies and output** — `anomalies.py` applies, on copies of the clean frames, each
+- [x] **8. Anomalies and output** — `anomalies.py` applies, on copies of the clean frames, each
   catalogued anomaly with its own spawned RNG and rate from `config.py`: missing `device_type`
   (3 % of sessions and events), double-fired events (1.5 %, new id, same timestamp), 25 bot
   sessions (150–400 product views, 0.7 s apart), missing phones (12 %), emails with stray
@@ -326,25 +352,25 @@ the app's constraints into `public` so the app itself can run on it.
   product (`product_id` NULL, 0.5 %), naive UTC timestamps (1 % of events), negative stock during
   stock-outs. `frames.py` turns rows into deterministic CSV (fixed column order, `\N` for NULL,
   sorted by primary key); `--out` writes them to disk.
-- [ ] **9. Database load** — `db.py`: URL resolution and guard, create DB if missing, `pnpm
+- [x] **9. Database load** — `db.py`: URL resolution and guard, create DB if missing, `pnpm
   db:migrate` with overridden env, `DROP/CREATE SCHEMA raw`, `CREATE TABLE raw.*` (column types per
   Q2) + `raw.customer_truth` + `raw.generation_runs`, `COPY` every table in one transaction.
   `--load-app-schema`: `sql/load_public.sql` (TRUNCATE … RESTART IDENTITY CASCADE, constraint- and
   FK-filtered inserts in FK order, `setval`), per Q1. Verify the ledger trigger allows TRUNCATE
   (migration 0029). Print row counts per table, raw and public.
-- [ ] **10. Tests** — pytest files from the Files table: determinism (two runs with seed 7 and
+- [x] **10. Tests** — pytest files from the Files table: determinism (two runs with seed 7 and
   300 customers give identical payload hashes); `subtotal - discount = total` on clean frames;
   no order/session/cart before the user's `created_at`; March 1–8 daily orders > 2× July daily
   average; status timestamps in lifecycle order on clean data; per-variant ledger sum = stock;
   each anomaly rate within ±30 % (bot and test-account counts exact); guard refuses
   `jassmindb`/`postgres`/the app DB name; fixtures and catalog JSON fresh; PEP 723 deps match
   `pyproject.toml`; DB integration test skipped (with a reason) when no `DATABASE_URL`.
-- [ ] **11. Aspire** — `jassmin-synth` database and explicit-start `synth-generate` executable;
+- [x] **11. Aspire** — `jassmin-synth` database and explicit-start `synth-generate` executable;
   document in `aspire-apphost/AGENTS.md`. Check: `pnpm aspire:build`; start `synth-generate` from
   the dashboard and confirm `jassmindb` row counts are unchanged.
-- [ ] **12. CI** — `analytics` job (setup-uv, pnpm install for migrations, postgres:18 service,
+- [x] **12. CI** — `analytics` job (setup-uv, pnpm install for migrations, postgres:18 service,
   `uv run --project analytics pytest`), path filter in `changes`; update `docs/ci.md`.
-- [ ] **13. Docs** — `analytics/README.md`: commands (standalone and Aspire), arguments, the
+- [x] **13. Docs** — `analytics/README.md`: commands (standalone and Aspire), arguments, the
   customer model (segment table, rates, churn, Gamma heterogeneity, family affinity, devices,
   channels, seasonality multipliers), the anomaly catalogue (anomaly, table/column, rate, how to
   detect in SQL), raw vs public, `customer_truth` warning, the demo password, the sanity SQL from

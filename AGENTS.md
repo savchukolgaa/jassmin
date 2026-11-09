@@ -10,6 +10,8 @@ There is no in-app admin area: staff manage products and orders in the Strapi ad
 
 The database schema is designed for later LTV and churn analytics. Columns such as `users.last_login_at`, `users.acquisition_channel`, `users.city`, `users.marketing_opt_in`, `products.fragrance_family`, `carts.abandoned_at`, `orders.returned_at`, `orders.cancel_reason` and `order_items.discount_allocated`, the `order_status_history` table (#128), and the `inventory_movements` ledger with its `inventory_daily` view (#130), are ML features: never drop or rename them. `user_events.event_properties` follows a typed, validated contract per event type (#129), documented in `docs/analytics-events.md`.
 
+`analytics/` is a separate Python project (uv, pytest) with the synthetic data generator (#131, see `analytics/README.md`). It writes only to the separate `jassmin_synth` database, never the app's; pnpm, Biome and `tsc` ignore it. Changing the catalog, the prices, the pricing rules or the event contract can make its fixture tests fail: see its README.
+
 ## Commands
 
 Always use **pnpm**, never npm or yarn.

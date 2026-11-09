@@ -80,6 +80,7 @@ jobs:
       pull-requests: read
     outputs:
       cms: ${{ steps.filter.outputs.cms }}
+      analytics: ${{ steps.filter.outputs.analytics }}
     steps:
       - uses: actions/checkout@v7
 
@@ -91,6 +92,14 @@ jobs:
               - "cms/**"
               - "pnpm-lock.yaml"
               - "pnpm-workspace.yaml"
+            analytics:
+              - "analytics/**"
+              - "app/.server/db/catalog-data.ts"
+              - "app/.server/db/catalog-prices.ts"
+              - "app/.server/db/migrations/**"
+              - "app/.server/services/pricing.ts"
+              - "app/lib/analytics.schema.ts"
+              - ".github/workflows/ci.yml"
 
   cms:
     name: cms
@@ -121,3 +130,44 @@ jobs:
 
       - name: Build Strapi
         run: pnpm cms:build
+
+  # The synthetic data generator (#131, Python): its pytest suite, including a load into a
+  # throwaway jassmin_synth_test_* database migrated with the app's migrations (hence pnpm).
+  analytics:
+    name: analytics
+    needs: changes
+    if: ${{ needs.changes.outputs.analytics == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SYNTH_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # uv installs the Python version from analytics/.python-version and the locked packages.
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Test the generator
+        run: uv run --project analytics --locked pytest analytics

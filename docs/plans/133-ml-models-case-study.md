@@ -34,7 +34,7 @@ case study.
   come from the READMEs, not from queries.
 - New Python packages (a new uv project, see Decisions): pandas, numpy, scipy, SQLAlchemy +
   psycopg, matplotlib, seaborn, statsmodels (STL), scikit-learn, LightGBM, shap,
-  pymc-marketing **(unconfirmed, Q1)**, implicit, jupyter/ipykernel, nbclient/nbformat, pytest.
+  pymc-marketing (Q1), implicit, jupyter/ipykernel, nbclient/nbformat, pytest.
   No npm packages, no migrations, no env vars beyond the existing database ones.
 
 ## Decisions & assumptions
@@ -72,14 +72,14 @@ case study.
    a revenue order: `fct_orders.is_revenue` (paid, shipped or completed; payment-failed
    cancellations excluded), as in `mart_customer_features`.
 5. **LTV (02).** Transactions = revenue orders per `customer_key` by `order_date` (one per day,
-   like `lifetimes`' `summary_data_from_transaction_data`), monetary = `net_revenue`, time unit
+   like `pymc_marketing.clv.utils.rfm_summary`), monetary = `net_revenue`, time unit
    = weeks. Calibration 2024-01-01 → 2025-11-01, holdout 2025-11-01 → 2026-11-01 (12 months, so
    it includes a full December and 8 March). Fit BG/NBD on the calibration RFM; Gamma-Gamma on
    repeat customers after checking the frequency–monetary correlation is weak. Then refit on the
    full period for 12-month CLV per customer (monthly discount rate 1 %, a stated assumption) and
    aggregate by `dim_customers.acquisition_channel`.
    - **Holdout check:** customers ranked into deciles by predicted holdout purchases; per decile
-     |predicted − actual| / actual ≤ 15 % **(unconfirmed, Q2)** for low deciles.
+     |predicted − actual| / actual ≤ 15 % (Q2: tiny bottom deciles may be merged into a "bottom 30 %" bucket).
    - **Ground truth:** Spearman ρ between the posterior expected rate (λ̂, from the conditional
      expected purchases) and `customer_truth.purchase_rate`; mean λ̂ and mean P(alive) per true
      segment vs. the generator's 6.0 / 3.0 / 1.3 / 0.6 orders a year; and 4 clusters
@@ -110,7 +110,7 @@ case study.
      *some* chance of staying (excluding P(churn) > 0.98 lost causes) ranked by
      `P(churn) × expected 90-day revenue` (AOV × expected orders); expected saved revenue
      = Σ P(churn) × value × uplift − promo cost, with uplift 10 % and a 15 % discount promo on one
-     order **(unconfirmed, Q3)**.
+     order, with a 5 / 10 / 20 % uplift sensitivity table (Q3).
 7. **Recommendations (04).** Items are perfumes (`product_key`, 128 + unknown `-1`, which is
    dropped), not sizes. Users are `customer_key` (logged-in events and orders; anonymous sessions
    feed only the co-view matrix via `session_id`). Implicit-feedback weights: purchase 5,
@@ -154,44 +154,34 @@ case study.
     `analytics/notebooks/figures/`. Numbers quoted in the README are the seed-42 default run's.
 11. **CI.** CI can't afford generate (≈ 3 min) + dbt build (≈ 3 min) + five notebooks within the
     analytics job's 15 minutes reliably, so CI runs only the `jassmin_ml` unit tests
-    **(unconfirmed, Q4)**: a new step `uv run --project analytics/notebooks --locked pytest
+    (Q4): a new step `uv run --project analytics/notebooks --locked pytest
     analytics/notebooks` in the existing `analytics` job (its path filter already covers
     `analytics/**`). Notebook execution is a documented local command.
 12. **Repo tooling.** Biome and `tsc` already ignore `analytics/`. Add
     `/analytics/notebooks/.venv/` and `.ipynb_checkpoints/` to `.gitignore`, and
     `*.ipynb linguist-generated` plus `*.png binary` to `.gitattributes` so PR diffs stay readable.
 
-## Open questions
-
-- [ ] **Q1: Which BG/NBD / Gamma-Gamma library: `pymc-marketing` or `lifetimes`?** — Why it
-  matters: `lifetimes` (named first in the issue) has had no release since 2020 and breaks on
-  current pandas/NumPy 2 in places; `pymc-marketing` is its maintained successor (same
-  `BetaGeoModel` / `GammaGammaModel`, MAP or full Bayesian fit) but pulls in PyMC/PyTensor, which on
-  Windows without a C compiler runs in slow Python mode (fine for a MAP fit on ~8,000 customers).
-  Recommended default: `pymc-marketing` with `fit(method="map")`, plus a short full-MCMC section
-  only if it runs in under ~5 minutes. Affects steps: 1, 4.
-- [ ] **Q2: How to read "within 15 % of actual purchases per decile" for the low deciles?** — Why
-  it matters: the bottom predicted deciles hold one-time buyers with near-zero holdout purchases,
-  so a relative error there can exceed 15 % on a handful of orders even when the model is right.
-  Recommended default: assert ≤ 15 % on every decile; if the bottom deciles fail only because
-  their actual count is tiny (< 30 orders), merge them into one "bottom 30 %" bucket, say so in the
-  notebook and README, and assert on that. Affects steps: 4.
-- [ ] **Q3: Win-back economics.** — Why it matters: expected saved revenue needs an uplift rate and
-  a promo cost, which the data can't tell us (there's no experiment). Recommended default: 10 %
-  uplift and a 15 %-off promo on the next order, shown as a sensitivity table (5 / 10 / 20 % uplift)
-  so the reader sees the assumption. Affects steps: 5.
-- [ ] **Q4: Should CI execute the notebooks?** — Why it matters: a full run needs the generator,
-  the dbt build and ~10–20 min of notebooks, which doesn't fit the 15-minute analytics job;
-  running on a smaller dataset (e.g. 1,000 customers) would make the asserted thresholds flaky.
-  Recommended default: CI runs only the `jassmin_ml` unit tests; notebooks are run locally with
-  `run_all.py` and committed with outputs. Affects steps: 2, 9.
-- [ ] **Q5: Add an Aspire resource for the notebooks?** — Why it matters: `synth-generate` and
-  `dbt-build` are Aspire children of `jassmin-synth`; a `jupyter-lab` / `ml-notebooks` child would
-  make the whole pipeline startable from the dashboard, at the cost of Aspire wiring in this
-  issue. Recommended default: no; document the `uv` commands only, and leave it for a later issue.
-  Affects steps: 9.
-
 ## Resolved questions
+
+Answered by the user:
+
+- **Q1: Which BG/NBD / Gamma-Gamma library?** — `pymc-marketing`, the maintained successor of
+  `lifetimes` (same `BetaGeoModel` / `GammaGammaModel`), fitted with `fit(method="map")`; a short
+  full-MCMC section only if it runs in under ~5 minutes. `lifetimes` is not used (no release since
+  2020, breaks on current pandas/NumPy 2). PyTensor without a C compiler on Windows runs in slow
+  Python mode, which is fine for a MAP fit on ~8,000 customers. If it can't be installed, stop and
+  ask rather than switching library. (user, answering Q1)
+- **Q2: "Within 15 % per decile" for the low deciles** — assert ≤ 15 % on every decile; if the
+  bottom deciles fail only because their actual count is tiny (< 30 orders), merge them into one
+  "bottom 30 %" bucket, say so in the notebook and README, and assert on that. (user: default)
+- **Q3: Win-back economics** — 10 % uplift and a 15 %-off promo on the next order, shown with a
+  sensitivity table (5 / 10 / 20 % uplift). (user: default)
+- **Q4: CI execution of the notebooks** — no; CI runs only the `jassmin_ml` unit tests, and the
+  notebooks are run locally with `run_all.py` and committed with outputs. (user: default)
+- **Q5: Aspire resource for the notebooks** — no; document the `uv` commands only, leave it for a
+  later issue. (user: default)
+
+Answered from the codebase:
 
 - **Where do features come from, and can notebooks read the app's database?** — Only `marts.*` in
   `jassmin_synth`; BI and ML never read the app's tables (source: `AGENTS.md` → Commands,
@@ -258,8 +248,8 @@ case study.
   `pythonpath = ["."]`), `.python-version`, and run `uv sync --project analytics/notebooks` on
   Windows. Verify that `lightgbm`, `shap`, `implicit` and `pymc_marketing` import, and that a
   10-customer BG/NBD MAP fit runs (Q1). If `implicit` has no Windows wheel for the resolved
-  version, pin the last version that does; if `pymc-marketing` is impractical, fall back to
-  `lifetimes` and note it. Update `.gitignore` / `.gitattributes`.
+  version, pin the last version that does; if `pymc-marketing` can't be installed, stop and ask
+  (Q1). Update `.gitignore` / `.gitattributes`.
 - [ ] **2. `jassmin_ml` helpers with tests.** Write `db.py` (resolution + guard + read-only session),
   `truth.py`, `metrics.py`, `splits.py`, `plots.py`, `seed.py`. Tests: the guard refuses
   `jassmindb` / the app's database / any non-`jassmin_synth` name and accepts

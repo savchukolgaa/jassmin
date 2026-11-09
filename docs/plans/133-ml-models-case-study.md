@@ -192,6 +192,15 @@ case study.
       notebook prints it and asserts the rest (total within 5 %, better than the calendar clock,
       ground truth above chance). Ground truth: Spearman 0.46, P(alive) ROC-AUC 0.74, ARI 0.14 vs.
       0.004, matched accuracy 45 % vs. 35 %.
+17. **Churn notebook findings (step 5).** LightGBM beats the logistic baseline on test PR-AUC
+    (churn 0.9615 vs 0.9567, retained 0.427 vs 0.405; customer-clustered bootstrap, 300 resamples:
+    the gain is positive in all of them). Both models are already calibrated, and isotonic doesn't
+    lower the Brier score, so the raw LightGBM scores the win-back list. The win-back ranking uses
+    expected net gain (risk × AOV × uplift × 0.85 − (1 − risk) × 0.15 × AOV) instead of the plan's
+    "exclude P > 0.98" rule: with a constant uplift, excluding the surest churners has no basis, and
+    the notebook compares it with the pure top-risk decile. `city` gets a wide SHAP spread without a
+    planted effect; dropping it doesn't change validation PR-AUC, which the notebook shows as a
+    caution about reading SHAP.
 
 ## Resolved questions
 
@@ -302,7 +311,7 @@ Answered from the codebase:
   acquisition channel, ground-truth comparison (Spearman ρ, per-segment means, k-means 4 clusters
   vs. truth: ARI, matched accuracy, permutation baseline). Checks cell: decile errors ≤ 15 %
   (Q2), ARI > permutation 99th percentile, accuracy > 0.35.
-- [ ] **5. `03_churn.ipynb`.** Build the feature frame (Decision 6), time split, logistic baseline
+- [x] **5. `03_churn.ipynb`.** Build the feature frame (Decision 6), time split, logistic baseline
   and LightGBM, ROC-AUC/PR-AUC (both classes)/Brier on test, reliability curves (calibrate if
   needed), SHAP beeswarm + recency dependence (`figures/03_shap_summary.png`), win-back list at the
   latest snapshot with the saved-revenue sensitivity table (Q3). Checks cell: LightGBM PR-AUC >
@@ -356,7 +365,7 @@ Answered from the codebase:
 
 - [ ] All five notebooks run end to end from a clean environment against `jassmin_synth` — steps 1, 3–8
 - [ ] BG/NBD holdout predictions are within 15% of actual purchases per decile, and the recovered segments match the generator's ground truth above chance — step 4 (Q2). Segments: met. Deciles: 9 of 10 within 15 %, decile 6 at 18 % (Decision 16).
-- [ ] The churn model beats the logistic baseline on PR-AUC with a time-based split, and SHAP plots are included — step 5
+- [x] The churn model beats the logistic baseline on PR-AUC with a time-based split, and SHAP plots are included — step 5
 - [ ] The recommender beats the popularity baseline on Recall@10 — step 6
 - [ ] The forecast beats the seasonal-naive baseline on WAPE, with stock-out days masked — step 7
 - [ ] `analytics/README.md` presents the architecture, data quality work and results as a portfolio case study — step 9

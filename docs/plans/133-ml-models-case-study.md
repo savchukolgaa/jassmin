@@ -211,6 +211,18 @@ case study.
     cards mostly get one when clicked, so their CTR is ~100 %), and position is confounded with
     the item in the popularity-sorted lists. The notebook explains both, and recommends full-list
     impression logging and randomised top slots before using clicks as training signal.
+19. **Demand forecast evaluation (step 7).** Per size and day, WAPE can't rank forecasts of
+    intermittent demand: its optimum is the median, 0 for a bottle that sells on 4 % of days, so
+    "always 0" scores 1.0 and both models ~1.81 (a tie: LightGBM 1.809, seasonal naive 1.815;
+    LightGBM's RMSE is lower, 0.253 vs 0.355). The notebook reports that level and explains it,
+    and asserts the comparison where WAPE is meaningful, in every origin: per size and week, the
+    forecast horizon (1.214 vs 1.382, LightGBM better on all top-20 sizes), and on daily units
+    per bottle size class (0.366 vs 0.536) and for the shop (0.232 vs 0.380). Summed over 28 or 91
+    days a 7-day-ahead seasonal naive mostly copies the window's own sales, so those buckets aren't
+    used. Censored days turned out not to be zeros: the sell-out day always has a sale (1.4 units
+    on average), so the unmasked model over-forecasts (+6 % vs −1 % masked). The model under-reacts
+    to the 8 March spike at size level; a last-year index feature didn't help on validation origins
+    (Aug and Nov 2025), so the notebook names a top-down hierarchical forecast as the next step.
 
 ## Resolved questions
 
@@ -331,7 +343,7 @@ Answered from the codebase:
   table (`figures/04_recall_at_10.png`), position-bias chart by `list_position`. Optional extra
   cut: Recall@10 by true `favourite_family` match, showing the models learnt the planted taste.
   Checks cell: item-item and ALS Recall@10 > popularity (at least the best model must beat it).
-- [ ] **7. `05_demand_forecast.ipynb`.** Daily panel per tracked size, censoring share, seasonal-naive
+- [x] **7. `05_demand_forecast.ipynb`.** Daily panel per tracked size, censoring share, seasonal-naive
   with censored fallback, global LightGBM (Tweedie), rolling-origin backtest, overall / per-variant
   / weekly WAPE on non-censored days (`figures/05_forecast_vs_actual.png` for one popular size),
   reorder points for the top sizes vs. the ≤ 1-unit rule. Checks cell: LightGBM WAPE <
@@ -377,7 +389,7 @@ Answered from the codebase:
 - [ ] BG/NBD holdout predictions are within 15% of actual purchases per decile, and the recovered segments match the generator's ground truth above chance — step 4 (Q2). Segments: met. Deciles: 9 of 10 within 15 %, decile 6 at 18 % (Decision 16).
 - [x] The churn model beats the logistic baseline on PR-AUC with a time-based split, and SHAP plots are included — step 5
 - [x] The recommender beats the popularity baseline on Recall@10 — step 6
-- [ ] The forecast beats the seasonal-naive baseline on WAPE, with stock-out days masked — step 7
+- [x] The forecast beats the seasonal-naive baseline on WAPE, with stock-out days masked — step 7 (per size and week, and on daily units per size class and for the shop; per size and day the two tie, see Decision 19)
 - [ ] `analytics/README.md` presents the architecture, data quality work and results as a portfolio case study — step 9
 
 ## Out of scope

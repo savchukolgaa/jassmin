@@ -33,7 +33,8 @@
     "db:convert-catalog": "tsx app/.server/db/scripts/convert-catalog.ts",
     "db:import-catalog": "tsx app/.server/db/scripts/import-catalog.ts",
     "db:apply-catalog-prices": "tsx app/.server/db/scripts/apply-catalog-prices.ts",
-    "db:backfill-product-images": "tsx app/.server/db/scripts/backfill-product-images.ts"
+    "db:backfill-product-images": "tsx app/.server/db/scripts/backfill-product-images.ts",
+    "analytics:export-catalog": "tsx app/.server/db/scripts/export-synthetic-catalog.ts"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",

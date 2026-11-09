@@ -1,0 +1,112 @@
+version: 2
+
+models:
+  - name: fct_sessions
+    description: One row per real visit (no bots, no test accounts) with its funnel flags.
+    columns:
+      - name: session_id
+        description: The visit.
+        data_tests: [unique, not_null]
+      - name: customer_key
+        description: Surrogate key of the logged-in customer; null for an anonymous visit.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+      - name: is_logged_in
+        description: The visitor was logged in.
+      - name: session_date
+        description: Kyiv date the visit started.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: started_at
+        description: When the visit started.
+      - name: ended_at
+        description: The visit's last request.
+      - name: duration_seconds
+        description: Seconds from start to last request.
+      - name: landing_page
+        description: The first page.
+      - name: traffic_source
+        description: utm_source or referrer host.
+      - name: traffic_medium
+        description: utm_medium.
+      - name: traffic_campaign
+        description: utm_campaign.
+      - name: device_type
+        description: mobile, tablet, desktop or unknown.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [mobile, tablet, desktop, unknown]
+      - name: event_count
+        description: Events in the visit.
+      - name: product_view_count
+        description: Product views in the visit.
+      - name: viewed_product
+        description: Funnel step 1, viewed a product page.
+      - name: added_to_cart
+        description: Funnel step 2, added to cart.
+      - name: started_checkout
+        description: Funnel step 3, opened checkout.
+      - name: purchased
+        description: Funnel step 4, placed an order.
+
+  - name: fct_events
+    description: One row per real event with typed #129 properties.
+    columns:
+      - name: event_id
+        description: The event.
+        data_tests: [unique, not_null]
+      - name: session_id
+        description: The visit.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_sessions')
+                field: session_id
+      - name: customer_key
+        description: Surrogate key of the logged-in customer; null when anonymous.
+      - name: event_type
+        description: What happened.
+      - name: event_date
+        description: Kyiv date of the event.
+      - name: event_at
+        description: When it happened.
+      - name: product_key
+        description: The product for product events; -1 when deleted.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: variant_public_id
+        description: The size shown or added.
+      - name: volume_ml
+        description: That size's volume.
+      - name: price
+        description: That size's price at that moment, UAH.
+      - name: in_stock
+        description: Whether that size was in stock at that moment.
+      - name: list_id
+        description: The product list the card was in.
+      - name: list_position
+        description: The card's 1-based position in the list.
+      - name: search_id
+        description: The search whose results the list showed.
+      - name: dwell_ms
+        description: Time on the product page, for product_dwell.
+      - name: device_type
+        description: mobile, tablet, desktop or unknown.
+      - name: source
+        description: utm_source.
+      - name: medium
+        description: utm_medium.
+      - name: campaign
+        description: utm_campaign.
+      - name: had_naive_timestamp
+        description: The raw timestamp had no offset and was read as UTC (anomaly flag).

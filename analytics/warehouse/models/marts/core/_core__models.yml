@@ -1,0 +1,303 @@
+version: 2
+
+# The order star schema. Grain: one row per day, product, customer, order and order line.
+
+models:
+  - name: dim_date
+    description: One row per Kyiv calendar day across the years with data, with gifting peaks.
+    columns:
+      - name: date_day
+        description: The Kyiv calendar day.
+        data_tests: [unique, not_null]
+      - name: year
+        description: Calendar year.
+      - name: quarter
+        description: Calendar quarter (1-4).
+      - name: month
+        description: Calendar month (1-12).
+      - name: month_name
+        description: Month name in English.
+      - name: month_start
+        description: The first day of the month.
+      - name: iso_year
+        description: ISO week-numbering year.
+      - name: iso_week
+        description: ISO week number.
+      - name: week_start
+        description: The Monday of the week.
+      - name: day_of_week
+        description: ISO day of week, 1 = Monday ... 7 = Sunday.
+      - name: day_name
+        description: Day name in English.
+      - name: is_weekend
+        description: Saturday or Sunday.
+      - name: is_womens_day
+        description: 8 March, the biggest perfume day of the year.
+      - name: is_valentines_day
+        description: 14 February.
+      - name: is_st_nicholas_day
+        description: 6 December.
+      - name: is_new_year
+        description: 31 December or 1 January.
+      - name: is_black_friday
+        description: The fourth Friday of November.
+      - name: is_gift_season
+        description: 1-8 March, 7-14 February or December.
+
+  - name: dim_products
+    description: One row per perfume with its size prices, plus the unknown product (-1).
+    columns:
+      - name: product_key
+        description: The product's key (its id); -1 is the unknown (deleted) product.
+        data_tests: [unique, not_null]
+      - name: product_public_id
+        description: The product's stable UUID; null for the unknown product.
+      - name: title
+        description: The perfume's title.
+      - name: brand
+        description: The perfume's brand.
+      - name: gender
+        description: women, men or unisex.
+      - name: fragrance_family
+        description: The primary fragrance family.
+      - name: fragrance_families
+        description: Every fragrance family, primary first.
+      - name: pack_size
+        description: Units in the product.
+      - name: popular_rank
+        description: Position on the popular page; null when not listed.
+      - name: is_active
+        description: Still sold.
+      - name: created_at
+        description: When the product was added.
+      - name: created_date
+        description: created_at as a Kyiv date.
+      - name: price_5ml
+        description: Price of the 5 ml size, UAH.
+      - name: price_10ml
+        description: Price of the 10 ml size, UAH.
+      - name: price_30ml
+        description: Price of the 30 ml size, UAH.
+      - name: price_50ml
+        description: Price of the 50 ml size, UAH.
+      - name: price_100ml
+        description: Price of the 100 ml size, UAH.
+      - name: has_tracked_stock
+        description: At least one size has tracked stock.
+      - name: is_unknown
+        description: The unknown (deleted) product member.
+
+  - name: dim_customers
+    description: >
+      One row per customer: every registered (non-test) user and every guest who ordered (one per
+      normalised email). No name, email, phone or address: the surrogate key and the city only.
+    columns:
+      - name: customer_key
+        description: Surrogate key of the customer.
+        data_tests: [unique, not_null]
+      - name: is_registered
+        description: A registered user (not a guest).
+      - name: signup_at
+        description: Signup time; null for a guest.
+      - name: signup_date
+        description: signup_at as a Kyiv date.
+      - name: acquisition_channel
+        description: Where the customer came from at signup; 'guest' for guests.
+        data_tests: [not_null]
+      - name: first_touch_source
+        description: utm_source of the customer's first session.
+      - name: first_touch_medium
+        description: utm_medium of the customer's first session.
+      - name: city
+        description: Delivery city of the customer's latest order.
+      - name: marketing_opt_in
+        description: Agreed to marketing emails.
+      - name: locale
+        description: The language the customer last used.
+      - name: has_phone
+        description: The customer gave a phone.
+      - name: first_order_at
+        description: When the customer placed their first order; null without orders.
+      - name: first_order_date
+        description: first_order_at as a Kyiv date.
+      - name: first_order_traffic_source
+        description: Traffic source of the visit the first order was placed in.
+      - name: last_order_at
+        description: When the customer placed their latest order.
+      - name: order_count
+        description: Orders placed, any status.
+      - name: revenue_order_count
+        description: Orders whose latest status is paid, shipped or completed.
+      - name: lifetime_net_revenue
+        description: Net revenue of those orders, UAH.
+      - name: session_count
+        description: Logged-in visits.
+      - name: share_mobile
+        description: Share of the customer's visits on a phone.
+      - name: share_tablet
+        description: Share on a tablet.
+      - name: share_desktop
+        description: Share on a desktop.
+      - name: share_unknown_device
+        description: Share with an unknown device.
+      - name: primary_device
+        description: The device the customer uses most.
+      - name: favourite_family
+        description: The fragrance family the customer viewed most (ties - bought most, then alphabetical).
+
+  - name: fct_orders
+    description: One row per order of a real customer.
+    columns:
+      - name: order_id
+        description: The order's id (degenerate key).
+        data_tests: [unique, not_null]
+      - name: customer_key
+        description: Surrogate key of the customer.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+      - name: order_date
+        description: Kyiv date the order was placed.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: created_at
+        description: When the order was placed.
+      - name: status
+        description: The order's latest status.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pending, paid, shipped, completed, cancelled, returned, unclaimed]
+      - name: payment_status
+        description: unpaid, paid or refunded.
+      - name: payment_method
+        description: card, cod or gift_card.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [card, cod, gift_card]
+      - name: cancel_reason
+        description: Why the order was cancelled.
+      - name: is_revenue
+        description: The latest status is paid, shipped or completed.
+      - name: order_seq
+        description: 1 for the customer's first order, 2 for the second, and so on.
+      - name: is_first_order
+        description: The customer's first order.
+      - name: days_since_prev_order
+        description: Days since the customer's previous order.
+      - name: discount_id
+        description: The discount rule applied.
+      - name: discount_slug
+        description: The discount rule's name.
+      - name: discount_kind
+        description: How the discount rule discounts.
+      - name: line_count
+        description: Lines in the order.
+      - name: item_count
+        description: Units in the order.
+      - name: subtotal
+        description: Sum of the lines before discounts, UAH.
+      - name: discount_amount
+        description: Total discount, UAH.
+      - name: shipping_amount
+        description: Delivery charged, UAH.
+      - name: gift_card_amount
+        description: Paid by gift card, UAH.
+      - name: total_amount
+        description: What was left to pay, UAH (price typos recomputed).
+      - name: net_revenue
+        description: Sum of the lines' net revenue, UAH.
+      - name: currency
+        description: Always UAH.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [UAH]
+      - name: free_shipping
+        description: The shop paid for delivery.
+      - name: payment_attempts
+        description: Card payment attempts.
+      - name: failed_payment_attempts
+        description: Failed card payment attempts.
+      - name: paid_at
+        description: When it was paid.
+      - name: shipped_at
+        description: When it was shipped (timeline fixed).
+      - name: arrived_at
+        description: When the parcel reached the branch.
+      - name: completed_at
+        description: When it was completed.
+      - name: cancelled_at
+        description: When it was cancelled.
+      - name: returned_at
+        description: When the parcel came back.
+      - name: refunded_at
+        description: When the payment was refunded.
+      - name: hours_to_ship
+        description: Hours from order to shipping.
+      - name: days_in_transit
+        description: Days from shipping to arrival at the branch.
+      - name: is_price_outlier
+        description: The raw total was a price typo and was recomputed (anomaly flag).
+      - name: raw_total_amount
+        description: The raw total before recomputation.
+      - name: had_lowercase_currency
+        description: The raw currency was lowercase (anomaly flag).
+      - name: has_impossible_timeline
+        description: The raw shipped_at was after completed_at (anomaly flag).
+      - name: timeline_fixed_from_history
+        description: The timeline was fixed from the status history.
+      - name: has_orphan_product
+        description: A line's product was deleted (anomaly flag).
+
+  - name: fct_order_items
+    description: One row per order line of a real customer.
+    columns:
+      - name: order_item_id
+        description: The line's id.
+        data_tests: [unique, not_null]
+      - name: order_id
+        description: The order.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_orders')
+                field: order_id
+      - name: customer_key
+        description: Surrogate key of the customer.
+      - name: product_key
+        description: The product; -1 when it was deleted.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: variant_id
+        description: The size; null when deleted.
+      - name: volume_ml
+        description: The size bought, in ml.
+      - name: order_date
+        description: Kyiv date the order was placed.
+      - name: quantity
+        description: Units bought.
+      - name: unit_price
+        description: Unit price before discounts, UAH.
+      - name: gross_line_revenue
+        description: quantity x unit_price.
+      - name: discount_allocated
+        description: The line's share of the order's discount.
+      - name: net_line_revenue
+        description: gross_line_revenue - discount_allocated.
+      - name: is_revenue
+        description: The order's latest status is paid, shipped or completed.
+      - name: is_orphan_product
+        description: The product was deleted (anomaly flag).

@@ -1,0 +1,234 @@
+version: 2
+
+# Intermediate: shared logic between staging and the marts. Test accounts and bots are gone from here
+# on, and no personal data is selected.
+
+models:
+  - name: int_data_window
+    description: The span the data covers, from the first to the last recorded activity.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "data_start_at <= data_end_at"
+    columns:
+      - name: data_start_at
+        description: The earliest signup, visit, event, order, status change or stock movement.
+        data_tests: [not_null]
+      - name: data_end_at
+        description: The latest of the same.
+        data_tests: [not_null]
+      - name: data_start_date
+        description: data_start_at as a Kyiv date.
+      - name: data_end_date
+        description: data_end_at as a Kyiv date.
+
+  - name: int_orders
+    description: Orders of real customers (test accounts dropped), with discount and payment attempts.
+    columns:
+      - name: order_id
+        description: The order's id.
+        data_tests: [unique, not_null]
+      - name: customer_key
+        description: Surrogate key of the customer.
+        data_tests: [not_null]
+      - name: is_registered_customer
+        description: Placed by a registered user (not a guest).
+      - name: cart_id
+        description: The cart the order was placed from.
+      - name: discount_id
+        description: The discount rule applied, if any.
+      - name: discount_slug
+        description: The discount rule's name.
+      - name: discount_kind
+        description: How the discount rule discounts.
+      - name: status
+        description: The order's latest status.
+      - name: payment_status
+        description: unpaid, paid or refunded.
+      - name: payment_method
+        description: card, cod or gift_card.
+      - name: cancel_reason
+        description: Why the order was cancelled.
+      - name: free_shipping
+        description: The shop paid for delivery.
+      - name: subtotal
+        description: Sum of the lines before discounts, UAH.
+      - name: discount_amount
+        description: Total discount, UAH.
+      - name: shipping_amount
+        description: Delivery charged, UAH.
+      - name: gift_card_amount
+        description: Paid by gift card, UAH.
+      - name: total_amount
+        description: What was left to pay, UAH (price typos recomputed).
+      - name: raw_total_amount
+        description: total_amount as written in the raw layer.
+      - name: currency
+        description: Always UAH.
+      - name: created_at
+        description: When the order was placed.
+      - name: paid_at
+        description: When it was paid.
+      - name: shipped_at
+        description: When it was shipped (timeline fixed).
+      - name: arrived_at
+        description: When the parcel reached the branch.
+      - name: completed_at
+        description: When it was completed.
+      - name: cancelled_at
+        description: When it was cancelled.
+      - name: returned_at
+        description: When the parcel came back.
+      - name: refunded_at
+        description: When the payment was refunded.
+      - name: is_revenue
+        description: The latest status is paid, shipped or completed.
+      - name: payment_attempts
+        description: Card payment attempts for the order.
+      - name: failed_payment_attempts
+        description: Failed card payment attempts.
+      - name: is_price_outlier
+        description: The raw total was a price typo (anomaly flag).
+      - name: had_lowercase_currency
+        description: The raw currency was lowercase (anomaly flag).
+      - name: has_impossible_timeline
+        description: The raw shipped_at was after completed_at (anomaly flag).
+      - name: timeline_fixed_from_history
+        description: The timeline was fixed from the status history.
+
+  - name: int_order_lines
+    description: Lines of real customers' orders with net revenue.
+    columns:
+      - name: order_item_id
+        description: The line's id.
+        data_tests: [unique, not_null]
+      - name: order_id
+        description: The order.
+      - name: customer_key
+        description: Surrogate key of the customer.
+      - name: product_key
+        description: The product; -1 when it was deleted.
+        data_tests: [not_null]
+      - name: variant_id
+        description: The size; null when deleted.
+      - name: volume_ml
+        description: The size bought, in ml.
+      - name: quantity
+        description: Units bought.
+      - name: unit_price
+        description: Unit price before discounts, UAH.
+      - name: gross_line_revenue
+        description: quantity x unit_price.
+      - name: discount_allocated
+        description: The line's share of the order's discount (#128).
+      - name: net_line_revenue
+        description: gross_line_revenue - discount_allocated.
+      - name: order_created_at
+        description: When the order was placed.
+      - name: is_revenue
+        description: The order's latest status is paid, shipped or completed.
+      - name: is_orphan_product
+        description: The product was deleted (anomaly flag).
+
+  - name: int_customer_orders
+    description: Each order's place in its customer's history.
+    columns:
+      - name: order_id
+        description: The order.
+        data_tests: [unique, not_null]
+      - name: customer_key
+        description: Surrogate key of the customer.
+      - name: created_at
+        description: When the order was placed.
+      - name: order_seq
+        description: 1 for the customer's first order, 2 for the second, and so on.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+      - name: days_since_prev_order
+        description: Days since the customer's previous order; null for the first.
+
+  - name: int_order_status_intervals
+    description: Each order's status as intervals [valid_from, valid_to), for point-in-time lookups.
+    columns:
+      - name: order_id
+        description: The order.
+        data_tests: [not_null]
+      - name: status
+        description: The status held during the interval.
+      - name: valid_from
+        description: When the status started (inclusive).
+        data_tests: [not_null]
+      - name: valid_to
+        description: When the next status started (exclusive); null for the current one.
+
+  - name: int_sessions
+    description: Real visits (no bots, no test accounts).
+    columns:
+      - name: session_id
+        description: The visit.
+        data_tests: [unique, not_null]
+      - name: customer_key
+        description: Surrogate key of the logged-in customer; null for an anonymous visit.
+      - name: started_at
+        description: When the visit started.
+      - name: ended_at
+        description: The visit's last request.
+      - name: landing_page
+        description: The first page.
+      - name: traffic_source
+        description: utm_source or referrer host.
+      - name: traffic_medium
+        description: utm_medium.
+      - name: traffic_campaign
+        description: utm_campaign.
+      - name: device_type
+        description: mobile, tablet, desktop or unknown.
+      - name: event_count
+        description: Events in the visit.
+      - name: product_view_count
+        description: Product views in the visit.
+
+  - name: int_events
+    description: Real events (no bots, no test accounts, no duplicates) with typed properties.
+    columns:
+      - name: event_id
+        description: The event.
+        data_tests: [unique, not_null]
+      - name: session_id
+        description: The visit.
+      - name: customer_key
+        description: Surrogate key of the logged-in customer; null when anonymous.
+      - name: event_type
+        description: What happened.
+      - name: created_at
+        description: When it happened.
+      - name: product_key
+        description: The product for product events; -1 when it was deleted.
+      - name: device_type
+        description: mobile, tablet, desktop or unknown.
+      - name: source
+        description: utm_source.
+      - name: medium
+        description: utm_medium.
+      - name: campaign
+        description: utm_campaign.
+      - name: variant_public_id
+        description: The size shown or added (event property variant_id).
+      - name: volume_ml
+        description: That size's volume.
+      - name: price
+        description: That size's price at that moment, UAH.
+      - name: in_stock
+        description: Whether that size was in stock at that moment.
+      - name: list_id
+        description: The product list the card was in (impressions, clicks).
+      - name: list_position
+        description: The card's 1-based position in the list.
+      - name: search_id
+        description: The search whose results the list showed.
+      - name: dwell_ms
+        description: Time on the product page, for product_dwell.
+      - name: had_naive_timestamp
+        description: The raw timestamp had no offset (anomaly flag).

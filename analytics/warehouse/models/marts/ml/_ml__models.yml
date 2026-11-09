@@ -1,0 +1,87 @@
+version: 2
+
+models:
+  - name: mart_customer_features
+    description: >
+      The churn model's training table: one row per customer and monthly snapshot (1st of the
+      month, 00:00 Kyiv), from the first snapshot with a revenue order. Every feature reads only
+      data before snapshot_at (point in time); churned_next_90d looks at the 90 days after it.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [customer_key, snapshot_date]
+    columns:
+      - name: customer_key
+        description: Surrogate key of the customer.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+      - name: snapshot_date
+        description: The snapshot's Kyiv date (the 1st of a month).
+        data_tests: [not_null]
+      - name: snapshot_at
+        description: The snapshot moment, 00:00 Kyiv on snapshot_date; features use data before it.
+        data_tests: [not_null]
+      - name: is_registered
+        description: A registered user (not a guest).
+      - name: tenure_days
+        description: Days since signup (or the first order, for a guest).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: recency_days
+        description: R of RFM, days since the latest revenue order.
+        data_tests: [not_null]
+      - name: frequency
+        description: F of RFM, revenue orders (paid, shipped or completed as of the snapshot).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+      - name: monetary
+        description: M of RFM, net revenue of those orders, UAH.
+        data_tests: [not_null]
+      - name: avg_order_value
+        description: monetary / frequency, UAH.
+      - name: discount_share
+        description: Discount / gross revenue of the revenue orders (0-1).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: orders_placed
+        description: Orders placed before the snapshot, any status.
+      - name: return_rate
+        description: Returned / shipped orders as of the snapshot (0-1).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: unclaimed_rate
+        description: Unclaimed / shipped orders as of the snapshot (0-1).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: sessions_30d
+        description: Logged-in visits in the 30 days before the snapshot.
+      - name: sessions_90d
+        description: Logged-in visits in the 90 days before the snapshot.
+      - name: days_since_last_visit
+        description: Days since the latest logged-in visit; null without one (e.g. guests).
+      - name: max_input_at
+        description: The latest timestamp any feature of the row read; always before snapshot_at.
+        data_tests: [not_null]
+      - name: is_label_available
+        description: The data covers the 90 days after the snapshot, so the label is known.
+      - name: churned_next_90d
+        description: >
+          The label. True when the customer placed no order (except one cancelled because its
+          payment failed) in the 90 days from snapshot_at; null when the data ends earlier.

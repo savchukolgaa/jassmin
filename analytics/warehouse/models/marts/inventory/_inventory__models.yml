@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: fct_inventory_daily
+    description: >
+      One row per tracked size and Kyiv day: units sold, returned and received, closing stock,
+      backorders and stock-outs. Days with a stock-out are censored demand.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [variant_id, day]
+    columns:
+      - name: variant_id
+        description: The size.
+        data_tests: [not_null]
+      - name: product_key
+        description: The perfume.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: volume_ml
+        description: The size in ml.
+      - name: day
+        description: The Kyiv day.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: units_sold
+        description: Units sold that day.
+      - name: units_returned
+        description: Units put back by cancelled orders and returned or unclaimed parcels.
+      - name: units_received
+        description: Units received from the supplier.
+      - name: units_adjusted
+        description: Opening balances and staff corrections.
+      - name: opening_stock
+        description: Stock at the start of the day, floored at 0; null on the first day.
+      - name: closing_stock
+        description: Stock at the end of the day, floored at 0.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: backorder_units
+        description: How far below zero the ledger's stock was at the end of the day.
+      - name: ledger_closing_stock
+        description: The ledger's own closing stock, negative during a backorder.
+      - name: is_stock_out
+        description: The size was out of stock at some moment that day.
+      - name: is_demand_censored
+        description: Sales that day are only a lower bound of the demand (a stock-out).

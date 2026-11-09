@@ -1,0 +1,139 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      The raw layer. On the `synth` target it's #131's `raw` schema in jassmin_synth: the app's
+      tables and column names, every column `text`, no constraints, and deliberate anomalies (see
+      analytics/README.md). On the `prod` target it's the app's own `public` tables (read-only).
+    schema: "{{ 'public' if target.name == 'prod' else 'raw' }}"
+    tables:
+      - name: users
+        description: Registered customers (app table `users`).
+        columns:
+          - name: id
+            description: The user's serial id.
+          - name: full_name
+            description: Name (personal data; never leaves staging).
+          - name: email
+            description: Email as typed; may have stray spaces or capitals, or be an @example.com test account.
+          - name: phone
+            description: Phone (personal data); missing for about 12% of users.
+          - name: acquisition_channel
+            description: Where the customer came from at signup (#128).
+          - name: created_at
+            description: Signup time.
+          - name: city
+            description: Delivery city of the user's latest order (#128).
+          - name: marketing_opt_in
+            description: Agreed to marketing emails.
+
+      - name: products
+        description: The catalog, one row per perfume (app table `products`).
+        columns:
+          - name: id
+            description: The product's serial id.
+          - name: public_id
+            description: The product's stable UUID.
+          - name: fragrance_family
+            description: The primary fragrance family.
+
+      - name: product_variants
+        description: The sizes of each perfume with price and stock (app table `product_variants`).
+        columns:
+          - name: id
+            description: The variant's serial id.
+          - name: stock_quantity
+            description: Current stock of a tracked size.
+          - name: track_stock
+            description: Whether stock limits sales of this size (#98).
+
+      - name: discounts
+        description: Discount rules and promo codes (app table `discounts`).
+        columns:
+          - name: id
+            description: The rule's serial id.
+
+      - name: sessions
+        description: Visits (app table `sessions`); includes bot sessions.
+        columns:
+          - name: session_id
+            description: The session's UUID.
+          - name: device_type
+            description: mobile, tablet or desktop; missing for about 3% of sessions.
+
+      - name: user_events
+        description: >
+          The behavioural event stream (app table `user_events`, #129); includes double-fired events,
+          bot traffic and timestamps without a UTC offset.
+        columns:
+          - name: event_id
+            description: The event's UUID.
+          - name: created_at
+            description: Event time; about 1% are written without an offset (UTC).
+
+      - name: carts
+        description: Shopping carts (app table `carts`).
+        columns:
+          - name: id
+            description: The cart's serial id.
+
+      - name: cart_items
+        description: Cart lines (app table `cart_items`).
+        columns:
+          - name: id
+            description: The line's serial id.
+
+      - name: orders
+        description: >
+          Orders (app table `orders`); includes x10 price typos, lowercase `uah` and `shipped_at`
+          after `completed_at`.
+        columns:
+          - name: id
+            description: The order's serial id.
+          - name: guest_email
+            description: The email given at checkout (personal data; never leaves staging).
+          - name: total_amount
+            description: What was left to pay; about 0.2% carry a x10 typo.
+          - name: currency
+            description: UAH; about 1% are written in lowercase.
+
+      - name: order_items
+        description: Order lines (app table `order_items`); a line's product may have been deleted.
+        columns:
+          - name: id
+            description: The line's serial id.
+          - name: product_id
+            description: The product; null when it was deleted.
+
+      - name: payments
+        description: Card payment attempts (app table `payments`).
+        columns:
+          - name: id
+            description: The attempt's serial id.
+
+      - name: order_status_history
+        description: Every change of an order's status (app table `order_status_history`, #128).
+        columns:
+          - name: id
+            description: The change's serial id.
+
+      - name: inventory_movements
+        description: >
+          The stock ledger (app table `inventory_movements`, #130); stock may go negative during
+          stock-outs (backorders).
+        columns:
+          - name: id
+            description: The movement's serial id.
+          - name: stock_after
+            description: Stock after the movement; negative during a backorder.
+
+      - name: customer_truth
+        description: >
+          #131's ground truth (segment, purchase rate, churn probability per user). Only for
+          evaluating models (#133): no warehouse model reads it, so features never see it.
+        columns:
+          - name: user_id
+            description: The user it describes.
+          - name: segment
+            description: loyal, regular, occasional or one_time.

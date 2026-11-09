@@ -1,0 +1,8 @@
+# The warehouse's uv virtualenv, Python caches and dbt output (#132)
+.venv/
+__pycache__/
+.pytest_cache/
+target/
+dbt_packages/
+logs/
+.user.yml

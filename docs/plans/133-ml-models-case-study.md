@@ -178,8 +178,9 @@ Answered by the user:
   sensitivity table (5 / 10 / 20 % uplift). (user: default)
 - **Q4: CI execution of the notebooks** — no; CI runs only the `jassmin_ml` unit tests, and the
   notebooks are run locally with `run_all.py` and committed with outputs. (user: default)
-- **Q5: Aspire resource for the notebooks** — no; document the `uv` commands only, leave it for a
-  later issue. (user: default)
+- **Q5: Aspire resource for the notebooks** — no Aspire resource in #133; document the `uv`
+  commands only. Starting the notebooks and JupyterLab from the Aspire dashboard is its own issue,
+  #159. (user)
 
 Answered from the codebase:
 
@@ -335,5 +336,7 @@ Answered from the codebase:
 - Dashboards / BI tools.
 - Changes to the generator or the dbt models (if a mart turns out to lack something, note it as a
   follow-up issue instead of widening this one).
-- An Aspire resource for Jupyter (Q5) and CI execution of the notebooks (Q4).
+- An Aspire resource for the notebooks and JupyterLab (Q5): #159 (Start the ML notebooks and
+  JupyterLab from the Aspire dashboard).
+- CI execution of the notebooks (Q4).
 - Running on the `prod` target / real data.

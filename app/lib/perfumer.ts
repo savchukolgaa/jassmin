@@ -98,7 +98,17 @@ export type PerfumerRating = (typeof PERFUMER_RATINGS)[number];
 /** One entry of the chat thread the browser shows and keeps in `sessionStorage`. */
 export type ThreadItem =
   | { id: string; role: "user"; text: string }
-  | { id: string; role: "perfumer"; reply: PerfumerReply }
+  | {
+      id: string;
+      role: "perfumer";
+      reply: PerfumerReply;
+      /** Names the answer in analytics (#166); answers kept from before #166 have none. */
+      replyId?: string;
+      /** The customer's message number this answers. */
+      turn?: number;
+      /** The customer's rating of the answer, once given. */
+      rating?: PerfumerRating;
+    }
   | { id: string; role: "error"; error: PerfumerErrorKey; retryText: string }
   | { id: string; role: "cancelled" };
 

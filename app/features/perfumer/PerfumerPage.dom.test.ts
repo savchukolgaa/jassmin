@@ -17,12 +17,14 @@ import { THREAD_STORAGE_KEY } from "./thread-storage";
 /** A request the test answers when it wants to. */
 interface Call {
   messages: PerfumerMessage[];
+  turn: unknown;
+  entry: unknown;
   answer: (result: PerfumerActionResult) => void;
 }
 
 let calls: Call[] = [];
 
-function renderPage(locale: Locale = "uk") {
+function renderPage(locale: Locale = "uk", url = "/parfumer") {
   const router = createMemoryRouter(
     [
       {
@@ -30,16 +32,18 @@ function renderPage(locale: Locale = "uk") {
         element: createElement(PerfumerPage),
         action: async ({ request }) => {
           const form = await request.formData();
-          const { messages } = JSON.parse(String(form.get("payload"))) as {
+          const { messages, turn, entry } = JSON.parse(String(form.get("payload"))) as {
             messages: PerfumerMessage[];
+            turn: unknown;
+            entry: unknown;
           };
           return new Promise<PerfumerActionResult>((resolve) => {
-            calls.push({ messages, answer: resolve });
+            calls.push({ messages, turn, entry, answer: resolve });
           });
         },
       },
     ],
-    { initialEntries: ["/parfumer"] },
+    { initialEntries: [url] },
   );
   return render(createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })));
 }
@@ -183,6 +187,55 @@ describe("PerfumerPage", () => {
       items: ThreadItem[];
     };
     expect(saved.items.map((item) => item.role)).toEqual(["user", "perfumer"]);
+  });
+
+  it("sends each message's turn and the entry the chat was opened from (#166)", async () => {
+    const user = userEvent.setup();
+    renderPage("uk", "/parfumer?from=catalog");
+
+    await user.type(input(), "Щось легке{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]).toMatchObject({ turn: 1, entry: "catalog" });
+    await answerLast(reply("Ось легкі.", "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d"));
+
+    await user.type(await screen.findByRole("textbox"), "Дешевше{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]).toMatchObject({ turn: 2, entry: "catalog" });
+
+    // The answer's reply id and turn are kept for its rating.
+    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
+      entry: string;
+      items: ThreadItem[];
+    };
+    expect(saved.entry).toBe("catalog");
+    expect(saved.items[1]).toMatchObject({
+      role: "perfumer",
+      replyId: "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d",
+      turn: 1,
+    });
+  });
+
+  it("keeps a restored conversation's entry, and counts an unknown one as direct", async () => {
+    sessionStorage.setItem(
+      THREAD_STORAGE_KEY,
+      JSON.stringify({
+        v: 1,
+        entry: "product",
+        items: [{ id: "1", role: "user", text: "Щось ванільне" }],
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage("uk", "/parfumer?from=nonsense");
+
+    await user.type(await screen.findByRole("textbox"), "Ще{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]).toMatchObject({ turn: 2, entry: "product" });
+
+    await answerLast(reply("Ось."));
+    await user.click(await screen.findByRole("button", { name: "Почати спочатку" }));
+    await user.type(input(), "Нове{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]).toMatchObject({ turn: 1, entry: "direct" });
   });
 
   it("renders in English", async () => {

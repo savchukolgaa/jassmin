@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useRouteLoaderData } from "react-router";
+import { useRouteLoaderData, useSearchParams } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { cn } from "~/lib/cn";
 import { type TextKey, useT } from "~/lib/i18n";
+import { toPerfumerEntry } from "~/lib/perfumer";
 import type { loader as shopLoader } from "~/routes/_shop";
 import { BottleIcon, RestartIcon } from "./icons";
 import { MessageThread } from "./MessageThread";
@@ -24,7 +25,9 @@ const EXAMPLES = [
  */
 export function PerfumerPage() {
   const { t } = useT();
-  const thread = usePerfumerThread();
+  // How the chat was opened (#166): the header's link and #165's entry points add `?from=`.
+  const [searchParams] = useSearchParams();
+  const thread = usePerfumerThread(toPerfumerEntry(searchParams.get("from")));
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // The fixed cookie banner (#18) would cover the stuck message bar: until it's answered the bar
@@ -61,6 +64,7 @@ export function PerfumerPage() {
             pending={thread.pending}
             onCancel={thread.cancel}
             onRetry={thread.retry}
+            onRate={thread.rate}
           />
         )}
         <PerfumerInput

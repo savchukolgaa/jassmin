@@ -1063,6 +1063,12 @@ export const uk = {
     picksLabel: "Рекомендовані аромати",
     whyItFits: "Чому вам пасує",
     questionLabel: "Уточнення",
+    feedback: {
+      question: "Відповідь була корисною?",
+      up: "Так, корисна",
+      down: "Ні, не допомогла",
+      thanks: "Дякуємо за відгук!",
+    },
     thinking: "Парфумер підбирає аромати…",
     usually: "зазвичай до хвилини",
     hints: {

@@ -1,4 +1,11 @@
-import { PERFUMER_ERROR_KEYS, type PerfumerReply, type ThreadItem } from "~/lib/perfumer";
+import {
+  PERFUMER_ERROR_KEYS,
+  PERFUMER_RATINGS,
+  type PerfumerEntry,
+  type PerfumerReply,
+  type ThreadItem,
+  toPerfumerEntry,
+} from "~/lib/perfumer";
 
 // The perfumer chat's thread in `sessionStorage` (#163): it survives a reload and dies with the
 // tab. Parsed defensively without zod (it stays out of the browser bundle, #96): anything that
@@ -49,7 +56,12 @@ function isThreadItem(value: unknown): value is ThreadItem {
     case "user":
       return isString(value.text);
     case "perfumer":
-      return isReply(value.reply);
+      return (
+        isReply(value.reply) &&
+        (value.replyId === undefined || isString(value.replyId)) &&
+        (value.turn === undefined || Number.isInteger(value.turn)) &&
+        (value.rating === undefined || PERFUMER_RATINGS.some((rating) => rating === value.rating))
+      );
     case "error":
       return PERFUMER_ERROR_KEYS.some((key) => key === value.error) && isString(value.retryText);
     case "cancelled":
@@ -68,24 +80,44 @@ function safeStorage(): Storage | undefined {
   }
 }
 
-/** The stored thread, or `[]` when there's none, it's broken or storage is blocked. */
-export function loadThread(storage: Storage | undefined = safeStorage()): ThreadItem[] {
+/** The stored copy, if it's one this version wrote. */
+function readStored(storage: Storage | undefined): { items: ThreadItem[]; entry: unknown } | null {
   try {
     const raw = storage?.getItem(THREAD_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) return null;
     const stored: unknown = JSON.parse(raw);
-    if (!isObject(stored) || stored.v !== VERSION || !Array.isArray(stored.items)) return [];
+    if (!isObject(stored) || stored.v !== VERSION || !Array.isArray(stored.items)) return null;
     const items: unknown[] = stored.items;
-    return items.every(isThreadItem) ? items.slice(-MAX_STORED_ITEMS) : [];
+    return items.every(isThreadItem)
+      ? { items: items.slice(-MAX_STORED_ITEMS), entry: stored.entry }
+      : null;
   } catch {
-    return [];
+    return null;
   }
 }
 
-/** Stores the thread (its last 50 items); an empty thread removes the key. */
+/** The stored thread, or `[]` when there's none, it's broken or storage is blocked. */
+export function loadThread(storage: Storage | undefined = safeStorage()): ThreadItem[] {
+  return readStored(storage)?.items ?? [];
+}
+
+/**
+ * How the stored conversation was opened (#166), or `undefined` without one. A thread stored
+ * before #166 has no entry and counts as `direct`.
+ */
+export function loadThreadEntry(
+  storage: Storage | undefined = safeStorage(),
+): PerfumerEntry | undefined {
+  const stored = readStored(storage);
+  if (!stored || stored.items.length === 0) return undefined;
+  return toPerfumerEntry(isString(stored.entry) ? stored.entry : undefined);
+}
+
+/** Stores the thread (its last 50 items) and its entry; an empty thread removes the key. */
 export function saveThread(
   items: readonly ThreadItem[],
   storage: Storage | undefined = safeStorage(),
+  entry: PerfumerEntry = "direct",
 ): void {
   try {
     if (items.length === 0) {
@@ -93,7 +125,7 @@ export function saveThread(
     } else {
       storage?.setItem(
         THREAD_STORAGE_KEY,
-        JSON.stringify({ v: VERSION, items: items.slice(-MAX_STORED_ITEMS) }),
+        JSON.stringify({ v: VERSION, entry, items: items.slice(-MAX_STORED_ITEMS) }),
       );
     }
   } catch {

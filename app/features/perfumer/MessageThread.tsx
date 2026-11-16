@@ -1,20 +1,24 @@
 import { Button } from "~/components/ui/Button";
+import { ProductListProvider } from "~/features/analytics/ProductList";
 import { ProductCard } from "~/features/catalog/ProductCard";
 import { useT } from "~/lib/i18n";
 import {
   isRetryable,
   type PerfumerErrorKey,
-  type PerfumerReply,
+  type PerfumerRating,
   type ThreadItem,
 } from "~/lib/perfumer";
 import { AlertIcon, QuestionIcon, RetryIcon } from "./icons";
+import { PerfumerFeedback } from "./PerfumerFeedback";
 import { PerfumerName } from "./PerfumerName";
 import { ThinkingBubble } from "./ThinkingBubble";
 import type { PendingTurn } from "./usePerfumerThread";
 
 // The conversation (#163): the customer's bubbles on the right, the perfumer's turns (intro, cards
 // with reasons, question) on the left, errors and cancels, and the "choosing…" bubble last. Every
-// text is a plain text node: nothing the model or the customer wrote is rendered as HTML.
+// text is a plain text node: nothing the model or the customer wrote is rendered as HTML. Each
+// answer's cards are a `perfumer` product list (#166), so their impressions and clicks are tracked
+// with their position, and each answer can be rated.
 
 const LABEL = "text-xs font-extrabold tracking-[0.08em] text-primary-dark uppercase";
 
@@ -23,9 +27,10 @@ export interface MessageThreadProps {
   pending: PendingTurn | null;
   onCancel: () => void;
   onRetry: (errorId: string) => void;
+  onRate: (itemId: string, rating: PerfumerRating) => void;
 }
 
-export function MessageThread({ items, pending, onCancel, onRetry }: MessageThreadProps) {
+export function MessageThread({ items, pending, onCancel, onRetry, onRate }: MessageThreadProps) {
   const { t } = useT();
   const last = items.at(-1);
 
@@ -41,7 +46,13 @@ export function MessageThread({ items, pending, onCancel, onRetry }: MessageThre
           case "user":
             return <UserBubble key={item.id} text={item.text} />;
           case "perfumer":
-            return <PerfumerTurn key={item.id} reply={item.reply} />;
+            return (
+              <PerfumerTurn
+                key={item.id}
+                item={item}
+                onRate={(rating) => onRate(item.id, rating)}
+              />
+            );
           case "error":
             return (
               <ErrorBubble
@@ -84,8 +95,15 @@ function UserBubble({ text }: { text: string }) {
   );
 }
 
-function PerfumerTurn({ reply }: { reply: PerfumerReply }) {
+function PerfumerTurn({
+  item,
+  onRate,
+}: {
+  item: Extract<ThreadItem, { role: "perfumer" }>;
+  onRate: (rating: PerfumerRating) => void;
+}) {
   const { t } = useT();
+  const { reply, replyId } = item;
   return (
     <li className="flex animate-fade-up flex-col gap-3.5">
       <PerfumerName />
@@ -93,23 +111,33 @@ function PerfumerTurn({ reply }: { reply: PerfumerReply }) {
         {reply.intro}
       </p>
       {reply.picks.length > 0 && (
-        <ul
-          aria-label={t("perfumer.picksLabel")}
-          className="grid grid-cols-[repeat(auto-fill,minmax(min(18.75rem,100%),1fr))] gap-4"
+        <ProductListProvider
+          listId="perfumer"
+          productIds={reply.picks.map((pick) => pick.product.id)}
         >
-          {reply.picks.map((pick) => (
-            <li key={pick.product.id} className="flex">
-              <ProductCard product={pick.product} headingLevel={3} purchase={false}>
-                <div className="mt-3.5 flex flex-col gap-1.5 rounded-2xl bg-blush px-3.5 pt-3.5 pb-4">
-                  <p className={LABEL}>{t("perfumer.whyItFits")}</p>
-                  <p className="text-[0.9375rem] leading-normal whitespace-pre-line text-body">
-                    {pick.reason}
-                  </p>
-                </div>
-              </ProductCard>
-            </li>
-          ))}
-        </ul>
+          <ul
+            aria-label={t("perfumer.picksLabel")}
+            className="grid grid-cols-[repeat(auto-fill,minmax(min(18.75rem,100%),1fr))] gap-4"
+          >
+            {reply.picks.map((pick, index) => (
+              <li key={pick.product.id} className="flex">
+                <ProductCard
+                  product={pick.product}
+                  headingLevel={3}
+                  purchase={false}
+                  listIndex={index}
+                >
+                  <div className="mt-3.5 flex flex-col gap-1.5 rounded-2xl bg-blush px-3.5 pt-3.5 pb-4">
+                    <p className={LABEL}>{t("perfumer.whyItFits")}</p>
+                    <p className="text-[0.9375rem] leading-normal whitespace-pre-line text-body">
+                      {pick.reason}
+                    </p>
+                  </div>
+                </ProductCard>
+              </li>
+            ))}
+          </ul>
+        </ProductListProvider>
       )}
       {reply.question && (
         <div className="flex items-start gap-3 rounded-card border-2 border-primary bg-blush px-5 py-4">
@@ -121,6 +149,14 @@ function PerfumerTurn({ reply }: { reply: PerfumerReply }) {
             </p>
           </div>
         </div>
+      )}
+      {replyId && (
+        <PerfumerFeedback
+          replyId={replyId}
+          turn={item.turn ?? 1}
+          rating={item.rating}
+          onRate={onRate}
+        />
       )}
     </li>
   );

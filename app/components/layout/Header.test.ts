@@ -82,15 +82,20 @@ describe("Header", () => {
 
     const html = renderHeader({ perfumerEnabled: true });
     // Once in the bar and once in the mobile menu.
-    expect(html.match(/<a[^>]*href="\/en\/perfumer"[^>]*>AI perfumer<\/a>/g)).toHaveLength(2);
+    // `from=menu` tells analytics how the chat was opened (#166).
+    expect(
+      html.match(/<a[^>]*href="\/en\/perfumer\?from=menu"[^>]*>AI perfumer<\/a>/g),
+    ).toHaveLength(2);
     expect(html.indexOf(">Offers<")).toBeLessThan(html.indexOf(">AI perfumer<"));
     expect(html.indexOf(">AI perfumer<")).toBeLessThan(html.indexOf(">Contacts<"));
-    expect(renderHeader({ perfumerEnabled: true }, "/", "uk")).toContain('href="/parfumer"');
+    expect(renderHeader({ perfumerEnabled: true }, "/", "uk")).toContain(
+      'href="/parfumer?from=menu"',
+    );
   });
 
   it("highlights the AI perfumer link on its page", () => {
     expect(renderHeader({ perfumerEnabled: true }, "/en/perfumer")).toMatch(
-      /<a[^>]*class="[^"]*text-primary-dark[^"]*underline decoration-2[^"]*"[^>]*href="\/en\/perfumer"[^>]*>AI perfumer<\/a>/,
+      /<a[^>]*class="[^"]*text-primary-dark[^"]*underline decoration-2[^"]*"[^>]*href="\/en\/perfumer\?from=menu"[^>]*>AI perfumer<\/a>/,
     );
   });
 

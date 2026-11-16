@@ -58,6 +58,7 @@ function thread(props: Partial<MessageThreadProps> = {}, locale: Locale = "uk") 
       pending: null,
       onCancel: () => {},
       onRetry: () => {},
+      onRate: () => {},
       ...props,
     }),
     locale,
@@ -133,7 +134,7 @@ describe("MessageThread", () => {
     expect(older).not.toContain("Спробувати ще раз");
     const waiting = thread({
       items: [errorItem("timeout")],
-      pending: { id: "p", text: "Щось морське" },
+      pending: { id: "p", text: "Щось морське", turn: 1 },
     });
     expect(waiting).not.toContain("Спробувати ще раз");
   });
@@ -145,7 +146,7 @@ describe("MessageThread", () => {
   });
 
   it("shows the thinking state while a reply is awaited, without a cancel button at first", () => {
-    const html = thread({ pending: { id: "p", text: "Щось морське" } });
+    const html = thread({ pending: { id: "p", text: "Щось морське", turn: 1 } });
     expect(html).toContain('role="status"');
     expect(html).toContain("Парфумер підбирає аромати…");
     expect(html).toContain("Шукаю в каталозі · зазвичай до хвилини");

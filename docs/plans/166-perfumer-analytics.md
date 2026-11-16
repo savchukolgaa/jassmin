@@ -91,6 +91,9 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   button changes the rating; pressing the chosen one does nothing. Each turn uses its own
   `useFetcher({ key: \`perfumer-feedback-${replyId}\` })` so it never touches the chat fetcher. The
   chosen rating is kept on the thread item (`ThreadItem.rating`), so it survives a reload.
+- **Rating UI details.** The thanks note is an `aria-live="polite"` paragraph rather than
+  `role="status"` (the chat's thinking bubble is the page's one status), and the two buttons sit in
+  a `<fieldset>` labelled by the question (Biome prefers it to `role="group"`).
 - **Order of work.** The generator (step 9) is done right after steps 1–2: the synthetic contract
   test needs every event type in its fixtures, so the contract and the generator change together.
   The generator draws the perfumer from its own random stream and event-id generator, so every
@@ -214,7 +217,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   `eventsLimiter` key logic so it can't flood `user_events`. Tests in `app/routes/perfumer.test.ts`:
   an answer records one `perfumer_message`; an invalid request records none; feedback records one
   `perfumer_feedback`; nothing without consent; a bad rating is a 400.
-- [ ] **6. Chat page: turn, entry, list tag and thumbs.**
+- [x] **6. Chat page: turn, entry, list tag and thumbs.**
   - `PerfumerPage` reads `useSearchParams().get("from")` → `PerfumerEntry` (else `direct`);
     `thread-storage.ts` stores `{ entry, items }` (still loading an old array-only value, entry
     `direct`) and items' optional `replyId` / `rating`.
@@ -229,7 +232,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
     list with positions 1…n (a click pushes a `product_click` with `list_id: "perfumer"`), the
     buttons post the right fields and show the pressed state, English copy under
     `<I18nProvider locale="en">`, an old stored thread without `replyId` shows no buttons.
-- [ ] **7. Menu entry.** `app/components/layout/nav.ts`: the perfumer link becomes
+- [x] **7. Menu entry.** `app/components/layout/nav.ts`: the perfumer link becomes
   `pathFor(locale, "perfumer") + "?from=menu"`; check the sitemap still lists the plain path and
   the canonical URL drops `from`. Update nav tests.
 - [ ] **8. Documentation.** `docs/analytics-events.md`: the two events in "Who records what", their

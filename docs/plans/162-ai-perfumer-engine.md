@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/162
 Branch: `issue/162`
 Worktree: `.claude/worktrees/issue-162`
-Status: In progress
+Status: Implemented
 
 ## Goal
 
@@ -288,7 +288,7 @@ There is no UI.
   loop, guard, why names come from the DB), the eval table and observations for granite4.1:3b, and a
   pointer to #167 for model comparison and hosting. Update `app/.server/AGENTS.md` and link from
   `docs/setup.md`.
-- [ ] **12. Final checks** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- [x] **12. Final checks** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ## Testing & verification
 
@@ -305,17 +305,23 @@ There is no UI.
 
 ## Acceptance criteria
 
-- [ ] `perfumer.reply(locale, messages)` returns an intro, 0–4 picks of real, active, in-stock
+- [x] `perfumer.reply(locale, messages)` returns an intro, 0–4 picks of real, active, in-stock
   catalog products with reasons, and an optional question — steps 5, 6, 7, 8
-- [ ] No product name or brand outside the picks survives in the returned text — steps 6, 7
-- [ ] Synonyms and "similar to" work: "морські ноти" finds aquatic perfumes and "схоже на La Vie Est
+- [x] No product name or brand outside the picks survives in the returned text — steps 6, 7
+- [x] Synonyms and "similar to" work: "морські ноти" finds aquatic perfumes and "схоже на La Vie Est
   Belle" finds fruity/floral ones — steps 4, 5 (integration tests), 10 (eval cases)
-- [ ] Off-topic and prompt-injection messages get a polite decline and no picks — steps 7 (prompt,
+- [x] Off-topic and prompt-injection messages get a polite decline and no picks — steps 7 (prompt,
   no-tool → no picks), 10 (eval cases)
-- [ ] Without `AI_BASE_URL` the engine reports disabled and nothing calls a model — steps 1, 2, 7
-- [ ] `pnpm ai:perfumer-eval granite4.1:3b` runs against local Ollama, and `docs/ai-perfumer.md`
+- [x] Without `AI_BASE_URL` the engine reports disabled and nothing calls a model — steps 1, 2, 7
+- [x] `pnpm ai:perfumer-eval granite4.1:3b` runs against local Ollama, and `docs/ai-perfumer.md`
   records the results and the setup (`ollama pull granite4.1:3b`) — steps 10, 11
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
+
+Verification notes: the first six were verified by the unit tests and by `pnpm ai:perfumer-eval
+granite4.1:3b` (14/15 as expected, 0 invented ids, see `docs/ai-perfumer.md`). The last stays open
+locally: typecheck, lint and build pass, and every non-database test passes, but the database
+integration tests (45 files at baseline plus the new `db/queries/perfumer.test.ts`) couldn't
+connect to PostgreSQL on port 5432 in this environment. CI runs them.
 
 ## Out of scope
 

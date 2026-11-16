@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/163
 Branch: `issue/163`
 Worktree: `.claude/worktrees/issue-163`
-Status: Planned. **Implementation starts after #162 (the engine) is merged.**
+Status: Planned, design approved. **Implementation starts after #162 (the engine) is merged.**
 
 ## Goal
 
@@ -83,21 +83,44 @@ enabled.
 - **Cards.** Reuse `ProductCard` (default variant, `headingLevel={3}`) with a new
   `purchase?: boolean` prop (default `true`); the perfumer passes `false`, which hides
   `AddToCartForm` and the size picker so the card shows image, brand, title, family, from-price and
-  link (adding to the cart from the chat is out of scope) **(see Q1)**. The reason sits under each
+  link (adding to the cart from the chat is out of scope, a follow-up issue) **(see Q1)**. The reason sits under each
   card as plain text. No `listIndex` / `ProductListProvider`: tagging clicks with `list: "perfumer"`
   is #166, which needs a new `LIST_IDS` value and an event-contract change. The product page's own
   analytics still run after the click.
 - **Plain text only.** Intro, reasons, question and the customer's text render as React text nodes
   (`whitespace-pre-line`), never `dangerouslySetInnerHTML` or markdown.
-- **Design.** No perfumer page on the C+ canvas; build from `docs/design.md` tokens and components:
-  a deep-pink hero band like `/popular` (eyebrow, serif `h1`, intro, white example chips with
-  `chip-hover`), then the thread in a `max-w-3xl` column: customer bubbles right-aligned `primary`
-  with white text, perfumer bubbles left-aligned white `rounded-card` with a `line` ring, the
-  question in a blush highlighted bubble, the error bubble with a `primary` `sm` retry button. Cards
-  stack one per row on phones, two per row from `sm`. Motion: `animate-fade-up` for new bubbles,
-  bouncing dots with `motion-safe:`; the `prefers-reduced-motion` block in `app/app.css` already
-  stops animations, and the hints still rotate as text (no motion needed to read them). A section in
-  `docs/design.md` records this **(see Q2)**.
+- **Design (approved 2026-11-16).** Build to the C+ canvas artboards `C+ AI perfumer — /parfumer
+  (#163)` and `C+ AI perfumer, phone width (#163)`
+  (https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW), using the `docs/design.md` tokens (white
+  header #72, serif headings #73):
+  - **Empty thread:** a deep-pink hero band like `/popular`: uppercase eyebrow "AI парфумер", serif
+    `h1`, intro, "Спробуйте:" and the 4 example chips as white pills with `primary-dark` text and
+    `chip-hover`; under it, one muted paragraph with tips on what to write.
+  - **Once the thread has messages:** the hero becomes a slim deep-pink strip: a white round bottle
+    icon, the `h1` "AI парфумер" at card-heading size, the line "Радить лише аромати, які є в
+    наявності", and an `outline-light` `sm` "Почати спочатку" button on the right.
+  - **Thread** in a ~800px column: customer bubbles right-aligned, `primary` with white text,
+    radius 24 with the bottom-right corner 8; perfumer turns start with a small blush bottle avatar
+    and the "AI парфумер" name in `muted`, then the intro in a white bubble with a `line` border
+    (top-left corner 8); cards in a grid of `minmax(300px, 1fr)` (two per row on desktop, one on
+    phones); the question in a blush box with a 2px `primary` border, a question-mark icon and the
+    label "Уточнення"; errors in a blush bubble with an alert icon, plus a `primary` `sm` "Спробувати
+    ще раз" only for `unavailable` and `timeout`; a cancelled turn as a centred `card` pill "Запит
+    скасовано. Напишіть ще раз, коли будете готові."
+  - **Card** (`ProductCard purchase={false}`): white with a `line` border, photo, uppercase brand in
+    `primary-dark`, serif title link, family chip, serif "від … ₴", then a blush box "Чому вам
+    пасує" with the reason. `lift` on hover.
+  - **Thinking bubble:** three `primary` bouncing dots, "Парфумер підбирає аромати…", the rotating
+    hint plus " · зазвичай до хвилини" (no model-specific time, #167), and after 10 s an outlined
+    "Скасувати" pill.
+  - **Input bar:** a `card` pill-shaped field (radius 28) with a round 48px `primary` send button
+    (an up arrow, `aria-label` "Надіслати"; grey while disabled); under it the disclaimer on the left
+    and, on the right, the counter from 400 characters or the "Enter — надіслати · Shift+Enter —
+    новий рядок" hint (hidden below `lg`). Over 500 characters: `primary-dark` border and counter
+    and a `role="alert"` line "Повідомлення задовге: скоротіть його до 500 символів."
+  - **Motion:** `animate-fade-up` for new bubbles, `animate-pop` for the thinking bubble and the
+    cancel button, dots `motion-safe:` only; with reduced motion the hints still change as text.
+  - `docs/design.md` gets a section describing this and a row in "Pages and issues".
 - **Mobile.** The page is a column with the thread growing and the input bar `sticky bottom-0` with
   a white background and safe-area padding (`pb-[env(safe-area-inset-bottom)]`); the input scrolls
   into view on focus. When the cookie banner is open it sits above the input bar (the banner is
@@ -110,33 +133,33 @@ enabled.
 - **axe check.** Add `axe-core` as a dev dependency and run it in a jsdom test on the rendered page
   (the `color-contrast` rule disabled: jsdom has no layout). No other accessibility library.
 - **Header placement.** "AI парфумер" / "AI perfumer" goes after "Акції"/"Offers" in the header's
-  inline nav and in the mobile menu, not in the footer **(see Q3)**.
+  inline nav and in the mobile menu, not in the footer. No floating corner button in this issue
+  **(see Q3b)**.
 
 ## Open questions
 
-- [ ] **Q1: Should the perfumer's cards include the add-to-cart button and size picker?** — Why it
-  matters: the issue says "reuse the catalog card (image, title, brand, from-price, link)" and puts
-  "adding to the cart from the chat" out of scope, but the catalog card has `AddToCartForm` built in.
-  Recommended default: hide it with a new `purchase={false}` prop; the card links to the product
-  page. Affects steps: 5, 7.
-- [ ] **Q2: Approve the canvas design.** — The owner asked for a design first (2026-11-16). Two
-  artboards were added to the C+ canvas (https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW):
-  `C+ AI perfumer — /parfumer (#163), for approval` and its phone-width twin, with a `scene` tweak
-  for every state (empty, thinking, cancel shown, reply, cancelled, unavailable, timeout,
-  rateLimited, tooLong). Steps 7–9 build to those artboards once they're approved; until then, the
-  Decisions above describe the same layout. Affects steps: 7–9, 12.
-- [ ] **Q3: Where does the menu link go, and should it stand out?** — Why it matters: the header
-  already has five items with the inline nav from `lg`; a sixth may need a wider breakpoint or a
-  shorter label. Recommended default: a plain nav item after "Offers" (header and mobile menu), no
-  footer link, no badge; check that the header still fits at `lg` (1024 px) and move the breakpoint
-  to `xl` if not. Affects steps: 4.
-- [ ] **Q4: Keep one shared thread for both languages, or one per language?** — Why it matters:
-  switching language keeps old answers in the old language. Recommended default: one shared thread
-  (the customer may switch languages mid-conversation; the model answers in the page's locale from
-  then on). Affects steps: 6.
+- [ ] **Q1: File the follow-up for adding to the cart from the chat?** — Hiding the cart controls on
+  the perfumer's cards (`purchase={false}`) is settled for this issue. Recommended: a separate issue
+  (via `/create-issue`) for size picking and add-to-cart inside the chat, depending on #163 and #166.
+  Waiting for the owner's go-ahead to file it. Affects steps: none in this issue.
+- [ ] **Q3b: Where does the owner's floating corner chat button go?** — The owner would like an "AI
+  парфумер" button in the bottom-right corner too (2026-11-16). #165 currently rules a floating
+  widget out ("links, not a floating widget… could be a later issue if the data (#166) shows people
+  use the chat"), and it's an entry point on other pages, so it isn't built here. Recommended: add it
+  to #165 as a small round link button to the chat page (not an in-page chat widget), hidden on the
+  perfumer page, cart and checkout, and placed above the cookie banner and the "Added to cart"
+  toast. Affects steps: none in this issue.
 
 ## Resolved questions
 
+- **Design** — Approved by the owner on 2026-11-16: the two `C+ AI perfumer` artboards on the C+
+  canvas (see Decisions → Design).
+- **Header link (Q3)** — A plain nav item after "Акції"/"Offers" in the header and mobile menu, no
+  footer link, no badge (owner, 2026-11-16). Check that the header still fits at `lg` (1024 px) and
+  move the inline nav breakpoint to `xl` if it doesn't.
+- **One thread or one per language (Q4)** — One shared thread for both languages (owner accepted the
+  default, 2026-11-16). Older replies stay in the language they were written in; the model answers
+  in the page's locale from then on.
 - **How is the rate limit stored?** — In the `rate_limits` table through `createRateLimiter` with
   `appRateLimitStore`; tests get an in-memory store from `vitest.setup.ts` (source:
   `app/.server/rate-limit.ts`, #143).
@@ -218,7 +241,7 @@ enabled.
 - [ ] **4. Path, route registration, menu and sitemap** — `PAGES.perfumer`; `routes.ts`;
   `_shop` loader returns `perfumerEnabled: isPerfumerEnabled()`; `navLinks().perfumer`; `Header` and
   `MobileMenu` render it only when `perfumerEnabled` (read from the layout's loader data, as the
-  header state is passed today); sitemap `perfumerEnabled` source. Check the header at 1024 px (Q3).
+  header state is passed today); sitemap `perfumerEnabled` source. Check the header at 1024 px.
   Tests: header with/without the link; sitemap with/without the perfumer URLs; existing path-table
   tests (`paths.test.ts`, `.server/paths.test.ts`) still pass.
 - [ ] **5. `ProductCard` `purchase` prop** — when `false`, the default card skips `AddToCartForm`
@@ -303,7 +326,7 @@ enabled.
 
 - The engine itself, its prompt, tools and eval (#162); model choice and hosting (#167).
 - Token streaming (#164); the reply arrives whole.
-- Perfumer entry buttons on other pages (#165).
+- Perfumer entry buttons on other pages (#165), including the floating corner button (Q3b).
 - Analytics: `perfumer_message`/`perfumer_feedback` events, `list: "perfumer"` card tagging,
   thumbs up/down (#166).
 - Adding to the cart from the chat; storing conversations on the server.

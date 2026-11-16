@@ -28,3 +28,15 @@ export const chatCompletionResponseSchema = z.object({
     )
     .min(1),
 });
+
+/**
+ * One `data:` chunk of a streamed response (`stream: true`, #164): the next piece of the text. The
+ * last chunk may have no `delta` content (a finish reason only), and some servers send no choices.
+ */
+export const chatCompletionChunkSchema = z.object({
+  choices: z.array(
+    z.object({
+      delta: z.object({ content: z.string().nullish() }).nullish(),
+    }),
+  ),
+});

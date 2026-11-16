@@ -166,7 +166,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
   (the synonym-mapped ones the ranking used), `gender`, `max_price_uah`, `found`; for `similar_to`,
   `reference?.title` and `found`. Failed calls get no step. Extend `catalog-tools.test.ts`: raw note
   words never appear in a step; an unknown similar title gives `title: undefined`.
-- [ ] **3. Streaming model client.** `client.schema.ts`: `chatCompletionChunkSchema`
+- [x] **3. Streaming model client.** `client.schema.ts`: `chatCompletionChunkSchema`
   (`choices[0].delta.content` nullable). `client.ts`: `ChatStreamFn` and `createChatStreamClient`,
   sharing headers/body with `createChatClient` (`toRequestBody(config, request, { stream: true })`),
   reading `response.body` through `TextDecoderStream`, splitting on blank lines, yielding non-empty

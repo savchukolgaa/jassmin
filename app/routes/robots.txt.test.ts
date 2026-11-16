@@ -36,7 +36,12 @@ describe("robots.txt loader", () => {
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=3600");
     expect(body).toMatch(/^User-agent: \*$/m);
     expect(disallowed(body)).toEqual(
-      expect.arrayContaining(["Disallow: /koshyk", "Disallow: /en/cart", "Disallow: /api/"]),
+      expect.arrayContaining([
+        "Disallow: /koshyk",
+        "Disallow: /en/cart",
+        "Disallow: /api/",
+        "Disallow: /parfumer?q=",
+      ]),
     );
     expect(disallowed(body)).not.toContain("Disallow: /");
     expect(body).toContain("Sitemap: https://jassmin.ua/sitemap.xml");

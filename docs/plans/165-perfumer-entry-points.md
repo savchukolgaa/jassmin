@@ -208,7 +208,7 @@ when the engine is off.
   `catalogPerfumerMessage(gender, search, translator)`.
 - [x] **7. Product link** — the "find similar" link in `product.tsx` below the purchase/unavailable
   block, with `similarMessage`.
-- [ ] **8. robots.txt** — add the two `?q=` chat paths to `robotsDisallowPaths()`; update
+- [x] **8. robots.txt** — add the two `?q=` chat paths to `robotsDisallowPaths()`; update
   `robots.txt.test.ts`.
 - [ ] **9. DOM tests for entry points** — corner button: hidden for each hidden page (uk and en
   paths), shown on home/catalog/product, hidden when disabled, fallback class with `cookieBanner`,

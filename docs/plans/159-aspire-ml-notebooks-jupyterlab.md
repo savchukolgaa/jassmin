@@ -125,12 +125,12 @@ endpoint, localhost only), both getting only the synth database as `JASSMIN_SYNT
   special: false }, { secret: true, persist: true })`, `.withEnvironment("JUPYTER_TOKEN", token)`,
   and try `withUrlForEndpoint("http", …)` to set the link to `/lab?token=…`; drop the link part if
   the callback can't resolve the secret value. Run `pnpm aspire:build` and `pnpm lint`.
-- [ ] **3. Update `aspire-apphost/AGENTS.md`** — A bullet after `dbt-build` / `dbt-docs`:
+- [x] **3. Update `aspire-apphost/AGENTS.md`** — A bullet after `dbt-build` / `dbt-docs`:
   `ml-notebooks` / `jupyter-lab`, explicit-start children of `jassmin-synth` (#159,
   `addExecutable`, `uv` on the PATH), what each runs, `JUPYTER_PORT` from the `http` endpoint,
   localhost only, token handling, only `JASSMIN_SYNTH_URI`, run order, link to
   `analytics/notebooks/README.md`.
-- [ ] **4. Update the analytics docs** — `analytics/notebooks/README.md` "Running it": a short
+- [x] **4. Update the analytics docs** — `analytics/notebooks/README.md` "Running it": a short
   "From the Aspire dashboard" paragraph (start `synth-generate`, then `dbt-build`, then
   `ml-notebooks`; `jupyter-lab` opens on its endpoint in `analytics/notebooks/`; the token; don't
   run both at once per Q2). `analytics/README.md` "Running it" (case study, ~line 279): one line

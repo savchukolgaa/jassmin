@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/166
 Branch: `issue/166`
 Worktree: `.claude/worktrees/issue-166`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -280,7 +280,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   first build on generated data (2,000 customers) built `int_perfumer_messages` and passed its
   column tests; the rebuild after making it a table was stopped by Claude Code for low memory
   before it finished, so the full synthetic build still has to be rerun.
-- [ ] **11. Final checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; the Python
+- [x] **11. Final checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; the Python
   suites above; manual check in the running app (below). Comment on #165 that its links need
   `?from=catalog|empty_results|product|corner`.
 
@@ -303,12 +303,12 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
 
 ## Acceptance criteria
 
-- [ ] Each perfumer answer records one `perfumer_message` event, with no message text — steps 1, 2, 3, 5
-- [ ] Clicks on perfumer cards are tagged `list: "perfumer"` (`list_id`) and orders can be attributed to them — steps 1, 6, 8, 10
-- [ ] Customers can rate an answer up or down — steps 4, 5, 6
-- [ ] The SQL in `docs/ai-perfumer.md` reports usage, latency, errors, click-through, conversion and ratings — step 8
-- [ ] `mart_perfumer_daily` builds and passes its tests on synthetic data — steps 9, 10
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
+- [x] Each perfumer answer records one `perfumer_message` event, with no message text — steps 1, 2, 3, 5
+- [x] Clicks on perfumer cards are tagged `list: "perfumer"` (`list_id`) and orders can be attributed to them — steps 1, 6, 8, 10
+- [x] Customers can rate an answer up or down — steps 4, 5, 6
+- [x] The SQL in `docs/ai-perfumer.md` reports usage, latency, errors, click-through, conversion and ratings — step 8
+- [ ] `mart_perfumer_daily` builds and passes its tests on synthetic data — steps 9, 10 (passes on the warehouse's fixture data; the full build on generated data was stopped for low memory and still needs a rerun)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
 
 ## Out of scope
 

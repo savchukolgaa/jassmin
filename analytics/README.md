@@ -283,7 +283,10 @@ uv run --project analytics/warehouse analytics/warehouse/wh.py build   # warehou
 uv run --project analytics/notebooks analytics/notebooks/run_all.py    # the five notebooks (#133)
 ```
 
-See [`notebooks/README.md`](notebooks/README.md) for JupyterLab and the tests.
+Under `pnpm aspire run`, the same three steps are the dashboard resources `synth-generate`,
+`dbt-build` and `ml-notebooks` (children of `jassmin-synth`); start them in that order, and
+`jupyter-lab` opens the notebooks in JupyterLab (#159). See
+[`notebooks/README.md`](notebooks/README.md) for JupyterLab and the tests.
 
 ---
 

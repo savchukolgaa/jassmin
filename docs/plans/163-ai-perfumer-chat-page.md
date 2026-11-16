@@ -135,6 +135,23 @@ enabled.
   inline nav and in the mobile menu, not in the footer. No floating corner button in this issue
   **(#165)**.
 
+### Implementation notes (steps 7–10)
+
+- Steps 7–10 went into one commit: the components import each other and are tested together.
+- The reason box ("Чому вам пасує") is inside the white card, through `ProductCard`'s new
+  `children` slot, as on the approved artboard.
+- Extra files: `app/features/perfumer/icons.tsx` (bottle, question, alert, retry, restart, send) and
+  `PerfumerName.tsx` (avatar + name above each perfumer turn). `app/app.css` gets
+  `--animate-dot` and its `dot` keyframes for the thinking dots (off with reduced motion, like
+  every animation).
+- `role="status"` sits on the thinking text, not the whole bubble, so the cancel button isn't inside a
+  live region.
+- While the cookie banner shows (the `_shop` loader's `consent === null`), the message bar isn't
+  sticky and the page gets bottom padding, so it can be scrolled above the fixed banner.
+- The counter and the 500 limit count the trimmed text, as the server does.
+- `fetcher.reset()` sets `fetcher.data` to `null` in v8 (not `undefined`); the hook treats both as
+  "no result", which the DOM tests caught for a second message.
+
 ## Resolved questions
 
 - **Add to cart from the chat (Q1)** — Not in this issue: the perfumer's cards hide the cart
@@ -258,26 +275,26 @@ enabled.
   so an old `fetcher.data` is never taken for the next message. Only the latest error can be
   retried. Statuses: `tooLong` 400, `rateLimited` 429, `unavailable` 503, `timeout` 504. Route tests: loader/action 404 when disabled, `tooLong`, success shape,
   `rateLimited` after 10 posts.
-- [ ] **7. `MessageThread`** — `<ol aria-live="polite">` of bubbles: customer text; perfumer intro,
+- [x] **7. `MessageThread`** — `<ol aria-live="polite">` of bubbles: customer text; perfumer intro,
   then a grid of `ProductCard purchase={false} headingLevel={3}` with the reason under each
   (`<p>` with a small "Чому підходить" label), then the question in a highlighted blush bubble;
   error bubble with the translated message and a "Спробувати ще раз" button (`rateLimited` and
   `tooLong` errors show no retry: waiting or editing is the fix). All text as text nodes with
   `whitespace-pre-line`.
-- [ ] **8. `ThinkingBubble` and `PerfumerInput`** — dots (`motion-safe:animate-bounce` with
+- [x] **8. `ThinkingBubble` and `PerfumerInput`** — dots (`motion-safe:animate-bounce` with
   staggered delays), a hint rotating every ~4 s via `setInterval` (cleared on unmount),
   `role="status"`, and "Скасувати" appearing after 10 s. Input: textarea growing with content up to
   ~6 lines (`field-sizing: content` with a JS height fallback), Enter sends, Shift+Enter newline,
   IME composition ignored (`event.nativeEvent.isComposing`), counter shown from 400 characters and
   red over 500 (send disabled), disabled while waiting, `maxLength` not set so pasted text shows the
   counter rather than being cut silently.
-- [ ] **9. `PerfumerPage`** — hero with eyebrow, `h1`, intro and the 4 chips (each a `button` that
+- [x] **9. `PerfumerPage`** — hero with eyebrow, `h1`, intro and the 4 chips (each a `button` that
   calls `send`; shown only while the thread is empty), the thread, the sticky input bar with
   "Почати спочатку" (shown when the thread isn't empty; no confirmation) and the disclaimer under the input
   ("AI-парфумер може помилятися…" + link to `pathFor(locale, "home", {}, { hash: "contacts" })`).
   Focus returns to the textarea when a turn finishes. Mobile layout and cookie-banner padding as in
   Decisions.
-- [ ] **10. Component tests** — `perfumer-ui.test.ts` (render to string, uk and in
+- [x] **10. Component tests** — `perfumer-ui.test.ts` (render to string, uk and in
   `<I18nProvider locale="en">`): intro, cards linking to `productHref`, reasons, question, each error
   message, disclaimer link. `PerfumerPage.dom.test.ts` (jsdom, router stub with a fake action):
   clicking a chip submits that text; the customer bubble and thinking state show immediately; cancel

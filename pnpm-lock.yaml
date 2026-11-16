@@ -257,6 +257,9 @@ importers:
       '@types/sanitize-html':
         specifier: ^2.16.2
         version: 2.16.2
+      axe-core:
+        specifier: ^4.14.0
+        version: 4.14.0
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
@@ -3938,6 +3941,10 @@ packages:
 
   attr-accept@2.2.5:
     resolution: {integrity: sha512-0bDNnY/u6pPwHDMoF0FieU354oBi0a8rD9FcsLwzcGWbc8KS8KPIi7y+s13OlVY+gMWc/9xEMUgNE6Qm8ZllYQ==}
+    engines: {node: '>=4'}
+
+  axe-core@4.14.0:
+    resolution: {integrity: sha512-9WTZxEjsZ7b13TH8JPmbV2z8CHbl80/2hm3XPEG4JgNdQLK81IBRXmSxHfMAOkSqQeRxT/0dwNDz2GOm3zzpcQ==}
     engines: {node: '>=4'}
 
   axios@1.20.0:
@@ -12352,6 +12359,8 @@ snapshots:
   asynckit@0.4.0: {}
 
   attr-accept@2.2.5: {}
+
+  axe-core@4.14.0: {}
 
   axios@1.20.0(debug@4.3.4(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:

@@ -56,11 +56,12 @@ export function usePerfumerThread(): PerfumerThread {
     if (restored) saveThread(items);
   }, [items, restored]);
 
-  // A finished request: its result joins the thread. `reset()` clears `fetcher.data`, so an old
-  // result is never taken for the next message's.
+  // A finished request: its result joins the thread. `reset()` sets `fetcher.data` to `null`, so
+  // an old result is never taken for the next message's (which is sent while the fetcher still
+  // looks idle).
   const result = fetcher.state === "idle" ? fetcher.data : undefined;
   useEffect(() => {
-    if (!pending || result === undefined) return;
+    if (!pending || result == null) return;
     const item: ThreadItem = result.ok
       ? { id: newId(), role: "perfumer", reply: result.reply }
       : { id: newId(), role: "error", error: result.error, retryText: pending.text };

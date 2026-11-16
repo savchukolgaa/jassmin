@@ -20,7 +20,7 @@ when the engine is off.
   `29dc62f`). The `_shop` loader already returns `perfumerEnabled` (`isPerfumerEnabled()`), and
   `PerfumerPage` / `usePerfumerThread` already have `send(text)`.
 - The corner button's design (C+ canvas, artboards `PerfumerCornerPlus.dc.html` and
-  `PerfumerCornerPlusPhone.dc.html`) is **waiting for the owner's approval** (see Q1).
+  `PerfumerCornerPlusPhone.dc.html`) was **approved by the owner** on 2026-11-16 (Q1).
 - No new packages, env vars or migrations. `axe-core`, jsdom and Testing Library are already dev
   dependencies (used by `app/features/perfumer/PerfumerPage.dom.test.ts`).
 
@@ -112,15 +112,11 @@ when the engine is off.
   `consent`), so the catalog and product loaders don't change.
 - **Analytics:** none in this issue; measuring entry-point use is #166.
 
-## Open questions
-
-- [ ] **Q1: Is the corner button design approved?** — Still waiting for the owner's approval
-  (answered 2026-11-16). Why it matters: the first acceptance criterion requires "matches the
-  approved C+ design". The plan builds exactly what the artboards draw (sizes, offsets, icon,
-  pop-in) and adjusts if the approved version differs; the PR must not be merged before approval.
-  Affects steps: 4, 10.
-
 ## Resolved questions
+
+- **Q1: Is the corner button design approved?** — Yes, as drawn: the owner approved the
+  `PerfumerCornerPlus.dc.html` and `PerfumerCornerPlusPhone.dc.html` artboards on the C+ canvas
+  (2026-11-16, canvas version `1794858052-f4a7`, artboards unchanged since planning).
 
 - **Q2: How should the button avoid the "Added to cart" status?** — Keep the app's inline pill; on
   phones the button rises by 80px for 2.6s after a successful add (option (a)) (owner,
@@ -241,7 +237,7 @@ when the engine is off.
 
 - [ ] A corner "AI парфумер" button on the shop's pages opens the chat, matches the approved C+
   design on mobile and desktop, and never covers the cookie banner or the cart toast — steps 4, 5,
-  9 (needs the design approval, Q1)
+  9
 - [ ] The corner button is hidden on the chat, cart, checkout and payment pages — steps 1, 4, 9
 - [ ] Catalog pages and the empty-results state have an entry point that opens the chat with the
   current filters as a message — steps 1, 3, 6, 9

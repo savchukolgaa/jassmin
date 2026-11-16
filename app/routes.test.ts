@@ -25,6 +25,8 @@ describe("route config", () => {
       "/en/offers",
       "/populiarni",
       "/en/popular",
+      "/parfumer",
+      "/en/perfumer",
       "/vkhid",
       "/en/login",
       "/reiestratsiia",

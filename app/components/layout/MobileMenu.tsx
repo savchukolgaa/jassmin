@@ -9,7 +9,14 @@ import { SocialLinks } from "./SocialLinks";
 import { useDisclosure } from "./useDisclosure";
 
 /** Hamburger menu below `lg` with the same links and language switcher as the inline nav. */
-export function MobileMenu({ socialLinks = [] }: { socialLinks?: readonly SocialLink[] }) {
+export function MobileMenu({
+  socialLinks = [],
+  perfumerEnabled = false,
+}: {
+  socialLinks?: readonly SocialLink[];
+  /** Shows the AI perfumer link after "Offers" (#163). */
+  perfumerEnabled?: boolean;
+}) {
   const { t } = useT();
   const links = useNavLinks();
   const { detailsProps, summaryProps } = useDisclosure();
@@ -65,6 +72,16 @@ export function MobileMenu({ socialLinks = [] }: { socialLinks?: readonly Social
               {t(links.offers.labelKey)}
             </NavLink>
           </li>
+          {perfumerEnabled && (
+            <li>
+              <NavLink
+                to={links.perfumer.to}
+                className={({ isActive }) => cn(navItemClasses(isActive, "onLight"), "flex")}
+              >
+                {t(links.perfumer.labelKey)}
+              </NavLink>
+            </li>
+          )}
           <li>
             <Link to={links.contacts.to} className={cn(navItemClasses(false, "onLight"), "flex")}>
               {t(links.contacts.labelKey)}

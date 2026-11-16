@@ -12,13 +12,20 @@ import { focusRing, headerNavItemClasses, iconButtonClasses, useNavLinks } from 
 export type HeaderProps = HeaderState & {
   /** The store's social profiles, shown in the mobile menu (#101). */
   socialLinks?: readonly SocialLink[];
+  /** Shows the AI perfumer link after "Offers" (#163). */
+  perfumerEnabled?: boolean;
 };
 
 /**
  * Site header shown on every public page; data comes from the `_shop` layout loader. White with
  * `ink` text (#72), so it stands apart from the deep-pink hero; colours are tokens only.
  */
-export function Header({ user, cartCount, socialLinks = [] }: HeaderProps) {
+export function Header({
+  user,
+  cartCount,
+  socialLinks = [],
+  perfumerEnabled = false,
+}: HeaderProps) {
   const { t } = useT();
   const path = usePathFor();
   const links = useNavLinks();
@@ -67,6 +74,16 @@ export function Header({ user, cartCount, socialLinks = [] }: HeaderProps) {
                 {t(links.offers.labelKey)}
               </NavLink>
             </li>
+            {perfumerEnabled && (
+              <li>
+                <NavLink
+                  to={links.perfumer.to}
+                  className={({ isActive }) => headerNavItemClasses(isActive)}
+                >
+                  {t(links.perfumer.labelKey)}
+                </NavLink>
+              </li>
+            )}
             <li>
               <Link to={links.contacts.to} className={headerNavItemClasses()}>
                 {t(links.contacts.labelKey)}
@@ -102,7 +119,7 @@ export function Header({ user, cartCount, socialLinks = [] }: HeaderProps) {
             <CartIcon className="size-5" />
             {badge && <span aria-hidden="true">{badge}</span>}
           </NavLink>
-          <MobileMenu socialLinks={socialLinks} />
+          <MobileMenu socialLinks={socialLinks} perfumerEnabled={perfumerEnabled} />
         </nav>
       </div>
     </header>

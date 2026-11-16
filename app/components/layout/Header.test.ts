@@ -77,6 +77,23 @@ describe("Header", () => {
     expect(html).toContain(">Women Perfumes<");
   });
 
+  it("shows the AI perfumer link after Offers only while it's enabled (#163)", () => {
+    expect(renderHeader()).not.toContain(">AI perfumer<");
+
+    const html = renderHeader({ perfumerEnabled: true });
+    // Once in the bar and once in the mobile menu.
+    expect(html.match(/<a[^>]*href="\/en\/perfumer"[^>]*>AI perfumer<\/a>/g)).toHaveLength(2);
+    expect(html.indexOf(">Offers<")).toBeLessThan(html.indexOf(">AI perfumer<"));
+    expect(html.indexOf(">AI perfumer<")).toBeLessThan(html.indexOf(">Contacts<"));
+    expect(renderHeader({ perfumerEnabled: true }, "/", "uk")).toContain('href="/parfumer"');
+  });
+
+  it("highlights the AI perfumer link on its page", () => {
+    expect(renderHeader({ perfumerEnabled: true }, "/en/perfumer")).toMatch(
+      /<a[^>]*class="[^"]*text-primary-dark[^"]*underline decoration-2[^"]*"[^>]*href="\/en\/perfumer"[^>]*>AI perfumer<\/a>/,
+    );
+  });
+
   it("highlights Offers on the offers page", () => {
     expect(renderHeader({}, "/en/offers")).toMatch(
       /<a[^>]*class="[^"]*text-primary-dark[^"]*underline decoration-2[^"]*"[^>]*href="\/en\/offers"[^>]*>Offers<\/a>/,

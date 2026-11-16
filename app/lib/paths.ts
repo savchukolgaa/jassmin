@@ -22,6 +22,8 @@ export const PAGES = {
   product: { uk: "parfumy/:handle", en: "perfumes/:handle", indexable: true },
   offers: { uk: "aktsii", en: "offers", indexable: true },
   popular: { uk: "populiarni", en: "popular", indexable: true },
+  // The AI perfumer chat (#163): a 404, with no menu link or sitemap entry, while it's disabled.
+  perfumer: { uk: "parfumer", en: "perfumer", indexable: true },
   blog: { uk: "blog", en: "blog", indexable: true },
   blogPost: { uk: "blog/:slug", en: "blog/:slug", indexable: true },
   cart: { uk: "koshyk", en: "cart", indexable: false },

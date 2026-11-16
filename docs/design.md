@@ -26,6 +26,7 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 | `C+ Account profile`, `C+ Account profile, phone width (errors)` | `/account/profile` | #54 |
 | `C+ Offers`, `C+ Offers, phone width` | `/offers` | #55 |
 | `C+ Popular`, `C+ Popular, phone width` | `/popular` | #67 |
+| `C+ AI perfumer — /parfumer (#163)`, `C+ AI perfumer, phone width (#163)` | `/parfumer` | #163 |
 | `Serif headings (#73) — home`, `Serif headings (#73) — product` | `/`, `/products/:id` (heading font only) | #73 |
 
 Cart and checkout aren't designed yet. Build them from the tokens and components below. There is
@@ -50,6 +51,31 @@ count and a grid of the home page's compact bestseller cards (`card-tilt`, the r
 grid and that panel give way to the blush empty panel used by `/offers`, with "Show all popular"
 (`primary`) and the two catalogs (`dark`). The `filtered` and `noMatches` tweaks on the
 artboard show both states.
+
+`/parfumer` (#163), the AI perfumer chat, exists only while the engine is enabled (`AI_BASE_URL`);
+then the header and mobile menu show "AI парфумер" after "Offers" (six inline links, still from
+`lg`). With an empty thread it opens with a deep-pink hero like `/popular`: an uppercase eyebrow,
+the serif `h1`, an intro and "Спробуйте:" with four example requests as white pills
+(`primary-dark` text, `chip-hover`), each sending itself; a muted tip paragraph follows. Once the
+thread has messages the hero becomes a slim strip: a white round bottle icon, the `h1` at 28px, "Радить
+лише аромати, які є в наявності" and an `outline-light` `sm` "Почати спочатку". The thread is an
+`<ol aria-live="polite">` in a ~800px column: the customer's bubbles right-aligned, `primary` with
+white text (radius 24, bottom-right 8); each perfumer turn starts with a blush bottle avatar and the
+name in `muted`, then the intro in a white bubble with a `line` border (top-left 8), the picks as
+default product cards without cart controls (`purchase={false}`, "from …" price) in a
+`minmax(300px, 1fr)` grid, each with a blush "Чому вам пасує" box inside the card, and the question
+in a blush box with a 2px `primary` border, a question-mark icon and the label "Уточнення". Errors are
+blush bubbles with an alert icon and, for `unavailable` and `timeout` only, a `primary` `sm`
+"Спробувати ще раз"; a cancelled request is a centred `card` pill. While a reply is awaited, a white
+bubble shows three bouncing `primary` dots (`animate-dot`), "Парфумер підбирає аромати…" and a hint
+that changes every 4 s ("· зазвичай до хвилини", never a model-specific time), and after 10 s an
+outlined "Скасувати" pill (`animate-pop`). The message bar sticks to the bottom (white, a `line` top
+border, safe-area padding): a `card` field with radius 28, a round 48px `primary` send button (grey
+when disabled), the AI disclaimer with a "напишіть нам" link to the contacts, and on the right the
+"Enter — надіслати · Shift+Enter — новий рядок" hint from `lg` or, from 400 characters, the
+"n / 500" counter. Over 500 the field border and counter turn `primary-dark` and a `role="alert"`
+line explains. While the cookie banner is open the bar isn't sticky and the page leaves room below
+it. Every text is plain text, never HTML.
 
 Like cart and checkout, the cookie banner and the privacy policy page (#18) aren't on the canvas. The banner
 (`features/consent/CookieBanner.tsx`) is a white `rounded-card` panel with a `line` border fixed to
@@ -259,6 +285,7 @@ The utilities are in `app/app.css`. Use motion to support content, never to hide
 | `animate-badge` | spin in from −200° and zero size at 0.7s, then wobble −8°↔6° every 4s (give it `-rotate-8`) | the hero's round price badge |
 | `animate-float` | drift up 14px and back every 6s | the hero's floating chip |
 | `animate-slot-pop` | grow from 30% with a twist, overshoot, settle | a filled "Build your trio" slot |
+| `animate-dot` | hop 6px and brighten, every 1.2s (stagger with `[animation-delay:…]`) | the AI perfumer's "choosing…" dots (`motion-safe:`) |
 | `card-tilt` | rise 6px and tilt −1° on hover; its `[data-zoom]` image scales to 1.04 | compact product cards (home bestsellers) |
 | `tile-arrow` | rise 6px on hover and slide its `[data-arrow]` 10px right | category tiles |
 | `quick-add` | turn 90° and scale to 1.08 on hover | the round + add-to-cart button |

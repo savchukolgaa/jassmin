@@ -130,3 +130,48 @@ describe.each(["default", "compact"] as const)("ProductCard (%s) in the browser"
     expect(await screen.findByRole("status")).toBeTruthy();
   });
 });
+
+describe("ProductCard without purchase controls (#163)", () => {
+  function renderLinkOnly(product: ProductSummary = PRODUCT) {
+    const router = createMemoryRouter([
+      {
+        path: "/",
+        element: createElement(
+          ProductCard,
+          { product, purchase: false, headingLevel: 3 },
+          createElement("p", null, "Why it suits you"),
+        ),
+      },
+    ]);
+    return render(
+      createElement(I18nProvider, { locale: "en" }, createElement(RouterProvider, { router })),
+    );
+  }
+
+  it("links to the product with a from-price, and no size picker or cart button", () => {
+    renderLinkOnly();
+
+    expect(screen.getByRole("heading", { level: 3, name: PRODUCT.title })).toBeTruthy();
+    expect(screen.getByRole("link", { name: PRODUCT.title }).getAttribute("href")).toBe(
+      "/en/perfumes/coco-mademoiselle-eau-de-parfum",
+    );
+    expect(screen.getByText(/from\s*₴990/)).toBeTruthy();
+    expect(screen.queryByRole("radio")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText("Why it suits you")).toBeTruthy();
+  });
+
+  it("shows a single size's price as it is", () => {
+    renderLinkOnly({
+      ...PRODUCT,
+      variants: [{ id: "v50", volumeMl: 50, price: "6850.00", inStock: true }],
+      minPrice: "6850.00",
+      hasPriceRange: false,
+      volumes: [50],
+      defaultVariant: { id: "v50", volumeMl: 50 },
+    });
+
+    expect(screen.getByText("₴6,850")).toBeTruthy();
+    expect(screen.queryByText(/from/)).toBeNull();
+  });
+});

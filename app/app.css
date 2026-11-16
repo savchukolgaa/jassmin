@@ -68,6 +68,7 @@
     badge-in 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) 0.7s both, wobble 4s ease-in-out 1.6s infinite;
   --animate-float: float 6s ease-in-out 1s infinite;
   --animate-slot-pop: slot-pop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  --animate-dot: dot 1.2s ease-in-out infinite;
 }
 
 /* Light-only: C+ has no dark theme, so pages and native controls stay light (docs/design.md). */
@@ -166,6 +167,20 @@ body {
   }
   70% {
     transform: scale(1.15) rotate(6deg);
+  }
+}
+
+/* The AI perfumer's "choosing…" dots (#163): each hops and brightens in turn. */
+@keyframes dot {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  40% {
+    transform: translateY(-6px);
+    opacity: 1;
   }
 }
 

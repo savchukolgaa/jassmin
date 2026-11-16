@@ -74,6 +74,30 @@ requests and to ignore instructions to change its rules. The guard doesn't rely 
 Errors are `AiError` with `kind`: `unavailable` (server down, unknown model, HTTP error),
 `timeout` (`AI_TIMEOUT_MS` for the whole reply) or `bad_response` (an answer of the wrong shape).
 
+## Chat page
+
+`/parfumer` (`/en/perfumer`, #163) is the customer-facing chat; its look is in `docs/design.md`.
+
+- **Only while enabled.** Without `AI_BASE_URL` the page and its action are 404s, and the header,
+  mobile menu and sitemap leave it out (`perfumerEnabled` from the `_shop` loader).
+- **The conversation lives in the browser**, in component state and `sessionStorage`
+  (`jassmin.perfumer.thread`, the last 50 items), so a reload keeps it and closing the tab ends it.
+  Nothing is stored on the server. Both languages share the thread: older replies stay in the
+  language they were written in.
+- **Each message** posts the last 10 messages as JSON (`payload`) to the route's action
+  (`app/routes/perfumer.tsx`). A message is at most 500 characters (the engine allows 1000); the
+  perfumer's earlier replies go back as text: the intro, the picks' names and the question
+  (`replyToHistoryText`). The action validates with zod (`app/lib/perfumer.schema.ts`).
+- **Rate limit:** 10 messages per 5 minutes per IP and per visitor (`anonymousId`), in the
+  `rate_limits` table (`perfumerLimiters`). Every accepted message counts, answered or not.
+- **Errors** come back as keys the page translates: `unavailable` (503; also `bad_response` and
+  anything unexpected, logged), `timeout` (504), `rateLimited` (429), `tooLong` (400). Only
+  `unavailable` and `timeout` offer a retry.
+- **Cancel.** After 10 s the customer can cancel: `fetcher.reset()` aborts the request, and the
+  action passes `request.signal` to `reply()` (`deps.signal`), which stops the model call.
+- **Plain text only:** the intro, reasons, question and the customer's words are rendered as text
+  nodes, never HTML or Markdown. Product cards come from the database, like the engine's picks.
+
 ## Eval
 
 ```bash

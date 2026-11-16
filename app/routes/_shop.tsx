@@ -1,4 +1,5 @@
 import { Outlet, useRouteLoaderData } from "react-router";
+import { isPerfumerEnabled } from "~/.server/ai/config";
 import { visitorMiddleware } from "~/.server/analytics-middleware";
 import { getSocialLinks } from "~/.server/cms/social";
 import { getConsent } from "~/.server/consent";
@@ -24,6 +25,7 @@ export const middleware: Route.MiddlewareFunction[] = [visitorMiddleware];
 // `suggestEnglish`: offer "View in English" to a browser that prefers it on a Ukrainian page (#84).
 // `socialLinks`: the footer's and mobile menu's icons, cached for a minute and `[]` while Strapi is
 // down, so they never slow down or fail a page (#101).
+// `perfumerEnabled`: whether the AI perfumer chat exists, for its menu link (#163).
 export async function loader({ request }: Route.LoaderArgs) {
   const [header, consent, suggestEnglish, socialLinks] = await Promise.all([
     getHeaderState(request),
@@ -31,19 +33,19 @@ export async function loader({ request }: Route.LoaderArgs) {
     shouldSuggestEnglish(request),
     getLocale(request).then(getSocialLinks),
   ]);
-  return { header, consent, suggestEnglish, socialLinks };
+  return { header, consent, suggestEnglish, socialLinks, perfumerEnabled: isPerfumerEnabled() };
 }
 
 /** Layout for every page. Products and orders are managed in the Strapi admin (#40). */
 export default function ShopLayout({ loaderData }: Route.ComponentProps) {
-  const { header, consent, suggestEnglish, socialLinks } = loaderData;
+  const { header, consent, suggestEnglish, socialLinks, perfumerEnabled } = loaderData;
   const tracking = consent === "granted";
   useClientPageViews(tracking);
   return (
     <TrackingProvider enabled={tracking}>
       <div className="flex min-h-dvh flex-col">
         {suggestEnglish && <LanguageHint />}
-        <Header {...header} socialLinks={socialLinks} />
+        <Header {...header} socialLinks={socialLinks} perfumerEnabled={perfumerEnabled} />
         <div className="flex-1">
           <Outlet />
         </div>
@@ -61,10 +63,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const layoutData = useRouteLoaderData<typeof loader>("routes/_shop");
   const headerState = layoutData?.header ?? LOGGED_OUT_HEADER;
   const socialLinks = layoutData?.socialLinks ?? [];
+  const perfumerEnabled = layoutData?.perfumerEnabled ?? false;
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <Header {...headerState} socialLinks={socialLinks} />
+      <Header {...headerState} socialLinks={socialLinks} perfumerEnabled={perfumerEnabled} />
       <div className="flex-1">
         <ErrorContent {...describeRouteError(error, t)} />
       </div>

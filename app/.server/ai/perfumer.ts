@@ -57,6 +57,11 @@ export interface PerfumerDeps {
   chat?: ChatFn;
   loadCatalog?: () => Promise<PerfumerProductRow[]>;
   loadSummaries?: (publicIds: readonly string[]) => Promise<Map<string, ProductSummary>>;
+  /**
+   * Cancels the reply early, e.g. the chat request's `request.signal` when the customer leaves or
+   * cancels (#163). `AI_TIMEOUT_MS` still bounds it; a cancelled reply throws a `timeout` `AiError`.
+   */
+  signal?: AbortSignal;
 }
 
 /** What happened during one reply, for the eval script (#162) and logs. */
@@ -121,7 +126,8 @@ export async function replyWithTrace(
     throw new PerfumerDisabledError();
   }
   const chat = deps.chat ?? createChatClient(config);
-  const signal = AbortSignal.timeout(config.timeoutMs);
+  const timeout = AbortSignal.timeout(config.timeoutMs);
+  const signal = deps.signal ? AbortSignal.any([timeout, deps.signal]) : timeout;
   const catalog = await (deps.loadCatalog ?? defaultCatalog)();
 
   const aliases = new AliasMap();

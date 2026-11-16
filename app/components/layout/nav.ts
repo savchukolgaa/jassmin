@@ -28,6 +28,11 @@ export function navLinks(locale: Locale) {
     to: pathFor(locale, "offers"),
     labelKey: "nav.offers",
   } as const satisfies NavLinkItem;
+  /** The AI perfumer chat (#163), shown only while it's enabled. */
+  const perfumer = {
+    to: pathFor(locale, "perfumer"),
+    labelKey: "nav.perfumer",
+  } as const satisfies NavLinkItem;
   const privacy = {
     to: pathFor(locale, "privacy"),
     labelKey: "consent.learnMore",
@@ -48,6 +53,7 @@ export function navLinks(locale: Locale) {
     blog,
     bestsellers,
     offers,
+    perfumer,
     privacy,
     catalog: [men, women],
     /** Links row of the site footer (women first, as in the C+ design). */

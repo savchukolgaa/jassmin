@@ -224,5 +224,33 @@ export const verificationEmailLimiter: RateLimiter = createRateLimiter({
   store: appRateLimitStore,
 });
 
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
+interface PerfumerLimiters {
+  /** Chat messages per client IP. */
+  byIp: RateLimiter;
+  /** Chat messages per visitor (`anonymousId`), so a shared IP isn't the only bound. */
+  bySession: RateLimiter;
+}
+
+/**
+ * AI perfumer chat messages (#163): 10 per 5 minutes per IP and per visitor. Every accepted message
+ * counts, since each one costs a model call.
+ */
+export const perfumerLimiters: PerfumerLimiters = {
+  byIp: createRateLimiter({
+    name: "perfumer-ip",
+    limit: 10,
+    windowMs: FIVE_MINUTES_MS,
+    store: appRateLimitStore,
+  }),
+  bySession: createRateLimiter({
+    name: "perfumer-session",
+    limit: 10,
+    windowMs: FIVE_MINUTES_MS,
+    store: appRateLimitStore,
+  }),
+};
+
 // The per-IP limits' key: `X-Forwarded-For` as far as `TRUSTED_PROXY_HOPS` allows (#143).
 export { getClientIp } from "./client-ip";

@@ -50,6 +50,8 @@ export default [
     ...localizedRoute("blogPost", "routes/blog-post.tsx"),
     ...localizedRoute("offers", "routes/offers.tsx"),
     ...localizedRoute("popular", "routes/popular.tsx"),
+    // The AI perfumer chat (#163), a 404 unless `AI_BASE_URL` is set.
+    ...localizedRoute("perfumer", "routes/perfumer.tsx"),
     ...localizedRoute("login", "routes/login.tsx"),
     ...localizedRoute("register", "routes/register.tsx"),
     // Password reset and email verification (#135).

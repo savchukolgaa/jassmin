@@ -5,7 +5,7 @@
 // app's URL as JASSMIN_APP_URL (product and order edits write through to the app, #40).
 // See https://aspire.dev
 
-import { createBuilder } from "./.aspire/modules/aspire.mjs";
+import { createBuilder, refExpr } from "./.aspire/modules/aspire.mjs";
 
 // Without a name the dashboard is titled after the AppHost folder ("aspire-apphost").
 const builder = await createBuilder({ dashboardApplicationName: "Jassmin" });
@@ -145,6 +145,49 @@ await builder
   .waitFor(synthDb)
   .withParentRelationship(synthDb)
   .withExplicitStart();
+
+// The ML notebooks (#133) on the warehouse marts (#159): `ml-notebooks` runs all five notebooks
+// headless with `run_all.py` and saves them with their outputs; `jupyter-lab` serves JupyterLab on
+// its `http` endpoint (127.0.0.1 only), opened on `analytics/notebooks/`. Run `synth-generate`,
+// then `dbt-build` first. Both get only the synth database; `jassmin_ml/db.py` refuses any other
+// and reads read-only. Jupyter takes its port from JUPYTER_PORT and its token from JUPYTER_TOKEN;
+// the `JupyterLab` link carries the token. Needs `uv` on the PATH.
+const notebooks = ["run", "--project", "analytics/notebooks"];
+await builder
+  .addExecutable("ml-notebooks", "uv", "..", [...notebooks, "analytics/notebooks/run_all.py"])
+  .withReference(synthDb)
+  .withEnvironment("JASSMIN_SYNTH_URI", await synthDb.uriExpression())
+  .waitFor(synthDb)
+  .withParentRelationship(synthDb)
+  .withExplicitStart();
+const jupyterToken = await builder.addParameterWithGeneratedValue(
+  "jupyter-token",
+  { minLength: 32, special: false },
+  { secret: true, persist: true },
+);
+const jupyterLab = await builder
+  .addExecutable("jupyter-lab", "uv", "..", [
+    ...notebooks,
+    "jupyter",
+    "lab",
+    "--no-browser",
+    "--ip",
+    "127.0.0.1",
+    "--ServerApp.root_dir=analytics/notebooks",
+    // Fail instead of moving to a port the dashboard link doesn't point to.
+    "--ServerApp.port_retries=0",
+  ])
+  .withHttpEndpoint({ env: "JUPYTER_PORT" })
+  .withEnvironment("JUPYTER_TOKEN", jupyterToken)
+  .withReference(synthDb)
+  .withEnvironment("JASSMIN_SYNTH_URI", await synthDb.uriExpression())
+  .waitFor(synthDb)
+  .withParentRelationship(synthDb)
+  .withExplicitStart();
+const jupyterEndpoint = await jupyterLab.getEndpoint("http");
+await jupyterLab.withUrl(refExpr`${jupyterEndpoint}/lab?token=${jupyterToken}`, {
+  displayText: "JupyterLab",
+});
 
 // Strapi secrets (APP_KEYS, …) come from cms/.env; the variables set here take precedence.
 const cms = builder

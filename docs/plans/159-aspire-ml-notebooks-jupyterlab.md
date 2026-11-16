@@ -111,14 +111,14 @@ endpoint, localhost only), both getting only the synth database as `JASSMIN_SYNT
 
 ## Steps
 
-- [ ] **1. Verify the Jupyter CLI assumptions** — In the worktree run
+- [x] **1. Verify the Jupyter CLI assumptions** — In the worktree run
   `uv sync --project analytics/notebooks`, then
   `JUPYTER_PORT=8899 uv run --project analytics/notebooks jupyter lab --no-browser --ip 127.0.0.1 --ServerApp.root_dir=analytics/notebooks --ServerApp.port_retries=0`
   and check the log says it listens on 8899 with root `analytics/notebooks`. Also check
   `JUPYTER_TOKEN=abc` sets the token. If `JUPYTER_PORT` is ignored, create `lab.py` (reads
   `JUPYTER_PORT`, appends `--port`, then calls `jupyterlab.labapp.main`) with a small pytest for
   the argument building, and point the resource at it instead.
-- [ ] **2. Add the resources to `apphost.mts`** — After `dbt-docs`, a comment block (#159: what each
+- [x] **2. Add the resources to `apphost.mts`** — After `dbt-docs`, a comment block (#159: what each
   does, "run `synth-generate` then `dbt-build` first", `db.py` refuses other databases, needs `uv`),
   `const notebooks = [...]`, then `ml-notebooks` and `jupyter-lab` with the wiring in *Decisions*.
   For Q1's token: `builder.addParameterWithGeneratedValue("jupyter-token", { minLength: 32,

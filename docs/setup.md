@@ -56,6 +56,11 @@ pnpm dev                    # http://localhost:5173
 | `SMTP_URL` | prod | SMTP server for every email (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container; in production it's the transactional provider (see [docs/email.md](email.md)). Required when `NODE_ENV=production`, for the app and `pnpm db:send-order-emails`. Without it, development logs contact messages instead of sending them, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `EMAIL_WEBHOOK_SECRET` | no* | Bearer secret (32+ characters) the email provider sends to `/hooks/email` with hard bounces and spam complaints (#134, see [docs/email.md](email.md)). *Without it the webhook answers 503, nothing is recorded, and production logs a warning at startup. |
 | `EMAIL_UNSUBSCRIBE_SECRET` | no* | Secret (32+ characters) that signs the one-click unsubscribe links in marketing emails (#139, see [docs/email.md](email.md)). *Without it `pnpm db:send-cart-reminders` sends no cart reminders, and production logs a warning at startup. Changing it breaks the links in emails already sent. |
+| `AI_BASE_URL` | no* | OpenAI-compatible chat-completions base URL for the AI perfumer (#162), e.g. `http://localhost:11434/v1` for local Ollama (see [docs/ai-perfumer.md](ai-perfumer.md)). *Without it the perfumer is off and nothing calls a model. |
+| `AI_MODEL` | no | Model name (default `granite4.1:3b`). |
+| `AI_API_KEY` | no | Bearer token for a hosted provider; Ollama needs none. |
+| `AI_TIMEOUT_MS` | no | The most one perfumer reply may take, tool calls included (default `90000`). |
+| `AI_KEEP_ALIVE` | no | Sent to Ollama as `keep_alive` (e.g. `30m`) so the model stays loaded between replies. |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
 | `ORDER_FROM` | no | Sender of order confirmation emails (default: `CONTACT_FROM`). Replies go to `CONTACT_INBOX`. |

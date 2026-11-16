@@ -185,7 +185,7 @@ There is no UI.
 
 ## Steps
 
-- [ ] **1. Environment** — Add to `envSchema`: `AI_BASE_URL: z.url({ protocol: /^https?$/ })
+- [x] **1. Environment** — Add to `envSchema`: `AI_BASE_URL: z.url({ protocol: /^https?$/ })
   .transform(stripTrailingSlash).optional()`, `AI_MODEL: z.string().min(1).default("granite4.1:3b")`,
   `AI_API_KEY: z.string().min(1).optional()`, `AI_TIMEOUT_MS: z.coerce.number().int().min(1000)
   .max(600_000).default(90_000)`, `AI_KEEP_ALIVE: z.string().regex(/^-?\d+[smh]?$/).optional()`; empty

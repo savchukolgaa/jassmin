@@ -196,7 +196,7 @@ There is no UI.
   `{ baseUrl, model, apiKey, timeoutMs, keepAlive } | null`; `isPerfumerEnabled()` is `!== null`.
   `errors.ts`: `AiError(kind, message, { status?, cause? })`, `PerfumerDisabledError`. Test: unset
   `AI_BASE_URL` → disabled.
-- [ ] **3. LLM client** — `chatCompletion({ messages, tools?, toolChoice?, responseFormat? },
+- [x] **3. LLM client** — `chatCompletion({ messages, tools?, toolChoice?, responseFormat? },
   { config, signal })`: `POST ${baseUrl}/chat/completions` with `model`, `temperature: 0.2`,
   `keep_alive` when set, `Authorization: Bearer` when `apiKey`. Validate with `client.schema.ts`
   (`choices[0].message` with `content: string | null` and optional `tool_calls[]` whose

@@ -57,12 +57,12 @@ when the engine is off.
 - **The "Added to cart" toast** (Q2, confirmed): the app has no fixed toast; `AddToCartForm` shows an
   inline `role="status"` pill below its button (floating `absolute top-full right-0` for the
   compact cards' round "+"), which can sit right under the phone's corner button. On
-  phones the button rises by 80px (`--bottom-ui-toast: 5rem`, the canvas's 96px − 16px) for 2.6s
-  after any add-to-cart fetcher (`useFetchers()`, key prefix `add-to-cart-`) turns idle with
-  `data.ok === true`. The corner button owns that state, so it sets a `data-raised` attribute on
-  itself rather than a variable on `<html>` (deviation: nothing else needs it); the pill itself is
-  unchanged. `ADD_TO_CART_FETCHER_PREFIX` is exported from `AddToCartForm.tsx` so the key has one
-  source.
+  phones the button rises by 80px (the canvas's 96px − 16px) for 2.6s after "Added to cart"
+  appears. Deviations, found while implementing: `useFetchers()` lists only in-flight fetchers, so
+  it can't tell when an add succeeded; instead `AddToCartForm` dispatches `CART_ADDED_EVENT`
+  (`jassmin:cart-added`) on `window` when its status appears, and the corner button listens. The
+  button owns the raised state, so it sets a `data-raised` attribute on itself rather than a
+  variable on `<html>`. The pill itself is unchanged.
 - **Hidden pages:** `perfumer`, `cart`, `checkout`, `checkoutSuccess`, `checkoutPay`,
   `giftCardSuccess`, matched with `pageOf(useLocation().pathname)` against a
   `PERFUMER_CORNER_HIDDEN_PAGES` set in `app/lib/perfumer.ts` (isomorphic, unit-testable). Also
@@ -196,7 +196,7 @@ when the engine is off.
   `className`. Test: href encodes Cyrillic and `&`, hidden when disabled.
 - [x] **4. Corner button** — `PerfumerCornerButton.tsx` per the decisions above (link to
   `path("perfumer")`, no `q`); `.perfumer-corner` rule in `app/app.css`; `cookieBanner` fallback
-  class; the 2.6s toast raise on phones via `useFetchers()` (Q2 confirmed). In `_shop.tsx`
+  class; the 2.6s toast raise on phones via `CART_ADDED_EVENT` (Q2 confirmed). In `_shop.tsx`
   render `{perfumerEnabled && <PerfumerCornerButton cookieBanner={consent === null} />}` after
   `<Footer>`. `MobileMenu`'s `<details>` gets `data-mobile-menu`. Check in the running app at 390px
   and 1440px against the artboards.
@@ -210,7 +210,7 @@ when the engine is off.
   block, with `similarMessage`.
 - [x] **8. robots.txt** — add the two `?q=` chat paths to `robotsDisallowPaths()`; update
   `robots.txt.test.ts`.
-- [ ] **9. DOM tests for entry points** — corner button: hidden for each hidden page (uk and en
+- [x] **9. DOM tests for entry points** — corner button: hidden for each hidden page (uk and en
   paths), shown on home/catalog/product, hidden when disabled, fallback class with `cookieBanner`,
   bottom variable raised after a successful add-to-cart fetcher and back after 2.6s (fake timers),
   `sr-only` label is the accessible name, axe has no violations with it shown. Catalog banner,

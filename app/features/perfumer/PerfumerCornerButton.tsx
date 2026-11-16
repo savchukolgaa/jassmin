@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useFetchers, useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { focusRing } from "~/components/layout/nav";
-import { ADD_TO_CART_FETCHER_PREFIX } from "~/features/cart/AddToCartForm";
+import { CART_ADDED_EVENT } from "~/features/cart/AddToCartForm";
 import { cn } from "~/lib/cn";
 import { usePathFor, useT } from "~/lib/i18n";
 import { pageOf } from "~/lib/paths";
@@ -52,36 +52,26 @@ export function PerfumerCornerButton({ cookieBanner = false }: { cookieBanner?: 
   );
 }
 
-function isCartAdded(data: unknown): boolean {
-  return typeof data === "object" && data !== null && "ok" in data && data.ok === true;
-}
-
 /**
- * True for `CART_ADDED_RAISE_MS` after an add-to-cart request finishes with "Added to cart", so on
- * phones the button doesn't cover the status under the product's add button.
+ * True for `CART_ADDED_RAISE_MS` after "Added to cart" appears (`CART_ADDED_EVENT`), so on phones
+ * the button doesn't cover the status under the product's add button.
  */
 function useRaisedAfterCartAdd(): boolean {
-  const fetchers = useFetchers();
-  const busy = useRef(new Set<string>());
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [raised, setRaised] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    let added = false;
-    const nowBusy = new Set<string>();
-    for (const fetcher of fetchers) {
-      if (!fetcher.key.startsWith(ADD_TO_CART_FETCHER_PREFIX)) continue;
-      if (fetcher.state !== "idle") nowBusy.add(fetcher.key);
-      else if (busy.current.has(fetcher.key) && isCartAdded(fetcher.data)) added = true;
+    function onAdded() {
+      setRaised(true);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setRaised(false), CART_ADDED_RAISE_MS);
     }
-    busy.current = nowBusy;
-    if (!added) return;
-    setRaised(true);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setRaised(false), CART_ADDED_RAISE_MS);
-  }, [fetchers]);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
+    window.addEventListener(CART_ADDED_EVENT, onAdded);
+    return () => {
+      window.removeEventListener(CART_ADDED_EVENT, onAdded);
+      clearTimeout(timer.current);
+    };
+  }, []);
 
   return raised;
 }

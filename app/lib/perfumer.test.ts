@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { pageOf } from "./paths";
 import {
+  isPerfumerEvent,
   isRetryable,
   PERFUMER_MAX_INPUT_LENGTH,
   PERFUMER_PREFILL_PARAM,
@@ -109,5 +110,44 @@ describe("perfumerPrefillSearch (#165)", () => {
     const search = perfumerPrefillSearch("  Схоже на Light Blue від Dolce & Gabbana ");
     expect(search.get(PERFUMER_PREFILL_PARAM)).toBe("Схоже на Light Blue від Dolce & Gabbana");
     expect(search.toString()).toContain("%26");
+  });
+});
+
+describe("isPerfumerEvent (#164)", () => {
+  const card = {
+    product: { id: "a1", title: "Acqua Di Gio", variants: [] },
+    reason: "Морські ноти.",
+  };
+
+  it.each([
+    { type: "step", step: { tool: "search", families: ["водяні"], maxPriceUah: 600, found: 3 } },
+    { type: "step", step: { tool: "search", gender: "men", families: [], found: 0 } },
+    { type: "step", step: { tool: "similar", title: "La Vie Est Belle", found: 6 } },
+    { type: "step", step: { tool: "similar", found: 0 } },
+    { type: "intro", text: "Ось свіжі аромати." },
+    { type: "picks", picks: [card] },
+    { type: "picks", picks: [] },
+    { type: "question", text: "Для кого?" },
+    { type: "error", error: "timeout" },
+    { type: "done" },
+  ])("accepts $type", (event) => {
+    expect(isPerfumerEvent(event)).toBe(true);
+  });
+
+  it.each([
+    null,
+    "done",
+    [],
+    { type: "unknown" },
+    { type: "step", step: { tool: "search", families: "водяні", found: 1 } },
+    { type: "step", step: { tool: "search", gender: "kids", families: [], found: 1 } },
+    { type: "step", step: { tool: "similar", title: 5, found: 1 } },
+    { type: "step", step: { tool: "similar" } },
+    { type: "intro", text: 1 },
+    { type: "picks", picks: [{ reason: "x" }] },
+    { type: "picks", picks: [{ ...card, product: { id: "a1" } }] },
+    { type: "error", error: "boom" },
+  ])("rejects %j", (event) => {
+    expect(isPerfumerEvent(event)).toBe(false);
   });
 });

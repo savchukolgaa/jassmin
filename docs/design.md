@@ -70,7 +70,12 @@ blush bubbles with an alert icon and, for `unavailable` and `timeout` only, a `p
 "Спробувати ще раз"; a cancelled request is a centred `card` pill. While a reply is awaited, a white
 bubble shows three bouncing `primary` dots (`animate-dot`), "Парфумер підбирає аромати…" and a hint
 that changes every 4 s ("· зазвичай до хвилини", never a model-specific time), and after 10 s an
-outlined "Скасувати" pill (`animate-pop`). The message bar sticks to the bottom (white, a `line` top
+outlined "Скасувати" pill (`animate-pop`). While the reply streams (#164), the hint gives way to the
+perfumer's searches as blush pills (`animate-pop`, `text-sm`, a `primary-dark` tick): "Шукаю в
+каталозі: водяні, до 600 ₴" and, in `muted`, "· знайдено 4 аромати". Once the intro arrives, the
+perfumer turn appears above with the intro typing in (a character every 15 ms; at once with reduced
+motion), and the bubble below, without its own name line, says "Парфумер пише відповідь…" until the
+cards arrive. The message bar sticks to the bottom (white, a `line` top
 border, safe-area padding): a `card` field with radius 28, a round 48px `primary` send button (grey
 when disabled), the AI disclaimer with a "напишіть нам" link to the contacts, and on the right the
 "Enter — надіслати · Shift+Enter — новий рядок" hint from `lg` or, from 400 characters, the

@@ -202,3 +202,79 @@ export function cleanProse(text: string, context: GuardContext): CleanedProse {
   }
   return { text: kept.join(" "), removed };
 }
+
+/** Where a streamed sentence ends: closing punctuation followed by whitespace (`splitSentences`). */
+const SENTENCE_BREAK = /(?<=[.!?…])\s+/u;
+
+/**
+ * The guard for text that arrives in pieces (#164): each sentence is checked with `cleanProse` as
+ * soon as it's complete, so it can be shown while the model is still writing the next one. A
+ * sentence is complete when closing punctuation is followed by whitespace, or when the text ends.
+ * The kept text is capped at `max` characters like `limitLength`; once it's `full`, the rest is
+ * dropped and the caller may stop the model.
+ */
+export class IntroGuard {
+  /** The sentences that were removed, for the eval and logs. */
+  readonly removed: string[] = [];
+  private buffer = "";
+  private length = 0;
+  private isFull = false;
+
+  constructor(
+    private readonly context: GuardContext,
+    private readonly max: number = MAX_INTRO,
+  ) {}
+
+  /** Whether the kept text reached `max`: everything after is dropped. */
+  get full(): boolean {
+    return this.isFull;
+  }
+
+  /** Whether any text was kept. */
+  get empty(): boolean {
+    return this.length === 0;
+  }
+
+  /** Adds a piece of text; returns the newly completed, kept sentences to append (or ""). */
+  push(piece: string): string {
+    if (this.isFull) {
+      return "";
+    }
+    this.buffer += piece;
+    const parts = this.buffer.split(SENTENCE_BREAK);
+    this.buffer = parts.pop() ?? "";
+    return parts.map((sentence) => this.accept(sentence)).join("");
+  }
+
+  /** The text ended: checks what's left; returns the kept rest to append (or ""). */
+  end(): string {
+    const rest = this.buffer;
+    this.buffer = "";
+    return this.isFull ? "" : this.accept(rest);
+  }
+
+  private accept(raw: string): string {
+    const sentence = raw.trim();
+    if (!sentence || this.isFull) {
+      return "";
+    }
+    const { text, removed } = cleanProse(sentence, this.context);
+    this.removed.push(...removed);
+    if (!text) {
+      return "";
+    }
+    const separator = this.length > 0 ? " " : "";
+    if (this.length + separator.length + text.length > this.max) {
+      this.isFull = true;
+      if (this.length > 0) {
+        return "";
+      }
+      // A first sentence longer than the whole intro is cut, like `limitLength` would.
+      const cut = limitLength(text, this.max);
+      this.length = cut.length;
+      return cut;
+    }
+    this.length += separator.length + text.length;
+    return separator + text;
+  }
+}

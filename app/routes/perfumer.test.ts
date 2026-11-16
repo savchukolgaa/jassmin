@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PerfumerReply } from "~/lib/perfumer";
 
 const ai = vi.hoisted(() => ({ isPerfumerEnabled: vi.fn(() => true) }));
-const engine = vi.hoisted(() => ({ reply: vi.fn() }));
+const engine = vi.hoisted(() => ({ reply: vi.fn(), replyStream: vi.fn() }));
 const analytics = vi.hoisted(() => ({ ensureVisitor: vi.fn() }));
 
 vi.mock("~/.server/ai/config", () => ai);

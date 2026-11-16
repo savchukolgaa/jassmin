@@ -34,7 +34,7 @@ Before every commit, `pnpm typecheck`, `pnpm lint` and `pnpm test` must pass. Be
 
 ## Architecture rules
 
-- **Reads go in route `loader`s, writes in route `action`s.** No REST API layer and no client-side fetching libraries (no React Query, Axios or Zustand).
+- **Reads go in route `loader`s, writes in route `action`s.** No REST API layer and no client-side fetching libraries (no React Query, Axios or Zustand). The one exception is the AI perfumer's streamed answer, read with `fetch` because `useFetcher` can't stream (#164, `docs/ai-perfumer.md` → Streaming); don't copy it elsewhere.
 - Routes are declared in `app/routes.ts`. Type route modules with the generated types: `import type { Route } from "./+types/<route>"`.
 - **Server-only code goes under `app/.server/`** (DB, services, session, env). Never import it from client code; the build fails if you do.
 - Shared enums and DTO types go in `app/lib/` (isomorphic, with no server imports).

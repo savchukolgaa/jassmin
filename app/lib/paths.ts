@@ -24,6 +24,8 @@ export const PAGES = {
   popular: { uk: "populiarni", en: "popular", indexable: true },
   // The AI perfumer chat (#163): a 404, with no menu link or sitemap entry, while it's disabled.
   perfumer: { uk: "parfumer", en: "perfumer", indexable: true },
+  // Action-only (POST): the chat's streamed answer (#164).
+  perfumerStream: { uk: "parfumer/stream", en: "perfumer/stream", indexable: false },
   blog: { uk: "blog", en: "blog", indexable: true },
   blogPost: { uk: "blog/:slug", en: "blog/:slug", indexable: true },
   cart: { uk: "koshyk", en: "cart", indexable: false },

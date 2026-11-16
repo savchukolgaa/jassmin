@@ -74,15 +74,19 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   as a form field. The header and mobile-menu links (`app/components/layout/nav.ts`) get
   `?from=menu`. `from` isn't a canonical query parameter, so `seoMeta` drops it from the canonical
   URL.
-- **Thumbs UI (C+).** Under each perfumer answer that has a `replyId` (answers from before this
-  change in `sessionStorage` have none and get no buttons): two small round ghost icon buttons
-  (thumb up / thumb down, `aria-pressed`, `aria-label` "Корисна відповідь" / "Не допомогло"), 44 px
-  hit area, focus ring and tokens from `docs/design.md`, a short "Дякуємо!" status after rating
-  (`role="status"`). Each turn uses its own `useFetcher({ key: \`perfumer-feedback-${replyId}\` })`
-  so it never touches the chat fetcher. The chosen rating is kept on the thread item
-  (`ThreadItem.rating`), so it survives a reload. **The look is drawn on the C+ canvas first
-  (artboards `C+ AI perfumer feedback (#166)` and its phone version) and waits for the owner's
-  approval (Q3); the description above is the starting point for that drawing, not final.**
+- **Thumbs UI (C+).** Drawn on the C+ canvas (https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW,
+  artboards `C+ AI perfumer answer rating (#166), for approval` and its phone version), waiting for
+  the owner's approval (Q3). Under each perfumer answer that has a `replyId` (answers from before this
+  change in `sessionStorage` have none and get no buttons): the label "Відповідь була корисною?" /
+  "Was this helpful?" (14 px, 700, `muted`), then a `role="group"` of two 44 px round buttons with
+  thumb icons (`aria-label` "Так, корисна" / "Yes, helpful" and "Ні, не допомогла" / "No, not
+  helpful", `aria-pressed`): a `line` border and `muted` icon; on hover a `primary` border and a
+  slight scale; chosen 👍 fills `primary` with a white icon, chosen 👎 fills `ink` so the two are
+  told apart by lightness. After rating, "Дякуємо за відгук!" / "Thanks for your feedback!" with a
+  check icon (`success`, `role="status"`, pop-in, reduced motion respected). Pressing the other
+  button changes the rating; pressing the chosen one does nothing. Each turn uses its own
+  `useFetcher({ key: \`perfumer-feedback-${replyId}\` })` so it never touches the chat fetcher. The
+  chosen rating is kept on the thread item (`ThreadItem.rating`), so it survives a reload.
 - **Generator rates (synthetic, plausible):** ~4 % of visits open the perfumer (entries weighted
   menu 40 %, catalog 20 %, empty_results 10 %, product 20 %, corner 10 %), 1–4 messages each; errors
   ~3 % (`timeout` most), rate-limited ~0.5 %; ~70 % of answers with picks (1–4), ~25 % ask a question;

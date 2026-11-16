@@ -182,7 +182,7 @@ when the engine is off.
   similar, catalogMessage, catalogMessageFilters, brandFilter, similarMessage}` to `uk.ts` and
   `en.ts`. Unit tests for the hidden pages (both locales' paths via `pageOf`) and the message
   (no filters, family, brand, both, unknown family value, English). `pnpm typecheck && pnpm test`.
-- [ ] **2. Prefill in the chat route** — `parsePerfumerPrefill` in `perfumer.schema.ts`; the
+- [x] **2. Prefill in the chat route** — `parsePerfumerPrefill` in `perfumer.schema.ts`; the
   `perfumer.tsx` loader returns `{ prefill }` and passes it to `PerfumerPage`. `usePerfumerThread`
   returns `restored`. In `PerfumerPage`, a ref-guarded effect sends the prefill once `restored`, then
   `navigate` with `replace` and no search. Tests: loader (`q` trimmed, empty → `null`, 501 chars →

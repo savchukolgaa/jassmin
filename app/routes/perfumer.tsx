@@ -7,7 +7,7 @@ import { answerPerfumerMessage } from "~/.server/services/perfumer-chat";
 import { PerfumerPage } from "~/features/perfumer/PerfumerPage";
 import { metaTranslator } from "~/lib/i18n";
 import type { PerfumerActionResult, PerfumerErrorKey } from "~/lib/perfumer";
-import { parsePerfumerRequest } from "~/lib/perfumer.schema";
+import { parsePerfumerPrefill, parsePerfumerRequest } from "~/lib/perfumer.schema";
 import { errorMeta, seoMeta } from "~/lib/seo";
 import type { Route } from "./+types/perfumer";
 
@@ -35,9 +35,13 @@ function requirePerfumer() {
   }
 }
 
-export function loader() {
+/**
+ * `prefill`: a message from an entry point (`?q=`, #165), which the page sends once and then
+ * removes from the URL. The canonical URL never has it (`seoMeta` keeps no query parameters here).
+ */
+export function loader({ request }: Route.LoaderArgs) {
   requirePerfumer();
-  return {};
+  return { prefill: parsePerfumerPrefill(new URL(request.url).searchParams) };
 }
 
 const ERROR_STATUS: Record<PerfumerErrorKey, number> = {
@@ -72,6 +76,6 @@ export async function action(args: Route.ActionArgs) {
   });
 }
 
-export default function PerfumerRoute() {
-  return <PerfumerPage />;
+export default function PerfumerRoute({ loaderData }: Route.ComponentProps) {
+  return <PerfumerPage prefill={loaderData.prefill} />;
 }

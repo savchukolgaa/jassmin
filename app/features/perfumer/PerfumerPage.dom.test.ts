@@ -22,12 +22,17 @@ interface Call {
 
 let calls: Call[] = [];
 
-function renderPage(locale: Locale = "uk") {
-  const router = createMemoryRouter(
+let router: ReturnType<typeof createMemoryRouter>;
+
+function renderPage(
+  locale: Locale = "uk",
+  { prefill = null as string | null, url = "/parfumer" } = {},
+) {
+  router = createMemoryRouter(
     [
       {
         path: "/parfumer",
-        element: createElement(PerfumerPage),
+        element: createElement(PerfumerPage, { prefill }),
         action: async ({ request }) => {
           const form = await request.formData();
           const { messages } = JSON.parse(String(form.get("payload"))) as {
@@ -39,7 +44,7 @@ function renderPage(locale: Locale = "uk") {
         },
       },
     ],
-    { initialEntries: ["/parfumer"] },
+    { initialEntries: [url] },
   );
   return render(createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })));
 }
@@ -204,5 +209,44 @@ describe("PerfumerPage", () => {
     await screen.findByText(/недоступний/);
 
     expect((await axe.run(container, options)).violations).toEqual([]);
+  });
+
+  it("sends a prefilled message once and removes `q` from the URL (#165)", async () => {
+    const message = "Схоже на Light Blue від Dolce & Gabbana";
+    const { unmount } = renderPage("uk", {
+      prefill: message,
+      url: `/parfumer?q=${encodeURIComponent(message)}`,
+    });
+
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.messages).toEqual([{ role: "user", content: message }]);
+    expect(screen.getByText(message, { selector: "p" })).toBeTruthy();
+    await waitFor(() => expect(router.state.location.search).toBe(""));
+    expect(router.state.historyAction).toBe("REPLACE");
+    await answerLast(reply("Ось схожі аромати."));
+    await screen.findByText("Ось схожі аромати.");
+
+    // A reload: the URL has no `q` any more, so nothing is sent again.
+    unmount();
+    renderPage("uk", { url: "/parfumer" });
+    expect(await screen.findByText("Ось схожі аромати.")).toBeTruthy();
+    expect(calls).toHaveLength(1);
+  });
+
+  it("adds a prefilled message to the stored thread instead of replacing it (#165)", async () => {
+    const stored: ThreadItem[] = [
+      { id: "1", role: "user", text: "Щось ванільне" },
+      { id: "2", role: "perfumer", reply: { intro: "Ось ванільні аромати.", picks: [] } },
+    ];
+    sessionStorage.setItem(THREAD_STORAGE_KEY, JSON.stringify({ v: 1, items: stored }));
+    renderPage("uk", { prefill: "Схоже на Libre від YSL", url: "/parfumer?q=x" });
+
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.messages).toEqual([
+      { role: "user", content: "Щось ванільне" },
+      { role: "assistant", content: "Ось ванільні аромати." },
+      { role: "user", content: "Схоже на Libre від YSL" },
+    ]);
+    expect(screen.getByText("Ось ванільні аромати.")).toBeTruthy();
   });
 });

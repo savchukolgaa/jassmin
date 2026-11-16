@@ -5,6 +5,7 @@ import { msg } from "./i18n";
 import {
   PERFUMER_MAX_INPUT_LENGTH,
   PERFUMER_MAX_MESSAGES,
+  PERFUMER_PREFILL_PARAM,
   type PerfumerErrorKey,
   type PerfumerMessage,
 } from "./perfumer";
@@ -47,4 +48,21 @@ export function parsePerfumerRequest(formData: FormData): PerfumerRequestResult 
   }
   const tooLong = parsed.error.issues.some((issue) => issue.message === TOO_LONG);
   return { ok: false, error: tooLong ? "tooLong" : "unavailable" };
+}
+
+/** A prefilled message (#165): like a typed one, 1–500 characters after trimming. */
+const prefillSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(PERFUMER_MAX_INPUT_LENGTH)
+  .nullable()
+  .catch(null);
+
+/**
+ * The message an entry point asks the chat page to send (`?q=`, #165), or `null`. An empty or too
+ * long one (only a hand-edited URL) is dropped quietly rather than shown as an error.
+ */
+export function parsePerfumerPrefill(params: URLSearchParams): string | null {
+  return prefillSchema.parse(params.get(PERFUMER_PREFILL_PARAM));
 }

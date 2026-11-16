@@ -21,6 +21,8 @@ export interface PendingTurn {
 export interface PerfumerThread {
   items: ThreadItem[];
   pending: PendingTurn | null;
+  /** Whether the stored thread has been read, so a message sent now joins it (#165). */
+  restored: boolean;
   /** Counts finished turns (a reply, an error or a cancel), so the page can move focus back. */
   finishedTurns: number;
   /** Sends a message; `false` when it's empty, too long or a reply is still awaited. */
@@ -120,5 +122,5 @@ export function usePerfumerThread(): PerfumerThread {
     setItems([]);
   }, [reset]);
 
-  return { items, pending, finishedTurns, send, cancel, retry, startOver };
+  return { items, pending, restored, finishedTurns, send, cancel, retry, startOver };
 }

@@ -85,7 +85,11 @@ describe.skipIf(!hasDatabase)("listPerfumerProducts (#162)", () => {
         { ml: 50, price: "1500.00" },
       ],
     });
-    expect(byTitle.get("Archived")).toMatchObject({ active: false });
+    // Each product keeps its own sizes, archived ones too.
+    expect(byTitle.get("Archived")).toMatchObject({
+      active: false,
+      sizes: [{ ml: 30, price: "900.00" }],
+    });
     expect(byTitle.get("No sizes")?.sizes).toEqual([]);
   });
 });

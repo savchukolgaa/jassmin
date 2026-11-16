@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/163
 Branch: `issue/163`
 Worktree: `.claude/worktrees/issue-163`
-Status: In progress (#162 merged as #170 on 2026-11-16).
+Status: Implemented (2026-11-16). Step 11's browser checks (phone width, header fit, screen readers) are still to do by hand.
 
 ## Goal
 
@@ -319,7 +319,7 @@ enabled.
   mobile input) and its row in "Pages and issues" (no canvas artboard); `docs/ai-perfumer.md`: the
   chat page section (route, 10 messages × 500 chars, 10 per 5 min per IP and per session,
   `sessionStorage`, plain text only).
-- [ ] **13. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- [x] **13. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ## Testing & verification
 
@@ -335,16 +335,18 @@ enabled.
 
 ## Acceptance criteria
 
-- [ ] With the engine enabled, `/parfumer` and `/en/perfumer` show the chat, and a message returns
+- [x] With the engine enabled, `/parfumer` and `/en/perfumer` show the chat, and a message returns
   an intro and 0–4 product cards with reasons that link to the product pages — steps 4, 6, 7, 10, 11
-- [ ] While waiting, the customer sees their message, an animated thinking state and can cancel;
+- [x] While waiting, the customer sees their message, an animated thinking state and can cancel;
   errors show a friendly message with retry — steps 6, 7, 8, 10
-- [ ] Example prompts, start over, and reload-safe history work — steps 6, 9, 10
+- [x] Example prompts, start over, and reload-safe history work — steps 6, 9, 10
 - [ ] The page works and looks right on mobile and desktop in the C+ design, is keyboard and
   screen-reader friendly, and shows the AI disclaimer — steps 7–9, 10 (axe), 11, 12
-- [ ] The page and its menu link are hidden when the engine is disabled — steps 4, 6, 11
-- [ ] Length, history and rate limits are enforced with clear messages — steps 2, 3, 6, 8
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
+  *(Not ticked: axe, keyboard and focus tests pass and the markup follows the approved artboards,
+  but the page wasn't looked at in a browser at 360 px / 1024 px or with NVDA/VoiceOver.)*
+- [x] The page and its menu link are hidden when the engine is disabled — steps 4, 6, 11
+- [x] Length, history and rate limits are enforced with clear messages — steps 2, 3, 6, 8
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
 
 ## Out of scope
 

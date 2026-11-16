@@ -107,7 +107,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
 - **Fall back to the action when the stream breaks after progress was shown?** — Yes, on every
   transport failure, keeping the steps shown; a second failure shows the action's error as today
   (decision 12). (source: the owner, Q2)
-- **Should the eval also measure the streaming path?** — Not in this issue; a follow-up issue adds a
+- **Should the eval also measure the streaming path?** — Not in this issue; #172 adds a
   `--stream` mode to `pnpm ai:perfumer-eval`. (source: the owner, Q3)
 - **Where does the locale come from in a resource route?** — From the path (`getLocale` →
   `localeFromPath`), so the stream route needs `uk`/`en` paths, registered like `checkoutPay`.
@@ -271,7 +271,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
 ## Out of scope
 
 - Streaming each card's reason (the issue's out of scope).
-- Changing `reply()`, its prompt, or the eval and its recorded results (a follow-up issue).
+- Changing `reply()`, its prompt, or the eval and its recorded results (#172).
 - Persisting conversations on the server, or resuming a stream after a reload.
 - WebSockets or a client fetching library.
 - Hosting or choosing a faster model (#167); analytics events for the chat (#166).

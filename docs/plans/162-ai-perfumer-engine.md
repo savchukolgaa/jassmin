@@ -223,7 +223,7 @@ There is no UI.
   inactive excluded, ranking by matches then `popular_rank`, `similar_to("la vie est belle")` returns
   fruity/floral women's perfumes without itself, unknown title → `found: false`. Unit tests for
   argument validation errors.
-- [ ] **6. Answer guard** — `answer-guard.ts`: `selectPicks(picks, aliases)` (known aliases only,
+- [x] **6. Answer guard** — `answer-guard.ts`: `selectPicks(picks, aliases)` (known aliases only,
   dedupe, max 4), `limitLength(text, max)`, `cleanProse(text, { locale, allowedNames,
   catalogNames })` implementing rules 1–5, `splitSentences` that keeps `.?!…` and handles
   `«»`. Unit tests with the feasibility test's real failures: invented "Aquarius"/"Blue Marlin",

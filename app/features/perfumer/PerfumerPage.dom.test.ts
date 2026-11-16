@@ -25,6 +25,8 @@ import { THREAD_STORAGE_KEY } from "./thread-storage";
 /** A request the test answers when it wants to. */
 interface Call {
   messages: PerfumerMessage[];
+  turn: unknown;
+  entry: unknown;
   answer: (result: PerfumerActionResult) => void;
 }
 
@@ -43,11 +45,13 @@ function renderPage(
         element: createElement(PerfumerPage, { prefill }),
         action: async ({ request }) => {
           const form = await request.formData();
-          const { messages } = JSON.parse(String(form.get("payload"))) as {
+          const { messages, turn, entry } = JSON.parse(String(form.get("payload"))) as {
             messages: PerfumerMessage[];
+            turn: unknown;
+            entry: unknown;
           };
           return new Promise<PerfumerActionResult>((resolve) => {
-            calls.push({ messages, answer: resolve });
+            calls.push({ messages, turn, entry, answer: resolve });
           });
         },
       },
@@ -57,7 +61,11 @@ function renderPage(
   return render(createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })));
 }
 
-const reply = (intro: string): PerfumerActionResult => ({ ok: true, reply: { intro, picks: [] } });
+const reply = (intro: string, replyId = crypto.randomUUID()): PerfumerActionResult => ({
+  ok: true,
+  reply: { intro, picks: [] },
+  replyId,
+});
 
 const input = () => screen.getByRole<HTMLTextAreaElement>("textbox", { name: /AI-парфумеру/ });
 
@@ -248,6 +256,55 @@ describe("PerfumerPage", () => {
     expect(saved.items.map((item) => item.role)).toEqual(["user", "perfumer"]);
   });
 
+  it("sends each message's turn and the entry the chat was opened from (#166)", async () => {
+    const user = userEvent.setup();
+    renderPage("uk", { url: "/parfumer?from=catalog" });
+
+    await user.type(input(), "Щось легке{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]).toMatchObject({ turn: 1, entry: "catalog" });
+    await answerLast(reply("Ось легкі.", "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d"));
+
+    await user.type(await screen.findByRole("textbox"), "Дешевше{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]).toMatchObject({ turn: 2, entry: "catalog" });
+
+    // The answer's reply id and turn are kept for its rating.
+    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
+      entry: string;
+      items: ThreadItem[];
+    };
+    expect(saved.entry).toBe("catalog");
+    expect(saved.items[1]).toMatchObject({
+      role: "perfumer",
+      replyId: "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d",
+      turn: 1,
+    });
+  });
+
+  it("keeps a restored conversation's entry, and counts an unknown one as direct", async () => {
+    sessionStorage.setItem(
+      THREAD_STORAGE_KEY,
+      JSON.stringify({
+        v: 1,
+        entry: "product",
+        items: [{ id: "1", role: "user", text: "Щось ванільне" }],
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage("uk", { url: "/parfumer?from=nonsense" });
+
+    await user.type(await screen.findByRole("textbox"), "Ще{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]).toMatchObject({ turn: 2, entry: "product" });
+
+    await answerLast(reply("Ось."));
+    await user.click(await screen.findByRole("button", { name: "Почати спочатку" }));
+    await user.type(input(), "Нове{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]).toMatchObject({ turn: 1, entry: "direct" });
+  });
+
   it("renders in English", async () => {
     renderPage("en");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
@@ -301,7 +358,7 @@ describe("PerfumerPage", () => {
       { id: "2", role: "perfumer", reply: { intro: "Ось ванільні аромати.", picks: [] } },
     ];
     sessionStorage.setItem(THREAD_STORAGE_KEY, JSON.stringify({ v: 1, items: stored }));
-    renderPage("uk", { prefill: "Схоже на Libre від YSL", url: "/parfumer?q=x" });
+    renderPage("uk", { prefill: "Схоже на Libre від YSL", url: "/parfumer?q=x&from=product" });
 
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.messages).toEqual([
@@ -356,6 +413,8 @@ describe("PerfumerPage streaming (#164)", () => {
     expect(stream?.url).toBe("/parfumer/stream");
     expect(JSON.parse(stream?.payload ?? "{}")).toEqual({
       messages: [{ role: "user", content: "Щось морське" }],
+      turn: 1,
+      entry: "direct",
     });
 
     await stream?.push({
@@ -392,12 +451,15 @@ describe("PerfumerPage streaming (#164)", () => {
   });
 
   it("streams a prefilled message to the end while `q` leaves the URL (#165)", async () => {
-    renderPage("uk", { prefill: "Схоже на Libre від YSL", url: "/parfumer?q=x" });
+    renderPage("uk", { prefill: "Схоже на Libre від YSL", url: "/parfumer?q=x&from=product" });
 
     await waitFor(() => expect(streams).toHaveLength(1));
     const stream = streams[0];
     expect(JSON.parse(stream?.payload ?? "{}")).toEqual({
       messages: [{ role: "user", content: "Схоже на Libre від YSL" }],
+      turn: 1,
+      // The entry point's `from` (#166), read before the URL is cleaned.
+      entry: "product",
     });
     await waitFor(() => expect(router.state.location.search).toBe(""));
     expect(stream?.signal?.aborted).toBe(false);

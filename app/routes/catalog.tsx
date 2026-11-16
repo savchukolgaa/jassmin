@@ -159,7 +159,7 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
             {perfumerEnabled && (
               <div className="mt-6 flex flex-col items-center gap-3">
                 <p className="text-body">{t("perfumer.entry.emptyText")}</p>
-                <PerfumerEntryLink message={perfumerMessage} size="sm">
+                <PerfumerEntryLink message={perfumerMessage} entry="empty_results" size="sm">
                   {t("perfumer.entry.emptyAction")}
                 </PerfumerEntryLink>
               </div>

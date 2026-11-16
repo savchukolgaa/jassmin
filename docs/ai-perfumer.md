@@ -2,7 +2,7 @@
 
 The AI perfumer is a server-side engine that turns a customer's words ("щось свіже з морськими
 нотами до 600 грн", "що схоже на La Vie Est Belle?") into recommendations of real perfumes from
-the Jassmin catalog (#162). The chat page that uses it is #163; streaming is #164 (below), analytics #166,
+the Jassmin catalog (#162). The chat page that uses it is #163; streaming is #164 (below), analytics #166 (below),
 and hosting a model in production, along with comparing models, is #167.
 
 ## Setup
@@ -155,6 +155,169 @@ instead of calling a tool (discarded, as in `reply()`) 60 s, the picks as JSON 3
 53 s (first token after 1.8 s: Ollama reuses the cached prompt). `reply()` took 137 s on the same
 request (`uk-aquatic`). The extra call costs little prompt time; the intro's tokens are generated
 in both paths. A comparison over every case is #172.
+
+## Analytics
+
+How customers use the perfumer, how well it answers and whether its recommendations sell (#166).
+The events follow the contract in [analytics-events.md](analytics-events.md); like every event,
+they're recorded only with analytics consent.
+
+- **`perfumer_message`**, one per message the chat accepts (stream or action) (answered, failed, cancelled
+  or rate-limited; a message refused as too long records nothing): `reply_id`, `turn`, `latency_ms`,
+  `model`, `tool_calls` (tool and argument **names** only), `pick_ids`, `asked_question`, `error`
+  and `entry` (how the chat was opened: `?from=` on its link, else `direct`).
+- **`perfumer_feedback`**: the 👍/👎 under an answer (`reply_id`, `turn`, `rating`). A customer
+  can change their mind, so count the latest rating per `reply_id`.
+- **Cards** are the `perfumer` product list: their impressions and clicks carry
+  `list_id = 'perfumer'` and the card's position (1–4).
+- **No text is stored**: not the customer's words, the intro, the reasons or the question. They
+  could hold personal data. The schemas reject any other key.
+
+With the streamed answer (#164), the stream route records the event when the stream ends,
+however it ends: an answer, an `error`, or `cancelled` when the customer stops reading. A message
+whose stream fails over to the action records two events, the stream's (`cancelled`) and the
+action's. The `done` event carries the answer's `replyId`, for its rating.
+
+The warehouse has the same figures per day, on the synthetic data, in `marts.mart_perfumer_daily`
+(`analytics/warehouse/README.md`). The queries below run against the app's database. Days are Kyiv
+days; a visitor is the same `anonymous_id`, or the same `user_id` once logged in.
+
+### Usage
+
+```sql
+-- Messages, conversations (visits) and rate-limited messages per day.
+select (created_at at time zone 'Europe/Kyiv')::date as day,
+       count(*) filter (where event_properties ->> 'error' is distinct from 'rate_limited') as messages,
+       count(distinct session_id) as conversations,
+       count(*) filter (where event_properties ->> 'error' = 'rate_limited') as rate_limited
+from user_events
+where event_type = 'perfumer_message'
+group by 1
+order by 1 desc;
+
+-- How conversations start: the entry of each conversation's first message.
+select event_properties ->> 'entry' as entry, count(*) as conversations
+from user_events
+where event_type = 'perfumer_message' and (event_properties ->> 'turn')::int = 1
+group by 1
+order by 2 desc;
+```
+
+### Latency and errors
+
+```sql
+-- Answer time of answered messages in the last 30 days, per model.
+select event_properties ->> 'model' as model,
+       count(*) as answers,
+       percentile_cont(0.5) within group (order by (event_properties ->> 'latency_ms')::int) as p50_ms,
+       percentile_cont(0.95) within group (order by (event_properties ->> 'latency_ms')::int) as p95_ms
+from user_events
+where event_type = 'perfumer_message'
+  and event_properties ->> 'error' is null
+  and created_at >= now() - interval '30 days'
+group by 1;
+
+-- Error rate per day, by error (rate-limited messages never reached the model).
+select (created_at at time zone 'Europe/Kyiv')::date as day,
+       round(avg((event_properties ->> 'error' is not null)::int), 4) as error_rate,
+       count(*) filter (where event_properties ->> 'error' = 'timeout') as timeouts,
+       count(*) filter (where event_properties ->> 'error' = 'unavailable') as unavailable,
+       count(*) filter (where event_properties ->> 'error' = 'bad_response') as bad_responses,
+       count(*) filter (where event_properties ->> 'error' = 'cancelled') as cancelled
+from user_events
+where event_type = 'perfumer_message'
+  and event_properties ->> 'error' is distinct from 'rate_limited'
+group by 1
+order by 1 desc;
+```
+
+### Answers with picks, click-through and conversion
+
+```sql
+-- Of the answers: how many recommend perfumes, ask a question, get a card clicked within an hour,
+-- and lead to an order within 7 days containing a recommended (or a clicked) perfume.
+with answers as (
+    select event_id, anonymous_id, user_id, created_at,
+           event_properties -> 'pick_ids' as picks,
+           (event_properties ->> 'asked_question')::boolean as asked_question
+    from user_events
+    where event_type = 'perfumer_message' and event_properties ->> 'error' is null
+),
+clicks as (
+    select anonymous_id, user_id, created_at, event_properties ->> 'product_public_id' as product
+    from user_events
+    where event_type = 'product_click' and event_properties ->> 'list_id' = 'perfumer'
+),
+ordered as (
+    select o.anonymous_id, o.user_id, o.created_at, p.public_id::text as product
+    from user_events as o
+    cross join lateral jsonb_array_elements(o.event_properties -> 'items') as item
+    join product_variants as v on v.public_id = (item ->> 'variant_id')::uuid
+    join products as p on p.id = v.product_id
+    where o.event_type = 'purchase'
+),
+scored as (
+    select a.*,
+           exists (
+               select 1 from clicks as c
+               where (c.anonymous_id = a.anonymous_id or c.user_id = a.user_id)
+                 and c.created_at between a.created_at and a.created_at + interval '1 hour'
+                 and a.picks ? c.product
+           ) as clicked,
+           exists (
+               select 1 from ordered as o
+               where (o.anonymous_id = a.anonymous_id or o.user_id = a.user_id)
+                 and o.created_at between a.created_at and a.created_at + interval '7 days'
+                 and a.picks ? o.product
+           ) as ordered_pick,
+           exists (
+               select 1 from ordered as o
+               join clicks as c
+                 on (c.anonymous_id = a.anonymous_id or c.user_id = a.user_id)
+                and c.product = o.product
+                and c.created_at between a.created_at and a.created_at + interval '1 hour'
+               where (o.anonymous_id = a.anonymous_id or o.user_id = a.user_id)
+                 and o.created_at between a.created_at and a.created_at + interval '7 days'
+                 and a.picks ? o.product
+           ) as ordered_clicked
+    from answers as a
+)
+select count(*) as answers,
+       round(avg((jsonb_array_length(picks) > 0)::int), 4) as share_with_picks,
+       round(avg(asked_question::int), 4) as share_with_question,
+       count(*) filter (where jsonb_array_length(picks) > 0) as answers_with_picks,
+       round(avg(clicked::int) filter (where jsonb_array_length(picks) > 0), 4) as click_through,
+       round(avg(ordered_pick::int) filter (where jsonb_array_length(picks) > 0), 4) as conversion_7d,
+       count(*) filter (where ordered_clicked) as answers_ordered_after_a_click
+from scored;
+```
+
+Answers of the last 7 days haven't had their full week yet. Purchases recorded before #129 have no
+`items`, so they never count as conversions.
+
+### Ratings
+
+```sql
+-- 👍/👎 per day of the answer: the latest rating of each answer.
+with latest as (
+    select distinct on (event_properties ->> 'reply_id')
+           event_properties ->> 'reply_id' as reply_id,
+           event_properties ->> 'rating' as rating
+    from user_events
+    where event_type = 'perfumer_feedback'
+    order by event_properties ->> 'reply_id', created_at desc
+)
+select (m.created_at at time zone 'Europe/Kyiv')::date as day,
+       count(*) filter (where l.rating = 'up') as up,
+       count(*) filter (where l.rating = 'down') as down,
+       round(avg((l.rating = 'up')::int), 4) as up_share,
+       round(count(l.rating)::numeric / count(*), 4) as rated_share
+from user_events as m
+left join latest as l on l.reply_id = m.event_properties ->> 'reply_id'
+where m.event_type = 'perfumer_message' and m.event_properties ->> 'error' is null
+group by 1
+order by 1 desc;
+```
 
 ## Eval
 

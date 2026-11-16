@@ -58,7 +58,8 @@ describe("PerfumerCornerButton", () => {
   it("links to the chat, named by its label even where only the icon shows", () => {
     renderCorner();
     const link = corner();
-    expect(link?.getAttribute("href")).toBe("/parfumer");
+    // `from=corner`: how the chat was opened, for analytics (#166).
+    expect(link?.getAttribute("href")).toBe("/parfumer?from=corner");
     expect(link?.textContent).toBe("Запитати AI парфумера");
     expect(link?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   });
@@ -66,7 +67,7 @@ describe("PerfumerCornerButton", () => {
   it("speaks English on English pages", () => {
     renderCorner({ url: "/en/catalog/women", locale: "en" });
     expect(screen.getByRole("link", { name: "Ask the AI perfumer" }).getAttribute("href")).toBe(
-      "/en/perfumer",
+      "/en/perfumer?from=corner",
     );
   });
 

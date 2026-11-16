@@ -50,25 +50,29 @@ afterEach(cleanup);
 describe("PerfumerEntryLink", () => {
   it("links to the chat in the page's language with the message in `q`, nofollow", () => {
     const message = "Схоже на Light Blue від Dolce & Gabbana";
-    renderInShop(createElement(PerfumerEntryLink, { message }, "Запитати"));
+    renderInShop(createElement(PerfumerEntryLink, { message, entry: "catalog" }, "Запитати"));
 
     const link = screen.getByRole("link", { name: "Запитати" });
     expect(link.getAttribute("href")).toMatch(/^\/parfumer\?q=/);
     expect(prefillOf(link)).toBe(message);
     expect(link.getAttribute("rel")).toBe("nofollow");
+    // Which entry point it is, for analytics (#166).
+    expect(
+      new URL(link.getAttribute("href") ?? "", "http://localhost").searchParams.get("from"),
+    ).toBe("catalog");
   });
 
   it("uses the English chat path in English", () => {
-    renderInShop(createElement(PerfumerEntryLink, { message: "Hi" }, "Ask"), {
+    renderInShop(createElement(PerfumerEntryLink, { message: "Hi", entry: "product" }, "Ask"), {
       locale: "en",
     });
     expect(screen.getByRole("link", { name: "Ask" }).getAttribute("href")).toBe(
-      "/en/perfumer?q=Hi",
+      "/en/perfumer?q=Hi&from=product",
     );
   });
 
   it("renders nothing while the perfumer is disabled", () => {
-    renderInShop(createElement(PerfumerEntryLink, { message: "Hi" }, "Ask"), {
+    renderInShop(createElement(PerfumerEntryLink, { message: "Hi", entry: "product" }, "Ask"), {
       enabled: false,
     });
     expect(screen.queryByRole("link")).toBeNull();

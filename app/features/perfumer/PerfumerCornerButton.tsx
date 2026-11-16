@@ -29,7 +29,8 @@ export function PerfumerCornerButton({ cookieBanner = false }: { cookieBanner?: 
 
   return (
     <Link
-      to={path("perfumer")}
+      // `from=corner` tells analytics how the chat was opened (#166).
+      to={path("perfumer", {}, { search: "from=corner" })}
       data-cookie-banner={cookieBanner || undefined}
       data-raised={raised || undefined}
       className={cn(

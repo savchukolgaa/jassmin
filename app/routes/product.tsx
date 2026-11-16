@@ -172,6 +172,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           {/* Perfumes like this one, from the AI perfumer (#165); its `similar_to` tool (#162)
               finds the product by name. */}
           <PerfumerEntryLink
+            entry="product"
             message={t("perfumer.entry.similarMessage", {
               title: product.title,
               brand: product.brand,

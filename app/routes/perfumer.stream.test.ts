@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PerfumerDeps } from "~/.server/ai/perfumer";
 import type { PerfumerEvent } from "~/lib/perfumer";
 
-const ai = vi.hoisted(() => ({ isPerfumerEnabled: vi.fn(() => true) }));
-const engine = vi.hoisted(() => ({ replyStream: vi.fn(), reply: vi.fn() }));
-const analytics = vi.hoisted(() => ({ ensureVisitor: vi.fn() }));
+const ai = vi.hoisted(() => ({
+  isPerfumerEnabled: vi.fn(() => true),
+  getPerfumerConfig: vi.fn(() => ({ model: "granite4.1:3b" })),
+}));
+const engine = vi.hoisted(() => ({ replyStream: vi.fn(), replyWithTrace: vi.fn() }));
+const analytics = vi.hoisted(() => ({ ensureVisitor: vi.fn(), trackEvent: vi.fn() }));
 
 vi.mock("~/.server/ai/config", () => ai);
 vi.mock("~/.server/ai/perfumer", () => engine);
@@ -83,7 +86,11 @@ describe("perfumer stream route (#164)", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("text/event-stream; charset=utf-8");
-    expect(await eventsOf(response)).toEqual(reply);
+    // `done` carries the reply's id, for its rating (#166).
+    expect(await eventsOf(response)).toEqual([
+      ...reply.slice(0, -1),
+      { type: "done", replyId: expect.any(String) },
+    ]);
     expect(engine.replyStream).toHaveBeenCalledWith(
       "en",
       [{ role: "user", content: "Щось свіже на літо" }],
@@ -117,6 +124,10 @@ describe("perfumer stream route (#164)", () => {
     expect(response.status).toBe(429);
     expect(await eventsOf(response)).toEqual([{ type: "error", error: "rateLimited" }]);
     expect(engine.replyStream).toHaveBeenCalledTimes(10);
+    // The refused message is recorded too (#166).
+    expect(analytics.trackEvent).toHaveBeenLastCalledWith(expect.anything(), "perfumer_message", {
+      properties: expect.objectContaining({ error: "rate_limited", model: null }),
+    });
   });
 
   it("stops the model call when the request is aborted", async () => {
@@ -139,5 +150,26 @@ describe("perfumer stream route (#164)", () => {
     await reader?.cancel();
 
     expect(engineSignal()?.aborted).toBe(true);
+  });
+
+  it("records one perfumer_message when the stream ends, with the turn and entry (#166)", async () => {
+    analytics.ensureVisitor.mockResolvedValue({ anonymousId: "visitor-166", sessionId: "s-166" });
+    const response = await action(
+      post({ ...ask(), turn: 3, entry: "empty_results" }, { ip: "198.51.100.66" }),
+    );
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
+    const events = await eventsOf(response);
+
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+    const [, type, options] = analytics.trackEvent.mock.calls[0] ?? [];
+    expect(type).toBe("perfumer_message");
+    expect(options.properties).toMatchObject({
+      reply_id: (events.at(-1) as { replyId: string }).replyId,
+      turn: 3,
+      entry: "empty_results",
+      model: "granite4.1:3b",
+      error: null,
+    });
+    expect(JSON.stringify(options)).not.toContain("Ось легкі аромати.");
   });
 });

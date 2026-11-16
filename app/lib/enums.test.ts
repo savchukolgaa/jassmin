@@ -74,6 +74,8 @@ describe("enum values", () => {
       "product_impression",
       "product_click",
       "product_dwell",
+      "perfumer_message",
+      "perfumer_feedback",
     ]);
   });
 

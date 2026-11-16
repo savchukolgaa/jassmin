@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { ThreadItem } from "~/lib/perfumer";
 import type { ProductSummary } from "~/lib/products";
-import { loadThread, MAX_STORED_ITEMS, saveThread, THREAD_STORAGE_KEY } from "./thread-storage";
+import {
+  loadThread,
+  loadThreadEntry,
+  MAX_STORED_ITEMS,
+  saveThread,
+  THREAD_STORAGE_KEY,
+} from "./thread-storage";
 
 /** A `Storage` backed by a map. */
 function memoryStorage(initial: Record<string, string> = {}): Storage {
@@ -103,5 +109,40 @@ describe("thread storage", () => {
       throw new Error("QuotaExceededError");
     };
     expect(() => saveThread(thread, throwing)).not.toThrow();
+  });
+
+  it("keeps each answer's reply id, turn and rating, and the conversation's entry (#166)", () => {
+    const storage = memoryStorage();
+    const rated: ThreadItem[] = [
+      { id: "1", role: "user", text: "Щось морське" },
+      {
+        id: "2",
+        role: "perfumer",
+        reply: { intro: "Ось.", picks: [] },
+        replyId: "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d",
+        turn: 1,
+        rating: "up",
+      },
+    ];
+    saveThread(rated, storage, "empty_results");
+    expect(loadThread(storage)).toEqual(rated);
+    expect(loadThreadEntry(storage)).toBe("empty_results");
+  });
+
+  it("reads a thread stored before #166 as a direct visit without ratings", () => {
+    const storage = memoryStorage({
+      [THREAD_STORAGE_KEY]: JSON.stringify({ v: 1, items: thread }),
+    });
+    expect(loadThread(storage)).toEqual(thread);
+    expect(loadThreadEntry(storage)).toBe("direct");
+    expect(loadThreadEntry(memoryStorage())).toBeUndefined();
+  });
+
+  it("drops a thread with an unknown rating", () => {
+    const raw = JSON.stringify({
+      v: 1,
+      items: [{ id: "2", role: "perfumer", reply: { intro: "Ось.", picks: [] }, rating: "meh" }],
+    });
+    expect(loadThread(memoryStorage({ [THREAD_STORAGE_KEY]: raw }))).toEqual([]);
   });
 });

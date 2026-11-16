@@ -152,6 +152,37 @@ SPRING_CODE_SHARE = 0.4
 TRIO_CART_SHARE = 0.12
 COUPLE_CART_SHARE = 0.10
 
+# --- the AI perfumer (#166) --------------------------------------------------------------------
+# Drawn from their own random stream, so the rest of the shop is the same with or without them.
+
+#: Share of visits that open the perfumer chat, and how they got there (`entry`).
+PERFUMER_VISIT_SHARE = 0.04
+PERFUMER_ENTRIES: dict[str, float] = {
+    "menu": 0.35, "catalog": 0.18, "empty_results": 0.08, "product": 0.17, "corner": 0.12,
+    "direct": 0.10,
+}  # fmt: skip
+#: Customer messages per conversation (uniform integer, high exclusive).
+PERFUMER_MESSAGES = (1, 5)
+PERFUMER_MODEL = "granite4.1:3b"
+#: Answer time: lognormal around 8 s (p95 ≈ 22 s), like a hosted model, capped at the timeout.
+PERFUMER_LATENCY_MEDIAN_MS = 8000
+PERFUMER_LATENCY_SIGMA = 0.6
+PERFUMER_TIMEOUT_MS = 90_000
+#: Failed answers: the share and the mix of reasons; rate-limited and cancelled requests.
+PERFUMER_ERROR_SHARE = 0.03
+PERFUMER_ERRORS: dict[str, float] = {"timeout": 0.5, "unavailable": 0.35, "bad_response": 0.15}
+PERFUMER_RATE_LIMITED_SHARE = 0.005
+PERFUMER_CANCELLED_SHARE = 0.01
+#: Answers with picks (1–4 of them), and answers that ask a clarifying question.
+PERFUMER_PICKS_SHARE = 0.7
+PERFUMER_QUESTION_SHARE = 0.25
+#: An answer with picks whose card gets clicked (the customer then opens that perfume).
+PERFUMER_CLICK_SHARE = 0.35
+#: Answers rated, and the share of 👍 (higher when a pick was clicked).
+PERFUMER_RATED_SHARE = 0.15
+PERFUMER_UP_SHARE = 0.7
+PERFUMER_UP_SHARE_CLICKED = 0.9
+
 # --- deliberate anomalies (README.md: the anomaly catalogue) -----------------------------------
 # Each rate is applied as an exact count, round(rate * rows), so a run hits it exactly.
 

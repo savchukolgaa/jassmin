@@ -86,6 +86,11 @@ export interface PerfumerDeps {
    * cancels (#163). `AI_TIMEOUT_MS` still bounds it; a cancelled reply throws a `timeout` `AiError`.
    */
   signal?: AbortSignal;
+  /**
+   * Called with each catalog tool call as it runs, for analytics (#166): the streamed reply has no
+   * trace to return.
+   */
+  onToolCall?: (record: ToolCallRecord) => void;
 }
 
 /** What happened during one reply, for the eval script (#162) and logs. */
@@ -217,6 +222,7 @@ async function toolRound(run: ReplyRun): Promise<ToolCallRecord[] | null> {
     }
     const tool = runCatalogTool(run.catalog, call.name, call.arguments, run.aliases);
     run.trace.toolCalls.push(tool.record);
+    run.deps.onToolCall?.(tool.record);
     records.push(tool.record);
     run.history.push({ role: "tool", toolCallId: call.id, content: tool.content });
   }

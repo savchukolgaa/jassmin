@@ -28,9 +28,12 @@ export function navLinks(locale: Locale) {
     to: pathFor(locale, "offers"),
     labelKey: "nav.offers",
   } as const satisfies NavLinkItem;
-  /** The AI perfumer chat (#163), shown only while it's enabled. */
+  /**
+   * The AI perfumer chat (#163), shown only while it's enabled. `from=menu` tells analytics how the
+   * chat was opened (#166); it isn't part of the canonical URL.
+   */
   const perfumer = {
-    to: pathFor(locale, "perfumer"),
+    to: pathFor(locale, "perfumer", {}, { search: "from=menu" }),
     labelKey: "nav.perfumer",
   } as const satisfies NavLinkItem;
   const privacy = {

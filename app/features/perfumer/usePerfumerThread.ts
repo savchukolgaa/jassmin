@@ -2,16 +2,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { usePathFor } from "~/lib/i18n";
 import {
+  MAX_PERFUMER_TURN,
   PERFUMER_MAX_INPUT_LENGTH,
   type PerfumerActionResult,
+  type PerfumerEntry,
   type PerfumerEvent,
   type PerfumerPick,
+  type PerfumerRating,
   type PerfumerStep,
   type ThreadItem,
   toHistory,
 } from "~/lib/perfumer";
 import { canStream, StreamFailedError, streamPerfumerReply } from "./perfumer-stream";
-import { loadThread, saveThread } from "./thread-storage";
+import { loadThread, loadThreadEntry, saveThread } from "./thread-storage";
 
 // The perfumer chat's state (#163): the thread (restored from `sessionStorage` after hydration, so
 // the server render and the first client render match), the message being answered, and how it's
@@ -23,6 +26,8 @@ export interface PendingTurn {
   id: string;
   /** The message being answered, for the error's retry. */
   text: string;
+  /** Its number among the customer's messages in the thread (#166). */
+  turn: number;
   /** The catalog searches so far (#164). */
   steps: PerfumerStep[];
   /** The intro so far, as it streams (#164). */
@@ -46,6 +51,8 @@ export interface PerfumerThread {
   retry: (errorId: string) => void;
   /** Clears the thread and its stored copy. */
   startOver: () => void;
+  /** Notes the customer's rating of a perfumer answer (#166); the button posts it. */
+  rate: (itemId: string, rating: PerfumerRating) => void;
 }
 
 function newId(): string {
@@ -54,7 +61,18 @@ function newId(): string {
   );
 }
 
-export function usePerfumerThread(): PerfumerThread {
+/** The customer's message number of the newest message in `thread`, for analytics (#166). */
+function turnOf(thread: readonly ThreadItem[]): number {
+  const asked = thread.filter((item) => item.role === "user").length;
+  return Math.min(Math.max(asked, 1), MAX_PERFUMER_TURN);
+}
+
+/**
+ * `urlEntry`: how this page was opened (`?from=`, #166). A restored conversation keeps the entry it
+ * was started with, unless the page was opened from an entry point again; a new one (also after
+ * "Start over") takes the page's.
+ */
+export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerThread {
   const fetcher = useFetcher<PerfumerActionResult>();
   const { reset, submit: submitForm } = fetcher;
   const pathFor = usePathFor();
@@ -63,17 +81,20 @@ export function usePerfumerThread(): PerfumerThread {
   const [pending, setPending] = useState<PendingTurn | null>(null);
   const [restored, setRestored] = useState(false);
   const [finishedTurns, setFinishedTurns] = useState(0);
+  const [entry, setEntry] = useState<PerfumerEntry>(urlEntry);
   /** The stream being read; replaced or cleared when it's no longer wanted. */
   const streamRef = useRef<AbortController | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: restored once, on hydration.
   useEffect(() => {
     setItems(loadThread());
+    setEntry(urlEntry === "direct" ? (loadThreadEntry() ?? urlEntry) : urlEntry);
     setRestored(true);
   }, []);
 
   useEffect(() => {
-    if (restored) saveThread(items);
-  }, [items, restored]);
+    if (restored) saveThread(items, undefined, entry);
+  }, [items, restored, entry]);
 
   // Leaving the page stops the stream, and with it the model call on the server.
   useEffect(() => () => streamRef.current?.abort(), []);
@@ -92,7 +113,13 @@ export function usePerfumerThread(): PerfumerThread {
     if (!pending || result == null) return;
     finish(
       result.ok
-        ? { id: newId(), role: "perfumer", reply: result.reply }
+        ? {
+            id: newId(),
+            role: "perfumer",
+            reply: result.reply,
+            replyId: result.replyId,
+            turn: pending.turn,
+          }
         : { id: newId(), role: "error", error: result.error, retryText: pending.text },
     );
     reset();
@@ -107,9 +134,10 @@ export function usePerfumerThread(): PerfumerThread {
   const submit = useCallback(
     (thread: readonly ThreadItem[], text: string) => {
       const id = newId();
-      const payload = JSON.stringify({ messages: toHistory(thread) });
+      const turn = turnOf(thread);
+      const payload = JSON.stringify({ messages: toHistory(thread), turn, entry });
       const viaAction = () => void submitForm({ payload }, { method: "post" });
-      setPending({ id, text, steps: [], intro: "" });
+      setPending({ id, text, turn, steps: [], intro: "" });
       if (!canStream()) {
         viaAction();
         return;
@@ -154,6 +182,8 @@ export function usePerfumerThread(): PerfumerThread {
                   id: newId(),
                   role: "perfumer",
                   reply: { intro, picks, ...(question ? { question } : {}) },
+                  ...(end.replyId ? { replyId: end.replyId } : {}),
+                  turn,
                 }
               : { id: newId(), role: "error", error: end.error, retryText: text },
           );
@@ -171,7 +201,7 @@ export function usePerfumerThread(): PerfumerThread {
         },
       );
     },
-    [submitForm, streamUrl, finish],
+    [submitForm, streamUrl, finish, entry],
   );
 
   const send = useCallback(
@@ -212,7 +242,16 @@ export function usePerfumerThread(): PerfumerThread {
     reset({ reason: "start over" });
     setPending(null);
     setItems([]);
-  }, [reset, stopStream]);
+    setEntry(urlEntry);
+  }, [reset, stopStream, urlEntry]);
 
-  return { items, pending, restored, finishedTurns, send, cancel, retry, startOver };
+  const rate = useCallback((itemId: string, rating: PerfumerRating) => {
+    setItems((current) =>
+      current.map((item) =>
+        item.id === itemId && item.role === "perfumer" ? { ...item, rating } : item,
+      ),
+    );
+  }, []);
+
+  return { items, pending, restored, finishedTurns, send, cancel, retry, startOver, rate };
 }

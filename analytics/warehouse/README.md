@@ -11,7 +11,8 @@ users, sessions, user_events ─► cast, normalise,     ─►  real customers 
 orders, order_items, ...        clean or flag every      no bots, no personal       dim_customers, fct_orders,
                                 anomaly; personal        data; shared logic         fct_order_items, fct_sessions,
                                 data stops here                                     fct_events, fct_inventory_daily,
-                                                                                    mart_customer_features
+                                                                                    mart_customer_features,
+                                                                                    mart_perfumer_daily
 ```
 
 ## Running it
@@ -60,7 +61,9 @@ raw format, so the warehouse is tested without generating data.
 - **intermediate** (`int_*`): test accounts and bots removed; `int_orders`, `int_order_lines` (net
   revenue after `discount_allocated`), `int_customer_orders` (order sequence, days since the
   previous order), `int_order_status_intervals` (each order's status over time, for point-in-time
-  questions), `int_sessions`, `int_events`, and `int_data_window` (the span the data covers).
+  questions), `int_sessions`, `int_events`, `int_perfumer_messages` (each AI perfumer message with its rating,
+  click and 7-day order flags, #166; a table, since its attribution joins scan every event), and
+  `int_data_window` (the span the data covers).
 - **marts**: a star schema for BI and the ML training table.
 
 | Mart | Grain | What it's for |
@@ -73,6 +76,7 @@ raw format, so the warehouse is tested without generating data.
 | `fct_sessions` | visit | Traffic, device and the funnel: viewed, added to cart, checkout, purchased |
 | `fct_events` | event | The #129 properties as typed columns (list, position, price, stock, dwell) |
 | `fct_inventory_daily` | size × Kyiv day | Sold, returned, received, closing stock, backorders, stock-outs; censored-demand flag |
+| `mart_perfumer_daily` | Kyiv day | The AI perfumer (#166): messages, conversations, rate-limited, error rate, answer time p50/p95, answers with picks, click-through, 7-day conversion, 👍/👎 |
 | `mart_customer_features` | customer × month | RFM, tenure, AOV, discount share, return and unclaimed rates, recent visits; `churned_next_90d` |
 
 **Keys and time.** Every date is a Kyiv calendar date (`var('timezone')`); timestamps are

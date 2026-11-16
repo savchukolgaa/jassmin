@@ -3,17 +3,30 @@
 import { z } from "zod";
 import { msg } from "./i18n";
 import {
+  MAX_PERFUMER_TURN,
+  PERFUMER_ENTRIES,
   PERFUMER_MAX_INPUT_LENGTH,
   PERFUMER_MAX_MESSAGES,
   PERFUMER_PREFILL_PARAM,
+  PERFUMER_RATINGS,
+  type PerfumerEntry,
   type PerfumerErrorKey,
   type PerfumerMessage,
+  type PerfumerRating,
 } from "./perfumer";
 
 const TOO_LONG = msg("perfumer.errors.tooLong");
 
-/** `{ messages }`: 1–10 messages of 1–500 characters, the last one the customer's. */
+const turnSchema = z.int().min(1).max(MAX_PERFUMER_TURN);
+
+/**
+ * `{ messages, turn, entry }`: 1–10 messages of 1–500 characters, the last one the customer's;
+ * the customer's message number in the thread and how the chat was opened (#166). A page opened
+ * before #166 sends neither: `turn` is then counted from the messages and `entry` is `direct`.
+ */
 export const perfumerRequestSchema = z.object({
+  turn: turnSchema.optional(),
+  entry: z.enum(PERFUMER_ENTRIES).catch("direct").default("direct"),
   messages: z
     .array(
       z.object({
@@ -27,7 +40,7 @@ export const perfumerRequestSchema = z.object({
 });
 
 export type PerfumerRequestResult =
-  | { ok: true; messages: PerfumerMessage[] }
+  | { ok: true; messages: PerfumerMessage[]; turn: number; entry: PerfumerEntry }
   | { ok: false; error: PerfumerErrorKey };
 
 /**
@@ -44,10 +57,34 @@ export function parsePerfumerRequest(formData: FormData): PerfumerRequestResult 
   }
   const parsed = perfumerRequestSchema.safeParse(json);
   if (parsed.success) {
-    return { ok: true, messages: parsed.data.messages };
+    const { messages, turn, entry } = parsed.data;
+    const asked = messages.filter((message) => message.role === "user").length;
+    return { ok: true, messages, turn: turn ?? asked, entry };
   }
   const tooLong = parsed.error.issues.some((issue) => issue.message === TOO_LONG);
   return { ok: false, error: tooLong ? "tooLong" : "unavailable" };
+}
+
+/** The chat page's rating of one answer (#166): `intent=feedback`, `replyId`, `turn`, `rating`. */
+export const perfumerFeedbackSchema = z.object({
+  intent: z.literal("feedback"),
+  replyId: z.uuid(),
+  turn: z.coerce.number().pipe(turnSchema),
+  rating: z.enum(PERFUMER_RATINGS),
+});
+
+export type PerfumerFeedbackResult =
+  | { ok: true; replyId: string; turn: number; rating: PerfumerRating }
+  | { ok: false };
+
+/** Parses the rating form. A bad one can only come from a tampered request. */
+export function parsePerfumerFeedback(formData: FormData): PerfumerFeedbackResult {
+  const parsed = perfumerFeedbackSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false };
+  }
+  const { replyId, turn, rating } = parsed.data;
+  return { ok: true, replyId, turn, rating };
 }
 
 /** A prefilled message (#165): like a typed one, 1–500 characters after trimming. */

@@ -1032,6 +1032,12 @@ export const en = {
     picksLabel: "Recommended perfumes",
     whyItFits: "Why it suits you",
     questionLabel: "A question",
+    feedback: {
+      question: "Was this helpful?",
+      up: "Yes, helpful",
+      down: "No, not helpful",
+      thanks: "Thanks for your feedback!",
+    },
     thinking: "The perfumer is choosing perfumes…",
     usually: "usually under a minute",
     hints: {

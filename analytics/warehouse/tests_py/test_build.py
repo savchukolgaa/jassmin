@@ -169,3 +169,29 @@ def test_churn_labels_are_point_in_time(built: str) -> None:
     # Order 3 was returned on 20 March: the return only counts from the April snapshot on.
     assert olena[date(2025, 3, 1)] == Decimal("0")
     assert olena[date(2025, 4, 1)] == Decimal("0.5")
+
+
+def test_perfumer_messages_and_the_daily_mart(built: str) -> None:
+    """#166: Maria's answer recommended product 2, was rated up then down, its card was clicked and
+    order 9 (product 2) followed; then a timeout and a rate-limited message."""
+    assert rows(
+        built,
+        "select turn, error, pick_count, latest_rating, clicked_pick, ordered_pick_7d, "
+        "ordered_clicked_7d from intermediate.int_perfumer_messages order by turn",
+    ) == [
+        (1, None, 1, "down", True, True, True),
+        (2, "timeout", 0, None, False, False, False),
+        (3, "rate_limited", 0, None, False, False, False),
+    ]
+    assert rows(
+        built,
+        "select date_day, messages, conversations, rate_limited, errors, error_rate, "
+        "latency_p50_ms, answers, answers_with_picks, questions, answers_clicked, "
+        "click_through_rate, answers_ordered_7d, conversion_rate_7d, ratings_up, ratings_down "
+        "from marts.mart_perfumer_daily",
+    ) == [
+        (
+            date(2025, 8, 30), 2, 1, 1, 1, Decimal("0.5000"), 8000.0, 1, 1, 1, 1,
+            Decimal("1.0000"), 1, Decimal("1.0000"), 0, 1,
+        )
+    ]  # fmt: skip

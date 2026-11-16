@@ -60,7 +60,8 @@ export type PerfumerEvent =
   | { type: "picks"; picks: PerfumerPick[] }
   | { type: "question"; text: string }
   | { type: "error"; error: PerfumerErrorKey }
-  | { type: "done" };
+  /** The end of a reply; `replyId` names it in analytics (#166), so its rating can be joined. */
+  | { type: "done"; replyId?: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -112,7 +113,7 @@ export function isPerfumerEvent(value: unknown): value is PerfumerEvent {
         (PERFUMER_ERROR_KEYS as readonly string[]).includes(value.error)
       );
     case "done":
-      return true;
+      return value.replyId === undefined || typeof value.replyId === "string";
     default:
       return false;
   }
@@ -131,9 +132,12 @@ export const PERFUMER_ERROR_KEYS = ["unavailable", "timeout", "rateLimited", "to
 
 export type PerfumerErrorKey = (typeof PERFUMER_ERROR_KEYS)[number];
 
-/** The chat action's result: locale-independent, so it can be rendered in either language. */
+/**
+ * The chat action's result: locale-independent, so it can be rendered in either language.
+ * `replyId` names the answer in analytics (#166), so its rating can be joined to it.
+ */
 export type PerfumerActionResult =
-  | { ok: true; reply: PerfumerReply }
+  | { ok: true; reply: PerfumerReply; replyId: string }
   | { ok: false; error: PerfumerErrorKey };
 
 /** Errors worth retrying as they are; for the others, waiting or editing the message is the fix. */
@@ -141,10 +145,62 @@ export function isRetryable(error: PerfumerErrorKey): boolean {
   return error === "unavailable" || error === "timeout";
 }
 
+// Analytics (#166): what `perfumer_message` and `perfumer_feedback` events record. Never text.
+
+/** How the customer opened the conversation: the chat page's `?from=`, else `direct`. */
+export const PERFUMER_ENTRIES = [
+  "menu",
+  "catalog",
+  "empty_results",
+  "product",
+  "corner",
+  "direct",
+] as const;
+
+export type PerfumerEntry = (typeof PERFUMER_ENTRIES)[number];
+
+/** `entry` from the `from` query parameter: anything unknown (or none) is `direct`. */
+export function toPerfumerEntry(value: string | null | undefined): PerfumerEntry {
+  return PERFUMER_ENTRIES.find((entry) => entry === value) ?? "direct";
+}
+
+/** Why an answer failed, for the owner: finer than the chat's `PerfumerErrorKey`. */
+export const PERFUMER_TELEMETRY_ERRORS = [
+  "unavailable",
+  "timeout",
+  "bad_response",
+  "rate_limited",
+  "cancelled",
+] as const;
+
+export type PerfumerTelemetryError = (typeof PERFUMER_TELEMETRY_ERRORS)[number];
+
+/** The engine's tools; any other name the model calls is recorded as `other`. */
+export const PERFUMER_TOOL_NAMES = ["search_perfumes", "similar_to", "other"] as const;
+
+export type PerfumerToolName = (typeof PERFUMER_TOOL_NAMES)[number];
+
+/** The highest `turn` recorded: the customer's message number in one thread. */
+export const MAX_PERFUMER_TURN = 100;
+
+export const PERFUMER_RATINGS = ["up", "down"] as const;
+
+export type PerfumerRating = (typeof PERFUMER_RATINGS)[number];
+
 /** One entry of the chat thread the browser shows and keeps in `sessionStorage`. */
 export type ThreadItem =
   | { id: string; role: "user"; text: string }
-  | { id: string; role: "perfumer"; reply: PerfumerReply }
+  | {
+      id: string;
+      role: "perfumer";
+      reply: PerfumerReply;
+      /** Names the answer in analytics (#166); answers kept from before #166 have none. */
+      replyId?: string;
+      /** The customer's message number this answers. */
+      turn?: number;
+      /** The customer's rating of the answer, once given. */
+      rating?: PerfumerRating;
+    }
   | { id: string; role: "error"; error: PerfumerErrorKey; retryText: string }
   | { id: string; role: "cancelled" };
 
@@ -202,7 +258,15 @@ export function showPerfumerCorner(page: Page | null): boolean {
   return page === null || !PERFUMER_CORNER_HIDDEN_PAGES.has(page);
 }
 
-/** The chat page's search params that send `message` once the page opens. */
-export function perfumerPrefillSearch(message: string): URLSearchParams {
-  return new URLSearchParams({ [PERFUMER_PREFILL_PARAM]: message.trim() });
+/** The query parameter that says how the chat was opened, for analytics (#166). */
+export const PERFUMER_ENTRY_PARAM = "from";
+
+/**
+ * The chat page's search params that send `message` once the page opens, and say which entry
+ * point opened it (#166).
+ */
+export function perfumerPrefillSearch(message: string, entry?: PerfumerEntry): URLSearchParams {
+  const search = new URLSearchParams({ [PERFUMER_PREFILL_PARAM]: message.trim() });
+  if (entry) search.set(PERFUMER_ENTRY_PARAM, entry);
+  return search;
 }

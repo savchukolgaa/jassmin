@@ -111,6 +111,10 @@ REFERRERS = {
 LANDINGS = ["home", "catalog", "popular", "offers", "product"]
 LANDING_CUM = cumulative([0.3, 0.35, 0.15, 0.1, 0.1])
 SORTS = ["newest", "price_asc", "price_desc"]
+PERFUMER_ENTRY_NAMES = list(config.PERFUMER_ENTRIES)
+PERFUMER_ENTRY_CUM = cumulative(config.PERFUMER_ENTRIES.values())
+PERFUMER_ERROR_NAMES = list(config.PERFUMER_ERRORS)
+PERFUMER_ERROR_CUM = cumulative(config.PERFUMER_ERRORS.values())
 
 
 def kyiv_day(ts: datetime) -> date:
@@ -200,13 +204,17 @@ class Simulation:
     ):
         self.customers, self.visitors, self.start, self.end = customers, visitors, start, end
         # One stream per concern, so a change in one part doesn't reshuffle every table.
-        streams = np.random.SeedSequence(seed).spawn(6)
+        streams = np.random.SeedSequence(seed).spawn(7)
         self.np_catalog = np.random.default_rng(streams[0])
         self.plan_rng = Rand(int(streams[1].generate_state(1)[0]))
         self.sim_rng = Rand(int(streams[2].generate_state(1)[0]))
         self.stock_rng = Rand(int(streams[3].generate_state(1)[0]))
         self.ids = Ids(random.Random(int(streams[4].generate_state(1)[0])))
         self.np_people = np.random.default_rng(streams[5])
+        # The AI perfumer (#166): its own draws and event ids, so adding it reshuffled nothing.
+        perfumer_state = streams[6].generate_state(2)
+        self.perfumer_rng = Rand(int(perfumer_state[0]))
+        self.perfumer_ids = Ids(random.Random(int(perfumer_state[1])))
 
         self.catalog = load_catalog(self.np_catalog, start, end)
         self.automatic = [d for d in self.catalog.discounts if d.code is None]
@@ -534,10 +542,12 @@ class Simulation:
         referrer = REFERRERS.get(source)
         clock = [ts]
 
-        def event(event_type: str, props: dict, product_id: int | None = None, gap: float = 25.0) -> None:
-            clock[0] = clock[0] + timedelta(seconds=rng.exponential(gap))
+        def event(event_type: str, props: dict, product_id: int | None = None, gap: float = 25.0,
+                  perfumer: bool = False) -> None:  # fmt: skip
+            draw, ids = (self.perfumer_rng, self.perfumer_ids) if perfumer else (rng, self.ids)
+            clock[0] = clock[0] + timedelta(seconds=draw.exponential(gap))
             self.events.append({
-                "event_id": self.ids.uuid7(clock[0]), "user_id": user_id, "anonymous_id": anon_id,
+                "event_id": ids.uuid7(clock[0]), "user_id": user_id, "anonymous_id": anon_id,
                 "session_id": session_id, "event_type": event_type, "product_id": product_id,
                 "event_properties": json.dumps(props, ensure_ascii=False, separators=(",", ":")),
                 "source": source, "medium": medium, "campaign": campaign, "device_type": device,
@@ -604,9 +614,14 @@ class Simulation:
                       product.id, gap=0.8)  # fmt: skip
                 shown.add(product.id)
 
+        # The AI perfumer (#166): perfumes it recommended and the customer opened lead the list of
+        # what was viewed, so they are the likeliest to be bought.
+        viewed: list[Product] = []
+        if self.perfumer_rng.chance(config.PERFUMER_VISIT_SHARE):
+            viewed = self.run_perfumer(event, family, who.gender, prefix, product_path)
+
         # Products looked at; remember which list each was clicked in.
         n_views = 1 + rng.poisson({"browse": 1.2, "cart": 2.0}.get(kind, 2.5))
-        viewed: list[Product] = []
         clicked_from: dict[int, dict] = {}
         for i in range(n_views):
             product = first_product if (i == 0 and first_product) else self.pick_product(family, who.gender, rng)
@@ -715,6 +730,93 @@ class Simulation:
         if search_id is not None:
             props["search_id"] = search_id
         return props
+
+    # --- the AI perfumer (#166) ---------------------------------------------------------------
+
+    def run_perfumer(self, event, family: str, gender: str, prefix: str, product_path) -> list[Product]:
+        """A chat with the AI perfumer: its page, one `perfumer_message` per customer message
+        (never any text), impressions of the picks, an optional rating, and maybe a click on a pick
+        that opens it. Returns the perfumes opened from it."""
+        rng = self.perfumer_rng
+        entry = rng.weighted(PERFUMER_ENTRY_NAMES, PERFUMER_ENTRY_CUM)
+        path = f"{prefix}/{'perfumer' if prefix else 'parfumer'}"
+        event("page_view", {"path": path if entry == "direct" else f"{path}?from={entry}"},
+              gap=8, perfumer=True)  # fmt: skip
+        opened: list[Product] = []
+        for turn in range(1, rng.integers(*config.PERFUMER_MESSAGES) + 1):
+            reply_id = self.perfumer_ids.uuid4()
+            props = {
+                "reply_id": reply_id, "turn": turn, "latency_ms": 0, "model": None,
+                "tool_calls": [], "pick_ids": [], "asked_question": False, "error": None,
+                "entry": entry,
+            }  # fmt: skip
+            picks: list[Product] = []
+            if rng.chance(config.PERFUMER_RATE_LIMITED_SHARE):
+                props["error"] = "rate_limited"
+            else:
+                latency = rng.lognormal(math.log(config.PERFUMER_LATENCY_MEDIAN_MS), config.PERFUMER_LATENCY_SIGMA)
+                props["latency_ms"] = min(int(latency), config.PERFUMER_TIMEOUT_MS)
+                props["model"] = config.PERFUMER_MODEL
+                if rng.chance(config.PERFUMER_CANCELLED_SHARE):
+                    props["error"] = "cancelled"
+                elif rng.chance(config.PERFUMER_ERROR_SHARE):
+                    props["error"] = rng.weighted(PERFUMER_ERROR_NAMES, PERFUMER_ERROR_CUM)
+                    if props["error"] == "timeout":
+                        props["latency_ms"] = config.PERFUMER_TIMEOUT_MS
+                else:
+                    if rng.chance(config.PERFUMER_PICKS_SHARE):
+                        wanted = rng.integers(1, 5)
+                        for _ in range(wanted * 3):
+                            product = self.pick_product(family, gender, rng)
+                            if product not in picks:
+                                picks.append(product)
+                            if len(picks) == wanted:
+                                break
+                        props["tool_calls"] = self.perfumer_tool_calls(rng)
+                    props["pick_ids"] = [p.public_id for p in picks]
+                    props["asked_question"] = rng.chance(config.PERFUMER_QUESTION_SHARE if picks else 0.6)
+            # The answer arrives after the model's time.
+            event("perfumer_message", props, gap=4 + props["latency_ms"] / 1000, perfumer=True)
+            clicked: Product | None = None
+            for position, product in enumerate(picks, start=1):
+                event("product_impression", self.list_props(product, "perfumer", position, None),
+                      product.id, gap=1, perfumer=True)  # fmt: skip
+            if picks and rng.chance(config.PERFUMER_CLICK_SHARE):
+                clicked = picks[0] if rng.chance(0.55) else rng.pick(picks)
+            if props["error"] is None and rng.chance(config.PERFUMER_RATED_SHARE):
+                up = config.PERFUMER_UP_SHARE_CLICKED if clicked else config.PERFUMER_UP_SHARE
+                rating = "up" if rng.chance(up) else "down"
+                event("perfumer_feedback", {"reply_id": reply_id, "turn": turn, "rating": rating},
+                      gap=6, perfumer=True)  # fmt: skip
+            if clicked is not None:
+                # The customer opens the perfume and leaves the chat.
+                position = picks.index(clicked) + 1
+                event("product_click", self.list_props(clicked, "perfumer", position, None),
+                      clicked.id, gap=5, perfumer=True)  # fmt: skip
+                event("page_view", {"path": product_path(clicked)}, gap=1, perfumer=True)
+                base = self.product_props(clicked)
+                event("product_view", base, clicked.id, gap=1, perfumer=True)
+                dwell = min(int(rng.lognormal(10.0, 0.7)), 1_800_000)
+                event("product_dwell", {**base, "dwell_ms": dwell, "max_scroll_pct": rng.integers(30, 101)},
+                      clicked.id, gap=dwell / 1000, perfumer=True)  # fmt: skip
+                opened.append(clicked)
+                break
+            if props["error"] == "rate_limited":
+                break
+        return opened
+
+    @staticmethod
+    def perfumer_tool_calls(rng: Rand) -> list[dict]:
+        """One or two catalog searches: tool names and argument names only (#166)."""
+        calls = []
+        for _ in range(1 if rng.chance(0.75) else 2):
+            if rng.chance(0.2):
+                calls.append({"name": "similar_to", "argument_keys": ["title"]})
+            else:
+                keys = [k for k in ("gender", "families", "notes", "max_price_uah", "limit")
+                        if rng.chance(0.6)]  # fmt: skip
+                calls.append({"name": "search_perfumes", "argument_keys": keys or ["families"]})
+        return calls
 
     # --- orders -----------------------------------------------------------------------------
 

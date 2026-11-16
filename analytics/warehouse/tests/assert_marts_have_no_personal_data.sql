@@ -9,7 +9,8 @@
 -- depends_on: {{ ref('dim_date') }} {{ ref('dim_products') }} {{ ref('dim_customers') }}
 -- depends_on: {{ ref('fct_orders') }} {{ ref('fct_order_items') }} {{ ref('fct_sessions') }}
 -- depends_on: {{ ref('fct_events') }} {{ ref('fct_inventory_daily') }}
--- depends_on: {{ ref('mart_customer_features') }}
+-- depends_on: {{ ref('mart_customer_features') }} {{ ref('int_perfumer_messages') }}
+-- depends_on: {{ ref('mart_perfumer_daily') }}
 select table_schema, table_name, column_name, data_type
 from information_schema.columns
 where table_schema in ('intermediate', 'marts')

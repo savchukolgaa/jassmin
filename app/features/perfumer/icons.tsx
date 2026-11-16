@@ -80,6 +80,31 @@ export function SendIcon(props: IconProps) {
   );
 }
 
+const THUMB =
+  "M15 5.9 14 10h5.8a2 2 0 0 1 1.9 2.6l-2.3 7A2 2 0 0 1 17.5 21H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2.8a2 2 0 0 0 1.8-1.1L12 2a3 3 0 0 1 3 3.9Z";
+
+/** Thumb up, for rating an answer as helpful (#166). */
+export function ThumbUpIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7 10v11" />
+      <path d={THUMB} />
+    </Icon>
+  );
+}
+
+/** Thumb down: the thumb up flipped upside down, as drawn on the C+ canvas (#166). */
+export function ThumbDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <g transform="matrix(1 0 0 -1 0 24)">
+        <path d="M7 10v11" />
+        <path d={THUMB} />
+      </g>
+    </Icon>
+  );
+}
+
 /** A tick: a catalog search the perfumer finished (#164). */
 export function CheckIcon(props: IconProps) {
   return (

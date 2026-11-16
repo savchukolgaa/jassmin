@@ -29,7 +29,7 @@ export function PerfumerCatalogBanner({ message }: { message: string }) {
         </p>
         <p className="mt-0.5 text-body">{t("perfumer.entry.bannerText")}</p>
       </div>
-      <PerfumerEntryLink message={message} size="sm" className="flex-none">
+      <PerfumerEntryLink message={message} entry="catalog" size="sm" className="flex-none">
         {t("perfumer.entry.bannerAction")}
       </PerfumerEntryLink>
     </aside>

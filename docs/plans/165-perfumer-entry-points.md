@@ -59,8 +59,10 @@ when the engine is off.
   compact cards' round "+"), which can sit right under the phone's corner button. On
   phones the button rises by 80px (`--bottom-ui-toast: 5rem`, the canvas's 96px − 16px) for 2.6s
   after any add-to-cart fetcher (`useFetchers()`, key prefix `add-to-cart-`) turns idle with
-  `data.ok === true`. The corner button sets the variable itself from that state (one component
-  owns it); the pill itself is unchanged.
+  `data.ok === true`. The corner button owns that state, so it sets a `data-raised` attribute on
+  itself rather than a variable on `<html>` (deviation: nothing else needs it); the pill itself is
+  unchanged. `ADD_TO_CART_FETCHER_PREFIX` is exported from `AddToCartForm.tsx` so the key has one
+  source.
 - **Hidden pages:** `perfumer`, `cart`, `checkout`, `checkoutSuccess`, `checkoutPay`,
   `giftCardSuccess`, matched with `pageOf(useLocation().pathname)` against a
   `PERFUMER_CORNER_HIDDEN_PAGES` set in `app/lib/perfumer.ts` (isomorphic, unit-testable). Also
@@ -192,7 +194,7 @@ when the engine is off.
 - [x] **3. `PerfumerEntryLink`** — a `Link` to `perfumerHref(path, message)` with `rel="nofollow"`,
   rendering nothing when `perfumerEnabled` is false; accepts `ButtonLink`-style variants or a
   `className`. Test: href encodes Cyrillic and `&`, hidden when disabled.
-- [ ] **4. Corner button** — `PerfumerCornerButton.tsx` per the decisions above (link to
+- [x] **4. Corner button** — `PerfumerCornerButton.tsx` per the decisions above (link to
   `path("perfumer")`, no `q`); `.perfumer-corner` rule in `app/app.css`; `cookieBanner` fallback
   class; the 2.6s toast raise on phones via `useFetchers()` (Q2 confirmed). In `_shop.tsx`
   render `{perfumerEnabled && <PerfumerCornerButton cookieBanner={consent === null} />}` after

@@ -12,6 +12,7 @@ import { LanguageHint } from "~/components/layout/LanguageHint";
 import { TrackingProvider } from "~/features/analytics/tracking";
 import { useClientPageViews } from "~/features/analytics/useClientPageViews";
 import { CookieBanner } from "~/features/consent/CookieBanner";
+import { PerfumerCornerButton } from "~/features/perfumer/PerfumerCornerButton";
 import { LOGGED_OUT_HEADER } from "~/lib/header";
 import { useT } from "~/lib/i18n";
 import { describeRouteError } from "~/lib/route-error";
@@ -25,7 +26,8 @@ export const middleware: Route.MiddlewareFunction[] = [visitorMiddleware];
 // `suggestEnglish`: offer "View in English" to a browser that prefers it on a Ukrainian page (#84).
 // `socialLinks`: the footer's and mobile menu's icons, cached for a minute and `[]` while Strapi is
 // down, so they never slow down or fail a page (#101).
-// `perfumerEnabled`: whether the AI perfumer chat exists, for its menu link (#163).
+// `perfumerEnabled`: whether the AI perfumer chat exists, for its menu link (#163) and the other
+// entry points (#165).
 export async function loader({ request }: Route.LoaderArgs) {
   const [header, consent, suggestEnglish, socialLinks] = await Promise.all([
     getHeaderState(request),
@@ -50,6 +52,8 @@ export default function ShopLayout({ loaderData }: Route.ComponentProps) {
           <Outlet />
         </div>
         <Footer socialLinks={socialLinks} />
+        {/* The page's last link, before the cookie banner (#165). */}
+        {perfumerEnabled && <PerfumerCornerButton cookieBanner={consent === null} />}
         {consent === null && <CookieBanner />}
       </div>
     </TrackingProvider>

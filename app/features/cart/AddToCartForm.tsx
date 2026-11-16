@@ -30,6 +30,9 @@ export interface AddToCartFormProps {
   children?: ReactNode;
 }
 
+/** Every add-to-cart fetcher's key starts with this; the perfumer corner button watches them (#165). */
+export const ADD_TO_CART_FETCHER_PREFIX = "add-to-cart-";
+
 /** Posts `intent=add` to the cart action without navigating away. */
 export function AddToCartForm({
   productId,
@@ -45,7 +48,9 @@ export function AddToCartForm({
   const translator = useT();
   const path = usePathFor();
   const { t } = translator;
-  const fetcher = useFetcher<CartActionResult>({ key: `add-to-cart-${productId}` });
+  const fetcher = useFetcher<CartActionResult>({
+    key: `${ADD_TO_CART_FETCHER_PREFIX}${productId}`,
+  });
   const result = fetcher.state === "idle" ? fetcher.data : undefined;
   const icon = appearance === "icon";
 

@@ -110,3 +110,82 @@ models:
         description: utm_campaign.
       - name: had_naive_timestamp
         description: The raw timestamp had no offset and was read as UTC (anomaly flag).
+
+  - name: mart_perfumer_daily
+    description: >-
+      The AI perfumer per Kyiv day (#166): usage, answer time, errors, recommendations,
+      click-through, 7-day conversion and ratings. Rate-limited messages are counted apart and left
+      out of every other figure; a rate is null when its denominator is 0.
+    columns:
+      - name: date_day
+        description: Kyiv date.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: messages
+        description: Messages that reached the model (rate-limited ones excluded).
+      - name: conversations
+        description: Visits with at least one such message.
+      - name: rate_limited
+        description: Messages refused by the rate limit, without calling the model.
+      - name: errors
+        description: "Messages without an answer: unavailable, timeout, bad response or cancelled."
+      - name: error_rate
+        description: errors / messages.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: latency_p50_ms
+        description: Median answer time of answered messages, ms.
+      - name: latency_p95_ms
+        description: 95th percentile answer time of answered messages, ms.
+      - name: answers
+        description: Answered messages.
+      - name: answers_with_picks
+        description: Answers that recommended at least one perfume.
+      - name: picks_share
+        description: answers_with_picks / answers.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: questions
+        description: Answers that asked a clarifying question.
+      - name: answers_clicked
+        description: Answers with picks whose card the visitor clicked within an hour.
+      - name: click_through_rate
+        description: answers_clicked / answers_with_picks.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: answers_ordered_7d
+        description: Answers with picks of which the visitor ordered a recommended perfume within 7 days.
+      - name: conversion_rate_7d
+        description: answers_ordered_7d / answers_with_picks.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: answers_ordered_clicked_7d
+        description: Answers of which the visitor ordered a perfume they clicked, within 7 days.
+      - name: ratings_up
+        description: Answers whose latest rating is up.
+      - name: ratings_down
+        description: Answers whose latest rating is down.
+      - name: up_share
+        description: ratings_up / rated answers.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1

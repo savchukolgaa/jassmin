@@ -94,6 +94,13 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
 - **Rating UI details.** The thanks note is an `aria-live="polite"` paragraph rather than
   `role="status"` (the chat's thinking bubble is the page's one status), and the two buttons sit in
   a `<fieldset>` labelled by the question (Biome prefers it to `role="group"`).
+- **Warehouse shape (changed from the plan).** `mart_perfumer_daily` has one row per Kyiv day, not
+  per day and model: rate-limited messages have no model, and a null in the grain breaks its
+  uniqueness test. `int_perfumer_messages` keeps `model`, so a per-model view (#167) is one
+  `group by` away. Orders are attributed through the visitor's `purchase` events (their
+  `order_id`) joined to the real order lines, so guests' orders count. `int_perfumer_messages` is a
+  table rather than a view like the other `int_*` models: on synthetic data each of its tests took
+  about 50 s as a view, because every one re-ran the attribution joins over all events.
 - **Order of work.** The generator (step 9) is done right after steps 1–2: the synthetic contract
   test needs every event type in its fixtures, so the contract and the generator change together.
   The generator draws the perfumer from its own random stream and event-id generator, so every
@@ -235,7 +242,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
 - [x] **7. Menu entry.** `app/components/layout/nav.ts`: the perfumer link becomes
   `pathFor(locale, "perfumer") + "?from=menu"`; check the sitemap still lists the plain path and
   the canonical URL drops `from`. Update nav tests.
-- [ ] **8. Documentation.** `docs/analytics-events.md`: the two events in "Who records what", their
+- [x] **8. Documentation.** `docs/analytics-events.md`: the two events in "Who records what", their
   property tables and examples, the `perfumer` list row, and the privacy rule (no text, argument keys
   only). `docs/ai-perfumer.md`: a new "Analytics" section — what is recorded and what isn't, and the
   SQL, run against the app database (`user_events`), each block a query with Kyiv days:
@@ -245,7 +252,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   of their `pick_ids` by the same visitor within 1 hour), orders within 7 days containing a
   recommended / a clicked product (join `purchase.items[].variant_id` → `product_variants` →
   `products.public_id`), and 👍/👎 (latest rating per `reply_id`, share up), plus usage by `entry`.
-- [ ] **9. Synthetic generator.** In `config.py` add the rates; in `simulate.py`'s `run_visit` add
+- [x] **9. Synthetic generator.** In `config.py` add the rates; in `simulate.py`'s `run_visit` add
   a perfumer branch for ~4 % of visits (a `page_view` of `/parfumer?from=…`, then per message a
   `perfumer_message` with a seeded `reply_id`, impressions and clicks with `list_id: "perfumer"`
   for some picks, an optional `perfumer_feedback`), and let clicked picks join `viewed`, so the
@@ -253,7 +260,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   `uv run --project analytics analytics/generator/fixtures.py`, then
   `uv run --project analytics pytest analytics` and `pnpm test
   app/.server/synthetic-data.contract.test.ts`.
-- [ ] **10. Warehouse.** Add both types to `stg_user_events`' accepted values. New
+- [x] **10. Warehouse.** Add both types to `stg_user_events`' accepted values. New
   `int_perfumer_messages` (one row per `perfumer_message` of a real visit: `reply_id`, `session_id`,
   `anonymous_id`/`customer_key`, `message_at`, `message_date`, `turn`, `entry`, `latency_ms`,
   `model`, `error`, `pick_count`, `asked_question`, `tool_call_count`, `latest_rating`,
@@ -268,6 +275,11 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   `int_perfumer_messages`); add both models to `assert_marts_have_no_personal_data`'s
   `depends_on`. Check: `uv run --project analytics/warehouse analytics/warehouse/wh.py build`.
   Update `analytics/warehouse/README.md` (models table) and `analytics/README.md` (events emitted).
+  Verified with `pytest analytics/warehouse` (34 passed: `dbt build` with every new test on
+  `fixtures/raw_fixture.sql`, which now has a perfumer conversation, plus row-level checks). A
+  first build on generated data (2,000 customers) built `int_perfumer_messages` and passed its
+  column tests; the rebuild after making it a table was stopped by Claude Code for low memory
+  before it finished, so the full synthetic build still has to be rerun.
 - [ ] **11. Final checks.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; the Python
   suites above; manual check in the running app (below). Comment on #165 that its links need
   `?from=catalog|empty_results|product|corner`.

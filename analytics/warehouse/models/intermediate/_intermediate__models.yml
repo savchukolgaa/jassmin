@@ -232,3 +232,77 @@ models:
         description: Time on the product page, for product_dwell.
       - name: had_naive_timestamp
         description: The raw timestamp had no offset (anomaly flag).
+
+  - name: int_perfumer_messages
+    description: >-
+      One row per AI perfumer message (#166) of a real visit, with its latest rating, whether a
+      recommended card was clicked and whether the same visitor ordered a recommended or clicked
+      perfume within 7 days. The events hold no text.
+    columns:
+      - name: event_id
+        description: The perfumer_message event.
+        data_tests: [unique, not_null]
+      - name: reply_id
+        description: The answer's id, which its ratings name.
+        data_tests: [not_null]
+      - name: session_id
+        description: The visit.
+        data_tests: [not_null]
+      - name: customer_key
+        description: Surrogate key of the logged-in customer; null when anonymous.
+      - name: message_at
+        description: When the answer (or its error) was recorded.
+      - name: message_date
+        description: Kyiv date of the message.
+        data_tests: [not_null]
+      - name: turn
+        description: The customer's message number in the conversation, 1-based.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+      - name: entry
+        description: How the chat was opened (menu, catalog, empty_results, product, corner, direct).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [menu, catalog, empty_results, product, corner, direct]
+      - name: model
+        description: The model that answered; null for a rate-limited message.
+      - name: error
+        description: Why there was no answer (unavailable, timeout, bad_response, rate_limited, cancelled); null when answered.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [unavailable, timeout, bad_response, rate_limited, cancelled]
+      - name: is_answered
+        description: The perfumer answered (no error).
+      - name: latency_ms
+        description: Server time from accepting the message to the result, ms; 0 when rate-limited.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: tool_call_count
+        description: Catalog tool calls the model made.
+      - name: pick_count
+        description: Perfumes recommended (0–4).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 4
+      - name: asked_question
+        description: The answer asked a clarifying question.
+      - name: latest_rating
+        description: The customer's last rating of the answer (up or down); null when unrated.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [up, down]
+      - name: clicked_pick
+        description: The visitor clicked one of the answer's cards within an hour.
+      - name: ordered_pick_7d
+        description: The visitor ordered one of the recommended perfumes within 7 days.
+      - name: ordered_clicked_7d
+        description: The visitor ordered a perfume they clicked in the answer within 7 days.

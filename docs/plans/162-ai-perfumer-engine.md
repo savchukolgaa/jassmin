@@ -282,7 +282,7 @@ There is no UI.
   language (Cyrillic ratio), picks count vs expectation, time; print a Markdown table and a summary
   per model; exit 1 only on crashes, not on quality. Requires `DATABASE_URL`/`JASSMINDB_URI` and
   `AI_BASE_URL`. Add the `package.json` script.
-- [ ] **11. Run the eval with granite4.1:3b and document** — `ollama pull granite4.1:3b`, run
+- [x] **11. Run the eval with granite4.1:3b and document** — `ollama pull granite4.1:3b`, run
   `pnpm ai:perfumer-eval granite4.1:3b` locally, write `docs/ai-perfumer.md`: what it is, setup
   (Ollama install, `ollama pull granite4.1:3b`, env vars, `AI_KEEP_ALIVE`), architecture (tools,
   loop, guard, why names come from the DB), the eval table and observations for granite4.1:3b, and a

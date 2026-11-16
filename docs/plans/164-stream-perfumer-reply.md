@@ -192,7 +192,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
     question, done`; an invented name in the second intro sentence is removed while the first and
     third arrive; an all-removed intro yields the fallback; no tool call → `picks: []`; breaking out of
     the `for await` aborts the signal the fake `chatStream` received; `deps.signal` abort → `timeout`.
-- [ ] **5. Chat service.** In `perfumer-chat.ts` extract `admitPerfumerMessage(input, limiters)` →
+- [x] **5. Chat service.** In `perfumer-chat.ts` extract `admitPerfumerMessage(input, limiters)` →
   `{ ok: true } | { ok: false, error: "rateLimited" }`; `answerPerfumerMessage` uses it (tests
   unchanged). Add `streamPerfumerMessage(input, deps): AsyncGenerator<PerfumerEvent>` that admits,
   then forwards `replyStream`'s events, mapping a thrown `AiError` / unknown error / abort to one

@@ -226,7 +226,7 @@ enabled.
   with contact link text, question label, "why it fits" label, and `errors.unavailable | timeout |
   rateLimited | tooLong`; plus `nav.perfumer`. Tests: schema (empty, 501 chars, 11 messages, last
   not `user`, trimming) and history helpers. `pnpm typecheck` passes (key parity).
-- [ ] **3. Server service and limiters** — `perfumerLimiters` in `rate-limit.ts`;
+- [x] **3. Server service and limiters** — `perfumerLimiters` in `rate-limit.ts`;
   `answerPerfumerMessage({ locale, messages, ipKey, sessionKey, signal }, deps)` in
   `app/.server/services/perfumer-chat.ts`: blocked on either key → `rateLimited` (engine not called);
   otherwise hit both, call `deps.reply`, map errors (`timeout` → `timeout`, `unavailable` /

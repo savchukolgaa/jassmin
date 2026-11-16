@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/164
 Branch: `issue/164`
 Worktree: `.claude/worktrees/issue-164`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -31,7 +31,10 @@ product cards and the question. The normal action (#163) stays as the fallback w
    4. streams the intro in a third call (`stream: true`, no tools) told which aliases it picked, and
       cleans it **per completed sentence** with the same `cleanProse` context (picks' names allowed),
    5. sends `picks` (cards from the database, reasons cleaned), then `question`, then `done`.
-   This costs one extra short model call (~1–3 s on the CPU with Ollama's prompt cache).
+   This costs one extra model call. **Measured (step 13):** its prompt is cached (first token
+   after 1.8 s), but the whole streamed reply took 155–215 s against 137 s for `reply()` on the same
+   request, more than the 1–3 s estimated; see `docs/ai-perfumer.md` → Streaming. #172 measures it
+   over every case.
 2. **`reply()` stays as it is**, so the fallback action and the eval (`pnpm ai:perfumer-eval`) keep
    their behaviour and recorded results. Shared parts (setup, tool round, pick validation, reason
    cleaning) are extracted so the two paths don't diverge.
@@ -253,7 +256,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
   final answer, per-sentence guard, abort, ping, fallback) and the fetch exception; `docs/design.md`:
   step chips and the typing intro; `AGENTS.md`: one clause in the "Reads in loaders" rule naming the
   perfumer stream as the only `fetch` exception.
-- [ ] **13. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual checks
+- [x] **13. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then the manual checks
   below with Ollama.
 
 ## Testing & verification
@@ -274,11 +277,17 @@ product cards and the question. The normal action (#163) stays as the fallback w
 ## Acceptance criteria
 
 - [ ] The first visible progress appears within a few seconds of sending, while the model is still
-  working — steps 2, 4, 6, 8, 9, 10
-- [ ] The intro appears progressively, followed by the validated product cards — steps 3, 4, 9, 10
-- [ ] Closing the page or pressing cancel stops the model call on the server — steps 4, 6, 9
-- [ ] If streaming fails, the page falls back to the normal request — steps 8, 9, 11
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
+  working — steps 2, 4, 6, 8, 9, 10. *Partly verified:* against granite4.1:3b the first step came
+  at 9–14 s warm (24 s cold), 100+ s before the intro; that's the first tool call's time on this
+  CPU, which the model's hosting (#167) decides. The DOM tests show a step as soon as it's streamed.
+- [x] The intro appears progressively, followed by the validated product cards — steps 3, 4, 9, 10
+  (engine and DOM tests; three runs against granite4.1:3b)
+- [ ] Closing the page or pressing cancel stops the model call on the server — steps 4, 6, 9.
+  *Verified by tests only:* cancel and unmount abort the fetch (DOM tests), an aborted request or a
+  cancelled body aborts the engine's signal (route tests), and leaving the stream aborts the model
+  call's signal (engine tests). Not yet checked in a running app with Ollama.
+- [x] If streaming fails, the page falls back to the normal request — steps 8, 9, 11
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
 
 ## Out of scope
 

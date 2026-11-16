@@ -141,6 +141,21 @@ the intro sentence by sentence, then the cards.
 - **Only the finished reply** joins the thread and `sessionStorage`; a reload mid-stream loses the
   answer in progress, like a reload during the action.
 
+Measured on 2026-11-16 on the owner's laptop (CPU, Ollama, `granite4.1:3b` already loaded),
+"Щось свіже з морськими нотами до 600 грн", three runs:
+
+| | Run 1 (cold) | Run 2 | Run 3 |
+|---|---|---|---|
+| First step shown | 24 s | 14 s | 9 s |
+| First intro sentence | 151 s | 195 s | 104 s |
+| Done | 213 s | 215 s | 155 s |
+
+In run 3 the calls took: first tool round 9 s, a second round in which the model wrote prose
+instead of calling a tool (discarded, as in `reply()`) 60 s, the picks as JSON 34 s, the intro
+53 s (first token after 1.8 s: Ollama reuses the cached prompt). `reply()` took 137 s on the same
+request (`uk-aquatic`). The extra call costs little prompt time; the intro's tokens are generated
+in both paths. A comparison over every case is #172.
+
 ## Eval
 
 ```bash

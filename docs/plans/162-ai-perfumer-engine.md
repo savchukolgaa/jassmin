@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/162
 Branch: `issue/162`
 Worktree: `.claude/worktrees/issue-162`
-Status: Planned
+Status: In progress
 
 ## Goal
 
@@ -99,8 +99,9 @@ There is no UI.
      not in the catalog;
   4. contains a raw id (`p\d+`, UUID) or a price pattern (`\d+ ?(грн|uah|₴)`).
   A reason that ends up empty becomes a generic reason from the pick's families (translated). If the
-  intro ends up empty it becomes a generic, translated intro. **(rule 3 and the English-side rule
-  unconfirmed, see Q2.)**
+  intro ends up empty it becomes a generic, translated intro.
+  5. (en only) contains two or more consecutive Capitalized words mid-sentence that aren't a pick's
+     title/brand (owner chose the strict guard, Q2).
 - **Return type** (`~/lib/perfumer.ts`, isomorphic, no zod): `PerfumerReply = { intro: string;
   picks: { product: ProductSummary; reason: string }[]; question?: string }`, products loaded with
   `getProductSummaries` and kept only when `inStock`, in the model's order.
@@ -114,36 +115,25 @@ There is no UI.
 - **`keep_alive`**: sent as the top-level `keep_alive` field only when `AI_KEEP_ALIVE` is set
   (Ollama honours it on `/v1`; hosted APIs ignore unknown fields, and leaving it out avoids 400s
   from strict providers). Default in `.env.example`: `30m`.
-- **Aspire**: see Q1. The plan assumes the apphost forwards the `AI_*` variables to `web` only when
-  they are set in the AppHost's environment / root `.env`, so the AI stays off for anyone without
-  Ollama. **(unconfirmed)**
+- **Aspire** (Q1): the apphost forwards the `AI_*` variables to `web` only when they are set in the
+  AppHost's environment / root `.env`, so the AI stays off for anyone without Ollama. No Ollama
+  container.
 - **Eval script** `app/.server/ai/scripts/perfumer-eval.ts` run with `tsx` (like the `db:*` scripts),
   using `createDb(url)` and an env built from `process.env` with `AI_MODEL` overridden per model. It
   is not a Vitest file and not in CI.
 
-## Open questions
-
-- [ ] **Q1: Should `pnpm aspire run` turn the perfumer on by default?** — Why it matters: the issue
-  says the apphost "passes them to `web`". If it passes a default `AI_BASE_URL=http://localhost:11434/v1`,
-  everyone running Aspire without Ollama gets an enabled-but-failing perfumer (#163's chat would
-  show "unavailable"). Recommended default: forward `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`
-  (secret), `AI_TIMEOUT_MS`, `AI_KEEP_ALIVE` from the AppHost process environment only when set; no
-  Ollama container in Aspire (CPU model in a container is slow, and it runs fine natively). The web
-  app also reads the root `.env`, so setting them there is enough. Affects steps: 1, 9.
-- [ ] **Q2: How strict should the prose guard be on invented names?** — Why it matters: matching
-  against the catalog alone cannot catch names that aren't in the catalog ("Aquarius", "Blue Marlin"
-  from the feasibility test). Recommended default: the rules above, incl. "Latin word in Ukrainian
-  prose" (uk) and "quoted name" (both locales); for English, additionally drop a sentence with two
-  or more consecutive Capitalized words mid-sentence that aren't a pick's title/brand. False
-  positives only cost a sentence (a generic fallback replaces an emptied field). Affects steps: 6.
-- [ ] **Q3: Should a reply carry picks for an off-topic message that the model nonetheless answers
-  with products?** — Why it matters: acceptance criterion says off-topic/injection get "no picks".
-  The engine can't classify topic itself without another model call. Recommended default: rely on
-  the prompt, plus a guard: picks are dropped when no tool was called in this reply (a pick id can
-  only come from a tool result anyway), and the eval checks the off-topic/injection cases. No extra
-  classifier call. Affects steps: 7, 10.
-
 ## Resolved questions
+
+- **Q1: Should `pnpm aspire run` turn the perfumer on by default?** — No. Forward `AI_BASE_URL`,
+  `AI_MODEL`, `AI_API_KEY` (secret), `AI_TIMEOUT_MS`, `AI_KEEP_ALIVE` from the AppHost environment
+  only when set; no Ollama container (source: owner, 2026-11-16).
+- **Q2: How strict should the prose guard be on invented names?** — Strict: all five rules in
+  Decisions (catalog names outside picks, quoted names, Latin words in Ukrainian prose, ids/prices,
+  consecutive Capitalized words in English prose); a generic fallback fills an emptied field
+  (source: owner, 2026-11-16).
+- **Q3: How do off-topic messages end up with no picks?** — The prompt plus a guard: picks are
+  dropped when no tool ran in the reply; no extra classifier call; the eval checks the cases
+  (source: owner, 2026-11-16).
 
 - **Where does server config come from?** — `getEnv()` only, extend `envSchema`, `.env.example`,
   `docs/setup.md` table, `env.test.ts` (source: `app/.server/AGENTS.md` → Environment).
@@ -174,7 +164,7 @@ There is no UI.
 | modify | `.env.example` | the AI variables, commented out, with Ollama example |
 | modify | `docs/setup.md` | env table rows + link to `docs/ai-perfumer.md` |
 | modify | `app/.server/AGENTS.md` | short "AI perfumer" section (rules: tools read-only, names from DB) |
-| modify | `aspire-apphost/apphost.mts`, `aspire-apphost/AGENTS.md` | forward `AI_*` to `web` (Q1) |
+| modify | `aspire-apphost/apphost.mts`, `aspire-apphost/AGENTS.md` | forward `AI_*` to `web` when set |
 | create | `app/.server/ai/config.ts` (+ `.test.ts`) | `getPerfumerConfig`, `isPerfumerEnabled` |
 | create | `app/.server/ai/errors.ts` | `AiError`, `PerfumerDisabledError` |
 | create | `app/.server/ai/client.schema.ts` | zod for chat-completions responses |
@@ -235,7 +225,7 @@ There is no UI.
   argument validation errors.
 - [ ] **6. Answer guard** — `answer-guard.ts`: `selectPicks(picks, aliases)` (known aliases only,
   dedupe, max 4), `limitLength(text, max)`, `cleanProse(text, { locale, allowedNames,
-  catalogNames })` implementing rules 1–4 (Q2), `splitSentences` that keeps `.?!…` and handles
+  catalogNames })` implementing rules 1–5, `splitSentences` that keeps `.?!…` and handles
   `«»`. Unit tests with the feasibility test's real failures: invented "Aquarius"/"Blue Marlin",
   a catalog brand not in the picks, ids leaking into text ("p3", a UUID), prices in prose, a pick's
   own name allowed, quoted names.
@@ -248,7 +238,7 @@ There is no UI.
   for the whole reply; up to 3 tool rounds (tool results appended as `role: "tool"` with
   `tool_call_id`); final structured call with `response_format` JSON schema built from the answer
   schema (one retry on `bad_response`); `selectPicks` → load `getProductSummaries` → keep `inStock`
-  in model order; drop picks when no tool ran (Q3); `cleanProse` on all text with catalog names;
+  in model order; drop picks when no tool ran; `cleanProse` on all text with catalog names;
   empty-field fallbacks from the `perfumer` i18n namespace. Return `PerfumerReply`. Unit tests with a
   scripted fake `chat` and fake tools: 3-round cap (4th tool request ignored, final call made),
   invented ids dropped, names removed, disabled never calls `chat`, error propagation, invalid tool
@@ -256,7 +246,7 @@ There is no UI.
 - [ ] **8. i18n + DTO** — `app/lib/perfumer.ts` types; `perfumer.fallbackIntro`,
   `perfumer.fallbackReason` (`{families}` placeholder) in `uk.ts` and `en.ts`. Check:
   `pnpm typecheck` (dictionaries must match).
-- [ ] **9. Aspire** — per Q1: in `apphost.mts`, read `process.env.AI_*` (the AppHost's environment) and
+- [ ] **9. Aspire** — in `apphost.mts`, read `process.env.AI_*` (the AppHost's environment) and
   `withEnvironment` each one on `web` only when set; `AI_API_KEY` through a secret parameter if it's
   set. Document in `aspire-apphost/AGENTS.md`. Check: `pnpm aspire:build`.
 - [ ] **10. Eval script** — `perfumer-eval.cases.ts`: ~15 cases, uk and en: fresh summer for him,

@@ -54,9 +54,9 @@ when the engine is off.
     it passes `cookieBanner` to the button, which then gets a static fallback class
     (`bottom-[15rem] sm:bottom-[8.5rem]`, the canvas's 244px / 132px rounded to the real banner)
     until the measured variable takes over.
-- **The "Added to cart" toast** (see Q2): the app has no fixed toast; `AddToCartForm` shows an
+- **The "Added to cart" toast** (Q2, confirmed): the app has no fixed toast; `AddToCartForm` shows an
   inline `role="status"` pill below its button (floating `absolute top-full right-0` for the
-  compact cards' round "+"), which can sit right under the phone's corner button. Default: on
+  compact cards' round "+"), which can sit right under the phone's corner button. On
   phones the button rises by 80px (`--bottom-ui-toast: 5rem`, the canvas's 96px − 16px) for 2.6s
   after any add-to-cart fetcher (`useFetchers()`, key prefix `add-to-cart-`) turns idle with
   `data.ok === true`. The corner button sets the variable itself from that state (one component
@@ -94,7 +94,7 @@ when the engine is off.
   en "Help me choose a women's perfume: citrus, by Lancôme". Without filters it's just the first
   part. Sort and page are ignored. The catalog has **no price filter** (`CatalogSearch` has only
   `fragranceFamily`, `brand`, `sort`, `page`), so the issue's "до 500 ₴" example doesn't apply.
-- **Catalog banner** (not drawn; follows the chat page's C+ look): between the filters and the
+- **Catalog banner** (not drawn, by decision Q3; follows the chat page's C+ look; on every catalog page, Q4): between the filters and the
   results, a `rounded-card-lg bg-blush` row with the white-circle bottle icon, the bold line
   "Не знаєте, що обрати? Запитайте AI парфумера" and a `ButtonLink size="sm"`
   "Запитати AI парфумера". In the empty state (`products.length === 0`), the existing blush box gets
@@ -114,24 +114,20 @@ when the engine is off.
 
 ## Open questions
 
-- [ ] **Q1: Is the corner button design approved?** — Why it matters: the issue marks the
-  `C+ AI perfumer corner button (#165)` artboards as waiting for the owner's approval; the first
-  acceptance criterion requires "matches the approved C+ design". Recommended default: build exactly
-  what the artboards draw (sizes, offsets, icon, pop-in) and adjust on feedback. Affects steps: 3, 4.
-- [ ] **Q2: How should the button avoid the "Added to cart" status?** — Why it matters: the canvas
-  draws a fixed, bottom-centre dark toast ("Додано в кошик · 3"), but the app's toast is an inline
-  green pill under each add button (`AddToCartForm.tsx`) that stays until the next action. Options:
-  (a) keep the inline pill and raise the phone button by 80px for 2.6s after an add, the canvas's
-  timing; (b) add a real fixed toast as drawn (a bigger change to `AddToCartForm` and every page
-  that uses it); (c) do nothing for the toast. Recommended default: (a). Affects steps: 4, 9.
-- [ ] **Q3: Draw the catalog banner and product link on the canvas first?** — Why it matters: the
-  issue says they "aren't drawn yet; they follow the chat page's approved design". Recommended
-  default: build them from the existing C+ tokens (described above) without a new artboard, and
-  show screenshots in the PR. Affects steps: 6, 7.
-- [ ] **Q4: Should the catalog banner show on every catalog page or only page 1?** — Recommended
-  default: every page, above the grid; it's one slim row. Affects step 6.
+- [ ] **Q1: Is the corner button design approved?** — Still waiting for the owner's approval
+  (answered 2026-11-16). Why it matters: the first acceptance criterion requires "matches the
+  approved C+ design". The plan builds exactly what the artboards draw (sizes, offsets, icon,
+  pop-in) and adjusts if the approved version differs; the PR must not be merged before approval.
+  Affects steps: 4, 10.
 
 ## Resolved questions
+
+- **Q2: How should the button avoid the "Added to cart" status?** — Keep the app's inline pill; on
+  phones the button rises by 80px for 2.6s after a successful add (option (a)) (owner,
+  2026-11-16).
+- **Q3: Draw the catalog banner and product link on the canvas first?** — No: build them from the
+  existing C+ tokens and show screenshots in the PR (owner, 2026-11-16).
+- **Q4: Catalog banner on every page or only page 1?** — Every catalog page (owner, 2026-11-16).
 
 - **Where does `perfumerEnabled` come from?** — The `_shop` loader already returns it
   (`app/routes/_shop.tsx`, #163); entry points read it with `useRouteLoaderData("routes/_shop")`,
@@ -203,7 +199,7 @@ when the engine is off.
   `className`. Test: href encodes Cyrillic and `&`, hidden when disabled.
 - [ ] **4. Corner button** — `PerfumerCornerButton.tsx` per the decisions above (link to
   `path("perfumer")`, no `q`); `.perfumer-corner` rule in `app/app.css`; `cookieBanner` fallback
-  class; the 2.6s toast raise on phones via `useFetchers()` **(Q2 unconfirmed)**. In `_shop.tsx`
+  class; the 2.6s toast raise on phones via `useFetchers()` (Q2 confirmed). In `_shop.tsx`
   render `{perfumerEnabled && <PerfumerCornerButton cookieBanner={consent === null} />}` after
   `<Footer>`. `MobileMenu`'s `<details>` gets `data-mobile-menu`. Check in the running app at 390px
   and 1440px against the artboards.
@@ -245,7 +241,7 @@ when the engine is off.
 
 - [ ] A corner "AI парфумер" button on the shop's pages opens the chat, matches the approved C+
   design on mobile and desktop, and never covers the cookie banner or the cart toast — steps 4, 5,
-  9 (Q1, Q2)
+  9 (needs the design approval, Q1)
 - [ ] The corner button is hidden on the chat, cart, checkout and payment pages — steps 1, 4, 9
 - [ ] Catalog pages and the empty-results state have an entry point that opens the chat with the
   current filters as a message — steps 1, 3, 6, 9
@@ -260,5 +256,5 @@ when the engine is off.
 - An in-page chat widget (a later issue if #166's data shows use).
 - Adding to the cart from the chat (#169).
 - Analytics events for the entry points (#166).
-- A fixed "Added to cart" toast, unless Q2 picks (b).
+- A fixed "Added to cart" toast (Q2 chose to keep the inline pill).
 - A price filter in the catalog.

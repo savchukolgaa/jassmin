@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { type RefObject, useEffect, useId, useRef, useState } from "react";
 import { Form, Link, useLocation, useNavigation } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
@@ -15,6 +15,8 @@ export function CookieBanner() {
   const titleId = useId();
   const { pathname, search } = useLocation();
   const navigation = useNavigation();
+  const sectionRef = useRef<HTMLElement>(null);
+  useBottomUiHeight(sectionRef);
   // Only known in the browser: where the visitor came from, so an accepted visit keeps its source.
   const [referrer, setReferrer] = useState("");
   useEffect(() => {
@@ -28,6 +30,7 @@ export function CookieBanner() {
 
   return (
     <section
+      ref={sectionRef}
       aria-labelledby={titleId}
       className="fixed inset-x-0 bottom-0 z-50 p-4 animate-fade-up"
     >
@@ -70,4 +73,29 @@ export function CookieBanner() {
       </Form>
     </section>
   );
+}
+
+/** The CSS variable on `<html>` with the banner's height, for the AI perfumer corner button (#165). */
+export const BOTTOM_UI_BANNER_VAR = "--bottom-ui-banner";
+
+/**
+ * Keeps `--bottom-ui-banner` on `<html>` equal to the banner's height while it's shown, so fixed
+ * bottom UI (the perfumer corner button) can sit above it; removed once the banner goes.
+ */
+function useBottomUiHeight(ref: RefObject<HTMLElement | null>) {
+  // After every render: the section disappears without unmounting the banner while an answer is
+  // on its way, and the variable must go with it.
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const style = document.documentElement.style;
+    const update = () => style.setProperty(BOTTOM_UI_BANNER_VAR, `${element.offsetHeight}px`);
+    update();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(element);
+    return () => {
+      observer?.disconnect();
+      style.removeProperty(BOTTOM_UI_BANNER_VAR);
+    };
+  });
 }

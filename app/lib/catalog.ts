@@ -84,3 +84,34 @@ export function catalogHref(pathname: string, search: CatalogSearch, page: numbe
   const query = params.toString();
   return query ? `${pathname}?${query}` : pathname;
 }
+
+/** The start of the AI perfumer message from each catalog (#165). */
+const PERFUMER_MESSAGE_KEYS = {
+  men: "perfumer.entry.catalogMessage.men",
+  women: "perfumer.entry.catalogMessage.women",
+} as const satisfies Record<CatalogGender, TextKey>;
+
+/**
+ * The AI perfumer message for a catalog's active filters (#165), e.g. "Допоможіть обрати жіночий
+ * аромат: цитрусові, бренд Lancôme". The sort and page aren't wishes, so they're left out.
+ */
+export function catalogPerfumerMessage(
+  gender: CatalogGender,
+  search: CatalogSearch,
+  translator: Pick<Translator, "t" | "locale">,
+): string {
+  const { t, locale } = translator;
+  const intro = t(PERFUMER_MESSAGE_KEYS[gender]);
+  const filters: string[] = [];
+  if (search.fragranceFamily) {
+    filters.push(
+      fragranceFamilyLabel(search.fragranceFamily, translator).toLocaleLowerCase(locale),
+    );
+  }
+  if (search.brand) {
+    filters.push(t("perfumer.entry.brandFilter", { brand: search.brand }));
+  }
+  return filters.length === 0
+    ? intro
+    : t("perfumer.entry.catalogMessageFilters", { intro, filters: filters.join(", ") });
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useRouteLoaderData } from "react-router";
+import { useLocation, useNavigate, useRouteLoaderData } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { cn } from "~/lib/cn";
@@ -21,10 +21,16 @@ const EXAMPLES = [
  * The AI perfumer chat page (#163), as drawn on the C+ canvas: a deep-pink hero with example
  * requests while the thread is empty, a slim strip with "Start over" once it isn't, the thread in
  * an 800px column and the message bar stuck to the bottom of the screen.
+ *
+ * `prefill`: a message from an entry point (`?q=`, #165), sent once the stored thread is restored
+ * (so it joins it), then removed from the URL so a reload or Back doesn't send it again.
  */
-export function PerfumerPage() {
+export function PerfumerPage({ prefill = null }: { prefill?: string | null }) {
   const { t } = useT();
   const thread = usePerfumerThread();
+  const navigate = useNavigate();
+  const { pathname, hash } = useLocation();
+  const prefillSent = useRef(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // The fixed cookie banner (#18) would cover the stuck message bar: until it's answered the bar
@@ -36,6 +42,14 @@ export function PerfumerPage() {
   useEffect(() => {
     if (thread.finishedTurns > 0) inputRef.current?.focus();
   }, [thread.finishedTurns]);
+
+  const { restored, send: sendMessage } = thread;
+  useEffect(() => {
+    if (!prefill || !restored || prefillSent.current) return;
+    prefillSent.current = true;
+    sendMessage(prefill);
+    void navigate({ pathname, search: "", hash }, { replace: true, preventScrollReset: true });
+  }, [prefill, restored, sendMessage, navigate, pathname, hash]);
 
   function send(text: string) {
     if (thread.send(text)) setDraft("");

@@ -1071,5 +1071,22 @@ export const en = {
       rateLimited: "You've sent a lot of messages in a row. Wait a few minutes and we'll continue.",
       tooLong: "Your message is too long: shorten it to 500 characters.",
     },
+    // Entry points to the chat (#165).
+    entry: {
+      corner: "Ask the AI perfumer",
+      bannerTitle: "Not sure what to choose?",
+      bannerText: "Ask the AI perfumer: it suggests perfumes from this catalog that are in stock.",
+      bannerAction: "Ask the AI perfumer",
+      emptyText: "Or describe what you're looking for to the AI perfumer.",
+      emptyAction: "Ask the AI perfumer",
+      similar: "Find similar with the AI perfumer",
+      catalogMessage: {
+        men: "Help me choose a men's perfume",
+        women: "Help me choose a women's perfume",
+      },
+      catalogMessageFilters: "{intro}: {filters}",
+      brandFilter: "by {brand}",
+      similarMessage: "Something like {title} by {brand}",
+    },
   },
 } satisfies Dictionary;

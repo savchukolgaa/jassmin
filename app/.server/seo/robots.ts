@@ -1,4 +1,5 @@
 import { EN_PREFIX, PAGES, type Page } from "~/lib/paths";
+import { PERFUMER_PREFILL_PARAM } from "~/lib/perfumer";
 
 // Builds `/robots.txt` (#87).
 
@@ -39,7 +40,20 @@ function privatePaths(page: Page): string[] {
 
 /** The `Disallow` paths of a production `robots.txt`: private pages, then system paths. */
 export function robotsDisallowPaths(): string[] {
-  return [...ROBOTS_PRIVATE_PAGES.flatMap(privatePaths), ...ROBOTS_SYSTEM_PATHS];
+  return [
+    ...ROBOTS_PRIVATE_PAGES.flatMap(privatePaths),
+    ...ROBOTS_SYSTEM_PATHS,
+    ...perfumerPrefillPaths(),
+  ];
+}
+
+/**
+ * The AI perfumer chat with a message to send (`?q=`, #165): a crawler that runs scripts would
+ * start a conversation with the model. The chat page itself stays crawlable.
+ */
+export function perfumerPrefillPaths(): string[] {
+  const query = `?${PERFUMER_PREFILL_PARAM}=`;
+  return [`/${PAGES.perfumer.uk}${query}`, `${EN_PREFIX}/${PAGES.perfumer.en}${query}`];
 }
 
 /**

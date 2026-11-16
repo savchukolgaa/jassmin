@@ -9,7 +9,13 @@ vi.mock("~/.server/ai/config", () => ai);
 vi.mock("~/.server/ai/perfumer", () => engine);
 vi.mock("~/.server/analytics", () => analytics);
 
-const { action, loader } = await import("./perfumer");
+const { action, loader, meta } = await import("./perfumer");
+
+type LoaderArgs = Parameters<typeof loader>[0];
+type MetaArgs = Parameters<typeof meta>[0];
+
+const get = (url = "http://localhost/parfumer") =>
+  ({ request: new Request(url), params: {}, context: {} }) as unknown as LoaderArgs;
 
 type ActionArgs = Parameters<typeof action>[0];
 
@@ -56,13 +62,41 @@ describe("perfumer route", () => {
   it("is a 404, page and action, while the perfumer is disabled", async () => {
     ai.isPerfumerEnabled.mockReturnValue(false);
 
-    expect(await thrownStatus(() => loader())).toBe(404);
+    expect(await thrownStatus(() => loader(get()))).toBe(404);
     expect(await thrownStatus(() => action(post(ask())))).toBe(404);
     expect(engine.reply).not.toHaveBeenCalled();
   });
 
   it("renders the page while it's enabled", () => {
-    expect(loader()).toEqual({});
+    expect(loader(get())).toEqual({ prefill: null });
+  });
+
+  it("passes a prefilled message from `q` to the page, trimmed (#165)", () => {
+    const q = encodeURIComponent("  Схоже на Light Blue від Dolce & Gabbana ");
+    expect(loader(get(`http://localhost/parfumer?q=${q}`))).toEqual({
+      prefill: "Схоже на Light Blue від Dolce & Gabbana",
+    });
+  });
+
+  it.each([
+    ["empty", "%20%20"],
+    ["over 500 characters", "а".repeat(501)],
+  ])("drops a prefilled message that is %s (#165)", (_name, q) => {
+    expect(loader(get(`http://localhost/parfumer?q=${q}`))).toEqual({ prefill: null });
+  });
+
+  it("keeps `q` out of the canonical URL (#165)", () => {
+    const tags = meta({
+      matches: [{ id: "root", loaderData: { locale: "en", site: { url: "https://jassmin.ua" } } }],
+      location: { pathname: "/en/perfumer", search: "?q=Something%20fresh" },
+      loaderData: { prefill: "Something fresh" },
+    } as unknown as MetaArgs);
+
+    expect(tags).toContainEqual({
+      tagName: "link",
+      rel: "canonical",
+      href: "https://jassmin.ua/en/perfumer",
+    });
   });
 
   it("answers in the page's language with the engine's reply", async () => {

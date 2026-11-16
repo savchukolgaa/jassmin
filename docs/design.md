@@ -27,6 +27,7 @@ The storefront follows **Option C+**, chosen on 2026-10-23 in #27.
 | `C+ Offers`, `C+ Offers, phone width` | `/offers` | #55 |
 | `C+ Popular`, `C+ Popular, phone width` | `/popular` | #67 |
 | `C+ AI perfumer — /parfumer (#163)`, `C+ AI perfumer, phone width (#163)` | `/parfumer` | #163 |
+| `C+ AI perfumer corner button (#165)` and its phone version | every shop page but the hidden ones below | #165 |
 | `Serif headings (#73) — home`, `Serif headings (#73) — product` | `/`, `/products/:id` (heading font only) | #73 |
 
 Cart and checkout aren't designed yet. Build them from the tokens and components below. There is
@@ -81,6 +82,37 @@ when disabled), the AI disclaimer with a "напишіть нам" link to the c
 "n / 500" counter. Over 500 the field border and counter turn `primary-dark` and a `role="alert"`
 line explains. While the cookie banner is open the bar isn't sticky and the page leaves room below
 it. Every text is plain text, never HTML.
+
+**The AI perfumer's entry points (#165)** appear only while the engine is enabled. Each is a plain
+link; the catalog and product ones carry a message in `?q=`, which the chat sends once and then
+removes from the URL (`rel="nofollow"`, and robots.txt blocks `?q=` chat URLs).
+
+- **Corner button** (`features/perfumer/PerfumerCornerButton.tsx`, rendered by the `_shop` layout
+  after the footer, so it's the page's last link before the cookie banner). From `sm`: a `primary`
+  pill at least 56px tall, `pr-5.5 pl-2`, with a 40px white circle holding the `primary` bottle
+  icon (with its sparkle) and "Запитати AI парфумера" in white weight 800; hover `primary-dark`
+  and 1.03 scale. On phones: a 60px `primary` circle with only the white bottle; the label stays in
+  the DOM as `sr-only`, so it's still the link's name (no `aria-label`). Shadow
+  `0 14px 30px rgb(194 47 75 / .35)`, `focusRing("onLight")`, `z-30` (under the sticky header and
+  its mobile menu, `z-40`, and the cookie banner, `z-50`). It pops in (`animate-pop`) 0.6s after
+  load, `motion-safe:` only.
+  - **Position** (`.perfumer-corner` in `app/app.css`): bottom-right, 16px from the edges on phones
+    (plus the safe area) and 24px from `sm`. While the cookie banner shows, it sits just above it:
+    the banner sets its height as `--bottom-ui-banner` on `<html>`, and until then (or without JS)
+    `data-cookie-banner` reserves 15rem on phones and 8.5rem from `sm`. On phones it rises 80px for
+    2.6s after "Added to cart" (`AddToCartForm` dispatches `jassmin:cart-added`; the button sets
+    `data-raised`), so it never covers that status. The move is a 0.3s `bottom` transition.
+  - **Hidden** on `/parfumer` itself, the cart, checkout, the order success and payment pages and
+    a gift card's result page (`PERFUMER_CORNER_HIDDEN_PAGES` in `app/lib/perfumer.ts`), on error
+    pages, and while the mobile menu is open (CSS `:has()` on its `details[data-mobile-menu]`).
+    Any new fixed bottom UI must publish its height the same way or the button will cover it.
+- **Catalog banner** (`PerfumerCatalogBanner`, between the filters and the results on every catalog
+  page): a blush `rounded-card-lg` row with the white round bottle (48px), "Не знаєте, що обрати?"
+  in bold, a line of body text and a `primary` `sm` "Запитати AI парфумера" asking with the active
+  family and brand ("Допоможіть обрати жіночий аромат: цитрусові, бренд Lancôme"). With no results
+  the banner gives way to a line and the same button inside the blush empty panel.
+- **Product page** "Знайти схожі з AI парфумером": a `ghost` `sm` link with the bottle icon below the
+  purchase form (or the archived notice), asking "Схоже на <title> від <brand>".
 
 Like cart and checkout, the cookie banner and the privacy policy page (#18) aren't on the canvas. The banner
 (`features/consent/CookieBanner.tsx`) is a white `rounded-card` panel with a `line` border fixed to
@@ -281,7 +313,7 @@ The utilities are in `app/app.css`. Use motion to support content, never to hide
 | Utility | Effect | Typical use |
 |---|---|---|
 | `animate-fade-up` + `anim-delay-1` … `anim-delay-6` | fade in from 16px below, each delay step +80ms | hero text, staggered sections and cards |
-| `animate-pop` | fade in from 90% scale | chips, badges, small confirmations |
+| `animate-pop` | fade in from 90% scale | chips, badges, small confirmations; the AI perfumer corner button, 0.6s after load (`motion-safe:`) |
 | `animate-spin-in` | rotate and scale in | the price badge |
 | `animate-marquee` + `marquee-pause` | scroll −50% in a loop over 26s; pauses on hover | the home offers band: a slim `ink` strip (`py-2`, `text-base`/`md:text-lg`) with the tester trio and free delivery only, no fragrance families (#72); render the content twice in the track, repeating the offers so a half is wider than the screen, and keep it `aria-hidden` |
 | `animate-toast` | slide up and fade in | the "Added to cart" popup (use `role="status"`) |

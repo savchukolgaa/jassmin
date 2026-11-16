@@ -306,6 +306,49 @@ body {
   }
 }
 
+/*
+ * The AI perfumer corner button (#165, PerfumerCornerPlus artboards): 16px from the bottom on phones
+ * and 24px from `sm`, above the cookie banner while it shows (its height, `--bottom-ui-banner`, is
+ * set on <html> by the banner; before that, and without JS, `data-cookie-banner` reserves about its
+ * height) and, on phones, 80px higher for a moment after "Added to cart" (`data-raised`).
+ */
+.perfumer-corner {
+  --corner-gap: 1rem;
+  --corner-banner: 0px;
+  --corner-toast: 0px;
+  bottom: calc(
+    env(safe-area-inset-bottom, 0px) +
+    max(
+      var(--corner-gap),
+      var(--bottom-ui-banner, var(--corner-banner)),
+      var(--corner-gap) +
+      var(--corner-toast)
+    )
+  );
+  transition:
+    bottom 0.3s ease,
+    background-color 0.2s ease,
+    scale 0.2s ease;
+
+  @media (width >= 40rem) {
+    --corner-gap: 1.5rem;
+  }
+
+  &[data-cookie-banner] {
+    --corner-banner: 15rem;
+
+    @media (width >= 40rem) {
+      --corner-banner: 8.5rem;
+    }
+  }
+
+  &[data-raised] {
+    @media (width < 40rem) {
+      --corner-toast: 5rem;
+    }
+  }
+}
+
 /* Turns off every animation and transition, including the button hover scale and the marquee. */
 @media (prefers-reduced-motion: reduce) {
   /* biome-ignore-start lint/complexity/noImportantStyles: reduced motion must beat every utility. */

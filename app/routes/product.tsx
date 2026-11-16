@@ -7,6 +7,8 @@ import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
 import { useProductDwell } from "~/features/analytics/useProductDwell";
 import { ProductImage } from "~/features/catalog/ProductImage";
+import { BottleIcon } from "~/features/perfumer/icons";
+import { PerfumerEntryLink } from "~/features/perfumer/PerfumerEntryLink";
 import { ProductUnavailable, SimilarProducts } from "~/features/product/ProductArchived";
 import { ProductPurchase } from "~/features/product/ProductPurchase";
 import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
@@ -167,6 +169,20 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           ) : (
             <ProductUnavailable catalog={catalog} />
           )}
+          {/* Perfumes like this one, from the AI perfumer (#165); its `similar_to` tool (#162)
+              finds the product by name. */}
+          <PerfumerEntryLink
+            message={t("perfumer.entry.similarMessage", {
+              title: product.title,
+              brand: product.brand,
+            })}
+            variant="ghost"
+            size="sm"
+            className="self-start px-3"
+          >
+            <BottleIcon sparkle className="size-5" />
+            {t("perfumer.entry.similar")}
+          </PerfumerEntryLink>
           <ProductNotes notes={product.notes} />
           {product.description && (
             <section aria-labelledby="description-heading" className="mt-2" lang={descriptionLang}>

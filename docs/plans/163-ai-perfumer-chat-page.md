@@ -243,7 +243,7 @@ enabled.
   and `SizePicker` and shows `product.fromPrice` for ranges (no skeleton needed, since no size can
   be picked). Test in `ProductCard.dom.test.ts`. Also a `children` slot at the bottom of the default card, so the perfumer's
   "Чому вам пасує" box sits inside the white card as in the approved design.
-- [ ] **6. Route module and thread hook** — `app/routes/perfumer.tsx`:
+- [x] **6. Route module and thread hook** — `app/routes/perfumer.tsx`:
   `loader` 404s when disabled, else returns `{}` (meta via `metaTranslator(matches)`: title and
   description; `hreflang` comes from `indexable`); `action` 404s when disabled, parses `payload`
   with `parsePerfumerRequest`, calls `answerPerfumerMessage` with `getLocale(request)`,
@@ -253,7 +253,10 @@ enabled.
   fetcher returns for the current turn id, `cancel()`, `retry(errorItem)` (removes the error and
   re-sends its `retryText` without duplicating the user bubble), `startOver()` (clears state and
   storage); `thread-storage.ts` load/save. Verify whether the v8 fetcher can be reset/aborted and
-  wire it into `cancel()`. Route tests: loader/action 404 when disabled, `tooLong`, success shape,
+  wire it into `cancel()`. **Done:** v8's `fetcher.reset({ reason })` aborts an in-flight request, so
+  `cancel()` and `startOver()` call it and no turn id is needed; a consumed result is `reset()` too,
+  so an old `fetcher.data` is never taken for the next message. Only the latest error can be
+  retried. Statuses: `tooLong` 400, `rateLimited` 429, `unavailable` 503, `timeout` 504. Route tests: loader/action 404 when disabled, `tooLong`, success shape,
   `rateLimited` after 10 posts.
 - [ ] **7. `MessageThread`** — `<ol aria-live="polite">` of bubbles: customer text; perfumer intro,
   then a grid of `ProductCard purchase={false} headingLevel={3}` with the reason under each

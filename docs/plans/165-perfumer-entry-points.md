@@ -189,7 +189,7 @@ when the engine is off.
   `null`, disabled → 404); DOM (the message is posted exactly once, joins an existing stored thread,
   the URL loses `q`, a re-render or remount after replace doesn't resend); `meta` canonical has no
   `q`.
-- [ ] **3. `PerfumerEntryLink`** — a `Link` to `perfumerHref(path, message)` with `rel="nofollow"`,
+- [x] **3. `PerfumerEntryLink`** — a `Link` to `perfumerHref(path, message)` with `rel="nofollow"`,
   rendering nothing when `perfumerEnabled` is false; accepts `ButtonLink`-style variants or a
   `className`. Test: href encodes Cyrillic and `&`, hidden when disabled.
 - [ ] **4. Corner button** — `PerfumerCornerButton.tsx` per the decisions above (link to

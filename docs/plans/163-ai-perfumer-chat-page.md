@@ -119,10 +119,12 @@ enabled.
   "adding to the cart from the chat" out of scope, but the catalog card has `AddToCartForm` built in.
   Recommended default: hide it with a new `purchase={false}` prop; the card links to the product
   page. Affects steps: 5, 7.
-- [ ] **Q2: Design the page on the C+ canvas first, or build straight from the tokens?** — Why it
-  matters: every other designed page has a canvas artboard; this one has none. Recommended default:
-  build from the tokens and existing patterns described above and document it in `docs/design.md`,
-  as was done for cart, checkout and the cookie banner. Affects steps: 7–9, 12.
+- [ ] **Q2: Approve the canvas design.** — The owner asked for a design first (2026-11-16). Two
+  artboards were added to the C+ canvas (https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW):
+  `C+ AI perfumer — /parfumer (#163), for approval` and its phone-width twin, with a `scene` tweak
+  for every state (empty, thinking, cancel shown, reply, cancelled, unavailable, timeout,
+  rateLimited, tooLong). Steps 7–9 build to those artboards once they're approved; until then, the
+  Decisions above describe the same layout. Affects steps: 7–9, 12.
 - [ ] **Q3: Where does the menu link go, and should it stand out?** — Why it matters: the header
   already has five items with the inline nav from `lg`; a sixth may need a wider breakpoint or a
   shorter label. Recommended default: a plain nav item after "Offers" (header and mobile menu), no

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FRAGRANCE_FAMILIES, type Gender } from "~/lib/enums";
+import type { PerfumerStep } from "~/lib/perfumer";
 import type { PerfumerProductRow } from "../db/queries/perfumer";
 import {
   type SearchPerfumesArgs,
@@ -143,14 +144,19 @@ export function searchCatalog(
   products: readonly PerfumerProductRow[],
   args: SearchPerfumesArgs,
 ): SearchResult {
+  return rank(products, searchCriteria(args));
+}
+
+/** The search's criteria: families and notes after the synonym mapping. */
+function searchCriteria(args: SearchPerfumesArgs): Criteria {
   const notes = resolveNotes(args.notes ?? []);
-  return rank(products, {
+  return {
     gender: args.gender,
     families: [...new Set([...resolveFamilies(args.families ?? []), ...notes.families])],
     notes: notes.notes,
     maxPrice: args.max_price_uah,
     limit: args.limit ?? DEFAULT_LIMIT,
-  });
+  };
 }
 
 /**
@@ -308,6 +314,8 @@ export interface ToolCallRecord {
   match?: SearchMatch;
   /** Aliases of the products returned. */
   resultIds: string[];
+  /** The call as the chat shows it while streaming (#164); only for calls that ran. */
+  step?: PerfumerStep;
 }
 
 export interface ToolRun {
@@ -348,8 +356,17 @@ export function runCatalogTool(
     if (!args.success) {
       return failure(name, raw, `Invalid arguments: ${z.prettifyError(args.error)}`);
     }
-    const result = searchCatalog(products, args.data);
+    const criteria = searchCriteria(args.data);
+    const result = rank(products, criteria);
     const rows = result.products.map((product) => toRow(product, aliases));
+    // The resolved families, never the model's own words: its notes are often nonsense.
+    const step: PerfumerStep = {
+      tool: "search",
+      families: [...criteria.families],
+      found: rows.length,
+      ...(criteria.gender ? { gender: criteria.gender } : {}),
+      ...(criteria.maxPrice !== undefined ? { maxPriceUah: criteria.maxPrice } : {}),
+    };
     return {
       content: JSON.stringify({ match: MATCH_HINTS[result.match], perfumes: rows }),
       record: {
@@ -358,6 +375,7 @@ export function runCatalogTool(
         ok: true,
         match: result.match,
         resultIds: rows.map((row) => row.id),
+        step,
       },
     };
   }
@@ -393,6 +411,12 @@ export function runCatalogTool(
         ok: true,
         match: result.match,
         resultIds: rows.map((row) => row.id),
+        // The catalog's title, never the model's: a perfume the shop doesn't have isn't named.
+        step: {
+          tool: "similar",
+          found: rows.length,
+          ...(result.reference ? { title: result.reference.title } : {}),
+        },
       },
     };
   }

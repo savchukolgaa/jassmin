@@ -236,7 +236,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
   `error` item; `StreamFailed` (not after a cancel) falls back to the existing `submitForm` path with
   the same payload. `cancel`, `startOver` and unmount abort the controller and `reset()` the fetcher.
   Skip streaming entirely when `ReadableStream`/`TextDecoderStream` are missing.
-- [ ] **10. UI.** `StepList.tsx` renders `PerfumerStep`s as translated sentences
+- [x] **10. UI.** `StepList.tsx` renders `PerfumerStep`s as translated sentences
   (`perfumer.steps.search` "Шукаю в каталозі: {families}", `…searchFor` with gender, `…upTo`
   "до {price}" via `formatPrice`, `…similar` "Шукаю схожі на «{title}»", `…similarUnknown`,
   `…found` plural "{count} аромат/аромати/ароматів"); family labels via `fragranceFamilyLabel`.

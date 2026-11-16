@@ -195,3 +195,63 @@ describe("PerfumerInput", () => {
     expect(html).toMatch(/<button type="submit" disabled=""/);
   });
 });
+
+describe("the streamed reply (#164)", () => {
+  const pending = { id: "p", text: "Щось морське", steps: [], intro: "" };
+
+  it("shows each catalog search as a sentence instead of the rotating hint", () => {
+    const html = thread({
+      pending: {
+        ...pending,
+        steps: [
+          { tool: "search", families: ["водяні"], gender: "men", maxPriceUah: 600, found: 4 },
+          { tool: "similar", title: "La Vie Est Belle", found: 0 },
+        ],
+      },
+    });
+    expect(html).toMatch(/Шукаю в каталозі: водяні, для нього, до 600\s₴/);
+    expect(html).toContain("знайдено 4 аромати");
+    expect(html).toContain("Шукаю схожі на «La Vie Est Belle»");
+    expect(html).toContain("нічого не знайдено");
+    expect(html).not.toContain("Шукаю в каталозі ·");
+  });
+
+  it("names the steps in English", () => {
+    const html = thread(
+      {
+        pending: {
+          ...pending,
+          steps: [
+            { tool: "search", families: [], found: 1 },
+            { tool: "similar", found: 3 },
+          ],
+        },
+      },
+      "en",
+    );
+    expect(html).toContain("Searching the catalog");
+    expect(html).toContain("found 1 perfume");
+    expect(html).toContain("Looking for similar perfumes");
+    expect(html).toContain("found 3 perfumes");
+  });
+
+  it("says the perfumer is writing while the intro streams, with cancel still possible", () => {
+    const html = thread({ pending: { ...pending, intro: "Ось свіжі аромати." } });
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain("Парфумер пише відповідь…");
+    expect(html).not.toContain("Парфумер підбирає аромати…");
+  });
+
+  it("shows the cards once they arrive, without the thinking bubble", () => {
+    const html = thread({
+      pending: {
+        ...pending,
+        intro: "Ось свіжі аромати.",
+        picks: [{ product, reason: "Морські ноти й мʼята." }],
+      },
+    });
+    expect(html).toContain("Acqua Di Gio");
+    expect(html).toContain("Морські ноти й мʼята.");
+    expect(html).not.toContain('role="status"');
+  });
+});

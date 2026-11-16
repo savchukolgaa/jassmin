@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type CatalogSearch,
   catalogHref,
+  catalogPerfumerMessage,
   FRAGRANCE_FAMILY_LABEL_KEYS,
   fragranceFamilyLabel,
   hasActiveFilters,
@@ -99,5 +100,41 @@ describe("fragranceFamilyLabel", () => {
 
   it("shows a value outside the list as stored", () => {
     expect(fragranceFamilyLabel("мікс", createTranslator("en"))).toBe("мікс");
+  });
+});
+
+describe("catalogPerfumerMessage (#165)", () => {
+  const uk = createTranslator("uk");
+  const en = createTranslator("en");
+
+  it("asks for help with the catalog's gender when nothing is filtered", () => {
+    expect(catalogPerfumerMessage("women", DEFAULTS, uk)).toBe("Допоможіть обрати жіночий аромат");
+    expect(catalogPerfumerMessage("men", DEFAULTS, en)).toBe("Help me choose a men's perfume");
+  });
+
+  it("adds the family in lower case and the brand as typed", () => {
+    expect(catalogPerfumerMessage("women", { ...DEFAULTS, fragranceFamily: "цитрусові" }, uk)).toBe(
+      "Допоможіть обрати жіночий аромат: цитрусові",
+    );
+    expect(catalogPerfumerMessage("men", { ...DEFAULTS, brand: "Dior" }, uk)).toBe(
+      "Допоможіть обрати чоловічий аромат: бренд Dior",
+    );
+    expect(
+      catalogPerfumerMessage(
+        "women",
+        { ...DEFAULTS, fragranceFamily: "цитрусові", brand: "Lancôme" },
+        en,
+      ),
+    ).toBe("Help me choose a women's perfume: citrus, by Lancôme");
+  });
+
+  it("leaves out the sort and page, and keeps a family outside the list as stored", () => {
+    expect(
+      catalogPerfumerMessage(
+        "women",
+        { ...DEFAULTS, sort: "price_asc", page: 3, fragranceFamily: "мікс" },
+        uk,
+      ),
+    ).toBe("Допоможіть обрати жіночий аромат: мікс");
   });
 });

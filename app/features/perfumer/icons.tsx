@@ -105,6 +105,7 @@ export function ThumbDownIcon(props: IconProps) {
   );
 }
 
+/** A tick: a catalog search the perfumer finished (#164). */
 export function CheckIcon(props: IconProps) {
   return (
     <Icon strokeWidth={2.6} {...props}>

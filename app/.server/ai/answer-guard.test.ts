@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cleanProse,
   type GuardContext,
+  IntroGuard,
   limitLength,
   MAX_PICKS,
   selectPicks,
@@ -124,5 +125,67 @@ describe("cleanProse", () => {
 describe("cleanProse: English sentence starts", () => {
   it("lets a capitalized first word sit before a pick's name", () => {
     expect(cleanProse("Try La Vie Est Belle tonight.", en).removed).toEqual([]);
+  });
+});
+
+describe("IntroGuard (#164)", () => {
+  /** Feeds `pieces` and returns what the guard let through after each one, then at the end. */
+  function feed(guard: IntroGuard, pieces: readonly string[]): string[] {
+    return [...pieces.map((piece) => guard.push(piece)), guard.end()];
+  }
+
+  it("lets a sentence through only once it's complete", () => {
+    const guard = new IntroGuard(uk);
+    expect(feed(guard, ["Ось сві", "жі аромати.", " Вони легкі", "! Гарного дня"])).toEqual([
+      "",
+      "",
+      "Ось свіжі аромати.",
+      " Вони легкі!",
+      " Гарного дня",
+    ]);
+    expect(guard.removed).toEqual([]);
+    expect(guard.empty).toBe(false);
+  });
+
+  it("removes an invented name sentence by sentence, keeping the ones around it", () => {
+    const guard = new IntroGuard(uk);
+    const out = feed(guard, [
+      "Ось морські аромати. ",
+      "Схожий на Aquarius. ",
+      "Також Sauvage від Dior. ",
+      "La Vie Est Belle теплий.",
+    ]);
+    expect(out.join("")).toBe("Ось морські аромати. La Vie Est Belle теплий.");
+    expect(guard.removed).toEqual(["Схожий на Aquarius.", "Також Sauvage від Dior."]);
+  });
+
+  it("removes prices and ids", () => {
+    const guard = new IntroGuard(uk);
+    expect(feed(guard, ["Усе до 500 грн. ", "Візьміть p1. ", "Гарний вибір."]).join("")).toBe(
+      "Гарний вибір.",
+    );
+    expect(guard.removed).toHaveLength(2);
+  });
+
+  it("is empty when every sentence is removed", () => {
+    const guard = new IntroGuard(uk);
+    expect(feed(guard, ["Спробуйте Aquarius."]).join("")).toBe("");
+    expect(guard.empty).toBe(true);
+  });
+
+  it("stops at the length cap and drops the rest", () => {
+    const guard = new IntroGuard(uk, 30);
+    const out = feed(guard, ["Перше речення тут. ", "Друге задовге речення. ", "Третє."]);
+    expect(out.join("")).toBe("Перше речення тут.");
+    expect(guard.full).toBe(true);
+    expect(guard.push(" Ще щось.")).toBe("");
+  });
+
+  it("cuts a first sentence longer than the cap", () => {
+    const guard = new IntroGuard(uk, 20);
+    const text = feed(guard, ["Дуже довге речення про свіжі морські аромати."]).join("");
+    expect(text.length).toBeLessThanOrEqual(20);
+    expect(text.endsWith("…")).toBe(true);
+    expect(guard.full).toBe(true);
   });
 });

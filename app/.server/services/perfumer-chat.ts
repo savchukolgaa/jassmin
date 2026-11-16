@@ -5,21 +5,27 @@ import {
   type PerfumerActionResult,
   type PerfumerEntry,
   type PerfumerErrorKey,
+  type PerfumerEvent,
   type PerfumerMessage,
-  type PerfumerReply,
   type PerfumerTelemetryError,
   type PerfumerToolName,
 } from "~/lib/perfumer";
 import type { ToolCallRecord } from "../ai/catalog-tools";
 import { getPerfumerConfig } from "../ai/config";
 import { AiError } from "../ai/errors";
-import { type PerfumerDeps, type PerfumerResult, replyWithTrace } from "../ai/perfumer";
+import {
+  type PerfumerDeps,
+  type PerfumerResult,
+  replyStream,
+  replyWithTrace,
+} from "../ai/perfumer";
 import { perfumerLimiters, type RateLimiter } from "../rate-limit";
 
-// The AI perfumer chat's one action (#163): the rate limits, the engine call (#162) and its errors
-// turned into the chat's translated error keys. The route only parses the request and passes keys.
-// It also describes each message for analytics (#166): counts, ids, timings and error keys, never
-// the customer's words or the perfumer's text. The route records that event.
+// The AI perfumer chat's one action (#163) and its stream (#164): the rate limits, the engine call
+// (#162) and its errors turned into the chat's translated error keys. The routes only parse the
+// request and pass keys. Each message is also described for analytics (#166): counts, ids,
+// timings and error keys, never the customer's words or the perfumer's text. The routes record
+// that event.
 
 export interface PerfumerChatInput {
   locale: Locale;
@@ -37,12 +43,8 @@ export interface PerfumerChatInput {
   signal?: AbortSignal;
 }
 
-export interface PerfumerChatDeps {
-  reply: (
-    locale: Locale,
-    messages: readonly PerfumerMessage[],
-    deps: Pick<PerfumerDeps, "signal">,
-  ) => Promise<PerfumerResult>;
+/** What the chat needs besides the engine: limits, and for analytics the model, a clock and ids. */
+interface PerfumerChatBaseDeps {
   limiters: { byIp: RateLimiter; bySession: RateLimiter };
   /** The configured `AI_MODEL`, for analytics. */
   model: () => string | null;
@@ -51,19 +53,22 @@ export interface PerfumerChatDeps {
   newReplyId: () => string;
 }
 
-const defaultDeps: PerfumerChatDeps = {
-  reply: replyWithTrace,
+export interface PerfumerChatDeps extends PerfumerChatBaseDeps {
+  reply: (
+    locale: Locale,
+    messages: readonly PerfumerMessage[],
+    deps: Pick<PerfumerDeps, "signal">,
+  ) => Promise<PerfumerResult>;
+}
+
+const baseDeps: PerfumerChatBaseDeps = {
   limiters: perfumerLimiters,
   model: () => getPerfumerConfig()?.model ?? null,
   now: () => performance.now(),
   newReplyId: () => crypto.randomUUID(),
 };
 
-/** The chat's answer, and the `perfumer_message` event that describes it. */
-export interface PerfumerChatOutcome {
-  result: PerfumerActionResult;
-  event: PerfumerMessageProperties;
-}
+const defaultDeps: PerfumerChatDeps = { ...baseDeps, reply: replyWithTrace };
 
 /** A tool argument's name as the event contract takes it; anything else is left out. */
 const ARGUMENT_KEY = /^[a-z][a-z0-9_]{0,39}$/;
@@ -92,8 +97,10 @@ export interface MessageEventInput {
   entry: PerfumerEntry;
   latencyMs: number;
   model: string | null;
-  /** The engine's result; `undefined` when it failed or wasn't called. */
-  answer?: PerfumerResult;
+  toolCalls: readonly ToolCallRecord[];
+  /** `products.public_id` of the picks shown. */
+  pickIds: readonly string[];
+  askedQuestion: boolean;
   error: PerfumerTelemetryError | null;
 }
 
@@ -104,24 +111,48 @@ export function perfumerMessageProperties({
   entry,
   latencyMs,
   model,
-  answer,
+  toolCalls,
+  pickIds,
+  askedQuestion,
   error,
 }: MessageEventInput): PerfumerMessageProperties {
-  const reply: PerfumerReply | undefined = answer?.reply;
   return {
     reply_id: replyId,
     turn,
     latency_ms: Math.max(0, Math.round(latencyMs)),
     model: model ? model.slice(0, 100) : null,
-    tool_calls: (answer?.trace.toolCalls ?? []).slice(0, MAX_TOOL_CALLS).map(toolCallSummary),
-    pick_ids: (reply?.picks ?? []).map((pick) => pick.product.id),
-    asked_question: Boolean(reply?.question),
+    tool_calls: toolCalls.slice(0, MAX_TOOL_CALLS).map(toolCallSummary),
+    pick_ids: [...pickIds],
+    asked_question: askedQuestion,
     error,
     entry,
   };
 }
 
-/** The chat's error key for an engine failure, and the finer one analytics records. */
+/**
+ * Whether a message may be answered: over 10 messages in 5 minutes per IP or per visitor, it may
+ * not. An accepted message counts against both limits, answered or not.
+ */
+async function admitPerfumerMessage(
+  { ipKey, sessionKey }: Pick<PerfumerChatInput, "ipKey" | "sessionKey">,
+  { byIp, bySession }: PerfumerChatBaseDeps["limiters"],
+): Promise<boolean> {
+  // Each key falls back to the other, so a request without either still has a bound.
+  const ip = ipKey ?? sessionKey ?? "anonymous";
+  const session = sessionKey ?? ipKey ?? "anonymous";
+  const [ipBlocked, sessionBlocked] = await Promise.all([
+    byIp.isBlocked(ip),
+    bySession.isBlocked(session),
+  ]);
+  if (ipBlocked || sessionBlocked) {
+    return false;
+  }
+  await Promise.all([byIp.hit(ip), bySession.hit(session)]);
+  return true;
+}
+
+/** The chat's error key for a failed reply, logging what isn't the customer's doing, and the
+ * finer reason analytics records. */
 function classify(
   error: unknown,
   signal: AbortSignal | undefined,
@@ -138,50 +169,150 @@ function classify(
   return { key: "unavailable", telemetry: "unavailable" };
 }
 
+/** The event of a message the rate limit refused: no model, no latency. */
+function rateLimitedEvent(
+  { turn, entry }: Pick<PerfumerChatInput, "turn" | "entry">,
+  replyId: string,
+): PerfumerMessageProperties {
+  return perfumerMessageProperties({
+    replyId,
+    turn,
+    entry,
+    latencyMs: 0,
+    model: null,
+    toolCalls: [],
+    pickIds: [],
+    askedQuestion: false,
+    error: "rate_limited",
+  });
+}
+
+/** The chat's answer, and the `perfumer_message` event that describes it. */
+export interface PerfumerChatOutcome {
+  result: PerfumerActionResult;
+  event: PerfumerMessageProperties;
+}
+
 /**
  * Answers one chat message. Over 10 messages in 5 minutes per IP or per visitor →
  * `rateLimited`, without calling the model. Every accepted message counts against both limits.
  */
 export async function answerPerfumerMessage(
-  { locale, messages, turn, entry, ipKey, sessionKey, signal }: PerfumerChatInput,
+  input: PerfumerChatInput,
   deps: PerfumerChatDeps = defaultDeps,
 ): Promise<PerfumerChatOutcome> {
+  const { locale, messages, turn, entry, signal } = input;
   const replyId = deps.newReplyId();
+  if (!(await admitPerfumerMessage(input, deps.limiters))) {
+    return { result: { ok: false, error: "rateLimited" }, event: rateLimitedEvent(input, replyId) };
+  }
+  const model = deps.model();
   const started = deps.now();
-  const describe = (fields: Pick<MessageEventInput, "error" | "answer" | "model">) =>
+  const describe = (
+    fields: Pick<MessageEventInput, "toolCalls" | "pickIds" | "askedQuestion" | "error">,
+  ) =>
     perfumerMessageProperties({
       replyId,
       turn,
       entry,
-      latencyMs: fields.model === null ? 0 : deps.now() - started,
+      latencyMs: deps.now() - started,
+      model,
       ...fields,
     });
-
-  // Each key falls back to the other, so a request without either still has a bound.
-  const ip = ipKey ?? sessionKey ?? "anonymous";
-  const session = sessionKey ?? ipKey ?? "anonymous";
-  const { byIp, bySession } = deps.limiters;
-  const [ipBlocked, sessionBlocked] = await Promise.all([
-    byIp.isBlocked(ip),
-    bySession.isBlocked(session),
-  ]);
-  if (ipBlocked || sessionBlocked) {
-    return {
-      result: { ok: false, error: "rateLimited" },
-      event: describe({ error: "rate_limited", model: null }),
-    };
-  }
-  await Promise.all([byIp.hit(ip), bySession.hit(session)]);
-
-  const model = deps.model();
   try {
     const answer = await deps.reply(locale, messages, signal ? { signal } : {});
     return {
       result: { ok: true, reply: answer.reply, replyId },
-      event: describe({ error: null, answer, model }),
+      event: describe({
+        toolCalls: answer.trace.toolCalls,
+        pickIds: answer.reply.picks.map((pick) => pick.product.id),
+        askedQuestion: Boolean(answer.reply.question),
+        error: null,
+      }),
     };
   } catch (error) {
     const { key, telemetry } = classify(error, signal);
-    return { result: { ok: false, error: key }, event: describe({ error: telemetry, model }) };
+    return {
+      result: { ok: false, error: key },
+      event: describe({ toolCalls: [], pickIds: [], askedQuestion: false, error: telemetry }),
+    };
   }
+}
+
+export interface PerfumerStreamDeps extends PerfumerChatBaseDeps {
+  replyStream: (
+    locale: Locale,
+    messages: readonly PerfumerMessage[],
+    deps: Pick<PerfumerDeps, "signal" | "onToolCall">,
+  ) => AsyncIterable<PerfumerEvent>;
+}
+
+const defaultStreamDeps: PerfumerStreamDeps = { ...baseDeps, replyStream };
+
+export type PerfumerStreamResult =
+  | { ok: false; error: "rateLimited"; event: PerfumerMessageProperties }
+  | { ok: true; events: AsyncIterable<PerfumerEvent> };
+
+/**
+ * Starts answering one chat message as events (#164), with the same rate limits and error keys as
+ * `answerPerfumerMessage`. A refused message is `rateLimited` before anything is streamed, so the
+ * route can answer 429; an accepted one's events always end with `done` (carrying the reply's id)
+ * or one `error`. Stopping the iteration (or `signal`) stops the model call. `onEvent` gets the
+ * message's `perfumer_message` event once the stream ends, however it ends (#166).
+ */
+export async function openPerfumerStream(
+  input: PerfumerChatInput & { onEvent?: (event: PerfumerMessageProperties) => void },
+  deps: PerfumerStreamDeps = defaultStreamDeps,
+): Promise<PerfumerStreamResult> {
+  const { locale, messages, turn, entry, signal, onEvent } = input;
+  const replyId = deps.newReplyId();
+  if (!(await admitPerfumerMessage(input, deps.limiters))) {
+    return { ok: false, error: "rateLimited", event: rateLimitedEvent(input, replyId) };
+  }
+  const model = deps.model();
+  const started = deps.now();
+  async function* events(): AsyncGenerator<PerfumerEvent, void, undefined> {
+    const toolCalls: ToolCallRecord[] = [];
+    let pickIds: string[] = [];
+    let askedQuestion = false;
+    let error: PerfumerTelemetryError | null = null;
+    let done = false;
+    try {
+      const stream = deps.replyStream(locale, messages, {
+        ...(signal ? { signal } : {}),
+        onToolCall: (record) => toolCalls.push(record),
+      });
+      for await (const event of stream) {
+        if (event.type === "picks") pickIds = event.picks.map((pick) => pick.product.id);
+        if (event.type === "question") askedQuestion = true;
+        if (event.type === "done") {
+          done = true;
+          yield { type: "done", replyId };
+          continue;
+        }
+        yield event;
+      }
+    } catch (failure) {
+      const { key, telemetry } = classify(failure, signal);
+      error = telemetry;
+      yield { type: "error", error: key };
+    } finally {
+      // Ended without `done` or an error: the customer stopped reading.
+      if (!done && error === null) error = "cancelled";
+      onEvent?.(
+        perfumerMessageProperties({
+          replyId,
+          turn,
+          entry,
+          latencyMs: deps.now() - started,
+          model,
+          toolCalls,
+          pickIds: error === null ? pickIds : [],
+          askedQuestion: error === null && askedQuestion,
+          error,
+        }),
+      );
+    }
+  }
+  return { ok: true, events: events() };
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { Link, useFetcher } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
@@ -30,6 +30,12 @@ export interface AddToCartFormProps {
   children?: ReactNode;
 }
 
+/**
+ * Dispatched on `window` each time "Added to cart" appears, so fixed UI near it can move out of the
+ * way (the AI perfumer corner button on phones, #165).
+ */
+export const CART_ADDED_EVENT = "jassmin:cart-added";
+
 /** Posts `intent=add` to the cart action without navigating away. */
 export function AddToCartForm({
   productId,
@@ -45,9 +51,15 @@ export function AddToCartForm({
   const translator = useT();
   const path = usePathFor();
   const { t } = translator;
-  const fetcher = useFetcher<CartActionResult>({ key: `add-to-cart-${productId}` });
+  const fetcher = useFetcher<CartActionResult>({
+    key: `add-to-cart-${productId}`,
+  });
   const result = fetcher.state === "idle" ? fetcher.data : undefined;
   const icon = appearance === "icon";
+
+  useEffect(() => {
+    if (result?.ok === true) window.dispatchEvent(new Event(CART_ADDED_EVENT));
+  }, [result]);
 
   return (
     <fetcher.Form method="post" action={path("cart")} className={cn(icon && "relative", className)}>

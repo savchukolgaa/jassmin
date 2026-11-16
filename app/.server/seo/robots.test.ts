@@ -55,6 +55,12 @@ describe("robotsDisallowPaths", () => {
     expect(paths).toEqual(expect.arrayContaining([...ROBOTS_SYSTEM_PATHS]));
   });
 
+  it("blocks the AI perfumer chat only with a prefilled message (#165)", () => {
+    expect(paths).toEqual(expect.arrayContaining(["/parfumer?q=", "/en/perfumer?q="]));
+    expect(paths).not.toContain("/parfumer");
+    expect(paths).not.toContain("/en/perfumer");
+  });
+
   it("never blocks the product feeds, which Google and Meta must fetch (#140)", () => {
     for (const path of ["/feeds/products.xml", "/en/feeds/products.xml"]) {
       expect(blocked(path), path).toBe(false);

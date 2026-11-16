@@ -1077,6 +1077,25 @@ export const uk = {
       stock: "Перевіряю наявність і ціни",
       choose: "Обираю найкращі варіанти",
     },
+    // What the perfumer is doing, as it streams (#164).
+    steps: {
+      label: "Що робить парфумер",
+      search: "Шукаю в каталозі",
+      searchFor: "Шукаю в каталозі: {criteria}",
+      women: "для неї",
+      men: "для нього",
+      upTo: "до {price}",
+      similar: "Шукаю схожі на «{title}»",
+      similarUnknown: "Шукаю схожі аромати",
+      found: {
+        one: "знайдено {count} аромат",
+        few: "знайдено {count} аромати",
+        many: "знайдено {count} ароматів",
+        other: "знайдено {count} аромату",
+      },
+      foundNone: "нічого не знайдено",
+    },
+    writing: "Парфумер пише відповідь…",
     cancel: "Скасувати",
     cancelled: "Запит скасовано. Напишіть ще раз, коли будете готові.",
     retry: "Спробувати ще раз",
@@ -1095,6 +1114,24 @@ export const uk = {
       rateLimited:
         "Ви надіслали багато повідомлень поспіль. Зачекайте кілька хвилин, і продовжимо.",
       tooLong: "Повідомлення задовге: скоротіть його до 500 символів.",
+    },
+    // Entry points to the chat (#165).
+    entry: {
+      corner: "Запитати AI парфумера",
+      bannerTitle: "Не знаєте, що обрати?",
+      bannerText:
+        "Запитайте AI парфумера: він порадить аромати з цього каталогу, які є в наявності.",
+      bannerAction: "Запитати AI парфумера",
+      emptyText: "Або опишіть, що шукаєте, AI парфумеру.",
+      emptyAction: "Запитати AI парфумера",
+      similar: "Знайти схожі з AI парфумером",
+      catalogMessage: {
+        men: "Допоможіть обрати чоловічий аромат",
+        women: "Допоможіть обрати жіночий аромат",
+      },
+      catalogMessageFilters: "{intro}: {filters}",
+      brandFilter: "бренд {brand}",
+      similarMessage: "Схоже на {title} від {brand}",
     },
   },
 };

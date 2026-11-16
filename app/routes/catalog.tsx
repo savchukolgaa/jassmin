@@ -10,6 +10,9 @@ import { Pagination } from "~/components/ui/Pagination";
 import { ProductListProvider } from "~/features/analytics/ProductList";
 import { CatalogFilters } from "~/features/catalog/CatalogFilters";
 import { ProductCard } from "~/features/catalog/ProductCard";
+import { PerfumerCatalogBanner } from "~/features/perfumer/PerfumerCatalogBanner";
+import { PerfumerEntryLink } from "~/features/perfumer/PerfumerEntryLink";
+import { usePerfumerEnabled } from "~/features/perfumer/usePerfumerEnabled";
 import { MAX_SEARCH_RESULT_IDS, shouldRevalidateView } from "~/lib/analytics";
 import { catalogBreadcrumbs } from "~/lib/breadcrumbs";
 import {
@@ -17,6 +20,7 @@ import {
   CATALOG_PAGE_SIZE,
   CATALOG_TITLE_KEYS,
   catalogHref,
+  catalogPerfumerMessage,
   hasActiveFilters,
   isCatalogGender,
 } from "~/lib/catalog";
@@ -96,6 +100,9 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   // Dim the results while a filter, sort or page change of this catalog loads.
   const busy = navigation.state === "loading" && navigation.location.pathname === pathname;
+  // The AI perfumer's entry points (#165) ask with this catalog's filters.
+  const perfumerEnabled = usePerfumerEnabled();
+  const perfumerMessage = catalogPerfumerMessage(gender, search, translator);
 
   return (
     <main className="container mx-auto px-4 pt-8 pb-16">
@@ -111,6 +118,12 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
       <div className="mt-6">
         <CatalogFilters pathname={pathname} search={search} options={filterOptions} />
       </div>
+
+      {products.length > 0 && (
+        <div className="mt-6">
+          <PerfumerCatalogBanner message={perfumerMessage} />
+        </div>
+      )}
 
       <section
         aria-label={t("catalog.results")}
@@ -143,6 +156,14 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
             >
               {t(`catalog.showAll.${gender}` as const)}
             </Link>
+            {perfumerEnabled && (
+              <div className="mt-6 flex flex-col items-center gap-3">
+                <p className="text-body">{t("perfumer.entry.emptyText")}</p>
+                <PerfumerEntryLink message={perfumerMessage} entry="empty_results" size="sm">
+                  {t("perfumer.entry.emptyAction")}
+                </PerfumerEntryLink>
+              </div>
+            )}
           </div>
         )}
       </section>

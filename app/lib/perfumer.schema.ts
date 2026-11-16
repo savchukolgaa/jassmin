@@ -7,6 +7,7 @@ import {
   PERFUMER_ENTRIES,
   PERFUMER_MAX_INPUT_LENGTH,
   PERFUMER_MAX_MESSAGES,
+  PERFUMER_PREFILL_PARAM,
   PERFUMER_RATINGS,
   type PerfumerEntry,
   type PerfumerErrorKey,
@@ -84,4 +85,21 @@ export function parsePerfumerFeedback(formData: FormData): PerfumerFeedbackResul
   }
   const { replyId, turn, rating } = parsed.data;
   return { ok: true, replyId, turn, rating };
+}
+
+/** A prefilled message (#165): like a typed one, 1–500 characters after trimming. */
+const prefillSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(PERFUMER_MAX_INPUT_LENGTH)
+  .nullable()
+  .catch(null);
+
+/**
+ * The message an entry point asks the chat page to send (`?q=`, #165), or `null`. An empty or too
+ * long one (only a hand-edited URL) is dropped quietly rather than shown as an error.
+ */
+export function parsePerfumerPrefill(params: URLSearchParams): string | null {
+  return prefillSchema.parse(params.get(PERFUMER_PREFILL_PARAM));
 }

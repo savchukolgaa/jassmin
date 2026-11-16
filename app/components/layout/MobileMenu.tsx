@@ -22,7 +22,7 @@ export function MobileMenu({
   const { detailsProps, summaryProps } = useDisclosure();
 
   return (
-    <details {...detailsProps} className="group lg:hidden">
+    <details {...detailsProps} data-mobile-menu className="group lg:hidden">
       <summary
         {...summaryProps}
         aria-label={t("nav.menu")}

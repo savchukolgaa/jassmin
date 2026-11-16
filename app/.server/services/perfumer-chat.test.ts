@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parseEventProperties } from "~/lib/analytics.schema";
-import type { PerfumerReply } from "~/lib/perfumer";
+import type { PerfumerEvent, PerfumerReply } from "~/lib/perfumer";
 import type { ProductSummary } from "~/lib/products";
 import { AiError } from "../ai/errors";
 import type { PerfumerResult, PerfumerTrace } from "../ai/perfumer";
 import { createMemoryRateLimitStore, createRateLimiter } from "../rate-limit";
 import {
   answerPerfumerMessage,
+  openPerfumerStream,
   type PerfumerChatDeps,
+  type PerfumerStreamDeps,
   perfumerMessageProperties,
   toolCallSummary,
 } from "./perfumer-chat";
@@ -255,11 +257,209 @@ describe("the perfumer_message event (#166)", () => {
       entry: "direct",
       latencyMs: 1.6,
       model: "m",
-      answer: result(answer, many),
+      toolCalls: many,
+      pickIds: [],
+      askedQuestion: false,
       error: null,
     });
     expect(event.tool_calls).toHaveLength(12);
     expect(event.latency_ms).toBe(2);
     expect(parseEventProperties("perfumer_message", event)).not.toBeNull();
+  });
+});
+
+describe("openPerfumerStream (#164)", () => {
+  const reply: PerfumerEvent[] = [
+    { type: "step", step: { tool: "search", families: ["водяні"], found: 2 } },
+    { type: "intro", text: "Ось що є." },
+    { type: "picks", picks: [] },
+    { type: "done" },
+  ];
+  /** What the customer receives: the same events, `done` carrying the reply's id (#166). */
+  const received: PerfumerEvent[] = [...reply.slice(0, -1), { type: "done", replyId: REPLY_ID }];
+
+  function streamDeps(
+    replyStream: PerfumerStreamDeps["replyStream"] = async function* () {
+      yield* reply;
+    },
+  ) {
+    return {
+      replyStream: vi.fn<PerfumerStreamDeps["replyStream"]>(replyStream),
+      limiters: deps.limiters,
+      model: deps.model,
+      now: deps.now,
+      newReplyId: deps.newReplyId,
+    };
+  }
+
+  async function collect(iterable: AsyncIterable<PerfumerEvent>): Promise<PerfumerEvent[]> {
+    const all: PerfumerEvent[] = [];
+    for await (const event of iterable) all.push(event);
+    return all;
+  }
+
+  async function stream(
+    sd: PerfumerStreamDeps,
+    ipKey: string | undefined = "1.1.1.1",
+    signal?: AbortSignal,
+  ): Promise<PerfumerEvent[] | "rateLimited"> {
+    const result = await openPerfumerStream(
+      { locale: "en", messages, turn: 1, entry: "menu", ipKey, sessionKey: "visitor", signal },
+      sd,
+    );
+    return result.ok ? collect(result.events) : result.error;
+  }
+
+  it("passes the engine's events through, with the request's signal", async () => {
+    const sd = streamDeps();
+    const signal = new AbortController().signal;
+    await expect(stream(sd, "1.1.1.1", signal)).resolves.toEqual(received);
+    expect(sd.replyStream).toHaveBeenCalledWith("en", messages, {
+      signal,
+      onToolCall: expect.any(Function),
+    });
+  });
+
+  it("shares the action's rate limit and refuses before streaming, without the model", async () => {
+    for (let n = 0; n < 10; n++) {
+      await ask("1.1.1.1", "visitor");
+    }
+    const sd = streamDeps();
+    await expect(stream(sd)).resolves.toBe("rateLimited");
+    expect(sd.replyStream).not.toHaveBeenCalled();
+  });
+
+  it("counts a streamed message against the limits", async () => {
+    const sd = streamDeps();
+    for (let n = 0; n < 10; n++) {
+      await stream(sd, `10.0.0.${n}`);
+    }
+    await expect(resultOf("10.0.0.99", "visitor")).resolves.toEqual({
+      ok: false,
+      error: "rateLimited",
+    });
+  });
+
+  it("ends a failed reply with one error event, after what was already sent", async () => {
+    const sd = streamDeps(async function* () {
+      yield { type: "step", step: { tool: "similar", found: 0 } };
+      throw new AiError("timeout", "too slow");
+    });
+    await expect(stream(sd)).resolves.toEqual([
+      { type: "step", step: { tool: "similar", found: 0 } },
+      { type: "error", error: "timeout" },
+    ]);
+
+    const broken = streamDeps(async function* () {
+      yield* [];
+      throw new Error("database down");
+    });
+    await expect(stream(broken, "2.2.2.2")).resolves.toEqual([
+      { type: "error", error: "unavailable" },
+    ]);
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  describe("its perfumer_message event (#166)", () => {
+    async function streamed(
+      replyStream: PerfumerStreamDeps["replyStream"],
+      { signal, stopAfter }: { signal?: AbortSignal; stopAfter?: number } = {},
+    ) {
+      const events: unknown[] = [];
+      const result = await openPerfumerStream(
+        {
+          locale: "uk",
+          messages,
+          turn: 4,
+          entry: "corner",
+          ipKey: "3.3.3.3",
+          sessionKey: "visitor",
+          signal,
+          onEvent: (event) => events.push(event),
+        },
+        streamDeps(replyStream),
+      );
+      if (!result.ok) throw new Error("refused");
+      let seen = 0;
+      for await (const _event of result.events) {
+        if (stopAfter !== undefined && ++seen >= stopAfter) break;
+      }
+      return events;
+    }
+
+    it("is recorded once the stream ends, with the tool calls, picks and question, no text", async () => {
+      const events = await streamed(async function* (_locale, _messages, engineDeps) {
+        const call = trace.toolCalls[0];
+        if (call) engineDeps.onToolCall?.(call);
+        clock += 5000;
+        yield { type: "intro", text: INTRO };
+        yield { type: "picks", picks: [{ product, reason: REASON }] };
+        yield { type: "question", text: QUESTION };
+        yield { type: "done" };
+      });
+      expect(events).toEqual([
+        {
+          reply_id: REPLY_ID,
+          turn: 4,
+          latency_ms: 5000,
+          model: "granite4.1:3b",
+          tool_calls: [
+            { name: "search_perfumes", argument_keys: ["families", "max_price_uah", "notes"] },
+          ],
+          pick_ids: [PRODUCT],
+          asked_question: true,
+          error: null,
+          entry: "corner",
+        },
+      ]);
+      const json = JSON.stringify(events);
+      for (const text of [CUSTOMER, INTRO, REASON, QUESTION, "Ocean Two"]) {
+        expect(json).not.toContain(text);
+      }
+    });
+
+    it("records a failed stream with its finer error", async () => {
+      const events = await streamed(async function* () {
+        yield* [];
+        throw new AiError("bad_response", "not JSON");
+      });
+      expect(events).toMatchObject([
+        { error: "bad_response", pick_ids: [], asked_question: false },
+      ]);
+    });
+
+    it("records a stream the customer stopped reading as cancelled", async () => {
+      const events = await streamed(
+        async function* () {
+          yield { type: "intro", text: INTRO };
+          yield { type: "picks", picks: [{ product, reason: REASON }] };
+          yield { type: "done" };
+        },
+        { stopAfter: 1 },
+      );
+      expect(events).toMatchObject([{ error: "cancelled", pick_ids: [] }]);
+    });
+
+    it("returns the rate-limited message's event instead of streaming", async () => {
+      for (let n = 0; n < 10; n++) {
+        await ask("4.4.4.4", "visitor-4");
+      }
+      const result = await openPerfumerStream(
+        {
+          locale: "uk",
+          messages,
+          turn: 2,
+          entry: "menu",
+          ipKey: "4.4.4.4",
+          sessionKey: "visitor-4",
+        },
+        streamDeps(),
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        error: "rateLimited",
+        event: { error: "rate_limited", model: null, latency_ms: 0, turn: 2 },
+      });
+    });
   });
 });

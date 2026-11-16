@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parsePerfumerFeedback, parsePerfumerRequest } from "./perfumer.schema";
+import {
+  parsePerfumerFeedback,
+  parsePerfumerPrefill,
+  parsePerfumerRequest,
+} from "./perfumer.schema";
 
 const form = (payload: unknown) => {
   const data = new FormData();
@@ -88,5 +92,20 @@ describe("parsePerfumerFeedback (#166)", () => {
     ["an unknown rating", { ...valid, rating: "meh" }],
   ])("refuses %s", (_name, fields) => {
     expect(parsePerfumerFeedback(feedback(fields))).toEqual({ ok: false });
+  });
+});
+
+describe("parsePerfumerPrefill (#165)", () => {
+  const parse = (query: string) => parsePerfumerPrefill(new URLSearchParams(query));
+
+  it("reads `q`, trimmed", () => {
+    expect(parse("q=%20%D0%A1%D1%85%D0%BE%D0%B6%D0%B5%20")).toBe("Схоже");
+    expect(parse(`q=${"а".repeat(500)}`)).toHaveLength(500);
+  });
+
+  it("is null without `q`, or for an empty or too long one", () => {
+    expect(parse("")).toBeNull();
+    expect(parse("q=%20")).toBeNull();
+    expect(parse(`q=${"а".repeat(501)}`)).toBeNull();
   });
 });

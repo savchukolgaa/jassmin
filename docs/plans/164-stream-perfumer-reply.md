@@ -244,7 +244,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
   `MessageThread` renders a streaming turn when `pending.intro` is set: `TypingText` for the intro,
   the dots until picks, then the cards as in `PerfumerTurn` (extract the shared card list). Keys in
   `uk.ts` and `en.ts`. Follow `docs/design.md` tokens and motion rules.
-- [ ] **11. UI tests** (`PerfumerPage.dom.test.ts`, mocking `fetch` with a `ReadableStream`): steps
+- [x] **11. UI tests** (`PerfumerPage.dom.test.ts`, mocking `fetch` with a `ReadableStream`): steps
   appear before the reply; the intro then the cards appear; cancel aborts the fetch signal; a 500 /
   non-event-stream response / a broken stream falls back to the action (fetcher submit called once);
   an `error: rateLimited` event shows the error without a fallback; the finished reply is saved to

@@ -307,7 +307,15 @@ enabled.
   phone width (360 px) in devtools with the on-screen keyboard emulated, keyboard-only use and
   VoiceOver/NVDA announcement of replies. Then unset `AI_BASE_URL`: `/parfumer` 404s, the menu link
   and the sitemap entries are gone.
-- [ ] **12. Docs** — `docs/design.md`: a `C+ Perfumer` paragraph (layout, bubbles, chips, motion,
+  **Done 2026-11-16** (dev server on a scratch database with the imported catalog, Ollama +
+  `granite4.1:3b`): `/parfumer` and `/en/perfumer` render with title, `hreflang` and both menu
+  links (marked current); the sitemap lists both URLs; a real message through the action answered
+  200 in 63 s with a typed reply. With `AI_BASE_URL` empty both pages and the action are 404s, and
+  the menu links and sitemap entries are gone. **Not done here (no browser in this session):** the
+  visual check at 360 px and 1024 px (header fit), the on-screen keyboard, cancel and reload in a
+  real browser, and NVDA/VoiceOver. Cancel, reload, start over, keyboard, focus and axe are
+  covered by `PerfumerPage.dom.test.ts`.
+- [x] **12. Docs** — `docs/design.md`: a `C+ Perfumer` paragraph (layout, bubbles, chips, motion,
   mobile input) and its row in "Pages and issues" (no canvas artboard); `docs/ai-perfumer.md`: the
   chat page section (route, 10 messages × 500 chars, 10 per 5 min per IP and per session,
   `sessionStorage`, plain text only).

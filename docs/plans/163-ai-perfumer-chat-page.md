@@ -233,7 +233,7 @@ enabled.
   `bad_response` / unknown → `unavailable`, logged), return `PerfumerActionResult`. Tests with a fake
   `reply`: 10 accepted then the 11th `rateLimited`, per-IP and per-session independently, window
   resets after 5 minutes (injected clock), each error mapping, success passthrough.
-- [ ] **4. Path, route registration, menu and sitemap** — `PAGES.perfumer`; `routes.ts`;
+- [x] **4. Path, route registration, menu and sitemap** — `PAGES.perfumer`; `routes.ts`;
   `_shop` loader returns `perfumerEnabled: isPerfumerEnabled()`; `navLinks().perfumer`; `Header` and
   `MobileMenu` render it only when `perfumerEnabled` (read from the layout's loader data, as the
   header state is passed today); sitemap `perfumerEnabled` source. Check the header at 1024 px.

@@ -8,6 +8,8 @@ vi.mock("~/.server/services/header", () => ({
 }));
 vi.mock("~/.server/consent", () => ({ getConsent: vi.fn(async () => "granted") }));
 vi.mock("~/.server/analytics-middleware", () => ({ visitorMiddleware: vi.fn() }));
+const ai = vi.hoisted(() => ({ isPerfumerEnabled: vi.fn(() => false) }));
+vi.mock("~/.server/ai/config", () => ai);
 
 const { loader } = await import("./_shop");
 
@@ -35,6 +37,14 @@ describe("_shop loader", () => {
 
     expect(social.getSocialLinks).toHaveBeenLastCalledWith("en");
     expect(data.suggestEnglish).toBe(false);
+  });
+
+  it("says whether the AI perfumer is enabled, for its menu link (#163)", async () => {
+    social.getSocialLinks.mockResolvedValue([]);
+
+    await expect(load()).resolves.toMatchObject({ perfumerEnabled: false });
+    ai.isPerfumerEnabled.mockReturnValue(true);
+    await expect(load()).resolves.toMatchObject({ perfumerEnabled: true });
   });
 
   it("returns no links when Strapi is down, without failing the page", async () => {

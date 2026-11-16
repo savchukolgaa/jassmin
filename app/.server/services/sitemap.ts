@@ -2,6 +2,7 @@ import { CATALOG_GENDERS } from "~/lib/catalog";
 import { PRIVACY_POLICY_UPDATED_AT } from "~/lib/consent";
 import { LOCALES, type Locale } from "~/lib/i18n";
 import { type Page, type PathArgs, pathFor } from "~/lib/paths";
+import { isPerfumerEnabled } from "../ai/config";
 import { listBlogPostsForSitemap, type SitemapBlogPost } from "../cms/content";
 import { isCmsError } from "../cms/errors";
 import { db as defaultDb } from "../db";
@@ -18,6 +19,8 @@ export interface SitemapSources {
   products: readonly SitemapProductRow[];
   /** `null` when Strapi couldn't be reached: the sitemap then lists everything but the posts. */
   posts: readonly SitemapBlogPost[] | null;
+  /** Whether the AI perfumer chat (#163) is enabled; its page is listed only then. */
+  perfumerEnabled?: boolean;
 }
 
 /**
@@ -29,6 +32,7 @@ export const SITEMAP_PAGES = [
   "catalog",
   "offers",
   "popular",
+  "perfumer",
   "blog",
   "privacy",
   "giftCards",
@@ -58,7 +62,11 @@ function latest(dates: Iterable<Date | string>): string | undefined {
  * The sitemap's pages. `lastmod` is the product's or post's last edit. A list page takes its
  * newest product's or post's: the catalogs their genders’, home, offers and popular any product’s.
  */
-export function sitemapPages({ products, posts }: SitemapSources): SitemapPage[] {
+export function sitemapPages({
+  products,
+  posts,
+  perfumerEnabled = false,
+}: SitemapSources): SitemapPage[] {
   const productsChanged = latest(products.map((product) => product.updatedAt));
   const pages: SitemapPage[] = [
     { paths: everyLocale("home"), lastmod: productsChanged },
@@ -72,6 +80,8 @@ export function sitemapPages({ products, posts }: SitemapSources): SitemapPage[]
     })),
     { paths: everyLocale("offers"), lastmod: productsChanged },
     { paths: everyLocale("popular"), lastmod: productsChanged },
+    // No `lastmod`: the chat page itself doesn't change with the data.
+    ...(perfumerEnabled ? [{ paths: everyLocale("perfumer") }] : []),
     { paths: everyLocale("blog"), lastmod: latest((posts ?? []).map((post) => post.updatedAt)) },
     { paths: everyLocale("privacy"), lastmod: PRIVACY_POLICY_UPDATED_AT },
   ];
@@ -99,10 +109,16 @@ export function sitemapPages({ products, posts }: SitemapSources): SitemapPage[]
 export interface SitemapDeps {
   listProducts: () => Promise<readonly SitemapProductRow[]>;
   listPosts: () => Promise<readonly SitemapBlogPost[]>;
+  /** `isPerfumerEnabled` by default (#163). */
+  perfumerEnabled?: () => boolean;
 }
 
 function defaultDeps(db: Db): SitemapDeps {
-  return { listProducts: () => listSitemapProducts(db), listPosts: listBlogPostsForSitemap };
+  return {
+    listProducts: () => listSitemapProducts(db),
+    listPosts: listBlogPostsForSitemap,
+    perfumerEnabled: isPerfumerEnabled,
+  };
 }
 
 /**
@@ -123,7 +139,10 @@ export async function getSitemap(
     }),
   ]);
   return {
-    xml: buildSitemapXml(sitemapPages({ products, posts }), siteUrl),
+    xml: buildSitemapXml(
+      sitemapPages({ products, posts, perfumerEnabled: deps.perfumerEnabled?.() ?? false }),
+      siteUrl,
+    ),
     complete: posts !== null,
   };
 }

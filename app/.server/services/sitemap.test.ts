@@ -115,6 +115,15 @@ describe("sitemapPages", () => {
     }
   });
 
+  it("lists the AI perfumer chat only while it's enabled (#163)", () => {
+    const perfumer = { uk: pathFor("uk", "perfumer"), en: pathFor("en", "perfumer") };
+    expect(pages.some((page) => page.paths.uk === perfumer.uk)).toBe(false);
+
+    const enabled = sitemapPages({ products: PRODUCTS, posts: POSTS, perfumerEnabled: true });
+    expect(enabled.find((page) => page.paths.uk === perfumer.uk)?.paths).toEqual(perfumer);
+    expect(enabled).toHaveLength(pages.length + 1);
+  });
+
   it("leaves out the posts, and the blog's lastmod, when Strapi was down", () => {
     const withoutCms = sitemapPages({ products: PRODUCTS, posts: null });
     expect(withoutCms).toHaveLength(7 + PRODUCTS.length);
@@ -139,6 +148,15 @@ describe("getSitemap", () => {
     expect(complete).toBe(true);
     expect(xml).toContain("<loc>https://jassmin.ua/blog/yak-obraty</loc>");
     expect(xml).toContain('hreflang="x-default" href="https://jassmin.ua/"');
+  });
+
+  it("asks whether the AI perfumer is enabled (#163)", async () => {
+    const { xml } = await getSitemap("https://jassmin.ua", {
+      ...deps(async () => POSTS),
+      perfumerEnabled: () => true,
+    });
+    expect(xml).toContain("<loc>https://jassmin.ua/parfumer</loc>");
+    expect(xml).toContain("<loc>https://jassmin.ua/en/perfumer</loc>");
   });
 
   it("still lists the products when Strapi is down", async () => {

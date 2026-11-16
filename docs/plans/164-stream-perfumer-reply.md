@@ -157,11 +157,11 @@ product cards and the question. The normal action (#163) stays as the fallback w
 
 ## Steps
 
-- [ ] **1. Shared event types.** In `app/lib/perfumer.ts` add `PerfumerStep` and `PerfumerEvent`
+- [x] **1. Shared event types.** In `app/lib/perfumer.ts` add `PerfumerStep` and `PerfumerEvent`
   (decision 3) and `isPerfumerEvent(value: unknown): value is PerfumerEvent`, a hand-written guard
   (checks `type` and the payload's fields; products are trusted as server data). Add
   `PERFUMER_STREAM_EVENTS` as a `const` tuple. Unit tests in `perfumer-ui.test.ts`.
-- [ ] **2. Step data from the tools.** In `catalog-tools.ts` add `step?: PerfumerStep` to
+- [x] **2. Step data from the tools.** In `catalog-tools.ts` add `step?: PerfumerStep` to
   `ToolCallRecord`, set by `runCatalogTool` for successful calls: for search, the resolved families
   (the synonym-mapped ones the ranking used), `gender`, `max_price_uah`, `found`; for `similar_to`,
   `reference?.title` and `found`. Failed calls get no step. Extend `catalog-tools.test.ts`: raw note

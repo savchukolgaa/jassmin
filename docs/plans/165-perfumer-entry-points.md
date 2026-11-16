@@ -206,7 +206,7 @@ when the engine is off.
 - [x] **6. Catalog entry points** — `PerfumerCatalogBanner` above the results when there are
   products; a `PerfumerEntryLink` button in the empty-results box; both with
   `catalogPerfumerMessage(gender, search, translator)`.
-- [ ] **7. Product link** — the "find similar" link in `product.tsx` below the purchase/unavailable
+- [x] **7. Product link** — the "find similar" link in `product.tsx` below the purchase/unavailable
   block, with `similarMessage`.
 - [ ] **8. robots.txt** — add the two `?q=` chat paths to `robotsDisallowPaths()`; update
   `robots.txt.test.ts`.

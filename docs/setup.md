@@ -421,7 +421,7 @@ The in-app `/admin` area was removed in #40. Every user still has a role, `custo
 
 ## Synthetic analytics data
 
-`analytics/generator/` (#131, Python with [uv](https://docs.astral.sh/uv/)) fills a separate `jassmin_synth` database on the same server with about three years of simulated shop data for the ETL and ML work: `raw.*` with deliberate anomalies, and with `--load-app-schema` also the app's own tables. It never writes to the app's database. Run `uv run analytics/generator/generate.py --customers 10000` from the repo root (it uses `SYNTH_DATABASE_URL`, else `DATABASE_URL` from `.env`, with the database name replaced), or start `synth-generate` from the Aspire dashboard. The customer model and the anomaly catalogue are in [analytics/README.md](../analytics/README.md).
+`analytics/generator/` (#131, Python with [uv](https://docs.astral.sh/uv/)) fills a separate `jassmin_synth` database on the same server with about three years of simulated shop data for the ETL and ML work: `raw.*` with deliberate anomalies, and with `--load-app-schema` also the app's own tables. It never writes to the app's database. Run `uv run analytics/generator/generate.py --customers 10000` from the repo root (it uses `SYNTH_DATABASE_URL`, else `DATABASE_URL` from `.env`, with the database name replaced), or start `synth-generate` from the Aspire dashboard. Then start `dbt-build` (the warehouse, #132) and `ml-notebooks` (the ML notebooks, #133), in that order; `jupyter-lab` opens the notebooks in JupyterLab (#159). The customer model and the anomaly catalogue are in [analytics/README.md](../analytics/README.md).
 
 ## Conventions
 

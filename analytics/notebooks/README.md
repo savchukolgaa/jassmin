@@ -39,6 +39,20 @@ them in JupyterLab:
 uv run --directory analytics/notebooks jupyter lab   # opens in the notebooks folder
 ```
 
+**From the Aspire dashboard** (#159). Under `pnpm aspire run`, the whole pipeline is a set of
+explicit-start children of `jassmin-synth`. Start them in this order, each after the previous one
+has finished, because none waits for the one before:
+
+1. `synth-generate`: generates the data (#131);
+2. `dbt-build`: builds and tests the marts (#132);
+3. `ml-notebooks`: runs `run_all.py` and fails if a notebook's checks do.
+
+`jupyter-lab` serves JupyterLab on 127.0.0.1, opened on this folder. Open it with its
+**JupyterLab** link in the dashboard, which carries the token; the plain endpoint link shows
+Jupyter's login page, and the token is the `jupyter-token` parameter. Both resources get only
+`JASSMIN_SYNTH_URI`. Don't start `ml-notebooks` while you're editing the notebooks in `jupyter-lab`:
+both save the same `.ipynb` files, so one can overwrite the other's changes.
+
 **Which database.** The same rules as `wh.py`: `WAREHOUSE_DATABASE_URL`, `JASSMIN_SYNTH_URI`,
 `SYNTH_DATABASE_URL`, else the repo `.env`'s `DATABASE_URL` with the database name replaced by
 `jassmin_synth`. `jassmin_ml/db.py` refuses any database that isn't `jassmin_synth[_suffix]`, and

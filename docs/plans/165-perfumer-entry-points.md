@@ -215,7 +215,7 @@ when the engine is off.
   bottom variable raised after a successful add-to-cart fetcher and back after 2.6s (fake timers),
   `sr-only` label is the accessible name, axe has no violations with it shown. Catalog banner,
   empty-state button and product link: correct `q`, absent when disabled.
-- [ ] **10. Docs** — `docs/design.md`: a "AI perfumer corner button" section (look per breakpoint,
+- [x] **10. Docs** — `docs/design.md`: a "AI perfumer corner button" section (look per breakpoint,
   offsets and the CSS variables, z-order, hidden pages, mobile menu, motion) and the `animate-pop`
   use in the motion table; mention the catalog banner and product link.
 - [ ] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual check with

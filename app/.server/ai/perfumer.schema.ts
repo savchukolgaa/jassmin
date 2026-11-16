@@ -33,6 +33,17 @@ export const modelAnswerSchema = z.object({
 
 export type ModelAnswer = z.infer<typeof modelAnswerSchema>;
 
+const PICKS_JSON_SCHEMA: JsonSchema = {
+  type: "array",
+  maxItems: 4,
+  items: {
+    type: "object",
+    properties: { id: { type: "string" }, reason: { type: "string" } },
+    required: ["id", "reason"],
+    additionalProperties: false,
+  },
+};
+
 /**
  * The same answer as a JSON Schema for `response_format`. Every property is required and the
  * question nullable, so providers with strict structured outputs accept it too.
@@ -41,18 +52,29 @@ export const MODEL_ANSWER_JSON_SCHEMA: JsonSchema = {
   type: "object",
   properties: {
     intro: { type: "string" },
-    picks: {
-      type: "array",
-      maxItems: 4,
-      items: {
-        type: "object",
-        properties: { id: { type: "string" }, reason: { type: "string" } },
-        required: ["id", "reason"],
-        additionalProperties: false,
-      },
-    },
+    picks: PICKS_JSON_SCHEMA,
     question: { type: ["string", "null"] },
   },
   required: ["intro", "picks", "question"],
+  additionalProperties: false,
+};
+
+/**
+ * The streamed reply's structured answer (#164): the picks and the question only. The intro is
+ * written afterwards, in a streamed call that knows the picks, so its names can be checked
+ * sentence by sentence.
+ */
+export const modelPicksSchema = modelAnswerSchema.omit({ intro: true });
+
+export type ModelPicks = z.infer<typeof modelPicksSchema>;
+
+/** `modelPicksSchema` as a JSON Schema for `response_format`, strict like the full answer. */
+export const MODEL_PICKS_JSON_SCHEMA: JsonSchema = {
+  type: "object",
+  properties: {
+    picks: PICKS_JSON_SCHEMA,
+    question: { type: ["string", "null"] },
+  },
+  required: ["picks", "question"],
   additionalProperties: false,
 };

@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+import type { PerfumerEvent } from "~/lib/perfumer";
 import type { ProductSummary } from "~/lib/products";
 import type { PerfumerProductRow } from "../db/queries/perfumer";
-import type { ChatFn, ChatRequest, ChatResult } from "./client";
+import type { ChatFn, ChatRequest, ChatResult, ChatStreamFn } from "./client";
 import type { PerfumerConfig } from "./config";
 import { AiError, PerfumerDisabledError } from "./errors";
-import { MAX_TOOL_ROUNDS, reply, replyWithTrace } from "./perfumer";
+import { MAX_TOOL_ROUNDS, reply, replyStream, replyWithTrace } from "./perfumer";
 
 const config: PerfumerConfig = {
   baseUrl: "http://localhost:11434/v1",
@@ -319,6 +320,184 @@ describe("perfumer.reply", () => {
     await expect(
       reply("uk", [{ role: "assistant", content: "Привіт" }], deps(chat)),
     ).rejects.toThrow();
+    expect(chat).not.toHaveBeenCalled();
+  });
+});
+
+/** A fake streamed intro: yields `pieces`, recording the request and signal it got. */
+function streamed(...pieces: string[]) {
+  const calls: { request: ChatRequest; signal: AbortSignal }[] = [];
+  const chatStream = vi.fn<ChatStreamFn>(async function* (request, signal) {
+    calls.push({ request: structuredClone(request), signal });
+    for (const piece of pieces) {
+      yield piece;
+    }
+  });
+  return { chatStream, calls };
+}
+
+async function events(iterable: AsyncIterable<PerfumerEvent>): Promise<PerfumerEvent[]> {
+  const all: PerfumerEvent[] = [];
+  for await (const event of iterable) {
+    all.push(event);
+  }
+  return all;
+}
+
+const picksAnswer = (picks: { id: string; reason: string }[], question: string | null = null) =>
+  final({ picks, question });
+
+describe("perfumer.replyStream (#164)", () => {
+  it("yields steps, then the intro, then the picks, the question and done", async () => {
+    const { chat, requests } = scripted(
+      toolCall("search_perfumes", { families: ["aquatic"], max_price_uah: 1000 }),
+      toolCall("similar_to", { title: "rose garden" }, "c2"),
+      { content: null, toolCalls: [] },
+      picksAnswer([{ id: "p1", reason: "Легкий бриз." }], "Для дня чи вечора?"),
+    );
+    const { chatStream, calls } = streamed("Ось свіжі ", "морські аромати. Вони", " легкі.");
+
+    const all = await events(replyStream("uk", ask, { ...deps(chat), chatStream }));
+
+    expect(all.map((event) => event.type)).toEqual([
+      "step",
+      "step",
+      "intro",
+      "intro",
+      "picks",
+      "question",
+      "done",
+    ]);
+    expect(all[0]).toEqual({
+      type: "step",
+      step: { tool: "search", families: ["водяні"], maxPriceUah: 1000, found: 2 },
+    });
+    expect(all[1]).toMatchObject({ type: "step", step: { tool: "similar", title: "Rose Garden" } });
+    expect(all.filter((e) => e.type === "intro").map((e) => e.type === "intro" && e.text)).toEqual([
+      "Ось свіжі морські аромати.",
+      " Вони легкі.",
+    ]);
+    const picks = all.find((e) => e.type === "picks");
+    expect(picks?.type === "picks" && picks.picks.map((p) => [p.product.title, p.reason])).toEqual([
+      ["Ocean One", "Легкий бриз."],
+    ]);
+    expect(all).toContainEqual({ type: "question", text: "Для дня чи вечора?" });
+
+    // The picks were asked for without the intro; the intro call knows them and has no tools.
+    expect(requests.at(-1)?.responseFormat?.name).toBe("perfumer_picks");
+    const introRequest = calls[0]?.request;
+    expect(introRequest?.tools).toBeUndefined();
+    expect(introRequest?.responseFormat).toBeUndefined();
+    expect(introRequest?.messages.at(-1)?.content).toContain("p1");
+  });
+
+  it("removes a sentence naming a perfume outside the picks, keeping the others", async () => {
+    const { chat } = scripted(
+      toolCall("search_perfumes", { notes: ["морські ноти"] }),
+      { content: null, toolCalls: [] },
+      picksAnswer([{ id: "p1", reason: "Бриз." }]),
+    );
+    const { chatStream } = streamed(
+      "Ось морські аромати. ",
+      "Схоже на Aquarius. ",
+      "Ocean One найсвіжіший.",
+    );
+
+    const all = await events(replyStream("uk", ask, { ...deps(chat), chatStream }));
+    const intro = all.flatMap((e) => (e.type === "intro" ? [e.text] : [])).join("");
+
+    expect(intro).toBe("Ось морські аромати. Ocean One найсвіжіший.");
+  });
+
+  it("falls back to the translated intro when every sentence is removed", async () => {
+    const { chat } = scripted(
+      toolCall("search_perfumes", { notes: ["морські ноти"] }),
+      { content: null, toolCalls: [] },
+      picksAnswer([{ id: "p1", reason: "Бриз." }]),
+    );
+    const { chatStream } = streamed("Спробуйте Aquarius за 500 грн.");
+
+    const all = await events(replyStream("uk", ask, { ...deps(chat), chatStream }));
+
+    expect(all.filter((e) => e.type === "intro")).toEqual([
+      { type: "intro", text: "Ось що є в нашому каталозі." },
+    ]);
+  });
+
+  it("has no steps and no picks when no tool ran", async () => {
+    const { chat } = scripted(
+      { content: "Я допомагаю лише з парфумами.", toolCalls: [] },
+      picksAnswer([]),
+    );
+    const { chatStream, calls } = streamed("Я допомагаю з вибором парфумів.");
+
+    const all = await events(replyStream("en", ask, { ...deps(chat), chatStream }));
+
+    expect(all).toEqual([
+      { type: "intro", text: "Я допомагаю з вибором парфумів." },
+      { type: "picks", picks: [] },
+      { type: "done" },
+    ]);
+    expect(calls[0]?.request.messages.at(-1)?.content).toContain("You chose no perfumes");
+  });
+
+  it("stops the model call when the caller stops reading", async () => {
+    const { chat } = scripted(
+      toolCall("search_perfumes", { notes: ["морські ноти"] }),
+      { content: null, toolCalls: [] },
+      picksAnswer([{ id: "p1", reason: "Бриз." }]),
+    );
+    const { chatStream, calls } = streamed("Перше речення. ", "Друге речення. ", "Третє.");
+
+    for await (const event of replyStream("uk", ask, { ...deps(chat), chatStream })) {
+      if (event.type === "intro") break;
+    }
+
+    expect(calls[0]?.signal.aborted).toBe(true);
+  });
+
+  it("stops the model call when the caller's signal aborts", async () => {
+    const controller = new AbortController();
+    const seen: AbortSignal[] = [];
+    const chat = vi.fn<ChatFn>(async (_request, signal) => {
+      seen.push(signal);
+      controller.abort();
+      throw new AiError("timeout", "cancelled");
+    });
+
+    await expect(
+      events(replyStream("uk", ask, { ...deps(chat), signal: controller.signal })),
+    ).rejects.toMatchObject({ kind: "timeout" });
+    expect(seen[0]?.aborted).toBe(true);
+  });
+
+  it("passes errors of the streamed intro through", async () => {
+    const { chat } = scripted(
+      toolCall("search_perfumes", { notes: ["морські ноти"] }),
+      { content: null, toolCalls: [] },
+      picksAnswer([{ id: "p1", reason: "Бриз." }]),
+    );
+    const chatStream = vi.fn<ChatStreamFn>(async function* () {
+      yield "Перше речення. ";
+      throw new AiError("unavailable", "broke off");
+    });
+
+    const seen: PerfumerEvent[] = [];
+    await expect(
+      (async () => {
+        for await (const event of replyStream("uk", ask, { ...deps(chat), chatStream })) {
+          seen.push(event);
+        }
+      })(),
+    ).rejects.toMatchObject({ kind: "unavailable" });
+    expect(seen.map((e) => e.type)).toEqual(["step", "intro"]);
+  });
+
+  it("is disabled without AI_BASE_URL and never calls a model", async () => {
+    const { chat } = scripted();
+    await expect(events(replyStream("uk", ask, { ...deps(chat), config: null }))).rejects.toThrow(
+      PerfumerDisabledError,
+    );
     expect(chat).not.toHaveBeenCalled();
   });
 });

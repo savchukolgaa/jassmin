@@ -173,7 +173,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
   deltas, stopping at `[DONE]`; errors map to `unavailable` / `timeout` / `bad_response` as today.
   Tests with a fake `fetch` returning a `ReadableStream`: deltas in order, chunks split mid-line,
   `[DONE]`, HTTP 404 → `unavailable`, abort → `timeout`.
-- [ ] **4. Engine: `replyStream`.**
+- [x] **4. Engine: `replyStream`.**
   - `perfumer.schema.ts`: `modelPicksSchema` (`picks`, `question`) and `MODEL_PICKS_JSON_SCHEMA`.
   - `prompts.ts`: `finalPicksInstructions(locale)` (JSON with picks and question only) and
     `introInstructions(locale, pickIds)` (1–3 plain sentences introducing the chosen aliases, or, with

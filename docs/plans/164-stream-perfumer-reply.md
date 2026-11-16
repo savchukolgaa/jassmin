@@ -249,7 +249,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
   non-event-stream response / a broken stream falls back to the action (fetcher submit called once);
   an `error: rateLimited` event shows the error without a fallback; the finished reply is saved to
   `sessionStorage` like an action reply. English copy under `<I18nProvider locale="en">`.
-- [ ] **12. Docs.** `docs/ai-perfumer.md`: a "Streaming" section (route, events, order, the two-step
+- [x] **12. Docs.** `docs/ai-perfumer.md`: a "Streaming" section (route, events, order, the two-step
   final answer, per-sentence guard, abort, ping, fallback) and the fetch exception; `docs/design.md`:
   step chips and the typing intro; `AGENTS.md`: one clause in the "Reads in loaders" rule naming the
   perfumer stream as the only `fetch` exception.

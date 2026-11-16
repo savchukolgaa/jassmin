@@ -2,7 +2,7 @@
 
 The AI perfumer is a server-side engine that turns a customer's words ("щось свіже з морськими
 нотами до 600 грн", "що схоже на La Vie Est Belle?") into recommendations of real perfumes from
-the Jassmin catalog (#162). The chat page that uses it is #163; streaming is #164, analytics #166,
+the Jassmin catalog (#162). The chat page that uses it is #163; streaming is #164 (below), analytics #166,
 and hosting a model in production, along with comparing models, is #167.
 
 ## Setup
@@ -93,10 +93,53 @@ Errors are `AiError` with `kind`: `unavailable` (server down, unknown model, HTT
 - **Errors** come back as keys the page translates: `unavailable` (503; also `bad_response` and
   anything unexpected, logged), `timeout` (504), `rateLimited` (429), `tooLong` (400). Only
   `unavailable` and `timeout` offer a retry.
-- **Cancel.** After 10 s the customer can cancel: `fetcher.reset()` aborts the request, and the
-  action passes `request.signal` to `reply()` (`deps.signal`), which stops the model call.
+- **Cancel.** After 10 s the customer can cancel: it aborts the stream (or, on the fallback,
+  `fetcher.reset()` aborts the request), and the server passes `request.signal` to the engine
+  (`deps.signal`), which stops the model call.
 - **Plain text only:** the intro, reasons, question and the customer's words are rendered as text
   nodes, never HTML or Markdown. Product cards come from the database, like the engine's picks.
+
+## Streaming
+
+An answer takes 20–80 s on a laptop CPU, so the chat streams it (#164): the customer sees each
+catalog search as soon as it ran ("Шукаю в каталозі: водяні, до 600 ₴ · знайдено 4 аромати"), then
+the intro sentence by sentence, then the cards.
+
+- **Route:** `POST /parfumer/stream` (`/en/perfumer/stream`, `app/routes/perfumer.stream.ts`), the
+  same `payload`, validation and rate limit as the chat's action (`openPerfumerStream` in
+  `perfumer-chat.ts`; one message counts once, whichever route answers it). A 404 while disabled;
+  blocked in `robots.txt`.
+- **Events** (`PerfumerEvent` in `app/lib/perfumer.ts`), as server-sent events (`event: <type>`,
+  the whole event as JSON `data:`), in this order: `step`* → `intro`* → `picks` → `question`? →
+  `done`, or one `error` at any point, after which the stream ends. A refusal before anything is
+  streamed (`tooLong`, `rateLimited`) is a stream with one `error` event and the action's status
+  (400, 429). A `: ping` comment every 15 s keeps proxies from closing the connection while the
+  model works (`app/.server/sse.ts`).
+- **Steps show only catalog-safe values:** the families after the synonym mapping, the gender, the
+  budget, a catalog title for `similar_to` and how many perfumes were found
+  (`ToolCallRecord.step`). Never the model's own note words ("лантан") or a title the shop doesn't
+  have.
+- **The engine** (`replyStream` in `perfumer.ts`): the same tool rounds and search nudge as
+  `reply()`, then a JSON call for the **picks and question only** (`finalPicksInstructions`), which
+  are validated exactly like `reply()`'s. Only then is the intro written, by a third, streamed call
+  (`stream: true`, `createChatStreamClient`) that is told which aliases became cards
+  (`introInstructions`). Each sentence passes the guard as soon as it's complete (`IntroGuard`:
+  closing punctuation followed by whitespace, or the end of the text), with the picks' names
+  allowed, so a sentence with an invented name is dropped while the ones around it are shown. The
+  intro is capped at 600 characters (the model call stops there); an intro that ends empty gets the
+  translated fallback. `reply()` itself is unchanged, so the fallback and the eval behave as before.
+- **Stopping:** leaving the `for await` over `replyStream`, the client closing the connection
+  (`request.signal`) or the response body being cancelled aborts the model call.
+- **The browser** (`streamPerfumerReply` in `app/features/perfumer/perfumer-stream.ts`) posts with
+  `fetch` and reads the body with its reader and a small parser (`sse.ts`); events are checked with a
+  plain guard (`isPerfumerEvent`), not zod. **This is the one exception to "no client fetching"**
+  (AGENTS.md): `useFetcher` can't stream. Don't copy it for anything else.
+- **Fallback:** when the stream can't be used (`fetch` fails, the answer isn't
+  `text/event-stream`, an event isn't valid) or ends before `done`/`error`, the chat posts the same
+  conversation to the action, keeping the steps already shown. This reruns the reply and counts
+  against the rate limit again; it's rare. An `error` event is shown as it is, without a fallback.
+- **Only the finished reply** joins the thread and `sessionStorage`; a reload mid-stream loses the
+  answer in progress, like a reload during the action.
 
 ## Eval
 

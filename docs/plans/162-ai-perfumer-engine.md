@@ -192,7 +192,7 @@ There is no UI.
   values count as unset in `parseEnv`. Add cases to `env.test.ts`, the variables to `.env.example`
   (commented, `AI_BASE_URL=http://localhost:11434/v1`) and rows to the `docs/setup.md` table. Check:
   `pnpm typecheck`, `pnpm test app/.server/env.test.ts`.
-- [ ] **2. Config and errors** — `config.ts`: `getPerfumerConfig(env = getEnv())` returns
+- [x] **2. Config and errors** — `config.ts`: `getPerfumerConfig(env = getEnv())` returns
   `{ baseUrl, model, apiKey, timeoutMs, keepAlive } | null`; `isPerfumerEnabled()` is `!== null`.
   `errors.ts`: `AiError(kind, message, { status?, cause? })`, `PerfumerDisabledError`. Test: unset
   `AI_BASE_URL` → disabled.

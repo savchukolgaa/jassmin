@@ -203,7 +203,7 @@ There is no UI.
   `function.arguments` is a JSON string). Map: fetch rejection/`ECONNREFUSED`/HTTP 5xx/404/429 →
   `unavailable`; `AbortError`/`TimeoutError` → `timeout`; non-JSON or schema mismatch, HTTP 400 →
   `bad_response`. Tests with a stubbed `fetch` (`vi.stubGlobal`) for each mapping, headers and body.
-- [ ] **4. Synonyms** — `normalize(s)` (lowercase, trim, NFKC, `’`→`'`, collapse spaces);
+- [x] **4. Synonyms** — `normalize(s)` (lowercase, trim, NFKC, `’`→`'`, collapse spaces);
   `resolveFamilies(input[]): FragranceFamily[]` (exact family, uk synonyms, en names, stems such as
   `квітков…`); `resolveNotes(input[]): { notes: string[]; families: FragranceFamily[] }` (note
   synonyms, note-that-is-a-family → family, e.g. `морська вода`/`морські` → `водяні`, `свіжі` →

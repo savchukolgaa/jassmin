@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/165
 Branch: `issue/165`
 Worktree: `.claude/worktrees/issue-165`
-Status: In progress
+Status: Implemented
 
 ## Goal
 
@@ -218,8 +218,21 @@ when the engine is off.
 - [x] **10. Docs** — `docs/design.md`: a "AI perfumer corner button" section (look per breakpoint,
   offsets and the CSS variables, z-order, hidden pages, mobile menu, motion) and the `animate-pop`
   use in the motion table; mention the catalog banner and product link.
-- [ ] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual check with
+- [x] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual check with
   `pnpm aspire run` and `AI_BASE_URL` set and unset.
+  - Done 2026-11-16: typecheck, lint, test (2418 passed, 1 skipped: the Windows-only symlink test
+    in `scripts/link-env.test.mjs`, see `docs/ci.md`; DB tests against a throwaway `postgres:18`)
+    and build pass. Manual check with the worktree's `pnpm dev` (not Aspire, which was running
+    from the main checkout) on a seeded throwaway database with a dummy `AI_BASE_URL`, driven in
+    headless Edge at 390×844 and 1440×900: the button matches the artboards, sits just above the
+    cookie banner (it publishes 306px / 206px) and drops after "Відхилити", rises 80px for 2.6s
+    after "+" on phones only, is absent on `/koshyk`, `/parfumer` and with the mobile menu open;
+    the catalog banner, empty-results button and product link carry the expected `q`. With
+    `AI_BASE_URL` unset, the absence of every entry point is covered by the DOM tests, not
+    checked by hand.
+  - Noticed: over the deep-pink footer, the desktop pill's edge blends into the footer (only the
+    white circle and label stand out). The approved artboard has the same footer, so it's left
+    as drawn.
 
 ## Testing & verification
 
@@ -236,17 +249,17 @@ when the engine is off.
 
 ## Acceptance criteria
 
-- [ ] A corner "AI парфумер" button on the shop's pages opens the chat, matches the approved C+
+- [x] A corner "AI парфумер" button on the shop's pages opens the chat, matches the approved C+
   design on mobile and desktop, and never covers the cookie banner or the cart toast — steps 4, 5,
   9
-- [ ] The corner button is hidden on the chat, cart, checkout and payment pages — steps 1, 4, 9
-- [ ] Catalog pages and the empty-results state have an entry point that opens the chat with the
+- [x] The corner button is hidden on the chat, cart, checkout and payment pages — steps 1, 4, 9
+- [x] Catalog pages and the empty-results state have an entry point that opens the chat with the
   current filters as a message — steps 1, 3, 6, 9
-- [ ] Product pages have a "find similar" link that opens the chat asking for similar perfumes —
+- [x] Product pages have a "find similar" link that opens the chat asking for similar perfumes —
   steps 3, 7, 9
-- [ ] The prefilled message is sent once and isn't repeated on reload — step 2
-- [ ] No entry points appear when the engine is disabled — steps 3, 4, 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
+- [x] The prefilled message is sent once and isn't repeated on reload — step 2
+- [x] No entry points appear when the engine is disabled — steps 3, 4, 9
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
 
 ## Out of scope
 

@@ -239,9 +239,10 @@ enabled.
   header state is passed today); sitemap `perfumerEnabled` source. Check the header at 1024 px.
   Tests: header with/without the link; sitemap with/without the perfumer URLs; existing path-table
   tests (`paths.test.ts`, `.server/paths.test.ts`) still pass.
-- [ ] **5. `ProductCard` `purchase` prop** — when `false`, the default card skips `AddToCartForm`
+- [x] **5. `ProductCard` `purchase` prop** — when `false`, the default card skips `AddToCartForm`
   and `SizePicker` and shows `product.fromPrice` for ranges (no skeleton needed, since no size can
-  be picked). Test in `ProductCard.dom.test.ts`.
+  be picked). Test in `ProductCard.dom.test.ts`. Also a `children` slot at the bottom of the default card, so the perfumer's
+  "Чому вам пасує" box sits inside the white card as in the approved design.
 - [ ] **6. Route module and thread hook** — `app/routes/perfumer.tsx`:
   `loader` 404s when disabled, else returns `{}` (meta via `metaTranslator(matches)`: title and
   description; `hreflang` comes from `indexable`); `action` 404s when disabled, parses `payload`

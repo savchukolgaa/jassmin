@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { useListedProduct } from "~/features/analytics/ProductList";
@@ -25,6 +25,13 @@ type ProductCardProps = {
    * impressions, clicks and cart adds (#129). Without it the card isn't tracked.
    */
   listIndex?: number;
+  /**
+   * Default card only: `false` hides the size picker and the add-to-cart button, and the price
+   * reads "from …" for several sizes. The AI perfumer's cards (#163) link to the product instead.
+   */
+  purchase?: boolean;
+  /** Default card only: content at the bottom of the card, e.g. the perfumer's reason (#163). */
+  children?: ReactNode;
 };
 
 export function ProductCard({
@@ -32,16 +39,36 @@ export function ProductCard({
   headingLevel = 2,
   variant = "default",
   listIndex,
+  purchase = true,
+  children,
 }: ProductCardProps) {
   return variant === "compact" ? (
     <CompactProductCard product={product} headingLevel={headingLevel} listIndex={listIndex} />
   ) : (
-    <CatalogProductCard product={product} headingLevel={headingLevel} listIndex={listIndex} />
+    <CatalogProductCard
+      product={product}
+      headingLevel={headingLevel}
+      listIndex={listIndex}
+      purchase={purchase}
+    >
+      {children}
+    </CatalogProductCard>
   );
 }
 
 type CardProps = Required<Pick<ProductCardProps, "product" | "headingLevel">> &
   Pick<ProductCardProps, "listIndex">;
+
+/** The lowest price, "from …" when the sizes cost different amounts: no size is picked. */
+function FromPrice({ product, className }: { product: ProductSummary; className?: string }) {
+  const { t, formatPrice } = useT();
+  const price = formatPrice(product.minPrice);
+  return (
+    <p className={cn("min-h-7 text-xl text-ink", className)}>
+      {product.hasPriceRange ? t("product.fromPrice", { price }) : price}
+    </p>
+  );
+}
 
 /** Click handlers for a card's links: a left or middle click follows them (#129). */
 function clickTracking(track: () => void) {
@@ -131,7 +158,13 @@ function SizePicker({
   );
 }
 
-function CatalogProductCard({ product, headingLevel, listIndex }: CardProps) {
+function CatalogProductCard({
+  product,
+  headingLevel,
+  listIndex,
+  purchase,
+  children,
+}: CardProps & { purchase: boolean; children?: ReactNode }) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
   const href = productHref(translator.locale, product);
@@ -171,23 +204,30 @@ function CatalogProductCard({ product, headingLevel, listIndex }: CardProps) {
             )}
           </p>
         )}
-        <CardPrice
-          product={product}
-          selectedId={selectedId}
-          hydrated={hydrated}
-          className="mt-auto pt-3 font-extrabold"
-        />
+        {purchase ? (
+          <CardPrice
+            product={product}
+            selectedId={selectedId}
+            hydrated={hydrated}
+            className="mt-auto pt-3 font-extrabold"
+          />
+        ) : (
+          <FromPrice product={product} className="mt-auto pt-3 font-serif font-bold" />
+        )}
       </div>
-      <AddToCartForm
-        productId={product.id}
-        variantId={single ? product.defaultVariant.id : undefined}
-        inStock={product.inStock}
-        size="sm"
-        className="flex flex-col gap-3 px-2 pt-3"
-        list={listed.list}
-      >
-        <SizePicker product={product} onChange={setSelectedId} />
-      </AddToCartForm>
+      {purchase && (
+        <AddToCartForm
+          productId={product.id}
+          variantId={single ? product.defaultVariant.id : undefined}
+          inStock={product.inStock}
+          size="sm"
+          className="flex flex-col gap-3 px-2 pt-3"
+          list={listed.list}
+        >
+          <SizePicker product={product} onChange={setSelectedId} />
+        </AddToCartForm>
+      )}
+      {children}
     </article>
   );
 }

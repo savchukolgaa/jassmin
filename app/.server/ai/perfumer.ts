@@ -1,0 +1,255 @@
+import { fragranceFamilyLabel } from "~/lib/catalog";
+import { createTranslator, type Locale } from "~/lib/i18n";
+import type { PerfumerMessage, PerfumerPick, PerfumerReply } from "~/lib/perfumer";
+import type { ProductSummary } from "~/lib/products";
+import type { PerfumerProductRow } from "../db/queries/perfumer";
+import {
+  cleanProse,
+  limitLength,
+  MAX_INTRO,
+  MAX_QUESTION,
+  MAX_REASON,
+  type ModelPick,
+  selectPicks,
+} from "./answer-guard";
+import {
+  AliasMap,
+  CATALOG_TOOL_DEFINITIONS,
+  runCatalogTool,
+  type ToolCallRecord,
+} from "./catalog-tools";
+import { type ChatFn, type ChatMessage, createChatClient } from "./client";
+import { getPerfumerConfig, type PerfumerConfig } from "./config";
+import { AiError, PerfumerDisabledError } from "./errors";
+import {
+  MODEL_ANSWER_JSON_SCHEMA,
+  type ModelAnswer,
+  modelAnswerSchema,
+  perfumerMessagesSchema,
+} from "./perfumer.schema";
+import { finalInstructions, systemPrompt } from "./prompts";
+
+// The AI perfumer engine (#162): the customer's words → at most 3 rounds of read-only catalog
+// tool calls → one structured answer, whose picks must be products the tools returned and whose
+// text loses every sentence naming a perfume outside them. Stateless: the caller passes the
+// conversation, and nothing is stored.
+
+/** Rounds in which the model may call tools before it must answer. */
+export const MAX_TOOL_ROUNDS = 3;
+
+/** Tool calls run per round; further ones are answered with an error. */
+const MAX_CALLS_PER_ROUND = 4;
+
+export interface PerfumerDeps {
+  /** `getPerfumerConfig()` by default; `null` means disabled. */
+  config?: PerfumerConfig | null;
+  chat?: ChatFn;
+  loadCatalog?: () => Promise<PerfumerProductRow[]>;
+  loadSummaries?: (publicIds: readonly string[]) => Promise<Map<string, ProductSummary>>;
+}
+
+/** What happened during one reply, for the eval script (#162) and logs. */
+export interface PerfumerTrace {
+  toolCalls: ToolCallRecord[];
+  /** Tool rounds the model used (0–3). */
+  rounds: number;
+  /** The ids the model picked, valid or not. */
+  modelPickIds: string[];
+  /** Picked ids the tools never returned, or products no longer for sale. */
+  droppedPickIds: string[];
+  /** Sentences the guard removed. */
+  removedSentences: string[];
+}
+
+export interface PerfumerResult {
+  reply: PerfumerReply;
+  trace: PerfumerTrace;
+}
+
+async function defaultCatalog(): Promise<PerfumerProductRow[]> {
+  const [{ db }, { listPerfumerProducts }] = await Promise.all([
+    import("../db"),
+    import("../db/queries/perfumer"),
+  ]);
+  return listPerfumerProducts(db);
+}
+
+async function defaultSummaries(publicIds: readonly string[]) {
+  const { getProductSummaries } = await import("../services/products");
+  return getProductSummaries(publicIds);
+}
+
+/** The model's JSON answer, tolerating a Markdown code fence around it. */
+function parseAnswer(content: string | null): ModelAnswer | undefined {
+  if (!content) {
+    return undefined;
+  }
+  const json = content
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  try {
+    const parsed = modelAnswerSchema.safeParse(JSON.parse(json));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Like `reply`, with a trace of the tool calls and of what the guard removed. */
+export async function replyWithTrace(
+  locale: Locale,
+  messages: readonly PerfumerMessage[],
+  deps: PerfumerDeps = {},
+): Promise<PerfumerResult> {
+  const conversation = perfumerMessagesSchema.parse(messages);
+  const config = deps.config === undefined ? getPerfumerConfig() : deps.config;
+  if (!config) {
+    throw new PerfumerDisabledError();
+  }
+  const chat = deps.chat ?? createChatClient(config);
+  const signal = AbortSignal.timeout(config.timeoutMs);
+  const catalog = await (deps.loadCatalog ?? defaultCatalog)();
+
+  const aliases = new AliasMap();
+  const trace: PerfumerTrace = {
+    toolCalls: [],
+    rounds: 0,
+    modelPickIds: [],
+    droppedPickIds: [],
+    removedSentences: [],
+  };
+  const history: ChatMessage[] = [
+    { role: "system", content: systemPrompt(locale) },
+    ...conversation,
+  ];
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const result = await chat({ messages: history, tools: CATALOG_TOOL_DEFINITIONS }, signal);
+    if (result.toolCalls.length === 0) {
+      break;
+    }
+    trace.rounds = round + 1;
+    history.push({ role: "assistant", content: result.content, toolCalls: result.toolCalls });
+    for (const [index, call] of result.toolCalls.entries()) {
+      if (index >= MAX_CALLS_PER_ROUND) {
+        history.push({
+          role: "tool",
+          toolCallId: call.id,
+          content: JSON.stringify({ error: "Too many tool calls at once." }),
+        });
+        continue;
+      }
+      const run = runCatalogTool(catalog, call.name, call.arguments, aliases);
+      trace.toolCalls.push(run.record);
+      history.push({ role: "tool", toolCallId: call.id, content: run.content });
+    }
+  }
+
+  // The final, structured answer: no tools, JSON only. One retry when it isn't valid.
+  history.push({ role: "system", content: finalInstructions(locale) });
+  let answer: ModelAnswer | undefined;
+  for (let attempt = 0; attempt < 2 && !answer; attempt++) {
+    const result = await chat(
+      {
+        messages: history,
+        responseFormat: { name: "perfumer_answer", schema: MODEL_ANSWER_JSON_SCHEMA },
+      },
+      signal,
+    );
+    answer = parseAnswer(result.content);
+  }
+  if (!answer) {
+    throw new AiError("bad_response", "The model's answer isn't the expected JSON");
+  }
+
+  const reply = await validate(locale, answer, { catalog, aliases, trace, deps });
+  return { reply, trace };
+}
+
+async function validate(
+  locale: Locale,
+  answer: ModelAnswer,
+  {
+    catalog,
+    aliases,
+    trace,
+    deps,
+  }: {
+    catalog: readonly PerfumerProductRow[];
+    aliases: AliasMap;
+    trace: PerfumerTrace;
+    deps: PerfumerDeps;
+  },
+): Promise<PerfumerReply> {
+  const translator = createTranslator(locale);
+  trace.modelPickIds = answer.picks.map((pick) => pick.id);
+
+  // A pick can only be a product a tool returned in this reply; without a tool call (an
+  // off-topic message, an injection) there are none.
+  const toolRan = trace.toolCalls.some((call) => call.ok);
+  const modelPicks: ModelPick[] = toolRan ? answer.picks : [];
+  const selected = selectPicks(modelPicks, aliases);
+  const summaries = selected.length
+    ? await (deps.loadSummaries ?? defaultSummaries)(selected.map((pick) => pick.publicId))
+    : new Map<string, ProductSummary>();
+
+  const kept = selected.flatMap((pick) => {
+    const product = summaries.get(pick.publicId);
+    return product?.inStock ? [{ product, reason: pick.reason }] : [];
+  });
+  const keptIds = new Set(kept.map((pick) => pick.product.id));
+  trace.droppedPickIds = answer.picks
+    .map((pick) => pick.id)
+    .filter((id) => {
+      const publicId = aliases.publicIdFor(id);
+      return !toolRan || !publicId || !keptIds.has(publicId);
+    });
+
+  const context = {
+    locale,
+    allowedNames: kept.flatMap((pick) => [pick.product.title, pick.product.brand]),
+    catalogNames: catalog.flatMap((product) => [product.title, product.brand]),
+  };
+  const clean = (text: string, max: number): string => {
+    const result = cleanProse(limitLength(text, max), context);
+    trace.removedSentences.push(...result.removed);
+    return result.text;
+  };
+
+  const families = new Map(catalog.map((product) => [product.publicId, product.fragranceFamilies]));
+  const picks: PerfumerPick[] = kept.map(({ product, reason }) => {
+    const cleaned = clean(reason, MAX_REASON);
+    if (cleaned) {
+      return { product, reason: cleaned };
+    }
+    const labels = (families.get(product.id) ?? []).map((f) => fragranceFamilyLabel(f, translator));
+    return {
+      product,
+      reason: labels.length
+        ? translator.t("perfumer.fallbackReason", { families: labels.join(", ") })
+        : translator.t("perfumer.fallbackReasonPlain"),
+    };
+  });
+
+  const intro =
+    clean(answer.intro, MAX_INTRO) ||
+    translator.t(picks.length ? "perfumer.fallbackIntro" : "perfumer.fallbackIntroEmpty");
+  const question = answer.question ? clean(answer.question, MAX_QUESTION) : "";
+
+  return { intro, picks, ...(question ? { question } : {}) };
+}
+
+/**
+ * The perfumer's reply to a conversation (1–10 messages, the last from the customer): an intro,
+ * 0–4 picks of active, in-stock catalog products with reasons, and an optional question. Throws
+ * `PerfumerDisabledError` when `AI_BASE_URL` is unset (no model is called) and `AiError` when the
+ * model is unavailable, too slow or answers nonsense.
+ */
+export async function reply(
+  locale: Locale,
+  messages: readonly PerfumerMessage[],
+  deps: PerfumerDeps = {},
+): Promise<PerfumerReply> {
+  return (await replyWithTrace(locale, messages, deps)).reply;
+}

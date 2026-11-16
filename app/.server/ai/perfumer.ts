@@ -40,6 +40,16 @@ export const MAX_TOOL_ROUNDS = 3;
 /** Tool calls run per round; further ones are answered with an error. */
 const MAX_CALLS_PER_ROUND = 4;
 
+/**
+ * Tokens a tool round may generate: enough for tool calls. When the model answers in prose
+ * instead, that text is discarded for the structured answer, so it's cut short (on a CPU every
+ * token costs time).
+ */
+const TOOL_ROUND_MAX_TOKENS = 256;
+
+/** Tokens the final JSON answer may take: an intro, four reasons and a question. */
+const FINAL_MAX_TOKENS = 800;
+
 export interface PerfumerDeps {
   /** `getPerfumerConfig()` by default; `null` means disabled. */
   config?: PerfumerConfig | null;
@@ -125,7 +135,10 @@ export async function replyWithTrace(
   ];
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const result = await chat({ messages: history, tools: CATALOG_TOOL_DEFINITIONS }, signal);
+    const result = await chat(
+      { messages: history, tools: CATALOG_TOOL_DEFINITIONS, maxTokens: TOOL_ROUND_MAX_TOKENS },
+      signal,
+    );
     if (result.toolCalls.length === 0) {
       break;
     }
@@ -154,6 +167,7 @@ export async function replyWithTrace(
       {
         messages: history,
         responseFormat: { name: "perfumer_answer", schema: MODEL_ANSWER_JSON_SCHEMA },
+        maxTokens: FINAL_MAX_TOKENS,
       },
       signal,
     );

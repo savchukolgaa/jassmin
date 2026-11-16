@@ -249,7 +249,7 @@ There is no UI.
 - [x] **9. Aspire** — in `apphost.mts`, read `process.env.AI_*` (the AppHost's environment) and
   `withEnvironment` each one on `web` only when set; `AI_API_KEY` through a secret parameter if it's
   set. Document in `aspire-apphost/AGENTS.md`. Check: `pnpm aspire:build`.
-- [ ] **10. Eval script** — `perfumer-eval.cases.ts`: ~15 cases, uk and en: fresh summer for him,
+- [x] **10. Eval script** — `perfumer-eval.cases.ts`: ~15 cases, uk and en: fresh summer for him,
   "морські ноти", sweet vanilla under 1500 грн, "щось схоже на La Vie Est Belle", "similar to
   Sauvage"-style English case, spicy oriental, gift for mum, budget with no match, notes not in the
   catalog (no match), a vague request (expects a question), off-topic weather, off-topic recipe,

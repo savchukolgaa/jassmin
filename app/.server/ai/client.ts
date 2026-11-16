@@ -31,6 +31,8 @@ export interface ChatRequest {
   tools?: ToolDefinition[];
   /** Asks for JSON matching this schema (`response_format: json_schema`). */
   responseFormat?: { name: string; schema: JsonSchema };
+  /** The most tokens the model may generate (`max_tokens`). */
+  maxTokens?: number;
 }
 
 export interface ChatResult {
@@ -71,6 +73,7 @@ export function toRequestBody(config: PerfumerConfig, request: ChatRequest) {
     messages: request.messages.map(toWireMessage),
     temperature: 0.2,
     stream: false,
+    ...(request.maxTokens ? { max_tokens: request.maxTokens } : {}),
     ...(request.tools?.length
       ? {
           tools: request.tools.map((tool) => ({

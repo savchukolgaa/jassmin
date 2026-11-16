@@ -133,7 +133,7 @@ describe("MessageThread", () => {
     expect(older).not.toContain("Спробувати ще раз");
     const waiting = thread({
       items: [errorItem("timeout")],
-      pending: { id: "p", text: "Щось морське" },
+      pending: { id: "p", text: "Щось морське", steps: [], intro: "" },
     });
     expect(waiting).not.toContain("Спробувати ще раз");
   });
@@ -145,7 +145,7 @@ describe("MessageThread", () => {
   });
 
   it("shows the thinking state while a reply is awaited, without a cancel button at first", () => {
-    const html = thread({ pending: { id: "p", text: "Щось морське" } });
+    const html = thread({ pending: { id: "p", text: "Щось морське", steps: [], intro: "" } });
     expect(html).toContain('role="status"');
     expect(html).toContain("Парфумер підбирає аромати…");
     expect(html).toContain("Шукаю в каталозі · зазвичай до хвилини");

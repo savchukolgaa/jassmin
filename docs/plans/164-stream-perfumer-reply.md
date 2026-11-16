@@ -106,6 +106,12 @@ product cards and the question. The normal action (#163) stays as the fallback w
     `rateLimited`; the route answers 429 with one `error` event. Streaming the frames, the ping and
     the cancel handling are a small helper, `eventStreamResponse` in `app/.server/sse.ts` (+ test).
 
+14b. **Deviation (step 8): a module, not a hook.** The stream is read by `streamPerfumerReply` in
+    `app/features/perfumer/perfumer-stream.ts` (+ test), a plain function: the state stays in
+    `usePerfumerThread`, which owns the pending turn, the abort controller and the fallback. It
+    uses the body's reader and `TextDecoder` rather than `TextDecoderStream`, which more browsers
+    (and jsdom) have.
+
 ## Resolved questions
 
 - **Is an extra model call for the intro acceptable?** — Yes: the intro is streamed in a third call
@@ -152,7 +158,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
 | modify | `app/.server/ai/perfumer.test.ts` | stream order, abort, per-sentence removal |
 | modify | `app/.server/services/perfumer-chat.ts` (+ test) | `admitPerfumerMessage`, `openPerfumerStream` |
 | create | `app/features/perfumer/sse.ts` (+ `sse.test.ts`) | SSE frame parser |
-| create | `app/features/perfumer/usePerfumerStream.ts` | fetch + reader → events, abort |
+| create | `app/features/perfumer/perfumer-stream.ts` (+ test) | fetch + reader → events, abort |
 | modify | `app/features/perfumer/usePerfumerThread.ts` | stream first, fallback to the fetcher |
 | create | `app/features/perfumer/StepList.tsx` | step chips with translated sentences |
 | create | `app/features/perfumer/TypingText.tsx` | reveals text by character (motion-safe) |
@@ -215,16 +221,16 @@ product cards and the question. The normal action (#163) stays as the fallback w
   Tests (`perfumer.stream.test.ts`, mocking the service like `perfumer.test.ts`): 404 when disabled,
   content type and frame format, 429 stream for rate limit, aborting `request.signal` aborts the
   signal the engine got, cancelling the response body does the same.
-- [ ] **7. Client SSE parsing.** `app/features/perfumer/sse.ts`: `createSseParser()` with
+- [x] **7. Client SSE parsing.** `app/features/perfumer/sse.ts`: `createSseParser()` with
   `push(chunk): { event, data }[]` handling `\n`/`\r\n`, frames split across chunks, comments
   (`:`), multi-line `data`. `sse.test.ts`.
-- [ ] **8. `usePerfumerStream`.** `streamPerfumerReply({ url, payload, signal, onEvent })`:
+- [x] **8. `usePerfumerStream`.** `streamPerfumerReply({ url, payload, signal, onEvent })`:
   `fetch(url, { method: "POST", body: FormData, signal, headers: { Accept: "text/event-stream" } })`,
   checks content type and `body`, pipes through `TextDecoderStream` and the parser, JSON-parses and
   guards each event with `isPerfumerEvent`, resolves `"done" | "error"` or throws `StreamFailed`
   (transport failure, before or after events) — an `AbortError` is rethrown as is. The URL comes from
   `pathFor(locale, "perfumerStream")`.
-- [ ] **9. Wire it into the thread.** In `usePerfumerThread`: `send`/`retry` start the stream with an
+- [x] **9. Wire it into the thread.** In `usePerfumerThread`: `send`/`retry` start the stream with an
   `AbortController` kept in a ref; events update the pending turn (`steps`, `intro`, `picks`,
   `question`); `done` assembles `{ intro, picks, question }` into a `perfumer` item; `error` adds an
   `error` item; `StreamFailed` (not after a cancel) falls back to the existing `submitForm` path with

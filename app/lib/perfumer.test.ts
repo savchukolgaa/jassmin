@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { pageOf } from "./paths";
 import {
   isRetryable,
   PERFUMER_MAX_INPUT_LENGTH,
+  PERFUMER_PREFILL_PARAM,
   type PerfumerReply,
+  perfumerPrefillSearch,
   replyToHistoryText,
+  showPerfumerCorner,
   type ThreadItem,
   toHistory,
 } from "./perfumer";
@@ -70,5 +74,40 @@ describe("isRetryable", () => {
     expect(isRetryable("timeout")).toBe(true);
     expect(isRetryable("rateLimited")).toBe(false);
     expect(isRetryable("tooLong")).toBe(false);
+  });
+});
+
+describe("showPerfumerCorner (#165)", () => {
+  it.each(["/parfumer", "/en/perfumer", "/koshyk", "/en/cart", "/oformlennia", "/en/checkout"])(
+    "hides the corner button on %s",
+    (path) => {
+      expect(pageOf(path)).not.toBeNull();
+      expect(showPerfumerCorner(pageOf(path))).toBe(false);
+    },
+  );
+
+  it.each(["/", "/en", "/katalog/zhinochi", "/en/catalog/men", "/aktsii"])(
+    "shows it on %s",
+    (path) => {
+      expect(showPerfumerCorner(pageOf(path))).toBe(true);
+    },
+  );
+
+  it("hides it on the order, payment and gift card result pages", () => {
+    for (const page of ["checkoutSuccess", "checkoutPay", "giftCardSuccess"] as const) {
+      expect(showPerfumerCorner(page)).toBe(false);
+    }
+  });
+
+  it("shows it for a URL outside the path table", () => {
+    expect(showPerfumerCorner(null)).toBe(true);
+  });
+});
+
+describe("perfumerPrefillSearch (#165)", () => {
+  it("puts the trimmed message in `q`, encoded", () => {
+    const search = perfumerPrefillSearch("  Схоже на Light Blue від Dolce & Gabbana ");
+    expect(search.get(PERFUMER_PREFILL_PARAM)).toBe("Схоже на Light Blue від Dolce & Gabbana");
+    expect(search.toString()).toContain("%26");
   });
 });

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/165
 Branch: `issue/165`
 Worktree: `.claude/worktrees/issue-165`
-Status: Planned
+Status: In progress
 
 ## Goal
 
@@ -70,8 +70,9 @@ when the engine is off.
 - **Tab order:** rendered in `_shop.tsx` after `<Footer>` and before `<CookieBanner>`, so it's the
   last link of the page (the banner, when open, stays after it as before).
 - **Prefill contract** (`?q=`):
-  - `app/lib/perfumer.ts`: `PERFUMER_PREFILL_PARAM = "q"` and
-    `perfumerHref(path, message)` → `path("perfumer", {}, { search: { q } })`.
+  - `app/lib/perfumer.ts`: `PERFUMER_PREFILL_PARAM = "q"` and `perfumerPrefillSearch(message)`
+    (search params), passed as `path("perfumer", {}, { search })`. (Deviation from
+    `perfumerHref(path, message)`: plain search params need no path-builder type in `app/lib`.)
   - `app/lib/perfumer.schema.ts`: `parsePerfumerPrefill(searchParams)` with zod:
     `z.string().trim().min(1).max(PERFUMER_MAX_INPUT_LENGTH)`, `.catch(null)`. A too long or empty
     `q` is dropped silently (a hand-edited URL), never an error page.
@@ -117,14 +118,12 @@ when the engine is off.
 - **Q1: Is the corner button design approved?** — Yes, as drawn: the owner approved the
   `PerfumerCornerPlus.dc.html` and `PerfumerCornerPlusPhone.dc.html` artboards on the C+ canvas
   (2026-11-16, canvas version `1794858052-f4a7`, artboards unchanged since planning).
-
 - **Q2: How should the button avoid the "Added to cart" status?** — Keep the app's inline pill; on
   phones the button rises by 80px for 2.6s after a successful add (option (a)) (owner,
   2026-11-16).
 - **Q3: Draw the catalog banner and product link on the canvas first?** — No: build them from the
   existing C+ tokens and show screenshots in the PR (owner, 2026-11-16).
 - **Q4: Catalog banner on every page or only page 1?** — Every catalog page (owner, 2026-11-16).
-
 - **Where does `perfumerEnabled` come from?** — The `_shop` loader already returns it
   (`app/routes/_shop.tsx`, #163); entry points read it with `useRouteLoaderData("routes/_shop")`,
   like `PerfumerPage` reads `consent`.
@@ -176,7 +175,7 @@ when the engine is off.
 
 ## Steps
 
-- [ ] **1. Shared helpers and copy** — In `app/lib/perfumer.ts` add `PERFUMER_PREFILL_PARAM`,
+- [x] **1. Shared helpers and copy** — In `app/lib/perfumer.ts` add `PERFUMER_PREFILL_PARAM`,
   `PERFUMER_CORNER_HIDDEN_PAGES` (`perfumer`, `cart`, `checkout`, `checkoutSuccess`, `checkoutPay`,
   `giftCardSuccess`) and `showPerfumerCorner(page: Page | null)`. Add `catalogPerfumerMessage` to
   `app/lib/catalog.ts`. Add `perfumer.entry.{corner, bannerTitle, bannerAction, emptyAction,

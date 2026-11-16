@@ -1,5 +1,6 @@
 // The AI perfumer's conversation and reply (#162), shared by the engine and the chat page (#163).
 // Isomorphic: no server imports and no zod (`app/.server/ai/perfumer.schema.ts` validates input).
+import type { Page } from "./paths";
 import type { ProductSummary } from "./products";
 
 /** At most this many messages are sent per reply; the conversation isn't stored. */
@@ -86,4 +87,32 @@ export function toHistory(items: readonly ThreadItem[]): PerfumerMessage[] {
     }
   }
   return messages.slice(-PERFUMER_MAX_MESSAGES);
+}
+
+// Entry points to the chat (#165): the corner button, the catalog banner and the product link.
+
+/** The chat page's query parameter with a message to send once on arrival (`/parfumer?q=…`). */
+export const PERFUMER_PREFILL_PARAM = "q";
+
+/**
+ * Pages without the floating corner button: the chat itself, and the cart, checkout and payment
+ * pages, where it would distract from paying.
+ */
+export const PERFUMER_CORNER_HIDDEN_PAGES: ReadonlySet<Page> = new Set<Page>([
+  "perfumer",
+  "cart",
+  "checkout",
+  "checkoutSuccess",
+  "checkoutPay",
+  "giftCardSuccess",
+]);
+
+/** Whether the corner button shows on `page` (`null`: a URL outside the path table). */
+export function showPerfumerCorner(page: Page | null): boolean {
+  return page === null || !PERFUMER_CORNER_HIDDEN_PAGES.has(page);
+}
+
+/** The chat page's search params that send `message` once the page opens. */
+export function perfumerPrefillSearch(message: string): URLSearchParams {
+  return new URLSearchParams({ [PERFUMER_PREFILL_PARAM]: message.trim() });
 }

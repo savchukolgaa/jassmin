@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/163
 Branch: `issue/163`
 Worktree: `.claude/worktrees/issue-163`
-Status: Planned, design approved. **Implementation starts after #162 (the engine) is merged.**
+Status: In progress (#162 merged as #170 on 2026-11-16).
 
 ## Goal
 
@@ -16,19 +16,18 @@ enabled.
 
 ## Dependencies & prerequisites
 
-- **#162 (engine), open, planned in parallel.** Not on `origin/main` yet. This plan is written
-  against the contract in #162's issue body and must be re-checked against the merged code before
-  step 3:
-  - `isPerfumerEnabled(): boolean` — false unless `AI_BASE_URL` is set. Assumed exported from
-    `app/.server/ai/perfumer.ts` **(unconfirmed: exact module)**.
-  - `perfumer.reply(locale, messages)` →
-    `{ intro: string, picks: { product: ProductSummary, reason: string }[], question?: string }`,
-    picks 0–4, products loaded from the database (`ProductSummary` from `app/lib/products.ts`).
-  - `messages`: the conversation, max 10. Assumed OpenAI-style
-    `{ role: "user" | "assistant", content: string }[]` **(unconfirmed: exact type)**.
-  - Typed errors from `app/.server/ai/client.ts`: `unavailable`, `timeout`, `bad_response`.
-  - Whether `reply` accepts an `AbortSignal` **(unconfirmed)**: if it does, the action passes
-    `request.signal` so a cancelled request stops the model call.
+- **#162 (engine), merged (PR #170).** Confirmed contract (step 1):
+  - `isPerfumerEnabled(): boolean` in `app/.server/ai/config.ts`, false unless `AI_BASE_URL` is set.
+  - `reply(locale, messages, deps?)` in `app/.server/ai/perfumer.ts` →
+    `PerfumerReply = { intro, picks: { product: ProductSummary, reason }[], question? }`.
+  - `PerfumerMessage = { role: "user" | "assistant", content }`, `PerfumerReply`, `PerfumerPick`,
+    `PERFUMER_MAX_MESSAGES = 10` and `PERFUMER_MAX_MESSAGE_LENGTH = 1000` already live in
+    `app/lib/perfumer.ts` (isomorphic); this issue extends that module instead of creating it.
+  - Errors: `AiError` with `kind: "unavailable" | "timeout" | "bad_response"` and
+    `PerfumerDisabledError` (`app/.server/ai/errors.ts`).
+  - `reply` had no external `AbortSignal`: step 1 adds an optional `deps.signal`, combined with
+    the `AI_TIMEOUT_MS` timeout through `AbortSignal.any`; a cancelled reply throws a `timeout`
+    `AiError` (the client ignores it anyway).
 - **#167 (model choice), open.** The UI hard-codes no model name or answer time: hints say
   "this may take a minute", not a figure tied to `granite4.1:3b`.
 - Env vars come from #162 (`AI_BASE_URL`, `AI_MODEL`, …). This issue adds none.
@@ -50,13 +49,13 @@ enabled.
   `{ messages: { role, content }[] }`, submitted with `useFetcher().submit` (a form field keeps the
   action testable with `FormData` like the other actions). Validated by `perfumerRequestSchema` in
   `app/lib/perfumer.schema.ts`: 1–10 messages, the last one `user`, each `content` trimmed,
-  1–500 characters. A message over 500 characters → `perfumer.errors.tooLong`; any other shape
+  1–500 characters (`PERFUMER_MAX_INPUT_LENGTH`; the engine itself allows 1000). A message over 500 characters → `perfumer.errors.tooLong`; any other shape
   error → `perfumer.errors.unavailable` (only a tampered request can hit it).
 - **Assistant turns in history.** The client keeps each perfumer reply structured (for the cards)
   and sends it back as text built by `replyToHistoryText(reply)` in `app/lib/perfumer.ts`: the intro,
   then "Picks: <title> (<brand>), …", then the question, cut to 500 characters. Product titles come
-  from the server's own reply, so this reveals nothing new to the model. **(unconfirmed: depends on
-  how #162 wants assistant turns.)**
+  from the server's own reply, so this reveals nothing new to the model. #162 takes assistant turns
+  as plain `content` strings, and its guard lets the model name back a pick it was told about.
 - **History trimming.** The client sends only the last 10 messages (`MAX_HISTORY = 10`); the server
   rejects more. The thread itself (what's shown and stored) is not trimmed.
 - **Rate limit.** Two limiters in `app/.server/rate-limit.ts`, following `loginLimiters`:
@@ -182,7 +181,8 @@ enabled.
 |--------|------|---------|
 | modify | `app/lib/paths.ts` | `PAGES.perfumer` |
 | modify | `app/routes.ts` | register `routes/perfumer.tsx` in `_shop` |
-| create | `app/lib/perfumer.ts` | DTO types (`PerfumerReply`, `PerfumerPick`, `PerfumerErrorKey`, `PerfumerActionResult`, `ChatMessage`), `MAX_MESSAGE_LENGTH = 500`, `MAX_HISTORY = 10`, `replyToHistoryText`, `toHistory` |
+| modify | `app/lib/perfumer.ts` (from #162) | add `PerfumerErrorKey`, `PerfumerActionResult`, `PERFUMER_MAX_INPUT_LENGTH = 500`, `replyToHistoryText`, `toHistory` (uses #162's `PerfumerMessage` and `PERFUMER_MAX_MESSAGES`) |
+| modify | `app/.server/ai/perfumer.ts` (+ test) | optional `deps.signal` to cancel a reply |
 | create | `app/lib/perfumer.schema.ts` | zod request schema + `parsePerfumerRequest` |
 | create | `app/lib/perfumer.schema.test.ts` | schema tests |
 | create | `app/lib/perfumer.test.ts` | history helpers |
@@ -212,7 +212,7 @@ enabled.
 
 ## Steps
 
-- [ ] **1. Rebase on #162 and confirm the contract** — `git fetch origin && git rebase origin/main`
+- [x] **1. Rebase on #162 and confirm the contract** — `git fetch origin && git rebase origin/main`
   once #162 is merged. Check `isPerfumerEnabled`'s module, the `reply` signature, the message type,
   the error class/keys and `AbortSignal` support; update the **(unconfirmed)** items in this plan
   and adjust the types in step 2 to import from the engine where they're isomorphic.

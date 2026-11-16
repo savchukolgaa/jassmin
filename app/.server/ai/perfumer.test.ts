@@ -301,6 +301,18 @@ describe("perfumer.reply", () => {
     await expect(reply("uk", ask, deps(chat))).rejects.toMatchObject({ kind: "unavailable" });
   });
 
+  it("passes the caller's cancel signal to the model call (#163)", async () => {
+    const controller = new AbortController();
+    const chat = vi.fn<ChatFn>(async (_request, signal) => {
+      controller.abort();
+      expect(signal.aborted).toBe(true);
+      throw new AiError("timeout", "cancelled");
+    });
+    await expect(
+      reply("uk", ask, { ...deps(chat), signal: controller.signal }),
+    ).rejects.toMatchObject({ kind: "timeout" });
+  });
+
   it("rejects an empty conversation or one that doesn't end with the customer", async () => {
     const { chat } = scripted();
     await expect(reply("uk", [], deps(chat))).rejects.toThrow();

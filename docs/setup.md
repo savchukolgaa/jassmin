@@ -21,6 +21,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Products and orders in Strapi](#products-and-orders-in-strapi)
 - [SEO](#seo)
 - [Product feeds](#product-feeds)
+- [AI perfumer](#ai-perfumer)
 - [Admin role](#admin-role)
 - [Synthetic analytics data](#synthetic-analytics-data)
 - [Conventions](#conventions)
@@ -56,6 +57,11 @@ pnpm dev                    # http://localhost:5173
 | `SMTP_URL` | prod | SMTP server for every email (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container; in production it's the transactional provider (see [docs/email.md](email.md)). Required when `NODE_ENV=production`, for the app and `pnpm db:send-order-emails`. Without it, development logs contact messages instead of sending them, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `EMAIL_WEBHOOK_SECRET` | no* | Bearer secret (32+ characters) the email provider sends to `/hooks/email` with hard bounces and spam complaints (#134, see [docs/email.md](email.md)). *Without it the webhook answers 503, nothing is recorded, and production logs a warning at startup. |
 | `EMAIL_UNSUBSCRIBE_SECRET` | no* | Secret (32+ characters) that signs the one-click unsubscribe links in marketing emails (#139, see [docs/email.md](email.md)). *Without it `pnpm db:send-cart-reminders` sends no cart reminders, and production logs a warning at startup. Changing it breaks the links in emails already sent. |
+| `AI_BASE_URL` | no* | OpenAI-compatible chat-completions base URL for the AI perfumer (#162), e.g. `http://localhost:11434/v1` for local Ollama (see [docs/ai-perfumer.md](ai-perfumer.md)). *Without it the perfumer is off and nothing calls a model. |
+| `AI_MODEL` | no | Model name (default `granite4.1:3b`). |
+| `AI_API_KEY` | no | Bearer token for a hosted provider; Ollama needs none. |
+| `AI_TIMEOUT_MS` | no | The most one perfumer reply may take, tool calls included (default `90000`). |
+| `AI_KEEP_ALIVE` | no | Sent to Ollama as `keep_alive` (e.g. `30m`) so the model stays loaded between replies. |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
 | `ORDER_FROM` | no | Sender of order confirmation emails (default: `CONTACT_FROM`). Replies go to `CONTACT_INBOX`. |
@@ -98,6 +104,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm analytics:export-catalog` | Write the catalog and price table to `analytics/generator/data/catalog.json` for the synthetic data generator (#131); a test fails until you run it after changing either |
+| `pnpm ai:perfumer-eval [models…]` | Run the AI perfumer's eval cases against a model (default `AI_MODEL` on local Ollama) and print a results table (#162, see [docs/ai-perfumer.md](ai-perfumer.md)); `--db` reads the catalog from the database, `--only <case>` runs one case. Not in CI |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
 The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`, `db-send-order-emails`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
@@ -389,6 +396,10 @@ Do this once after the first production deploy; the search engines re-read the s
 ## Product feeds
 
 `/feeds/products.xml` (Ukrainian) and `/en/feeds/products.xml` (English) list every perfume size on sale, with its price, stock and photo, in Google's RSS format, for Google Merchant Center (free listings in Google Shopping) and Meta Commerce Manager (Instagram Shopping product tags) (#140). They are cached for an hour and marked `noindex`. [docs/product-feeds.md](product-feeds.md) covers the fields and the owner's account setup step by step.
+
+## AI perfumer
+
+A server-side engine turns a customer's words into recommendations of real perfumes from the catalog (#162; the chat page is #163). It's off unless `AI_BASE_URL` points at an OpenAI-compatible chat-completions server. Locally that's Ollama: `ollama pull granite4.1:3b`, then `AI_BASE_URL=http://localhost:11434/v1` in `.env`. [docs/ai-perfumer.md](ai-perfumer.md) covers the setup, how the engine keeps the model from inventing products, and the eval results.
 
 ## Admin role
 

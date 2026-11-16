@@ -283,6 +283,17 @@ const web = builder
 // doesn't wait for `web` (that would be a cycle), so an edit made while the app is down fails
 // with a clear message in the Strapi admin.
 await cms.withEnvironment("JASSMIN_APP_URL", web.getEndpoint("http"));
+
+// The AI perfumer (#162) stays off unless `AI_BASE_URL` is set, so the AppHost forwards its
+// settings only when they're set in its own environment; there's no Ollama container (a CPU model
+// runs faster natively, see docs/ai-perfumer.md). `web` also reads them, and `AI_API_KEY`, from
+// the root `.env`, so a key never shows up in the dashboard.
+for (const name of ["AI_BASE_URL", "AI_MODEL", "AI_TIMEOUT_MS", "AI_KEEP_ALIVE"]) {
+  const value = process.env[name];
+  if (value) {
+    await web.withEnvironment(name, value);
+  }
+}
 await web;
 
 await builder.build().run();

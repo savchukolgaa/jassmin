@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getDatabaseUrl, getSiteUrl, parseCmsSyncEnv, parseEnv, parseMailEnv } from "./env";
+import {
+  getDatabaseUrl,
+  getSiteUrl,
+  parseAiEnv,
+  parseCmsSyncEnv,
+  parseEnv,
+  parseMailEnv,
+} from "./env";
 
 const valid = {
   DATABASE_URL: "postgres://jassmin:jassmin@localhost:5432/jassmin",
@@ -35,6 +42,8 @@ describe("parseEnv", () => {
       TRUSTED_PROXY_HOPS: 0,
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
+      AI_MODEL: "granite4.1:3b",
+      AI_TIMEOUT_MS: 90_000,
     });
   });
 
@@ -199,6 +208,66 @@ describe("parseEnv: TRUSTED_PROXY_HOPS", () => {
     for (const value of ["-1", "1.5", "11", "many"]) {
       expect(() => parseEnv({ ...valid, TRUSTED_PROXY_HOPS: value })).toThrow(/TRUSTED_PROXY_HOPS/);
     }
+  });
+});
+
+describe("parseEnv: AI perfumer", () => {
+  it("leaves the perfumer off by default with granite4.1:3b and 90 s, empty values unset", () => {
+    for (const env of [
+      parseEnv(valid),
+      parseEnv({
+        ...valid,
+        AI_BASE_URL: "",
+        AI_MODEL: "",
+        AI_API_KEY: "",
+        AI_TIMEOUT_MS: "",
+        AI_KEEP_ALIVE: "",
+      }),
+    ]) {
+      expect(env.AI_BASE_URL).toBeUndefined();
+      expect(env.AI_API_KEY).toBeUndefined();
+      expect(env.AI_KEEP_ALIVE).toBeUndefined();
+      expect(env.AI_MODEL).toBe("granite4.1:3b");
+      expect(env.AI_TIMEOUT_MS).toBe(90_000);
+    }
+  });
+
+  it("accepts a base URL without its trailing slash, a model, key, timeout and keep-alive", () => {
+    const env = parseEnv({
+      ...valid,
+      AI_BASE_URL: "http://localhost:11434/v1/",
+      AI_MODEL: "granite4.1:8b",
+      AI_API_KEY: "sk-test",
+      AI_TIMEOUT_MS: "30000",
+      AI_KEEP_ALIVE: "30m",
+    });
+
+    expect(env).toMatchObject({
+      AI_BASE_URL: "http://localhost:11434/v1",
+      AI_MODEL: "granite4.1:8b",
+      AI_API_KEY: "sk-test",
+      AI_TIMEOUT_MS: 30_000,
+      AI_KEEP_ALIVE: "30m",
+    });
+    expect(parseEnv({ ...valid, AI_KEEP_ALIVE: "-1" }).AI_KEEP_ALIVE).toBe("-1");
+  });
+
+  it("rejects a non-HTTP base URL, an out-of-range timeout and a bad keep-alive", () => {
+    expect(() => parseEnv({ ...valid, AI_BASE_URL: "ftp://models.example.com" })).toThrow(
+      /AI_BASE_URL/,
+    );
+    for (const value of ["500", "1.5", "600001", "soon"]) {
+      expect(() => parseEnv({ ...valid, AI_TIMEOUT_MS: value })).toThrow(/AI_TIMEOUT_MS/);
+    }
+    expect(() => parseEnv({ ...valid, AI_KEEP_ALIVE: "forever" })).toThrow(/AI_KEEP_ALIVE/);
+  });
+
+  it("parseAiEnv reads only the AI variables", () => {
+    expect(parseAiEnv({ AI_BASE_URL: "http://localhost:11434/v1" })).toEqual({
+      AI_BASE_URL: "http://localhost:11434/v1",
+      AI_MODEL: "granite4.1:3b",
+      AI_TIMEOUT_MS: 90_000,
+    });
   });
 });
 

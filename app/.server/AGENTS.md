@@ -205,6 +205,14 @@ PostgreSQL is the system of record for products, stock and orders; the Strapi ad
 - `changeEmail` and `changePassword` check the current password first. Wrong ones are counted by `profilePasswordLimiter` (5 per user id per 15 minutes, shared by both forms); the route checks it before verifying anything. A taken email is detected by the unique index (`23505` → `email-taken`), not a pre-check. New passwords are stored only as `hashPassword` output, through `setPasswordChanged`, which records `password_changed_at`: a password change logs out the user's other sessions (#135), and the route renews this session with `renewSessionAuth`.
 - After a real email change the route calls `void notifyEmailChanged(…)`, a notice in the shared layout to the **old** address in the request's locale, from `CONTACT_FROM`. It's best effort: no outbox or retry, skipped without `SMTP_URL`, and it never rejects. It also sends the new address a verification link (`sendVerificationEmail`, #135).
 
+## AI perfumer: `ai/` (#162)
+
+- `perfumer.ts`: `reply(locale, messages, deps?)` (and `replyWithTrace` for the eval) turns a conversation (1–10 messages, last from the customer, `perfumerMessagesSchema`) into `PerfumerReply` (`~/lib/perfumer`). Stateless: nothing is stored. Off unless `AI_BASE_URL` is set (`isPerfumerEnabled()`, `PerfumerDisabledError`; no model is called). Model failures are `AiError` (`unavailable` | `timeout` | `bad_response`); `AI_TIMEOUT_MS` bounds the whole reply.
+- `client.ts` is a plain `fetch` client for `POST {AI_BASE_URL}/chat/completions` (no SDK). Any OpenAI-compatible server works; the model is configuration (`AI_MODEL`), compared in #167.
+- The tools (`catalog-tools.ts`) are **read-only** and filter the catalog in TypeScript (`listPerfumerProducts`: every product with its sizes in stock). Only active products with a size in stock are returned, women/men include unisex like the catalogs, and family/note synonyms live in `synonyms.ts`. The model never sees a `public_id`: rows carry per-reply aliases (`p1`, …), and a pick is kept only when its alias came from this reply's tool results (`AliasMap`, `selectPicks`). Without a tool call (off-topic, injection) there are no picks.
+- **Names and prices come from the database, never from the model.** `answer-guard.ts` removes every sentence of the intro, reasons and question that names a catalog title or brand outside the picks, quotes a name, has a Latin word in Ukrainian prose (or a run of Capitalized words in English), or shows an id or a price; translated fallbacks (`perfumer.*`) fill an emptied field. Keep it strict: a false alarm costs one sentence, an invented perfume costs the shop's credibility.
+- Prompts (`prompts.ts`) are server code, not i18n copy. When you change them, the tools or the guard, run `pnpm ai:perfumer-eval` and update `docs/ai-perfumer.md`.
+
 ## Tests
 
 - Unit tests sit next to the code (`*.test.ts`).

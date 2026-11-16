@@ -44,6 +44,27 @@ const cmsSyncEnvSchema = z.object({
   STRAPI_SYNC_TOKEN: z.string().min(1).optional(),
 });
 
+// The AI perfumer (#162, docs/ai-perfumer.md): any OpenAI-compatible chat-completions server,
+// local Ollama by default. Its own schema, so `pnpm ai:perfumer-eval` can read it without the web
+// app's variables. Without `AI_BASE_URL` the perfumer is off and nothing calls a model.
+const aiEnvSchema = z.object({
+  // e.g. http://localhost:11434/v1 (Ollama); `/chat/completions` is appended.
+  AI_BASE_URL: z
+    .url({ protocol: /^https?$/ })
+    .transform((url) => url.replace(/\/+$/, ""))
+    .optional(),
+  AI_MODEL: z.string().min(1).default("granite4.1:3b"),
+  // Bearer token for a hosted provider; Ollama needs none.
+  AI_API_KEY: z.string().min(1).optional(),
+  // The most one perfumer reply may take, tool rounds included.
+  AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(90_000),
+  // Sent to Ollama as `keep_alive` (e.g. `30m`, `-1`) so the model stays loaded between replies.
+  AI_KEEP_ALIVE: z
+    .string()
+    .regex(/^-?\d+(ms|s|m|h)?$/)
+    .optional(),
+});
+
 const envSchema = z
   .object({
     DATABASE_URL: z.url(),
@@ -73,6 +94,7 @@ const envSchema = z
     // then the IP is unknown). Set it to 1 behind a single hosting proxy. See docs/security.md.
     TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
     ...mailEnvSchema.shape,
+    ...aiEnvSchema.shape,
   })
   .refine(hasSmtpInProduction, SMTP_REQUIRED)
   .refine((env) => env.NODE_ENV !== "production" || env.PUBLIC_SITE_URL !== undefined, {
@@ -89,6 +111,8 @@ export type Env = z.infer<typeof envSchema>;
 export type MailEnv = z.infer<typeof mailEnvSchema>;
 
 export type CmsSyncEnv = z.infer<typeof cmsSyncEnvSchema>;
+
+export type AiEnv = z.infer<typeof aiEnvSchema>;
 
 /** The mail variables, with empty values counting as unset. */
 function mailSource(source: NodeJS.ProcessEnv) {
@@ -107,6 +131,17 @@ function cmsSyncSource(source: NodeJS.ProcessEnv) {
   return {
     STRAPI_URL: source.STRAPI_URL || source.CMS_HTTP || undefined,
     STRAPI_SYNC_TOKEN: source.STRAPI_SYNC_TOKEN || undefined,
+  };
+}
+
+/** The AI perfumer variables (#162), empty values unset. */
+function aiSource(source: NodeJS.ProcessEnv) {
+  return {
+    AI_BASE_URL: source.AI_BASE_URL || undefined,
+    AI_MODEL: source.AI_MODEL || undefined,
+    AI_API_KEY: source.AI_API_KEY || undefined,
+    AI_TIMEOUT_MS: source.AI_TIMEOUT_MS || undefined,
+    AI_KEEP_ALIVE: source.AI_KEEP_ALIVE || undefined,
   };
 }
 
@@ -141,12 +176,22 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     CSP_MODE: source.CSP_MODE || undefined,
     TRUSTED_PROXY_HOPS: source.TRUSTED_PROXY_HOPS || undefined,
     ...mailSource(source),
+    ...aiSource(source),
   });
 
   if (!result.success) {
     throw invalid(result.error);
   }
 
+  return result.data;
+}
+
+/** Validates only the AI perfumer variables, for `pnpm ai:perfumer-eval` (#162). */
+export function parseAiEnv(source: NodeJS.ProcessEnv): AiEnv {
+  const result = aiEnvSchema.safeParse(aiSource(source));
+  if (!result.success) {
+    throw invalid(result.error);
+  }
   return result.data;
 }
 

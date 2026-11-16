@@ -32,7 +32,6 @@ product cards and the question. The normal action (#163) stays as the fallback w
       cleans it **per completed sentence** with the same `cleanProse` context (picks' names allowed),
    5. sends `picks` (cards from the database, reasons cleaned), then `question`, then `done`.
    This costs one extra short model call (~1–3 s on the CPU with Ollama's prompt cache).
-   **(unconfirmed, Q1)**
 2. **`reply()` stays as it is**, so the fallback action and the eval (`pnpm ai:perfumer-eval`) keep
    their behaviour and recorded results. Shared parts (setup, tool round, pick validation, reason
    cleaning) are extracted so the two paths don't diverge.
@@ -87,7 +86,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
     (`app/features/perfumer/sse.ts`) and a hand-written event guard (no zod in the browser, #96).
 12. **Fallback** to the existing `useFetcher` action when the stream can't be used: `fetch` rejects
     (not an abort), the response isn't `text/event-stream`, there's no `response.body`, or the stream
-    ends/breaks before `done` or `error`. **(unconfirmed, Q2: also mid-stream)** The pending turn keeps
+    ends/breaks before `done` or `error`. Also mid-stream. The pending turn keeps
     its steps and returns to the rotating hints while the action runs. An `error` event is shown as
     today (retry where `isRetryable`); it doesn't trigger the fallback.
 13. **Thread state.** The pending turn (`PendingTurn`) gains `steps`, `intro` (text so far) and
@@ -101,26 +100,15 @@ product cards and the question. The normal action (#163) stays as the fallback w
     typing intro is `aria-busy="true"` until `done`, so it's read once. The cancel button keeps its
     10 s delay.
 
-## Open questions
-
-- [ ] **Q1: Is an extra model call for the intro acceptable?** — Why it matters: generating the intro
-  after the picks are fixed (the issue's assumption) needs a third call; with Ollama's prompt cache it
-  adds roughly 1–3 s to a 20–80 s answer, but on a cold or hosted model it's another round trip.
-  The alternative (stream the JSON answer and parse `intro` out of it) shows the intro sooner but can't
-  know the picks while the intro streams, so names couldn't be allowed and the issue rules it out.
-  Recommended default: the extra call (decision 1). Affects steps: 3, 4.
-- [ ] **Q2: Fall back to the action when the stream breaks after progress was shown?** — Why it
-  matters: the fallback re-runs the whole reply (another 20–80 s and a second rate-limit hit), while
-  showing `unavailable` with "Try again" is quicker to understand. Recommended default: fall back in
-  every transport failure (the acceptance criterion says "if streaming fails"), keeping the shown
-  steps; a second failure shows the action's error as today. Affects steps: 8, 9.
-- [ ] **Q3: Should the eval also measure the streaming path?** — Why it matters: the streamed intro
-  comes from a different prompt, so `docs/ai-perfumer.md`'s results don't cover it. Recommended
-  default: out of scope here; a `--stream` flag for `pnpm ai:perfumer-eval` (time to first step,
-  time to first intro) can be a follow-up. Affects steps: none.
-
 ## Resolved questions
 
+- **Is an extra model call for the intro acceptable?** — Yes: the intro is streamed in a third call
+  after the picks are fixed, adding roughly 1–3 s locally (decision 1). (source: the owner, Q1)
+- **Fall back to the action when the stream breaks after progress was shown?** — Yes, on every
+  transport failure, keeping the steps shown; a second failure shows the action's error as today
+  (decision 12). (source: the owner, Q2)
+- **Should the eval also measure the streaming path?** — Not in this issue; a follow-up issue adds a
+  `--stream` mode to `pnpm ai:perfumer-eval`. (source: the owner, Q3)
 - **Where does the locale come from in a resource route?** — From the path (`getLocale` →
   `localeFromPath`), so the stream route needs `uk`/`en` paths, registered like `checkoutPay`.
   (source: `app/.server/locale.ts`, `app/routes.ts`, `app/lib/paths.ts`)
@@ -283,7 +271,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
 ## Out of scope
 
 - Streaming each card's reason (the issue's out of scope).
-- Changing `reply()`, its prompt, or the eval and its recorded results (Q3).
+- Changing `reply()`, its prompt, or the eval and its recorded results (a follow-up issue).
 - Persisting conversations on the server, or resuming a stream after a reload.
 - WebSockets or a client fetching library.
 - Hosting or choosing a faster model (#167); analytics events for the chat (#166).

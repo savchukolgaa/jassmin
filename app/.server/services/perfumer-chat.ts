@@ -102,22 +102,29 @@ export interface PerfumerStreamDeps {
 
 const defaultStreamDeps: PerfumerStreamDeps = { replyStream, limiters: perfumerLimiters };
 
+export type PerfumerStreamResult =
+  | { ok: false; error: "rateLimited" }
+  | { ok: true; events: AsyncIterable<PerfumerEvent> };
+
 /**
- * Answers one chat message as events (#164), with the same rate limits and error keys as
- * `answerPerfumerMessage`: a refused or failed message ends with one `error` event, so the stream
- * always ends with `done` or `error`. Stopping the iteration stops the model call.
+ * Starts answering one chat message as events (#164), with the same rate limits and error keys as
+ * `answerPerfumerMessage`. A refused message is `rateLimited` before anything is streamed, so the
+ * route can answer 429; an accepted one's events always end with `done` or one `error`. Stopping
+ * the iteration (or `signal`) stops the model call.
  */
-export async function* streamPerfumerMessage(
+export async function openPerfumerStream(
   { locale, messages, ipKey, sessionKey, signal }: PerfumerChatInput,
   deps: PerfumerStreamDeps = defaultStreamDeps,
-): AsyncGenerator<PerfumerEvent, void, undefined> {
+): Promise<PerfumerStreamResult> {
   if (!(await admitPerfumerMessage({ ipKey, sessionKey }, deps.limiters))) {
-    yield { type: "error", error: "rateLimited" };
-    return;
+    return { ok: false, error: "rateLimited" };
   }
-  try {
-    yield* deps.replyStream(locale, messages, signal ? { signal } : {});
-  } catch (error) {
-    yield { type: "error", error: errorKeyOf(error, signal) };
+  async function* events(): AsyncGenerator<PerfumerEvent, void, undefined> {
+    try {
+      yield* deps.replyStream(locale, messages, signal ? { signal } : {});
+    } catch (error) {
+      yield { type: "error", error: errorKeyOf(error, signal) };
+    }
   }
+  return { ok: true, events: events() };
 }

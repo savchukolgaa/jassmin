@@ -4,9 +4,9 @@ import { AiError } from "../ai/errors";
 import { createMemoryRateLimitStore, createRateLimiter } from "../rate-limit";
 import {
   answerPerfumerMessage,
+  openPerfumerStream,
   type PerfumerChatDeps,
   type PerfumerStreamDeps,
-  streamPerfumerMessage,
 } from "./perfumer-chat";
 
 const answer: PerfumerReply = { intro: "Ось що є.", picks: [] };
@@ -109,7 +109,7 @@ describe("answerPerfumerMessage", () => {
   });
 });
 
-describe("streamPerfumerMessage (#164)", () => {
+describe("openPerfumerStream (#164)", () => {
   const reply: PerfumerEvent[] = [
     { type: "step", step: { tool: "search", families: ["водяні"], found: 2 } },
     { type: "intro", text: "Ось що є." },
@@ -134,14 +134,17 @@ describe("streamPerfumerMessage (#164)", () => {
     return all;
   }
 
-  const stream = (
+  async function stream(
     sd: PerfumerStreamDeps,
     ipKey: string | undefined = "1.1.1.1",
     signal?: AbortSignal,
-  ) =>
-    collect(
-      streamPerfumerMessage({ locale: "en", messages, ipKey, sessionKey: "visitor", signal }, sd),
+  ): Promise<PerfumerEvent[] | "rateLimited"> {
+    const result = await openPerfumerStream(
+      { locale: "en", messages, ipKey, sessionKey: "visitor", signal },
+      sd,
     );
+    return result.ok ? collect(result.events) : result.error;
+  }
 
   it("passes the engine's events through, with the request's signal", async () => {
     const sd = streamDeps();
@@ -150,12 +153,12 @@ describe("streamPerfumerMessage (#164)", () => {
     expect(sd.replyStream).toHaveBeenCalledWith("en", messages, { signal });
   });
 
-  it("shares the action's rate limit and refuses with one error event, without the model", async () => {
+  it("shares the action's rate limit and refuses before streaming, without the model", async () => {
     for (let n = 0; n < 10; n++) {
       await ask("1.1.1.1", "visitor");
     }
     const sd = streamDeps();
-    await expect(stream(sd)).resolves.toEqual([{ type: "error", error: "rateLimited" }]);
+    await expect(stream(sd)).resolves.toBe("rateLimited");
     expect(sd.replyStream).not.toHaveBeenCalled();
   });
 

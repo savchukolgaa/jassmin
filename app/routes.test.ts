@@ -27,6 +27,8 @@ describe("route config", () => {
       "/en/popular",
       "/parfumer",
       "/en/perfumer",
+      "/parfumer/stream",
+      "/en/perfumer/stream",
       "/vkhid",
       "/en/login",
       "/reiestratsiia",

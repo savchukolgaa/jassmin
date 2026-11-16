@@ -61,7 +61,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
    (`ensureVisitor`) work as in the action. Action-only (POST); `loader`-less, so GET is a 405.
    It reads the same `payload` form field with `parsePerfumerRequest`, and 404s while disabled.
 7. **Same rate limit, counted once per message.** `perfumer-chat.ts` gets `admitPerfumerMessage`
-   (the limiter check + hit, extracted from `answerPerfumerMessage`) and `streamPerfumerMessage`,
+   (the limiter check + hit, extracted from `answerPerfumerMessage`) and `openPerfumerStream`,
    which maps `AiError`s to `error` events exactly like the action maps them to keys. A fallback
    after a failed stream posts to the action, which counts the message again; accepted, since the
    limit is 10 per 5 minutes and fallbacks are rare.
@@ -99,6 +99,12 @@ product cards and the question. The normal action (#163) stays as the fallback w
     `picks`. Screen readers: the steps' container is `role="status"` (each new step announced); the
     typing intro is `aria-busy="true"` until `done`, so it's read once. The cancel button keeps its
     10 s delay.
+
+14a. **Deviation (step 6): admission before the stream.** The route must send its status before the
+    first event, so the service is `openPerfumerStream(input)` →
+    `{ ok: false, error: "rateLimited" } | { ok: true, events }` rather than a generator that yields
+    `rateLimited`; the route answers 429 with one `error` event. Streaming the frames, the ping and
+    the cancel handling are a small helper, `eventStreamResponse` in `app/.server/sse.ts` (+ test).
 
 ## Resolved questions
 
@@ -144,7 +150,7 @@ product cards and the question. The normal action (#163) stays as the fallback w
 | modify | `app/.server/ai/prompts.ts` | `finalPicksInstructions`, `introInstructions` (uk/en) |
 | modify | `app/.server/ai/perfumer.ts` | shared helpers, `replyStream` |
 | modify | `app/.server/ai/perfumer.test.ts` | stream order, abort, per-sentence removal |
-| modify | `app/.server/services/perfumer-chat.ts` (+ test) | `admitPerfumerMessage`, `streamPerfumerMessage` |
+| modify | `app/.server/services/perfumer-chat.ts` (+ test) | `admitPerfumerMessage`, `openPerfumerStream` |
 | create | `app/features/perfumer/sse.ts` (+ `sse.test.ts`) | SSE frame parser |
 | create | `app/features/perfumer/usePerfumerStream.ts` | fetch + reader → events, abort |
 | modify | `app/features/perfumer/usePerfumerThread.ts` | stream first, fallback to the fetcher |
@@ -194,11 +200,11 @@ product cards and the question. The normal action (#163) stays as the fallback w
     the `for await` aborts the signal the fake `chatStream` received; `deps.signal` abort → `timeout`.
 - [x] **5. Chat service.** In `perfumer-chat.ts` extract `admitPerfumerMessage(input, limiters)` →
   `{ ok: true } | { ok: false, error: "rateLimited" }`; `answerPerfumerMessage` uses it (tests
-  unchanged). Add `streamPerfumerMessage(input, deps): AsyncGenerator<PerfumerEvent>` that admits,
+  unchanged). Add `openPerfumerStream(input, deps)` that admits,
   then forwards `replyStream`'s events, mapping a thrown `AiError` / unknown error / abort to one
   `error` event with the same keys and logging as the action. Tests: rate-limited yields only
   `error: rateLimited` and never calls the engine; `AiError("timeout")` → `error: timeout`.
-- [ ] **6. Resource route.** `paths.ts` `perfumerStream`; `routes.ts` `...localizedRoute(
+- [x] **6. Resource route.** `paths.ts` `perfumerStream`; `routes.ts` `...localizedRoute(
   "perfumerStream", "routes/perfumer.stream.ts")` next to `perfumer` (inside the layout, with a
   comment). `app/routes/perfumer.stream.ts`: `action` → 404 unless enabled; `parsePerfumerRequest`
   (an `error` stream with 400 for `tooLong`); `getLocale` + `ensureVisitor`; an `AbortController`

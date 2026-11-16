@@ -317,7 +317,7 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: [page_view, product_view, search, add_to_cart, remove_from_cart, checkout_start, purchase, login, review_submit, product_impression, product_click, product_dwell]
+                values: [page_view, product_view, search, add_to_cart, remove_from_cart, checkout_start, purchase, login, review_submit, product_impression, product_click, product_dwell, perfumer_message, perfumer_feedback]
       - name: product_id
         description: The product, for product events.
       - name: event_properties

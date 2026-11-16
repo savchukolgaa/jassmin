@@ -50,6 +50,48 @@ export function isRetryable(error: PerfumerErrorKey): boolean {
   return error === "unavailable" || error === "timeout";
 }
 
+// Analytics (#166): what `perfumer_message` and `perfumer_feedback` events record. Never text.
+
+/** How the customer opened the conversation: the chat page's `?from=`, else `direct`. */
+export const PERFUMER_ENTRIES = [
+  "menu",
+  "catalog",
+  "empty_results",
+  "product",
+  "corner",
+  "direct",
+] as const;
+
+export type PerfumerEntry = (typeof PERFUMER_ENTRIES)[number];
+
+/** `entry` from the `from` query parameter: anything unknown (or none) is `direct`. */
+export function toPerfumerEntry(value: string | null | undefined): PerfumerEntry {
+  return PERFUMER_ENTRIES.find((entry) => entry === value) ?? "direct";
+}
+
+/** Why an answer failed, for the owner: finer than the chat's `PerfumerErrorKey`. */
+export const PERFUMER_TELEMETRY_ERRORS = [
+  "unavailable",
+  "timeout",
+  "bad_response",
+  "rate_limited",
+  "cancelled",
+] as const;
+
+export type PerfumerTelemetryError = (typeof PERFUMER_TELEMETRY_ERRORS)[number];
+
+/** The engine's tools; any other name the model calls is recorded as `other`. */
+export const PERFUMER_TOOL_NAMES = ["search_perfumes", "similar_to", "other"] as const;
+
+export type PerfumerToolName = (typeof PERFUMER_TOOL_NAMES)[number];
+
+/** The highest `turn` recorded: the customer's message number in one thread. */
+export const MAX_PERFUMER_TURN = 100;
+
+export const PERFUMER_RATINGS = ["up", "down"] as const;
+
+export type PerfumerRating = (typeof PERFUMER_RATINGS)[number];
+
 /** One entry of the chat thread the browser shows and keeps in `sessionStorage`. */
 export type ThreadItem =
   | { id: string; role: "user"; text: string }

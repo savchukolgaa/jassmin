@@ -87,6 +87,10 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   button changes the rating; pressing the chosen one does nothing. Each turn uses its own
   `useFetcher({ key: \`perfumer-feedback-${replyId}\` })` so it never touches the chat fetcher. The
   chosen rating is kept on the thread item (`ThreadItem.rating`), so it survives a reload.
+- **Order of work.** The generator (step 9) is done right after steps 1–2: the synthetic contract
+  test needs every event type in its fixtures, so the contract and the generator change together.
+  The generator draws the perfumer from its own random stream and event-id generator, so every
+  other synthetic row keeps its values except where a perfumer visit changes what is viewed.
 - **Generator rates (synthetic, plausible):** ~4 % of visits open the perfumer (entries weighted
   menu 40 %, catalog 20 %, empty_results 10 %, product 20 %, corner 10 %), 1–4 messages each; errors
   ~3 % (`timeout` most), rate-limited ~0.5 %; ~70 % of answers with picks (1–4), ~25 % ask a question;
@@ -169,7 +173,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
 
 ## Steps
 
-- [ ] **1. Event contract.** Add `perfumer_message` and `perfumer_feedback` to `EVENT_TYPES`,
+- [x] **1. Event contract.** Add `perfumer_message` and `perfumer_feedback` to `EVENT_TYPES`,
   `"perfumer"` to `LIST_IDS`, and in `app/lib/perfumer.ts` the isomorphic constants
   `PERFUMER_ENTRIES` (`menu`, `catalog`, `empty_results`, `product`, `corner`, `direct`),
   `PERFUMER_TELEMETRY_ERRORS`, `PERFUMER_TOOL_NAMES` and `MAX_PERFUMER_TURN = 100`. Add the property
@@ -178,7 +182,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   ≤ 100 chars). Examples and tests in `analytics.schema.test.ts`: valid examples, unknown keys
   rejected (e.g. `intro`, `text`, `message`), argument values rejected, a sentence-like
   `argument_keys` entry rejected. Check: `pnpm typecheck`, `pnpm test app/lib`.
-- [ ] **2. Migration.** `pnpm db:generate --name perfumer_event_types` (the CHECK comes from
+- [x] **2. Migration.** `pnpm db:generate --name perfumer_event_types` (the CHECK comes from
   `EVENT_TYPES` in `schema.ts`); hand-write `rollbacks/0032_perfumer_event_types.sql` restoring
   0030's list, deleting the rows of the two new types first (as 0030's rollback does). Check:
   migrate and roll back on a test database (`createTestDatabase()`, existing

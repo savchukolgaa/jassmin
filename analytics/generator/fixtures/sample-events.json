@@ -566,6 +566,118 @@
     }
   },
   {
+    "event_type": "perfumer_message",
+    "event_properties": {
+      "reply_id": "149aff70-3311-4202-bc24-b5daf139b59c",
+      "turn": 1,
+      "latency_ms": 12291,
+      "model": "granite4.1:3b",
+      "tool_calls": [
+        {
+          "name": "search_perfumes",
+          "argument_keys": [
+            "families",
+            "notes"
+          ]
+        }
+      ],
+      "pick_ids": [
+        "f260c06f-9f38-8ca2-8838-b773b5806e8a"
+      ],
+      "asked_question": false,
+      "error": null,
+      "entry": "menu"
+    }
+  },
+  {
+    "event_type": "perfumer_feedback",
+    "event_properties": {
+      "reply_id": "149aff70-3311-4202-bc24-b5daf139b59c",
+      "turn": 1,
+      "rating": "up"
+    }
+  },
+  {
+    "event_type": "perfumer_message",
+    "event_properties": {
+      "reply_id": "3a98d7cb-6485-4e9f-91fa-f219aa8652a2",
+      "turn": 2,
+      "latency_ms": 3181,
+      "model": "granite4.1:3b",
+      "tool_calls": [
+        {
+          "name": "search_perfumes",
+          "argument_keys": [
+            "families",
+            "notes",
+            "max_price_uah"
+          ]
+        }
+      ],
+      "pick_ids": [
+        "05083541-9890-829f-a30f-248b7e689b2c",
+        "7075fa6b-8eb9-8c82-ad84-50b7e72e3560"
+      ],
+      "asked_question": false,
+      "error": null,
+      "entry": "menu"
+    }
+  },
+  {
+    "event_type": "perfumer_message",
+    "event_properties": {
+      "reply_id": "008a0a9a-ef44-4bd7-add8-7011b83fb550",
+      "turn": 1,
+      "latency_ms": 5957,
+      "model": "granite4.1:3b",
+      "tool_calls": [
+        {
+          "name": "search_perfumes",
+          "argument_keys": [
+            "notes"
+          ]
+        },
+        {
+          "name": "similar_to",
+          "argument_keys": [
+            "title"
+          ]
+        }
+      ],
+      "pick_ids": [
+        "05083541-9890-829f-a30f-248b7e689b2c",
+        "4ce5a513-2b90-889c-8b47-bd30def6f0a8",
+        "5d4163f1-a7b0-8be9-a228-e4249aeccaf2"
+      ],
+      "asked_question": false,
+      "error": null,
+      "entry": "catalog"
+    }
+  },
+  {
+    "event_type": "perfumer_message",
+    "event_properties": {
+      "reply_id": "f2da0ff0-228f-4b3c-9d4b-4d2275ace305",
+      "turn": 2,
+      "latency_ms": 4937,
+      "model": "granite4.1:3b",
+      "tool_calls": [
+        {
+          "name": "similar_to",
+          "argument_keys": [
+            "title"
+          ]
+        }
+      ],
+      "pick_ids": [
+        "9a8b57f9-b077-8176-b304-308b193cc70d"
+      ],
+      "asked_question": false,
+      "error": null,
+      "entry": "catalog"
+    }
+  },
+  {
     "event_type": "remove_from_cart",
     "event_properties": {
       "product_public_id": "48740e2c-e7fd-8c65-a1f4-fd852da97540",
@@ -589,6 +701,30 @@
       "quantity": 1,
       "cart_value_after": "238.00",
       "source": "stepper"
+    }
+  },
+  {
+    "event_type": "perfumer_feedback",
+    "event_properties": {
+      "reply_id": "cc1ea325-78ca-49e4-8f90-de3d202c9bcb",
+      "turn": 1,
+      "rating": "up"
+    }
+  },
+  {
+    "event_type": "perfumer_feedback",
+    "event_properties": {
+      "reply_id": "fe1d57a9-0bf8-44b5-b80b-3d521240cefe",
+      "turn": 1,
+      "rating": "up"
+    }
+  },
+  {
+    "event_type": "perfumer_feedback",
+    "event_properties": {
+      "reply_id": "dc54c09a-6145-4176-a7cb-b0c32c264064",
+      "turn": 2,
+      "rating": "up"
     }
   },
   {

@@ -225,6 +225,13 @@
       "when": 1793998802876,
       "tag": "0031_cart_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794858357674,
+      "tag": "0032_perfumer_event_types",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import { EVENT_TYPES } from "./enums";
 const PRODUCT = "01a1652b-6e25-7c03-ae47-25b57131fb06";
 const VARIANT = "01a1652b-6e25-7d00-8000-000000000050";
 const SEARCH = "0b6f1b8e-3f7e-4a52-9a43-3c1f7f1f2c11";
+const REPLY = "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d";
 
 const product = {
   product_public_id: PRODUCT,
@@ -59,6 +60,18 @@ const VALID: { [T in EventType]: EventProperties<T> } = {
   },
   login: { method: "register" },
   review_submit: { product_public_id: PRODUCT },
+  perfumer_message: {
+    reply_id: REPLY,
+    turn: 2,
+    latency_ms: 8400,
+    model: "granite4.1:3b",
+    tool_calls: [{ name: "search_perfumes", argument_keys: ["families", "max_price_uah"] }],
+    pick_ids: [PRODUCT],
+    asked_question: true,
+    error: null,
+    entry: "menu",
+  },
+  perfumer_feedback: { reply_id: REPLY, turn: 2, rating: "up" },
 };
 
 describe("parseEventProperties", () => {
@@ -150,5 +163,54 @@ describe("clientEventBatchSchema product events (#129)", () => {
       clientEventBatchSchema.safeParse({ events: [event("add_to_cart", VALID.add_to_cart)] })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("perfumer events (#166)", () => {
+  const message = VALID.perfumer_message;
+
+  it("never takes text: no intro, reasons, question or customer message", () => {
+    for (const key of ["intro", "text", "message", "question", "reason", "content"]) {
+      expect(parseEventProperties("perfumer_message", { ...message, [key]: "Свіжий" })).toBeNull();
+    }
+    expect(
+      parseEventProperties("perfumer_feedback", { ...VALID.perfumer_feedback, comment: "супер" }),
+    ).toBeNull();
+  });
+
+  it("takes tool argument names, never their values", () => {
+    const withValues = {
+      ...message,
+      tool_calls: [{ name: "search_perfumes", argument_keys: ["families"], arguments: {} }],
+    };
+    expect(parseEventProperties("perfumer_message", withValues)).toBeNull();
+    const sentence = {
+      ...message,
+      tool_calls: [{ name: "similar_to", argument_keys: ["схоже на La Vie Est Belle"] }],
+    };
+    expect(parseEventProperties("perfumer_message", sentence)).toBeNull();
+  });
+
+  it("refuses a tool name outside the engine's, which is recorded as `other`", () => {
+    const unknown = { ...message, tool_calls: [{ name: "drop_table", argument_keys: [] }] };
+    expect(parseEventProperties("perfumer_message", unknown)).toBeNull();
+  });
+
+  it("keeps at most 4 picks and only known entries, errors and ratings", () => {
+    expect(
+      parseEventProperties("perfumer_message", { ...message, pick_ids: Array(5).fill(PRODUCT) }),
+    ).toBeNull();
+    expect(parseEventProperties("perfumer_message", { ...message, entry: "email" })).toBeNull();
+    expect(parseEventProperties("perfumer_message", { ...message, error: "tooLong" })).toBeNull();
+    expect(
+      parseEventProperties("perfumer_message", { ...message, error: "rate_limited", model: null }),
+    ).not.toBeNull();
+    expect(
+      parseEventProperties("perfumer_feedback", { ...VALID.perfumer_feedback, rating: "meh" }),
+    ).toBeNull();
+  });
+
+  it("counts turns from 1", () => {
+    expect(parseEventProperties("perfumer_message", { ...message, turn: 0 })).toBeNull();
   });
 });

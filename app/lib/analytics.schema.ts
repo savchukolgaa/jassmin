@@ -13,6 +13,13 @@ import {
 } from "./analytics";
 import { CATALOG_GENDERS, CATALOG_SORTS } from "./catalog";
 import { type EventType, PAYMENT_METHODS } from "./enums";
+import {
+  MAX_PERFUMER_TURN,
+  PERFUMER_ENTRIES,
+  PERFUMER_RATINGS,
+  PERFUMER_TELEMETRY_ERRORS,
+  PERFUMER_TOOL_NAMES,
+} from "./perfumer";
 
 /** A same-site path: starts with one `/` (so not `//host`) and has no backslash. */
 const sitePath = z
@@ -51,6 +58,12 @@ const cartChangeShape = {
   cart_value_after: money,
   source: z.literal("stepper").optional(),
 };
+
+/** A perfumer answer's message number in its thread. */
+const perfumerTurn = z.int().min(1).max(MAX_PERFUMER_TURN);
+
+/** A tool argument's name (`max_price_uah`): an identifier, so no customer text fits in it. */
+const argumentKey = z.string().regex(/^[a-z][a-z0-9_]{0,39}$/);
 
 // Strict objects: an unknown key (and so any personal data) fails the event.
 export const eventPropertiesSchemas = {
@@ -105,6 +118,29 @@ export const eventPropertiesSchemas = {
   }),
   login: z.strictObject({ method: z.enum(["login", "register", "password_reset"]) }),
   review_submit: z.strictObject({ product_public_id: z.uuid() }),
+  perfumer_message: z.strictObject({
+    reply_id: z.uuid(),
+    turn: perfumerTurn,
+    latency_ms: z.int().min(0).max(600_000),
+    model: z.string().min(1).max(100).nullable(),
+    tool_calls: z
+      .array(
+        z.strictObject({
+          name: z.enum(PERFUMER_TOOL_NAMES),
+          argument_keys: z.array(argumentKey).max(10),
+        }),
+      )
+      .max(12),
+    pick_ids: z.array(z.uuid()).max(4),
+    asked_question: z.boolean(),
+    error: z.enum(PERFUMER_TELEMETRY_ERRORS).nullable(),
+    entry: z.enum(PERFUMER_ENTRIES),
+  }),
+  perfumer_feedback: z.strictObject({
+    reply_id: z.uuid(),
+    turn: perfumerTurn,
+    rating: z.enum(PERFUMER_RATINGS),
+  }),
 } satisfies { [T in EventType]: z.ZodType<EventPropertiesMap[T]> };
 
 /** The event's properties if they match its type's contract, else `null`. */

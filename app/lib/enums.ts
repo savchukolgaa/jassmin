@@ -108,6 +108,9 @@ export const EVENT_TYPES = [
   "product_impression",
   "product_click",
   "product_dwell",
+  // The AI perfumer (#166): recorded by the chat page's action.
+  "perfumer_message",
+  "perfumer_feedback",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

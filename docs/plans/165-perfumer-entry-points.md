@@ -200,7 +200,7 @@ when the engine is off.
   render `{perfumerEnabled && <PerfumerCornerButton cookieBanner={consent === null} />}` after
   `<Footer>`. `MobileMenu`'s `<details>` gets `data-mobile-menu`. Check in the running app at 390px
   and 1440px against the artboards.
-- [ ] **5. Cookie banner offset** — `CookieBanner` sets/removes `--bottom-ui-banner` with a
+- [x] **5. Cookie banner offset** — `CookieBanner` sets/removes `--bottom-ui-banner` with a
   `ResizeObserver` (guard for jsdom without it). Test: the variable is set while the banner shows and
   removed after it unmounts.
 - [ ] **6. Catalog entry points** — `PerfumerCatalogBanner` above the results when there are

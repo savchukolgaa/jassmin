@@ -203,7 +203,7 @@ when the engine is off.
 - [x] **5. Cookie banner offset** — `CookieBanner` sets/removes `--bottom-ui-banner` with a
   `ResizeObserver` (guard for jsdom without it). Test: the variable is set while the banner shows and
   removed after it unmounts.
-- [ ] **6. Catalog entry points** — `PerfumerCatalogBanner` above the results when there are
+- [x] **6. Catalog entry points** — `PerfumerCatalogBanner` above the results when there are
   products; a `PerfumerEntryLink` button in the empty-results box; both with
   `catalogPerfumerMessage(gender, search, translator)`.
 - [ ] **7. Product link** — the "find similar" link in `product.tsx` below the purchase/unavailable

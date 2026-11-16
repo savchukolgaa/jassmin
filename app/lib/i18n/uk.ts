@@ -1031,4 +1031,12 @@ export const uk = {
       unisex: "Унісекс парфуми",
     },
   },
+  // AI perfumer (#162): texts shown when the model's own text was removed by the guard.
+  perfumer: {
+    fallbackIntro: "Ось що є в нашому каталозі.",
+    fallbackIntroEmpty:
+      "Я допомагаю з вибором парфумів з нашого каталогу. Розкажіть, які ноти чи родини вам подобаються?",
+    fallbackReason: "Родини: {families}.",
+    fallbackReasonPlain: "Підходить під ваш запит.",
+  },
 };

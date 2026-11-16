@@ -1001,4 +1001,11 @@ export const en = {
       unisex: "Unisex perfume",
     },
   },
+  perfumer: {
+    fallbackIntro: "Here is what I found in our catalog.",
+    fallbackIntroEmpty:
+      "I help you choose perfume from our catalog. Which notes or families do you like?",
+    fallbackReason: "Families: {families}.",
+    fallbackReasonPlain: "Matches what you asked for.",
+  },
 } satisfies Dictionary;

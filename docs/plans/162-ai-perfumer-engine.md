@@ -243,7 +243,7 @@ There is no UI.
   scripted fake `chat` and fake tools: 3-round cap (4th tool request ignored, final call made),
   invented ids dropped, names removed, disabled never calls `chat`, error propagation, invalid tool
   args reported back to the model, en vs uk prompt chosen.
-- [ ] **8. i18n + DTO** — `app/lib/perfumer.ts` types; `perfumer.fallbackIntro`,
+- [x] **8. i18n + DTO** — `app/lib/perfumer.ts` types; `perfumer.fallbackIntro`,
   `perfumer.fallbackReason` (`{families}` placeholder) in `uk.ts` and `en.ts`. Check:
   `pnpm typecheck` (dictionaries must match).
 - [ ] **9. Aspire** — in `apphost.mts`, read `process.env.AI_*` (the AppHost's environment) and

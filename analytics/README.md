@@ -310,7 +310,14 @@ The data looks like this shop rather than generic e-commerce:
   summer dip;
 - card payments (with failed attempts) or cash on delivery, and Nova Poshta parcels that are
   never collected (`unclaimed`);
-- traffic mostly from Instagram and Telegram, and mostly on phones.
+- traffic mostly from Instagram and Telegram, and mostly on phones;
+- the AI perfumer chat (#166): about 4 % of visits open it (from the menu, the catalog, an empty
+  search, a product page, the corner button or directly) and send 1–4 messages, each a
+  `perfumer_message` (answer time around 8 s, ~3 % errors, ~70 % of answers with picks), with
+  impressions and clicks on the `perfumer` cards, some 👍/👎 (`perfumer_feedback`), and the perfumes
+  opened from it first in line for the cart. The rates are in `config.py` (`PERFUMER_*`); the chat
+  draws from its own random stream, so the rest of the shop doesn't change with them. The
+  perfumer is simulated over the whole period, although the real chat only opened in 2026.
 
 ## Running it
 

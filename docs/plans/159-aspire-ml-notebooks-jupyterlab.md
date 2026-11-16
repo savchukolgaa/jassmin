@@ -54,9 +54,9 @@ endpoint, localhost only), both getting only the synth database as `JASSMIN_SYNT
   server's environment, so `jassmin_ml/db.py` resolves `JASSMIN_SYNTH_URI` (key 2 of its order),
   and its `guard` still refuses anything but `jassmin_synth[_suffix]`. `db.py` also reads the repo
   `.env` but only for the fallback and the app-name guard; the injected variable wins.
-- **Token**: see Q1. Default is a token, passed via the `JUPYTER_TOKEN` env var (jupyter_server
+- **Token** (Q1, confirmed): a token, passed via the `JUPYTER_TOKEN` env var (jupyter_server
   reads it) from a generated, persisted secret parameter, with the dashboard URL carrying
-  `?token=` if the SDK makes that easy **(unconfirmed)**.
+  `?token=` if the SDK makes that easy.
 - **No dashboard description field**: in the generated SDK `withDescription` exists only on
   parameters, not executables (`aspire-apphost/.aspire/modules/aspire.mts`), so the "run
   `synth-generate` and `dbt-build` first" hint lives in the `apphost.mts` comment and the docs, as
@@ -65,25 +65,19 @@ endpoint, localhost only), both getting only the synth database as `JASSMIN_SYNT
   (`tsc -p tsconfig.apphost.json`), Biome, and a manual `pnpm aspire run`. A Python test is added
   only if the `lab.py` fallback is needed.
 
-## Open questions
-
-- [ ] **Q1: Token or token-less JupyterLab?** — Why it matters: the issue accepts token-less on a
-  local dashboard, but prefers a token if easy. A token means one more secret parameter
-  (`jupyter-token`, `addParameterWithGeneratedValue(..., { secret: true, persist: true })`, the
-  `cms-sync-secret` pattern) passed as `JUPYTER_TOKEN`, and the dashboard link must include
-  `?token=…` (via `withUrlForEndpoint`/`withUrls`) or the developer copies it from the parameter or
-  the logs. Recommended default: use the token; if the dashboard link can't carry it without
-  awkward code, keep the token and say in the docs that the link opens Jupyter's login page and the
-  token is shown under the `jupyter-token` parameter in the dashboard. Fall back to token-less
-  (`--IdentityProvider.token=`) only if the token blocks the kernel/websocket through Aspire's
-  proxy. Affects steps: 2.
-- [ ] **Q2: Should `jupyter-lab` and `ml-notebooks` be allowed to run at the same time?** — Why it
-  matters: both write the same `.ipynb` files in place (run_all saves outputs; JupyterLab saves on
-  edit), so a save in one can clobber the other. Recommended default: no code guard, just a note in
-  the docs ("don't run `ml-notebooks` while editing the notebooks in `jupyter-lab`"). Affects
-  steps: 4.
-
 ## Resolved questions
+
+- **Q1: Token or token-less JupyterLab?** — Token (confirmed by the owner). A generated, persisted
+  secret parameter `jupyter-token` (`addParameterWithGeneratedValue(..., { secret: true, persist:
+  true })`, the `cms-sync-secret` pattern) is passed as `JUPYTER_TOKEN`. Try to put `?token=…` in
+  the dashboard link (via `withUrlForEndpoint`/`withUrls`); if that needs awkward code, keep the
+  token and say in the docs that the link opens Jupyter's login page and the token is shown under
+  the `jupyter-token` parameter in the dashboard. Fall back to token-less
+  (`--IdentityProvider.token=`) only if the token blocks the kernel/websocket through Aspire's
+  proxy. Affects step 2.
+- **Q2: Should `jupyter-lab` and `ml-notebooks` be allowed to run at the same time?** — No code
+  guard, just a note in the docs (confirmed by the owner): both write the same `.ipynb` files in
+  place, so "don't run `ml-notebooks` while editing the notebooks in `jupyter-lab`". Affects step 4.
 
 - **Does the dashboard get a description for `ml-notebooks`?** — Not possible for executables:
   `withDescription` is only on `ParameterResource` in the SDK; the hint goes in the comment and
@@ -108,7 +102,7 @@ endpoint, localhost only), both getting only the synth database as `JASSMIN_SYNT
 
 | Action | Path | Purpose |
 |--------|------|---------|
-| modify | `aspire-apphost/apphost.mts` | Add `ml-notebooks` and `jupyter-lab` after `dbt-docs` (and `jupyter-token` if Q1 = token) |
+| modify | `aspire-apphost/apphost.mts` | Add `ml-notebooks` and `jupyter-lab` after `dbt-docs` and the `jupyter-token` parameter |
 | modify | `aspire-apphost/AGENTS.md` | Document both resources next to `dbt-build` / `dbt-docs` |
 | modify | `analytics/notebooks/README.md` | "From the Aspire dashboard" next to the `uv` commands; run order; Q2 note |
 | modify | `analytics/README.md` | Dashboard way and order in the case study's "Running it" |

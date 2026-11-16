@@ -75,8 +75,8 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   `?from=menu`. `from` isn't a canonical query parameter, so `seoMeta` drops it from the canonical
   URL.
 - **Thumbs UI (C+).** Drawn on the C+ canvas (https://claude.ai/artifact/RCvne95y2han2bw8dWm1iW,
-  artboards `C+ AI perfumer answer rating (#166), for approval` and its phone version), waiting for
-  the owner's approval (Q3). Under each perfumer answer that has a `replyId` (answers from before this
+  artboards `C+ AI perfumer answer rating (#166)` and its phone version), approved by the owner on
+  2026-11-16. Under each perfumer answer that has a `replyId` (answers from before this
   change in `sessionStorage` have none and get no buttons): the label "Відповідь була корисною?" /
   "Was this helpful?" (14 px, 700, `muted`), then a `role="group"` of two 44 px round buttons with
   thumb icons (`aria-label` "Так, корисна" / "Yes, helpful" and "Ні, не допомогла" / "No, not
@@ -94,14 +94,10 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   rated, 75 % up; ~35 % of answers with picks get a card click; visitors who clicked a pick buy it a
   little more often. Exact numbers live in `analytics/generator/config.py`.
 
-## Open questions
-
-- [ ] **Q3: Approval of the thumbs up/down design on the C+ canvas.** — Why it matters: the owner
-  wants to see it before it's built (answered 2026-11-16). Default until approved: build every other
-  part first; step 6's `PerfumerFeedback` UI follows the approved artboard. Affects step 6.
-
 ## Resolved questions
 
+- **Q3: Thumbs up/down design?** — Approved by the owner on the C+ canvas (2026-11-16), artboards
+  `C+ AI perfumer answer rating (#166)` and its phone version.
 - **Q1: A server-generated `reply_id` on both events?** — Yes: a uuid per request, returned in the
   action result (`{ ok: true, reply, replyId }`) and sent back with the rating (owner, 2026-11-16).
 - **Q2: `corner` and `direct` entries?** — Yes: `menu | catalog | empty_results | product | corner |
@@ -210,8 +206,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   `eventsLimiter` key logic so it can't flood `user_events`. Tests in `app/routes/perfumer.test.ts`:
   an answer records one `perfumer_message`; an invalid request records none; feedback records one
   `perfumer_feedback`; nothing without consent; a bad rating is a 400.
-- [ ] **6. Chat page: turn, entry, list tag and thumbs.** Do the thumbs last, after the canvas
-  design is approved (Q3).
+- [ ] **6. Chat page: turn, entry, list tag and thumbs.**
   - `PerfumerPage` reads `useSearchParams().get("from")` → `PerfumerEntry` (else `direct`);
     `thread-storage.ts` stores `{ entry, items }` (still loading an old array-only value, entry
     `direct`) and items' optional `replyId` / `rating`.

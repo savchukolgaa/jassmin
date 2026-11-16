@@ -57,3 +57,41 @@ export function systemPrompt(locale: Locale): string {
 export function finalInstructions(locale: Locale): string {
   return FINAL_INSTRUCTIONS[locale];
 }
+
+// Streaming (#164): the picks first, as JSON, then the intro as plain text that streams to the
+// customer. The intro is written knowing which perfumes were chosen.
+
+const FINAL_PICKS_INSTRUCTIONS: Record<Locale, string> = {
+  uk: `Тепер обери парфуми й дай відповідь як JSON: {"picks": [{"id": "...", "reason": "..."}], "question": "..." або null}.
+- picks: 0–4 парфуми лише з id, які повернули інструменти (наприклад "p1"); reason — одне речення українською, чому він підходить, без назв і цін.
+- question: одне уточнювальне запитання або null.
+- Якщо питання не про парфуми або нічого не знайшлося, picks — порожній список.`,
+  en: `Now choose the perfumes and answer as JSON: {"picks": [{"id": "...", "reason": "..."}], "question": "..." or null}.
+- picks: 0–4 perfumes, only with ids the tools returned (e.g. "p1"); reason is one sentence in English on why it fits, without names or prices.
+- question: one clarifying question, or null.
+- If the question isn't about perfume or nothing was found, picks is an empty list.`,
+};
+
+/** Sent when streaming: the picks and the question as JSON, without the intro. */
+export function finalPicksInstructions(locale: Locale): string {
+  return FINAL_PICKS_INSTRUCTIONS[locale];
+}
+
+/**
+ * Sent when streaming, after the picks are fixed: the intro as plain text. `pickIds` are the
+ * aliases that became cards (`p1`, …), so the intro matches them.
+ */
+export function introInstructions(locale: Locale, pickIds: readonly string[]): string {
+  if (locale === "en") {
+    const chosen = pickIds.length
+      ? `You chose ${pickIds.join(", ")}; the customer will see them as product cards below your text.`
+      : "You chose no perfumes: the request was off-topic or nothing in the catalog fits. Say so politely and, if it's about perfume, suggest other notes or families.";
+    return `${chosen}
+Now write the intro: 1–3 short sentences in English, plain text (no JSON, no lists, no Markdown). Explain in terms of notes, families, mood and occasion. Never write perfume names, brands, ids or prices. Don't ask a question: it's shown separately.`;
+  }
+  const chosen = pickIds.length
+    ? `Ти обрав ${pickIds.join(", ")}; покупець побачить їх як картки товарів під твоїм текстом.`
+    : "Ти не обрав жодного парфуму: запит не про парфуми або в каталозі нічого не підходить. Ввічливо скажи про це й, якщо запит про парфуми, запропонуй інші ноти чи родини.";
+  return `${chosen}
+Тепер напиши вступ: 1–3 короткі речення українською, звичайним текстом (без JSON, списків і Markdown). Пояснюй словами про ноти, родини, настрій і нагоду. Ніколи не пиши назв парфумів, брендів, id чи цін. Не став запитань: запитання покажеться окремо.`;
+}

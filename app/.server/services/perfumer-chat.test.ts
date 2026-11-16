@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { PerfumerReply } from "~/lib/perfumer";
+import type { PerfumerEvent, PerfumerReply } from "~/lib/perfumer";
 import { AiError } from "../ai/errors";
 import { createMemoryRateLimitStore, createRateLimiter } from "../rate-limit";
-import { answerPerfumerMessage, type PerfumerChatDeps } from "./perfumer-chat";
+import {
+  answerPerfumerMessage,
+  openPerfumerStream,
+  type PerfumerChatDeps,
+  type PerfumerStreamDeps,
+} from "./perfumer-chat";
 
 const answer: PerfumerReply = { intro: "Ось що є.", picks: [] };
 const messages = [{ role: "user" as const, content: "Щось свіже" }];
@@ -100,6 +105,91 @@ describe("answerPerfumerMessage", () => {
       ok: false,
       error: "unavailable",
     });
+    expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe("openPerfumerStream (#164)", () => {
+  const reply: PerfumerEvent[] = [
+    { type: "step", step: { tool: "search", families: ["водяні"], found: 2 } },
+    { type: "intro", text: "Ось що є." },
+    { type: "picks", picks: [] },
+    { type: "done" },
+  ];
+
+  function streamDeps(
+    replyStream: PerfumerStreamDeps["replyStream"] = async function* () {
+      yield* reply;
+    },
+  ) {
+    return {
+      replyStream: vi.fn<PerfumerStreamDeps["replyStream"]>(replyStream),
+      limiters: deps.limiters,
+    };
+  }
+
+  async function collect(iterable: AsyncIterable<PerfumerEvent>): Promise<PerfumerEvent[]> {
+    const all: PerfumerEvent[] = [];
+    for await (const event of iterable) all.push(event);
+    return all;
+  }
+
+  async function stream(
+    sd: PerfumerStreamDeps,
+    ipKey: string | undefined = "1.1.1.1",
+    signal?: AbortSignal,
+  ): Promise<PerfumerEvent[] | "rateLimited"> {
+    const result = await openPerfumerStream(
+      { locale: "en", messages, ipKey, sessionKey: "visitor", signal },
+      sd,
+    );
+    return result.ok ? collect(result.events) : result.error;
+  }
+
+  it("passes the engine's events through, with the request's signal", async () => {
+    const sd = streamDeps();
+    const signal = new AbortController().signal;
+    await expect(stream(sd, "1.1.1.1", signal)).resolves.toEqual(reply);
+    expect(sd.replyStream).toHaveBeenCalledWith("en", messages, { signal });
+  });
+
+  it("shares the action's rate limit and refuses before streaming, without the model", async () => {
+    for (let n = 0; n < 10; n++) {
+      await ask("1.1.1.1", "visitor");
+    }
+    const sd = streamDeps();
+    await expect(stream(sd)).resolves.toBe("rateLimited");
+    expect(sd.replyStream).not.toHaveBeenCalled();
+  });
+
+  it("counts a streamed message against the limits", async () => {
+    const sd = streamDeps();
+    for (let n = 0; n < 10; n++) {
+      await stream(sd, `10.0.0.${n}`);
+    }
+    await expect(ask("10.0.0.99", "visitor")).resolves.toEqual({
+      ok: false,
+      error: "rateLimited",
+    });
+  });
+
+  it("ends a failed reply with one error event, after what was already sent", async () => {
+    const sd = streamDeps(async function* () {
+      yield { type: "step", step: { tool: "similar", found: 0 } };
+      throw new AiError("timeout", "too slow");
+    });
+    await expect(stream(sd)).resolves.toEqual([
+      { type: "step", step: { tool: "similar", found: 0 } },
+      { type: "error", error: "timeout" },
+    ]);
+
+    const broken = streamDeps(async function* () {
+      yield* [];
+      throw new Error("database down");
+    });
+    await expect(stream(broken, "2.2.2.2")).resolves.toEqual([
+      { type: "error", error: "unavailable" },
+    ]);
     expect(console.error).toHaveBeenCalled();
   });
 });

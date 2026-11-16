@@ -1,4 +1,4 @@
-import { chatCompletionResponseSchema } from "./client.schema";
+import { chatCompletionChunkSchema, chatCompletionResponseSchema } from "./client.schema";
 import type { PerfumerConfig } from "./config";
 import { AiError } from "./errors";
 
@@ -43,6 +43,12 @@ export interface ChatResult {
 /** One chat-completions call; `signal` bounds it (the perfumer passes one for the whole reply). */
 export type ChatFn = (request: ChatRequest, signal: AbortSignal) => Promise<ChatResult>;
 
+/**
+ * One streamed chat-completions call (#164): the text as the model writes it, in pieces. Stopping
+ * the iteration cancels the response; `signal` bounds the whole call.
+ */
+export type ChatStreamFn = (request: ChatRequest, signal: AbortSignal) => AsyncIterable<string>;
+
 function toWireMessage(message: ChatMessage): Record<string, unknown> {
   switch (message.role) {
     case "assistant":
@@ -66,13 +72,17 @@ function toWireMessage(message: ChatMessage): Record<string, unknown> {
   }
 }
 
-/** The request body of one call. */
-export function toRequestBody(config: PerfumerConfig, request: ChatRequest) {
+/** The request body of one call; `stream` asks for the answer as server-sent events (#164). */
+export function toRequestBody(
+  config: PerfumerConfig,
+  request: ChatRequest,
+  { stream = false }: { stream?: boolean } = {},
+) {
   return {
     model: config.model,
     messages: request.messages.map(toWireMessage),
     temperature: 0.2,
-    stream: false,
+    stream,
     ...(request.maxTokens ? { max_tokens: request.maxTokens } : {}),
     ...(request.tools?.length
       ? {
@@ -115,40 +125,59 @@ function timeout(cause: unknown): AiError {
   return new AiError("timeout", "The model took too long to answer", { cause });
 }
 
+/**
+ * Posts one request and returns the successful response. A refused connection is `unavailable`, an
+ * abort or timeout `timeout`, and an HTTP error `bad_response` (400/422) or `unavailable`.
+ */
+async function post(
+  config: PerfumerConfig,
+  fetchFn: typeof fetch,
+  body: unknown,
+  signal: AbortSignal,
+  accept: string,
+): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetchFn(`${config.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: accept,
+        ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}),
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (error) {
+    if (isAbort(error, signal)) {
+      throw timeout(error);
+    }
+    throw new AiError("unavailable", "The model server can't be reached", { cause: error });
+  }
+
+  if (!response.ok) {
+    const detail = (await response.text().catch(() => "")).slice(0, 200);
+    // 400/422: the server understood the request but refused our payload (e.g. no tool
+    // support); anything else (404 unknown model, 401, 429, 5xx) means it can't serve us now.
+    const kind =
+      response.status === 400 || response.status === 422 ? "bad_response" : "unavailable";
+    throw new AiError(kind, `The model server answered ${response.status}: ${detail}`, {
+      status: response.status,
+    });
+  }
+  return response;
+}
+
 /** A `ChatFn` that calls the configured server. */
 export function createChatClient(config: PerfumerConfig, fetchFn: typeof fetch = fetch): ChatFn {
-  const url = `${config.baseUrl}/chat/completions`;
-
   return async (request, signal) => {
-    let response: Response;
-    try {
-      response = await fetchFn(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}),
-        },
-        body: JSON.stringify(toRequestBody(config, request)),
-        signal,
-      });
-    } catch (error) {
-      if (isAbort(error, signal)) {
-        throw timeout(error);
-      }
-      throw new AiError("unavailable", "The model server can't be reached", { cause: error });
-    }
-
-    if (!response.ok) {
-      const detail = (await response.text().catch(() => "")).slice(0, 200);
-      // 400/422: the server understood the request but refused our payload (e.g. no tool
-      // support); anything else (404 unknown model, 401, 429, 5xx) means it can't serve us now.
-      const kind =
-        response.status === 400 || response.status === 422 ? "bad_response" : "unavailable";
-      throw new AiError(kind, `The model server answered ${response.status}: ${detail}`, {
-        status: response.status,
-      });
-    }
+    const response = await post(
+      config,
+      fetchFn,
+      toRequestBody(config, request),
+      signal,
+      "application/json",
+    );
 
     let body: unknown;
     try {
@@ -176,5 +205,80 @@ export function createChatClient(config: PerfumerConfig, fetchFn: typeof fetch =
         arguments: call.function.arguments,
       })),
     };
+  };
+}
+
+/** The text in one `data:` chunk; throws `bad_response` when it isn't a chunk. */
+function deltaOf(data: string): string {
+  let json: unknown;
+  try {
+    json = JSON.parse(data);
+  } catch (error) {
+    throw new AiError("bad_response", "The model server streamed a chunk that isn't JSON", {
+      cause: error,
+    });
+  }
+  const parsed = chatCompletionChunkSchema.safeParse(json);
+  if (!parsed.success) {
+    throw new AiError("bad_response", "Unexpected chat-completions chunk", {
+      cause: parsed.error,
+    });
+  }
+  return parsed.data.choices[0]?.delta?.content ?? "";
+}
+
+/**
+ * A `ChatStreamFn` that calls the configured server with `stream: true` and reads its server-sent
+ * events: `data: {chunk}` lines, then `data: [DONE]`.
+ */
+export function createChatStreamClient(
+  config: PerfumerConfig,
+  fetchFn: typeof fetch = fetch,
+): ChatStreamFn {
+  return async function* stream(request, signal) {
+    const response = await post(
+      config,
+      fetchFn,
+      toRequestBody(config, request, { stream: true }),
+      signal,
+      "text/event-stream",
+    );
+    if (!response.body) {
+      throw new AiError("bad_response", "The model server streamed no body");
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      while (true) {
+        let chunk: ReadableStreamReadResult<Uint8Array>;
+        try {
+          chunk = await reader.read();
+        } catch (error) {
+          if (isAbort(error, signal)) {
+            throw timeout(error);
+          }
+          throw new AiError("unavailable", "The model server's stream broke off", {
+            cause: error,
+          });
+        }
+        buffer += chunk.done ? decoder.decode() : decoder.decode(chunk.value, { stream: true });
+        // A complete line ends with a line break; the unfinished last one waits for more.
+        const lines = buffer.split(/\r?\n/);
+        buffer = chunk.done ? "" : (lines.pop() ?? "");
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+          const data = line.slice(5).trim();
+          if (data === "[DONE]") return;
+          if (data === "") continue;
+          const delta = deltaOf(data);
+          if (delta) yield delta;
+        }
+        if (chunk.done) return;
+      }
+    } finally {
+      // Stopped early (the customer left, the intro is long enough) or failed: drop the connection.
+      await reader.cancel().catch(() => {});
+    }
   };
 }

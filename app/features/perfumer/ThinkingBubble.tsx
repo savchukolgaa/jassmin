@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { focusRing } from "~/components/layout/nav";
 import { cn } from "~/lib/cn";
 import { type TextKey, useT } from "~/lib/i18n";
+import type { PerfumerStep } from "~/lib/perfumer";
 import { PerfumerName } from "./PerfumerName";
+import { StepList } from "./StepList";
 
 /** The cancel button appears after this long, once a slow answer is likely (#163). */
 export const CANCEL_AFTER_MS = 10_000;
@@ -17,12 +19,24 @@ const HINTS = [
   "perfumer.hints.choose",
 ] as const satisfies readonly TextKey[];
 
+export interface ThinkingBubbleProps {
+  onCancel: () => void;
+  /** The catalog searches so far (#164); they replace the rotating hint once there is one. */
+  steps?: readonly PerfumerStep[];
+  /**
+   * The intro is streaming above (#164): the bubble only says the perfumer is writing, without
+   * its own name line or the steps.
+   */
+  writing?: boolean;
+}
+
 /**
  * The perfumer's "choosing…" turn while a reply is awaited: three bouncing dots (only with motion
- * allowed), a hint that changes every 4 s (as text, so it also changes with reduced motion) and,
- * after 10 s, a cancel button. Re-keyed per message, so its timers restart.
+ * allowed), a hint that changes every 4 s (as text, so it also changes with reduced motion) or,
+ * once the reply streams (#164), the searches done so far, and after 10 s a cancel button.
+ * Re-keyed per message, so its timers restart.
  */
-export function ThinkingBubble({ onCancel }: { onCancel: () => void }) {
+export function ThinkingBubble({ onCancel, steps = [], writing = false }: ThinkingBubbleProps) {
   const { t } = useT();
   const [hint, setHint] = useState(0);
   const [canCancel, setCanCancel] = useState(false);
@@ -38,7 +52,7 @@ export function ThinkingBubble({ onCancel }: { onCancel: () => void }) {
 
   return (
     <li className="flex animate-pop flex-col items-start gap-2.5">
-      <PerfumerName />
+      {!writing && <PerfumerName />}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[0.5rem_1.5rem_1.5rem_1.5rem] border border-line bg-white px-5 py-4">
         <span aria-hidden="true" className="inline-flex h-6 items-center gap-1.5">
           {[0, 1, 2].map((dot) => (
@@ -53,10 +67,19 @@ export function ThinkingBubble({ onCancel }: { onCancel: () => void }) {
           ))}
         </span>
         <div role="status" className="flex flex-col gap-0.5">
-          <p className="font-extrabold text-ink">{t("perfumer.thinking")}</p>
-          <p className="text-sm font-semibold text-muted">
-            {t(HINTS[hint] ?? HINTS[0])} · {t("perfumer.usually")}
+          <p className="font-extrabold text-ink">
+            {t(writing ? "perfumer.writing" : "perfumer.thinking")}
           </p>
+          {!writing && steps.length === 0 && (
+            <p className="text-sm font-semibold text-muted">
+              {t(HINTS[hint] ?? HINTS[0])} · {t("perfumer.usually")}
+            </p>
+          )}
+          {!writing && steps.length > 0 && (
+            <div className="mt-2">
+              <StepList steps={steps} />
+            </div>
+          )}
         </div>
         {canCancel && (
           <button

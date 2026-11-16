@@ -52,6 +52,9 @@ export default [
     ...localizedRoute("popular", "routes/popular.tsx"),
     // The AI perfumer chat (#163), a 404 unless `AI_BASE_URL` is set.
     ...localizedRoute("perfumer", "routes/perfumer.tsx"),
+    // Action-only (POST): the chat's answer as server-sent events (#164). Inside the layout, so the
+    // visitor middleware runs, like the chat's own action.
+    ...localizedRoute("perfumerStream", "routes/perfumer.stream.ts"),
     ...localizedRoute("login", "routes/login.tsx"),
     ...localizedRoute("register", "routes/register.tsx"),
     // Password reset and email verification (#135).

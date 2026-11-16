@@ -250,4 +250,55 @@ describe("runCatalogTool", () => {
     const run = runCatalogTool(catalog, "similar_to", '{"title":"Baccarat Rouge"}', new AliasMap());
     expect(JSON.parse(run.content)).toMatchObject({ reference: null, perfumes: [] });
   });
+
+  describe("the step the chat shows (#164)", () => {
+    it("shows the resolved families, gender and budget, never the model's note words", () => {
+      const run = runCatalogTool(
+        catalog,
+        "search_perfumes",
+        '{"gender":"men","families":["aquatic"],"notes":["лантан"],"max_price_uah":600}',
+        new AliasMap(),
+      );
+      expect(run.record.step).toEqual({
+        tool: "search",
+        gender: "men",
+        families: ["водяні"],
+        maxPriceUah: 600,
+        found: expect.any(Number),
+      });
+      expect(JSON.stringify(run.record.step)).not.toContain("лантан");
+    });
+
+    it("counts what the search found", () => {
+      const run = runCatalogTool(catalog, "search_perfumes", '{"notes":["кедр"]}', new AliasMap());
+      expect(run.record.step).toEqual({ tool: "search", families: [], found: 1 });
+    });
+
+    it("names the catalog's title for similar_to, and nothing for an unknown perfume", () => {
+      const found = runCatalogTool(
+        catalog,
+        "similar_to",
+        '{"title":"lancome la vie est belle"}',
+        new AliasMap(),
+      );
+      expect(found.record.step).toEqual({
+        tool: "similar",
+        title: "La Vie Est Belle",
+        found: expect.any(Number),
+      });
+
+      const unknown = runCatalogTool(
+        catalog,
+        "similar_to",
+        '{"title":"Baccarat Rouge"}',
+        new AliasMap(),
+      );
+      expect(unknown.record.step).toEqual({ tool: "similar", found: 0 });
+    });
+
+    it("has no step for a failed call", () => {
+      const run = runCatalogTool(catalog, "similar_to", "{}", new AliasMap());
+      expect(run.record.step).toBeUndefined();
+    });
+  });
 });

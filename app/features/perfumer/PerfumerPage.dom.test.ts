@@ -6,13 +6,21 @@ import { createElement } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, type Locale } from "~/lib/i18n";
-import type { PerfumerActionResult, PerfumerMessage, ThreadItem } from "~/lib/perfumer";
+import type {
+  PerfumerActionResult,
+  PerfumerEvent,
+  PerfumerMessage,
+  ThreadItem,
+} from "~/lib/perfumer";
+import type { ProductSummary } from "~/lib/products";
 import { PerfumerPage } from "./PerfumerPage";
 import { CANCEL_AFTER_MS } from "./ThinkingBubble";
 import { THREAD_STORAGE_KEY } from "./thread-storage";
 
 // The chat page in the browser (#163): example chips, sending, the thinking state, cancel, errors
-// with retry, the thread surviving a reload, start over, focus and an axe check.
+// with retry, the thread surviving a reload, start over, focus and an axe check. Streaming (#164):
+// by default `fetch` fails, so these tests also show the fallback to the action; the streaming
+// tests at the end answer through a stream they control.
 
 /** A request the test answers when it wants to. */
 interface Call {
@@ -55,14 +63,68 @@ async function answerLast(result: PerfumerActionResult) {
   await act(async () => call.answer(result));
 }
 
+/** A streamed request the test answers event by event. */
+interface Stream {
+  url: string;
+  payload: string;
+  signal: AbortSignal | undefined;
+  push: (event: PerfumerEvent) => Promise<void>;
+  /** The connection breaks off. */
+  fail: () => Promise<void>;
+}
+
+let streams: Stream[] = [];
+
+/** `fetch` answers every request with an event stream the test controls. */
+function streamReplies() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async (url, init) => {
+      const encoder = new TextEncoder();
+      let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+      const body = new ReadableStream<Uint8Array>({
+        start(c) {
+          controller = c;
+        },
+      });
+      const form = init?.body instanceof FormData ? init.body : new FormData();
+      streams.push({
+        url: String(url),
+        payload: String(form.get("payload")),
+        signal: init?.signal ?? undefined,
+        push: async (event) =>
+          act(async () => {
+            controller?.enqueue(
+              encoder.encode(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`),
+            );
+          }),
+        fail: async () =>
+          act(async () => {
+            controller?.error(new TypeError("network error"));
+          }),
+      });
+      return new Response(body, { headers: { "Content-Type": "text/event-stream" } });
+    }),
+  );
+}
+
 beforeEach(() => {
   calls = [];
+  streams = [];
   sessionStorage.clear();
+  // No server to stream from: every message falls back to the action, as when streaming fails.
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async () => {
+      throw new TypeError("Failed to fetch");
+    }),
+  );
 });
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("PerfumerPage", () => {
@@ -202,6 +264,171 @@ describe("PerfumerPage", () => {
     await waitFor(() => expect(calls).toHaveLength(1));
     await answerLast({ ok: false, error: "unavailable" });
     await screen.findByText(/недоступний/);
+
+    expect((await axe.run(container, options)).violations).toEqual([]);
+  });
+});
+
+describe("PerfumerPage streaming (#164)", () => {
+  const product: ProductSummary = {
+    id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+    slug: "acqua-di-gio",
+    title: "Acqua Di Gio",
+    brand: "Armani",
+    gender: "men",
+    packSize: 1,
+    image: null,
+    variants: [{ id: "v5", volumeMl: 5, price: "290.00", inStock: true }],
+    minPrice: "290.00",
+    hasPriceRange: false,
+    volumes: [5],
+    inStock: true,
+    defaultVariant: { id: "v5", volumeMl: 5 },
+    fragranceFamily: "водяні",
+  };
+
+  beforeEach(() => {
+    streamReplies();
+    // Reduced motion: the intro appears at once instead of typing in (see TypingText.dom.test.ts).
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("reduce"),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }));
+  });
+
+  it("shows the steps, then the intro, then the cards, without calling the action", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(input(), "Щось морське{Enter}");
+    await waitFor(() => expect(streams).toHaveLength(1));
+    const stream = streams[0];
+    expect(stream?.url).toBe("/parfumer/stream");
+    expect(JSON.parse(stream?.payload ?? "{}")).toEqual({
+      messages: [{ role: "user", content: "Щось морське" }],
+    });
+
+    await stream?.push({
+      type: "step",
+      step: { tool: "search", families: ["водяні"], maxPriceUah: 600, found: 3 },
+    });
+    expect(await screen.findByText(/Шукаю в каталозі: водяні, до 600/)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("знайдено 3 аромати");
+
+    await stream?.push({ type: "intro", text: "Ось свіжі морські аромати." });
+    expect(await screen.findByText("Ось свіжі морські аромати.")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("Парфумер пише відповідь…");
+
+    await stream?.push({ type: "picks", picks: [{ product, reason: "Морський бриз." }] });
+    expect(await screen.findByText("Acqua Di Gio")).toBeTruthy();
+    await stream?.push({ type: "question", text: "Для дня чи вечора?" });
+    await stream?.push({ type: "done" });
+
+    expect(await screen.findByText("Для дня чи вечора?")).toBeTruthy();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(input().disabled).toBe(false);
+    expect(calls).toHaveLength(0);
+    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
+      items: ThreadItem[];
+    };
+    expect(saved.items.at(-1)).toMatchObject({
+      role: "perfumer",
+      reply: {
+        intro: "Ось свіжі морські аромати.",
+        picks: [{ reason: "Морський бриз." }],
+        question: "Для дня чи вечора?",
+      },
+    });
+  });
+
+  it("aborts the stream on cancel, without falling back", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderPage();
+
+    await user.type(input(), "Щось морське{Enter}");
+    await waitFor(() => expect(streams).toHaveLength(1));
+    await act(async () => vi.advanceTimersByTime(CANCEL_AFTER_MS));
+    await user.click(screen.getByRole("button", { name: "Скасувати" }));
+
+    expect(streams[0]?.signal?.aborted).toBe(true);
+    expect(screen.getByText("Запит скасовано. Напишіть ще раз, коли будете готові.")).toBeTruthy();
+    await act(async () => vi.advanceTimersByTime(100));
+    expect(calls).toHaveLength(0);
+  });
+
+  it("aborts the stream when the page is left", async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderPage();
+
+    await user.type(input(), "Щось морське{Enter}");
+    await waitFor(() => expect(streams).toHaveLength(1));
+    unmount();
+
+    expect(streams[0]?.signal?.aborted).toBe(true);
+  });
+
+  it("falls back to the action when the answer is not a stream", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async () => new Response("<h1>Oops</h1>", { status: 500 })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(input(), "Щось морське{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.messages).toEqual([{ role: "user", content: "Щось морське" }]);
+    await answerLast(reply("Ось морські аромати."));
+
+    expect(await screen.findByText("Ось морські аромати.")).toBeTruthy();
+  });
+
+  it("falls back to the action when the stream breaks off, keeping the steps shown", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(input(), "Щось морське{Enter}");
+    await waitFor(() => expect(streams).toHaveLength(1));
+    await streams[0]?.push({ type: "step", step: { tool: "similar", found: 0 } });
+    await streams[0]?.fail();
+
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(screen.getByText(/Шукаю схожі аромати/)).toBeTruthy();
+    await answerLast(reply("Ось що є."));
+    expect(await screen.findByText("Ось що є.")).toBeTruthy();
+    expect(screen.queryByText(/Шукаю схожі аромати/)).toBeNull();
+  });
+
+  it("shows an error the server streamed, without falling back", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(input(), "Щось морське{Enter}");
+    await waitFor(() => expect(streams).toHaveLength(1));
+    await streams[0]?.push({ type: "error", error: "rateLimited" });
+
+    expect(await screen.findByText(/багато повідомлень поспіль/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Спробувати ще раз" })).toBeNull();
+    expect(calls).toHaveLength(0);
+  });
+
+  it("has no axe violations while the reply streams", async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    const options: axe.RunOptions = { rules: { "color-contrast": { enabled: false } } };
+
+    await user.type(input(), "Щось морське{Enter}");
+    await waitFor(() => expect(streams).toHaveLength(1));
+    await streams[0]?.push({ type: "step", step: { tool: "search", families: [], found: 2 } });
+    await streams[0]?.push({ type: "intro", text: "Ось свіжі аромати." });
+    await screen.findByText("Ось свіжі аромати.");
 
     expect((await axe.run(container, options)).violations).toEqual([]);
   });

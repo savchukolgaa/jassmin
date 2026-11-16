@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createChatClient, toRequestBody } from "./client";
+import { createChatClient, createChatStreamClient, toRequestBody } from "./client";
 import type { PerfumerConfig } from "./config";
 import { AiError } from "./errors";
 
@@ -123,6 +123,141 @@ describe("createChatClient", () => {
     ]) {
       const fetchFn = vi.fn<typeof fetch>(async () => response());
       const error = await failure(createChatClient(config, fetchFn)({ messages: [] }, signal()));
+      expect(error.kind).toBe("bad_response");
+    }
+  });
+});
+
+/** A streamed response whose body arrives in these pieces. */
+function sse(pieces: readonly string[], { onCancel }: { onCancel?: () => void } = {}): Response {
+  const encoder = new TextEncoder();
+  let index = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      const piece = pieces[index++];
+      if (piece === undefined) {
+        controller.close();
+      } else {
+        controller.enqueue(encoder.encode(piece));
+      }
+    },
+    cancel() {
+      onCancel?.();
+    },
+  });
+  return new Response(body, { headers: { "Content-Type": "text/event-stream" } });
+}
+
+const chunk = (content: string | null) =>
+  `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
+
+async function collect(iterable: AsyncIterable<string>): Promise<string[]> {
+  const pieces: string[] = [];
+  for await (const piece of iterable) {
+    pieces.push(piece);
+  }
+  return pieces;
+}
+
+async function streamFailure(iterable: AsyncIterable<string>): Promise<AiError> {
+  return failure(collect(iterable));
+}
+
+describe("createChatStreamClient (#164)", () => {
+  it("asks for a stream and yields the text pieces in order until [DONE]", async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () =>
+      sse([
+        `${chunk("Ось ")}${chunk(null)}`,
+        // A chunk split in the middle of its line, and a CRLF line end.
+        `data: {"choices":[{"delta":{"content":"свіжі"}}]}`,
+        "\r\n\r\n: a comment\n\n",
+        chunk(" аромати."),
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n',
+        "data: [DONE]\n\n",
+        chunk("never read"),
+      ]),
+    );
+    const stream = createChatStreamClient(config, fetchFn);
+
+    const pieces = await collect(stream({ messages: [] }, signal()));
+
+    expect(pieces).toEqual(["Ось ", "свіжі", " аромати."]);
+    const init = fetchFn.mock.calls[0]?.[1];
+    expect(JSON.parse(String(init?.body))).toMatchObject({ stream: true });
+    expect(new Headers(init?.headers).get("Accept")).toBe("text/event-stream");
+  });
+
+  it("ends without [DONE] when the body ends", async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => sse([chunk("Один."), chunk(" Два.")]));
+    const pieces = await collect(
+      createChatStreamClient(config, fetchFn)({ messages: [] }, signal()),
+    );
+    expect(pieces).toEqual(["Один.", " Два."]);
+  });
+
+  it("cancels the response when the caller stops early", async () => {
+    const onCancel = vi.fn();
+    const fetchFn = vi.fn<typeof fetch>(async () =>
+      sse([chunk("Один."), chunk(" Два."), chunk(" Три.")], { onCancel }),
+    );
+    for await (const piece of createChatStreamClient(config, fetchFn)({ messages: [] }, signal())) {
+      expect(piece).toBe("Один.");
+      break;
+    }
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("maps HTTP errors and refused connections like the plain client", async () => {
+    const notFound = vi.fn<typeof fetch>(async () => json({ error: "model not found" }, 404));
+    expect(
+      (await streamFailure(createChatStreamClient(config, notFound)({ messages: [] }, signal())))
+        .kind,
+    ).toBe("unavailable");
+
+    const refused = vi.fn<typeof fetch>(async () => {
+      throw new TypeError("fetch failed");
+    });
+    expect(
+      (await streamFailure(createChatStreamClient(config, refused)({ messages: [] }, signal())))
+        .kind,
+    ).toBe("unavailable");
+  });
+
+  it("maps an abort while reading to timeout", async () => {
+    const controller = new AbortController();
+    const fetchFn = vi.fn<typeof fetch>(async (_url, init) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(stream) {
+          stream.enqueue(new TextEncoder().encode(chunk("Ось")));
+          init?.signal?.addEventListener("abort", () =>
+            stream.error(new DOMException("aborted", "AbortError")),
+          );
+        },
+      });
+      return new Response(body);
+    });
+    const pieces: string[] = [];
+    const error = await failure(
+      (async () => {
+        for await (const piece of createChatStreamClient(config, fetchFn)(
+          { messages: [] },
+          controller.signal,
+        )) {
+          pieces.push(piece);
+          controller.abort();
+        }
+      })(),
+    );
+    expect(pieces).toEqual(["Ось"]);
+    expect(error.kind).toBe("timeout");
+  });
+
+  it("maps a chunk that isn't JSON or a chunk to bad_response", async () => {
+    for (const piece of ["data: <html>\n\n", 'data: {"error":"overloaded"}\n\n']) {
+      const fetchFn = vi.fn<typeof fetch>(async () => sse([piece]));
+      const error = await streamFailure(
+        createChatStreamClient(config, fetchFn)({ messages: [] }, signal()),
+      );
       expect(error.kind).toBe("bad_response");
     }
   });

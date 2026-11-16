@@ -27,6 +27,96 @@ export interface PerfumerReply {
   question?: string;
 }
 
+// Streaming (#164): the events of `POST /parfumer/stream`, in this order: `step`* → `intro`* →
+// `picks` → `question`? → `done`, or one `error` at any point (then the stream ends).
+
+/**
+ * One catalog tool call, as the chat shows it ("Шукаю в каталозі: цитрусові, до 600 ₴"). Only
+ * resolved, catalog-safe values: the families after the synonym mapping and a catalog title, never
+ * the model's own note words or a title the shop doesn't have.
+ */
+export type PerfumerStep =
+  | {
+      tool: "search";
+      gender?: "women" | "men";
+      /** Stored Ukrainian family values; label them with `fragranceFamilyLabel`. */
+      families: string[];
+      maxPriceUah?: number;
+      /** How many perfumes the search returned. */
+      found: number;
+    }
+  | {
+      tool: "similar";
+      /** The catalog title, when found. */
+      title?: string;
+      found: number;
+    };
+
+export type PerfumerEvent =
+  | { type: "step"; step: PerfumerStep }
+  /** One or more whole, checked sentences of the intro, to append as they are. */
+  | { type: "intro"; text: string }
+  | { type: "picks"; picks: PerfumerPick[] }
+  | { type: "question"; text: string }
+  | { type: "error"; error: PerfumerErrorKey }
+  | { type: "done" };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStep(value: unknown): value is PerfumerStep {
+  if (!isRecord(value) || typeof value.found !== "number") return false;
+  if (value.tool === "similar") {
+    return value.title === undefined || typeof value.title === "string";
+  }
+  return (
+    value.tool === "search" &&
+    Array.isArray(value.families) &&
+    value.families.every((family) => typeof family === "string") &&
+    (value.gender === undefined || value.gender === "women" || value.gender === "men") &&
+    (value.maxPriceUah === undefined || typeof value.maxPriceUah === "number")
+  );
+}
+
+function isPick(value: unknown): value is PerfumerPick {
+  return (
+    isRecord(value) &&
+    typeof value.reason === "string" &&
+    isRecord(value.product) &&
+    typeof value.product.id === "string" &&
+    typeof value.product.title === "string" &&
+    Array.isArray(value.product.variants)
+  );
+}
+
+/**
+ * Whether a parsed stream event has the expected shape. A plain guard rather than zod, which stays
+ * out of the browser bundle (#96); the products are the server's own data, so only their shape
+ * is checked.
+ */
+export function isPerfumerEvent(value: unknown): value is PerfumerEvent {
+  if (!isRecord(value)) return false;
+  switch (value.type) {
+    case "step":
+      return isStep(value.step);
+    case "intro":
+    case "question":
+      return typeof value.text === "string";
+    case "picks":
+      return Array.isArray(value.picks) && value.picks.every(isPick);
+    case "error":
+      return (
+        typeof value.error === "string" &&
+        (PERFUMER_ERROR_KEYS as readonly string[]).includes(value.error)
+      );
+    case "done":
+      return true;
+    default:
+      return false;
+  }
+}
+
 // The chat page (#163): what the browser keeps and sends, and what the action returns.
 
 /** The longest message a customer may type in the chat (the engine itself allows more). */

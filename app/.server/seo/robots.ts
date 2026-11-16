@@ -5,7 +5,7 @@ import { EN_PREFIX, PAGES, type Page } from "~/lib/paths";
 /**
  * The private pages: cart, checkout (with its success and payment pages), login, register, the
  * password reset and email verification pages (#135), the unsubscribe page (#139), the account (with its orders and profile),
- * and a gift card's result page (#125). Each one's path is a prefix of its sub-pages' paths, so
+ * a gift card's result page (#125) and the AI perfumer's stream endpoint (#164). Each one's path is a prefix of its sub-pages' paths, so
  * these cover every page that isn't indexable; a test checks that.
  */
 export const ROBOTS_PRIVATE_PAGES = [
@@ -21,6 +21,8 @@ export const ROBOTS_PRIVATE_PAGES = [
   "account",
   // The gift card purchase page is indexable, so only its result pages are blocked (#125).
   "giftCardSuccess",
+  // The AI perfumer chat's streamed answer, POST only (#164); the chat page itself is indexable.
+  "perfumerStream",
 ] as const satisfies readonly Page[];
 
 /**

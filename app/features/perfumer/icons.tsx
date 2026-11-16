@@ -79,3 +79,12 @@ export function SendIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/** A tick: a catalog search the perfumer finished (#164). */
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth={2.6} {...props}>
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </Icon>
+  );
+}

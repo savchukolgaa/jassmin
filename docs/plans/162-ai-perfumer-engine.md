@@ -209,7 +209,7 @@ There is no UI.
   synonyms, note-that-is-a-family → family, e.g. `морська вода`/`морські` → `водяні`, `свіжі` →
   `свіжі`+`цитрусові`, `солодкі` → `гурманські`+`ванільні`). Unit tests for every mapping the issue
   lists plus the feasibility test's misses ("spicy oriental" → `пряні`+`східні`).
-- [ ] **5. Catalog tools** — `db/queries/perfumer.ts`:
+- [x] **5. Catalog tools** — `db/queries/perfumer.ts`:
   `listPerfumerCandidates(db, { genders, maxPrice? })` (active products with ≥ 1 size in stock and,
   with a budget, ≤ max; returns id, publicId, title, brand, gender, families, notes, popularRank and
   the qualifying sizes as `json_agg`), `findProductsByTitle(db)` (all titles/brands for `similar_to`

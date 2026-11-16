@@ -216,7 +216,7 @@ enabled.
   once #162 is merged. Check `isPerfumerEnabled`'s module, the `reply` signature, the message type,
   the error class/keys and `AbortSignal` support; update the **(unconfirmed)** items in this plan
   and adjust the types in step 2 to import from the engine where they're isomorphic.
-- [ ] **2. Shared types, schema and copy** — `app/lib/perfumer.ts` (types, limits,
+- [x] **2. Shared types, schema and copy** — `app/lib/perfumer.ts` (types, limits,
   `replyToHistoryText`, `toHistory(items)` → last 10 `ChatMessage`s, skipping error items),
   `app/lib/perfumer.schema.ts` (zod, messages keyed with `msg("perfumer.errors.tooLong")`), and the
   `perfumer` namespace in `uk.ts`/`en.ts`: page title/meta description, hero eyebrow/title/intro,

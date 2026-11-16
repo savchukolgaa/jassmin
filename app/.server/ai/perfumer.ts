@@ -27,7 +27,8 @@ import {
   modelAnswerSchema,
   perfumerMessagesSchema,
 } from "./perfumer.schema";
-import { finalInstructions, systemPrompt } from "./prompts";
+import { finalInstructions, searchFirst, systemPrompt } from "./prompts";
+import { foldLatin } from "./synonyms";
 
 // The AI perfumer engine (#162): the customer's words → at most 3 rounds of read-only catalog
 // tool calls → one structured answer, whose picks must be products the tools returned and whose
@@ -69,6 +70,8 @@ export interface PerfumerTrace {
   droppedPickIds: string[];
   /** Sentences the guard removed. */
   removedSentences: string[];
+  /** Whether the model picked perfumes without searching and was told to search. */
+  searchNudged: boolean;
 }
 
 export interface PerfumerResult {
@@ -128,21 +131,23 @@ export async function replyWithTrace(
     modelPickIds: [],
     droppedPickIds: [],
     removedSentences: [],
+    searchNudged: false,
   };
   const history: ChatMessage[] = [
     { role: "system", content: systemPrompt(locale) },
     ...conversation,
   ];
 
-  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+  /** Runs one tool round; `false` when the model called no tool. */
+  const toolRound = async (): Promise<boolean> => {
     const result = await chat(
       { messages: history, tools: CATALOG_TOOL_DEFINITIONS, maxTokens: TOOL_ROUND_MAX_TOKENS },
       signal,
     );
     if (result.toolCalls.length === 0) {
-      break;
+      return false;
     }
-    trace.rounds = round + 1;
+    trace.rounds += 1;
     history.push({ role: "assistant", content: result.content, toolCalls: result.toolCalls });
     for (const [index, call] of result.toolCalls.entries()) {
       if (index >= MAX_CALLS_PER_ROUND) {
@@ -157,28 +162,66 @@ export async function replyWithTrace(
       trace.toolCalls.push(run.record);
       history.push({ role: "tool", toolCallId: call.id, content: run.content });
     }
-  }
+    return true;
+  };
 
-  // The final, structured answer: no tools, JSON only. One retry when it isn't valid.
-  history.push({ role: "system", content: finalInstructions(locale) });
-  let answer: ModelAnswer | undefined;
-  for (let attempt = 0; attempt < 2 && !answer; attempt++) {
-    const result = await chat(
-      {
-        messages: history,
-        responseFormat: { name: "perfumer_answer", schema: MODEL_ANSWER_JSON_SCHEMA },
-        maxTokens: FINAL_MAX_TOKENS,
-      },
-      signal,
-    );
-    answer = parseAnswer(result.content);
-  }
-  if (!answer) {
+  /** The final, structured answer: no tools, JSON only. One retry when it isn't valid. */
+  const finalAnswer = async (): Promise<ModelAnswer> => {
+    const messages: ChatMessage[] = [
+      ...history,
+      { role: "system", content: finalInstructions(locale) },
+    ];
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = await chat(
+        {
+          messages,
+          responseFormat: { name: "perfumer_answer", schema: MODEL_ANSWER_JSON_SCHEMA },
+          maxTokens: FINAL_MAX_TOKENS,
+        },
+        signal,
+      );
+      const answer = parseAnswer(result.content);
+      if (answer) {
+        return answer;
+      }
+    }
     throw new AiError("bad_response", "The model's answer isn't the expected JSON");
+  };
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS && (await toolRound()); round++) {}
+  let answer = await finalAnswer();
+
+  // Picks without a search: the model skipped the tools (seen in the eval with granite4.1:3b), so
+  // its ids are invented. Tell it to search and give it one more round. An off-topic answer has
+  // no picks and never gets here.
+  if (trace.toolCalls.length === 0 && answer.picks.length > 0) {
+    trace.searchNudged = true;
+    history.push({ role: "system", content: searchFirst(locale) });
+    if (await toolRound()) {
+      answer = await finalAnswer();
+    }
   }
 
-  const reply = await validate(locale, answer, { catalog, aliases, trace, deps });
+  const reply = await validate(locale, answer, {
+    catalog,
+    aliases,
+    trace,
+    deps,
+    customerText: conversation.filter((m) => m.role === "user").map((m) => m.content),
+  });
   return { reply, trace };
+}
+
+/**
+ * The catalog titles and brands the customer wrote ("схоже на La Vie Est Belle"): real products,
+ * so the reply may name them back. Names outside the catalog are never allowed.
+ */
+function namesIn(customerText: readonly string[], catalogNames: readonly string[]): string[] {
+  const folded = ` ${customerText.map(foldLatin).join(" ")} `;
+  return catalogNames.filter((name) => {
+    const own = foldLatin(name);
+    return own.length >= 3 && folded.includes(` ${own} `);
+  });
 }
 
 async function validate(
@@ -189,11 +232,14 @@ async function validate(
     aliases,
     trace,
     deps,
+    customerText,
   }: {
     catalog: readonly PerfumerProductRow[];
     aliases: AliasMap;
     trace: PerfumerTrace;
     deps: PerfumerDeps;
+    /** What the customer wrote: catalog perfumes they named may be named back. */
+    customerText: readonly string[];
   },
 ): Promise<PerfumerReply> {
   const translator = createTranslator(locale);
@@ -220,10 +266,14 @@ async function validate(
       return !toolRan || !publicId || !keptIds.has(publicId);
     });
 
+  const catalogNames = catalog.flatMap((product) => [product.title, product.brand]);
   const context = {
     locale,
-    allowedNames: kept.flatMap((pick) => [pick.product.title, pick.product.brand]),
-    catalogNames: catalog.flatMap((product) => [product.title, product.brand]),
+    allowedNames: [
+      ...kept.flatMap((pick) => [pick.product.title, pick.product.brand]),
+      ...namesIn(customerText, catalogNames),
+    ],
+    catalogNames,
   };
   const clean = (text: string, max: number): string => {
     const result = cleanProse(limitLength(text, max), context);

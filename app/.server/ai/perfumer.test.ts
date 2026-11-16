@@ -197,15 +197,60 @@ describe("perfumer.reply", () => {
   it("returns no picks when no tool ran (off-topic, injection)", async () => {
     const { chat } = scripted(
       { content: "Не можу допомогти з погодою.", toolCalls: [] },
-      final({
-        intro: "Я допомагаю лише з парфумами.",
-        picks: [{ id: "p1", reason: "Вигадка." }],
-      }),
+      final({ intro: "Я допомагаю лише з парфумами.", picks: [], question: null }),
     );
 
     const result = await reply("uk", [{ role: "user", content: "Яка погода завтра?" }], deps(chat));
 
     expect(result).toEqual({ intro: "Я допомагаю лише з парфумами.", picks: [] });
+    expect(chat).toHaveBeenCalledTimes(2);
+  });
+
+  it("tells a model that picked without searching to search, once", async () => {
+    const { chat, requests } = scripted(
+      { content: "Ось троянди.", toolCalls: [] },
+      final({ intro: "Ось.", picks: [{ id: "p1", reason: "Вигадка." }] }),
+      toolCall("search_perfumes", { notes: ["троянда"] }),
+      final({ intro: "Ось троянди.", picks: [{ id: "p1", reason: "Троянда." }] }),
+    );
+
+    const { reply: result, trace } = await replyWithTrace("uk", ask, deps(chat));
+
+    expect(trace.searchNudged).toBe(true);
+    expect(requests[2]?.messages.at(-1)?.content).toContain("search_perfumes");
+    expect(result.picks.map((p) => p.product.title)).toEqual(["Rose Garden"]);
+  });
+
+  it("drops the picks when the model still doesn't search", async () => {
+    const { chat } = scripted(
+      { content: null, toolCalls: [] },
+      final({ intro: "Ось.", picks: [{ id: "p1", reason: "Вигадка." }] }),
+      { content: "Ні.", toolCalls: [] },
+    );
+
+    const result = await reply("uk", ask, deps(chat));
+
+    expect(result.picks).toEqual([]);
+    expect(chat).toHaveBeenCalledTimes(3);
+  });
+
+  it("may name back a catalog perfume the customer named", async () => {
+    const { chat } = scripted(
+      toolCall("similar_to", { title: "Rose Garden" }),
+      { content: null, toolCalls: [] },
+      final({
+        intro: "Схожі на Rose Garden аромати. Але не Aquarius.",
+        picks: [{ id: "p1", reason: "Теж свіжий." }],
+      }),
+    );
+
+    const result = await reply(
+      "uk",
+      [{ role: "user", content: "Що схоже на rose garden?" }],
+      deps(chat),
+    );
+
+    expect(result.intro).toBe("Схожі на Rose Garden аромати.");
   });
 
   it("reports invalid tool arguments back to the model", async () => {

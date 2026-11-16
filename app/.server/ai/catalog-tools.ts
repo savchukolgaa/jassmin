@@ -242,12 +242,13 @@ export const SIMILAR_TO = "similar_to";
 const genderParameter = {
   type: "string",
   enum: ["women", "men"],
-  description: "Who the perfume is for. Leave it out when it doesn't matter.",
+  description: "Who the perfume is for. Only when the customer says so; otherwise leave it out.",
 };
 
 const maxPriceParameter = {
   type: "number",
-  description: "The most the customer wants to pay, in UAH, for one bottle.",
+  description:
+    "The customer's budget in UAH for one bottle. Only when the customer names a budget; never guess one.",
 };
 
 const limitParameter = {

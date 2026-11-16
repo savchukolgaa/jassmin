@@ -40,6 +40,16 @@ const FINAL_INSTRUCTIONS: Record<Locale, string> = {
 - If the question isn't about perfume or nothing was found, picks is an empty list.`,
 };
 
+const SEARCH_FIRST: Record<Locale, string> = {
+  uk: "Ти порадив парфуми, не викликавши search_perfumes чи similar_to, тож ці id вигадані. Спершу виклич search_perfumes або similar_to за запитом покупця.",
+  en: "You recommended perfumes without calling search_perfumes or similar_to, so those ids are invented. First call search_perfumes or similar_to for the customer's request.",
+};
+
+/** Sent when the model picked perfumes without searching. */
+export function searchFirst(locale: Locale): string {
+  return SEARCH_FIRST[locale];
+}
+
 export function systemPrompt(locale: Locale): string {
   return SYSTEM_PROMPTS[locale];
 }

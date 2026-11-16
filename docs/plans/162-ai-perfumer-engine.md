@@ -122,6 +122,27 @@ There is no UI.
   using `createDb(url)` and an env built from `process.env` with `AI_MODEL` overridden per model. It
   is not a Vitest file and not in CI.
 
+### Changes made during implementation
+
+- **Catalog query**: `listPerfumerProducts` loads every product with its in-stock sizes once per
+  reply; gender, budget and ranking are filtered in TypeScript (pure, unit-tested without a DB).
+- **Token caps**: tool rounds may generate 256 tokens, the final answer 800. Prose the model
+  writes instead of calling a tool is discarded anyway, and on a CPU every token costs time (the
+  first smoke run went from 169 s to 111 s).
+- **Search nudge**: the first eval run showed granite4.1:3b sometimes "picking" ids without calling
+  a tool. When the final answer has picks but no tool ran, the engine tells the model to search and
+  gives it one more tool round and final answer; if it still doesn't search, there are no picks.
+- **Customer-named perfumes**: catalog titles and brands the customer wrote ("схоже на La Vie Est
+  Belle") may be named back; the first eval run lost every useful sentence about the reference.
+  Names outside the catalog are still removed.
+- **Budget and gender only when stated**: the tool descriptions say so; the model invented budgets
+  (300, 1500 UAH) in the first run.
+- **Eval catalog**: by default the eval reads the owner's list (`catalog-data.ts`) with the shared
+  price table, so it needs no database; `--db` reads the app database.
+- **Aspire**: `AI_API_KEY` is never forwarded (it would show in the dashboard); `web` reads it from
+  the root `.env`. `pnpm aspire:build` can't run in a fresh worktree (Aspire's generated modules
+  are git-ignored), so the AppHost change is unchecked by `tsc`.
+
 ## Resolved questions
 
 - **Q1: Should `pnpm aspire run` turn the perfumer on by default?** — No. Forward `AI_BASE_URL`,

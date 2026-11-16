@@ -246,7 +246,7 @@ There is no UI.
 - [x] **8. i18n + DTO** — `app/lib/perfumer.ts` types; `perfumer.fallbackIntro`,
   `perfumer.fallbackReason` (`{families}` placeholder) in `uk.ts` and `en.ts`. Check:
   `pnpm typecheck` (dictionaries must match).
-- [ ] **9. Aspire** — in `apphost.mts`, read `process.env.AI_*` (the AppHost's environment) and
+- [x] **9. Aspire** — in `apphost.mts`, read `process.env.AI_*` (the AppHost's environment) and
   `withEnvironment` each one on `web` only when set; `AI_API_KEY` through a secret parameter if it's
   set. Document in `aspire-apphost/AGENTS.md`. Check: `pnpm aspire:build`.
 - [ ] **10. Eval script** — `perfumer-eval.cases.ts`: ~15 cases, uk and en: fresh summer for him,

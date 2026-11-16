@@ -65,9 +65,13 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   (`up` \| `down`). Recorded by the same route's action with `intent=feedback` (a separate,
   zod-validated branch), also only with consent. The customer can change their mind; the SQL takes
   the **latest** rating per `reply_id`.
-- **`latency_ms` and `model` come from the engine.** `PerfumerTrace` gains `model`; the chat
-  service calls `replyWithTrace` instead of `reply` and builds the event properties from the trace.
-  The service stays pure: it returns `{ result, event }` and the route records the event.
+- **Where the event's fields come from.** The chat service calls `replyWithTrace` instead of
+  `reply` and takes the tool calls from its trace. `model` comes from `getPerfumerConfig()` (a
+  service dependency), not from the trace as first planned: a failed reply throws, so its trace is
+  lost, but the event of a failed answer still needs the model. `latency_ms` is measured by the
+  service. The service stays pure: it returns `{ result, event }` and the route records the event.
+  `turn` and `entry` travel inside the JSON `payload` with the messages; a page opened before this
+  change sends neither, so `turn` is then counted from the messages and `entry` is `direct`.
 - **`entry` transport.** The chat page reads `?from=` (validated against `PERFUMER_ENTRIES`, anything
   else → `direct`), stores it with the thread in `sessionStorage` (the entry of the conversation, not
   of each page load; clearing the thread takes the current URL's), and sends it with every message
@@ -187,7 +191,7 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   0030's list, deleting the rows of the two new types first (as 0030's rollback does). Check:
   migrate and roll back on a test database (`createTestDatabase()`, existing
   migration tests).
-- [ ] **3. Engine and chat service telemetry.** Add `model` to `PerfumerTrace` (from the config).
+- [x] **3. Engine and chat service telemetry.** Add `model` to `PerfumerTrace` (from the config).
   In `perfumer-chat.ts` switch the dep to `replyWithTrace`, measure `latency_ms` with
   `performance.now()`, generate `reply_id` (`crypto.randomUUID()`), and return
   `{ result, event: PerfumerMessageProperties }`; `result` gains `replyId` when ok. A pure
@@ -198,11 +202,11 @@ the warehouse gets a `mart_perfumer_daily` mart built on synthetic data.
   `unavailable`). Tests: one event per outcome (answer with picks, question only, each error,
   rate-limited without calling the engine), and that `JSON.stringify(event)` contains none of the
   intro, reasons, question or customer text.
-- [ ] **4. Request schema.** `perfumerRequestSchema` gains `turn` (int 1–100) and `entry`
+- [x] **4. Request schema.** `perfumerRequestSchema` gains `turn` (int 1–100) and `entry`
   (`PERFUMER_ENTRIES`, default `direct` when missing, so an old open tab still works);
   `parsePerfumerFeedback(formData)` validates `intent=feedback`, `replyId` (uuid), `turn` and
   `rating` (`up` | `down`) and returns typed errors. Tests in `perfumer.schema.test.ts`.
-- [ ] **5. Route action.** In `app/routes/perfumer.tsx` branch on `formData.get("intent")`:
+- [x] **5. Route action.** In `app/routes/perfumer.tsx` branch on `formData.get("intent")`:
   `feedback` → `parsePerfumerFeedback`, `ensureVisitor`, `void trackEvent(args,
   "perfumer_feedback", …)`, return `{ ok: true }` (400 on invalid input, never an error for missing
   consent). Otherwise the chat as today, plus `void trackEvent(args, "perfumer_message",

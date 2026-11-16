@@ -44,7 +44,11 @@ function renderPage(locale: Locale = "uk") {
   return render(createElement(I18nProvider, { locale }, createElement(RouterProvider, { router })));
 }
 
-const reply = (intro: string): PerfumerActionResult => ({ ok: true, reply: { intro, picks: [] } });
+const reply = (intro: string, replyId = crypto.randomUUID()): PerfumerActionResult => ({
+  ok: true,
+  reply: { intro, picks: [] },
+  replyId,
+});
 
 const input = () => screen.getByRole<HTMLTextAreaElement>("textbox", { name: /AI-парфумеру/ });
 

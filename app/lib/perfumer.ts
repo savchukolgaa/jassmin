@@ -40,9 +40,12 @@ export const PERFUMER_ERROR_KEYS = ["unavailable", "timeout", "rateLimited", "to
 
 export type PerfumerErrorKey = (typeof PERFUMER_ERROR_KEYS)[number];
 
-/** The chat action's result: locale-independent, so it can be rendered in either language. */
+/**
+ * The chat action's result: locale-independent, so it can be rendered in either language.
+ * `replyId` names the answer in analytics (#166), so its rating can be joined to it.
+ */
 export type PerfumerActionResult =
-  | { ok: true; reply: PerfumerReply }
+  | { ok: true; reply: PerfumerReply; replyId: string }
   | { ok: false; error: PerfumerErrorKey };
 
 /** Errors worth retrying as they are; for the others, waiting or editing the message is the fix. */

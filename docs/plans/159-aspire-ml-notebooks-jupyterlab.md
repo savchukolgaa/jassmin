@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/159
 Branch: `issue/159`
 Worktree: `.claude/worktrees/issue-159`
-Status: Planned
+Status: Implemented (two checks pending, see Verification notes)
 
 ## Goal
 
@@ -156,12 +156,29 @@ endpoint, localhost only), both getting only the synth database as `JASSMIN_SYNT
 
 ## Acceptance criteria
 
-- [ ] `ml-notebooks` and `jupyter-lab` appear under `jassmin-synth` in the Aspire dashboard and don't start on their own — steps 2, 5
-- [ ] Starting `ml-notebooks` after `synth-generate` and `dbt-build` runs all notebooks against `jassmin_synth` and finishes successfully — steps 2, 5
+- [x] `ml-notebooks` and `jupyter-lab` appear under `jassmin-synth` in the Aspire dashboard and don't start on their own — steps 2, 5
+- [x] Starting `ml-notebooks` after `synth-generate` and `dbt-build` runs all notebooks against `jassmin_synth` and finishes successfully — steps 2, 5
 - [ ] Starting `jupyter-lab` serves JupyterLab on its dashboard endpoint (localhost only), opened on `analytics/notebooks/`, with a kernel that can read `marts.*` — steps 1, 2, 5
-- [ ] Neither resource gets `jassmindb` or the app's environment — steps 2, 5
-- [ ] `aspire-apphost/AGENTS.md` and the analytics READMEs describe the resources and the run order — steps 3, 4
+- [x] Neither resource gets `jassmindb` or the app's environment — steps 2, 5
+- [x] `aspire-apphost/AGENTS.md` and the analytics READMEs describe the resources and the run order — steps 3, 4
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 6
+
+## Verification notes
+
+- `aspire describe`: `ml-notebooks` and `jupyter-lab` are `NotStarted` children of
+  `jassmin-synth`. From the dashboard, `synth-generate` → `dbt-build` (PASS=179) → `ml-notebooks`
+  ran all five notebooks "ok" and finished with exit code 0. The rerun changed only how one
+  notebook's stdout was chunked (same text), which was reverted.
+- Step 1, outside Aspire: `jupyter lab` with `JUPYTER_PORT=8899 JUPYTER_TOKEN=…` listened on
+  `127.0.0.1:8899` only, served `analytics/notebooks/` and answered 403 without the token.
+  **Pending:** starting `jupyter-lab` from the dashboard, opening its `JupyterLab` link (token in
+  the URL via `withUrl(refExpr…)`) and reading `marts.*` from a kernel. The Aspire run was stopped
+  by the machine running low on memory before this check.
+- Neither resource has `withReference(db)` or any app variable; their only database is `synthDb`.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build` and `pnpm aspire:build` pass. **Pending:**
+  `pnpm test`: 45 database test files failed with `ECONNREFUSED` on `localhost:5432` because no
+  PostgreSQL was running for the `.env` URL; no test covers the AppHost or the docs changed here.
+  Rerun with the database up.
 
 ## Out of scope
 

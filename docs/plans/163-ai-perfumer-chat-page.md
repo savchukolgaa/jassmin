@@ -83,7 +83,7 @@ enabled.
 - **Cards.** Reuse `ProductCard` (default variant, `headingLevel={3}`) with a new
   `purchase?: boolean` prop (default `true`); the perfumer passes `false`, which hides
   `AddToCartForm` and the size picker so the card shows image, brand, title, family, from-price and
-  link (adding to the cart from the chat is out of scope, a follow-up issue) **(see Q1)**. The reason sits under each
+  link (adding to the cart from the chat is out of scope, a follow-up issue) **(#169)**. The reason sits under each
   card as plain text. No `listIndex` / `ProductListProvider`: tagging clicks with `list: "perfumer"`
   is #166, which needs a new `LIST_IDS` value and an event-contract change. The product page's own
   analytics still run after the click.
@@ -134,24 +134,19 @@ enabled.
   (the `color-contrast` rule disabled: jsdom has no layout). No other accessibility library.
 - **Header placement.** "AI парфумер" / "AI perfumer" goes after "Акції"/"Offers" in the header's
   inline nav and in the mobile menu, not in the footer. No floating corner button in this issue
-  **(see Q3b)**.
-
-## Open questions
-
-- [ ] **Q1: File the follow-up for adding to the cart from the chat?** — Hiding the cart controls on
-  the perfumer's cards (`purchase={false}`) is settled for this issue. Recommended: a separate issue
-  (via `/create-issue`) for size picking and add-to-cart inside the chat, depending on #163 and #166.
-  Waiting for the owner's go-ahead to file it. Affects steps: none in this issue.
-- [ ] **Q3b: Where does the owner's floating corner chat button go?** — The owner would like an "AI
-  парфумер" button in the bottom-right corner too (2026-11-16). #165 currently rules a floating
-  widget out ("links, not a floating widget… could be a later issue if the data (#166) shows people
-  use the chat"), and it's an entry point on other pages, so it isn't built here. Recommended: add it
-  to #165 as a small round link button to the chat page (not an in-page chat widget), hidden on the
-  perfumer page, cart and checkout, and placed above the cookie banner and the "Added to cart"
-  toast. Affects steps: none in this issue.
+  **(#165)**.
 
 ## Resolved questions
 
+- **Add to cart from the chat (Q1)** — Not in this issue: the perfumer's cards hide the cart
+  controls (`ProductCard purchase={false}`) and link to the product page. The follow-up is #169
+  (size picker and add-to-cart in the chat, `list: "perfumer"`), which depends on #163 and #166
+  (owner, 2026-11-16).
+- **Floating corner chat button (Q3b)** — Added to #165, not built here: a link button to the chat
+  page in the bottom-right corner, hidden on the chat, cart, checkout and payment pages, raised above
+  the cookie banner and the cart toast. Its design is on the C+ canvas
+  (`C+ AI perfumer corner button (#165)`), waiting for the owner's approval (owner, 2026-11-16).
+  #163 only provides `perfumerEnabled` from the `_shop` loader, which #165 reuses.
 - **Design** — Approved by the owner on 2026-11-16: the two `C+ AI perfumer` artboards on the C+
   canvas (see Decisions → Design).
 - **Header link (Q3)** — A plain nav item after "Акції"/"Offers" in the header and mobile menu, no
@@ -326,7 +321,8 @@ enabled.
 
 - The engine itself, its prompt, tools and eval (#162); model choice and hosting (#167).
 - Token streaming (#164); the reply arrives whole.
-- Perfumer entry buttons on other pages (#165), including the floating corner button (Q3b).
+- Perfumer entry buttons on other pages (#165), including the floating corner button.
+- Adding to the cart from the chat (#169).
 - Analytics: `perfumer_message`/`perfumer_feedback` events, `list: "perfumer"` card tagging,
   thumbs up/down (#166).
-- Adding to the cart from the chat; storing conversations on the server.
+- Storing conversations on the server.

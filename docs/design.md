@@ -63,8 +63,10 @@ thread has messages the hero becomes a slim strip: a white round bottle icon, th
 `<ol aria-live="polite">` in a ~800px column: the customer's bubbles right-aligned, `primary` with
 white text (radius 24, bottom-right 8); each perfumer turn starts with a blush bottle avatar and the
 name in `muted`, then the intro in a white bubble with a `line` border (top-left 8), the picks as
-default product cards without cart controls (`purchase={false}`, "from …" price) in a
-`minmax(300px, 1fr)` grid, each with a blush "Чому вам пасує" box inside the card, and the question
+default product cards with the catalog card's cart controls (#169: the picked size's price, the
+size picker for several sizes, an `sm` "Додати в кошик" and its "Додано в кошик · Переглянути
+кошик" status, scrolled just above the message bar when it appears) in a `minmax(300px, 1fr)`
+grid, each with a blush "Чому вам пасує" box inside the card below the button, and the question
 in a blush box with a 2px `primary` border, a question-mark icon and the label "Уточнення". Errors are
 blush bubbles with an alert icon and, for `unavailable` and `timeout` only, a `primary` `sm`
 "Спробувати ще раз"; a cancelled request is a centred `card` pill. While a reply is awaited, a white

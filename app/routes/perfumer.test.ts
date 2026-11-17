@@ -1,3 +1,4 @@
+import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PerfumerReply } from "~/lib/perfumer";
 
@@ -12,7 +13,7 @@ vi.mock("~/.server/ai/config", () => ai);
 vi.mock("~/.server/ai/perfumer", () => engine);
 vi.mock("~/.server/analytics", () => analytics);
 
-const { action, loader, meta } = await import("./perfumer");
+const { action, loader, meta, shouldRevalidate } = await import("./perfumer");
 
 type LoaderArgs = Parameters<typeof loader>[0];
 type MetaArgs = Parameters<typeof meta>[0];
@@ -223,5 +224,29 @@ describe("perfumer feedback (#166)", () => {
       expect(unwrap(await action(rate({}, "198.51.100.21"))).status).toBe(200);
     }
     expect(unwrap(await action(rate({}, "198.51.100.21"))).status).toBe(429);
+  });
+});
+
+describe("perfumer shouldRevalidate (#169)", () => {
+  const url = (path: string) => new URL(path, "http://localhost");
+  const args = (overrides: Partial<ShouldRevalidateFunctionArgs>) =>
+    ({
+      currentUrl: url("/parfumer"),
+      nextUrl: url("/parfumer"),
+      defaultShouldRevalidate: true,
+      ...overrides,
+    }) as ShouldRevalidateFunctionArgs;
+
+  it("doesn't rerun the loader after a cart add or the chat's own posts", () => {
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/koshyk" }))).toBe(false);
+    expect(shouldRevalidate(args({ formMethod: "POST", formAction: "/parfumer" }))).toBe(false);
+  });
+
+  it("reruns it after switching the language", () => {
+    expect(
+      shouldRevalidate(
+        args({ formMethod: "POST", formAction: "/locale", nextUrl: url("/en/perfumer") }),
+      ),
+    ).toBe(true);
   });
 });

@@ -88,14 +88,28 @@ describe("MessageThread", () => {
     expect(html).not.toContain("<b>");
   });
 
-  it("shows each pick as a card linking to the product, with its reason and no cart button", () => {
+  it("shows each pick as a card linking to the product, with its reason", () => {
     const html = thread();
     expect(html).toContain('aria-label="Рекомендовані аромати"');
     expect(html).toMatch(/<h3[^>]*><a[^>]*href="\/parfumy\/acqua-di-gio"[^>]*>Acqua Di Gio<\/a>/);
     expect(html).toContain("Чому вам пасує");
     expect(html).toContain("Морські ноти й мʼята.");
+    // Before hydration, "from …" for pages without JS (#169: the picked size's price after it).
     expect(html).toContain("від 290");
-    expect(html).not.toMatch(/<button/);
+  });
+
+  it("gives each pick the catalog card's size picker and add button, above its reason (#169)", () => {
+    const html = thread();
+    expect(html).toMatch(/<form[^>]*action="\/koshyk"/);
+    expect(html).toContain('name="intent" value="add"');
+    expect(html).toContain('name="productId" value="01a1652b-6e25-7c03-ae47-25b57131fb06"');
+    expect(html).toContain('<legend class="sr-only">Об’єм</legend>');
+    expect(html.indexOf("Додати в кошик")).toBeGreaterThan(-1);
+    expect(html.indexOf("Додати в кошик")).toBeLessThan(html.indexOf("Чому вам пасує"));
+  });
+
+  it("names the add button in English", () => {
+    expect(thread({}, "en")).toContain("Add to cart");
   });
 
   it("shows the perfumer's question", () => {

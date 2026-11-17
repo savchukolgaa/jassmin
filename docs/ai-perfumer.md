@@ -96,6 +96,13 @@ Errors are `AiError` with `kind`: `unavailable` (server down, unknown model, HTT
 - **Cancel.** After 10 s the customer can cancel: it aborts the stream (or, on the fallback,
   `fetcher.reset()` aborts the request), and the server passes `request.signal` to the engine
   (`deps.signal`), which stops the model call.
+- **Adding to the cart (#169).** Each card has the catalog card's size picker and "Додати в кошик"
+  (`AddToCartForm` posting to the cart action with a fetcher), so the customer stays in the chat:
+  the thread, its scroll and the draft stay, focus goes back to the button, and the header badge
+  updates through the `_shop` loader (the page's own loader isn't rerun, `shouldRevalidate`).
+  Each answer's cards keep their own "Added to cart" state (`fetcherKey`). Picks restored from
+  `sessionStorage` can be stale: the cart action re-checks stock and price and the card shows its
+  normal error.
 - **Plain text only:** the intro, reasons, question and the customer's words are rendered as text
   nodes, never HTML or Markdown. Product cards come from the database, like the engine's picks.
 

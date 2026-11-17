@@ -240,8 +240,10 @@ The 👍/👎 under an answer: `reply_id` (the answer's), `turn` (the message it
 ```
 
 The perfumer's product cards are the `perfumer` list: their impressions and clicks are ordinary
-`product_impression` / `product_click` events with `list_id: "perfumer"`. The cards have no cart
-button, so an order is attributed to an answer through the visitor's `purchase` items.
+`product_impression` / `product_click` events with `list_id: "perfumer"`. Their add-to-cart button
+(#169) posts the list too, so `add_to_cart` has `list_id: "perfumer"` and the card's
+`list_position`, and an order is attributed to an answer through it. A card added in the moment
+before its answer finishes streaming has no list (those cards aren't a list yet).
 
 ## Rows recorded before #129
 

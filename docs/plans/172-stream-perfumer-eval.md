@@ -65,7 +65,7 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
   `first intro p50 … / p95 …` and `total p50 … / p95 …`.
 - **Removed sentences** are `trace.removedSentences` from `onTrace`. That's the intro guard's
   removals plus the cleaned reasons and question, in one list like the regular mode. I won't add a
-  separate "intro only" column **(unconfirmed, Q1)**.
+  separate "intro only" column.
 - **"No invented name or invalid id reaches the reply":** picks are `ProductSummary`s loaded by
   public id, so an invalid id can't become a card. The `Invalid ids` column
   (`trace.droppedPickIds`) shows the ids that were dropped. The doc write-up checks the recorded
@@ -78,21 +78,14 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
 - `--stream` works with `--db`, `--only` and several models. The model filter already skips `--`
   arguments, so `--stream` isn't read as a model name.
 
-## Open questions
-
-- [ ] **Q1: Report the intro guard's removals separately from the reasons' and the question's?** —
-  Why it matters: the issue asks whether "the streamed intro is as clean as the regular one". A
-  separate count needs `IntroGuard`'s removals tagged in the trace (e.g. a new
-  `PerfumerTrace.introRemovedSentences`). Recommended default: one combined column, like the
-  regular mode. The doc write-up names which removals came from the intro. Affects steps: 1, 3.
-- [ ] **Q2: Should `/implement` run the full `granite4.1:3b` stream eval (about 30–50 min on this
-  CPU), or will you run it and paste the table?** — Why it matters: the acceptance criterion needs
-  a recorded run, and the timings depend on the machine. Ollama and `granite4.1:3b` are available
-  here. Recommended default: `/implement` runs it in the background with `AI_KEEP_ALIVE=30m` and
-  records the output with the date and "owner's laptop, CPU, Ollama", like the existing results.
-  Affects step: 5.
-
 ## Resolved questions
+
+- **Report the intro guard's removals separately?** — No: one combined "Removed sentences"
+  column, like the regular mode; the doc write-up names which removals came from the intro (owner
+  accepted the default, 2026-11-17).
+- **Who runs the recorded `granite4.1:3b` stream eval?** — `/implement` runs it in the background
+  on this machine with `AI_KEEP_ALIVE=30m` and records it with the date and "owner's laptop, CPU,
+  Ollama" (owner accepted the default, 2026-11-17).
 
 - **Does the streamed reply already expose a trace?** — No. `replyStream` only gives events and
   `onToolCall`. The doc comment on `onToolCall` says "the streamed reply has no trace to return"
@@ -185,7 +178,7 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
     print the regular table.
 - [ ] **5. Record the `granite4.1:3b` stream run** — With Ollama running and
   `AI_KEEP_ALIVE=30m`, run `pnpm ai:perfumer-eval --stream granite4.1:3b` (in the background,
-  about 30–50 min) **(Q2)**. In `docs/ai-perfumer.md`:
+  about 30–50 min). In `docs/ai-perfumer.md`:
   - Under `## Eval`, add the `--stream` command and a paragraph on the extra columns, the clock
     start, `—` for no step, and the nearest-rank p50/p95.
   - Add `## Results: granite4.1:3b, streamed` after the regular results: date, machine, command,

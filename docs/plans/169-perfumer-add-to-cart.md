@@ -61,13 +61,19 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   the cart action re-checks via `checkVariantForCart` and the card shows the normal error. A pick
   whose stored `inStock` is `false` shows the disabled "Немає в наявності" button.
 
-## Open questions
-- [ ] **Q2: Should the "Added to cart" confirmation in the chat move the stuck message bar or the
-  thread's scroll?** — Why it matters: on phones the confirmation below the button could sit under
-  the sticky input bar. Recommended default: no scrolling (the button is in view when tapped and
-  the status appears right under it); check at 375px in step 8. Affects steps: 8.
+- **The confirmation is scrolled into view (Q2).** In the chat, once "Додано в кошик" (or the
+  cart's error) appears under the button, the page scrolls just enough to show it above the sticky
+  message bar: `AddToCartForm` gets an optional `revealResult` prop; when a new result shows, it
+  calls `scrollIntoView({ block: "nearest" })` on the status line (`behavior: "smooth"` unless
+  `prefers-reduced-motion`), and the perfumer passes a `scroll-mb-*` class sized to the bar
+  (measured at 375px; the bar is taller there with the disclaimer) so `nearest` clears it. It
+  never moves focus and does nothing when the line is already visible. Off by default, so the
+  catalog doesn't change.
 
 ## Resolved questions
+- **Q2: Should the chat scroll so the "Added to cart" confirmation isn't hidden under the sticky
+  message bar on phones?** — Yes (source: the user, 2026-11-17). See "The confirmation is scrolled
+  into view" above; steps 1, 3, 6, 8.
 - **Q1: Has the owner approved an updated `C+ AI perfumer` artboard with the cart controls?** —
   Yes, already approved (source: the user, 2026-11-17). Steps 3 and 7 take the price style, button
   size and spacing from the approved artboard rather than assuming the catalog card's.
@@ -105,7 +111,10 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   `add-to-cart-${productId}`). Keep a ref to the submit button (`Button` forwards `ref`? check; else
   wrap via `form.querySelector('button[type=submit]')`), note in `onSubmit` whether
   `document.activeElement` is it, and in an effect on `fetcher.state === "idle"` focus it again.
-  Same for the icon variant. Test: the key separates two forms for one product; focus returns.
+  Same for the icon variant. Add `revealResult?: boolean` and `statusClassName?: string`: when a
+  new result shows and `revealResult` is set, scroll the status line into view (`block: "nearest"`,
+  smooth unless reduced motion). Test: the key separates two forms for one product; focus returns;
+  `scrollIntoView` is called only with `revealResult`.
 - [ ] **2. `ProductCard`: pass the key** — `CatalogProductCard` takes an optional `cartKey` prop
   (through `ProductCardProps`, default card only) and passes it as `fetcherKey`. Update the
   `purchase` comment (no longer "the AI perfumer's cards link to the product instead").
@@ -114,7 +123,9 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   `pending.id`, `PerfumerTurn` passes `item.id`. Match the approved `C+ AI perfumer` artboards (price
   style, button size, spacing). Check at 375px and desktop that the reason box sits
   under the button with the card's spacing (`mt-3.5` may need trimming since the form has `pt-3`
-  and a `min-h-5` status line). Update the file's header comment.
+  and a `min-h-5` status line). Turn on `revealResult` with a `scroll-mb-*` that clears the
+  sticky message bar (via a new optional `ProductCard` prop passed through to the form). Update
+  the file's header comment.
 - [ ] **4. `usePerfumerThread`: stable turn id** — In both finish paths (fetcher result and stream
   `done`), give the `perfumer` item the pending turn's `id` (errors keep `newId()`). Check the
   `key` on `StreamingTurn` (`${pending.id}-reply`) vs `PerfumerTurn` (`item.id`) don't collide.
@@ -137,7 +148,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
 - [ ] **8. Manual check** — `pnpm aspire run` with `AI_BASE_URL` set: ask the perfumer, change a
   size, add; the header badge updates, the conversation, scroll and draft stay, focus stays on the
   button; keyboard-only and a screen reader announce "Додано в кошик"; 375px layout with the sticky
-  bar (Q2); reload and add a stale/out-of-stock pick.
+  bar: adding from a card low on the screen scrolls "Додано в кошик" just above the bar; reload and add a stale/out-of-stock pick.
 
 ## Testing & verification
 - Vitest DOM tests in step 6, plus the `AddToCartForm`/`ProductCard` and `perfumer.test.ts` cases.

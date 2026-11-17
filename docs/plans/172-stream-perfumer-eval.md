@@ -136,7 +136,7 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
   Import them back in the script. Check: `pnpm typecheck`, and
   `pnpm ai:perfumer-eval --only en-injection granite4.1:3b` prints the same table format as before
   (header, row, summary).
-- [ ] **3. Collect a streamed reply with timings** — In the same module, add:
+- [x] **3. Collect a streamed reply with timings** — In the same module, add:
   ```ts
   export interface StreamTimings { firstStepMs?: number; firstIntroMs?: number; totalMs: number }
   export async function collectStreamedReply(

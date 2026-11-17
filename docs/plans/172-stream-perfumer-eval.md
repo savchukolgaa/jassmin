@@ -130,7 +130,7 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
   the intro sentence the guard removed ("Схоже на Aquarius."), the model's pick ids and the
   dropped ones. (b) It isn't called when the reply throws (e.g. `bad_response`). (c) No event
   carries a `trace` property. Check with `pnpm test app/.server/ai/perfumer.test.ts`.
-- [ ] **2. Move the eval's helpers into a module** — Create
+- [x] **2. Move the eval's helpers into a module** — Create
   `app/.server/ai/scripts/perfumer-eval.stream.ts` and move `cyrillicShare`, `describeTools`,
   `cell` and `meetsExpectation` (with its types) out of `perfumer-eval.ts` without changing them.
   Import them back in the script. Check: `pnpm typecheck`, and

@@ -17,8 +17,9 @@ import { getDatabaseUrl, parseAiEnv } from "../../env";
 import { createChatClient } from "../client";
 import type { PerfumerConfig } from "../config";
 import { AiError } from "../errors";
-import { type PerfumerDeps, type PerfumerTrace, replyWithTrace } from "../perfumer";
-import { EVAL_CASES, type EvalCase } from "./perfumer-eval.cases";
+import { type PerfumerDeps, replyWithTrace } from "../perfumer";
+import { EVAL_CASES } from "./perfumer-eval.cases";
+import { cell, cyrillicShare, describeTools, meetsExpectation } from "./perfumer-eval.stream";
 
 if (existsSync(".env")) {
   process.loadEnvFile(".env");
@@ -124,23 +125,6 @@ async function catalogDeps(): Promise<{
   };
 }
 
-/** The share of letters that are Cyrillic. */
-function cyrillicShare(text: string): number {
-  const letters = text.match(/\p{L}/gu) ?? [];
-  const cyrillic = text.match(/\p{Script=Cyrillic}/gu) ?? [];
-  return letters.length ? cyrillic.length / letters.length : 0;
-}
-
-function describeTools(trace: PerfumerTrace): string {
-  return (
-    trace.toolCalls
-      .map((call) => `${call.ok ? "" : "✗"}${call.name}(${JSON.stringify(call.arguments)})`)
-      .join("; ") || "—"
-  );
-}
-
-const cell = (value: string) => value.replaceAll("|", "\\|").replaceAll("\n", " ");
-
 interface Row {
   model: string;
   id: string;
@@ -152,22 +136,6 @@ interface Row {
   language: boolean;
   expected: boolean;
   error?: string;
-}
-
-function meetsExpectation(
-  test: EvalCase,
-  picks: { product: ProductSummary }[],
-  catalog: readonly PerfumerProductRow[],
-): boolean {
-  if (test.picks === "some" && picks.length === 0) return false;
-  if (test.picks === "none" && picks.length > 0) return false;
-  const families = new Map(catalog.map((p) => [p.publicId, p.fragranceFamilies]));
-  return picks.every(({ product }) => {
-    const own = families.get(product.id) ?? [];
-    const familyOk = !test.families || own.some((f) => (test.families as string[]).includes(f));
-    const priceOk = test.maxPrice === undefined || Number(product.minPrice) <= test.maxPrice;
-    return familyOk && priceOk;
-  });
 }
 
 async function runModel(

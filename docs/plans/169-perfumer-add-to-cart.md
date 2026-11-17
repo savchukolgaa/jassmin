@@ -156,11 +156,11 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   says the cards post `add_to_cart` with `list_id: "perfumer"` and `list_position`.
   `docs/ai-perfumer.md`: a bullet on adding to the cart from a card (stale picks re-checked).
 - [ ] **8. Manual check** — `pnpm aspire run` with `AI_BASE_URL` set: ask the perfumer, change a
-  **Not done yet:** Docker (and so Postgres) wasn't running and no AI engine was available while
-  implementing; to do before merging.
   size, add; the header badge updates, the conversation, scroll and draft stay, focus stays on the
   button; keyboard-only and a screen reader announce "Додано в кошик"; 375px layout with the sticky
   bar: adding from a card low on the screen scrolls "Додано в кошик" just above the bar; reload and add a stale/out-of-stock pick.
+  **Not done yet:** Docker (and so Postgres) wasn't running and no AI engine was available while
+  implementing; to do before merging.
 
 ## Testing & verification
 - Vitest DOM tests in step 6, plus the `AddToCartForm`/`ProductCard` and `perfumer.test.ts` cases.

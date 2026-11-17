@@ -2,9 +2,10 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { createElement } from "react";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { createElement, Fragment } from "react";
+import { createMemoryRouter, Outlet, RouterProvider, useLoaderData } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { CartActionResult } from "~/lib/cart";
 import { I18nProvider, type Locale } from "~/lib/i18n";
 import type {
   PerfumerActionResult,
@@ -556,5 +557,150 @@ describe("PerfumerPage streaming (#164)", () => {
     await screen.findByText("Ось свіжі аромати.");
 
     expect((await axe.run(container, options)).violations).toEqual([]);
+  });
+});
+
+/** A layout showing its loader's cart count, as the `_shop` layout's header badge does. */
+function ShopLayout() {
+  const count = useLoaderData() as number;
+  return createElement(
+    Fragment,
+    null,
+    createElement("p", { "data-testid": "badge" }, String(count)),
+    createElement(Outlet),
+  );
+}
+
+describe("PerfumerPage cart adds (#169)", () => {
+  const product: ProductSummary = {
+    id: "01a1652b-6e25-7c03-ae47-25b57131fb06",
+    slug: "acqua-di-gio",
+    title: "Acqua Di Gio",
+    brand: "Armani",
+    gender: "men",
+    packSize: 1,
+    image: null,
+    variants: [{ id: "v5", volumeMl: 5, price: "290.00", inStock: true }],
+    minPrice: "290.00",
+    hasPriceRange: false,
+    volumes: [5],
+    inStock: true,
+    defaultVariant: { id: "v5", volumeMl: 5 },
+    fragranceFamily: "водяні",
+  };
+
+  let cartLines: number;
+  let pageLoads: number;
+  let cartRelease: (() => void) | null;
+
+  /** The chat under a layout whose loader counts the cart, as the `_shop` loader's badge does. */
+  function renderShop() {
+    router = createMemoryRouter(
+      [
+        {
+          id: "shop",
+          path: "/",
+          loader: () => cartLines,
+          element: createElement(ShopLayout),
+          children: [
+            {
+              path: "parfumer",
+              loader: () => {
+                pageLoads += 1;
+                return null;
+              },
+              shouldRevalidate: ({ formMethod, defaultShouldRevalidate }) =>
+                formMethod ? false : defaultShouldRevalidate,
+              element: createElement(PerfumerPage, {}),
+              action: async ({ request }) => {
+                const form = await request.formData();
+                const { messages } = JSON.parse(String(form.get("payload"))) as {
+                  messages: PerfumerMessage[];
+                };
+                return new Promise<PerfumerActionResult>((resolve) => {
+                  calls.push({ messages, turn: 1, entry: "direct", answer: resolve });
+                });
+              },
+            },
+            {
+              path: "koshyk",
+              action: () =>
+                new Promise<CartActionResult>((resolve) => {
+                  cartRelease = () => {
+                    cartLines += 1;
+                    resolve({ ok: true, intent: "add" });
+                  };
+                }),
+            },
+          ],
+        },
+      ],
+      { initialEntries: ["/parfumer"] },
+    );
+    return render(
+      createElement(I18nProvider, { locale: "uk" }, createElement(RouterProvider, { router })),
+    );
+  }
+
+  beforeEach(() => {
+    cartLines = 0;
+    pageLoads = 0;
+    cartRelease = null;
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  const withCard = (intro: string): PerfumerActionResult => ({
+    ok: true,
+    reply: { intro, picks: [{ product, reason: "Морський бриз." }] },
+    replyId: crypto.randomUUID(),
+  });
+
+  it("adds a pick and keeps the conversation, the draft and the focus; the badge updates", async () => {
+    const user = userEvent.setup();
+    renderShop();
+    await user.type(await screen.findByRole("textbox"), "Щось морське{Enter}");
+    await waitFor(() => expect(calls).toHaveLength(1));
+    await answerLast(withCard("Ось морські аромати."));
+    await screen.findByText("Ось морські аромати.");
+    await user.type(input(), "А дешевше?");
+    const loadsBefore = pageLoads;
+
+    const add = screen.getByRole("button", { name: "Додати в кошик" });
+    await user.click(add);
+    await waitFor(() => expect(cartRelease).not.toBeNull());
+    // A disabled button loses focus in browsers (jsdom keeps it): simulate that.
+    add.blur();
+    await act(async () => cartRelease?.());
+
+    expect(await screen.findByText("Додано в кошик")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("badge").textContent).toBe("1"));
+    expect(pageLoads).toBe(loadsBefore);
+    expect(screen.getByText("Щось морське", { selector: "p" })).toBeTruthy();
+    expect(screen.getByText("Ось морські аромати.")).toBeTruthy();
+    expect(input().value).toBe("А дешевше?");
+    await waitFor(() => expect(document.activeElement).toBe(add));
+    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
+      items: ThreadItem[];
+    };
+    expect(saved.items.map((item) => item.role)).toEqual(["user", "perfumer"]);
+  });
+
+  it('keeps "Added to cart" on a card added while its answer was still streaming', async () => {
+    streamReplies();
+    const user = userEvent.setup();
+    renderShop();
+    await user.type(await screen.findByRole("textbox"), "Щось морське{Enter}");
+    await waitFor(() => expect(streams).toHaveLength(1));
+    const stream = streams[0];
+    await stream?.push({ type: "intro", text: "Ось." });
+    await stream?.push({ type: "picks", picks: [{ product, reason: "Морський бриз." }] });
+
+    await user.click(await screen.findByRole("button", { name: "Додати в кошик" }));
+    await waitFor(() => expect(cartRelease).not.toBeNull());
+    await stream?.push({ type: "done" });
+    await act(async () => cartRelease?.());
+
+    expect(await screen.findByText("Додано в кошик")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Почати спочатку" })).toBeTruthy();
   });
 });

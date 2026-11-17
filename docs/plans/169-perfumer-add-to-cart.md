@@ -141,7 +141,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   `key` on `StreamingTurn` (`${pending.id}-reply`) vs `PerfumerTurn` (`item.id`) don't collide.
 - [x] **5. `perfumer.tsx`: `shouldRevalidate`** — Export `shouldRevalidateView` from
   `~/lib/analytics`. Test: POST to the cart → `false`; locale switch → `true`.
-- [ ] **6. Tests** — `MessageThread.dom.test.ts` (with a router and a `/koshyk` action stub):
+- [x] **6. Tests** — `MessageThread.dom.test.ts` (with a router and a `/koshyk` action stub):
   a several-size pick renders the size picker and "Додати в кошик" / "Add to cart" in `en`;
   submitting posts `intent=add`, the chosen `variantId`, `listId=perfumer`, `listPosition=2` for the
   second card; an `out-of-stock` result shows the cart's message and no "Додано в кошик"; a pick

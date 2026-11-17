@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/172
 Branch: `issue/172`
 Worktree: `.claude/worktrees/issue-172`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -200,13 +200,16 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
 
 ## Acceptance criteria
 
-- [ ] `pnpm ai:perfumer-eval --stream granite4.1:3b` runs every case and prints time to first step,
+- [x] `pnpm ai:perfumer-eval --stream granite4.1:3b` runs every case and prints time to first step,
   time to first intro and total time per case, with p50/p95 — steps 3, 4, 5
-- [ ] Removed sentences from the streamed intro are reported, and no invented name or invalid id
+- [x] Removed sentences from the streamed intro are reported, and no invented name or invalid id
   reaches the reply — steps 1, 3, 4, 5
-- [ ] Without `--stream` the output is unchanged — steps 2, 4
-- [ ] A `granite4.1:3b` stream run is recorded in `docs/ai-perfumer.md` — step 5
+- [x] Without `--stream` the output is unchanged — steps 2, 4
+- [x] A `granite4.1:3b` stream run is recorded in `docs/ai-perfumer.md` — step 5
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 6
+  (2026-11-17: typecheck, lint and build pass; every non-database test passes. The 46 database
+  test files couldn't run locally: PostgreSQL wasn't up (Docker Desktop off, `ECONNREFUSED :5432`).
+  CI runs them against PostgreSQL.)
 
 ## Out of scope
 

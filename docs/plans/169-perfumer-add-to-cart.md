@@ -17,8 +17,9 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   answer): merged (`a00ed3e`). The cart action already accepts and records `listId` /
   `listPosition` (`app/routes/cart.tsx` → `listOf`, `app/lib/cart.schema.ts`).
 - The issue suggests starting "once #166 has some data": a product call, not a code dependency.
-- **Design:** the issue requires the C+ canvas `C+ AI perfumer` artboards to be updated with the
-  card's cart controls and approved by the owner before implementation (see Q1).
+- **Design:** the updated C+ canvas `C+ AI perfumer` artboards with the card's cart controls are
+  approved by the owner (confirmed 2026-11-17). Implementation follows them; where they're silent,
+  it follows the catalog card.
 - No new packages, env vars or migrations.
 
 ## Decisions & assumptions
@@ -54,26 +55,22 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   out of scope.
 - **Confirmation and errors reuse the cart's UI and copy**: `cart.added` + `cart.view` ("Переглянути
   кошик" link) with `role="status"`, and `cartErrorMessage` for `out-of-stock` / `not-found` /
-  `exceeds-stock`. No new i18n keys are expected; if the design adds one (Q1), it goes into
+  `exceeds-stock`. No new i18n keys are expected; if the approved artboard adds one, it goes into
   `uk.ts` and `en.ts` under `perfumer`.
 - **Stale picks** restored from `sessionStorage` (price or stock changed) need no special handling:
   the cart action re-checks via `checkVariantForCart` and the card shows the normal error. A pick
   whose stored `inStock` is `false` shows the disabled "Немає в наявності" button.
 
 ## Open questions
-- [ ] **Q1: Has the owner approved an updated `C+ AI perfumer` artboard with the cart controls?** —
-  Why it matters: the issue says the artboard update goes to the owner before implementation; the
-  layout (price style, button size, reason box below the button) and whether the price stays serif
-  like the current "from …" price or turns `font-extrabold` like the catalog's depend on it.
-  Recommended default: follow the catalog card exactly (`CardPrice` `font-extrabold`, `sm` button,
-  reason box last), update the canvas to match, and ask for approval before `/implement`. Affects
-  steps: 3, 7.
 - [ ] **Q2: Should the "Added to cart" confirmation in the chat move the stuck message bar or the
   thread's scroll?** — Why it matters: on phones the confirmation below the button could sit under
   the sticky input bar. Recommended default: no scrolling (the button is in view when tapped and
   the status appears right under it); check at 375px in step 8. Affects steps: 8.
 
 ## Resolved questions
+- **Q1: Has the owner approved an updated `C+ AI perfumer` artboard with the cart controls?** —
+  Yes, already approved (source: the user, 2026-11-17). Steps 3 and 7 take the price style, button
+  size and spacing from the approved artboard rather than assuming the catalog card's.
 - **Does the cart action already take the list context?** — Yes: `listId` (enum incl.
   `"perfumer"`), `listPosition` and `searchId` are parsed and added to `add_to_cart`
   (source: `app/lib/cart.schema.ts`, `app/routes/cart.tsx` → `listOf`, `app/lib/analytics.ts`
@@ -114,7 +111,8 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   `purchase` comment (no longer "the AI perfumer's cards link to the product instead").
 - [ ] **3. `MessageThread`: turn the controls on** — In `PickList`, drop `purchase={false}`, take a
   `turnId` and pass `cartKey={`perfumer-${turnId}-${pick.product.id}`}`; `StreamingTurn` passes
-  `pending.id`, `PerfumerTurn` passes `item.id`. Check at 375px and desktop that the reason box sits
+  `pending.id`, `PerfumerTurn` passes `item.id`. Match the approved `C+ AI perfumer` artboards (price
+  style, button size, spacing). Check at 375px and desktop that the reason box sits
   under the button with the card's spacing (`mt-3.5` may need trimming since the form has `pt-3`
   and a `min-h-5` status line). Update the file's header comment.
 - [ ] **4. `usePerfumerThread`: stable turn id** — In both finish paths (fetcher result and stream
@@ -133,7 +131,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
 - [ ] **7. Docs** — `docs/design.md`: replace "default product cards without cart controls
   (`purchase={false}`, "from …" price)" with the cart controls (price of the picked size, picker,
   `sm` add button, "Додано в кошик · Переглянути кошик" status, then the reason box). Update the
-  canvas artboards if not done (Q1). `docs/analytics-events.md`: the `perfumer` list paragraph now
+  approved artboards in the design table if their names changed. `docs/analytics-events.md`: the `perfumer` list paragraph now
   says the cards post `add_to_cart` with `list_id: "perfumer"` and `list_position`.
   `docs/ai-perfumer.md`: a bullet on adding to the cart from a card (stale picks re-checked).
 - [ ] **8. Manual check** — `pnpm aspire run` with `AI_BASE_URL` set: ask the perfumer, change a
@@ -152,7 +150,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
 - [ ] Adding to the cart keeps the customer on the chat with the conversation, scroll position and input intact, and updates the header's cart count — steps 1, 4, 5, 6, 8
 - [ ] Cart adds from the chat are recorded with `list: "perfumer"` and the card's position — steps 3, 6, 7
 - [ ] Out-of-stock and stale picks show the cart's normal error instead of adding — steps 3, 6, 8
-- [ ] The controls follow the approved C+ chat design on mobile and desktop, and are keyboard and screen-reader friendly — steps 1, 3, 6, 7, 8 (Q1)
+- [ ] The controls follow the approved C+ chat design on mobile and desktop, and are keyboard and screen-reader friendly — steps 1, 3, 6, 7, 8
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
 
 ## Out of scope

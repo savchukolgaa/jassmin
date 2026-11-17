@@ -128,7 +128,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
 - [x] **2. `ProductCard`: pass the key** — `CatalogProductCard` takes an optional `cartKey` prop
   (through `ProductCardProps`, default card only) and passes it as `fetcherKey`. Update the
   `purchase` comment (no longer "the AI perfumer's cards link to the product instead").
-- [ ] **3. `MessageThread`: turn the controls on** — In `PickList`, drop `purchase={false}`, take a
+- [x] **3. `MessageThread`: turn the controls on** — In `PickList`, drop `purchase={false}`, take a
   `turnId` and pass `cartKey={`perfumer-${turnId}-${pick.product.id}`}`; `StreamingTurn` passes
   `pending.id`, `PerfumerTurn` passes `item.id`. Match the approved `C+ AI perfumer` artboards (price
   style, button size, spacing). Check at 375px and desktop that the reason box sits
@@ -136,7 +136,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   and a `min-h-5` status line). Turn on `revealResult` with a `scroll-mb-*` that clears the
   sticky message bar (via a new optional `ProductCard` prop passed through to the form). Update
   the file's header comment.
-- [ ] **4. `usePerfumerThread`: stable turn id** — In both finish paths (fetcher result and stream
+- [x] **4. `usePerfumerThread`: stable turn id** — In both finish paths (fetcher result and stream
   `done`), give the `perfumer` item the pending turn's `id` (errors keep `newId()`). Check the
   `key` on `StreamingTurn` (`${pending.id}-reply`) vs `PerfumerTurn` (`item.id`) don't collide.
 - [ ] **5. `perfumer.tsx`: `shouldRevalidate`** — Export `shouldRevalidateView` from

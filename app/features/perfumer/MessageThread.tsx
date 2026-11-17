@@ -19,8 +19,10 @@ import type { PendingTurn } from "./usePerfumerThread";
 // The conversation (#163): the customer's bubbles on the right, the perfumer's turns (intro, cards
 // with reasons, question) on the left, errors and cancels, and the "choosing…" bubble last. Every
 // text is a plain text node: nothing the model or the customer wrote is rendered as HTML. Each
-// answer's cards are a `perfumer` product list (#166), so their impressions and clicks are tracked
-// with their position, and each answer can be rated.
+// answer's cards are a `perfumer` product list (#166), so their impressions, clicks and cart adds
+// are tracked with their position, and each answer can be rated. Each card can be added to the cart
+// in place (#169): its size picker and button post to the cart action with a fetcher, so the
+// thread, its scroll and the message bar stay as they are.
 
 const LABEL = "text-xs font-extrabold tracking-[0.08em] text-primary-dark uppercase";
 
@@ -119,20 +121,32 @@ function StreamingTurn({ pending }: { pending: PendingTurn }) {
       <p className={INTRO_BUBBLE}>
         <TypingText text={pending.intro} />
       </p>
-      {pending.picks && <PickList picks={pending.picks} />}
+      {pending.picks && <PickList turnId={pending.id} picks={pending.picks} />}
     </li>
   );
 }
 
 /**
+ * The "Added to cart" line is scrolled just above the stuck message bar (#169): taller on phones,
+ * where the AI disclaimer wraps.
+ */
+const CART_STATUS_CLEARANCE = "scroll-mb-48 sm:scroll-mb-40";
+
+/**
  * The cards of a reply. `tracked`: a finished answer's cards are a `perfumer` product list (#166),
- * so their impressions and clicks are recorded with their position. The cards of a reply still
- * streaming aren't, so the finished turn that replaces them doesn't count them twice.
+ * so their impressions, clicks and cart adds are recorded with their position. The cards of a reply
+ * still streaming aren't, so the finished turn that replaces them doesn't count them twice.
+ *
+ * `turnId`: each answer's cards keep their own "Added to cart" state (#169), so the same perfume
+ * in a later answer doesn't open as added. The finished turn keeps the streaming turn's id, so an
+ * add made while it streamed carries over.
  */
 function PickList({
+  turnId,
   picks,
   tracked = false,
 }: {
+  turnId: string;
   picks: readonly PerfumerPick[];
   tracked?: boolean;
 }) {
@@ -148,10 +162,14 @@ function PickList({
           <ProductCard
             product={pick.product}
             headingLevel={3}
-            purchase={false}
             listIndex={tracked ? index : undefined}
+            cartForm={{
+              fetcherKey: `perfumer-${turnId}-${pick.product.id}`,
+              revealResult: true,
+              statusClassName: CART_STATUS_CLEARANCE,
+            }}
           >
-            <div className="mt-3.5 flex flex-col gap-1.5 rounded-2xl bg-blush px-3.5 pt-3.5 pb-4">
+            <div className="mt-1.5 flex flex-col gap-1.5 rounded-2xl bg-blush px-3.5 pt-3.5 pb-4">
               <p className={LABEL}>{t("perfumer.whyItFits")}</p>
               <p className="text-[0.9375rem] leading-normal whitespace-pre-line text-body">
                 {pick.reason}
@@ -183,7 +201,7 @@ function PerfumerTurn({
     <li className="flex animate-fade-up flex-col gap-3.5">
       <PerfumerName />
       <p className={INTRO_BUBBLE}>{reply.intro}</p>
-      <PickList picks={reply.picks} tracked />
+      <PickList turnId={item.id} picks={reply.picks} tracked />
       {reply.question && (
         <div className="flex items-start gap-3 rounded-card border-2 border-primary bg-blush px-5 py-4">
           <QuestionIcon className="mt-0.5 size-5.5 flex-none text-primary-dark" />

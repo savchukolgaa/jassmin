@@ -114,7 +114,8 @@ export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerT
     finish(
       result.ok
         ? {
-            id: newId(),
+            // The streaming turn's id, so its cards keep their cart state (#169).
+            id: pending.id,
             role: "perfumer",
             reply: result.reply,
             replyId: result.replyId,
@@ -179,7 +180,8 @@ export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerT
           finish(
             end.type === "done"
               ? {
-                  id: newId(),
+                  // The streaming turn's id, so its cards keep their cart state (#169).
+                  id,
                   role: "perfumer",
                   reply: { intro, picks, ...(question ? { question } : {}) },
                   ...(end.replyId ? { replyId: end.replyId } : {}),

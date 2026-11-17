@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/169
 Branch: `issue/169`
 Worktree: `.claude/worktrees/issue-169`
-Status: Planned
+Status: Implemented
 
 ## Goal
 A customer chatting with the AI perfumer can pick a size and add a recommended perfume to the cart
@@ -156,6 +156,8 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   says the cards post `add_to_cart` with `list_id: "perfumer"` and `list_position`.
   `docs/ai-perfumer.md`: a bullet on adding to the cart from a card (stale picks re-checked).
 - [ ] **8. Manual check** — `pnpm aspire run` with `AI_BASE_URL` set: ask the perfumer, change a
+  **Not done yet:** Docker (and so Postgres) wasn't running and no AI engine was available while
+  implementing; to do before merging.
   size, add; the header badge updates, the conversation, scroll and draft stay, focus stays on the
   button; keyboard-only and a screen reader announce "Додано в кошик"; 375px layout with the sticky
   bar: adding from a card low on the screen scrolls "Додано в кошик" just above the bar; reload and add a stale/out-of-stock pick.
@@ -167,12 +169,12 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   `list_id: "perfumer"` and `list_position`.
 
 ## Acceptance criteria
-- [ ] Each recommended card in the chat has a size picker (several sizes) and an add-to-cart button, matching the catalog card — steps 2, 3, 6
-- [ ] Adding to the cart keeps the customer on the chat with the conversation, scroll position and input intact, and updates the header's cart count — steps 1, 4, 5, 6, 8
-- [ ] Cart adds from the chat are recorded with `list: "perfumer"` and the card's position — steps 3, 6, 7
-- [ ] Out-of-stock and stale picks show the cart's normal error instead of adding — steps 3, 6, 8
-- [ ] The controls follow the approved C+ chat design on mobile and desktop, and are keyboard and screen-reader friendly — steps 1, 3, 6, 7, 8
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps
+- [x] Each recommended card in the chat has a size picker (several sizes) and an add-to-cart button, matching the catalog card — steps 2, 3, 6
+- [x] Adding to the cart keeps the customer on the chat with the conversation, scroll position and input intact, and updates the header's cart count — steps 1, 4, 5, 6, 8 (tests; real scrolling to be seen in step 8)
+- [x] Cart adds from the chat are recorded with `list: "perfumer"` and the card's position — steps 3, 6, 7
+- [x] Out-of-stock and stale picks show the cart's normal error instead of adding — steps 3, 6, 8
+- [ ] The controls follow the approved C+ chat design on mobile and desktop, and are keyboard and screen-reader friendly — steps 1, 3, 6, 7, 8 — **unverified:** keyboard and screen-reader use, labels and axe are covered by tests, but the layout at phone and desktop width needs step 8, and the canvas artboards show no cart controls (see Decisions)
+- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — all steps — typecheck, lint and build pass; `pnpm test`: all 2207 tests that need no database pass, the 46 PostgreSQL test files fail with `ECONNREFUSED :5432` (Docker not running), so CI or a local run with the database must confirm them
 
 ## Out of scope
 Adding several picks at once, a cart summary inside the chat, the perfumer reasoning about the

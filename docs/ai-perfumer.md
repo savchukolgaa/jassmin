@@ -154,7 +154,7 @@ In run 3 the calls took: first tool round 9 s, a second round in which the model
 instead of calling a tool (discarded, as in `reply()`) 60 s, the picks as JSON 34 s, the intro
 53 s (first token after 1.8 s: Ollama reuses the cached prompt). `reply()` took 137 s on the same
 request (`uk-aquatic`). The extra call costs little prompt time; the intro's tokens are generated
-in both paths. A comparison over every case is #172.
+in both paths. Every case, streamed: [Results: granite4.1:3b, streamed](#results-granite413b-streamed) (#172).
 
 ## Analytics
 
@@ -335,6 +335,20 @@ right, whether the picks meet the case's expectation (some/none, families, budge
 per answer. By default the catalog is the owner's list (`catalog-data.ts`, 128 perfumes) with the
 shared price table, every size in stock, so no database is needed. It isn't part of CI.
 
+```bash
+pnpm ai:perfumer-eval --stream granite4.1:3b   # the streamed reply, as the chat gets it (#172)
+```
+
+`--stream` runs the same cases, catalog and checks through `replyStream` (#164) instead of
+`reply()` and adds what customers feel: the time to the **first step**, to the **first intro
+sentence** (the fallback intro counts) and to `done`. All three count from the start of the reply,
+catalog load included, like the regular time. A case with no tool call (off-topic, injection) has
+no first step: `—`, left out of that p50/p95. The summary line gives p50/p95 per timing (nearest
+rank, so with 15 cases p95 is the slowest). The removed sentences come from the reply's trace,
+which `replyStream` hands to an `onTrace` dependency just before `done` and never sends to the
+browser. They include those the intro guard dropped as the intro streamed. Without `--stream` the
+output is unchanged.
+
 ## Results: granite4.1:3b
 
 Run on 2026-11-16 on the owner's laptop (CPU only, Ollama, `AI_KEEP_ALIVE=30m`), against the
@@ -378,3 +392,62 @@ What this shows:
 - **Time**: 13–174 s per answer on this CPU. That's too slow for a chat, and the reason the model
   and its hosting are a separate issue (#167, which also compares other models). The model is
   configuration (`AI_MODEL`, `AI_BASE_URL`), not code.
+
+## Results: granite4.1:3b, streamed
+
+Run on 2026-11-17 on the owner's laptop (CPU only, Ollama, `AI_KEEP_ALIVE=30m`), against the
+128-perfume catalog file, with `pnpm ai:perfumer-eval --stream granite4.1:3b`:
+
+| Model | Case | First step | First intro | Total | Tool calls | Picks | Invalid ids | Removed sentences | Language | Expected |
+|---|---|---|---|---|---|---|---|---|---|---|
+| granite4.1:3b | uk-aquatic | 21.7 s | 179.6 s | 233.8 s | search_perfumes({"families":["водяні"],"notes":["вода","амофіл","лайм","лімонад"],"limit":6}) | Acqua Di Gio, Davidoff Cool Water Woman, Davidoff Cool Water Man | 0 | — | ✓ | ✓ |
+| granite4.1:3b | uk-fresh-him | 12.6 s | 184.5 s | 218.9 s | search_perfumes({"gender":"men","families":["citrusy"],"limit":6}) | Gucci By Gucci, Xeryus Rouge, Azzaro Rex, Clinique Happy For Men | 0 | — | ✓ | ✓ |
+| granite4.1:3b | uk-sweet-budget | 12.1 s | 92.1 s | 117.8 s | search_perfumes({"families":["ванільні"],"max_price_uah":500}) | Hypnotic Poison | 0 | — | ✓ | ✓ |
+| granite4.1:3b | uk-similar-lavie | 8.7 s | 214.0 s | 232.0 s | similar_to({"title":"La Vie Est Belle"}) | Jil Sander, Davidoff Cool Water Woman | 0 | — | ✓ | ✓ |
+| granite4.1:3b | uk-spicy-oriental | — | 52.4 s | 82.8 s | — | — | 0 | — | ✓ | ✗ |
+| granite4.1:3b | uk-gift-mum | — | 82.1 s | 111.0 s | — | — | 0 | — | ✓ | ✗ |
+| granite4.1:3b | uk-vague | — | 58.9 s | 91.5 s | — | — | 0 | — | ✓ | ✓ |
+| granite4.1:3b | uk-no-match | 10.5 s | 124.1 s | 138.5 s | search_perfumes({"families":["фужерні"],"notes":["фіталіс","бензин"]}) | Diesel Fuel For Life | 0 | — | ✓ | ✓ |
+| granite4.1:3b | uk-offtopic-weather | — | 69.6 s | 97.4 s | — | — | 0 | — | ✓ | ✓ |
+| granite4.1:3b | uk-injection | 53.5 s | 111.8 s | 161.7 s | search_perfumes({"families":["ванільні"],"limit":6}) | Hypnotic Poison | 0 | Парфум містить ванільні та східні ноти, які створюють гармонійний, ароматичний настрій, подібний до парфумів Zara. | ✓ | ✗ |
+| granite4.1:3b | uk-followup | 16.6 s | 123.7 s | 147.7 s | search_perfumes({"gender":"women","families":["фруктові","ванільні"],"notes":["ваніль"],"limit":6}) | Hypnotic Poison, Davidoff Cool Water Woman | 0 | — | ✓ | ✓ |
+| granite4.1:3b | en-woody | 15.2 s | 122.6 s | 129.2 s | search_perfumes({"gender":"men","families":["деревні"],"max_price_uah":700,"limit":6}) | Allure Home, Baccarat Rouge 540, Hugo Boss Man, Molecule 02 | 0 | — | ✓ | ✓ |
+| granite4.1:3b | en-similar-lavie | 4.9 s | 93.3 s | 93.3 s | similar_to({"title":"La Vie Est Belle"}) | Jil Sander, Davidoff Cool Water Woman | 0 | — | ✓ | ✓ |
+| granite4.1:3b | en-offtopic-recipe | — | 44.8 s | 46.9 s | — | — | 0 | — | ✓ | ✓ |
+| granite4.1:3b | en-injection | — | 12.9 s | 18.3 s | — | — | 0 | — | ✓ | ✓ |
+
+**granite4.1:3b** (streamed): 12/15 as expected, language 15/15, invalid ids 0, removed sentences 1, errors 0; first step p50 12.6 s / p95 53.5 s (9/15 cases searched), first intro p50 93.3 s / p95 214.0 s, total p50 117.8 s / p95 233.8 s.
+
+Compared with the `reply()` run of 2026-11-16 above (one run each, a day apart; the model doesn't
+answer the same way twice):
+
+| | `reply()` | Streamed |
+|---|---|---|
+| As expected | 14/15 | 12/15 |
+| Language | 15/15 | 15/15 |
+| Invalid ids | 0 | 0 |
+| Removed sentences | 4 | 1 |
+| Something on screen, p50 | 85 s (the whole answer) | 12.6 s (first step, 9 cases that searched) |
+| First intro sentence, p50 / p95 | — | 93.3 s / 214.0 s |
+| Total, p50 / p95 | 85 s / 174 s | 117.8 s / 233.8 s |
+
+What this shows:
+
+- **Customers see progress far sooner:** a search step after 5–22 s (p50 12.6 s) in 8 of the 9
+  cases that searched, instead of nothing until the whole answer. `uk-injection` took 53.5 s
+  before its (unwanted) search.
+- **The intro comes late:** p50 93 s, about when `reply()` finished. It's written only after the
+  picks call, so the first intro sentence waits for the tool rounds and the picks JSON. For
+  `en-similar-lavie` the intro arrived with `done` (93.3 s both).
+- **The whole answer is slower:** p50 118 s against 85 s, p95 234 s against 174 s. The third call
+  (the streamed intro) adds tokens, as measured for one request in [Streaming](#streaming). Most of
+  the gap is in the cases with long intros (`uk-aquatic`, `uk-similar-lavie`).
+- **The text is as clean as `reply()`'s:** the guard removed one sentence in the whole run
+  (`uk-injection`, comparing the pick with Zara perfumes), against four in the `reply()` run. The
+  trace lists removals from the intro, the reasons and the question together, so it doesn't say
+  which one this was; it reads like a pick's reason. No invented id or name reached a reply.
+- **The three misses are the model, not the stream:** in `uk-spicy-oriental` and `uk-gift-mum`
+  the model searched nothing and picked nothing, so the search nudge (which needs picks) didn't
+  apply. In `uk-injection` it searched for vanilla perfumes and picked Hypnotic Poison instead of
+  declining. The tool rounds are the same code as in `reply()`. Changing the prompts or the nudge
+  would be a separate issue; comparing models is #167.

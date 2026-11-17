@@ -107,7 +107,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
 | modify | `docs/ai-perfumer.md` | chat section: adding to the cart from a card |
 
 ## Steps
-- [ ] **1. `AddToCartForm`: `fetcherKey` and focus** — Add `fetcherKey?: string` (default
+- [x] **1. `AddToCartForm`: `fetcherKey` and focus** — Add `fetcherKey?: string` (default
   `add-to-cart-${productId}`). Keep a ref to the submit button (`Button` forwards `ref`? check; else
   wrap via `form.querySelector('button[type=submit]')`), note in `onSubmit` whether
   `document.activeElement` is it, and in an effect on `fetcher.state === "idle"` focus it again.

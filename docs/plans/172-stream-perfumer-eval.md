@@ -159,7 +159,7 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
     `collectStreamedReply` gives a reply without that sentence, and `onTrace` reports it.
   - `percentile`: [] → undefined, a single value, p50/p95 of 15 values.
   - `meetsExpectation` and `cyrillicShare`: a couple of cases, now that they can be imported.
-- [ ] **4. `--stream` in the eval script** — In `perfumer-eval.ts`:
+- [x] **4. `--stream` in the eval script** — In `perfumer-eval.ts`:
   - Read `const stream = args.includes("--stream")`.
   - Update the header comment with `[--stream]` and what it measures.
   - In `runModel`, when `stream` is set, create `chatStream = createChatStreamClient(config)`.

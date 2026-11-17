@@ -6,6 +6,7 @@ import { getLocale } from "~/.server/locale";
 import { getClientIp } from "~/.server/rate-limit";
 import { answerPerfumerMessage } from "~/.server/services/perfumer-chat";
 import { PerfumerPage } from "~/features/perfumer/PerfumerPage";
+import { shouldRevalidateView } from "~/lib/analytics";
 import { metaTranslator } from "~/lib/i18n";
 import type { PerfumerActionResult, PerfumerErrorKey } from "~/lib/perfumer";
 import {
@@ -48,6 +49,12 @@ export function loader({ request }: Route.LoaderArgs) {
   requirePerfumer();
   return { prefill: parsePerfumerPrefill(new URL(request.url).searchParams) };
 }
+
+/**
+ * The loader only reads `?q=`: a form posted from the page (a cart add from a card, #169, a
+ * message or a rating) doesn't rerun it. The `_shop` loader still does, so the cart badge updates.
+ */
+export const shouldRevalidate = shouldRevalidateView;
 
 const ERROR_STATUS: Record<PerfumerErrorKey, number> = {
   tooLong: 400,

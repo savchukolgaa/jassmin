@@ -139,7 +139,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
 - [x] **4. `usePerfumerThread`: stable turn id** — In both finish paths (fetcher result and stream
   `done`), give the `perfumer` item the pending turn's `id` (errors keep `newId()`). Check the
   `key` on `StreamingTurn` (`${pending.id}-reply`) vs `PerfumerTurn` (`item.id`) don't collide.
-- [ ] **5. `perfumer.tsx`: `shouldRevalidate`** — Export `shouldRevalidateView` from
+- [x] **5. `perfumer.tsx`: `shouldRevalidate`** — Export `shouldRevalidateView` from
   `~/lib/analytics`. Test: POST to the cart → `false`; locale switch → `true`.
 - [ ] **6. Tests** — `MessageThread.dom.test.ts` (with a router and a `/koshyk` action stub):
   a several-size pick renders the size picker and "Додати в кошик" / "Add to cart" in `en`;

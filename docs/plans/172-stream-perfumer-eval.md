@@ -120,7 +120,7 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
 
 ## Steps
 
-- [ ] **1. Expose the streamed trace (`onTrace`)** — In `perfumer.ts`, add
+- [x] **1. Expose the streamed trace (`onTrace`)** — In `perfumer.ts`, add
   `onTrace?: (trace: PerfumerTrace) => void` to `PerfumerDeps`, with a doc comment ("the streamed
   reply's trace, for the eval (#172); never sent to the browser"). In `replyStream`, call
   `deps.onTrace?.(run.trace)` right before `yield { type: "done" }`, after the question is cleaned.

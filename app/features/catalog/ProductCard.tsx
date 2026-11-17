@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { useListedProduct } from "~/features/analytics/ProductList";
-import { AddToCartForm } from "~/features/cart/AddToCartForm";
+import { AddToCartForm, type AddToCartFormProps } from "~/features/cart/AddToCartForm";
 import { fragranceFamilyLabel } from "~/lib/catalog";
 import { cn } from "~/lib/cn";
 import { useT } from "~/lib/i18n";
@@ -10,6 +10,12 @@ import { cardPrice, formatVolume, type ProductSummary, productHref } from "~/lib
 import { CardVolumePicker } from "./CardVolumePicker";
 import { FamilyChip } from "./FamilyChip";
 import { ProductImage } from "./ProductImage";
+
+/** The add-to-cart form's options a card's caller can set. */
+export type CartFormOptions = Pick<
+  AddToCartFormProps,
+  "fetcherKey" | "revealResult" | "statusClassName"
+>;
 
 type ProductCardProps = {
   product: ProductSummary;
@@ -27,9 +33,14 @@ type ProductCardProps = {
   listIndex?: number;
   /**
    * Default card only: `false` hides the size picker and the add-to-cart button, and the price
-   * reads "from …" for several sizes. The AI perfumer's cards (#163) link to the product instead.
+   * reads "from …" for several sizes.
    */
   purchase?: boolean;
+  /**
+   * Default card only: options for its add-to-cart form, e.g. the AI perfumer's cards (#169) keep
+   * their own state per answer and scroll "Added to cart" above the chat's message bar.
+   */
+  cartForm?: CartFormOptions;
   /** Default card only: content at the bottom of the card, e.g. the perfumer's reason (#163). */
   children?: ReactNode;
 };
@@ -40,6 +51,7 @@ export function ProductCard({
   variant = "default",
   listIndex,
   purchase = true,
+  cartForm,
   children,
 }: ProductCardProps) {
   return variant === "compact" ? (
@@ -50,6 +62,7 @@ export function ProductCard({
       headingLevel={headingLevel}
       listIndex={listIndex}
       purchase={purchase}
+      cartForm={cartForm}
     >
       {children}
     </CatalogProductCard>
@@ -163,8 +176,9 @@ function CatalogProductCard({
   headingLevel,
   listIndex,
   purchase,
+  cartForm,
   children,
-}: CardProps & { purchase: boolean; children?: ReactNode }) {
+}: CardProps & { purchase: boolean; cartForm?: CartFormOptions; children?: ReactNode }) {
   const Heading = `h${headingLevel}` as const;
   const translator = useT();
   const href = productHref(translator.locale, product);
@@ -223,6 +237,7 @@ function CatalogProductCard({
           size="sm"
           className="flex flex-col gap-3 px-2 pt-3"
           list={listed.list}
+          {...cartForm}
         >
           <SizePicker product={product} onChange={setSelectedId} />
         </AddToCartForm>

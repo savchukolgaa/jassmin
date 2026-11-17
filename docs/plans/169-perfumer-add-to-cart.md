@@ -69,6 +69,16 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   (measured at 375px; the bar is taller there with the disclaimer) so `nearest` clears it. It
   never moves focus and does nothing when the line is already visible. Off by default, so the
   catalog doesn't change.
+- **Deviations found while implementing.**
+  - `ProductCard` takes one `cartForm` prop (`fetcherKey`, `revealResult`, `statusClassName`,
+    the `CartFormOptions` type) instead of separate `cartKey`/reveal props: one pass-through.
+  - The approved C+ canvas's `PerfumerPlus` / `PerfumerPlusPhone` artboards (as published on
+    2026-11-17) still draw the card without cart controls ("від [PRICE] ₴"), so the layout follows
+    the catalog card: `CardPrice` `font-extrabold`, the picker, the `sm` button, the status line,
+    then the reason box (its top margin trimmed from `mt-3.5` to `mt-1.5`, as the form already
+    ends with the `min-h-5` status line).
+  - The status line's clearance above the message bar is `scroll-mb-48 sm:scroll-mb-40` (the bar
+    is ~170px on phones with the disclaimer wrapped, ~130px from `sm`).
 
 ## Resolved questions
 - **Q2: Should the chat scroll so the "Added to cart" confirmation isn't hidden under the sticky
@@ -115,7 +125,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   new result shows and `revealResult` is set, scroll the status line into view (`block: "nearest"`,
   smooth unless reduced motion). Test: the key separates two forms for one product; focus returns;
   `scrollIntoView` is called only with `revealResult`.
-- [ ] **2. `ProductCard`: pass the key** — `CatalogProductCard` takes an optional `cartKey` prop
+- [x] **2. `ProductCard`: pass the key** — `CatalogProductCard` takes an optional `cartKey` prop
   (through `ProductCardProps`, default card only) and passes it as `fetcherKey`. Update the
   `purchase` comment (no longer "the AI perfumer's cards link to the product instead").
 - [ ] **3. `MessageThread`: turn the controls on** — In `PickList`, drop `purchase={false}`, take a

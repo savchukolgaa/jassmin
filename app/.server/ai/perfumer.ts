@@ -87,10 +87,16 @@ export interface PerfumerDeps {
    */
   signal?: AbortSignal;
   /**
-   * Called with each catalog tool call as it runs, for analytics (#166): the streamed reply has no
-   * trace to return.
+   * Called with each catalog tool call as it runs, for analytics (#166), in `reply` and
+   * `replyStream` alike.
    */
   onToolCall?: (record: ToolCallRecord) => void;
+  /**
+   * `replyStream` only: called once with the finished reply's trace, just before `done`, for the
+   * eval (#172). Never part of the events, so it doesn't reach the browser. `replyWithTrace`
+   * returns its trace instead.
+   */
+  onTrace?: (trace: PerfumerTrace) => void;
 }
 
 /** What happened during one reply, for the eval script (#162) and logs. */
@@ -471,6 +477,7 @@ export async function* replyStream(
     yield { type: "picks", picks: validated.picks };
     const question = answer.question ? validated.clean(answer.question, MAX_QUESTION) : "";
     if (question) yield { type: "question", text: question };
+    deps.onTrace?.(run.trace);
     yield { type: "done" };
   } finally {
     // Finished, failed or abandoned by the caller: no model call may outlive the reply.

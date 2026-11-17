@@ -5,7 +5,13 @@ import type { PerfumerProductRow } from "../db/queries/perfumer";
 import type { ChatFn, ChatRequest, ChatResult, ChatStreamFn } from "./client";
 import type { PerfumerConfig } from "./config";
 import { AiError, PerfumerDisabledError } from "./errors";
-import { MAX_TOOL_ROUNDS, reply, replyStream, replyWithTrace } from "./perfumer";
+import {
+  MAX_TOOL_ROUNDS,
+  type PerfumerTrace,
+  reply,
+  replyStream,
+  replyWithTrace,
+} from "./perfumer";
 
 const config: PerfumerConfig = {
   baseUrl: "http://localhost:11434/v1",
@@ -491,6 +497,52 @@ describe("perfumer.replyStream (#164)", () => {
       })(),
     ).rejects.toMatchObject({ kind: "unavailable" });
     expect(seen.map((e) => e.type)).toEqual(["step", "intro"]);
+  });
+
+  it("hands the trace to onTrace once, before done, outside the events (#172)", async () => {
+    const { chat } = scripted(
+      toolCall("search_perfumes", { notes: ["морські ноти"] }),
+      { content: null, toolCalls: [] },
+      picksAnswer([
+        { id: "p1", reason: "Бриз." },
+        { id: "p9", reason: "Вигадка." },
+      ]),
+    );
+    const { chatStream } = streamed("Ось морські аромати. ", "Схоже на Aquarius.");
+    const order: string[] = [];
+    const onTrace = vi.fn((_trace: PerfumerTrace) => {
+      order.push("trace");
+    });
+
+    const all: PerfumerEvent[] = [];
+    for await (const event of replyStream("uk", ask, { ...deps(chat), chatStream, onTrace })) {
+      order.push(event.type);
+      all.push(event);
+    }
+
+    expect(onTrace).toHaveBeenCalledTimes(1);
+    expect(order.slice(-2)).toEqual(["trace", "done"]);
+    const trace = onTrace.mock.calls[0]?.[0];
+    expect(trace?.toolCalls.map((call) => call.name)).toEqual(["search_perfumes"]);
+    expect(trace?.modelPickIds).toEqual(["p1", "p9"]);
+    expect(trace?.droppedPickIds).toEqual(["p9"]);
+    expect(trace?.removedSentences).toEqual(["Схоже на Aquarius."]);
+    expect(all.some((event) => "trace" in event)).toBe(false);
+  });
+
+  it("doesn't call onTrace when the reply fails", async () => {
+    const { chat } = scripted(
+      toolCall("search_perfumes", { notes: ["морські ноти"] }),
+      { content: null, toolCalls: [] },
+      { content: "not json", toolCalls: [] },
+      { content: "still not json", toolCalls: [] },
+    );
+    const onTrace = vi.fn();
+
+    await expect(events(replyStream("uk", ask, { ...deps(chat), onTrace }))).rejects.toMatchObject({
+      kind: "bad_response",
+    });
+    expect(onTrace).not.toHaveBeenCalled();
   });
 
   it("is disabled without AI_BASE_URL and never calls a model", async () => {

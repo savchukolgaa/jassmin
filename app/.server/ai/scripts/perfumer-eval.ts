@@ -1,7 +1,10 @@
-// `pnpm ai:perfumer-eval [models…] [--db] [--only <case>]`: runs the AI perfumer (#162) on the
+// `pnpm ai:perfumer-eval [models…] [--db] [--only <case>] [--stream]`: runs the AI perfumer (#162) on the
 // cases in `perfumer-eval.cases.ts` against a real model and prints a Markdown table: the tool
 // arguments, picks, invented ids, sentences the guard removed (invented names), the language and
 // the time per answer. Not part of the tests or CI; record results in docs/ai-perfumer.md.
+//
+// `--stream` (#172) runs the cases through `replyStream` (#164) instead, as the chat does, and adds
+// the time to the first step, to the first intro sentence and to `done`, with their p50/p95.
 //
 // The model server is `AI_BASE_URL` (default: local Ollama, http://localhost:11434/v1); the models
 // are the arguments (default: `AI_MODEL`). The catalog is the owner's list in `catalog-data.ts`
@@ -9,16 +12,25 @@
 import { existsSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { PERFUME_VOLUMES_ML } from "~/lib/enums";
+import type { PerfumerReply } from "~/lib/perfumer";
 import type { ProductSummary } from "~/lib/products";
 import { CATALOG_PRODUCTS } from "../../db/catalog-data";
 import { CATALOG_PRICES } from "../../db/catalog-prices";
 import type { PerfumerProductRow } from "../../db/queries/perfumer";
 import { getDatabaseUrl, parseAiEnv } from "../../env";
-import { createChatClient } from "../client";
+import { createChatClient, createChatStreamClient } from "../client";
 import type { PerfumerConfig } from "../config";
 import { AiError } from "../errors";
-import { type PerfumerDeps, type PerfumerTrace, replyWithTrace } from "../perfumer";
+import { type PerfumerDeps, type PerfumerTrace, replyStream, replyWithTrace } from "../perfumer";
 import { EVAL_CASES, type EvalCase } from "./perfumer-eval.cases";
+import {
+  cell,
+  collectStreamedReply,
+  cyrillicShare,
+  describeTools,
+  meetsExpectation,
+  percentile,
+} from "./perfumer-eval.stream";
 
 if (existsSync(".env")) {
   process.loadEnvFile(".env");
@@ -26,6 +38,7 @@ if (existsSync(".env")) {
 
 const args = process.argv.slice(2);
 const useDb = args.includes("--db");
+const stream = args.includes("--stream");
 const onlyIndex = args.indexOf("--only");
 const only = onlyIndex >= 0 ? args[onlyIndex + 1] : undefined;
 const env = parseAiEnv(process.env);
@@ -124,23 +137,6 @@ async function catalogDeps(): Promise<{
   };
 }
 
-/** The share of letters that are Cyrillic. */
-function cyrillicShare(text: string): number {
-  const letters = text.match(/\p{L}/gu) ?? [];
-  const cyrillic = text.match(/\p{Script=Cyrillic}/gu) ?? [];
-  return letters.length ? cyrillic.length / letters.length : 0;
-}
-
-function describeTools(trace: PerfumerTrace): string {
-  return (
-    trace.toolCalls
-      .map((call) => `${call.ok ? "" : "✗"}${call.name}(${JSON.stringify(call.arguments)})`)
-      .join("; ") || "—"
-  );
-}
-
-const cell = (value: string) => value.replaceAll("|", "\\|").replaceAll("\n", " ");
-
 interface Row {
   model: string;
   id: string;
@@ -152,23 +148,48 @@ interface Row {
   language: boolean;
   expected: boolean;
   error?: string;
+  /** `--stream` only: seconds to the first step (none when no tool ran) and the first intro. */
+  firstStep?: number;
+  firstIntro?: number;
 }
 
-function meetsExpectation(
-  test: EvalCase,
-  picks: { product: ProductSummary }[],
-  catalog: readonly PerfumerProductRow[],
-): boolean {
-  if (test.picks === "some" && picks.length === 0) return false;
-  if (test.picks === "none" && picks.length > 0) return false;
-  const families = new Map(catalog.map((p) => [p.publicId, p.fragranceFamilies]));
-  return picks.every(({ product }) => {
-    const own = families.get(product.id) ?? [];
-    const familyOk = !test.families || own.some((f) => (test.families as string[]).includes(f));
-    const priceOk = test.maxPrice === undefined || Number(product.minPrice) <= test.maxPrice;
-    return familyOk && priceOk;
-  });
+interface Answer {
+  reply: PerfumerReply;
+  trace: PerfumerTrace;
+  firstStep?: number;
+  firstIntro?: number;
 }
+
+/** The streamed reply as the chat gets it, with its trace (`onTrace`) and timings. */
+async function streamedAnswer(
+  test: EvalCase,
+  deps: PerfumerDeps,
+  started: number,
+): Promise<Answer> {
+  let trace: PerfumerTrace | undefined;
+  const { reply, timings } = await collectStreamedReply(
+    replyStream(test.locale, test.messages, {
+      ...deps,
+      onTrace: (t) => {
+        trace = t;
+      },
+    }),
+    started,
+  );
+  if (!trace) {
+    throw new Error("replyStream finished without a trace");
+  }
+  return {
+    reply,
+    trace,
+    ...(timings.firstStepMs === undefined ? {} : { firstStep: timings.firstStepMs / 1000 }),
+    ...(timings.firstIntroMs === undefined ? {} : { firstIntro: timings.firstIntroMs / 1000 }),
+  };
+}
+
+/** Seconds with one decimal, or `—`. */
+const seconds = (value: number | undefined) =>
+  value === undefined ? "—" : `${value.toFixed(1)} s`;
 
 async function runModel(
   model: string,
@@ -182,6 +203,7 @@ async function runModel(
     keepAlive: env.AI_KEEP_ALIVE ?? "30m",
   };
   const chat = createChatClient(config);
+  const chatStream = createChatStreamClient(config);
   // Load the model first so the first case isn't charged for it.
   await chat(
     { messages: [{ role: "user", content: "ok" }] },
@@ -192,11 +214,11 @@ async function runModel(
   for (const test of EVAL_CASES.filter((c) => !only || c.id === only)) {
     const started = performance.now();
     try {
-      const { reply, trace } = await replyWithTrace(test.locale, test.messages, {
-        ...source.deps,
-        config,
-        chat,
-      });
+      const deps: PerfumerDeps = { ...source.deps, config, chat, chatStream };
+      const answer: Answer = stream
+        ? await streamedAnswer(test, deps, started)
+        : await replyWithTrace(test.locale, test.messages, deps);
+      const { reply, trace, firstStep, firstIntro } = answer;
       const text = [reply.intro, ...reply.picks.map((p) => p.reason), reply.question ?? ""].join(
         " ",
       );
@@ -211,6 +233,8 @@ async function runModel(
         removed: trace.removedSentences,
         language: test.locale === "uk" ? share >= 0.6 : share <= 0.1,
         expected: meetsExpectation(test, reply.picks, source.catalog),
+        ...(firstStep === undefined ? {} : { firstStep }),
+        ...(firstIntro === undefined ? {} : { firstIntro }),
       });
     } catch (error) {
       rows.push({
@@ -227,8 +251,11 @@ async function runModel(
       });
     }
     const last = rows.at(-1);
+    const timings = stream
+      ? `first step ${seconds(last?.firstStep)}, first intro ${seconds(last?.firstIntro)}, `
+      : "";
     console.error(
-      `${model} ${test.id}: ${last?.error ?? last?.picks} (${last?.seconds.toFixed(0)} s)`,
+      `${model} ${test.id}: ${last?.error ?? last?.picks} (${timings}${last?.seconds.toFixed(0)} s)`,
     );
   }
   return rows;
@@ -253,16 +280,44 @@ function printTable(rows: readonly Row[]): void {
   }
 }
 
+/** `--stream`: the timings first, with p50/p95 per model. */
+function printStreamTable(rows: readonly Row[]): void {
+  console.log(
+    "| Model | Case | First step | First intro | Total | Tool calls | Picks | Invalid ids | Removed sentences | Language | Expected |",
+  );
+  console.log("|---|---|---|---|---|---|---|---|---|---|---|");
+  for (const row of rows) {
+    console.log(
+      `| ${row.model} | ${row.id} | ${seconds(row.firstStep)} | ${seconds(row.firstIntro)} | ${seconds(row.seconds)} | ${cell(row.error ?? row.tools)} | ${cell(row.picks)} | ${row.invalidIds} | ${cell(row.removed.join(" / ") || "—")} | ${row.language ? "✓" : "✗"} | ${row.expected ? "✓" : "✗"} |`,
+    );
+  }
+  const spread = (values: number[]) =>
+    `p50 ${seconds(percentile(values, 50))} / p95 ${seconds(percentile(values, 95))}`;
+  for (const model of new Set(rows.map((r) => r.model))) {
+    const mine = rows.filter((r) => r.model === model);
+    const steps = mine.flatMap((r) => (r.firstStep === undefined ? [] : [r.firstStep]));
+    const intros = mine.flatMap((r) => (r.firstIntro === undefined ? [] : [r.firstIntro]));
+    console.log(
+      `
+**${model}** (streamed): ${mine.filter((r) => r.expected).length}/${mine.length} as expected, language ${mine.filter((r) => r.language).length}/${mine.length}, invalid ids ${mine.reduce((n, r) => n + r.invalidIds, 0)}, removed sentences ${mine.reduce((n, r) => n + r.removed.length, 0)}, errors ${mine.filter((r) => r.error).length}; first step ${spread(steps)} (${steps.length}/${mine.length} cases searched), first intro ${spread(intros)}, total ${spread(mine.map((r) => r.seconds))}.`,
+    );
+  }
+}
+
 const source = await catalogDeps();
 try {
   console.error(
-    `${source.catalog.length} perfumes from ${useDb ? "the database" : "catalog-data.ts"}; ${baseUrl}`,
+    `${source.catalog.length} perfumes from ${useDb ? "the database" : "catalog-data.ts"}; ${baseUrl}${stream ? "; streamed" : ""}`,
   );
   const rows: Row[] = [];
   for (const model of models) {
     rows.push(...(await runModel(model, source)));
   }
-  printTable(rows);
+  if (stream) {
+    printStreamTable(rows);
+  } else {
+    printTable(rows);
+  }
 } finally {
   await source.close();
 }

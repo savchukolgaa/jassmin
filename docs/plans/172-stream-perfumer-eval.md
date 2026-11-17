@@ -176,7 +176,7 @@ and the total time, plus the sentences the guard removed. A `granite4.1:3b` run 
   - Check: `pnpm ai:perfumer-eval --stream --only en-injection granite4.1:3b` and
     `--stream --only uk-aquatic` print sensible rows, and the same commands without `--stream`
     print the regular table.
-- [ ] **5. Record the `granite4.1:3b` stream run** — With Ollama running and
+- [x] **5. Record the `granite4.1:3b` stream run** — With Ollama running and
   `AI_KEEP_ALIVE=30m`, run `pnpm ai:perfumer-eval --stream granite4.1:3b` (in the background,
   about 30–50 min). In `docs/ai-perfumer.md`:
   - Under `## Eval`, add the `--stream` command and a paragraph on the extra columns, the clock

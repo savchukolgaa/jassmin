@@ -103,7 +103,7 @@ describe("MessageThread", () => {
     expect(html).toMatch(/<form[^>]*action="\/koshyk"/);
     expect(html).toContain('name="intent" value="add"');
     expect(html).toContain('name="productId" value="01a1652b-6e25-7c03-ae47-25b57131fb06"');
-    expect(html).toContain("<legend class=\"sr-only\">Об’єм</legend>");
+    expect(html).toContain('<legend class="sr-only">Об’єм</legend>');
     expect(html.indexOf("Додати в кошик")).toBeGreaterThan(-1);
     expect(html.indexOf("Додати в кошик")).toBeLessThan(html.indexOf("Чому вам пасує"));
   });

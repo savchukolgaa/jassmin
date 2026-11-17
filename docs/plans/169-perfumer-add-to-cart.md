@@ -149,7 +149,7 @@ action), and cart adds from the chat are recorded with `list_id: "perfumer"` and
   keeps separate states; axe has no violations on an answer with cards. `PerfumerPage.dom.test.ts`:
   after an add (action + `_shop` loader revalidation) the thread items, the draft in the input and
   focus on the add button are unchanged, and `sessionStorage` still holds the thread.
-- [ ] **7. Docs** — `docs/design.md`: replace "default product cards without cart controls
+- [x] **7. Docs** — `docs/design.md`: replace "default product cards without cart controls
   (`purchase={false}`, "from …" price)" with the cart controls (price of the picked size, picker,
   `sm` add button, "Додано в кошик · Переглянути кошик" status, then the reason box). Update the
   approved artboards in the design table if their names changed. `docs/analytics-events.md`: the `perfumer` list paragraph now

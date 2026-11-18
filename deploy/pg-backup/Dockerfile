@@ -8,4 +8,5 @@ ADD --chmod=755 https://github.com/aptible/supercronic/releases/download/${SUPER
 COPY --chmod=755 backup.sh /usr/local/bin/backup.sh
 COPY crontab /etc/pg-backup/crontab
 ENTRYPOINT []
-CMD ["supercronic", "-passthrough-logs", "/etc/pg-backup/crontab"]
+# The absolute path: as PID 1 supercronic re-executes itself by the name it was started with.
+CMD ["/usr/local/bin/supercronic", "-passthrough-logs", "/etc/pg-backup/crontab"]

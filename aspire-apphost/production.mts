@@ -12,7 +12,7 @@
 // See docs/deploy.md.
 
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type {
   ContainerResource,
@@ -27,6 +27,12 @@ const REMOTE_DIR = "/srv/jassmin";
 
 /** Where Aspire writes docker-compose.yaml and .env: `pnpm aspire:deploy` passes `-o aspire-output`. */
 const OUTPUT_DIR = resolve(import.meta.dirname, "..", "aspire-output");
+
+/**
+ * The .env with the values, written by `prepare-jassmin` for the deploy environment (`aspire do`
+ * defaults to Production). `publish` writes only `.env`, an empty template.
+ */
+const ENV_FILE = ".env.Production";
 
 /** A random secret, generated on the first deploy and kept in Aspire's deployment state. */
 function generatedSecret(builder: DistributedApplicationBuilder, name: string, minLength = 48) {
@@ -95,14 +101,15 @@ export async function addProductionResources(builder: DistributedApplicationBuil
   const db = await postgres.addDatabase("jassmindb");
   const strapiDb = await postgres.addDatabase("strapidb");
 
-  // `pnpm db:migrate` once per deploy, from the `jobs` image; `web` and `scheduler` wait for it.
+  // Once per deploy, from the `jobs` image: create the databases (Compose's Postgres starts empty,
+  // and Aspire creates them only in run mode), then `pnpm db:migrate`. `cms`, `web` and `scheduler`
+  // wait for it; it retries while Postgres starts, since Compose can't wait for its health here.
   const dbMigrate = await builder
     .addDockerfile("db-migrate", "..", { stage: "jobs" })
-    // Compose can't wait for Postgres to be healthy here, so retry while it starts up.
     .withArgs([
       "sh",
       "-c",
-      "for try in $(seq 30); do pnpm --silent db:migrate && exit 0; sleep 2; done; exit 1",
+      "pnpm --silent db:create-databases jassmindb strapidb && pnpm --silent db:migrate",
     ])
     .withReference(db)
     .waitFor(postgres)
@@ -117,7 +124,7 @@ export async function addProductionResources(builder: DistributedApplicationBuil
     .withEnvironment("PUBLIC_URL", refExpr`https://${adminDomain}`)
     .withEnvironment("IS_PROXIED", "true")
     .withEnvironment("CMS_SYNC_SECRET", cmsSyncSecret)
-    .waitFor(postgres)
+    .waitForCompletion(dbMigrate)
     .withContainerRegistry(ghcr);
   for (const [name, value] of strapiSecrets) {
     await cms.withEnvironment(name, value);
@@ -190,10 +197,18 @@ export async function addProductionResources(builder: DistributedApplicationBuil
   });
 }
 
-/** Runs a command without a shell, streaming its output, and fails on a non-zero exit. */
-function run(command: string, args: string[]): Promise<void> {
+/**
+ * Runs a command without a shell, streaming its output, and fails on a non-zero exit. `stdinFile`
+ * is piped to its standard input.
+ */
+function run(command: string, args: string[], stdinFile?: string): Promise<void> {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, { stdio: "inherit" });
+    const child = spawn(command, args, {
+      stdio: [stdinFile ? "pipe" : "inherit", "inherit", "inherit"],
+    });
+    if (stdinFile && child.stdin) {
+      createReadStream(stdinFile).on("error", reject).pipe(child.stdin);
+    }
     child.on("error", reject);
     child.on("exit", (code) =>
       code === 0
@@ -205,7 +220,7 @@ function run(command: string, args: string[]): Promise<void> {
 
 /**
  * Copies the generated Compose files to the server and starts them there. The server is
- * `DEPLOY_SSH_TARGET` (e.g. `deploy@203.0.113.7`) from the environment of `pnpm aspire deploy`.
+ * `DEPLOY_SSH_TARGET` (e.g. `deploy@203.0.113.7`) from the environment of `pnpm aspire:deploy`.
  */
 async function deployOverSsh(context: PipelineStepContext): Promise<void> {
   const target = process.env.DEPLOY_SSH_TARGET;
@@ -214,21 +229,24 @@ async function deployOverSsh(context: PipelineStepContext): Promise<void> {
       "Set DEPLOY_SSH_TARGET (e.g. deploy@203.0.113.7) before `pnpm aspire:deploy`; see docs/deploy.md.",
     );
   }
-  const files = ["docker-compose.yaml", ".env"].map((name) => join(OUTPUT_DIR, name));
-  const missing = files.filter((file) => !existsSync(file));
+  const composeFile = join(OUTPUT_DIR, "docker-compose.yaml");
+  const envFile = join(OUTPUT_DIR, ENV_FILE);
+  const missing = [composeFile, envFile].filter((file) => !existsSync(file));
   if (missing.length > 0) {
     throw new Error(`Aspire didn't write ${missing.join(", ")}; run \`pnpm aspire:deploy\`.`);
   }
 
   const step = await context.reportingStep();
   const copy = await step.createTask(`Copying the Compose files to ${target}:${REMOTE_DIR}`);
-  await run("scp", ["-q", ...files, `${target}:${REMOTE_DIR}/`]);
+  await run("scp", ["-q", composeFile, `${target}:${REMOTE_DIR}/docker-compose.yaml`]);
+  // The secrets go through stdin into a file only the deploy user can read, from its first byte.
+  await run("ssh", [target, `umask 077 && cat > ${REMOTE_DIR}/.env`], envFile);
   await copy.completeTask();
 
   const up = await step.createTask("Pulling the images and starting the services");
   await run("ssh", [
     target,
-    `cd ${REMOTE_DIR} && chmod 600 .env && docker compose pull --quiet && docker compose up -d --remove-orphans && docker image prune -f`,
+    `cd ${REMOTE_DIR} && docker compose pull --quiet && docker compose up -d --remove-orphans && docker image prune -f`,
   ]);
   await up.completeTask();
   await step.completeStep(`Deployed to ${target}`);

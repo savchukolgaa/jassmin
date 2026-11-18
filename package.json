@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:create-databases": "tsx app/.server/db/scripts/create-databases.ts",
     "db:rollback": "tsx app/.server/db/scripts/rollback.ts",
     "db:seed": "tsx app/.server/db/scripts/seed.ts",
     "db:make-admin": "tsx app/.server/db/scripts/make-admin.ts",

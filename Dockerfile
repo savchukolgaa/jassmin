@@ -49,10 +49,14 @@ FROM deps AS jobs
 ARG SUPERCRONIC_VERSION=v0.2.33
 ARG TARGETARCH=amd64
 ADD --chmod=755 https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-${TARGETARCH} /usr/local/bin/supercronic
-ENV NODE_ENV=production
+# Only the app's packages are installed (not Strapi's), so pnpm's "are the workspace's
+# dependencies up to date?" check before `pnpm <script>` would try to install; skip it.
+ENV NODE_ENV=production \
+    pnpm_config_verify_deps_before_run=false
 COPY . .
 # Corepack keeps pnpm in the user's cache, so install it for `node` before dropping root.
 RUN mkdir -p /home/node/.cache && cp -r /root/.cache/node /home/node/.cache/ \
     && chown -R node:node /home/node/.cache
 USER node
-CMD ["supercronic", "-passthrough-logs", "/app/deploy/crontab"]
+# The absolute path: as PID 1 supercronic re-executes itself by the name it was started with.
+CMD ["/usr/local/bin/supercronic", "-passthrough-logs", "/app/deploy/crontab"]

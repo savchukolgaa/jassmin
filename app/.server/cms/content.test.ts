@@ -77,15 +77,15 @@ afterEach(() => {
 });
 
 describe("toImage", () => {
-  it("resolves relative upload URLs against the CMS origin", () => {
+  it("serves relative upload URLs from the shop's origin (#176)", () => {
     expect(
       toImage({ url: "/uploads/a.jpg", alternativeText: "A", width: 10, height: 5 }, BASE_URL),
     ).toEqual({
-      url: "http://cms.test/uploads/a.jpg",
+      url: "/uploads/a.jpg",
       alt: "A",
       width: 10,
       height: 5,
-      srcSet: "http://cms.test/uploads/a.jpg 10w",
+      srcSet: "/uploads/a.jpg 10w",
     });
   });
 
@@ -104,7 +104,7 @@ describe("toImage", () => {
     );
 
     expect(image?.srcSet).toBe(
-      "http://cms.test/uploads/small_a.jpg 500w, http://cms.test/uploads/medium_a.jpg 750w, http://cms.test/uploads/a.jpg 1200w",
+      "/uploads/small_a.jpg 500w, /uploads/medium_a.jpg 750w, /uploads/a.jpg 1200w",
     );
   });
 
@@ -132,7 +132,7 @@ describe("pickImage", () => {
 
   it("shows the locale's override when it is set", () => {
     expect(pickImage({ shared, localized, alt: null }, BASE_URL)).toMatchObject({
-      url: "http://cms.test/uploads/uk.jpg",
+      url: "/uploads/uk.jpg",
       alt: "Ukrainian file",
       width: 20,
     });
@@ -140,7 +140,7 @@ describe("pickImage", () => {
 
   it("falls back to the shared image without an override", () => {
     expect(pickImage({ shared, localized: null, alt: undefined }, BASE_URL)).toMatchObject({
-      url: "http://cms.test/uploads/shared.jpg",
+      url: "/uploads/shared.jpg",
       alt: "Shared file",
     });
   });
@@ -246,16 +246,16 @@ describe("getHomePage", () => {
       ctaLabel: "Замовити",
       ctaHref: "/popular",
       image: {
-        url: `http://cms.test${homePage.data.heroImage.url}`,
+        url: homePage.data.heroImage.url,
         alt: "Тестери парфумів Jassmin",
         width: 1200,
         height: 800,
         srcSet: [
-          "http://cms.test/uploads/thumbnail_hero_86b09bc538.jpg 234w",
-          "http://cms.test/uploads/small_hero_86b09bc538.jpg 500w",
-          "http://cms.test/uploads/medium_hero_86b09bc538.jpg 750w",
-          "http://cms.test/uploads/large_hero_86b09bc538.jpg 1000w",
-          "http://cms.test/uploads/hero_86b09bc538.jpg 1200w",
+          "/uploads/thumbnail_hero_86b09bc538.jpg 234w",
+          "/uploads/small_hero_86b09bc538.jpg 500w",
+          "/uploads/medium_hero_86b09bc538.jpg 750w",
+          "/uploads/large_hero_86b09bc538.jpg 1000w",
+          "/uploads/hero_86b09bc538.jpg 1200w",
         ].join(", "),
       },
       eyebrow: "Тестерний набір",
@@ -372,7 +372,7 @@ describe("listBlogPosts", () => {
       "fragrance-families-explained",
       "how-to-choose-a-perfume",
     ]);
-    expect(result.items[0]?.coverImage?.url).toMatch(/^http:\/\/cms\.test\/uploads\//);
+    expect(result.items[0]?.coverImage?.url).toMatch(/^\/uploads\//);
     expect(result.items[0]).not.toHaveProperty("content");
   });
 
@@ -676,7 +676,7 @@ describe("toHomePage", () => {
       subtitle: expect.stringContaining("499₴"),
       secondaryCta: { label: "See all perfumes", href: "/catalog/women" },
     });
-    expect(page.about.image?.url).toMatch(/^http:\/\/cms\.test\/uploads\//);
+    expect(page.about.image?.url).toMatch(/^\/uploads\//);
   });
 
   it("treats blank or missing optional fields as not set", () => {
@@ -714,10 +714,10 @@ describe("toHomePage", () => {
     const ukrainian = toHomePage(uk, BASE_URL);
 
     expect(english.hero.image).toMatchObject({
-      url: "http://cms.test/uploads/banner_en.jpg",
+      url: "/uploads/banner_en.jpg",
       alt: "Jassmin perfume testers",
     });
-    expect(ukrainian.hero.image?.url).toBe(`http://cms.test${uk.heroImage?.url}`);
+    expect(ukrainian.hero.image?.url).toBe(uk.heroImage?.url);
     expect(toHomePage(en, BASE_URL).hero.image?.url).toBe(ukrainian.hero.image?.url);
   });
 });
@@ -733,7 +733,7 @@ function offerEntryFrom(index: number) {
 }
 
 describe("toOffer", () => {
-  it("maps an offer with absolute image URLs and its products", () => {
+  it("maps an offer with same-origin image URLs and its products", () => {
     const offer = toOffer(offerEntryFrom(2), BASE_URL);
 
     expect(offer).toMatchObject({
@@ -748,8 +748,8 @@ describe("toOffer", () => {
       startsAt: null,
       endsAt: null,
     });
-    expect(offer.image?.url).toMatch(/^http:\/\/cms\.test\/uploads\//);
-    expect(offer.image?.srcSet).toContain("http://cms.test/uploads/small_");
+    expect(offer.image?.url).toMatch(/^\/uploads\//);
+    expect(offer.image?.srcSet).toContain("/uploads/small_");
     expect(offer.image?.alt).toBe("Тестери парфумів Jassmin");
     expect(offer.productIds).toEqual([
       "01a1652b-6e25-7c03-ae47-25b57131fb06",
@@ -822,10 +822,10 @@ describe("offer and blog images (#80)", () => {
     const entry = offerEntryFrom(2);
 
     expect(toOffer({ ...entry, imageLocalized: override }, BASE_URL).image).toMatchObject({
-      url: "http://cms.test/uploads/uk_banner.jpg",
+      url: "/uploads/uk_banner.jpg",
       alt: "Тестери парфумів Jassmin",
     });
-    expect(toOffer(entry, BASE_URL).image?.url).toBe(`http://cms.test${entry.image?.url}`);
+    expect(toOffer(entry, BASE_URL).image?.url).toBe(entry.image?.url);
   });
 
   it("shows a post's per-language cover over the shared one", () => {
@@ -834,10 +834,8 @@ describe("offer and blog images (#80)", () => {
 
     expect(
       toBlogPost({ ...entry, coverImageLocalized: override }, BASE_URL).coverImage,
-    ).toMatchObject({ url: "http://cms.test/uploads/uk_banner.jpg", alt: "Perfume bottles" });
-    expect(toBlogPost(entry, BASE_URL).coverImage?.url).toBe(
-      `http://cms.test${entry.coverImage?.url}`,
-    );
+    ).toMatchObject({ url: "/uploads/uk_banner.jpg", alt: "Perfume bottles" });
+    expect(toBlogPost(entry, BASE_URL).coverImage?.url).toBe(entry.coverImage?.url);
   });
 });
 

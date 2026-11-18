@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { strapiMediaUrl } from "../cms/media";
 import { strapiMedia } from "../cms/schemas";
 import { cmsWrite } from "../cms/writer";
 import type { Db } from "../db/client";
@@ -18,7 +19,7 @@ const productPage = z.object({
 
 export type StrapiProductPage = z.infer<typeof productPage>;
 
-/** The image columns for Strapi's media, its relative `/uploads/…` URLs resolved. */
+/** The image columns for Strapi's media; its uploads are stored as `/uploads/…` paths (#176). */
 export function toProductImageWrite(
   media: StrapiProductPage["data"][number]["image"],
   strapiUrl: string,
@@ -26,8 +27,7 @@ export function toProductImageWrite(
   if (!media) {
     return { imageUrl: null, imageWidth: null, imageHeight: null, imageFormats: null };
   }
-  const base = strapiUrl.endsWith("/") ? strapiUrl : `${strapiUrl}/`;
-  const resolve = (url: string) => new URL(url, base).toString();
+  const resolve = (url: string) => strapiMediaUrl(url, strapiUrl);
   return {
     imageUrl: resolve(media.url),
     imageWidth: media.width && media.width > 0 ? media.width : null,

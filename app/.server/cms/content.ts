@@ -15,6 +15,7 @@ import { normalizeSocialLinks } from "~/lib/social";
 import { getEnv } from "../env";
 import { cmsFetch, type StrapiQuery } from "./client";
 import { isCmsError } from "./errors";
+import { strapiMediaUrl } from "./media";
 import {
   type BlogPostEntry,
   type BlogPostSummaryEntry,
@@ -60,22 +61,22 @@ const BLOG_COVER_POPULATE = ["coverImage", "coverImageLocalized"];
  */
 export function toSrcSet(media: StrapiMedia, baseUrl: string): string | null {
   const candidates: ImageCandidate[] = Object.values(media.formats ?? {}).map((format) => ({
-    url: new URL(format.url, baseUrl).toString(),
+    url: strapiMediaUrl(format.url, baseUrl),
     width: format.width,
   }));
   if (media.width) {
-    candidates.push({ url: new URL(media.url, baseUrl).toString(), width: media.width });
+    candidates.push({ url: strapiMediaUrl(media.url, baseUrl), width: media.width });
   }
   return buildSrcSet(candidates);
 }
 
-/** Resolves Strapi's relative `/uploads/…` URLs against the CMS origin. */
+/** Strapi's media as an image; its `/uploads/…` files are served by the app's proxy (#176). */
 export function toImage(media: StrapiMedia | null | undefined, baseUrl: string): CmsImage | null {
   if (!media) {
     return null;
   }
   return {
-    url: new URL(media.url, baseUrl).toString(),
+    url: strapiMediaUrl(media.url, baseUrl),
     alt: media.alternativeText ?? "",
     width: media.width ?? null,
     height: media.height ?? null,

@@ -113,6 +113,9 @@ export default [
   // Share images of products without their own photo (#105): `/og/products/<handle>.png`, the
   // `.png` checked by the loader. Language-neutral; a resource route outside the layout.
   route("og/products/:file", "routes/og.products.$file.ts"),
+  // Strapi's media (#176): `/uploads/*` fetched from the internal STRAPI_URL on the server, so
+  // browsers load CMS and product images from the shop's own origin. A resource route.
+  route("uploads/*", "routes/uploads.$.ts"),
   // Every other URL: the 301s from old paths (`/catalog/women`, `/uk/…`, `/en/koshyk`), else a 404
   // (#84). Outside the layout, like unmatched URLs before.
   route("*", "routes/redirects.ts"),

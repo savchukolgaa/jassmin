@@ -9,7 +9,11 @@
 
 # Aspire (generated SDK, regenerate with `aspire restore`)
 /aspire-apphost/.aspire/
+# Compose files written by `pnpm aspire publish` / `pnpm aspire:deploy` (#176); the .env holds secrets
+/aspire-output/
 /.aspire/
+# Compose files written by `pnpm aspire publish` / `pnpm aspire:deploy` (#176); the .env holds secrets
+/aspire-output/
 
 # Local notes, never committed
 /Project Overview & Guidelines for Claude.md

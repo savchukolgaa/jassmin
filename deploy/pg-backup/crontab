@@ -1,0 +1,2 @@
+# Nightly database dumps at 02:00 UTC (#176). Logs: `docker compose logs pg-backup`.
+0 2 * * * /usr/local/bin/backup.sh

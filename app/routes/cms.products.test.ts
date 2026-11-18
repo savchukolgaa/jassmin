@@ -88,17 +88,17 @@ describe("cms products sync route", () => {
     });
   });
 
-  it("resolves Strapi's relative image URL against the CMS origin", async () => {
+  it("stores Strapi's upload URLs as same-origin paths (#176)", async () => {
     const { action } = await import("./cms.products");
 
     await action(post(JSON.stringify({ ...update, imageUrl: "/uploads/coco.jpg" })));
 
     expect(applyCmsProductChange.mock.calls[0]?.[0]).toMatchObject({
-      imageUrl: "http://cms.test/uploads/coco.jpg",
+      imageUrl: "/uploads/coco.jpg",
     });
   });
 
-  it("resolves the image formats' URLs too (#88)", async () => {
+  it("stores the image formats' URLs as paths too (#88, #176)", async () => {
     const { action } = await import("./cms.products");
 
     await action(
@@ -116,7 +116,7 @@ describe("cms products sync route", () => {
     expect(applyCmsProductChange.mock.calls[0]?.[0]).toMatchObject({
       imageWidth: 800,
       imageHeight: 1000,
-      imageFormats: [{ url: "http://cms.test/uploads/small_coco.jpg", width: 400, height: 500 }],
+      imageFormats: [{ url: "/uploads/small_coco.jpg", width: 400, height: 500 }],
     });
   });
 

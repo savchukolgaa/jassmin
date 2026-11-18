@@ -1,6 +1,20 @@
 # AGENTS.md: aspire-apphost
 
-Aspire TypeScript AppHost, used for **local development only**. Production runs `pnpm build && pnpm start`.
+Aspire TypeScript AppHost. `apphost.mts` branches on `isPublishMode()`: `pnpm aspire run` declares the local development resources below (`addDevelopmentResources`), and `aspire publish` / `aspire do` declare only the production deployment from `production.mts` (#176). No development resource is ever published.
+
+## Production (publish mode, `production.mts`)
+
+One Hetzner server running Docker Compose (`addDockerComposeEnvironment("jassmin")`, no dashboard); see `docs/deploy.md` for the server, the first deploy and operations.
+
+- **Deploy with `pnpm aspire:deploy`** (`aspire do deploy-ssh -o aspire-output`), with `DEPLOY_SSH_TARGET=deploy@<server>` in the environment. **Never `aspire deploy`**: it also runs Aspire's `docker-compose-up-jassmin`, which starts the stack on the local machine. `deploy-ssh` depends on `push` (build and push every image to GHCR) and `prepare-jassmin` (write `aspire-output/.env.Production` with the values); it copies `docker-compose.yaml` with `scp`, pipes the env file over `ssh` into `/srv/jassmin/.env` (`umask 077`) and runs `docker compose pull && up -d --remove-orphans` there. `pnpm aspire publish -o aspire-output` writes only the Compose file and an empty `.env` template. `aspire-output/` is git-ignored.
+- **Services:** `postgres` (`postgres:18`, `jassmindb` + `strapidb`, named data volume), `db-migrate` (the `jobs` image: `pnpm db:create-databases jassmindb strapidb && pnpm db:migrate`; Compose's Postgres starts empty, and has no health check here, so `db:create-databases` retries the connection), `cms` (`cms/Dockerfile`, uploads volume, waits for `db-migrate`), `web` (root `Dockerfile` target `web`), `scheduler` (target `jobs`, supercronic with `deploy/crontab`), `pg-backup` (`deploy/pg-backup`, nightly dumps into the host's `/srv/jassmin/backups`) and `proxy` (`deploy/caddy`, the only service with host ports, 80 and 443). Everything restarts `unless-stopped`, except `db-migrate`.
+- **Images:** every `addDockerfile` resource is pushed to the `ghcr` registry (`registry-endpoint`, default `ghcr.io`, + `ghcr-repository`); the server pulls them. All Dockerfiles build from the repo root context (`.dockerignore`), except `deploy/caddy` and `deploy/pg-backup`.
+- **Parameters:** asked for on the first deploy: `site-domain`, `admin-domain`, `ghcr-repository`, `smtp-url`, `email-webhook-secret`, `strapi-api-token`, `strapi-sync-token`. Generated (`addParameterWithGeneratedValue`, persisted): `postgres-password`, `session-secret`, `cms-sync-secret`, `email-unsubscribe-secret` and Strapi's six secrets. Aspire keeps the values in `~/.aspire/deployments/<hash>/production.json`. Generated values must never change after the first deploy (sessions, unsubscribe links, Strapi's encryption key).
+- **Environment:** `web` and `scheduler` get the same app environment (`NODE_ENV=production`, `JASSMINDB_URI`, `PUBLIC_SITE_URL`, `TRUSTED_PROXY_HOPS=1`, `STRAPI_URL=http://cms:1337`, the tokens and email secrets); no `PAYMENT_PROVIDER` and no `AI_*` (#167). A new variable the app needs in production goes in that loop.
+- Pipeline steps: inspect them with `pnpm aspire do --list-steps`. A pipeline step can't read a parameter's value in the TypeScript SDK, which is why the SSH target is an environment variable.
+
+## Development (run mode)
+
 
 - `apphost.mts` names the dashboard "Jassmin" (`createBuilder({ dashboardApplicationName })`) and declares the resources:
   - `postgres`: PostgreSQL container with a persistent data volume.

@@ -1,0 +1,22 @@
+# HTTPS reverse proxy for production (#176). Caddy gets and renews Let's Encrypt certificates for
+# both domains by itself; they're kept on the `caddy-data` volume. The domains come from the
+# deploy parameters as SITE_DOMAIN and ADMIN_DOMAIN. `web` and `cms` aren't published on the host,
+# so this is the only way in. Caddy appends the client to X-Forwarded-For, hence
+# TRUSTED_PROXY_HOPS=1 for the app (docs/security.md).
+{$SITE_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:3000
+}
+
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+{$ADMIN_DOMAIN} {
+	encode zstd gzip
+	# Strapi uploads are large; the admin's own limit applies too.
+	request_body {
+		max_size 200MB
+	}
+	reverse_proxy cms:1337
+}

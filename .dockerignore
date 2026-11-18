@@ -1,0 +1,26 @@
+# Build context for Dockerfile and cms/Dockerfile (#176). Secrets, installs, build output and the
+# projects the images don't need stay out.
+.env
+.env.*
+**/.env
+**/node_modules
+.git
+.github
+.claude
+.agents
+.react-router
+build
+coverage
+analytics
+aspire-apphost
+aspire-output
+docs
+cms/.tmp
+cms/.cache
+cms/.strapi
+cms/dist
+cms/public/uploads/*
+!cms/public/uploads/.gitkeep
+**/*.test.ts
+**/*.test.tsx
+Project Overview & Guidelines for Claude.md

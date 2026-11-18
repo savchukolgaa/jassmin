@@ -4,6 +4,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 
 ## Contents
 
+- [Production deployment](#production-deployment)
 - [Without Aspire](#without-aspire)
 - [Environment variables](#environment-variables)
 - [Scripts](#scripts)
@@ -25,6 +26,10 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Admin role](#admin-role)
 - [Synthetic analytics data](#synthetic-analytics-data)
 - [Conventions](#conventions)
+
+## Production deployment
+
+Production is one Hetzner server running Docker Compose, deployed from your computer with `pnpm aspire:deploy` (#176): the shop, Strapi, PostgreSQL, Caddy for HTTPS, the scheduled jobs (`deploy/crontab`, run by the `scheduler` service) and nightly database dumps. [docs/deploy.md](deploy.md) covers setting up the server from scratch, the first deploy, updating, logs, backups and restoring. The cron lines in the sections below are what the `scheduler` runs; you only need them for a server set up some other way.
 
 ## Without Aspire
 
@@ -84,6 +89,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm test:watch` | Vitest, watch mode |
 | `pnpm aspire <cmd>` | Aspire CLI via the pnpm-compatible wrapper (`pnpm aspire run`) |
 | `pnpm aspire:build` | Type-check the Aspire AppHost |
+| `pnpm aspire:deploy` | Build, push and start the production deployment on the server in `DEPLOY_SSH_TARGET` (`aspire do deploy-ssh`), see [docs/deploy.md](deploy.md) |
 | `pnpm herdr:plans <n> [<n> ...]` | Inside a Herdr pane: prepare each issue's worktree, link its `.env` and `cms/.env` to the main checkout's, and run `/create-plan <n>` in its own tab (`--kind <agent>`, default `claude`) |
 | `pnpm worktree:remove <n>` | Remove issue `<n>`'s worktree after its PR is merged: deletes its `node_modules` without following links into pnpm's shared store, then runs `git worktree remove` |
 | `pnpm cms:dev` | Strapi in development mode (admin at http://localhost:1337/admin) |
@@ -91,6 +97,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm cms:seed` | Seed Strapi with demo content (`-- --token` also creates the app's read-only and sync API tokens) |
 | `pnpm db:generate` | Generate a migration from `app/.server/db/schema.ts` (`--name <name>`) |
 | `pnpm db:migrate` | Apply pending migrations |
+| `pnpm db:create-databases <name> [<name> ...]` | Create the named databases on the app database's server if they're missing (the production `db-migrate` runs it with `jassmindb strapidb`, #176) |
 | `pnpm db:rollback` | Roll back the latest applied migration |
 | `pnpm db:seed` | Add the sample products that don't exist yet (safe to re-run) |
 | `pnpm db:import-catalog` | Add the shop's perfume range (`app/.server/db/catalog-data.ts`) that isn't in the database yet, every size at the price table's price (`catalog-prices.ts`), always available (stock isn't tracked, #98), with its Ukrainian and English descriptions (`catalog-descriptions.ts`). Existing products only get a description where theirs is empty, so staff edits survive (safe to re-run). Then run `pnpm db:sync-cms` |
@@ -115,7 +122,7 @@ The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`, `import-cata
 
 `pnpm db:mark-abandoned-carts` marks every `active` cart that has items and no activity for more than `ABANDONED_CART_HOURS` (default 24) as `abandoned`, sets `carts.abandoned_at`, and logs how many carts it changed. It leaves `updated_at` alone, so that stays the shopper's last activity. Empty and converted carts are never touched, and a second run changes nothing, so it's safe to run as often as you like.
 
-The app server only handles requests, so run the job hourly from an external scheduler. With system cron, for example:
+The app server only handles requests, so run the job hourly from an external scheduler (in production, the `scheduler` service, see [Production deployment](#production-deployment)). With system cron, for example:
 
 ```cron
 0 * * * * cd /srv/jassmin && pnpm db:mark-abandoned-carts >> /var/log/jassmin/abandoned-carts.log 2>&1
@@ -267,7 +274,7 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
 
 Don't give the Public or Authenticated roles (Settings → Users & Permissions → Roles) any permission on these content types. Strapi doesn't grant any by default, unauthenticated requests get a 403, and Strapi logs a warning at startup if someone enables one. The token's `find` permission can technically request drafts (`?status=draft`). The app never does, because `cmsFetch` always sends `status=published`.
 
-Media uploads use Strapi's local provider and are stored in `cms/public/uploads/` (git-ignored). The app turns their URLs into absolute URLs on `STRAPI_URL`.
+Media uploads use Strapi's local provider and are stored in `cms/public/uploads/` (git-ignored; in production on the `jassmin-strapi-uploads` volume). Browsers never load them from Strapi: the app serves them at `/uploads/…` on its own origin, fetching each file from `STRAPI_URL` on the server (`routes/uploads.$.ts`, `app/.server/cms/uploads-proxy.ts`, #176), with a year-long `Cache-Control` (Strapi's file names change with the content). Image URLs from Strapi, and `products.image_url`, are stored and served as those `/uploads/…` paths; emails, Open Graph tags and the product feeds make them absolute on `PUBLIC_SITE_URL`.
 
 ### Content model
 

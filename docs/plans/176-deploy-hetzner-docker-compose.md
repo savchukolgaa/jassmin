@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/176
 Branch: `issue/176`
 Worktree: `.claude/worktrees/issue-176`
-Status: In progress
+Status: Implemented
 
 ## Goal
 
@@ -218,6 +218,28 @@ backups. `pnpm aspire run` stays exactly as it is today.
       siteUrl)` (`app/lib/seo.ts`, `structured-data.ts`), and the product feed through
       `absoluteUrl(row.imageUrl, origin)`, so they needed no change. Order emails carry no
       product photos; only cart reminders do.
+    - **Databases are created by `db-migrate`.** In the Compose output Aspire doesn't create
+      `jassmindb`/`strapidb` (it does only in run mode), so Strapi and the migration failed on a
+      fresh Postgres. A new `pnpm db:create-databases <name>…` (`app/.server/db/create-databases.ts`,
+      tested) creates missing databases, retrying the connection while Postgres starts. It
+      replaces the shell retry loop: `db-migrate` runs it with `jassmindb strapidb` before
+      `db:migrate`, and `cms` now waits for `db-migrate` too.
+    - **The jobs image skips pnpm's dependency check** (`pnpm_config_verify_deps_before_run=false`).
+      Only the app's packages are installed, so pnpm saw the workspace as out of date and tried to
+      install before every `pnpm <script>`.
+    - **supercronic starts by its absolute path.** As PID 1 it re-executes itself by the name it was
+      started with, and failed with "fork exec: no such file or directory" when that was the bare
+      name.
+    - **`prepare-jassmin` writes the values to `aspire-output/.env.Production`** (named after the
+      environment); `.env` stays an empty template. `deploy-ssh` uploads `.env.Production` as the
+      server's `.env`, piped through `ssh` with `umask 077` so it's never readable by others. It
+      doesn't `scp` it and `chmod` afterwards.
+    - **The restore commands run in `pg-backup`.** Aspire's Postgres asks for a password even on the
+      local socket, so `docker compose exec postgres psql -U postgres` hangs at a prompt.
+      `pg-backup` has `PGHOST`/`PGUSER`/`PGPASSWORD` and the dumps at `/backups`.
+    - **Strapi doesn't answer 304s** (no `ETag`, and it ignores `If-Modified-Since`). The proxy's
+      conditional passthrough is still there and tested, but browsers rely on the year-long
+      `immutable` cache instead.
 
 ## Open questions
 
@@ -375,7 +397,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
   - `pnpm aspire run`: the dashboard shows the same resources as on `main` (compare against a
     `main` checkout), and `web`, `cms`, `db-migrate` and `smtp4dev` come up.
   - No `proxy`, `scheduler` or `pg-backup` resource appears.
-- [ ] **7. Verify the publish output.**
+- [x] **7. Verify the publish output.**
   - Run `pnpm aspire publish -o aspire-output`, then inspect `aspire-output/docker-compose.yaml`
     and `.env`.
   - The Compose file has no smtp4dev, `db-seed`, `cms-seed`, synth, dbt or Jupyter services.
@@ -392,7 +414,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
     - `pg-backup` writes a dump when `backup.sh` is run by hand;
     - restoring that dump with the commands planned for `docs/deploy.md` works;
     - after `docker compose down` and `up`, the data and the upload are still there.
-- [ ] **8. Write `docs/deploy.md`.** Cover:
+- [x] **8. Write `docs/deploy.md`.** Cover:
   - **The server:** Hetzner Cloud CX23 on Ubuntu 24.04 with backups turned on (+20%), the SSH
     key, a firewall allowing only 22, 80 and 443, Docker Engine with the Compose plugin from
     Docker's apt repo, the `deploy` user, `PasswordAuthentication no`, and
@@ -417,7 +439,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
     the same for `strapidb`, with `web`/`cms` stopped first. Also restoring a whole Hetzner
     snapshot.
   - **Monthly cost:** €5.99 + €1.20 backups, plus VAT, with 20 TB of traffic and IPv4 included.
-- [ ] **9. Update the other docs.**
+- [x] **9. Update the other docs.**
   - `aspire-apphost/AGENTS.md`: replace "local development only / production runs `pnpm build &&
     pnpm start`" with a publish-mode section listing the production resources and parameters.
   - Root `AGENTS.md` (Commands: `pnpm aspire deploy`).
@@ -425,7 +447,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
     `/uploads/*`, and add the production section linking `docs/deploy.md`.
   - `docs/security.md`: the CSP's `img-src` is now `'self' data:`, and why.
   - `README.md`: a link to `docs/deploy.md`.
-- [ ] **10. Final checks.**
+- [x] **10. Final checks.**
   - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and `pnpm aspire:build` pass.
   - The CI `cms` job still passes (`pnpm cms:build`).
   - There's no server yet (Q6), so the PR lists the server-only acceptance criteria as manual
@@ -465,15 +487,41 @@ backups. `pnpm aspire run` stays exactly as it is today.
 
 ## Acceptance criteria
 
-- [ ] `pnpm aspire run` behaves exactly as before, and `pnpm aspire:build` passes — steps 4, 6, 10
-- [ ] Publishing produces a Docker Compose deployment that contains no development resources and no secret values — steps 4, 7
+- [x] `pnpm aspire run` behaves exactly as before, and `pnpm aspire:build` passes — steps 4, 6, 10
+- [x] Publishing produces a Docker Compose deployment that contains no development resources and no secret values — steps 4, 7
 - [ ] One deploy command builds, pushes and starts the site, Strapi and Postgres on a Hetzner server over SSH — steps 1, 2, 4, 8 (built and checked locally; the SSH run against a server is manual, Q6)
 - [ ] The site is reachable over HTTPS on the shop's domain, Strapi admin on its own subdomain, and Postgres isn't reachable from the internet — steps 3, 4, 5, 7, 8 (checked on `localhost`; the real domain is manual, Q4/Q6)
 - [ ] Data and Strapi uploads survive a redeploy and a server reboot — steps 4, 7, 8 (checked locally with `down`/`up`; the reboot is manual)
-- [ ] The scheduled jobs run on their schedules (visible in the scheduler's logs) — steps 2, 5, 7
+- [x] The scheduled jobs run on their schedules (visible in the scheduler's logs) — steps 2, 5, 7
 - [ ] A nightly database dump is created, and the restore steps in `docs/deploy.md` were tested once — steps 5, 7, 8 (restore tested locally against the smoke-test stack; on the server: manual)
-- [ ] `docs/deploy.md` lets the owner set up a new server from scratch — step 8
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] `docs/deploy.md` lets the owner set up a new server from scratch — step 8
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+
+### Verification results (2026-11-18)
+
+- **Run mode:** `pnpm aspire start` showed every development resource as before; `db-migrate`
+  finished, `web` and `cms` were healthy, and no production service was declared. In
+  development `/uploads/…` served a Strapi file through the proxy, with `img-src 'self' data:`.
+- **Publish output:** `aspire-output/docker-compose.yaml` has only `postgres`, `db-migrate`,
+  `cms`, `web`, `scheduler`, `pg-backup` and `proxy`; only `proxy` has `ports:` (80, 443);
+  every secret is a `${…}` placeholder, and `pnpm aspire publish` writes an empty `.env`.
+- **Local smoke test** (`aspire do prepare-jassmin`, then `docker compose up` of the generated
+  files with `site-domain=localhost`):
+  - all six images built, and every service was running;
+  - `db-migrate` created both databases and migrated;
+  - HTTPS through Caddy on `localhost` and `admin.localhost` (Strapi admin 200, `/_health` 204),
+    HTTP → HTTPS 308, HSTS sent;
+  - `db:import-catalog` ran in `scheduler` and the catalog showed 128 products;
+  - an upload in the `cms` volume was served at `https://localhost/uploads/…`;
+  - `backup.sh` wrote both dumps, and the documented restore (scratch database, then a full restore
+    of both databases) undid a change made after the dump;
+  - after `docker compose down` and `up`, the products and the upload were still there;
+  - the scheduler ran `db:sync-cms` and `db:send-order-emails` at the 5-minute mark. Sync got 401
+    from Strapi, as expected with the `pending` token.
+- **Not verified, no server yet (Q6):** the `deploy-ssh` step itself (`scp`, `ssh`, the remote
+  `docker compose pull/up`), pushing to GHCR, Let's Encrypt on a real domain, Postgres being
+  closed from outside, and a real reboot. They're the checks in `docs/deploy.md` → Check that it
+  works, for the first deploy.
 
 ## Out of scope
 

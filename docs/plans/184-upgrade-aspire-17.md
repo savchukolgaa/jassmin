@@ -82,6 +82,23 @@ the same PR table.
   - The dev `postgres` password is also a persisted parameter (`Parameters:postgres-password` in the
     AppHost's user secrets). If it changed, the existing `postgres-data` volume would stop accepting
     connections, so step 5 checks it along with `cms-sync-secret` and `jupyter-token`, by hash.
+- **Findings from steps 6–8:**
+  - `pnpm aspire publish` on 17.0.0 writes a `docker-compose.yaml` and `.env` template that are
+    **byte-identical** to 13.6.3's. The template has no values, and `docker compose config`
+    validates it (with placeholder values) with all seven services.
+  - `aspire do prepare-jassmin`, with throwaway parameters passed as `Parameters__*` environment
+    variables, builds all six images and writes `.env.Production` with all 23 values (21/21 steps).
+    The deployment state is still `~/.aspire/deployments/<HASH>/production.json`, so `docs/deploy.md`'s
+    backup path stays right. 17.0 adds a `production.json.migration` file beside it, and dev secrets
+    now go to `~/.aspire/secrets/<apphost-id>/Development.json`. The throwaway state and output were
+    deleted afterwards.
+  - **Deviation from step 7:** no `docker login ghcr.io` on this machine, so per Q2 the check stops
+    after `prepare-jassmin`. `push` and the `deploy-ssh` "Set DEPLOY_SSH_TARGET" failure weren't
+    exercised. `deploy-ssh` and its dependencies are unchanged in `--list-steps`.
+  - The secrets import (#20135, "Existing Development .NET user secrets are imported when the Aspire
+    file does not exist") keeps the same AppHost id scheme (`aspire-<hash>`), and the legacy file
+    stays a lower-precedence fallback. This worktree never ran under 13.6, so the import itself is
+    proven on the main checkout's first 17.0 run, after the merge.
 
 ## Resolved questions
 
@@ -176,14 +193,14 @@ the same PR table.
     `JupyterLab` link opens without a login page).
   - The dashboard is titled "Jassmin". Stop with `pnpm aspire stop`, run again, and `git status`
     must show **no change to `aspire.config.json`** (acceptance criterion).
-- [ ] **6. Publish** — `pnpm aspire publish -o "$SCRATCH/compose-17.0.0"`. Diff `docker-compose.yaml`
+- [x] **6. Publish** — `pnpm aspire publish -o "$SCRATCH/compose-17.0.0"`. Diff `docker-compose.yaml`
   against the 13.6.3 one: same services (`postgres`, `db-migrate`, `cms`, `web`, `scheduler`,
   `pg-backup`, `proxy`), images, volumes, `restart: unless-stopped`, only the proxy's host ports, the
   same environment variable names. Expected differences, such as the image naming or the postgres
   default tag (production pins `18`), get explained in the PR. Check that the `.env` template has
   only empty or placeholder values (`grep -E '=.+' .env` returns only non-secret defaults such as
   `registry-endpoint`) and that `docker compose -f … config` validates it.
-- [ ] **7. Deploy, up to the SSH step** — Run `pnpm aspire do prepare-jassmin -o aspire-output`
+- [x] **7. Deploy, up to the SSH step** — Run `pnpm aspire do prepare-jassmin -o aspire-output`
   (asks for or reuses the parameters; enter throwaway test values, never real secrets, if no
   deployment state exists). It must write `aspire-output/.env.Production` and `docker-compose.yaml`.
   Note where 17.0 stores the deployment state (`~/.aspire/deployments/…` or `~/.aspire/secrets/…`)
@@ -191,7 +208,7 @@ the same PR table.
   (only if `docker login ghcr.io` is set up, Q2), and `deploy-ssh` must fail with our "Set
   DEPLOY_SSH_TARGET…" message. No real deploy: the server doesn't exist yet (Q2). Afterwards,
   delete the throwaway deployment state and `aspire-output/` so the real first deploy starts clean.
-- [ ] **8. Docs** —
+- [x] **8. Docs** —
   - `README.md` → Prerequisites: "Aspire CLI **17.0.0**", the install commands, `aspire update --self`
     to update an existing CLI, and a link to the upgrade note.
   - `aspire-apphost/AGENTS.md`: the CLI version must equal `sdk.version` in `aspire.config.json`.

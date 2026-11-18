@@ -180,6 +180,9 @@ The first time, Aspire asks for these values:
 | `strapi-api-token` | `pending` for now (see step 6) |
 | `strapi-sync-token` | `pending` for now |
 
+Every one of them is required: since Aspire 17.0 an empty answer is rejected, which is why the
+tokens get `pending` until Strapi exists.
+
 Aspire **generates** the other secrets on the first deploy: the Postgres password,
 `SESSION_SECRET`, `CMS_SYNC_SECRET`, `EMAIL_UNSUBSCRIBE_SECRET` and Strapi's `APP_KEYS`,
 `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET` and `ENCRYPTION_KEY`.
@@ -193,7 +196,8 @@ The deploy then builds the six images (a few minutes the first time), pushes the
 
 Aspire keeps every value, the generated secrets included, in
 `%USERPROFILE%\.aspire\deployments\<hash>\production.json` (`~/.aspire/deployments/<hash>/` on
-macOS/Linux; the newest folder there). **Copy it into your password manager now.** If it's lost,
+macOS/Linux; the newest folder there). Aspire 17.0 also writes a `production.json.migration`
+file next to it; back up the whole folder. **Copy it into your password manager now.** If it's lost,
 the next deploy generates new secrets: everyone is logged out of the shop, unsubscribe links in
 emails already sent stop working, and Strapi can't read its encrypted data until the old
 `ENCRYPTION_KEY` is restored. The same values are also in `/srv/jassmin/.env` on the server, so you

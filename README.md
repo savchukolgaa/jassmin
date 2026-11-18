@@ -125,9 +125,11 @@ The rules the agent follows are in [AGENTS.md](AGENTS.md) and the scoped [app/.s
 - **pnpm 12**: `npm install -g pnpm` (the version is pinned in `package.json` → `packageManager`)
 - **Docker Desktop**, running
 - **PostgreSQL 18+** if you run without Aspire (the schema uses the built-in `uuidv7()`). Aspire and the Docker command in the [setup guide](docs/setup.md#without-aspire) already use `postgres:18`.
-- **Aspire CLI ≥ 13.4**:
+- **Aspire CLI 17.0.0**, the same version as `sdk.version` in `aspire.config.json`:
   - Windows: `irm https://aspire.dev/install.ps1 | iex`
   - macOS/Linux: `curl -sSL https://aspire.dev/install.sh | bash`
+  - Already installed: `aspire update --self --channel stable`, then check with `aspire --version`.
+    Don't commit an `aspire.config.json` that the CLI rewrote. See [Upgrading Aspire](docs/setup.md#upgrading-aspire).
 - A trusted HTTPS dev certificate: `aspire certs trust`. `aspire doctor` checks the whole setup.
 
 ### Quick start

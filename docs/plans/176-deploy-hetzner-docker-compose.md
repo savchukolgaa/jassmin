@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/176
 Branch: `issue/176`
 Worktree: `.claude/worktrees/issue-176`
-Status: Planned
+Status: In progress
 
 ## Goal
 
@@ -81,10 +81,10 @@ backups. `pnpm aspire run` stays exactly as it is today.
      with volumes `caddy-data` and `caddy-config`. The Caddyfile reads `{$SITE_DOMAIN}` and
      `{$ADMIN_DOMAIN}` and proxies them to `web:3000` and `cms:1337`. Caddy issues Let's Encrypt
      certificates automatically. `www.{$SITE_DOMAIN}` redirects to the bare domain.
-   - Every built image is pushed to GHCR (`withContainerRegistry(ghcr)`). Caddy and Postgres
-     aren't pushed: `pg-backup` and `proxy` are small and built on the server's Docker by the
-     deploy step (Decision 4). **(unconfirmed: if Aspire pushes every `addDockerfile` image to
-     the registry anyway, all five go to GHCR, which works just as well)**
+   - Every built image is pushed to GHCR (`withContainerRegistry(ghcr)`): `web`, `cms`,
+     `db-migrate`, `scheduler`, `pg-backup` and `proxy`. Aspire has a `push-<resource>` step for
+     each `addDockerfile` resource, so the small `pg-backup` and `proxy` images go to GHCR too and
+     the server never builds anything. Postgres comes from Docker Hub.
 4. **Deploying over SSH is an AppHost pipeline step, not a separate script.** The TypeScript SDK
    has `builder.pipeline().addStep()`, so `production.mts` adds a `deploy-ssh` step. It depends
    on the Compose publish step and the image push step, and is required by `deploy`. The step:
@@ -187,6 +187,38 @@ backups. `pnpm aspire run` stays exactly as it is today.
     - **robots.txt:** `/uploads/` stays crawlable, so product images can be indexed. The
       `docs/security.md` CSP section and the `docs/setup.md` Strapi section describe the proxy.
 
+11. **Deviations found while implementing** (recorded here instead of silently changing the plan):
+    - **Docker integration version.** `pnpm aspire add docker` picked `Aspire.Hosting.Docker`
+      17.0.0, a newer major than the AppHost's SDK (13.6.3 in this checkout). It's pinned to
+      **13.6.3** in `aspire.config.json`, matching the other integrations.
+    - **The deploy command is `pnpm aspire:deploy`, not `pnpm aspire deploy`.** `--list-steps`
+      showed that `deploy` also depends on Aspire's own `docker-compose-up-jassmin`, which runs
+      `docker compose up` on the computer running the deploy. A pipeline step can't remove that
+      dependency in the TypeScript SDK. So `deploy-ssh` depends on `push` (build and push every
+      image) and `prepare-jassmin` (write the `.env` with the values). It runs through
+      `aspire do deploy-ssh -o aspire-output`, wrapped as the new script `pnpm aspire:deploy`.
+      `pnpm aspire publish` still writes the Compose file and an empty `.env` template. The
+      `scripts/deploy.mjs` fallback isn't needed.
+    - **`DEPLOY_SSH_TARGET` is an environment variable, not a parameter.** The TypeScript SDK
+      can't read a parameter's value inside a pipeline step (`ParameterResource` has no value
+      getter, and `ReferenceExpression.getValue` only works on server-returned expressions). The
+      target isn't secret anyway, so the step reads `process.env.DEPLOY_SSH_TARGET`.
+    - **`registry-endpoint` parameter.** `addContainerRegistry` refuses a string endpoint
+      together with a parameter repository. The endpoint is therefore a parameter too, with
+      `ghcr.io` as its published default, so nobody types it.
+    - **`db-migrate` retries.** The Compose publisher has no health check for Postgres, so
+      `depends_on` only waits for the container to start. `db-migrate` runs `pnpm db:migrate` in
+      a 30 × 2 s retry loop, and `web`/`scheduler` wait for it to complete successfully.
+    - **The `web` image runs `react-router-serve` directly** instead of `pnpm start`, so the
+      runtime image needs no pnpm or Corepack. The `jobs` image keeps pnpm for the cron lines.
+    - **Strapi media URLs.** `content.ts` keeps its `baseUrl` parameters. A new
+      `strapiMediaUrl(url, strapiUrl)` (`app/.server/cms/media.ts`) returns `/uploads/…` paths
+      for Strapi's uploads and resolves anything else against Strapi as before. `toMediaPath`
+      only normalizes. Open Graph and JSON-LD images already went through `absoluteUrl(…,
+      siteUrl)` (`app/lib/seo.ts`, `structured-data.ts`), and the product feed through
+      `absoluteUrl(row.imageUrl, origin)`, so they needed no change. Order emails carry no
+      product photos; only cart reminders do.
+
 ## Open questions
 
 - [ ] **Q4: What are the domains?** — Why it matters: Caddy, `PUBLIC_SITE_URL`, the DNS records
@@ -281,7 +313,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
 
 ## Steps
 
-- [ ] **1. Add the Docker integration and confirm the API.** In the worktree, run
+- [x] **1. Add the Docker integration and confirm the API.** In the worktree, run
   `pnpm aspire add docker` and `pnpm aspire restore`. In `.aspire/modules/aspire.mts`, look up
   `addDockerComposeEnvironment`, the Compose options (dashboard off), how ports are published
   (`withHostPort` / `publishAsDockerComposeService`) and the pipeline step names for publish and

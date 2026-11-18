@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/167
 Branch: `issue/167`
 Worktree: `.claude/worktrees/issue-167`
-Status: Planned
+Status: In progress — code and docs done; blocked on hosted-model runs (step 6) and hosting (step 8)
 
 ## Goal
 

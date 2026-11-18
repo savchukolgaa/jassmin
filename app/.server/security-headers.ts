@@ -21,14 +21,12 @@ const FRAME_ORIGINS = ["https://www.google.com", "https://maps.google.com"];
 
 export interface CspOptions {
   nonce: string;
-  /** Origin of `STRAPI_URL`: CMS and product images are its `/uploads/…` URLs. */
-  strapiOrigin: string;
   /** Development adds `ws:` to `connect-src` for Vite's HMR socket. */
   isDev: boolean;
 }
 
 /** The policy's directives, without the header name. */
-export function buildCsp({ nonce, strapiOrigin, isDev }: CspOptions): string {
+export function buildCsp({ nonce, isDev }: CspOptions): string {
   const directives: [string, ...string[]][] = [
     ["default-src", "'self'"],
     // 'strict-dynamic' lets the nonced bootstrap load the route modules; 'self' is the fallback
@@ -36,7 +34,8 @@ export function buildCsp({ nonce, strapiOrigin, isDev }: CspOptions): string {
     ["script-src", "'self'", `'nonce-${nonce}'`, "'strict-dynamic'"],
     // React `style` attributes (e.g. the order progress bar) and Vite dev's <style> tags.
     ["style-src", "'self'", "'unsafe-inline'"],
-    ["img-src", "'self'", "data:", strapiOrigin],
+    // CMS and product images are same-origin: the app proxies Strapi's `/uploads/*` (#176).
+    ["img-src", "'self'", "data:"],
     // Vite inlines small font subsets (under 4 KB) as `data:` URIs in the stylesheet.
     ["font-src", "'self'", "data:"],
     ["connect-src", "'self'", ...(isDev ? ["ws:"] : [])],
@@ -54,7 +53,7 @@ export function buildCsp({ nonce, strapiOrigin, isDev }: CspOptions): string {
 }
 
 export interface SecurityHeadersOptions {
-  env: Pick<Env, "NODE_ENV" | "PUBLIC_SITE_URL" | "STRAPI_URL" | "CSP_MODE">;
+  env: Pick<Env, "NODE_ENV" | "PUBLIC_SITE_URL" | "CSP_MODE">;
   /** The CSP goes only on HTML responses; it means nothing on XML, images or JSON. */
   html: boolean;
   nonce: string;
@@ -78,7 +77,6 @@ export function buildSecurityHeaders({ env, html, nonce }: SecurityHeadersOption
   if (html) {
     const policy = buildCsp({
       nonce,
-      strapiOrigin: new URL(env.STRAPI_URL).origin,
       isDev: env.NODE_ENV === "development",
     });
     const name =

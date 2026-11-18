@@ -14,7 +14,7 @@ export interface ImageFormat extends ImageCandidate {
 
 /** What an `<img>` needs to load the right size without shifting the layout. */
 export interface ResponsiveImage {
-  /** Absolute URL of the original, the `src` fallback. */
+  /** URL of the original, the `src` fallback: a same-origin `/uploads/…` path for Strapi media (#176). */
   url: string;
   /** `srcset` of the resized versions plus the original; `null` when no width is known. */
   srcSet: string | null;

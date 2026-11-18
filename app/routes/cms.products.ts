@@ -1,3 +1,4 @@
+import { strapiMediaUrl } from "~/.server/cms/media";
 import { checkCmsSyncAuth, readJsonBody } from "~/.server/cms/sync-auth";
 import { getEnv } from "~/.server/env";
 import { applyCmsProductChange } from "~/.server/services/cms-sync";
@@ -26,10 +27,10 @@ export async function action({ request }: Route.ActionArgs) {
 
   const change = parsed.data;
   if (change.action !== "delete") {
-    // Strapi's uploads are relative to the CMS origin, like the images `cms/content.ts` serves.
+    // Strapi's uploads are stored as `/uploads/…` paths, served by the app's proxy (#176), like the
+    // images `cms/content.ts` serves.
     const base = getEnv().STRAPI_URL;
-    const resolve = (url: string) =>
-      new URL(url, base.endsWith("/") ? base : `${base}/`).toString();
+    const resolve = (url: string) => strapiMediaUrl(url, base);
     if (change.imageUrl) {
       change.imageUrl = resolve(change.imageUrl);
     }

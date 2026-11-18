@@ -13,14 +13,12 @@ type HeaderEnv = Parameters<typeof buildSecurityHeaders>[0]["env"];
 const devEnv: HeaderEnv = {
   NODE_ENV: "development",
   PUBLIC_SITE_URL: undefined,
-  STRAPI_URL: "http://localhost:1337",
   CSP_MODE: "report-only",
 };
 
 const prodEnv: HeaderEnv = {
   NODE_ENV: "production",
   PUBLIC_SITE_URL: "https://jassmin.ua",
-  STRAPI_URL: "https://cms.jassmin.ua/",
   CSP_MODE: "enforce",
 };
 
@@ -35,9 +33,7 @@ function directives(policy: string): Record<string, string[]> {
 }
 
 describe("buildCsp", () => {
-  const policy = directives(
-    buildCsp({ nonce: "abc123==", strapiOrigin: "https://cms.jassmin.ua", isDev: false }),
-  );
+  const policy = directives(buildCsp({ nonce: "abc123==", isDev: false }));
 
   it("allows scripts only by nonce, with strict-dynamic and never unsafe-inline", () => {
     expect(policy["script-src"]).toEqual(["'self'", "'nonce-abc123=='", "'strict-dynamic'"]);
@@ -57,8 +53,8 @@ describe("buildCsp", () => {
     });
   });
 
-  it("allows CMS images and the map frame", () => {
-    expect(policy["img-src"]).toEqual(["'self'", "data:", "https://cms.jassmin.ua"]);
+  it("allows same-origin images (Strapi's are proxied, #176) and the map frame", () => {
+    expect(policy["img-src"]).toEqual(["'self'", "data:"]);
     expect(policy["frame-src"]).toEqual(["https://www.google.com", "https://maps.google.com"]);
   });
 
@@ -68,7 +64,7 @@ describe("buildCsp", () => {
   });
 
   it("allows Vite's HMR socket in development only", () => {
-    const dev = directives(buildCsp({ nonce: "n", strapiOrigin: "http://x", isDev: true }));
+    const dev = directives(buildCsp({ nonce: "n", isDev: true }));
     expect(dev["connect-src"]).toEqual(["'self'", "ws:"]);
   });
 });
@@ -79,19 +75,15 @@ describe("buildSecurityHeaders", () => {
 
     expect(headers.get("Content-Security-Policy")).toBeNull();
     expect(headers.get("Content-Security-Policy-Report-Only")).toContain("'nonce-n1'");
-    expect(headers.get("Content-Security-Policy-Report-Only")).toContain(
-      "img-src 'self' data: http://localhost:1337;",
-    );
+    expect(headers.get("Content-Security-Policy-Report-Only")).toContain("img-src 'self' data:;");
     expect(headers.get("Reporting-Endpoints")).toBe('csp="/csp-report"');
   });
 
-  it("enforces the CSP when CSP_MODE=enforce, with the Strapi origin only", () => {
+  it("enforces the CSP when CSP_MODE=enforce", () => {
     const headers = buildSecurityHeaders({ env: prodEnv, html: true, nonce: "n2" });
 
     expect(headers.get("Content-Security-Policy-Report-Only")).toBeNull();
-    expect(headers.get("Content-Security-Policy")).toContain(
-      "img-src 'self' data: https://cms.jassmin.ua;",
-    );
+    expect(headers.get("Content-Security-Policy")).toContain("img-src 'self' data:;");
   });
 
   it("sends the other headers on every response, and no CSP on non-HTML ones", () => {

@@ -6,6 +6,7 @@ import type { Translator } from "~/lib/i18n";
 import type { Locale } from "~/lib/i18n/locales";
 import { pathFor } from "~/lib/paths";
 import { formatVolume } from "~/lib/products";
+import { toMediaPath } from "../cms/media";
 import type { CartReminder } from "../db/queries/cart-reminders";
 import { composeEmail, type EmailBlock } from "../email/layout";
 import { stripLineBreaks } from "../mail";
@@ -50,11 +51,20 @@ export function listUnsubscribeHeaders(url: string): Record<string, string> {
   };
 }
 
-/** A line's photo: its own when it has an absolute web URL, else the shop's bottle. */
+/**
+ * A line's photo: its own when it has one, else the shop's bottle. Strapi's uploads are served from
+ * the shop's origin (#176), so a stored `/uploads/…` path (or an older absolute Strapi URL) becomes
+ * an absolute URL on the site; other absolute web URLs are used as they are.
+ */
 function photoOf(imageUrl: string | null, siteUrl: string): string {
-  return imageUrl && /^https?:\/\//i.test(imageUrl)
-    ? imageUrl
-    : `${siteUrl}${EMAIL_BOTTLE_PHOTO_PATH}`;
+  if (!imageUrl) {
+    return `${siteUrl}${EMAIL_BOTTLE_PHOTO_PATH}`;
+  }
+  const path = toMediaPath(imageUrl);
+  if (path.startsWith("/uploads/")) {
+    return `${siteUrl}${path}`;
+  }
+  return /^https?:\/\//i.test(path) ? path : `${siteUrl}${EMAIL_BOTTLE_PHOTO_PATH}`;
 }
 
 /** The reminder for `reminder`'s cart, in the translator's language. */

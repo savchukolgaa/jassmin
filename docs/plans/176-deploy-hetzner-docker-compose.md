@@ -330,7 +330,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
   - Check: `docker run --rm -e NODE_ENV=production ... jassmin-web` starts. With a local
     Postgres URL it answers `/`.
   - Check: `docker run --rm jassmin-jobs pnpm db:migrate --help` works.
-- [ ] **3. Small app and Strapi changes for production.**
+- [x] **3. Small app and Strapi changes for production.**
   - `cms/config/server.ts`: add `url`/`proxy` (Decision 7).
   - **The `/uploads/*` proxy** (Decision 10):
     - write `media.ts` (`toMediaPath`), `uploads-proxy.ts` and the schema;

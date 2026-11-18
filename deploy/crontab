@@ -1,0 +1,17 @@
+# The shop's scheduled jobs in production (#176), run by supercronic in the `scheduler` container
+# (the site's `jobs` image). Times are UTC. Every run is logged: `docker compose logs scheduler`.
+# The jobs and their schedules are described in docs/setup.md and docs/email.md.
+
+# Push queued order, stock and gift-card changes to Strapi (#40), and send due order emails (#45).
+*/5 * * * * pnpm --silent db:sync-cms
+*/5 * * * * pnpm --silent db:send-order-emails
+
+# Mark carts idle for 24 h as abandoned (#19), then send the cart reminders (#139).
+0 * * * * pnpm --silent db:mark-abandoned-carts && pnpm --silent db:send-cart-reminders
+
+# Cancel card orders still unpaid after UNPAID_ORDER_HOURS (#128).
+30 * * * * pnpm --silent db:cancel-unpaid-orders
+
+# Expire gift cards past their 12 months (#125), and delete ended rate-limit windows (#143).
+15 3 * * * pnpm --silent db:expire-gift-cards
+30 3 * * * pnpm --silent db:prune-rate-limits

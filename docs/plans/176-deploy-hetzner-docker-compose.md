@@ -319,7 +319,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
   (`withHostPort` / `publishAsDockerComposeService`) and the pipeline step names for publish and
   push. Decide between the `deploy-ssh` pipeline step and the `scripts/deploy.mjs` fallback, and
   note the decision in this plan. Check: `pnpm aspire:build` passes.
-- [ ] **2. Dockerfiles and `.dockerignore`.**
+- [x] **2. Dockerfiles and `.dockerignore`.**
   - Write `Dockerfile` with the `web` and `jobs` targets and `cms/Dockerfile`, as in Decision 2.
   - Use `--mount=type=cache` for the pnpm store, `pnpm install --frozen-lockfile`, and
     `CI=true` for non-interactive pnpm.

@@ -113,13 +113,15 @@ backups. `pnpm aspire run` stays exactly as it is today.
      `cms-sync-secret`, `email-unsubscribe-secret`, and Strapi's `app-keys`, `api-token-salt`,
      `admin-jwt-secret`, `transfer-token-salt`, `jwt-secret` and `encryption-key`.
      `ENCRYPTION_KEY` and `SESSION_SECRET` are required by the code (`cms/config/admin.ts`,
-     `app/.server/env.ts`) but missing from the issue's list. **(unconfirmed: Q2)**
+     `app/.server/env.ts`) but missing from the issue's list. The owner chose generated values
+     (Q2), so `docs/deploy.md` says to back up Aspire's deployment state after the first deploy.
 6. **Environment wiring:**
    - `web`/`scheduler` get:
      - `NODE_ENV=production`, `JASSMINDB_URI` (from `withReference(db)`) and `SESSION_SECRET`;
      - `PUBLIC_SITE_URL=https://{site-domain}`, `TRUSTED_PROXY_HOPS=1` and `CSP_MODE=report-only`;
-     - `STRAPI_URL=http://cms:1337`, `STRAPI_PUBLIC_URL=https://{admin-domain}` (Q1),
-       `STRAPI_API_TOKEN`, `STRAPI_SYNC_TOKEN` and `CMS_SYNC_SECRET`;
+     - `STRAPI_URL=http://cms:1337` (internal only; browsers get images through the app's
+       `/uploads/*` proxy, Decision 10), `STRAPI_API_TOKEN`, `STRAPI_SYNC_TOKEN` and
+       `CMS_SYNC_SECRET`;
      - `SMTP_URL`, `EMAIL_WEBHOOK_SECRET` and `EMAIL_UNSUBSCRIBE_SECRET`.
    - `PAYMENT_PROVIDER` isn't set, so card payment is off. `env.ts` already refuses `simulator`
      in production, so no code change is needed.
@@ -143,41 +145,79 @@ backups. `pnpm aspire run` stays exactly as it is today.
 9. **`.dockerignore`** keeps out `.env`, `cms/.env`, `**/node_modules`, `.claude/`, `analytics/`,
    `build/`, `.react-router/`, `aspire-apphost/`, `aspire-output/`, `cms/.tmp`, `cms/dist`,
    `cms/public/uploads`, `.git` and `docs/`.
+10. **Strapi media goes through an app-side proxy at `/uploads/*` (Q1).** Browsers never talk to
+    Strapi for images; the app fetches them from the internal `STRAPI_URL` on the server side.
+    The same code runs in development (proxying to `http://localhost:1337`), so dev and
+    production behave alike.
+    - **New resource route** `app/routes/uploads.$.ts`, declared in `app/routes.ts` outside
+      the locale prefixes. Its `loader`:
+      - validates the splat with a `*.schema.ts` zod schema: one or more path segments of
+        `[A-Za-z0-9._-]`, no `..`, no empty segments. Anything else gets a 404.
+      - fetches `${STRAPI_URL}/uploads/<path>` with `GET` and `AbortSignal.timeout(10_000)`.
+        It forwards only `If-None-Match` and `If-Modified-Since`.
+      - streams the body back with `Content-Type`, `Content-Length`, `ETag` and
+        `Last-Modified`, plus `Cache-Control: public, max-age=31536000, immutable`. Strapi's
+        file names carry a hash, so a changed image gets a new URL.
+      - passes 304 and 404 through, answers 502 when Strapi is down or times out, and never
+        passes on Strapi's other headers (cookies, `Server`).
+      - `HEAD` works through the same loader.
+    - **The server code lives in** `app/.server/cms/uploads-proxy.ts`, so it can be tested
+      with a mocked `fetch`. The route only wires it up.
+    - **Media URLs become same-origin paths.** A new `toMediaPath(url)` helper in
+      `app/.server/cms/media.ts` turns Strapi's `/uploads/…` (relative, or absolute on any
+      origin) into `/uploads/…`, and leaves other URLs as they are (e.g. an external
+      `https://` image). Three places use it instead of resolving against `STRAPI_URL`:
+      - `toImage`/`toSrcSet` in `content.ts`;
+      - the `/cms/products` route (`app/routes/cms.products.ts`);
+      - `toProductImageWrite` in `product-image-backfill.ts`.
+
+      New `products.image_url`/`image_formats` values are therefore stored as `/uploads/…`.
+    - **Rows stored before this change** hold absolute `http://localhost:1337/uploads/…` URLs.
+      `toResponsiveImage`'s callers (`services/products.ts`, `services/cart.ts`) normalize them
+      at read time with `toMediaPath`, so no data migration is needed. The production database
+      starts empty anyway.
+    - **Absolute URLs where they're needed.** The product feeds already use
+      `absoluteUrl(row.imageUrl, origin)`. The cart-reminder and order emails
+      (`photoOf` in `cart-reminder-email.ts`, and the order email lines) prefix a relative
+      `/uploads/…` with `PUBLIC_SITE_URL` instead of falling back to the bottle photo. Any Open
+      Graph image built from CMS media becomes absolute against the site origin; step 3 checks
+      every user of `CmsImage.url`.
+    - **CSP:** `img-src` becomes `'self' data:`, and `strapiOrigin` is dropped from
+      `buildCsp`/`CspOptions`. A new external origin for images would need adding explicitly.
+    - **robots.txt:** `/uploads/` stays crawlable, so product images can be indexed. The
+      `docs/security.md` CSP section and the `docs/setup.md` Strapi section describe the proxy.
 
 ## Open questions
 
-- [ ] **Q1: Where should the browser load Strapi images from?** — Why it matters: `content.ts`
-  resolves `/uploads/…` against `STRAPI_URL`, and `buildCsp` adds `STRAPI_URL`'s origin to
-  `img-src`. In production the server should reach Strapi at `http://cms:1337`, but browsers
-  can't. Recommended default: add an optional `STRAPI_PUBLIC_URL` to `env.ts` (default
-  `STRAPI_URL`), used for media URLs and the CSP's `img-src`, with tests. The alternative is to
-  set `STRAPI_URL=https://admin.<domain>`, so every server-side CMS request goes out to the
-  internet and back through Caddy. Affects steps: 3, 5.
-- [ ] **Q2: Should random secrets be generated by Aspire or typed in by the owner?** — Why it
-  matters: generated values live only in Aspire's deployment state on the owner's PC. Losing it
-  and redeploying would rotate `ENCRYPTION_KEY` (Strapi's encrypted tokens),
-  `EMAIL_UNSUBSCRIBE_SECRET` (links in sent emails) and `SESSION_SECRET` (logs everyone out).
-  Recommended default: generate them, and have `docs/deploy.md` tell the owner to back up the
-  deployment state file to a password manager after the first deploy. Affects steps: 4, 8.
-- [ ] **Q3: Should the GHCR images be private or public?** — Why it matters: private images need
-  a `read:packages` token and `docker login ghcr.io` on the server. Public images show the built
-  code, but no secrets. Recommended default: private, with the one-time login in
-  `docs/deploy.md`. Affects steps: 4, 8.
-- [ ] **Q4: What are the domains?** — Why it matters: Caddy, `PUBLIC_SITE_URL` and the docs need
-  them. Recommended default: `jassmin.ua` and `admin.jassmin.ua` (`docs/email.md` already uses
-  `jassmin.ua`), entered as parameters so nothing is hard-coded. Affects steps: 4, 8.
-- [ ] **Q5: The Strapi API tokens exist only after Strapi is up.** — Why it matters: the first
-  deploy asks for `strapi-api-token` and `strapi-sync-token` before they exist. Recommended
-  default: on the first deploy the owner enters the placeholder `pending`. CMS pages answer 503
-  and sync jobs fail until then (the same behaviour as a missing token). The guide then creates
-  the tokens, updates the two parameters and runs `pnpm aspire deploy` again. Affects step: 8.
-- [ ] **Q6: Should the server be tested for real in this issue?** — Why it matters: the
-  acceptance criteria include HTTPS, a reboot, the scheduler logs and a tested restore. These
-  need a paid server and DNS, which only the owner can provide. Recommended default: I verify
-  everything up to `docker compose up` locally (the publish output, an image build, and a local
-  `docker compose up` with a self-signed Caddy `localhost` site). The owner then runs the first
-  real deploy following `docs/deploy.md`, and the PR lists those checks as manual. Affects
-  steps: 9, 10.
+- [ ] **Q4: What are the domains?** — Why it matters: Caddy, `PUBLIC_SITE_URL`, the DNS records
+  and the guide's examples need them. The owner hasn't decided yet (TBD). Plan: the shop and
+  admin domains are the deploy parameters `site-domain` and `admin-domain`, so nothing in the
+  code or the Compose file names a domain. `docs/deploy.md` writes `<shop-domain>` and
+  `admin.<shop-domain>` as placeholders. The local smoke test uses `localhost`. Nothing in this
+  issue is blocked on the answer. Affects steps: 4, 5, 8.
+
+## Answered by the owner (2026-11-18)
+
+- **Q1: Where should the browser load Strapi images from?** — Through a proxy in the app, on
+  the server side, not a separate public Strapi URL. See Decision 10.
+- **Q2: Should random secrets be generated or typed in?** — Generated by Aspire (Decision 5).
+  `docs/deploy.md` tells the owner to back up the deployment state, because losing it would
+  rotate `ENCRYPTION_KEY`, `EMAIL_UNSUBSCRIBE_SECRET` and `SESSION_SECRET`.
+- **Q3: Should the GHCR images be private or public?** — Private. The server logs in once with
+  a `read:packages` token (step 8).
+- **Q5: The Strapi API tokens exist only after Strapi is up.** — Agreed: on the first deploy
+  the owner enters the placeholder `pending`, then creates the tokens in Strapi, updates the
+  two parameters and runs `pnpm aspire deploy` again (step 8).
+- **Q6: Should the server be tested for real in this issue?** — No server exists yet.
+  Verification stops at the local checks:
+  - the image builds;
+  - the publish output inspection;
+  - a local `docker compose up` on `localhost` with Caddy's internal CA, including the
+    scheduler logs, a dump and a restore.
+
+  The criteria that need the real server (public HTTPS, Postgres closed from outside,
+  surviving a reboot, the first nightly dump on the server) stay unchecked in the PR as
+  manual checks for the owner's first deploy, which follows `docs/deploy.md`.
 
 ## Resolved questions
 
@@ -227,7 +267,14 @@ backups. `pnpm aspire run` stays exactly as it is today.
 | modify | `aspire.config.json` | `Aspire.Hosting.Docker` package (via `pnpm aspire add docker`) |
 | modify | `.gitignore` | `/aspire-output/` |
 | modify | `cms/config/server.ts` | `url` and `proxy` from `PUBLIC_URL` / `IS_PROXIED` |
-| modify | `app/.server/env.ts`, `app/.server/cms/content.ts`, `app/.server/security-headers.ts` (+ tests) | `STRAPI_PUBLIC_URL` for media and CSP (Q1) |
+| create | `app/routes/uploads.$.ts`, `app/lib/uploads.schema.ts` | Resource route proxying `/uploads/*` to Strapi, and its path schema (Decision 10) |
+| create | `app/.server/cms/uploads-proxy.ts` (+ `.test.ts`) | Fetch, header filtering, caching and error mapping for the proxy |
+| create | `app/.server/cms/media.ts` (+ `.test.ts`) | `toMediaPath`: Strapi `/uploads/…` URLs → same-origin paths |
+| modify | `app/routes.ts` | Declare `uploads/*` outside the locale prefixes |
+| modify | `app/.server/cms/content.ts`, `app/routes/cms.products.ts`, `app/.server/services/product-image-backfill.ts`, `app/.server/services/products.ts`, `app/.server/services/cart.ts` (+ tests) | Store and serve `/uploads/…` paths instead of Strapi-origin URLs |
+| modify | `app/.server/services/cart-reminder-email.ts`, order email line photos (+ tests) | Make relative `/uploads/…` absolute with `PUBLIC_SITE_URL` |
+| modify | `app/.server/security-headers.ts` (+ test) | `img-src 'self' data:`; drop `strapiOrigin` |
+| modify | `docs/security.md` | CSP `img-src` and the uploads proxy |
 | create | `docs/deploy.md` | Server setup, DNS, first deploy, Strapi tokens, updates, logs, backups/restore, cost |
 | modify | `aspire-apphost/AGENTS.md` | Publish mode and production resources |
 | modify | `AGENTS.md`, `docs/setup.md`, `README.md` | Production deploys through Aspire; cron examples point to `deploy/crontab` |
@@ -253,11 +300,21 @@ backups. `pnpm aspire run` stays exactly as it is today.
   - Check: `docker run --rm jassmin-jobs pnpm db:migrate --help` works.
 - [ ] **3. Small app and Strapi changes for production.**
   - `cms/config/server.ts`: add `url`/`proxy` (Decision 7).
-  - If Q1's default is kept, add `STRAPI_PUBLIC_URL` to `cmsSyncEnvSchema`'s neighbour in
-    `envSchema`, falling back to `STRAPI_URL`. Use it in `content.ts` (wherever `baseUrl` is
-    resolved for media) and in `security-headers.ts` (`strapiOrigin`).
-  - Update `env.test.ts`, `security-headers.test.ts` and the affected `content`/`home`/`blog`
-    tests. Document the variable in the `docs/setup.md` env table.
+  - **The `/uploads/*` proxy** (Decision 10):
+    - write `media.ts` (`toMediaPath`), `uploads-proxy.ts` and the schema;
+    - add the `uploads.$.ts` route to `app/routes.ts`;
+    - switch `content.ts`, `cms.products.ts` and `product-image-backfill.ts` to `toMediaPath`,
+      and normalize at read time in `services/products.ts` and `services/cart.ts`;
+    - make email photos absolute with `PUBLIC_SITE_URL`;
+    - narrow the CSP's `img-src` to `'self' data:`.
+  - Before changing `CmsImage.url`, `grep` for every user of it (OG/meta tags, JSON-LD,
+    product feeds, emails). Any that needs an absolute URL builds it from the site origin.
+  - Update the affected tests (`content`, `home`, `blog`, `cms-sync`,
+    `product-image-backfill`, `product-feed`, `security-headers`, the email tests) and add the
+    new ones (see Testing).
+  - Check by hand under `pnpm aspire run`: product, home and blog images load from
+    `http://localhost:5173/uploads/…`, there are no CSP reports for images, and an image request
+    shows the long `Cache-Control`. A second load gets a 304.
   - Check: `pnpm typecheck`, `pnpm lint` and `pnpm test` pass.
 - [ ] **4. `aspire-apphost/production.mts` and the publish branch in `apphost.mts`.**
   - Move the current run-mode declarations into `addDevelopmentResources(builder)`. They stay
@@ -296,8 +353,13 @@ backups. `pnpm aspire run` stays exactly as it is today.
   - Volumes exist for Postgres data, Strapi uploads and Caddy data. `web` depends on
     `db-migrate` with `service_completed_successfully`.
   - Smoke test: `docker compose up` with a throwaway `.env` and `SITE_DOMAIN=localhost`
-    (Caddy's internal CA). The site answers over `https://localhost`, the scheduler logs a job
-    run, and `pg-backup` writes a dump when `backup.sh` is run by hand.
+    (Caddy's internal CA). Check that:
+    - the site answers over `https://localhost`;
+    - an image uploaded in Strapi shows on the site through `/uploads/…`;
+    - the scheduler logs a job run;
+    - `pg-backup` writes a dump when `backup.sh` is run by hand;
+    - restoring that dump with the commands planned for `docs/deploy.md` works;
+    - after `docker compose down` and `up`, the data and the upload are still there.
 - [ ] **8. Write `docs/deploy.md`.** Cover:
   - **The server:** Hetzner Cloud CX23 on Ubuntu 24.04 with backups turned on (+20%), the SSH
     key, a firewall allowing only 22, 80 and 443, Docker Engine with the Compose plugin from
@@ -327,27 +389,41 @@ backups. `pnpm aspire run` stays exactly as it is today.
   - `aspire-apphost/AGENTS.md`: replace "local development only / production runs `pnpm build &&
     pnpm start`" with a publish-mode section listing the production resources and parameters.
   - Root `AGENTS.md` (Commands: `pnpm aspire deploy`).
-  - `docs/setup.md`: point the cron examples at `deploy/crontab`, and add `STRAPI_PUBLIC_URL`
-    and the production section linking `docs/deploy.md`.
+  - `docs/setup.md`: point the cron examples at `deploy/crontab`, explain that images go through
+    `/uploads/*`, and add the production section linking `docs/deploy.md`.
+  - `docs/security.md`: the CSP's `img-src` is now `'self' data:`, and why.
   - `README.md`: a link to `docs/deploy.md`.
 - [ ] **10. Final checks.**
   - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and `pnpm aspire:build` pass.
   - The CI `cms` job still passes (`pnpm cms:build`).
-  - Mark the server-only acceptance criteria as manual checks for the owner's first deploy (Q6).
+  - There's no server yet (Q6), so the PR lists the server-only acceptance criteria as manual
+    checks for the owner's first deploy.
 
 ## Testing & verification
 
 - **Unit tests:**
-  - `env.test.ts`: `STRAPI_PUBLIC_URL` defaults to `STRAPI_URL`, and its trailing slash is
-    stripped.
-  - `security-headers.test.ts`: `img-src` uses the public origin.
-  - The `content`/`home`/`blog` tests: media URLs use the public origin, while fetches still use
-    `STRAPI_URL`.
+  - `media.test.ts`: `toMediaPath` handles a relative `/uploads/a.jpg`, an absolute
+    `http://localhost:1337/uploads/a.jpg`, `http://cms:1337/uploads/a.jpg`, a non-uploads
+    `https://` URL (unchanged) and `null`.
+  - `uploads-proxy.test.ts` (mocked `fetch`):
+    - a 200 streams the body with the allowed headers and the long `Cache-Control`;
+    - `Set-Cookie`/`Server` from Strapi are dropped;
+    - `If-None-Match` is forwarded and a 304 is passed through;
+    - a 404 is passed through;
+    - a network error or timeout gives a 502;
+    - `../`, encoded `%2e%2e`, empty segments and odd characters get a 404 without calling
+      `fetch`.
+  - `security-headers.test.ts`: `img-src` is `'self' data:`, with no Strapi origin.
+  - `content`/`home`/`blog`/`cms-sync`/`product-image-backfill` tests: media URLs and stored
+    `image_url`/`image_formats` are `/uploads/…`, while API fetches still use `STRAPI_URL`.
+  - Email tests: a `/uploads/…` photo becomes `PUBLIC_SITE_URL` + path. `product-feed` still
+    gives absolute image URLs.
 - **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm aspire:build`,
   `pnpm cms:build`.
 - **Local container checks** (steps 2, 5, 7): image builds, the publish output inspection, and
   the `docker compose up` smoke test on `localhost`.
-- **Manual on the real server** (owner, following `docs/deploy.md`):
+- **Manual on the real server** (owner, at the first deploy following `docs/deploy.md`; there's
+  no server yet, Q6):
   - HTTPS on both domains;
   - `nc -vz <ip> 5432` fails from outside;
   - a product edit and an upload survive `pnpm aspire deploy` and `sudo reboot`;
@@ -359,9 +435,9 @@ backups. `pnpm aspire run` stays exactly as it is today.
 
 - [ ] `pnpm aspire run` behaves exactly as before, and `pnpm aspire:build` passes — steps 4, 6, 10
 - [ ] Publishing produces a Docker Compose deployment that contains no development resources and no secret values — steps 4, 7
-- [ ] One deploy command builds, pushes and starts the site, Strapi and Postgres on a Hetzner server over SSH — steps 1, 2, 4, 8
-- [ ] The site is reachable over HTTPS on the shop's domain, Strapi admin on its own subdomain, and Postgres isn't reachable from the internet — steps 3, 4, 5, 8 (real server: manual, Q6)
-- [ ] Data and Strapi uploads survive a redeploy and a server reboot — steps 4, 8 (manual)
+- [ ] One deploy command builds, pushes and starts the site, Strapi and Postgres on a Hetzner server over SSH — steps 1, 2, 4, 8 (built and checked locally; the SSH run against a server is manual, Q6)
+- [ ] The site is reachable over HTTPS on the shop's domain, Strapi admin on its own subdomain, and Postgres isn't reachable from the internet — steps 3, 4, 5, 7, 8 (checked on `localhost`; the real domain is manual, Q4/Q6)
+- [ ] Data and Strapi uploads survive a redeploy and a server reboot — steps 4, 7, 8 (checked locally with `down`/`up`; the reboot is manual)
 - [ ] The scheduled jobs run on their schedules (visible in the scheduler's logs) — steps 2, 5, 7
 - [ ] A nightly database dump is created, and the restore steps in `docs/deploy.md` were tested once — steps 5, 7, 8 (restore tested locally against the smoke-test stack; on the server: manual)
 - [ ] `docs/deploy.md` lets the owner set up a new server from scratch — step 8

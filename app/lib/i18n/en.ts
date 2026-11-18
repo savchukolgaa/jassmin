@@ -90,6 +90,7 @@ export const en = {
     sharing: {
       heading: "Who we share data with",
       text: "We don't sell your data or share it for advertising. Only the services the store can't run without can access it: hosting, our email service and, for your orders, the delivery service.",
+      ai: "The messages you write to the AI perfumer are sent to the language model provider, {provider}, only to prepare the answer. We don't store the conversation's text, so please don't include personal data in it.",
     },
     rights: {
       heading: "Your rights",

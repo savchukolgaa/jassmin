@@ -82,6 +82,10 @@ policy that names the AI provider when messages leave the shop's server.
   early never reaches that chunk, so it counts as `unreported` and the totals are then a lower
   bound; the eval says so. The open questions weren't answered before implementing, so the plan's
   recommended defaults apply.
+- **Implemented (step 4):** `getAiProviderName()` in `app/.server/ai/config.ts` returns
+  `AI_PROVIDER_NAME` only while the perfumer is on. `PRIVACY_POLICY_UPDATED_AT` moves to
+  2026-11-18 because the policy's text changed (the new paragraph); it also feeds the sitemap's
+  `lastmod`.
 - Models that reject `tools` + strict `response_format: json_schema` show up as `bad_response`
   errors in the eval; that is a valid result for the table ("not compatible"), not something to work
   around in this issue.
@@ -183,7 +187,7 @@ policy that names the AI provider when messages leave the shop's server.
   ```powershell
   $env:AI_BASE_URL="https://…/v1"; $env:AI_API_KEY="…"; pnpm ai:perfumer-eval --stream --texts --price-in 0.1 --price-out 0.4 <model>
   ```
-- [ ] **4. Privacy policy names the AI provider** **(Q6)** — Add optional `AI_PROVIDER_NAME`
+- [x] **4. Privacy policy names the AI provider** **(Q6)** — Add optional `AI_PROVIDER_NAME`
   (`z.string().min(1).max(80).optional()`) to the AI env schema and `parseAiEnv`; forward it in
   `apphost.mts`; document it in `.env.example` and `docs/setup.md`. The privacy loader returns
   `aiProvider` = the name when `isPerfumerEnabled()` and the name is set, else `null`.

@@ -62,6 +62,7 @@ pnpm dev                    # http://localhost:5173
 | `AI_API_KEY` | no | Bearer token for a hosted provider; Ollama needs none. |
 | `AI_TIMEOUT_MS` | no | The most one perfumer reply may take, tool calls included (default `90000`). |
 | `AI_KEEP_ALIVE` | no | Sent to Ollama as `keep_alive` (e.g. `30m`) so the model stays loaded between replies. |
+| `AI_PROVIDER_NAME` | prod* | The hosted model's provider (e.g. `OpenRouter`), named in the privacy policy as where the perfumer's messages go (#167). *Required in production whenever `AI_BASE_URL` is a third party's server; leave it unset for Ollama on the shop's own server. See [docs/ai-perfumer.md](ai-perfumer.md#production). |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
 | `ORDER_FROM` | no | Sender of order confirmation emails (default: `CONTACT_FROM`). Replies go to `CONTACT_INBOX`. |

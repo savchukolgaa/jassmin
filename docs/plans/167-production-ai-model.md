@@ -86,6 +86,15 @@ policy that names the AI provider when messages leave the shop's server.
   `AI_PROVIDER_NAME` only while the perfumer is on. `PRIVACY_POLICY_UPDATED_AT` moves to
   2026-11-18 because the policy's text changed (the new paragraph); it also feeds the sitemap's
   `lastmod`.
+- **Deviation (step 5), at the owner's request to keep it short:** a full 3-model run would take
+  1.5–2 hours on the laptop CPU, so `granite4.1:8b` and `qwen3:4b` ran three Ukrainian cases only
+  (`--only uk-aquatic,uk-gift-mum,uk-injection`; `--only` now takes a comma-separated list), and
+  `granite4.1:3b` reuses its full streamed run of 2026-11-17. Result: 8b 131–270 s with one
+  timeout, `qwen3:4b` timed out (270 s) on all three. All local CPU options are ruled out on
+  speed, which the doc states; a fuller local run wouldn't change the decision.
+- **Blocked (steps 6, 8):** the hosted runs need the owner's provider account, API key and
+  spending limit; the live check needs hosting. `docs/ai-perfumer.md` → Model comparison has
+  empty rows for the two hosted models and "Decision: pending the hosted runs".
 - Models that reject `tools` + strict `response_format: json_schema` show up as `bad_response`
   errors in the eval; that is a valid result for the table ("not compatible"), not something to work
   around in this issue.
@@ -196,7 +205,7 @@ policy that names the AI provider when messages leave the shop's server.
   `{provider}` only to produce the answer; the shop doesn't store them; please don't include
   personal data. Tests: paragraph shown with a provider, hidden without one or with the perfumer
   off; English copy under `<I18nProvider locale="en">`.
-- [ ] **5. Run the local evals (owner's laptop)** — `pnpm ai:perfumer-eval --stream --texts
+- [x] **5. Run the local evals (owner's laptop)** — `pnpm ai:perfumer-eval --stream --texts
   granite4.1:3b granite4.1:8b qwen3:4b` (Ollama, `AI_KEEP_ALIVE=30m`). If `qwen3:4b` spends most of
   its time thinking, note it (and see Decisions on `AI_REASONING_EFFORT`).
 - [ ] **6. Run the hosted evals and decide** **(Q2, Q4)** — Create the provider account(s), set a
@@ -207,7 +216,7 @@ policy that names the AI provider when messages leave the shop's server.
   whether data leaves the shop. Keep the full per-case tables in a collapsed `<details>` per model.
   Write the decision and why (the chosen model must have total p50 ≲ 10 s and Ukrainian judged
   correct on the eval set).
-- [ ] **7. Production setup docs** — In `docs/ai-perfumer.md` add **"Production"**: the env values
+- [x] **7. Production setup docs** — In `docs/ai-perfumer.md` add **"Production"**: the env values
   for the chosen setup (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` as host secrets, never in the repo;
   `AI_TIMEOUT_MS=30000`; `AI_PROVIDER_NAME` if hosted; `AI_KEEP_ALIVE` only for Ollama), the
   spending limit and alert thresholds at the provider **(Q3)**, what customers see when the cap or
@@ -237,11 +246,14 @@ policy that names the AI provider when messages leave the shop's server.
 ## Acceptance criteria
 
 - [ ] At least four models are compared with `pnpm ai:perfumer-eval`, and the table is in
-  `docs/ai-perfumer.md` — steps 2, 3, 5, 6
-- [ ] The chosen setup answers in under ~10 s (p50) with correct Ukrainian on the eval set — steps 3, 6
+  `docs/ai-perfumer.md` — steps 2, 3, 5, 6. **Partly:** the table and three local models are in;
+  the two hosted models need the owner's keys (step 6).
+- [ ] The chosen setup answers in under ~10 s (p50) with correct Ukrainian on the eval set — steps 3, 6.
+  **Not yet:** no local model is close (p50 ≥ 118 s); needs the hosted runs.
 - [ ] The live site uses it through env configuration only, with a spending cap and a graceful
-  "unavailable" fallback — steps 2 (fallback test), 7, 8 **(Q1, Q3)**
-- [ ] The privacy policy mentions the AI provider if messages leave the shop's server — step 4
+  "unavailable" fallback — steps 2 (fallback test), 7, 8 **(Q1, Q3)**. **Partly:** env-only setup,
+  cap and fallback are documented and the fallback is tested; the live check waits for hosting.
+- [x] The privacy policy mentions the AI provider if messages leave the shop's server — step 4
 
 ## Out of scope
 

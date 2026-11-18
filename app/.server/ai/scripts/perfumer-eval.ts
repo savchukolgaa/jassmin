@@ -1,4 +1,4 @@
-// `pnpm ai:perfumer-eval [models…] [--db] [--only <case>] [--stream] [--texts]
+// `pnpm ai:perfumer-eval [models…] [--db] [--only <case>[,<case>…]] [--stream] [--texts]
 //   [--price-in <usd/M> --price-out <usd/M>]`: runs the AI perfumer (#162) on the
 // cases in `perfumer-eval.cases.ts` against a real model and prints a Markdown table: the tool
 // arguments, picks, invented ids, sentences the guard removed (invented names), the language and
@@ -53,7 +53,12 @@ const stream = args.includes("--stream");
 const texts = args.includes("--texts");
 const prices = parsePrices(args);
 const onlyIndex = args.indexOf("--only");
-const only = onlyIndex >= 0 ? args[onlyIndex + 1] : undefined;
+// One case or several, comma-separated (#167: a quick run of a slow model).
+const only = onlyIndex >= 0 ? new Set((args[onlyIndex + 1] ?? "").split(",")) : undefined;
+const unknownCases = [...(only ?? [])].filter((id) => !EVAL_CASES.some((c) => c.id === id));
+if (unknownCases.length > 0) {
+  throw new Error(`Unknown eval case: ${unknownCases.join(", ")}`);
+}
 const env = parseAiEnv(process.env);
 const VALUE_FLAGS = new Set(["--only", "--price-in", "--price-out"]);
 const models = args.filter(
@@ -231,7 +236,7 @@ async function runModel(
   ).catch(() => undefined);
 
   const rows: Row[] = [];
-  for (const test of EVAL_CASES.filter((c) => !only || c.id === only)) {
+  for (const test of EVAL_CASES.filter((c) => !only || only.has(c.id))) {
     const started = performance.now();
     try {
       const deps: PerfumerDeps = { ...source.deps, config, chat, chatStream };

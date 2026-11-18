@@ -2,8 +2,9 @@
 
 The AI perfumer is a server-side engine that turns a customer's words ("щось свіже з морськими
 нотами до 600 грн", "що схоже на La Vie Est Belle?") into recommendations of real perfumes from
-the Jassmin catalog (#162). The chat page that uses it is #163; streaming is #164 (below), analytics #166 (below),
-and hosting a model in production, along with comparing models, is #167.
+the Jassmin catalog (#162). The chat page that uses it is #163; streaming is #164 (below), analytics #166 (below).
+Comparing models and running one for the live site are #167: [Model comparison](#model-comparison)
+and [Production](#production) (below).
 
 ## Setup
 
@@ -331,6 +332,7 @@ order by 1 desc;
 ```bash
 pnpm ai:perfumer-eval granite4.1:3b         # every case; several models are allowed
 pnpm ai:perfumer-eval --only uk-similar-lavie
+pnpm ai:perfumer-eval --only uk-aquatic,uk-gift-mum,uk-injection   # several cases (#167)
 pnpm ai:perfumer-eval --db                  # the app database instead of the catalog file
 ```
 
@@ -434,7 +436,7 @@ What this shows:
   (`uk-spicy-oriental`, `uk-gift-mum`); the engine now asks it to search first.
 - **Ukrainian** is understandable throughout, with some odd phrasing.
 - **Time**: 13–174 s per answer on this CPU. That's too slow for a chat, and the reason the model
-  and its hosting are a separate issue (#167, which also compares other models). The model is
+  and its hosting are a separate issue (#167, see [Model comparison](#model-comparison)). The model is
   configuration (`AI_MODEL`, `AI_BASE_URL`), not code.
 
 ## Results: granite4.1:3b, streamed
@@ -494,4 +496,113 @@ What this shows:
   the model searched nothing and picked nothing, so the search nudge (which needs picks) didn't
   apply. In `uk-injection` it searched for vanilla perfumes and picked Hypnotic Poison instead of
   declining. The tool rounds are the same code as in `reply()`. Changing the prompts or the nudge
-  would be a separate issue; comparing models is #167.
+  would be a separate issue; for other models see [Model comparison](#model-comparison).
+
+## Model comparison
+
+Which model the live site should use (#167). Customers need an answer in about 10 s (p50 of the
+streamed total) in correct Ukrainian, at a cost a small shop can carry. Each model is run with
+`pnpm ai:perfumer-eval --stream --texts` (see
+[Comparing models](#comparing-models-tokens-cost-and-texts-167)); Ukrainian is the owner's 1–5
+judgment from the printed answers.
+
+| Model | Where it runs | Cases | As expected | Invented names reaching a card | Ukrainian (1–5) | First intro p50 | Total p50 / p95 | Tokens per answer (in / out) | Cost per 1000 answers | Messages leave the shop |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `granite4.1:3b` | Laptop CPU, Ollama | 15 | 12/15 | 0 | _owner_ (understandable, odd phrasing) | 93.3 s | 117.8 s / 233.8 s | not measured (run of 2026-11-17) | $0 per message | No |
+| `granite4.1:8b` | Laptop CPU, Ollama | 3 (quick) | 2/3, 1 timeout | 0 | _owner_ (errors: "вашій маті", "квітові", "мускутні") | 55.0 s | 241.2 s / 270 s (timeout) | 4,396 / 427 | $0 per message | No |
+| `qwen3:4b` | Laptop CPU, Ollama | 3 (quick) | 0/3, 3 timeouts | — | — (no answer) | — | 270 s timeout on every case | unknown | $0 per message | No |
+| Hosted open model _(not run yet)_ | Provider API | 15 | | | | | | | | Yes |
+| Hosted frontier model _(not run yet)_ | Provider API | 15 | | | | | | | | Yes |
+
+The local runs were on 2026-11-18 on the owner's laptop (CPU only, Ollama, `AI_KEEP_ALIVE=30m`),
+against the 128-perfume catalog file, with the eval's 270 s limit per answer (`AI_TIMEOUT_MS` × 3).
+To keep the run short, `granite4.1:8b` and `qwen3:4b` ran only three Ukrainian cases
+(`--only uk-aquatic,uk-gift-mum,uk-injection`): a search, a gift and a prompt injection. The
+`granite4.1:3b` row is the full streamed run [above](#results-granite413b-streamed).
+
+What this shows so far:
+
+- **No local model is usable on this laptop's CPU.** The fastest, `granite4.1:3b`, needs about two
+  minutes per answer; the 8b model is slower still and timed out on the aquatic case. Ollama on the
+  shop's own server would only meet the 10 s target with a GPU.
+- **`qwen3:4b` didn't finish a single answer in 270 s.** It's a thinking model: on a CPU it spends
+  its time reasoning before it writes anything. Turning thinking off (an `AI_REASONING_EFFORT`
+  setting) was left out on purpose until a model needs it; on this hardware it wouldn't reach
+  10 s anyway.
+- **`granite4.1:8b`'s Ukrainian is not better enough to matter**: in the gift case it recommended
+  Davidoff Cool Water Woman for "троянди" (the search had asked for woody families) and wrote
+  "вашій маті", "квітові", "мускутні". The injection case declined correctly, at length.
+- **No invented product reached a card** in any finished answer: the guard holds for every model.
+
+**Decision: pending the hosted runs.** The local options are ruled out on speed, so the live site
+will use a hosted model. Run the two hosted candidates with the full 15 cases and their prices
+(`--price-in`/`--price-out`), fill in their rows and Ukrainian scores, and choose the cheapest one
+with total p50 ≲ 10 s and correct Ukrainian on the eval set. Then set it up as in
+[Production](#production).
+
+## Production
+
+How the live site runs the perfumer (#167). Everything here is configuration: no code changes to
+switch the model or the provider.
+
+### Settings
+
+Set these as **secrets of the hosting platform**, never in the repository or a committed file:
+
+| Variable | Hosted model | Ollama on the shop's server |
+|---|---|---|
+| `AI_BASE_URL` | The provider's OpenAI-compatible base URL (e.g. `https://openrouter.ai/api/v1`) | `http://<ollama-host>:11434/v1`, reachable only from the app |
+| `AI_MODEL` | The provider's model id, exactly as in the comparison | The Ollama tag (e.g. `qwen3:4b`) |
+| `AI_API_KEY` | A key used only by the live site (one per environment) | Unset |
+| `AI_TIMEOUT_MS` | `30000`: a reply that takes longer is a `timeout` the customer can retry | `30000` on a GPU; the 90 s default only suits a laptop CPU |
+| `AI_KEEP_ALIVE` | Unset (Ollama only) | `-1` (keep the model loaded) or e.g. `24h` |
+| `AI_PROVIDER_NAME` | The provider's name (e.g. `OpenRouter`): the privacy policy then says the messages go there | Unset: no message leaves the shop's servers |
+
+Without `AI_BASE_URL` the perfumer is simply off: the chat, its links and the sitemap entry
+disappear and the rest of the shop works as before. That's also the emergency switch.
+
+### Spending cap
+
+- **At the provider, a hard limit**: a monthly spending limit on the account, or a credit limit on
+  the live site's key. If the provider only has a prepaid balance, top up a small amount and turn
+  **auto top-up off**: the balance is the cap. Size it from the comparison's cost per 1000 answers
+  times the expected messages, with headroom; the rate limit (10 messages per 5 minutes per IP and
+  per visitor, [Chat page](#chat-page)) bounds what one visitor can spend.
+- **An alert before the cap**: email at about 50 % and 80 % of the limit, to the owner.
+- **When the cap is reached** the provider refuses the calls (HTTP 402 or 429). The client treats
+  every such answer as `unavailable` (`client.ts`, tested in `client.test.ts`): the chat shows
+  "unavailable" with a retry, the stream records `error: 'unavailable'` (#166) and every other
+  page, the cart and checkout keep working. The same happens if the provider is down or the key
+  is wrong.
+
+### Privacy
+
+When the model runs at a third party, the customer's messages (and the catalog rows the model
+reads) leave the shop's servers. The shop itself still stores no message text ([Analytics](#analytics)).
+Setting `AI_PROVIDER_NAME` adds a paragraph to the privacy policy's "Who we share data with" naming
+the provider (`privacy.sharing.ai`); it's shown only while the perfumer is on. Pick a provider whose
+terms say API inputs aren't used for training, and where possible turn off prompt logging in its
+settings.
+
+### Watching it
+
+- **Latency and errors**: the queries in [Latency and errors](#latency-and-errors), on the live
+  database. A rise in `unavailable` usually means the cap, the key or the provider.
+- **Spend**: the provider's usage dashboard, against the comparison's cost per 1000 answers.
+- **Quality**: the 👍/👎 ratings ([Ratings](#ratings)).
+
+### Switching the model
+
+1. Run `pnpm ai:perfumer-eval --stream --texts` against the new model (see
+   [Comparing models](#comparing-models-tokens-cost-and-texts-167)) and add it to the
+   [comparison](#model-comparison).
+2. Change `AI_MODEL` (and `AI_BASE_URL`, `AI_API_KEY`, `AI_PROVIDER_NAME` for a new provider) and
+   redeploy or restart. A new provider also needs its own spending limit and alert.
+
+### Go-live checklist
+
+- [ ] Provider account with a spending limit and an alert; a key only for the live site.
+- [ ] The secrets above set on the host; the app restarted.
+- [ ] A Ukrainian and an English message on `/parfumer` answer in about 10 s or less.
+- [ ] The privacy page names the provider (hosted model only).
+- [ ] With a wrong `AI_API_KEY` the chat shows "unavailable" and the shop works; then restore it.

@@ -105,7 +105,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm analytics:export-catalog` | Write the catalog and price table to `analytics/generator/data/catalog.json` for the synthetic data generator (#131); a test fails until you run it after changing either |
-| `pnpm ai:perfumer-eval [models…]` | Run the AI perfumer's eval cases against a model (default `AI_MODEL` on local Ollama) and print a results table (#162, see [docs/ai-perfumer.md](ai-perfumer.md)); `--db` reads the catalog from the database, `--only <case>` runs one case, `--stream` measures the streamed reply, `--texts` prints the answers, `--price-in`/`--price-out` (USD per million tokens) add the cost per 1000 answers (#167). Not in CI |
+| `pnpm ai:perfumer-eval [models…]` | Run the AI perfumer's eval cases against a model (default `AI_MODEL` on local Ollama) and print a results table (#162, see [docs/ai-perfumer.md](ai-perfumer.md)); `--db` reads the catalog from the database, `--only <case>[,<case>…]` runs some cases, `--stream` measures the streamed reply, `--texts` prints the answers, `--price-in`/`--price-out` (USD per million tokens) add the cost per 1000 answers (#167). Not in CI |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
 The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`, `db-send-order-emails`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
@@ -400,7 +400,7 @@ Do this once after the first production deploy; the search engines re-read the s
 
 ## AI perfumer
 
-A server-side engine turns a customer's words into recommendations of real perfumes from the catalog (#162; the chat page is #163). It's off unless `AI_BASE_URL` points at an OpenAI-compatible chat-completions server. Locally that's Ollama: `ollama pull granite4.1:3b`, then `AI_BASE_URL=http://localhost:11434/v1` in `.env`. [docs/ai-perfumer.md](ai-perfumer.md) covers the setup, how the engine keeps the model from inventing products, and the eval results.
+A server-side engine turns a customer's words into recommendations of real perfumes from the catalog (#162; the chat page is #163). It's off unless `AI_BASE_URL` points at an OpenAI-compatible chat-completions server. Locally that's Ollama: `ollama pull granite4.1:3b`, then `AI_BASE_URL=http://localhost:11434/v1` in `.env`. [docs/ai-perfumer.md](ai-perfumer.md) covers the setup, how the engine keeps the model from inventing products, and the eval results. For the live site it has the [model comparison](ai-perfumer.md#model-comparison) and the [production setup](ai-perfumer.md#production) (#167): env settings only, with a spending cap at the provider.
 
 ## Admin role
 

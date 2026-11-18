@@ -547,7 +547,9 @@ switch the model or the provider.
 
 ### Settings
 
-Set these as **secrets of the hosting platform**, never in the repository or a committed file:
+These are the app's settings; never put their values in the repository or a committed file.
+On the Hetzner deploy (#176, [deploy.md](deploy.md)) they are Aspire parameters, see
+[On the Hetzner deploy](#on-the-hetzner-deploy) below:
 
 | Variable | Hosted model | Ollama on the shop's server |
 |---|---|---|
@@ -560,6 +562,27 @@ Set these as **secrets of the hosting platform**, never in the repository or a c
 
 Without `AI_BASE_URL` the perfumer is simply off: the chat, its links and the sitemap entry
 disappear and the rest of the shop works as before. That's also the emergency switch.
+
+### On the Hetzner deploy
+
+The production AppHost (`aspire-apphost/production.mts`) passes **no** `AI_*` variables yet, so the
+perfumer is off on the live site until a model is chosen. Going live is then the one code change:
+in the `for (const app of [web, scheduler])` environment, add parameters for the chosen setup, e.g.
+for a hosted model
+
+```ts
+const aiApiKey = await builder.addParameter("ai-api-key", { secret: true });
+// …
+  .withEnvironment("AI_BASE_URL", "https://openrouter.ai/api/v1")
+  .withEnvironment("AI_MODEL", "<model id from the comparison>")
+  .withEnvironment("AI_API_KEY", aiApiKey)
+  .withEnvironment("AI_TIMEOUT_MS", "30000")
+  .withEnvironment("AI_PROVIDER_NAME", "OpenRouter")
+```
+
+and update the comment there, `aspire-apphost/AGENTS.md` and `docs/deploy.md`, which say the
+perfumer is off. `pnpm aspire:deploy` asks for the key on the next deploy. After that, switching
+the model or key is a parameter change and a redeploy.
 
 ### Spending cap
 
@@ -602,7 +625,7 @@ settings.
 ### Go-live checklist
 
 - [ ] Provider account with a spending limit and an alert; a key only for the live site.
-- [ ] The secrets above set on the host; the app restarted.
+- [ ] The settings added to `production.mts` ([On the Hetzner deploy](#on-the-hetzner-deploy)) and deployed with `pnpm aspire:deploy`.
 - [ ] A Ukrainian and an English message on `/parfumer` answer in about 10 s or less.
 - [ ] The privacy page names the provider (hosted model only).
 - [ ] With a wrong `AI_API_KEY` the chat shows "unavailable" and the shop works; then restore it.

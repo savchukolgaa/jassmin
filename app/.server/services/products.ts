@@ -13,6 +13,7 @@ import {
   type ProductVariant,
   pickDescription,
 } from "~/lib/products";
+import { toMediaPath } from "../cms/media";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import { findProductIdBySlugHistory } from "../db/queries/product-slugs";
@@ -49,9 +50,17 @@ export interface ProductImageColumns {
   imageFormats: ImageFormat[] | null;
 }
 
-/** The product photo's responsive image from its columns (#88). */
+/**
+ * The product photo's responsive image from its columns (#88). Rows synced before #176 hold
+ * absolute Strapi URLs; their uploads are served from the shop's origin like the newer ones.
+ */
 export function productImage(row: ProductImageColumns): ResponsiveImage | null {
-  return toResponsiveImage(row.imageUrl, row.imageWidth, row.imageHeight, row.imageFormats);
+  return toResponsiveImage(
+    row.imageUrl === null ? null : toMediaPath(row.imageUrl),
+    row.imageWidth,
+    row.imageHeight,
+    row.imageFormats?.map((format) => ({ ...format, url: toMediaPath(format.url) })) ?? null,
+  );
 }
 
 // The only place rows become DTOs.

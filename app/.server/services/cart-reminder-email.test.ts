@@ -126,3 +126,22 @@ describe("buildCartReminderEmail", () => {
     );
   });
 });
+
+describe("cart reminder photos (#176)", () => {
+  it("links Strapi's uploads on the shop's origin, where the app serves them", () => {
+    const content = String(
+      build("uk", {
+        ...reminder,
+        lines: [
+          line("Coco", "/uploads/coco_3f2a.jpg"),
+          line("Chance", "http://localhost:1337/uploads/chance_9b1c.jpg"),
+          line("No 5", "data:image/png;base64,AAAA"),
+        ],
+      }).html,
+    );
+    expect(content).toContain('src="https://jassmin.ua/uploads/coco_3f2a.jpg"');
+    expect(content).toContain('src="https://jassmin.ua/uploads/chance_9b1c.jpg"');
+    expect(content).not.toContain("localhost");
+    expect(content.match(/src="https:\/\/jassmin\.ua\/email\/shop-bottle\.jpg"/g)).toHaveLength(1);
+  });
+});

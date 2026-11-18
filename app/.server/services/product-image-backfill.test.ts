@@ -13,12 +13,12 @@ const media = {
 };
 
 describe("toProductImageWrite", () => {
-  it("resolves the URLs against Strapi's origin and keeps the sizes", () => {
+  it("stores the uploads as same-origin paths and keeps the sizes", () => {
     expect(toProductImageWrite(media, "http://cms.test")).toEqual({
-      imageUrl: "http://cms.test/uploads/p.jpg",
+      imageUrl: "/uploads/p.jpg",
       imageWidth: 800,
       imageHeight: 1000,
-      imageFormats: [{ url: "http://cms.test/uploads/small_p.jpg", width: 400, height: 500 }],
+      imageFormats: [{ url: "/uploads/small_p.jpg", width: 400, height: 500 }],
     });
   });
 

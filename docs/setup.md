@@ -5,6 +5,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 ## Contents
 
 - [Production deployment](#production-deployment)
+- [Upgrading Aspire](#upgrading-aspire)
 - [Without Aspire](#without-aspire)
 - [Environment variables](#environment-variables)
 - [Scripts](#scripts)
@@ -30,6 +31,38 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 ## Production deployment
 
 Production is one Hetzner server running Docker Compose, deployed from your computer with `pnpm aspire:deploy` (#176): the shop, Strapi, PostgreSQL, Caddy for HTTPS, the scheduled jobs (`deploy/crontab`, run by the `scheduler` service) and nightly database dumps. [docs/deploy.md](deploy.md) covers setting up the server from scratch, the first deploy, updating, logs, backups and restoring. The cron lines in the sections below are what the `scheduler` runs; you only need them for a server set up some other way.
+
+## Upgrading Aspire
+
+The Aspire CLI on every computer and the version pinned in `aspire.config.json` (`sdk.version` and
+each entry in `packages`) must be the same release, currently **17.0.0**. When they differ, the CLI
+offers an update and rewrites `aspire.config.json` locally. That change then blocks `git pull`
+whenever the file changed on `main` too.
+
+- **One upgrade, one PR.** Upgrade on an `issue/<n>` branch in its own worktree, never on `main`.
+  Never commit an `aspire.config.json` change that comes only from a CLI update prompt. Discard it
+  with `git restore aspire.config.json` and update the CLI instead.
+- **The CLI first, then the repo:**
+  ```bash
+  aspire update --self --channel stable   # the CLI on your computer
+  pnpm aspire update --channel stable     # in the worktree: aspire.config.json and the generated SDK
+  ```
+  Use `pnpm aspire update`, not plain `aspire update`, for the same pnpm reason as `pnpm aspire run`.
+- **Read the release notes** for every version in between ([aspire.dev/whats-new](https://aspire.dev/whats-new/),
+  [GitHub releases](https://github.com/microsoft/aspire/releases)) and list the breaking changes
+  that touch `aspire-apphost/` in the PR, each with how it was handled.
+- **Check:** `pnpm aspire:build`; `pnpm aspire run` with every resource in
+  `aspire-apphost/AGENTS.md`; `pnpm aspire do --list-steps` (the `push` and `prepare-jassmin` steps
+  that `deploy-ssh` depends on); `pnpm aspire publish -o <dir>` compared with the previous
+  version's Compose file; and `pnpm aspire:deploy`, or up to the SSH step when there's no server.
+- **After the merge,** everyone runs `aspire update --self` before their next `pnpm aspire run`.
+  Update the version in the README's prerequisites and in this section in the same PR.
+
+Since 17.0, Aspire keeps the AppHost's secrets (the generated `postgres-password`,
+`cms-sync-secret` and `jupyter-token` for development) in
+`~/.aspire/secrets/<apphost-id>/Development.json` instead of .NET user secrets. The first 17.0
+run imports the old values, so the existing database volume keeps working. Use `aspire secret list`
+and `aspire secret path` to see them.
 
 ## Without Aspire
 

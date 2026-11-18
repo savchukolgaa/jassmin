@@ -33,11 +33,24 @@ export interface ChatRequest {
   responseFormat?: { name: string; schema: JsonSchema };
   /** The most tokens the model may generate (`max_tokens`). */
   maxTokens?: number;
+  /**
+   * Streamed calls only: called with the tokens the call used, when the server reports them in
+   * its last chunk (#167). A stream stopped early never gets there, so it isn't called then.
+   */
+  onUsage?: (usage: TokenUsage) => void;
+}
+
+/** The tokens one call used, as the server reported them (#167). */
+export interface TokenUsage {
+  input: number;
+  output: number;
 }
 
 export interface ChatResult {
   content: string | null;
   toolCalls: ToolCall[];
+  /** Absent when the server didn't report it. */
+  usage?: TokenUsage;
 }
 
 /** One chat-completions call; `signal` bounds it (the perfumer passes one for the whole reply). */
@@ -83,6 +96,8 @@ export function toRequestBody(
     messages: request.messages.map(toWireMessage),
     temperature: 0.2,
     stream,
+    // The token counts arrive in the stream's last chunk only when asked for (#167).
+    ...(stream ? { stream_options: { include_usage: true } } : {}),
     ...(request.maxTokens ? { max_tokens: request.maxTokens } : {}),
     ...(request.tools?.length
       ? {
@@ -197,6 +212,7 @@ export function createChatClient(config: PerfumerConfig, fetchFn: typeof fetch =
     }
 
     const message = parsed.data.choices[0]?.message;
+    const usage = toUsage(parsed.data.usage);
     return {
       content: message?.content ?? null,
       toolCalls: (message?.tool_calls ?? []).map((call, index) => ({
@@ -204,12 +220,22 @@ export function createChatClient(config: PerfumerConfig, fetchFn: typeof fetch =
         name: call.function.name,
         arguments: call.function.arguments,
       })),
+      ...(usage ? { usage } : {}),
     };
   };
 }
 
-/** The text in one `data:` chunk; throws `bad_response` when it isn't a chunk. */
-function deltaOf(data: string): string {
+function toUsage(
+  usage: { prompt_tokens: number; completion_tokens: number } | null | undefined,
+): TokenUsage | undefined {
+  return usage ? { input: usage.prompt_tokens, output: usage.completion_tokens } : undefined;
+}
+
+/**
+ * The text in one `data:` chunk and the usage it reports, if any; throws `bad_response` when it
+ * isn't a chunk.
+ */
+function parseChunk(data: string): { delta: string; usage: TokenUsage | undefined } {
   let json: unknown;
   try {
     json = JSON.parse(data);
@@ -224,7 +250,10 @@ function deltaOf(data: string): string {
       cause: parsed.error,
     });
   }
-  return parsed.data.choices[0]?.delta?.content ?? "";
+  return {
+    delta: parsed.data.choices[0]?.delta?.content ?? "",
+    usage: toUsage(parsed.data.usage),
+  };
 }
 
 /**
@@ -271,7 +300,8 @@ export function createChatStreamClient(
           const data = line.slice(5).trim();
           if (data === "[DONE]") return;
           if (data === "") continue;
-          const delta = deltaOf(data);
+          const { delta, usage } = parseChunk(data);
+          if (usage) request.onUsage?.(usage);
           if (delta) yield delta;
         }
         if (chunk.done) return;

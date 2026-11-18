@@ -27,6 +27,7 @@ import {
   createChatClient,
   createChatStreamClient,
   type JsonSchema,
+  type TokenUsage,
 } from "./client";
 import { getPerfumerConfig, type PerfumerConfig } from "./config";
 import { AiError, PerfumerDisabledError } from "./errors";
@@ -112,6 +113,21 @@ export interface PerfumerTrace {
   removedSentences: string[];
   /** Whether the model picked perfumes without searching and was told to search. */
   searchNudged: boolean;
+  /**
+   * The tokens every model call of the reply used, for the eval's cost estimate (#167). `unreported`
+   * counts the calls the server gave no usage for (or a streamed intro stopped early), so `input`
+   * and `output` are then a lower bound.
+   */
+  tokens: TokenUsage & { unreported: number };
+}
+
+function addUsage(trace: PerfumerTrace, usage: TokenUsage | undefined): void {
+  if (usage) {
+    trace.tokens.input += usage.input;
+    trace.tokens.output += usage.output;
+  } else {
+    trace.tokens.unreported += 1;
+  }
 }
 
 export interface PerfumerResult {
@@ -184,21 +200,29 @@ async function startReply(
   const signals = [AbortSignal.timeout(config.timeoutMs), deps.signal, extraSignal].filter(
     (signal) => signal !== undefined,
   );
+  const trace: PerfumerTrace = {
+    toolCalls: [],
+    rounds: 0,
+    modelPickIds: [],
+    droppedPickIds: [],
+    removedSentences: [],
+    searchNudged: false,
+    tokens: { input: 0, output: 0, unreported: 0 },
+  };
+  const chat = deps.chat ?? createChatClient(config);
   return {
     locale,
     config,
-    chat: deps.chat ?? createChatClient(config),
+    // Every call's tokens go into the trace.
+    chat: async (request, signal) => {
+      const result = await chat(request, signal);
+      addUsage(trace, result.usage);
+      return result;
+    },
     signal: AbortSignal.any(signals),
     catalog: await (deps.loadCatalog ?? defaultCatalog)(),
     aliases: new AliasMap(),
-    trace: {
-      toolCalls: [],
-      rounds: 0,
-      modelPickIds: [],
-      droppedPickIds: [],
-      removedSentences: [],
-      searchNudged: false,
-    },
+    trace,
     history: [{ role: "system", content: systemPrompt(locale) }, ...conversation],
     customerText: conversation.filter((m) => m.role === "user").map((m) => m.content),
     deps,
@@ -448,6 +472,7 @@ export async function* replyStream(
     // clean. The call stops when the intro is long enough.
     const guard = new IntroGuard(validated.context, MAX_INTRO);
     const chatStream = deps.chatStream ?? createChatStreamClient(run.config);
+    let introUsage: TokenUsage | undefined;
     const intro = chatStream(
       {
         messages: [
@@ -455,6 +480,9 @@ export async function* replyStream(
           { role: "system", content: introInstructions(locale, validated.aliases) },
         ],
         maxTokens: INTRO_MAX_TOKENS,
+        onUsage: (usage) => {
+          introUsage = usage;
+        },
       },
       run.signal,
     );
@@ -463,6 +491,7 @@ export async function* replyStream(
       if (text) yield { type: "intro", text };
       if (guard.full) break;
     }
+    addUsage(run.trace, introUsage);
     const rest = guard.end();
     if (rest) yield { type: "intro", text: rest };
     run.trace.removedSentences.push(...guard.removed);

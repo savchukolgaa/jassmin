@@ -25,6 +25,14 @@ export function getPerfumerConfig(env: AiEnv = getEnv()): PerfumerConfig | null 
   };
 }
 
+/**
+ * The provider the perfumer's messages go to, for the privacy policy (#167): `AI_PROVIDER_NAME`
+ * while the perfumer is on, else `null` (off, or a model on the shop's own server).
+ */
+export function getAiProviderName(env: AiEnv = getEnv()): string | null {
+  return isPerfumerEnabled(env) ? (env.AI_PROVIDER_NAME ?? null) : null;
+}
+
 /** Whether the AI perfumer is configured, so the UI (#163) can hide itself when it isn't. */
 export function isPerfumerEnabled(env: AiEnv = getEnv()): boolean {
   return getPerfumerConfig(env) !== null;

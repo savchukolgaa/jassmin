@@ -102,10 +102,32 @@ describe("createChatClient", () => {
     expect(error.kind).toBe("timeout");
   });
 
-  it("maps HTTP errors: 400 to bad_response, 404 and 500 to unavailable", async () => {
+  it("returns the usage the server reports, and none when it's missing or malformed (#167)", async () => {
+    const answer = { choices: [{ message: { content: "Ось." } }] };
+    for (const [usage, expected] of [
+      [
+        { prompt_tokens: 1200, completion_tokens: 80, total_tokens: 1280 },
+        { input: 1200, output: 80 },
+      ],
+      [undefined, undefined],
+      [{ prompt_tokens: "many" }, undefined],
+    ] as const) {
+      const fetchFn = vi.fn<typeof fetch>(async () => json({ ...answer, usage }));
+      const result = await createChatClient(config, fetchFn)({ messages: [] }, signal());
+      expect(result.content).toBe("Ось.");
+      expect(result.usage).toEqual(expected);
+    }
+  });
+
+  it("maps HTTP errors: 400 to bad_response; 401, 402, 404, 429 and 500 to unavailable", async () => {
+    // 402 and 429 are what a hosted provider answers once its spending limit is reached (#167):
+    // the chat then shows "unavailable" and the shop keeps working.
     for (const [status, kind] of [
       [400, "bad_response"],
+      [401, "unavailable"],
+      [402, "unavailable"],
       [404, "unavailable"],
+      [429, "unavailable"],
       [500, "unavailable"],
     ] as const) {
       const fetchFn = vi.fn<typeof fetch>(async () => json({ error: "nope" }, status));
@@ -185,6 +207,28 @@ describe("createChatStreamClient (#164)", () => {
     const init = fetchFn.mock.calls[0]?.[1];
     expect(JSON.parse(String(init?.body))).toMatchObject({ stream: true });
     expect(new Headers(init?.headers).get("Accept")).toBe("text/event-stream");
+  });
+
+  it("asks for the usage and reports it from the last chunk (#167)", async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () =>
+      sse([
+        chunk("Ось."),
+        'data: {"choices":[],"usage":{"prompt_tokens":1500,"completion_tokens":42}}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+    );
+    const onUsage = vi.fn();
+
+    const pieces = await collect(
+      createChatStreamClient(config, fetchFn)({ messages: [], onUsage }, signal()),
+    );
+
+    expect(pieces).toEqual(["Ось."]);
+    expect(onUsage).toHaveBeenCalledExactlyOnceWith({ input: 1500, output: 42 });
+    const init = fetchFn.mock.calls[0]?.[1];
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      stream_options: { include_usage: true },
+    });
   });
 
   it("ends without [DONE] when the body ends", async () => {
@@ -296,5 +340,11 @@ describe("toRequestBody", () => {
       response_format: { type: "json_schema", json_schema: { name: "answer", strict: true } },
     });
     expect(body).not.toHaveProperty("keep_alive");
+    // Only a stream asks for its usage chunk (#167); the plain answer has it anyway.
+    expect(body).not.toHaveProperty("stream_options");
+    // The callback is ours, never sent.
+    expect(
+      toRequestBody(config, { messages: [], onUsage: () => {} }, { stream: true }),
+    ).not.toHaveProperty("onUsage");
   });
 });

@@ -302,7 +302,13 @@ async function addDevelopmentResources(builder: DistributedApplicationBuilder) {
   // settings only when they're set in its own environment; there's no Ollama container (a CPU model
   // runs faster natively, see docs/ai-perfumer.md). `web` also reads them, and `AI_API_KEY`, from
   // the root `.env`, so a key never shows up in the dashboard.
-  for (const name of ["AI_BASE_URL", "AI_MODEL", "AI_TIMEOUT_MS", "AI_KEEP_ALIVE"]) {
+  for (const name of [
+    "AI_BASE_URL",
+    "AI_MODEL",
+    "AI_TIMEOUT_MS",
+    "AI_KEEP_ALIVE",
+    "AI_PROVIDER_NAME",
+  ]) {
     const value = process.env[name];
     if (value) {
       await web.withEnvironment(name, value);

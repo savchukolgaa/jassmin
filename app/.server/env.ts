@@ -63,6 +63,9 @@ const aiEnvSchema = z.object({
     .string()
     .regex(/^-?\d+(ms|s|m|h)?$/)
     .optional(),
+  // The hosted model's provider as the privacy policy names it (e.g. `OpenRouter`, #167). Unset
+  // when the model runs on the shop's own server: then no message leaves it.
+  AI_PROVIDER_NAME: z.string().trim().min(1).max(80).optional(),
 });
 
 const envSchema = z
@@ -142,6 +145,7 @@ function aiSource(source: NodeJS.ProcessEnv) {
     AI_API_KEY: source.AI_API_KEY || undefined,
     AI_TIMEOUT_MS: source.AI_TIMEOUT_MS || undefined,
     AI_KEEP_ALIVE: source.AI_KEEP_ALIVE || undefined,
+    AI_PROVIDER_NAME: source.AI_PROVIDER_NAME?.trim() || undefined,
   };
 }
 

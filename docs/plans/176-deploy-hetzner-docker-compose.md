@@ -358,7 +358,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
     shell, the way `scripts/aspire.mjs` does.
   - Add `production.mts` to `tsconfig.apphost.json`'s `include`.
   - Check: `pnpm aspire:build` and `pnpm lint` pass.
-- [ ] **5. Caddy, scheduler and backup files.**
+- [x] **5. Caddy, scheduler and backup files.**
   - `deploy/caddy/Caddyfile`:
     - a `{$SITE_DOMAIN}` block with `reverse_proxy web:3000` and `encode zstd gzip`, and a
       `www.{$SITE_DOMAIN}` redirect;

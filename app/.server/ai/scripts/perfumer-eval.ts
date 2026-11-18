@@ -1,4 +1,5 @@
-// `pnpm ai:perfumer-eval [models…] [--db] [--only <case>] [--stream]`: runs the AI perfumer (#162) on the
+// `pnpm ai:perfumer-eval [models…] [--db] [--only <case>] [--stream] [--texts]
+//   [--price-in <usd/M> --price-out <usd/M>]`: runs the AI perfumer (#162) on the
 // cases in `perfumer-eval.cases.ts` against a real model and prints a Markdown table: the tool
 // arguments, picks, invented ids, sentences the guard removed (invented names), the language and
 // the time per answer. Not part of the tests or CI; record results in docs/ai-perfumer.md.
@@ -6,8 +7,12 @@
 // `--stream` (#172) runs the cases through `replyStream` (#164) instead, as the chat does, and adds
 // the time to the first step, to the first intro sentence and to `done`, with their p50/p95.
 //
-// The model server is `AI_BASE_URL` (default: local Ollama, http://localhost:11434/v1); the models
-// are the arguments (default: `AI_MODEL`). The catalog is the owner's list in `catalog-data.ts`
+// For comparing models (#167) every table has the tokens per answer, and the summary their mean;
+// with `--price-in`/`--price-out` (the provider's USD per million tokens) also the cost of 1000
+// answers. `--texts` prints each answer after the table, for judging the language by eye.
+//
+// The model server is `AI_BASE_URL` (default: local Ollama, http://localhost:11434/v1) with
+// `AI_API_KEY`, one server per run; the models are the arguments (default: `AI_MODEL`). The catalog is the owner's list in `catalog-data.ts`
 // with the shared price table, so no database is needed; `--db` reads the app database instead.
 import { existsSync } from "node:fs";
 import { performance } from "node:perf_hooks";
@@ -24,12 +29,18 @@ import { AiError } from "../errors";
 import { type PerfumerDeps, type PerfumerTrace, replyStream, replyWithTrace } from "../perfumer";
 import { EVAL_CASES, type EvalCase } from "./perfumer-eval.cases";
 import {
+  type AnswerTokens,
   cell,
   collectStreamedReply,
   cyrillicShare,
+  describeTokens,
   describeTools,
+  formatAnswerText,
+  isLocalServer,
   meetsExpectation,
+  parsePrices,
   percentile,
+  summarizeTokens,
 } from "./perfumer-eval.stream";
 
 if (existsSync(".env")) {
@@ -39,10 +50,15 @@ if (existsSync(".env")) {
 const args = process.argv.slice(2);
 const useDb = args.includes("--db");
 const stream = args.includes("--stream");
+const texts = args.includes("--texts");
+const prices = parsePrices(args);
 const onlyIndex = args.indexOf("--only");
 const only = onlyIndex >= 0 ? args[onlyIndex + 1] : undefined;
 const env = parseAiEnv(process.env);
-const models = args.filter((arg, i) => !arg.startsWith("--") && args[i - 1] !== "--only");
+const VALUE_FLAGS = new Set(["--only", "--price-in", "--price-out"]);
+const models = args.filter(
+  (arg, i) => !arg.startsWith("--") && !VALUE_FLAGS.has(args[i - 1] ?? ""),
+);
 if (models.length === 0) {
   models.push(env.AI_MODEL);
 }
@@ -151,6 +167,9 @@ interface Row {
   /** `--stream` only: seconds to the first step (none when no tool ran) and the first intro. */
   firstStep?: number;
   firstIntro?: number;
+  /** None when the answer failed. */
+  tokens?: AnswerTokens;
+  reply?: PerfumerReply;
 }
 
 interface Answer {
@@ -200,7 +219,8 @@ async function runModel(
     model,
     apiKey: env.AI_API_KEY,
     timeoutMs: env.AI_TIMEOUT_MS * 3,
-    keepAlive: env.AI_KEEP_ALIVE ?? "30m",
+    // Ollama's `keep_alive`; a hosted API may refuse the unknown parameter (#167).
+    keepAlive: env.AI_KEEP_ALIVE ?? (isLocalServer(baseUrl) ? "30m" : undefined),
   };
   const chat = createChatClient(config);
   const chatStream = createChatStreamClient(config);
@@ -233,6 +253,8 @@ async function runModel(
         removed: trace.removedSentences,
         language: test.locale === "uk" ? share >= 0.6 : share <= 0.1,
         expected: meetsExpectation(test, reply.picks, source.catalog),
+        tokens: trace.tokens,
+        reply,
         ...(firstStep === undefined ? {} : { firstStep }),
         ...(firstIntro === undefined ? {} : { firstIntro }),
       });
@@ -261,21 +283,33 @@ async function runModel(
   return rows;
 }
 
+/** Tokens in / out of one answer, `—` when it failed or the server reported none. */
+function tokensCell(tokens: AnswerTokens | undefined): string {
+  if (!tokens || (tokens.input === 0 && tokens.output === 0)) return "—";
+  return `${tokens.input} / ${tokens.output}${tokens.unreported > 0 ? "+" : ""}`;
+}
+
+/** The model's tokens per answer and, with prices, the cost of 1000 answers (#167). */
+function tokenSentence(mine: readonly Row[]): string {
+  const answers = mine.flatMap((r) => (r.tokens ? [r.tokens] : []));
+  return describeTokens(summarizeTokens(answers, prices));
+}
+
 function printTable(rows: readonly Row[]): void {
   console.log(
-    "| Model | Case | Time | Tool calls | Picks | Invalid ids | Removed sentences | Language | Expected |",
+    "| Model | Case | Time | Tool calls | Picks | Invalid ids | Removed sentences | Language | Expected | Tokens in / out |",
   );
-  console.log("|---|---|---|---|---|---|---|---|---|");
+  console.log("|---|---|---|---|---|---|---|---|---|---|");
   for (const row of rows) {
     console.log(
-      `| ${row.model} | ${row.id} | ${row.seconds.toFixed(0)} s | ${cell(row.error ?? row.tools)} | ${cell(row.picks)} | ${row.invalidIds} | ${cell(row.removed.join(" / ") || "—")} | ${row.language ? "✓" : "✗"} | ${row.expected ? "✓" : "✗"} |`,
+      `| ${row.model} | ${row.id} | ${row.seconds.toFixed(0)} s | ${cell(row.error ?? row.tools)} | ${cell(row.picks)} | ${row.invalidIds} | ${cell(row.removed.join(" / ") || "—")} | ${row.language ? "✓" : "✗"} | ${row.expected ? "✓" : "✗"} | ${tokensCell(row.tokens)} |`,
     );
   }
   for (const model of new Set(rows.map((r) => r.model))) {
     const mine = rows.filter((r) => r.model === model);
     const times = mine.map((r) => r.seconds);
     console.log(
-      `\n**${model}**: ${mine.filter((r) => r.expected).length}/${mine.length} as expected, language ${mine.filter((r) => r.language).length}/${mine.length}, invalid ids ${mine.reduce((n, r) => n + r.invalidIds, 0)}, removed sentences ${mine.reduce((n, r) => n + r.removed.length, 0)}, errors ${mine.filter((r) => r.error).length}, ${Math.min(...times).toFixed(0)}–${Math.max(...times).toFixed(0)} s per answer.`,
+      `\n**${model}**: ${mine.filter((r) => r.expected).length}/${mine.length} as expected, language ${mine.filter((r) => r.language).length}/${mine.length}, invalid ids ${mine.reduce((n, r) => n + r.invalidIds, 0)}, removed sentences ${mine.reduce((n, r) => n + r.removed.length, 0)}, errors ${mine.filter((r) => r.error).length}, ${Math.min(...times).toFixed(0)}–${Math.max(...times).toFixed(0)} s per answer (p50 ${seconds(percentile(times, 50))} / p95 ${seconds(percentile(times, 95))}); ${tokenSentence(mine)}.`,
     );
   }
 }
@@ -283,12 +317,12 @@ function printTable(rows: readonly Row[]): void {
 /** `--stream`: the timings first, with p50/p95 per model. */
 function printStreamTable(rows: readonly Row[]): void {
   console.log(
-    "| Model | Case | First step | First intro | Total | Tool calls | Picks | Invalid ids | Removed sentences | Language | Expected |",
+    "| Model | Case | First step | First intro | Total | Tool calls | Picks | Invalid ids | Removed sentences | Language | Expected | Tokens in / out |",
   );
-  console.log("|---|---|---|---|---|---|---|---|---|---|---|");
+  console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
   for (const row of rows) {
     console.log(
-      `| ${row.model} | ${row.id} | ${seconds(row.firstStep)} | ${seconds(row.firstIntro)} | ${seconds(row.seconds)} | ${cell(row.error ?? row.tools)} | ${cell(row.picks)} | ${row.invalidIds} | ${cell(row.removed.join(" / ") || "—")} | ${row.language ? "✓" : "✗"} | ${row.expected ? "✓" : "✗"} |`,
+      `| ${row.model} | ${row.id} | ${seconds(row.firstStep)} | ${seconds(row.firstIntro)} | ${seconds(row.seconds)} | ${cell(row.error ?? row.tools)} | ${cell(row.picks)} | ${row.invalidIds} | ${cell(row.removed.join(" / ") || "—")} | ${row.language ? "✓" : "✗"} | ${row.expected ? "✓" : "✗"} | ${tokensCell(row.tokens)} |`,
     );
   }
   const spread = (values: number[]) =>
@@ -299,7 +333,7 @@ function printStreamTable(rows: readonly Row[]): void {
     const intros = mine.flatMap((r) => (r.firstIntro === undefined ? [] : [r.firstIntro]));
     console.log(
       `
-**${model}** (streamed): ${mine.filter((r) => r.expected).length}/${mine.length} as expected, language ${mine.filter((r) => r.language).length}/${mine.length}, invalid ids ${mine.reduce((n, r) => n + r.invalidIds, 0)}, removed sentences ${mine.reduce((n, r) => n + r.removed.length, 0)}, errors ${mine.filter((r) => r.error).length}; first step ${spread(steps)} (${steps.length}/${mine.length} cases searched), first intro ${spread(intros)}, total ${spread(mine.map((r) => r.seconds))}.`,
+**${model}** (streamed): ${mine.filter((r) => r.expected).length}/${mine.length} as expected, language ${mine.filter((r) => r.language).length}/${mine.length}, invalid ids ${mine.reduce((n, r) => n + r.invalidIds, 0)}, removed sentences ${mine.reduce((n, r) => n + r.removed.length, 0)}, errors ${mine.filter((r) => r.error).length}; first step ${spread(steps)} (${steps.length}/${mine.length} cases searched), first intro ${spread(intros)}, total ${spread(mine.map((r) => r.seconds))}; ${tokenSentence(mine)}.`,
     );
   }
 }
@@ -317,6 +351,12 @@ try {
     printStreamTable(rows);
   } else {
     printTable(rows);
+  }
+  if (texts) {
+    console.log("\n### Answers\n");
+    for (const row of rows) {
+      if (row.reply) console.log(`${formatAnswerText(row.model, row.id, row.reply)}\n`);
+    }
   }
 } finally {
   await source.close();

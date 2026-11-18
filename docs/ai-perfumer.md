@@ -353,8 +353,45 @@ catalog load included, like the regular time. A case with no tool call (off-topi
 no first step: `—`, left out of that p50/p95. The summary line gives p50/p95 per timing (nearest
 rank, so with 15 cases p95 is the slowest). The removed sentences come from the reply's trace,
 which `replyStream` hands to an `onTrace` dependency just before `done` and never sends to the
-browser. They include those the intro guard dropped as the intro streamed. Without `--stream` the
-output is unchanged.
+browser. They include those the intro guard dropped as the intro streamed.
+
+### Comparing models: tokens, cost and texts (#167)
+
+```bash
+pnpm ai:perfumer-eval --stream --texts --price-in 0.10 --price-out 0.40 <model>
+```
+
+- **Tokens.** Every table has a `Tokens in / out` column per answer: the sum over the reply's model
+  calls (tool rounds, picks, intro) as the server reported them (`usage`; a streamed call asks for
+  it with `stream_options.include_usage`). The summary line gives the mean per answer. A `+` after
+  a count, or "at least" in the summary, means some calls reported no usage, so it's a lower bound.
+  That happens when the guard stops a long intro before the server's last chunk. The counts stay
+  in the trace: they never reach the browser or analytics.
+- **Cost.** With `--price-in` and `--price-out` (the provider's USD per **million** input and
+  output tokens, from its price page on the day of the run) the summary adds "≈ $X per 1000
+  answers" = mean tokens × prices. Give both or neither. For Ollama the messages cost nothing; the
+  server does.
+- **Texts.** `--texts` prints every finished answer after the tables (the intro, each pick's reason
+  and the question, quoted), so the Ukrainian can be judged by reading it.
+- **The summary of a plain run** (without `--stream`) also gives p50/p95 of the time per answer.
+- **A hosted model.** The eval uses one server per run, `AI_BASE_URL` with `AI_API_KEY`. Set them
+  for the command instead of editing `.env` (variables already set win over `.env`):
+
+  ```powershell
+  # PowerShell
+  $env:AI_BASE_URL = "https://<provider>/v1"; $env:AI_API_KEY = "<key>"
+  pnpm ai:perfumer-eval --stream --texts --price-in 0.10 --price-out 0.40 <model>
+  Remove-Item Env:AI_BASE_URL, Env:AI_API_KEY
+  ```
+
+  ```bash
+  # bash
+  AI_BASE_URL=https://<provider>/v1 AI_API_KEY=<key> pnpm ai:perfumer-eval --stream --texts <model>
+  ```
+
+  The eval sends Ollama's `keep_alive` only to a server on this machine, since a hosted API may
+  refuse the unknown parameter. A model that can't do tool calls with a strict JSON schema answers
+  `bad_response` on every case: that's a result too.
 
 ## Results: granite4.1:3b
 

@@ -9,8 +9,13 @@ import type { EvalCase } from "./perfumer-eval.cases";
 import {
   collectStreamedReply,
   cyrillicShare,
+  describeTokens,
+  formatAnswerText,
+  isLocalServer,
   meetsExpectation,
+  parsePrices,
   percentile,
+  summarizeTokens,
 } from "./perfumer-eval.stream";
 
 const ocean: PerfumerProductRow = {
@@ -199,5 +204,87 @@ describe("eval checks", () => {
   it("cyrillicShare is the share of Cyrillic letters", () => {
     expect(cyrillicShare("Ось Ocean")).toBeCloseTo(3 / 8);
     expect(cyrillicShare("123")).toBe(0);
+  });
+});
+
+describe("eval cost and texts (#167)", () => {
+  it("parsePrices reads both prices, or none", () => {
+    expect(parsePrices(["qwen", "--price-in", "0.15", "--price-out", "0.6"])).toEqual({
+      input: 0.15,
+      output: 0.6,
+    });
+    expect(parsePrices(["qwen", "--stream"])).toBeUndefined();
+    expect(() => parsePrices(["--price-in", "0.15"])).toThrow(/both/);
+    expect(() => parsePrices(["--price-in", "cheap", "--price-out", "1"])).toThrow(/--price-in/);
+    expect(() => parsePrices(["--price-in", "-1", "--price-out", "1"])).toThrow(/--price-in/);
+    expect(() => parsePrices(["--price-out"])).toThrow(/--price-out/);
+  });
+
+  it("summarizeTokens averages the answers and prices 1000 of them", () => {
+    const summary = summarizeTokens(
+      [
+        { input: 4000, output: 100, unreported: 0 },
+        { input: 2000, output: 300, unreported: 1 },
+      ],
+      { input: 0.5, output: 2 },
+    );
+    // 3000 in × $0.5/M + 200 out × $2/M = $0.0019 per answer, $1.90 per 1000.
+    expect(summary).toEqual({
+      answers: 2,
+      meanInput: 3000,
+      meanOutput: 200,
+      unreported: 1,
+      costPer1000: expect.closeTo(1.9, 10),
+    });
+    expect(summarizeTokens([{ input: 1, output: 1, unreported: 0 }])).not.toHaveProperty(
+      "costPer1000",
+    );
+    expect(summarizeTokens([])).toBeUndefined();
+  });
+
+  it("describeTokens says what's known, and when it's a lower bound", () => {
+    expect(
+      describeTokens({
+        answers: 15,
+        meanInput: 4210.4,
+        meanOutput: 180,
+        unreported: 0,
+        costPer1000: 0.712,
+      }),
+    ).toBe("tokens per answer 4,210 in / 180 out; ≈ $0.71 per 1000 answers");
+    expect(describeTokens({ answers: 15, meanInput: 900, meanOutput: 50, unreported: 2 })).toBe(
+      "tokens per answer 900 in / 50 out (at least: 2 calls reported no usage)",
+    );
+    expect(describeTokens({ answers: 3, meanInput: 0, meanOutput: 0, unreported: 9 })).toBe(
+      "tokens unknown (the server reported no usage)",
+    );
+    expect(describeTokens(undefined)).toBe("tokens unknown (no answer finished)");
+  });
+
+  it("formatAnswerText quotes the intro, each reason and the question", () => {
+    expect(
+      formatAnswerText("qwen3:4b", "uk-aquatic", {
+        intro: "Ось морські\nаромати.",
+        picks: [pick],
+        question: "Для дня?",
+      }),
+    ).toBe(
+      [
+        "#### qwen3:4b · uk-aquatic",
+        "",
+        "> Ось морські аромати.",
+        ">",
+        "> **Ocean One**: Бриз.",
+        ">",
+        "> *Для дня?*",
+      ].join("\n"),
+    );
+  });
+
+  it("isLocalServer is true only for this machine", () => {
+    expect(isLocalServer("http://localhost:11434/v1")).toBe(true);
+    expect(isLocalServer("http://127.0.0.1:11434/v1")).toBe(true);
+    expect(isLocalServer("https://openrouter.ai/api/v1")).toBe(false);
+    expect(isLocalServer("not a url")).toBe(false);
   });
 });

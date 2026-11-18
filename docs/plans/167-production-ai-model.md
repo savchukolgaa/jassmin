@@ -172,7 +172,7 @@ policy that names the AI provider when messages leave the shop's server.
   (`tokensIn`, `tokensOut`, `undefined` when the server reported none). Nothing new reaches the
   browser or analytics. Tests: usage parsed when present, absent → `undefined`; trace sums across
   rounds; HTTP 402 and 429 → `AiError("unavailable")` (pins the spending-cap fallback).
-- [ ] **3. Eval: cost and texts** — In `perfumer-eval.ts` add a `Tokens` column (in/out per case)
+- [x] **3. Eval: cost and texts** — In `perfumer-eval.ts` add a `Tokens` column (in/out per case)
   and, in the per-model summary line, mean tokens per answer and, when `--price-in`/`--price-out`
   (USD per million tokens) are given, "cost per 1000 answers ≈ $X". Add `--texts` **(Q5)**: after
   the tables, per model and case, print the intro, each pick's reason and the question as a

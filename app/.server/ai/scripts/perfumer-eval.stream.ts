@@ -107,3 +107,116 @@ export function percentile(values: readonly number[], p: number): number | undef
   const rank = Math.max(1, Math.ceil((p / 100) * sorted.length));
   return sorted[rank - 1];
 }
+
+// Cost and texts (#167): what a model would cost per 1000 answers, from the tokens it used, and
+// the answers themselves, so the owner can judge the Ukrainian.
+
+/** USD per million tokens, from the provider's price page on the day of the run. */
+export interface TokenPrices {
+  input: number;
+  output: number;
+}
+
+/**
+ * `--price-in <usd/M> --price-out <usd/M>`: both or neither, non-negative numbers. Throws with a
+ * usage message otherwise.
+ */
+export function parsePrices(args: readonly string[]): TokenPrices | undefined {
+  const value = (flag: string) => {
+    const index = args.indexOf(flag);
+    if (index < 0) return undefined;
+    const raw = args[index + 1];
+    const number = raw === undefined ? Number.NaN : Number(raw);
+    if (!Number.isFinite(number) || number < 0) {
+      throw new Error(`${flag} needs a price in USD per million tokens, e.g. ${flag} 0.15`);
+    }
+    return number;
+  };
+  const input = value("--price-in");
+  const output = value("--price-out");
+  if (input === undefined && output === undefined) return undefined;
+  if (input === undefined || output === undefined) {
+    throw new Error("Give both --price-in and --price-out (USD per million tokens)");
+  }
+  return { input, output };
+}
+
+/** The tokens of one answer, as in `PerfumerTrace.tokens`. */
+export interface AnswerTokens {
+  input: number;
+  output: number;
+  unreported: number;
+}
+
+export interface TokenSummary {
+  /** Answers that finished (failed ones have no trace). */
+  answers: number;
+  meanInput: number;
+  meanOutput: number;
+  /** Model calls without usage across all answers: the means are then a lower bound. */
+  unreported: number;
+  /** USD for 1000 answers like these; only with prices. */
+  costPer1000?: number;
+}
+
+/** Mean tokens per answer and, with `prices`, the cost of 1000 such answers. */
+export function summarizeTokens(
+  answers: readonly AnswerTokens[],
+  prices?: TokenPrices,
+): TokenSummary | undefined {
+  if (answers.length === 0) return undefined;
+  const sum = (pick: (a: AnswerTokens) => number) => answers.reduce((n, a) => n + pick(a), 0);
+  const meanInput = sum((a) => a.input) / answers.length;
+  const meanOutput = sum((a) => a.output) / answers.length;
+  return {
+    answers: answers.length,
+    meanInput,
+    meanOutput,
+    unreported: sum((a) => a.unreported),
+    ...(prices
+      ? { costPer1000: (meanInput * prices.input + meanOutput * prices.output) / 1000 }
+      : {}),
+  };
+}
+
+/** One summary phrase: "tokens per answer 4,210 in / 180 out; ≈ $0.71 per 1000 answers". */
+export function describeTokens(summary: TokenSummary | undefined): string {
+  if (!summary) return "tokens unknown (no answer finished)";
+  if (summary.meanInput === 0 && summary.meanOutput === 0 && summary.unreported > 0) {
+    return "tokens unknown (the server reported no usage)";
+  }
+  const round = (n: number) => Math.round(n).toLocaleString("en-US");
+  const lowerBound =
+    summary.unreported > 0 ? ` (at least: ${summary.unreported} calls reported no usage)` : "";
+  const cost =
+    summary.costPer1000 === undefined
+      ? ""
+      : `; ≈ $${summary.costPer1000.toFixed(2)} per 1000 answers`;
+  return `tokens per answer ${round(summary.meanInput)} in / ${round(summary.meanOutput)} out${lowerBound}${cost}`;
+}
+
+/** `--texts`: one answer as quoted Markdown, for judging its language by eye. */
+export function formatAnswerText(model: string, caseId: string, reply: PerfumerReply): string {
+  const quote = (text: string) => `> ${text.replaceAll("\n", " ")}`;
+  const lines = [`#### ${model} · ${caseId}`, "", quote(reply.intro)];
+  for (const pick of reply.picks) {
+    lines.push(">", quote(`**${pick.product.title}**: ${pick.reason}`));
+  }
+  if (reply.question) {
+    lines.push(">", quote(`*${reply.question}*`));
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Whether the model server runs on this machine (Ollama): only then does the eval send
+ * `keep_alive`, which a strict hosted API may refuse as an unknown parameter.
+ */
+export function isLocalServer(baseUrl: string): boolean {
+  try {
+    const { hostname } = new URL(baseUrl);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+  } catch {
+    return false;
+  }
+}

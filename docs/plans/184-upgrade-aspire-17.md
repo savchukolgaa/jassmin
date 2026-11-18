@@ -69,6 +69,19 @@ the same PR table.
 - The production deploy is verified **up to the SSH step**: `aspire do push` + `prepare-jassmin`,
   then `deploy-ssh` without `DEPLOY_SSH_TARGET`, which must fail with our own message. A real deploy
   doesn't happen in this PR: the server doesn't exist yet (Q2).
+- **Findings from steps 1–4 (implementation):**
+  - Without a terminal, `aspire update --self` stops at a channel prompt, so it needs
+    `--channel stable` (and `--yes`). `pnpm aspire update` changed only `aspire.config.json`.
+    `aspire-apphost/package.json` and its lockfile stayed as they were.
+  - The regenerated SDK compiles unchanged. No export or method of the 13.6.3 SDK was removed. The
+    only new generated file, `integration-host.mts`, is for TypeScript-authored integrations, and
+    nothing we compile imports it, so `tsconfig.apphost.json` stays as it is.
+  - All 37 pipeline step names are the same as on 13.6.3, including `push` and `prepare-jassmin`, and
+    `aspire do` still has `-o`, `--list-steps` and `--pipeline-log-level`. `scripts/aspire.mjs` and
+    `package.json` don't change.
+  - The dev `postgres` password is also a persisted parameter (`Parameters:postgres-password` in the
+    AppHost's user secrets). If it changed, the existing `postgres-data` volume would stop accepting
+    connections, so step 5 checks it along with `cms-sync-secret` and `jupyter-token`, by hash.
 
 ## Resolved questions
 
@@ -117,20 +130,20 @@ the same PR table.
 
 ## Steps
 
-- [ ] **1. Baseline on 13.6.3** — Before upgrading, in the worktree: `pnpm install`,
+- [x] **1. Baseline on 13.6.3** — Before upgrading, in the worktree: `pnpm install`,
   `pnpm aspire restore` (regenerates `.aspire/modules/` for 13.6.3), `pnpm aspire:build`. Then
   `pnpm aspire publish -o "$SCRATCH/compose-13.6.3"` and `pnpm aspire do --list-steps > "$SCRATCH/steps-13.6.3.txt"`
   (scratchpad, never committed). Save the 13.6.3 generated SDK's exported names
   (`grep -o "^export [a-z]* [A-Za-z]*" .aspire/modules/aspire.mts`) for the diff in step 3.
   Back up `~/.aspire/` (at least `secrets/` and the user-secrets file for this AppHost, if any) to
   the scratchpad, so step 5 can restore it if the import goes wrong.
-- [ ] **2. Update the CLI, then the repo** — `aspire update --self` (to 17.0.0), check with
+- [x] **2. Update the CLI, then the repo** — `aspire update --self` (to 17.0.0), check with
   `aspire --version`. Then `pnpm aspire update` in the worktree (it goes through the wrapper so
   pnpm's `allowBuilds` apply to the AppHost install). Check that `aspire.config.json` has
   `sdk.version` and all three packages at `17.0.0`, that `profiles` and `appHost` are unchanged,
   and that only the expected files changed in `git status`. Don't run `--migrate` unless the CLI
   says it's required; if it does, record what it changed.
-- [ ] **3. Fix the AppHost against the new SDK** — `pnpm aspire:build`. Compare the regenerated
+- [x] **3. Fix the AppHost against the new SDK** — `pnpm aspire:build`. Compare the regenerated
   `.aspire/modules/aspire.mts` exports with the step 1 list for every API the AppHost uses:
   `createBuilder({ dashboardApplicationName })`, `executionContext().isPublishMode()`, `addPostgres`
   /`withDataVolume`/`addDatabase({ databaseName })`/`uriExpression`, `addJavaScriptApp`/`addViteApp`/
@@ -144,7 +157,7 @@ the same PR table.
   `completeTask`/`completeStep`. Fix each compile error with the smallest change, and note each one
   for the PR table. Update `tsconfig.apphost.json` if the generated module file names changed. Then
   `pnpm lint` (Biome covers `apphost.mts` and `production.mts`) and `pnpm typecheck`.
-- [ ] **4. Check that the pipeline step names still exist** — `pnpm aspire do --list-steps`, then
+- [x] **4. Check that the pipeline step names still exist** — `pnpm aspire do --list-steps`, then
   diff against `steps-13.6.3.txt`. `deploy-ssh` depends on `push` and `prepare-jassmin`. If either
   was renamed, update `dependsOn`, the comments in `production.mts`, `aspire-apphost/AGENTS.md` and
   `docs/deploy.md`. Check `aspire do --help` for `-o` and `scripts/aspire.mjs`'s assumptions, and

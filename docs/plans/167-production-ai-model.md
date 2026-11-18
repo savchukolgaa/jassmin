@@ -76,6 +76,12 @@ policy that names the AI provider when messages leave the shop's server.
   answering. Run them as configured first; only if the eval shows thinking dominates latency, add an
   optional `AI_REASONING_EFFORT` env sent as `reasoning_effort` (sent only when set, like
   `keep_alive`). Not planned up front.
+- **Implemented (step 2):** the trace field is `tokens: { input, output, unreported }`. Every
+  streamed call sends `stream_options: { include_usage: true }` (part of the OpenAI spec; checked
+  against Ollama, which answers with a final `usage` chunk). A streamed intro that the guard stops
+  early never reaches that chunk, so it counts as `unreported` and the totals are then a lower
+  bound; the eval says so. The open questions weren't answered before implementing, so the plan's
+  recommended defaults apply.
 - Models that reject `tools` + strict `response_format: json_schema` show up as `bad_response`
   errors in the eval; that is a valid result for the table ("not compatible"), not something to work
   around in this issue.
@@ -155,9 +161,9 @@ policy that names the AI provider when messages leave the shop's server.
 
 ## Steps
 
-- [ ] **1. Baseline check** — In the worktree run `pnpm typecheck`, `pnpm lint`, `pnpm test` to
+- [x] **1. Baseline check** — In the worktree run `pnpm typecheck`, `pnpm lint`, `pnpm test` to
   confirm a green start.
-- [ ] **2. Token usage in the client and trace** — Extend the chat-completions response schema and
+- [x] **2. Token usage in the client and trace** — Extend the chat-completions response schema and
   stream-chunk schema in `client.schema.ts` with an optional
   `usage: { prompt_tokens: number, completion_tokens: number }`. `createChatClient` returns it with
   the message; `createChatStreamClient` sends `stream_options: { include_usage: true }` and picks

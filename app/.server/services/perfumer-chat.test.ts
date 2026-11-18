@@ -43,6 +43,7 @@ const trace: PerfumerTrace = {
   droppedPickIds: [],
   removedSentences: [],
   searchNudged: false,
+  tokens: { input: 120, output: 40, unreported: 0 },
 };
 const result = (reply: PerfumerReply, toolCalls = trace.toolCalls): PerfumerResult => ({
   reply,

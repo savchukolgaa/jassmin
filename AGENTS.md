@@ -6,6 +6,8 @@ Guidance for AI coding agents working in this repository. Read `README.md` for s
 
 Jassmin is an e-commerce site for a small perfume store in Ukraine. It's a single full-stack SSR app built on React Router v8 (framework mode), TypeScript 7, Tailwind v4, PostgreSQL with Drizzle ORM, zod, Biome and Vitest. Local development is orchestrated by Aspire, and pnpm is the package manager.
 
+Production is one Hetzner server running Docker Compose (#176), declared in `aspire-apphost/production.mts` and deployed with `pnpm aspire:deploy` (see `docs/deploy.md`). A new environment variable the app or a job needs in production must be added there too, as a plain value or an Aspire parameter, never committed.
+
 There is no in-app admin area: staff manage products and orders in the Strapi admin (`cms/`), which writes every edit through to PostgreSQL, the system of record (#40; see `app/.server/AGENTS.md` → CMS sync).
 
 The database schema is designed for later LTV and churn analytics. Columns such as `users.last_login_at`, `users.acquisition_channel`, `users.city`, `users.marketing_opt_in`, `products.fragrance_family`, `carts.abandoned_at`, `orders.returned_at`, `orders.cancel_reason` and `order_items.discount_allocated`, the `order_status_history` table (#128), and the `inventory_movements` ledger with its `inventory_daily` view (#130), are ML features: never drop or rename them. `user_events.event_properties` follows a typed, validated contract per event type (#129), documented in `docs/analytics-events.md`.
@@ -24,6 +26,7 @@ pnpm format         # biome check --write .
 pnpm test           # vitest run
 pnpm build
 pnpm aspire run     # never plain `aspire run`, see aspire-apphost/AGENTS.md
+pnpm aspire:deploy  # production: build, push to GHCR, Compose over SSH (docs/deploy.md)
 ```
 
 The dbt warehouse (#132) is a separate Python project in `analytics/warehouse/` (uv, not pnpm): `uv run --project analytics/warehouse analytics/warehouse/wh.py build` builds and tests raw → staging → marts in `jassmin_synth`, never the app's database. BI and ML read its `marts` schema, never the app's tables. See `analytics/warehouse/README.md`.

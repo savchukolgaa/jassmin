@@ -27,7 +27,7 @@ Static files (`/assets/*` and `public/`) are served by `react-router-serve` befo
 default-src 'self';
 script-src 'self' 'nonce-<per request>' 'strict-dynamic';
 style-src 'self' 'unsafe-inline';
-img-src 'self' data: <STRAPI_URL origin>;
+img-src 'self' data:;
 font-src 'self' data:;
 connect-src 'self';                      (+ ws: in development, for Vite's HMR)
 frame-src https://www.google.com https://maps.google.com;
@@ -37,7 +37,7 @@ report-uri /csp-report; report-to csp
 
 - **Scripts:** `entry.server.tsx` passes the nonce to React (its own streaming scripts), to `<ServerRouter>` and, through `NonceProvider` / `useNonce()` (`app/lib/nonce.tsx`), to the root layout's inline theme script, `<Links>`, `<ScrollRestoration>` and `<Scripts>`. `'strict-dynamic'` lets the nonced bootstrap load the route modules. Never add `'unsafe-inline'` to `script-src`: give a new inline script `nonce={useNonce()}` instead. JSON-LD blocks (`type="application/ld+json"`) aren't executed and need no nonce.
 - **Styles:** `'unsafe-inline'` stays because of React `style` attributes (the order progress bar in `OrderProgress.tsx`) and the `<style>` tags Vite injects in development. To drop it, replace inline `style` attributes with classes (or CSS variables set from a class), then check the dev server too.
-- **Images:** CMS and product images are absolute `STRAPI_URL` upload URLs, so the policy takes that origin from the env.
+- **Images:** CMS and product images are same-origin: the app serves Strapi's uploads at `/uploads/…` and fetches them from `STRAPI_URL` on the server (#176), so Strapi's origin isn't in the policy and Strapi can stay internal.
 - **Fonts:** self-hosted `@fontsource` files; Vite inlines the small subsets as `data:` URIs.
 - **Frames:** the home page map is Strapi's `mapEmbedUrl`, a Google Maps embed.
 - **Forms:** forms post only to the shop.
@@ -48,7 +48,7 @@ Edit `buildCsp` in `app/.server/security-headers.ts`, add a case to `security-he
 
 - **Another map provider** (OpenStreetMap, Mapbox): add its embed origin to `FRAME_ORIGINS`.
 - **A real card payment provider** (e.g. LiqPay's hosted checkout): add its origin to `form-action`. Chrome also checks `form-action` against the redirect after a form POST, so the checkout redirect to the provider's page is blocked without it.
-- **An image CDN or cloud upload provider for Strapi**: add its origin to `img-src` (or derive it from a new env var next to `STRAPI_URL`).
+- **An image CDN or cloud upload provider for Strapi**: its files have absolute URLs outside `/uploads/`, so the proxy doesn't serve them; add its origin to `img-src`.
 - **Third-party scripts** (analytics, chat): a plain `<script src>` from another origin is blocked. Load it from a nonced script instead (`'strict-dynamic'` then trusts what that script loads), and add its beacon or font origin to `connect-src` / `font-src`.
 
 ## Report-only and enforced mode (`CSP_MODE`)

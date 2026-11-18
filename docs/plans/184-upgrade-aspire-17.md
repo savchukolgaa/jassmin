@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/184
 Branch: `issue/184`
 Worktree: `.claude/worktrees/issue-184`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -99,6 +99,30 @@ the same PR table.
     file does not exist") keeps the same AppHost id scheme (`aspire-<hash>`), and the legacy file
     stays a lower-precedence fallback. This worktree never ran under 13.6, so the import itself is
     proven on the main checkout's first 17.0 run, after the merge.
+- **Findings from step 5 (run mode on 17.0.0, the worktree's own new volumes):**
+  - The main checkout's 13.6 AppHost had the fixed profile ports (17082/22289). The owner agreed to
+    stop it with `aspire stop --apphost <main>/aspire-apphost/apphost.mts`.
+  - Started on their own: `postgres`, `jassmindb`, `strapidb`, `jassmin-synth`, `db-migrate`
+    (exit 0), `web` and `cms` healthy (`/_health` 204), `smtp4dev` (UI 200), and both generated
+    parameters. `web` serves the catalog and cart (200).
+  - Explicit-start resources that exited 0: `db-seed`, `cms-seed`, `db-import-catalog`,
+    `db-apply-catalog-prices`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`,
+    `db-expire-gift-cards`, `db-prune-rate-limits`, `db-send-order-emails`, `synth-generate`,
+    `dbt-build` and `ml-notebooks`. `dbt-docs` serves its docs (200). `jupyter-lab`'s `JupyterLab`
+    link (`refExpr` with the token) opens the lab, while the plain endpoint goes to the login page.
+    `db-rollback` was only checked as listed and startable, not run.
+  - `db-sync-cms` and `db-backfill-product-images` reached Strapi at the injected `STRAPI_URL` but
+    got a **401**, and the home page answers the documented 503. The cause is the environment, not
+    Aspire: the root `.env` linked from the main checkout holds tokens for the main checkout's
+    Strapi, and the worktree has a new Strapi database.
+  - The first `synth-generate` failed when `uv` couldn't reach PyPI ("invalid peer certificate:
+    UnknownIssuer"). The rerun passed, so it was a transient network/TLS problem, not Aspire.
+  - The generated `cms-sync-secret`, `jupyter-token` and `postgres-password` kept the same values
+    (hashes) across a stop and start, in `~/.aspire/secrets/<id>/Development.json`.
+    `aspire.config.json` didn't change through `start`/`stop`/`start`, and the CLI no longer shows
+    the "new version available" notice.
+  - Run side effects were restored with `git restore`, not committed: the notebooks and figures
+    (rewritten by `ml-notebooks`) and `cms/types/generated/*` (rewritten by Strapi `develop`).
 
 ## Resolved questions
 
@@ -179,7 +203,7 @@ the same PR table.
   was renamed, update `dependsOn`, the comments in `production.mts`, `aspire-apphost/AGENTS.md` and
   `docs/deploy.md`. Check `aspire do --help` for `-o` and `scripts/aspire.mjs`'s assumptions, and
   update `package.json` `aspire:deploy` only if a flag changed.
-- [ ] **5. Run mode: every resource** — `pnpm aspire run`, and check against `aspire-apphost/AGENTS.md`:
+- [x] **5. Run mode: every resource** — `pnpm aspire run`, and check against `aspire-apphost/AGENTS.md`:
   - `postgres` (now `18.6`, the existing data volume still opens), `jassmindb`, `strapidb`,
     `jassmin-synth`; `db-migrate` completes; `web` starts and its endpoint serves the shop; `cms` is
     healthy (`/_health` 204); `smtp4dev` UI opens.
@@ -222,7 +246,7 @@ the same PR table.
     never commit an `aspire.config.json` change made by a CLI update on `main`; and everyone updates
     their CLI after the merge.
   - Fix the duplicated `aspire-output/` block in `.gitignore`.
-- [ ] **9. Full checks and commit** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+- [x] **9. Full checks and commit** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
   Stage paths explicitly (`aspire.config.json`, `aspire-apphost/package.json`,
   `aspire-apphost/pnpm-lock.yaml`, the changed `.mts` files, the docs, `.gitignore`) and check that
   nothing under `aspire-apphost/.aspire/` or `aspire-output/` is staged. Write the PR's breaking-change
@@ -238,12 +262,12 @@ the same PR table.
 
 ## Acceptance criteria
 
-- [ ] `aspire.config.json` pins one Aspire version (17.0 or the latest stable) for the SDK and all packages, matching the CLI in the README: steps 2, 8
-- [ ] The breaking changes between 13.6.3 and the new version that affect this repo are listed in the PR, each with how it was handled: the breaking-change table above, steps 3, 4, 9
-- [ ] `pnpm aspire:build` passes, and `pnpm aspire run` starts every resource as documented: steps 3, 5
-- [ ] `pnpm aspire publish` produces a working Docker Compose setup, and `pnpm aspire:deploy` works or is verified up to the SSH step: steps 6, 7
-- [ ] Running the upgraded CLI no longer changes `aspire.config.json` in a clean checkout: steps 2, 5
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 9
+- [x] `aspire.config.json` pins one Aspire version (17.0 or the latest stable) for the SDK and all packages, matching the CLI in the README: steps 2, 8
+- [ ] The breaking changes between 13.6.3 and the new version that affect this repo are listed in the PR, each with how it was handled: the breaking-change table above, steps 3, 4, 9. *Open until the PR exists: the table and the findings go into its description at `/open-pr`.*
+- [x] `pnpm aspire:build` passes, and `pnpm aspire run` starts every resource as documented: steps 3, 5
+- [ ] `pnpm aspire publish` produces a working Docker Compose setup, and `pnpm aspire:deploy` works or is verified up to the SSH step: steps 6, 7. *Partly: the publish was verified, and the deploy up to `prepare-jassmin` (all images built, `.env.Production` complete). `push` and the `deploy-ssh` failure without `DEPLOY_SSH_TARGET` weren't run (no GHCR login, Q2).*
+- [x] Running the upgraded CLI no longer changes `aspire.config.json` in a clean checkout: steps 2, 5
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass: step 9
 
 ## Out of scope
 

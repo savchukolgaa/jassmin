@@ -371,7 +371,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
     - runs `find /backups -name '*.dump' -mtime +7 -delete` and fails loudly (`set -euo
       pipefail`).
   - Check: `docker build` of both small images succeeds.
-- [ ] **6. Verify run mode is unchanged.**
+- [x] **6. Verify run mode is unchanged.**
   - `pnpm aspire run`: the dashboard shows the same resources as on `main` (compare against a
     `main` checkout), and `web`, `cms`, `db-migrate` and `smtp4dev` come up.
   - No `proxy`, `scheduler` or `pg-backup` resource appears.

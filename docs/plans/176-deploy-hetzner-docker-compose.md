@@ -348,7 +348,7 @@ backups. `pnpm aspire run` stays exactly as it is today.
     `http://localhost:5173/uploads/…`, there are no CSP reports for images, and an image request
     shows the long `Cache-Control`. A second load gets a 304.
   - Check: `pnpm typecheck`, `pnpm lint` and `pnpm test` pass.
-- [ ] **4. `aspire-apphost/production.mts` and the publish branch in `apphost.mts`.**
+- [x] **4. `aspire-apphost/production.mts` and the publish branch in `apphost.mts`.**
   - Move the current run-mode declarations into `addDevelopmentResources(builder)`. They stay
     in `apphost.mts` with their statements unchanged.
   - Add the parameters (Decision 5), the Compose environment, the GHCR registry and the

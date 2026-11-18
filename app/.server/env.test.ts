@@ -222,9 +222,11 @@ describe("parseEnv: AI perfumer", () => {
         AI_API_KEY: "",
         AI_TIMEOUT_MS: "",
         AI_KEEP_ALIVE: "",
+        AI_PROVIDER_NAME: "  ",
       }),
     ]) {
       expect(env.AI_BASE_URL).toBeUndefined();
+      expect(env.AI_PROVIDER_NAME).toBeUndefined();
       expect(env.AI_API_KEY).toBeUndefined();
       expect(env.AI_KEEP_ALIVE).toBeUndefined();
       expect(env.AI_MODEL).toBe("granite4.1:3b");
@@ -250,6 +252,15 @@ describe("parseEnv: AI perfumer", () => {
       AI_KEEP_ALIVE: "30m",
     });
     expect(parseEnv({ ...valid, AI_KEEP_ALIVE: "-1" }).AI_KEEP_ALIVE).toBe("-1");
+  });
+
+  it("reads the provider's name for the privacy policy, trimmed (#167)", () => {
+    expect(parseEnv({ ...valid, AI_PROVIDER_NAME: " OpenRouter " }).AI_PROVIDER_NAME).toBe(
+      "OpenRouter",
+    );
+    expect(() => parseEnv({ ...valid, AI_PROVIDER_NAME: "x".repeat(81) })).toThrow(
+      /AI_PROVIDER_NAME/,
+    );
   });
 
   it("rejects a non-HTTP base URL, an out-of-range timeout and a bad keep-alive", () => {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PerfumerEvent } from "~/lib/perfumer";
 import type { ProductSummary } from "~/lib/products";
 import type { PerfumerProductRow } from "../db/queries/perfumer";
-import type { ChatFn, ChatRequest, ChatResult, ChatStreamFn } from "./client";
+import type { ChatFn, ChatRequest, ChatResult, ChatStreamFn, TokenUsage } from "./client";
 import type { PerfumerConfig } from "./config";
 import { AiError, PerfumerDisabledError } from "./errors";
 import {
@@ -224,6 +224,8 @@ describe("perfumer.reply", () => {
     const { reply: result, trace } = await replyWithTrace("uk", ask, deps(chat));
 
     expect(trace.searchNudged).toBe(true);
+    // Four calls, none of which reported usage (#167).
+    expect(trace.tokens).toEqual({ input: 0, output: 0, unreported: 4 });
     expect(requests[2]?.messages.at(-1)?.content).toContain("search_perfumes");
     expect(result.picks.map((p) => p.product.title)).toEqual(["Rose Garden"]);
   });
@@ -330,16 +332,25 @@ describe("perfumer.reply", () => {
   });
 });
 
-/** A fake streamed intro: yields `pieces`, recording the request and signal it got. */
-function streamed(...pieces: string[]) {
-  const calls: { request: ChatRequest; signal: AbortSignal }[] = [];
+/**
+ * A fake streamed intro: yields `pieces`, recording the request and signal it got, then reports
+ * `usage` like a server's last chunk, when given.
+ */
+function streamedWithUsage(usage: TokenUsage | undefined, ...pieces: string[]) {
+  const calls: { request: Omit<ChatRequest, "onUsage">; signal: AbortSignal }[] = [];
   const chatStream = vi.fn<ChatStreamFn>(async function* (request, signal) {
-    calls.push({ request: structuredClone(request), signal });
+    const { onUsage, ...rest } = request;
+    calls.push({ request: structuredClone(rest), signal });
     for (const piece of pieces) {
       yield piece;
     }
+    if (usage) onUsage?.(usage);
   });
   return { chatStream, calls };
+}
+
+function streamed(...pieces: string[]) {
+  return streamedWithUsage(undefined, ...pieces);
 }
 
 async function events(iterable: AsyncIterable<PerfumerEvent>): Promise<PerfumerEvent[]> {
@@ -528,6 +539,41 @@ describe("perfumer.replyStream (#164)", () => {
     expect(trace?.droppedPickIds).toEqual(["p9"]);
     expect(trace?.removedSentences).toEqual(["Схоже на Aquarius."]);
     expect(all.some((event) => "trace" in event)).toBe(false);
+  });
+
+  it("sums the tokens of every call in the trace, counting calls without usage (#167)", async () => {
+    const { chat } = scripted(
+      {
+        ...toolCall("search_perfumes", { notes: ["морські ноти"] }),
+        usage: { input: 900, output: 30 },
+      },
+      { content: null, toolCalls: [], usage: { input: 1500, output: 5 } },
+      // This server forgot the usage on one call.
+      picksAnswer([{ id: "p1", reason: "Бриз." }]),
+    );
+    const { chatStream } = streamedWithUsage({ input: 1600, output: 60 }, "Ось морські аромати.");
+    const onTrace = vi.fn((_trace: PerfumerTrace) => {});
+
+    await events(replyStream("uk", ask, { ...deps(chat), chatStream, onTrace }));
+
+    expect(onTrace.mock.calls[0]?.[0].tokens).toEqual({ input: 4000, output: 95, unreported: 1 });
+  });
+
+  it("counts a streamed intro that reports no usage as unreported (#167)", async () => {
+    const { chat } = scripted(
+      {
+        ...toolCall("search_perfumes", { notes: ["морські ноти"] }),
+        usage: { input: 10, output: 1 },
+      },
+      { content: null, toolCalls: [], usage: { input: 10, output: 1 } },
+      { ...picksAnswer([{ id: "p1", reason: "Бриз." }]), usage: { input: 10, output: 1 } },
+    );
+    const { chatStream } = streamed("Ось морські аромати.");
+    const onTrace = vi.fn((_trace: PerfumerTrace) => {});
+
+    await events(replyStream("uk", ask, { ...deps(chat), chatStream, onTrace }));
+
+    expect(onTrace.mock.calls[0]?.[0].tokens).toEqual({ input: 30, output: 3, unreported: 1 });
   });
 
   it("doesn't call onTrace when the reply fails", async () => {

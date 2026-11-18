@@ -100,6 +100,7 @@ pnpm dev                    # http://localhost:5173
 | `AI_API_KEY` | no | Bearer token for a hosted provider; Ollama needs none. |
 | `AI_TIMEOUT_MS` | no | The most one perfumer reply may take, tool calls included (default `90000`). |
 | `AI_KEEP_ALIVE` | no | Sent to Ollama as `keep_alive` (e.g. `30m`) so the model stays loaded between replies. |
+| `AI_PROVIDER_NAME` | prod* | The hosted model's provider (e.g. `OpenRouter`), named in the privacy policy as where the perfumer's messages go (#167). *Required in production whenever `AI_BASE_URL` is a third party's server; leave it unset for Ollama on the shop's own server. See [docs/ai-perfumer.md](ai-perfumer.md#production). |
 | `CONTACT_INBOX` | no | Address that receives contact form emails (default `hello@jassmin.ua`). |
 | `CONTACT_FROM` | no | Sender of contact form emails (default `Jassmin website <no-reply@jassmin.ua>`). |
 | `ORDER_FROM` | no | Sender of order confirmation emails (default: `CONTACT_FROM`). Replies go to `CONTACT_INBOX`. |
@@ -144,7 +145,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm analytics:export-catalog` | Write the catalog and price table to `analytics/generator/data/catalog.json` for the synthetic data generator (#131); a test fails until you run it after changing either |
-| `pnpm ai:perfumer-eval [models…]` | Run the AI perfumer's eval cases against a model (default `AI_MODEL` on local Ollama) and print a results table (#162, see [docs/ai-perfumer.md](ai-perfumer.md)); `--db` reads the catalog from the database, `--only <case>` runs one case. Not in CI |
+| `pnpm ai:perfumer-eval [models…]` | Run the AI perfumer's eval cases against a model (default `AI_MODEL` on local Ollama) and print a results table (#162, see [docs/ai-perfumer.md](ai-perfumer.md)); `--db` reads the catalog from the database, `--only <case>[,<case>…]` runs some cases, `--stream` measures the streamed reply, `--texts` prints the answers, `--price-in`/`--price-out` (USD per million tokens) add the cost per 1000 answers (#167). Not in CI |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
 The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`, `db-send-order-emails`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
@@ -439,7 +440,7 @@ Do this once after the first production deploy; the search engines re-read the s
 
 ## AI perfumer
 
-A server-side engine turns a customer's words into recommendations of real perfumes from the catalog (#162; the chat page is #163). It's off unless `AI_BASE_URL` points at an OpenAI-compatible chat-completions server. Locally that's Ollama: `ollama pull granite4.1:3b`, then `AI_BASE_URL=http://localhost:11434/v1` in `.env`. [docs/ai-perfumer.md](ai-perfumer.md) covers the setup, how the engine keeps the model from inventing products, and the eval results.
+A server-side engine turns a customer's words into recommendations of real perfumes from the catalog (#162; the chat page is #163). It's off unless `AI_BASE_URL` points at an OpenAI-compatible chat-completions server. Locally that's Ollama: `ollama pull granite4.1:3b`, then `AI_BASE_URL=http://localhost:11434/v1` in `.env`. [docs/ai-perfumer.md](ai-perfumer.md) covers the setup, how the engine keeps the model from inventing products, and the eval results. For the live site it has the [model comparison](ai-perfumer.md#model-comparison) and the [production setup](ai-perfumer.md#production) (#167): env settings only, with a spending cap at the provider.
 
 ## Admin role
 

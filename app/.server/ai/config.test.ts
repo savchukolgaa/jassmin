@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseAiEnv } from "../env";
-import { getPerfumerConfig, isPerfumerEnabled } from "./config";
+import { getAiProviderName, getPerfumerConfig, isPerfumerEnabled } from "./config";
 
 describe("perfumer config", () => {
   it("is disabled without AI_BASE_URL", () => {
@@ -22,5 +22,14 @@ describe("perfumer config", () => {
       timeoutMs: 90_000,
       keepAlive: "30m",
     });
+  });
+
+  it("names the provider for the privacy policy only while the perfumer is on (#167)", () => {
+    const hosted = { AI_BASE_URL: "https://openrouter.ai/api/v1", AI_PROVIDER_NAME: "OpenRouter" };
+    expect(getAiProviderName(parseAiEnv(hosted))).toBe("OpenRouter");
+    // Off: nothing is sent anywhere.
+    expect(getAiProviderName(parseAiEnv({ AI_PROVIDER_NAME: "OpenRouter" }))).toBeNull();
+    // Ollama on the shop's own server: no provider to name.
+    expect(getAiProviderName(parseAiEnv({ AI_BASE_URL: "http://localhost:11434/v1" }))).toBeNull();
   });
 });

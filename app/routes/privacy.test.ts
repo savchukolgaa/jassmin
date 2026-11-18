@@ -7,8 +7,10 @@ import { COOKIE_INVENTORY } from "~/lib/consent";
 import { I18nProvider, type Locale } from "~/lib/i18n";
 
 const content = vi.hoisted(() => ({ getSiteSettings: vi.fn() }));
+const ai = vi.hoisted(() => ({ getAiProviderName: vi.fn((): string | null => null) }));
 
 vi.mock("~/.server/cms/content", () => content);
+vi.mock("~/.server/ai/config", () => ai);
 
 const { loader, meta } = await import("./privacy");
 
@@ -28,8 +30,12 @@ const contacts: PrivacyContacts = {
 };
 
 // The "Cookie settings" `<Form>` needs a data router. Without a locale, the default (Ukrainian).
-function renderPolicy(props: PrivacyContacts | null, locale: Locale | null = "en") {
-  const element = createElement(PrivacyPolicy, { contacts: props });
+function renderPolicy(
+  props: PrivacyContacts | null,
+  locale: Locale | null = "en",
+  aiProvider: string | null = null,
+) {
+  const element = createElement(PrivacyPolicy, { contacts: props, aiProvider });
   const router = createMemoryRouter([{ path: "*", element }], { initialEntries: ["/privacy"] });
   const app = createElement(RouterProvider, { router });
   return renderToStaticMarkup(locale ? createElement(I18nProvider, { locale }, app) : app);
@@ -48,15 +54,25 @@ describe("privacy loader", () => {
       socialLinks: [],
     });
 
-    expect(await load("en")).toEqual({ contacts });
+    expect(await load("en")).toEqual({ contacts, aiProvider: null });
     expect(content.getSiteSettings).toHaveBeenCalledWith("en");
+  });
+
+  it("passes on the hosted AI perfumer's provider, even when the CMS is down (#167)", async () => {
+    ai.getAiProviderName.mockReturnValue("OpenRouter");
+    content.getSiteSettings.mockRejectedValueOnce(new Error("Strapi down"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(await load()).toEqual({ contacts: null, aiProvider: "OpenRouter" });
+    consoleError.mockRestore();
+    ai.getAiProviderName.mockReturnValue(null);
   });
 
   it("still renders the page when the CMS is down", async () => {
     content.getSiteSettings.mockRejectedValueOnce(new Error("Strapi down"));
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(await load()).toEqual({ contacts: null });
+    expect(await load()).toEqual({ contacts: null, aiProvider: null });
     consoleError.mockRestore();
   });
 });
@@ -91,7 +107,7 @@ describe("PrivacyPolicy", () => {
 
     expect(html).toContain("Visit statistics for 26 months.");
     expect(html).toContain("Only with your consent, statistics");
-    expect(html).toMatch(/<time datetime="2026-11-06">Updated 6 November 2026<\/time>/i);
+    expect(html).toMatch(/<time datetime="2026-11-18">Updated 18 November 2026<\/time>/i);
   });
 
   it("explains the newsletter consent and the delivery city (#128)", () => {
@@ -100,6 +116,16 @@ describe("PrivacyPolicy", () => {
     expect(html).toContain("agreed to the newsletter");
     expect(html).toContain("unsubscribe at any time");
     expect(html).toContain("the delivery city of your latest order");
+  });
+
+  it("names the AI perfumer's provider only when its messages leave the shop (#167)", () => {
+    expect(renderPolicy(contacts, "en", "OpenRouter")).toContain(
+      "The messages you write to the AI perfumer are sent to the language model provider, OpenRouter, only to prepare the answer.",
+    );
+    expect(renderPolicy(contacts, null, "OpenRouter")).toContain(
+      "передаються постачальнику мовної моделі, OpenRouter,",
+    );
+    expect(renderPolicy(contacts)).not.toContain("AI perfumer");
   });
 
   it("lets the visitor change their cookie choice", () => {

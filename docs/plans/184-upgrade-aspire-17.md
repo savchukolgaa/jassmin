@@ -54,7 +54,7 @@ the same PR table.
 ## Decisions & assumptions
 
 - **Target 17.0.0** (stable, *Latest*), not 13.6.5. The issue asks for the latest stable release,
-  and 17.0.0 is stable. **(unconfirmed, see Q1)**
+  and 17.0.0 is stable. (Q1, confirmed)
 - **One exact version everywhere**: `sdk.version` and all three `packages.*` in `aspire.config.json`
   are `17.0.0`. The README prerequisite says *Aspire CLI 17.0.0* rather than "≥ 13.4", because a CLI
   whose version differs from the pin is what triggers the update prompt and rewrites the file.
@@ -68,25 +68,20 @@ the same PR table.
   comment and the entry). It's tiny and touches the same Aspire area.
 - The production deploy is verified **up to the SSH step**: `aspire do push` + `prepare-jassmin`,
   then `deploy-ssh` without `DEPLOY_SSH_TARGET`, which must fail with our own message. A real deploy
-  happens only if the server exists. **(unconfirmed, see Q2)**
-
-## Open questions
-
-- [ ] **Q1: Go to 17.0.0 today, or wait for 17.0.1?** Why it matters: 17.0.0 came out today
-  (2026-11-18). A first major release often gets a quick patch, and every patch means another
-  CLI + pin bump. Recommended default: upgrade to 17.0.0 now, as the issue asks. If a blocker turns
-  up in steps 3–7 that a patch would fix, stop and report instead of working around it. Affects steps: 1–2.
-- [ ] **Q2: Does the Hetzner server exist yet, and should this PR deploy to it?** Why it matters:
-  `~/.aspire/deployments/` is empty here, so no deploy has run from this machine. A real deploy would
-  also prove the generated secrets survive the new secrets store. Recommended default: no real
-  deploy. Verify up to the SSH step and push the images to GHCR only if `docker login ghcr.io` is
-  already set up; otherwise stop after `prepare-jassmin`. Affects steps: 7.
-- [ ] **Q3: Should the "Upgrading Aspire" note be a section in `aspire-apphost/AGENTS.md` (for
-  agents) and the README (for people), or a new `docs/aspire-upgrade.md`?** Why it matters: it's
-  only where the note goes. Recommended default: a short "Upgrading Aspire" section in `docs/setup.md`,
-  linked from the README prerequisites, plus one rule in `aspire-apphost/AGENTS.md`. Affects steps: 8.
+  doesn't happen in this PR: the server doesn't exist yet (Q2).
 
 ## Resolved questions
+
+- **Q1: Go to 17.0.0 today, or wait for 17.0.1?** Go to 17.0.0 now. If a blocker turns up in
+  steps 3–7 that a patch would fix, stop and report instead of working around it (source: owner,
+  2026-11-18).
+- **Q2: Does the Hetzner server exist yet, and should this PR deploy to it?** Not yet, so no real
+  deploy. Verify up to the SSH step with throwaway values. Push the images to GHCR only if
+  `docker login ghcr.io` is already set up; otherwise stop after `prepare-jassmin` (source: owner,
+  2026-11-18).
+- **Q3: Where does the "Upgrading Aspire" note go?** In a short "Upgrading Aspire" section in
+  `docs/setup.md`, linked from the README prerequisites, plus one rule in `aspire-apphost/AGENTS.md`
+  (source: owner, 2026-11-18).
 
 - **Does 17.0 exist, and is it a preview?** It's `v17.0.0`, stable and *Latest*, from 2026-11-18.
   Nothing between 13.6 and 17 except the 13.6.4 and 13.6.5 patches (source: `gh release list -R microsoft/aspire`).
@@ -180,8 +175,8 @@ the same PR table.
   deployment state exists). It must write `aspire-output/.env.Production` and `docker-compose.yaml`.
   Note where 17.0 stores the deployment state (`~/.aspire/deployments/…` or `~/.aspire/secrets/…`)
   for `docs/deploy.md`. Then run `pnpm aspire:deploy` **without** `DEPLOY_SSH_TARGET`: `push` runs
-  (if `docker login ghcr.io` is set up, Q2), and `deploy-ssh` must fail with our "Set
-  DEPLOY_SSH_TARGET…" message. A real deploy happens only if Q2 says the server exists. Afterwards,
+  (only if `docker login ghcr.io` is set up, Q2), and `deploy-ssh` must fail with our "Set
+  DEPLOY_SSH_TARGET…" message. No real deploy: the server doesn't exist yet (Q2). Afterwards,
   delete the throwaway deployment state and `aspire-output/` so the real first deploy starts clean.
 - [ ] **8. Docs** —
   - `README.md` → Prerequisites: "Aspire CLI **17.0.0**", the install commands, `aspire update --self`

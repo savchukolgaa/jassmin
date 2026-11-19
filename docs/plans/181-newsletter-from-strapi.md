@@ -111,6 +111,15 @@ No new packages (`marked` is already used by `markdown.ts`).
 - **Config:** the send route refuses with 503 `mail-not-configured` without SMTP,
   `PUBLIC_SITE_URL` or `EMAIL_UNSUBSCRIBE_SECRET` (nothing queued), and the job logs the same and
   sends nothing, like `sendCartRemindersJob`.
+- **Implementation notes (deviations, recorded while implementing):**
+  - A newsletter whose slug another newsletter already used is refused with `slug-taken`: the slug
+    is the campaign in the analytics, and a cloned or re-created Strapi document could reuse one.
+  - Steps 4–6 and 8 were built and committed together, since the send, the job and the push share
+    one service (`services/newsletters.ts`). `toStrapiNewsletterData` lives in `cms-push.ts` next to
+    the other `toStrapi*Data` mappers rather than in `~/lib/cms-sync`.
+  - A test send greets the staff member by the name Strapi sends (the admin's first name).
+  - A product card shows the lowest price of a size **in stock**, "від" only when the sizes in
+    stock differ; a product with no size in stock is left out.
 - Shared unsubscribe helpers (`unsubscribeUrl`, `listUnsubscribeHeaders`, `photoOf`) move from
   `cart-reminder-email.ts` to `email/marketing.ts` and are re-imported by the reminder, so both
   marketing emails use one implementation.
@@ -230,7 +239,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   text; images dropped) and runs every href through `linkFn`. Tests: formatting, nested emphasis,
   links tagged, `javascript:` links dropped to text, HTML tags dropped, empty body.
 
-- [ ] **4. Queries and the send service.** `db/queries/newsletters.ts`:
+- [x] **4. Queries and the send service.** `db/queries/newsletters.ts`:
   - `findNewsletterSendBlock(tx, now)`: the newest newsletter's `sentAt`/`status` → `too-soon`
     (with `nextAllowedAt`) or `another-sending`.
   - `insertNewsletterWithDeliveries(tx, content)`: inserts the newsletter (`status 'sending'`,
@@ -251,7 +260,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   (6 days refused, 7 days allowed), `another-sending`, `no-recipients` writes nothing, concurrent
   sends produce one newsletter.
 
-- [ ] **5. The delivery job.** `db/queries/newsletters.ts`: `countNewsletterAttemptsSince(db,
+- [x] **5. The delivery job.** `db/queries/newsletters.ts`: `countNewsletterAttemptsSince(db,
   since)` (deliveries whose `sent_at` is in the window, any status except `queued`/`skipped`),
   `claimNewsletterDeliveries(db, limit, now)` (lease: `status = 'queued' and next_attempt_at <=
   now`, ordered by `newsletter_id, id`, `FOR UPDATE SKIP LOCKED`, `attempts + 1`, push
@@ -276,7 +285,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   skipped and not mailed; suppressed after queuing → skipped; transient error retried then
   failed; two concurrent runs never send one delivery twice.
 
-- [ ] **6. The newsletter email.** `services/newsletter-email.ts` →
+- [x] **6. The newsletter email.** `services/newsletter-email.ts` →
   `buildNewsletterEmail({ newsletter, recipient, products }, translator, env, links)`: the
   greeting, the body blocks (`markdownToEmailBlocks` with `withUtm`), the `products` block (up to
   4 cards: brand + title, "від {price}", photo via `photoOf`, `url` = `productHref` under the
@@ -303,7 +312,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   every validation rule, each refusal's status and body, a test send calls the mailer only for the
   given address.
 
-- [ ] **8. Push counts to Strapi.** `loadNewsletter(id)` in the cms-push deps (document id,
+- [x] **8. Push counts to Strapi.** `loadNewsletter(id)` in the cms-push deps (document id,
   status, counts, `sentAt`), `toStrapiNewsletterData` in `~/lib/cms-sync` (`newsletterStatus`,
   `queuedCount`, `sentCount`, `failedCount`, `skippedCount`, `sentAt`), and a `newsletter` branch
   in `pushOne` that `PUT`s `newsletters/<documentId>` (no upsert: the document exists; a 404 is

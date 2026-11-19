@@ -297,7 +297,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   thread from loader data (no `sessionStorage`), posts only `{ message, entry }`, the old storage
   key is cleared, new chat / delete post their intents and empty the thread, `?q=` prefill joins
   the saved thread, add-to-cart on a saved card still works (#169).
-- [ ] **9. Privacy copy.** `privacy.collect.perfumer` (shown when the perfumer is enabled: add
+- [x] **9. Privacy copy.** `privacy.collect.perfumer` (shown when the perfumer is enabled: add
   `perfumerEnabled: isPerfumerEnabled()` to the privacy loader): what is stored (messages and the
   perfumer's answers, linked to the browser id or the account), why (to continue the conversation
   across visits and devices). `privacy.retention.perfumer`: kept 90 days after the last message, then

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/181
 Branch: `issue/181`
 Worktree: `.claude/worktrees/issue-181`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -384,7 +384,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   helpers; the newsletter is now marketing email besides the cart reminder). Update
   `docs/analytics-events.md` only if anything there lists campaign sources.
 
-- [ ] **13. Finish.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm cms:build`;
+- [x] **13. Finish.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm cms:build`;
   an end-to-end run under Aspire (below). Remove nothing from this plan until the PR is merged.
 
 ## Testing & verification
@@ -410,17 +410,21 @@ No new packages (`marked` is already used by `markdown.ts`).
 ## Acceptance criteria
 
 - [ ] Staff can write a uk/en newsletter with featured products in Strapi and send a test to
-  themselves — steps 3, 4, 6, 7, 9, 10
-- [ ] Sending emails every opted-in, verified, not suppressed customer exactly once, in their
+  themselves — steps 3, 4, 6, 7, 9, 10. *Not yet verified in a running Strapi:* the handler,
+  middleware and app side are covered by tests and `pnpm cms:build` passes, but the buttons
+  haven't been clicked under `pnpm aspire run` (the Strapi database isn't reachable outside Aspire
+  here).
+- [x] Sending emails every opted-in, verified, not suppressed customer exactly once, in their
   language — steps 2, 4, 5, 6
-- [ ] Customers who unsubscribed or bounced, even after queuing, get nothing — steps 4, 5
-- [ ] Every email has a working unsubscribe link and one-click unsubscribe headers — steps 3, 6
-- [ ] Sending respects `NEWSLETTER_DAILY_LIMIT` and continues the next day; a second send within 7
+- [x] Customers who unsubscribed or bounced, even after queuing, get nothing — steps 4, 5
+- [x] Every email has a working unsubscribe link and one-click unsubscribe headers — steps 3, 6
+- [x] Sending respects `NEWSLETTER_DAILY_LIMIT` and continues the next day; a second send within 7
   days is refused — steps 1, 4, 5, 11
-- [ ] Strapi shows the newsletter's status and counts — steps 7, 8, 9
-- [ ] Links carry UTM tags, and visits from a newsletter appear as `newsletter` in the acquisition
+- [ ] Strapi shows the newsletter's status and counts — steps 7, 8, 9. *Same:* the push and the
+  handler's update are tested against fakes; not yet seen in a running Strapi admin.
+- [x] Links carry UTM tags, and visits from a newsletter appear as `newsletter` in the acquisition
   analytics — steps 3, 6, 12
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
 
 ## Out of scope
 

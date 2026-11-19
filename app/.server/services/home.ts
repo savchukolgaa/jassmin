@@ -9,6 +9,7 @@ const NO_SHOP_DATA: HomeShopData = {
   selectedFamilies: [],
   selectedGender: "women",
   bestsellers: [],
+  forYou: null,
 };
 
 /** Prepares the Strapi home page, site settings and shop data for the home route. */
@@ -29,6 +30,7 @@ export function buildHomePageView(
       gender: shop.selectedGender,
     },
     bestsellers: shop.bestsellers,
+    forYou: shop.forYou,
     location: {
       address: location.address,
       openingHours: location.openingHours,

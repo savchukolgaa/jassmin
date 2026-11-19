@@ -16,6 +16,8 @@ vi.mock("~/.server/services/products", () => ({
   getTrioFamilies: shop.getTrioFamilies,
 }));
 vi.mock("~/.server/services/trio", () => ({ getTesterTrioOffer: shop.getTesterTrioOffer }));
+const recommendations = vi.hoisted(() => ({ getForYou: vi.fn() }));
+vi.mock("~/.server/services/recommendations", () => recommendations);
 
 const { action, loader, meta, shouldRevalidate } = await import("./home");
 
@@ -72,6 +74,7 @@ const families = ["квіткові", "деревні", "свіжі", "схід�
 
 beforeEach(() => {
   shop.getBestsellers.mockResolvedValue([]);
+  recommendations.getForYou.mockResolvedValue(null);
   shop.getTrioFamilies.mockResolvedValue(families);
   shop.getTesterTrioOffer.mockResolvedValue(trioOffer);
 });
@@ -122,6 +125,19 @@ describe("home loader", () => {
     expect(view.trioOffer).toEqual(trioOffer);
     expect(view.trio).toEqual({ families, selected: [], gender: "women" });
     expect(shop.getBestsellers).toHaveBeenCalledOnce();
+    expect(view.forYou).toBeNull();
+  });
+
+  it('adds "For you" for the visitor (#182)', async () => {
+    content.getHomePage.mockResolvedValue(homePage);
+    content.getSiteSettings.mockResolvedValue(siteSettings);
+    const picked = [{ id: "picked" }];
+    recommendations.getForYou.mockResolvedValueOnce(picked);
+
+    const view = await load();
+
+    expect(view.forYou).toEqual(picked);
+    expect(recommendations.getForYou).toHaveBeenCalledWith(expect.any(Request));
   });
 
   it("reads the trio picks of a no-JS submission, at most three known families", async () => {

@@ -6,6 +6,7 @@ import { getClientIp } from "~/.server/rate-limit";
 import { submitContactMessage } from "~/.server/services/contact";
 import { buildHomePageView } from "~/.server/services/home";
 import { getBestsellers, getTrioFamilies } from "~/.server/services/products";
+import { getForYou } from "~/.server/services/recommendations";
 import { getTesterTrioOffer } from "~/.server/services/trio";
 import { JsonLd } from "~/components/JsonLd";
 import { parseContactForm } from "~/features/home/contact-form.schema";
@@ -38,16 +39,18 @@ export function meta({ loaderData, matches, location, error }: Route.MetaArgs) {
 
 // Content is edited in Strapi (`home-page`, `site-settings`), in the visitor's language with a
 // Ukrainian fallback; an outage becomes a 503 page. The tester-trio price, the trio builder's
-// families and the bestsellers come from PostgreSQL (#64); `?family=` and `?gender=` hold the trio
-// picks and gender (#102, women unless it is a valid one) when the builder was submitted without JS.
+// families and the bestsellers come from PostgreSQL (#64), "For you" from the visitor's views and
+// orders (#182). `?family=` and `?gender=` hold the trio picks and gender (#102, women unless it
+// is a valid one) when the builder was submitted without JS.
 export async function loader({ request }: Route.LoaderArgs) {
   const locale = await getLocale(request);
-  const [homePage, siteSettings, trioOffer, trioFamilies, bestsellers] = await Promise.all([
+  const [homePage, siteSettings, trioOffer, trioFamilies, bestsellers, forYou] = await Promise.all([
     getHomePage(locale).catch(cmsUnavailable),
     getSiteSettings(locale).catch(cmsUnavailable),
     getTesterTrioOffer(),
     getTrioFamilies(),
     getBestsellers(),
+    getForYou(request),
   ]);
   const { searchParams } = new URL(request.url);
   const selectedFamilies = parseTrioSearch(searchParams, trioFamilies);
@@ -58,6 +61,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     selectedFamilies,
     selectedGender,
     bestsellers,
+    forYou,
   });
 }
 

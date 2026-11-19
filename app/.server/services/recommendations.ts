@@ -7,6 +7,7 @@ import { GENDERS } from "~/lib/enums";
 import type { ProductDetail, ProductSummary } from "~/lib/products";
 import { type ProductRecsSource, pendingTrioUnits, RECS_LIST_LIMIT } from "~/lib/recommendations";
 import type { TrioOffer } from "~/lib/trio";
+import { isTrackingAllowed } from "../analytics";
 import { db as defaultDb } from "../db";
 import type { Db } from "../db/client";
 import {
@@ -21,6 +22,7 @@ import {
   listPurchasedProductIds,
   listRecentlyViewedProductIds,
 } from "../db/queries/recommendations";
+import { getCartOwner, getCartProductIds } from "./cart";
 import { GENDER_SCOPE, toSummary } from "./products";
 
 /** How many recent views and purchases seed "For you". */
@@ -130,6 +132,33 @@ export async function forVisitor(
   }
   const rows = await fillUp(filter, RECS_LIST_LIMIT, [async () => recs, bestsellers(db)]);
   return rows.map(toSummary);
+}
+
+/**
+ * "For you" for this request's visitor: their user, their `anonymous_id` cookie (views only with
+ * consent) and their cart, which is left out.
+ */
+export async function getForYou(
+  request: Request,
+  db: Db = defaultDb,
+): Promise<ProductSummary[] | null> {
+  const [owner, trackingAllowed] = await Promise.all([
+    getCartOwner(request, db),
+    isTrackingAllowed(request),
+  ]);
+  if (owner.userId === null && !(trackingAllowed && owner.anonymousId)) {
+    return null;
+  }
+  const cartProductIds = await getCartProductIds(owner, db);
+  return forVisitor(
+    {
+      userId: owner.userId,
+      anonymousId: owner.anonymousId ?? null,
+      trackingAllowed,
+      cartProductIds,
+    },
+    db,
+  );
 }
 
 export interface CartRecs {

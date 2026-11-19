@@ -305,7 +305,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
       "Покупці також обирали") and `listId: "recs_product"`;
     - otherwise: heading `product.similar` and `listId: "similar"`.
   - Keep `shouldRevalidate`. Update `product.test.ts` for the new loader shape.
-- [ ] **7. Home "For you".**
+- [x] **7. Home "For you".**
   - The `home.tsx` loader calls `forVisitor` with `getSessionUser`, `readVisitor(request)` and
     `isTrackingAllowed(request)`, in the existing `Promise.all`. `buildHomePageView` passes
     `forYou: ProductSummary[] | null`.

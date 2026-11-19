@@ -15,6 +15,8 @@ export interface HomeShopData {
   /** The trio builder's gender (#102), from the URL; women by default. */
   selectedGender: CatalogGender;
   bestsellers: ProductSummary[];
+  /** "For you" (#182), from the visitor's views and orders; `null` without history. */
+  forYou: ProductSummary[] | null;
 }
 
 // What the home route's loader returns: CMS content prepared for rendering (sanitized HTML,
@@ -33,6 +35,8 @@ export interface HomePageView {
   trioOffer: TrioOffer | null;
   trio: { families: string[]; selected: string[]; gender: CatalogGender };
   bestsellers: ProductSummary[];
+  /** "For you" (#182); `null` hides the section, and the bestsellers are the popular perfumes. */
+  forYou: ProductSummary[] | null;
   location: {
     address: string;
     openingHours: string | null;

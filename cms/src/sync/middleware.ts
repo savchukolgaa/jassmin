@@ -1,5 +1,10 @@
 import type { Core } from "@strapi/strapi";
 import { errors } from "@strapi/utils";
+import {
+  NEWSLETTER_DRAFT_STATE,
+  NEWSLETTER_READ_ONLY_FIELDS,
+  NEWSLETTER_UID,
+} from "../newsletter/send";
 import { AppSyncError, postToApp } from "../utils/app-sync";
 
 /**
@@ -308,10 +313,42 @@ async function syncOrder(strapi: Core.Strapi, context: DocumentContext): Promise
   params.data = toOrderData(answer);
 }
 
+/**
+ * Staff edits of a newsletter (#181). Its content stays in Strapi until it is sent, so nothing goes
+ * to the app here. The status and counts are the shop's: an edit keeps the stored ones, and a new
+ * or cloned newsletter starts as a draft. Once it is sending or sent, it can't be changed or deleted
+ * (customers got what was sent); staff clone it to reuse it.
+ */
+async function guardNewsletter(strapi: Core.Strapi, context: DocumentContext): Promise<void> {
+  const { action, params } = context;
+  if (action === "create" || action === "clone") {
+    params.data = { ...(params.data ?? {}), ...NEWSLETTER_DRAFT_STATE };
+    return;
+  }
+  const stored = await findStored(strapi, NEWSLETTER_UID, params.documentId);
+  const status = stored?.newsletterStatus;
+  if (status && status !== "draft") {
+    throw new AppSyncError(
+      action === "delete"
+        ? "Надіслану розсилку не можна видалити: за нею рахуємо відвідування й замовлення."
+        : "Розсилку вже надіслано, тож її не можна змінити. Щоб надіслати схожу, дублюйте її.",
+    );
+  }
+  if (action === "update" && params.data) {
+    const data = { ...params.data };
+    for (const field of NEWSLETTER_READ_ONLY_FIELDS) {
+      delete data[field];
+    }
+    params.data = data;
+  }
+}
+
+const SYNCED_UIDS = new Set([PRODUCT_UID, ORDER_UID, GIFT_CARD_UID, NEWSLETTER_UID]);
+
 export function createSyncMiddleware(strapi: Core.Strapi): DocumentMiddleware {
   const middleware = async (context: DocumentContext, next: () => Promise<unknown>) => {
     if (
-      (context.uid !== PRODUCT_UID && context.uid !== ORDER_UID && context.uid !== GIFT_CARD_UID) ||
+      !SYNCED_UIDS.has(context.uid) ||
       !WRITE_ACTIONS.has(context.action) ||
       !isStaffEdit(strapi)
     ) {
@@ -323,7 +360,9 @@ export function createSyncMiddleware(strapi: Core.Strapi): DocumentMiddleware {
           "Подарункові картки змінюються лише в магазині: тут їх можна тільки переглядати.",
         );
       }
-      if (context.uid === PRODUCT_UID) {
+      if (context.uid === NEWSLETTER_UID) {
+        await guardNewsletter(strapi, context);
+      } else if (context.uid === PRODUCT_UID) {
         await syncProduct(strapi, context);
       } else {
         await syncOrder(strapi, context);

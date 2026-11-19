@@ -158,7 +158,10 @@ export async function addProductionResources(builder: DistributedApplicationBuil
       .withEnvironment("CMS_SYNC_SECRET", cmsSyncSecret)
       .withEnvironment("SMTP_URL", smtpUrl)
       .withEnvironment("EMAIL_WEBHOOK_SECRET", emailWebhookSecret)
-      .withEnvironment("EMAIL_UNSUBSCRIBE_SECRET", emailUnsubscribeSecret);
+      .withEnvironment("EMAIL_UNSUBSCRIBE_SECRET", emailUnsubscribeSecret)
+      // Newsletter emails per 24 hours (#181): Brevo's free 300 a day, less room for order,
+      // account and cart reminder emails. Raise it with a paid plan (docs/email.md).
+      .withEnvironment("NEWSLETTER_DAILY_LIMIT", "200");
     await restartUnlessStopped(app);
   }
   // Strapi writes product and order edits through to the app (#40).

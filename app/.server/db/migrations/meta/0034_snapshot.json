@@ -1,5 +1,5 @@
 {
-  "id": "4e787ba9-0625-47f5-9437-f61de264e98f",
+  "id": "24305e92-3b35-492a-81a6-94586244ba81",
   "prevId": "16eda010-4656-4cf5-979b-86abe6e5dce6",
   "version": "7",
   "dialect": "postgresql",
@@ -565,7 +565,7 @@
       "checkConstraints": {
         "cms_outbox_entity_check": {
           "name": "cms_outbox_entity_check",
-          "value": "\"cms_outbox\".\"entity\" in ('order', 'product', 'gift_card')"
+          "value": "\"cms_outbox\".\"entity\" in ('order', 'product', 'gift_card', 'newsletter')"
         },
         "cms_outbox_attempts_check": {
           "name": "cms_outbox_attempts_check",
@@ -1227,6 +1227,320 @@
         "inventory_movements_stock_after_check": {
           "name": "inventory_movements_stock_after_check",
           "value": "\"inventory_movements\".\"stock_after\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.newsletter_deliveries": {
+      "name": "newsletter_deliveries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "newsletter_id": {
+          "name": "newsletter_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'queued'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "newsletter_deliveries_status_next_attempt_at_idx": {
+          "name": "newsletter_deliveries_status_next_attempt_at_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "newsletter_deliveries_sent_at_idx": {
+          "name": "newsletter_deliveries_sent_at_idx",
+          "columns": [
+            {
+              "expression": "sent_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "newsletter_deliveries_newsletter_id_newsletters_id_fk": {
+          "name": "newsletter_deliveries_newsletter_id_newsletters_id_fk",
+          "tableFrom": "newsletter_deliveries",
+          "tableTo": "newsletters",
+          "columnsFrom": [
+            "newsletter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "newsletter_deliveries_user_id_users_id_fk": {
+          "name": "newsletter_deliveries_user_id_users_id_fk",
+          "tableFrom": "newsletter_deliveries",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "newsletter_deliveries_newsletter_id_user_id_unique": {
+          "name": "newsletter_deliveries_newsletter_id_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "newsletter_id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "newsletter_deliveries_locale_check": {
+          "name": "newsletter_deliveries_locale_check",
+          "value": "\"newsletter_deliveries\".\"locale\" in ('uk', 'en')"
+        },
+        "newsletter_deliveries_status_check": {
+          "name": "newsletter_deliveries_status_check",
+          "value": "\"newsletter_deliveries\".\"status\" in ('queued', 'sent', 'failed', 'skipped')"
+        },
+        "newsletter_deliveries_attempts_check": {
+          "name": "newsletter_deliveries_attempts_check",
+          "value": "\"newsletter_deliveries\".\"attempts\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.newsletters": {
+      "name": "newsletters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "strapi_document_id": {
+          "name": "strapi_document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_uk": {
+          "name": "subject_uk",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "preheader_uk": {
+          "name": "preheader_uk",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body_uk": {
+          "name": "body_uk",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_en": {
+          "name": "subject_en",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preheader_en": {
+          "name": "preheader_en",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body_en": {
+          "name": "body_en",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "product_public_ids": {
+          "name": "product_public_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::uuid[]"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'sending'"
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "newsletters_sent_at_idx": {
+          "name": "newsletters_sent_at_idx",
+          "columns": [
+            {
+              "expression": "sent_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "newsletters_strapi_document_id_unique": {
+          "name": "newsletters_strapi_document_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "strapi_document_id"
+          ]
+        },
+        "newsletters_slug_unique": {
+          "name": "newsletters_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "newsletters_status_check": {
+          "name": "newsletters_status_check",
+          "value": "\"newsletters\".\"status\" in ('sending', 'sent')"
+        },
+        "newsletters_en_check": {
+          "name": "newsletters_en_check",
+          "value": "(\"newsletters\".\"subject_en\" is null) = (\"newsletters\".\"body_en\" is null) and (\"newsletters\".\"preheader_en\" is null or \"newsletters\".\"body_en\" is not null)"
+        },
+        "newsletters_products_check": {
+          "name": "newsletters_products_check",
+          "value": "cardinality(\"newsletters\".\"product_public_ids\") <= 4"
         }
       },
       "isRLSEnabled": false
@@ -2448,125 +2762,6 @@
         "perfumer_threads_deleted_closed_check": {
           "name": "perfumer_threads_deleted_closed_check",
           "value": "\"perfumer_threads\".\"deleted_at\" is null or \"perfumer_threads\".\"closed_at\" is not null"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.product_recommendations": {
-      "name": "product_recommendations",
-      "schema": "",
-      "columns": {
-        "product_id": {
-          "name": "product_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "recommended_product_id": {
-          "name": "recommended_product_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "score": {
-          "name": "score",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rank": {
-          "name": "rank",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "signals": {
-          "name": "signals",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "computed_at": {
-          "name": "computed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "product_recommendations_product_id_rank_idx": {
-          "name": "product_recommendations_product_id_rank_idx",
-          "columns": [
-            {
-              "expression": "product_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "rank",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "product_recommendations_product_id_products_id_fk": {
-          "name": "product_recommendations_product_id_products_id_fk",
-          "tableFrom": "product_recommendations",
-          "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "product_recommendations_recommended_product_id_products_id_fk": {
-          "name": "product_recommendations_recommended_product_id_products_id_fk",
-          "tableFrom": "product_recommendations",
-          "tableTo": "products",
-          "columnsFrom": [
-            "recommended_product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "product_recommendations_pkey": {
-          "name": "product_recommendations_pkey",
-          "columns": [
-            "product_id",
-            "recommended_product_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "product_recommendations_not_self_check": {
-          "name": "product_recommendations_not_self_check",
-          "value": "\"product_recommendations\".\"product_id\" <> \"product_recommendations\".\"recommended_product_id\""
-        },
-        "product_recommendations_rank_check": {
-          "name": "product_recommendations_rank_check",
-          "value": "\"product_recommendations\".\"rank\" between 1 and 12"
-        },
-        "product_recommendations_signals_check": {
-          "name": "product_recommendations_signals_check",
-          "value": "\"product_recommendations\".\"signals\" > 0"
         }
       },
       "isRLSEnabled": false

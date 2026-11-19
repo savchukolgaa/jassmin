@@ -42,6 +42,7 @@ describe("parseEnv", () => {
       TRUSTED_PROXY_HOPS: 0,
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
+      NEWSLETTER_DAILY_LIMIT: 200,
       AI_MODEL: "granite4.1:3b",
       AI_TIMEOUT_MS: 90_000,
     });
@@ -354,6 +355,7 @@ describe("parseMailEnv", () => {
       SMTP_URL: "smtp://localhost:2525",
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
+      NEWSLETTER_DAILY_LIMIT: 200,
     });
   });
 
@@ -477,5 +479,19 @@ describe("EMAIL_UNSUBSCRIBE_SECRET", () => {
     expect(() => parseMailEnv({ EMAIL_UNSUBSCRIBE_SECRET: "short" })).toThrow(
       /EMAIL_UNSUBSCRIBE_SECRET/,
     );
+  });
+});
+
+describe("NEWSLETTER_DAILY_LIMIT", () => {
+  it("defaults to 200 in both schemas, and an empty value counts as unset", () => {
+    expect(parseEnv(valid).NEWSLETTER_DAILY_LIMIT).toBe(200);
+    expect(parseMailEnv({}).NEWSLETTER_DAILY_LIMIT).toBe(200);
+    expect(parseMailEnv({ NEWSLETTER_DAILY_LIMIT: "" }).NEWSLETTER_DAILY_LIMIT).toBe(200);
+  });
+
+  it("takes a positive whole number", () => {
+    expect(parseMailEnv({ NEWSLETTER_DAILY_LIMIT: "300" }).NEWSLETTER_DAILY_LIMIT).toBe(300);
+    expect(() => parseMailEnv({ NEWSLETTER_DAILY_LIMIT: "0" })).toThrow(/NEWSLETTER_DAILY_LIMIT/);
+    expect(() => parseMailEnv({ NEWSLETTER_DAILY_LIMIT: "2.5" })).toThrow(/NEWSLETTER_DAILY_LIMIT/);
   });
 });

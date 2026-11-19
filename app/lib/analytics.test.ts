@@ -55,6 +55,17 @@ describe("resolveTrafficAttribution", () => {
     });
   });
 
+  it("counts a newsletter link as the newsletter source, with its campaign (#181)", () => {
+    const url = new URL(
+      "https://jassmin.ua/parfumy/coco?utm_source=newsletter&utm_medium=email&utm_campaign=autumn-news",
+    );
+    expect(resolveTrafficAttribution(url, "https://mail.google.com/")).toEqual({
+      source: "newsletter",
+      medium: "email",
+      campaign: "autumn-news",
+    });
+  });
+
   it("counts another site as a referral", () => {
     const url = new URL("https://jassmin.ua/catalog/women");
     expect(resolveTrafficAttribution(url, "https://www.google.com/search?q=x")).toEqual({

@@ -12,6 +12,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Abandoned carts](#abandoned-carts)
 - [Unpaid card orders](#unpaid-card-orders)
 - [Order emails](#order-emails)
+- [Newsletter](#newsletter)
 - [Email delivery in production](#email-delivery-in-production)
 - [Gift cards](#gift-cards)
 - [Recommendations](#recommendations)
@@ -96,6 +97,7 @@ pnpm dev                    # http://localhost:5173
 | `SMTP_URL` | prod | SMTP server for every email (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container; in production it's the transactional provider (see [docs/email.md](email.md)). Required when `NODE_ENV=production`, for the app and `pnpm db:send-order-emails`. Without it, development logs contact messages instead of sending them, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `EMAIL_WEBHOOK_SECRET` | no* | Bearer secret (32+ characters) the email provider sends to `/hooks/email` with hard bounces and spam complaints (#134, see [docs/email.md](email.md)). *Without it the webhook answers 503, nothing is recorded, and production logs a warning at startup. |
 | `EMAIL_UNSUBSCRIBE_SECRET` | no* | Secret (32+ characters) that signs the one-click unsubscribe links in marketing emails (#139, see [docs/email.md](email.md)). *Without it `pnpm db:send-cart-reminders` sends no cart reminders, and production logs a warning at startup. Changing it breaks the links in emails already sent. |
+| `NEWSLETTER_DAILY_LIMIT` | no | The most newsletter emails `pnpm db:send-newsletters` sends in any 24 hours (#181, default `200`). The provider's daily quota (Brevo's free plan: 300) is shared with order, account and cart reminder emails, so leave room for them (see [docs/email.md](email.md#newsletter)). |
 | `AI_BASE_URL` | no* | OpenAI-compatible chat-completions base URL for the AI perfumer (#162), e.g. `http://localhost:11434/v1` for local Ollama (see [docs/ai-perfumer.md](ai-perfumer.md)). *Without it the perfumer is off and nothing calls a model. |
 | `AI_MODEL` | no | Model name (default `granite4.1:3b`). |
 | `AI_API_KEY` | no | Bearer token for a hosted provider; Ollama needs none. |
@@ -148,12 +150,13 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:prune-perfumer-chats` | Delete AI perfumer chats not updated for `PERFUMER_CHAT_RETENTION_DAYS` (safe to re-run), see [Perfumer chats](#perfumer-chats) |
 | `pnpm db:build-recommendations` | Rebuild the product recommendations from the last year's orders and views (safe to re-run), see [Recommendations](#recommendations) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
+| `pnpm db:send-newsletters` | Send the queued newsletter emails within `NEWSLETTER_DAILY_LIMIT` and push their counts to Strapi (safe to re-run), see [Newsletter](#newsletter) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm analytics:export-catalog` | Write the catalog and price table to `analytics/generator/data/catalog.json` for the synthetic data generator (#131); a test fails until you run it after changing either |
 | `pnpm ai:perfumer-eval [models…]` | Run the AI perfumer's eval cases against a model (default `AI_MODEL` on local Ollama) and print a results table (#162, see [docs/ai-perfumer.md](ai-perfumer.md)); `--db` reads the catalog from the database, `--only <case>[,<case>…]` runs some cases, `--stream` measures the streamed reply, `--texts` prints the answers, `--price-in`/`--price-out` (USD per million tokens) add the cost per 1000 answers (#167). Not in CI |
 | `pnpm db:sync-cms` | Push queued order and stock changes to Strapi (safe to re-run; `-- --all` queues every product and order first), see [Products and orders in Strapi](#products-and-orders-in-strapi) |
 
-The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`, `db-send-order-emails`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
+The `db:*` scripts use `JASSMINDB_URI` or `DATABASE_URL`, like the app. Aspire generates the password of its database, so under Aspire run them through the dashboard resources (`db-migrate` runs automatically, while `db-seed`, `db-import-catalog`, `db-rollback`, `db-mark-abandoned-carts`, `db-cancel-unpaid-orders`, `db-send-order-emails`, `db-send-newsletters`, `db-sync-cms` and `db-backfill-product-images` start by hand) instead of from a terminal.
 
 The DB tests (`health.test.ts`, `migrator.test.ts`, `seed.test.ts`, `import-catalog.test.ts`) are integration tests. They run only when a database is configured (`DATABASE_URL` in `.env`, or Aspire's Postgres) and are reported as skipped otherwise. The migration, seed and import tests create and drop their own throwaway databases on that server, so the configured user needs `CREATEDB`.
 
@@ -196,6 +199,16 @@ Run the job every 5 minutes from an external scheduler, like the abandoned-cart 
 It needs the database URL and the mail variables (`SMTP_URL`, `ORDER_FROM`, `CONTACT_FROM`, `CONTACT_INBOX`), but not `SESSION_SECRET`. Under Aspire, start the `db-send-order-emails` resource from the dashboard; it sends to smtp4dev.
 
 An email to an address that hard-bounced or complained before is never sent: its row becomes `failed` with `suppressed: <reason>` at once. A bounce that arrives later marks the sent row `failed` too (see below).
+
+## Newsletter
+
+Staff write a newsletter in Strapi (**Newsletter**, uk and en) and press **Надіслати підписникам** once (#181). The shop queues one `newsletter_deliveries` row per customer who agreed to marketing email, confirmed their address and isn't suppressed, and `pnpm db:send-newsletters` sends them: at most `NEWSLETTER_DAILY_LIMIT` (default 200) in any 24 hours, continuing in later runs, and skipping anyone who unsubscribed or bounced since. A second send of a newsletter, or one within 7 days of the last, is refused. After each run the job pushes the counts to Strapi when `STRAPI_SYNC_TOKEN` is set (otherwise `pnpm db:sync-cms` does). Run it every 15 minutes (the production `scheduler` does):
+
+```cron
+*/15 * * * * cd /srv/jassmin && pnpm db:send-newsletters >> /var/log/jassmin/newsletters.log 2>&1
+```
+
+It needs the database URL and the mail variables (`SMTP_URL`, `PUBLIC_SITE_URL`, `EMAIL_UNSUBSCRIBE_SECRET`, `NEWSLETTER_DAILY_LIMIT`, …); without the first three it sends nothing. Under Aspire, start the `db-send-newsletters` resource from the dashboard; it sends to smtp4dev. Writing, testing, the limits and Brevo's plan: [docs/email.md → Newsletter](email.md#newsletter).
 
 ## Email delivery in production
 
@@ -337,7 +350,7 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
    - Offer: `find`
    - Site-setting: `find`
 
-   Save the token and copy it into `STRAPI_API_TOKEN` in `.env`. Create a second **Custom**, **Unlimited** token for `STRAPI_SYNC_TOKEN` with only `find`, `findOne`, `create` and `update` on Product, Order and Gift-card (#125).
+   Save the token and copy it into `STRAPI_API_TOKEN` in `.env`. Create a second **Custom**, **Unlimited** token for `STRAPI_SYNC_TOKEN` with only `find`, `findOne`, `create` and `update` on Product, Order and Gift-card (#125), and `find`, `findOne` and `update` on Newsletter (#181).
 
 Don't give the Public or Authenticated roles (Settings → Users & Permissions → Roles) any permission on these content types. Strapi doesn't grant any by default, unauthenticated requests get a 403, and Strapi logs a warning at startup if someone enables one. The token's `find` permission can technically request drafts (`?status=draft`). The app never does, because `cmsFetch` always sends `status=published`.
 
@@ -439,6 +452,7 @@ There is no admin area in the app any more (#40): staff manage the catalogue and
 
   It sets `paid_at`, `shipped_at`, `completed_at`, `cancelled_at` and `refunded_at`. Completing a cash-on-delivery order marks it paid. `cancelled` and `unclaimed` put the units back in stock in the same transaction (`returned` doesn't: the perfume may have been opened), logged in the inventory ledger. Orders can't be created or deleted in Strapi. Customers see each change on `/account` straight away.
 - **Inventory ledger** (#130): every change to a size that tracks stock is recorded in `inventory_movements` (sale, cancellation, return of an unclaimed parcel, delivery, correction), and the `inventory_daily` view gives units sold, closing stock and whether it ran out per size and day, for demand forecasting. When you change a tracked size's stock in Strapi, pick **Stock reason**: «надходження» for a delivery from the supplier (it must add units) or «коригування» for a correction (the default; it resets after every save). A size that has stock history can't be removed: turn **Track stock** off or set the stock to 0 instead. Restart Strapi after upgrading past #130 so it picks up the new field.
+- **Newsletters** (#181) are written in Strapi and sent by the shop: the **Надіслати тест собі** and **Надіслати підписникам** buttons call the app's `/cms/newsletters/:id/send`, and the shop pushes the status and counts back. The sync token needs `find`, `findOne` and `update` on `api::newsletter.newsletter`: re-run `pnpm cms:seed -- --token`. See [docs/email.md → Newsletter](email.md#newsletter).
 - **Gift cards** (#125) are read-only in Strapi: the shop pushes each card with its balance and what each order took off it, and refuses every admin save. Orders show what a gift card paid (`giftCardAmount`). The sync token needs the `api::gift-card.gift-card` permissions: re-run `pnpm cms:seed -- --token`, which grants an existing token the permissions it lacks and keeps its key.
 - **From the app to Strapi:** new orders, card payments, stock changes (checkout, restocks) and gift cards are queued in `cms_outbox` in the same transaction and pushed with `STRAPI_SYNC_TOKEN` right after it commits. `pnpm db:sync-cms` retries whatever failed (run it every 5 minutes from cron in production; under Aspire it's the `db-sync-cms` resource).
 

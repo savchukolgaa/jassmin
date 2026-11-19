@@ -54,13 +54,31 @@ export type EmailBlock =
    * are shown; the text part lists each item on its own line.
    */
   | { type: "products"; items: EmailProduct[] }
+  /**
+   * A paragraph of formatted text (#181), e.g. a newsletter's body from Strapi's Markdown. Only
+   * `http(s)` links become links; others are shown as text.
+   */
+  | { type: "rich"; runs: EmailRun[] }
+  /** A bullet or numbered list of formatted items (#181). */
+  | { type: "list"; ordered: boolean; items: EmailRun[][] }
   | { type: "signature"; text: string };
+
+/** A piece of formatted text in a `rich` or `list` block: plain text, never HTML. */
+export interface EmailRun {
+  text: string;
+  strong?: boolean;
+  em?: boolean;
+  /** Makes the run a link; the text part writes it out after the text. */
+  href?: string | undefined;
+}
 
 /** A product in a `products` block: its name, a details line and an optional photo. */
 export interface EmailProduct {
   name: string;
   details: string;
   imageUrl?: string | undefined;
+  /** The product's page (#181): the photo and the name link to it; written out in the text part. */
+  url?: string | undefined;
 }
 
 /** What the footer shows: the shop's inbox and, when known, the site. */
@@ -99,6 +117,30 @@ function escapeLines(value: string): string {
 function isWebUrl(url: string | undefined): url is string {
   return url !== undefined && /^https?:\/\//i.test(url);
 }
+
+const LINK_STYLE = `color:${EMAIL_COLORS.primary};text-decoration:underline;`;
+
+/** A run as HTML: escaped, emphasised, and a link when its `href` is a web URL. */
+function runHtml(run: EmailRun): string {
+  let html = escapeLines(run.text);
+  if (run.em) html = `<em>${html}</em>`;
+  if (run.strong) html = `<strong style="color:${EMAIL_COLORS.ink};">${html}</strong>`;
+  if (isWebUrl(run.href)) {
+    html = `<a href="${escapeHtml(run.href)}" style="${LINK_STYLE}">${html}</a>`;
+  }
+  return html;
+}
+
+/** A run as plain text: a web link's URL follows its text, unless the text is the URL. */
+function runText(run: EmailRun): string {
+  if (isWebUrl(run.href) && run.text.trim() !== run.href) {
+    return `${run.text} (${run.href})`;
+  }
+  return run.text;
+}
+
+const runsHtml = (runs: EmailRun[]): string => runs.map(runHtml).join("");
+const runsText = (runs: EmailRun[]): string => runs.map(runText).join("");
 
 function paragraph(content: string, style = ""): string {
   return `<p style="margin:0 0 16px;${style}">${content}</p>`;
@@ -152,20 +194,35 @@ function blockHtml(block: EmailBlock): string {
     }
     case "products": {
       const rows = block.items
-        .map(({ name, details, imageUrl }) => {
+        .map(({ name, details, imageUrl, url }) => {
+          const link = (content: string) =>
+            isWebUrl(url)
+              ? `<a href="${escapeHtml(url)}" style="color:${EMAIL_COLORS.ink};text-decoration:none;">${content}</a>`
+              : content;
           const photo = isWebUrl(imageUrl)
-            ? `<img src="${escapeHtml(imageUrl)}" width="64" height="80" alt="" style="display:block;width:64px;height:80px;object-fit:cover;border:0;background:${EMAIL_COLORS.card};">`
+            ? link(
+                `<img src="${escapeHtml(imageUrl)}" width="64" height="80" alt="" style="display:block;width:64px;height:80px;object-fit:cover;border:0;background:${EMAIL_COLORS.card};">`,
+              )
             : "";
           return [
             `<tr><td width="64" valign="top" style="padding:8px 16px 8px 0;">${photo}</td>`,
             `<td valign="middle" style="padding:8px 0;">`,
-            `<p style="margin:0;font-weight:bold;color:${EMAIL_COLORS.ink};">${escapeHtml(name)}</p>`,
+            `<p style="margin:0;font-weight:bold;color:${EMAIL_COLORS.ink};">${link(escapeHtml(name))}</p>`,
             `<p style="margin:4px 0 0;font-size:14px;color:${EMAIL_COLORS.muted};">${escapeHtml(details)}</p>`,
             "</td></tr>",
           ].join("");
         })
         .join("");
       return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;border-collapse:collapse;">${rows}</table>`;
+    }
+    case "rich":
+      return paragraph(runsHtml(block.runs));
+    case "list": {
+      const tag = block.ordered ? "ol" : "ul";
+      const items = block.items
+        .map((runs) => `<li style="margin:0 0 4px;">${runsHtml(runs)}</li>`)
+        .join("");
+      return `<${tag} style="margin:0 0 16px;padding:0 0 0 24px;">${items}</${tag}>`;
     }
     case "signature":
       return paragraph(escapeLines(block.text), `margin-top:24px;color:${EMAIL_COLORS.ink};`);
@@ -187,7 +244,17 @@ function blockText(block: EmailBlock): string {
     case "button":
       return `${block.label}:\n${block.url}`;
     case "products":
-      return block.items.map(({ name, details }) => `${name}\n${details}`).join("\n");
+      return block.items
+        .map(({ name, details, url }) =>
+          [name, details, ...(isWebUrl(url) ? [url] : [])].join("\n"),
+        )
+        .join("\n");
+    case "rich":
+      return runsText(block.runs);
+    case "list":
+      return block.items
+        .map((runs, index) => `${block.ordered ? `${index + 1}.` : "-"} ${runsText(runs)}`)
+        .join("\n");
   }
 }
 

@@ -187,7 +187,7 @@ export const PAYMENT_ATTEMPT_STATUSES = ["pending", "succeeded", "failed"] as co
 export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
 
 /** What the app pushes to Strapi through `cms_outbox` (#40); a CHECK constraint limits it. */
-export const CMS_SYNC_ENTITIES = ["order", "product", "gift_card"] as const;
+export const CMS_SYNC_ENTITIES = ["order", "product", "gift_card", "newsletter"] as const;
 
 export type CmsSyncEntity = (typeof CMS_SYNC_ENTITIES)[number];
 
@@ -253,3 +253,22 @@ export type FragranceFamily = (typeof FRAGRANCE_FAMILIES)[number];
 export function isFragranceFamily(value: string): value is FragranceFamily {
   return (FRAGRANCE_FAMILIES as readonly string[]).includes(value);
 }
+
+/**
+ * A newsletter in `newsletters.status` (#181): `sending` from the moment staff press "send" in
+ * Strapi until no delivery is queued, then `sent`. (`draft` exists only in Strapi.) A CHECK
+ * constraint limits it to these values.
+ */
+export const NEWSLETTER_STATUSES = ["sending", "sent"] as const;
+
+export type NewsletterStatus = (typeof NEWSLETTER_STATUSES)[number];
+
+/**
+ * One customer's copy of a newsletter in `newsletter_deliveries.status` (#181): `queued` until the
+ * job sends it (`sent`), gives up after its attempts (`failed`), or finds the customer no longer
+ * wants or can get it (`skipped`: unsubscribed, unverified or suppressed). A CHECK constraint
+ * limits it to these values.
+ */
+export const NEWSLETTER_DELIVERY_STATUSES = ["queued", "sent", "failed", "skipped"] as const;
+
+export type NewsletterDeliveryStatus = (typeof NEWSLETTER_DELIVERY_STATUSES)[number];

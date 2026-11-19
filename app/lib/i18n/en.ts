@@ -603,6 +603,17 @@ export const en = {
     signature: "The Jassmin team",
     why: "You're getting this email because you agreed to receive news and offers from Jassmin.",
   },
+  newsletterEmail: {
+    greeting: "Hello, {name}!",
+    productsHeading: "Picked for you",
+    priceFrom: "from {price}",
+    button: "Visit the shop",
+    contact: "Questions about a fragrance? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+    why: "You're getting this email because you agreed to receive news and offers from Jassmin. We write at most once a week.",
+    testSubject: "[Test] {subject}",
+    testNote: "This is a test email: only you received it. It hasn't been sent to customers yet.",
+  },
   giftCardEmail: {
     subject: "Your Jassmin gift card of {amount}",
     greeting: "Hello!",

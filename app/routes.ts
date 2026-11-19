@@ -100,6 +100,7 @@ export default [
   // Authenticated by `CMS_SYNC_SECRET`; no layout, session or consent.
   route("cms/products", "routes/cms.products.ts"),
   route("cms/orders/:id", "routes/cms.orders.$id.ts"),
+  route("cms/newsletters/:id/send", "routes/cms.newsletters.$id.send.ts"),
   // Action-only (POST) webhook from the email provider with bounces and spam complaints (#134).
   // Authenticated by `EMAIL_WEBHOOK_SECRET`; no layout, session or consent.
   route("hooks/email", "routes/hooks.email.ts"),

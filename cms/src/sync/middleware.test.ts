@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import { describe, expect, it } from "vitest";
+import { NEWSLETTER_UID } from "../newsletter/send";
 import {
   applyProductAnswer,
   componentValues,
@@ -277,6 +278,86 @@ describe("gift cards (#125)", () => {
     expect(
       toOrderData({ orderId: 7, status: "paid", giftCardAmount: "500.00", items: [] }),
     ).toMatchObject({ orderStatus: "paid", giftCardAmount: 500 });
+  });
+});
+
+describe("newsletters (#181)", () => {
+  type Middleware = (context: unknown, next: () => Promise<unknown>) => Promise<unknown>;
+
+  /** An admin request, with the stored newsletter `findOne` returns. */
+  function adminStrapi(stored: Record<string, unknown> | null) {
+    return {
+      requestContext: { get: () => ({ state: { auth: { strategy: { name: "admin" } } } }) },
+      documents: () => ({ findOne: async () => stored }),
+    } as unknown as Core.Strapi;
+  }
+
+  it("starts a new or cloned newsletter as a draft with no counts", async () => {
+    const middleware = createSyncMiddleware(adminStrapi(null)) as unknown as Middleware;
+    for (const action of ["create", "clone"]) {
+      const params = {
+        data: { subject: "Осінь", newsletterStatus: "sent", sentCount: 40, sentAt: "2026-11-01" },
+      };
+      await middleware({ uid: NEWSLETTER_UID, action, params }, async () => {});
+      expect(params.data).toEqual({
+        subject: "Осінь",
+        newsletterStatus: "draft",
+        queuedCount: 0,
+        sentCount: 0,
+        failedCount: 0,
+        skippedCount: 0,
+        sentAt: null,
+      });
+    }
+  });
+
+  it("keeps the stored status and counts when staff edit a draft", async () => {
+    const middleware = createSyncMiddleware(
+      adminStrapi({ newsletterStatus: "draft" }),
+    ) as unknown as Middleware;
+    const params = {
+      documentId: "doc",
+      data: { subject: "Нова тема", newsletterStatus: "sent", queuedCount: 5 },
+    };
+    let saved = false;
+    await middleware({ uid: NEWSLETTER_UID, action: "update", params }, async () => {
+      saved = true;
+    });
+    expect(saved).toBe(true);
+    expect(params.data).toEqual({ subject: "Нова тема" });
+  });
+
+  it("refuses to change or delete a newsletter that is sending or sent", async () => {
+    for (const status of ["sending", "sent"]) {
+      const middleware = createSyncMiddleware(
+        adminStrapi({ newsletterStatus: status }),
+      ) as unknown as Middleware;
+      for (const [action, message] of [
+        ["update", "Розсилку вже надіслано"],
+        ["delete", "Надіслану розсилку не можна видалити"],
+      ] as const) {
+        let saved = false;
+        await expect(
+          middleware(
+            { uid: NEWSLETTER_UID, action, params: { documentId: "doc", data: {} } },
+            async () => {
+              saved = true;
+            },
+          ),
+        ).rejects.toThrow(message);
+        expect(saved).toBe(false);
+      }
+    }
+  });
+
+  it("lets the app's pushes through", async () => {
+    const tokenStrapi = {
+      requestContext: { get: () => ({ state: {} }) },
+    } as unknown as Core.Strapi;
+    const middleware = createSyncMiddleware(tokenStrapi) as unknown as Middleware;
+    const params = { documentId: "doc", data: { newsletterStatus: "sent", sentCount: 3 } };
+    await middleware({ uid: NEWSLETTER_UID, action: "update", params }, async () => {});
+    expect(params.data).toEqual({ newsletterStatus: "sent", sentCount: 3 });
   });
 });
 

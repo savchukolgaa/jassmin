@@ -196,7 +196,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
 
 ## Steps
 
-- [ ] **1. Schema and migration.** Add `perfumerThreads` / `perfumerMessages` to `schema.ts` as in
+- [x] **1. Schema and migration.** Add `perfumerThreads` / `perfumerMessages` to `schema.ts` as in
   *Decisions* (explicit snake_case constraint names, CHECKs built from `PERFUMER_ENTRIES`,
   `PERFUMER_ERROR_KEYS` + `"cancelled"` exported from `~/lib/perfumer` as
   `PERFUMER_STORED_ERROR_KEYS`). `pnpm db:generate --name perfumer_chats`; review the SQL (partial

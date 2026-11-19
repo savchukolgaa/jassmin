@@ -4,7 +4,8 @@
 // discount rules (#59), the Strapi catalog and order sync (#40) and several fragrance families,
 // notes and a store code per product (#65), gift cards with their redemptions (#125), email
 // suppressions (#134), the shared rate-limit counters (#143), and password reset and email
-// verification tokens (#135), and the inventory ledger with its daily view (#130).
+// verification tokens (#135), the inventory ledger with its daily view (#130), and the AI
+// perfumer's saved chats (#180).
 // Names are camelCase in TS and snake_case in PostgreSQL (`casing: "snake_case"`).
 //
 // `users.last_login_at`, `users.acquisition_channel` and `products.fragrance_family` are
@@ -72,6 +73,15 @@ import {
 import { GIFT_CARD_AMOUNTS } from "~/lib/gift-cards";
 import { LOCALES, type Locale } from "~/lib/i18n/locales";
 import type { ImageFormat } from "~/lib/images";
+import {
+  PERFUMER_ENTRIES,
+  PERFUMER_MESSAGE_ROLES,
+  PERFUMER_STORED_ERROR_KEYS,
+  type PerfumerEntry,
+  type PerfumerMessageRole,
+  type PerfumerStoredErrorKey,
+  type StoredPerfumerReply,
+} from "~/lib/perfumer";
 
 export const genderType = pgEnum("gender_type", GENDERS);
 export const orderStatusType = pgEnum("order_status_type", ORDER_STATUSES);
@@ -928,5 +938,80 @@ export const rateLimits = pgTable(
   (t) => [
     check("rate_limits_count_check", sql`${t.count} > 0`),
     index("rate_limits_reset_at_idx").on(t.resetAt),
+  ],
+);
+
+/**
+ * The AI perfumer's saved chats (#180): one thread per conversation, owned by a visitor
+ * (`anonymous_id`, with `user_id` null) or a customer account (`user_id`). At most one thread per
+ * owner is active (`closed_at` null); "New chat" closes it, "Delete chat" closes it and sets
+ * `deleted_at`, which hides it from the customer for good while the rows stay until
+ * `pnpm db:prune-perfumer-chats` deletes threads not updated for 90 days. Message text stays in
+ * these tables: never copy it to `user_events`, the warehouse or training data.
+ */
+export const perfumerThreads = pgTable(
+  "perfumer_threads",
+  {
+    id: serial().primaryKey(),
+    /** The visitor that started the thread (the `anonymous_id` cookie). */
+    anonymousId: text().notNull(),
+    /** The customer's account; the thread is deleted with it. */
+    userId: integer().references(() => users.id, { onDelete: "cascade" }),
+    /** How the conversation was opened (#166). */
+    entry: text().$type<PerfumerEntry>().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** The last message, close or delete; the retention job counts from it. */
+    updatedAt: updatedAt(),
+    /** "New chat" (or a merge at login) ended it; `null` while it's the owner's active thread. */
+    closedAt: timestamp({ withTimezone: true }),
+    /** The customer deleted it: never shown again, erased by the retention job. */
+    deletedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    check("perfumer_threads_entry_check", oneOf(t.entry, PERFUMER_ENTRIES)),
+    check(
+      "perfumer_threads_deleted_closed_check",
+      sql`${t.deletedAt} is null or ${t.closedAt} is not null`,
+    ),
+    index("perfumer_threads_anonymous_id_closed_at_idx").on(t.anonymousId, t.closedAt),
+    index("perfumer_threads_user_id_closed_at_idx").on(t.userId, t.closedAt),
+    index("perfumer_threads_updated_at_idx").on(t.updatedAt),
+    // One active thread per customer and per guest, so two tabs' first messages can't create two.
+    uniqueIndex("perfumer_threads_active_user_id_unique")
+      .on(t.userId)
+      .where(sql`${t.closedAt} is null and ${t.userId} is not null`),
+    uniqueIndex("perfumer_threads_active_anonymous_id_unique")
+      .on(t.anonymousId)
+      .where(sql`${t.closedAt} is null and ${t.userId} is null`),
+  ],
+);
+
+/**
+ * One message of a saved chat (#180): the customer's (`text`), the perfumer's answer (`text` is
+ * the intro, `reply` the picks as product ids with reasons, the question, `replyId`, `turn` and
+ * the rating), or an error marker for a turn without an answer (`error_key`, `cancelled` included).
+ */
+export const perfumerMessages = pgTable(
+  "perfumer_messages",
+  {
+    id: serial().primaryKey(),
+    threadId: integer()
+      .notNull()
+      .references(() => perfumerThreads.id, { onDelete: "cascade" }),
+    role: text().$type<PerfumerMessageRole>().notNull(),
+    text: text(),
+    reply: jsonb().$type<StoredPerfumerReply>(),
+    errorKey: text().$type<PerfumerStoredErrorKey>(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("perfumer_messages_role_check", oneOf(t.role, PERFUMER_MESSAGE_ROLES)),
+    check("perfumer_messages_error_key_check", oneOf(t.errorKey, PERFUMER_STORED_ERROR_KEYS)),
+    check(
+      "perfumer_messages_shape_check",
+      sql`(${t.role} = 'user' and ${t.text} is not null and ${t.reply} is null and ${t.errorKey} is null)
+        or (${t.role} = 'perfumer' and num_nonnulls(${t.reply}, ${t.errorKey}) = 1)`,
+    ),
+    index("perfumer_messages_thread_id_id_idx").on(t.threadId, t.id),
   ],
 );

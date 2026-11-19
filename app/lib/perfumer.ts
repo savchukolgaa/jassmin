@@ -3,7 +3,7 @@
 import type { Page } from "./paths";
 import type { ProductSummary } from "./products";
 
-/** At most this many messages are sent per reply; the conversation isn't stored. */
+/** At most this many stored messages are sent to the model per reply (#180). */
 export const PERFUMER_MAX_MESSAGES = 10;
 
 /** The longest message a customer may send. */
@@ -131,6 +131,43 @@ export const PERFUMER_COUNTER_FROM = 400;
 export const PERFUMER_ERROR_KEYS = ["unavailable", "timeout", "rateLimited", "tooLong"] as const;
 
 export type PerfumerErrorKey = (typeof PERFUMER_ERROR_KEYS)[number];
+
+// Saved chats (#180): the thread lives in PostgreSQL (`perfumer_threads`, `perfumer_messages`).
+
+/** Who wrote a stored message: the customer, or the perfumer (a reply or an error marker). */
+export const PERFUMER_MESSAGE_ROLES = ["user", "perfumer"] as const;
+
+export type PerfumerMessageRole = (typeof PERFUMER_MESSAGE_ROLES)[number];
+
+/** Why a stored turn has no reply: a chat error, or the customer cancelled it. */
+export const PERFUMER_STORED_ERROR_KEYS = [...PERFUMER_ERROR_KEYS, "cancelled"] as const;
+
+export type PerfumerStoredErrorKey = (typeof PERFUMER_STORED_ERROR_KEYS)[number];
+
+/**
+ * A saved answer (`perfumer_messages.reply`): the picks as product ids with reasons, never product
+ * data, so a reloaded answer shows current prices and leaves out archived products. The intro is
+ * the row's `text`. `replyId` names it in analytics (#166) and `rating` is the customer's.
+ */
+export interface StoredPerfumerReply {
+  /** `products.public_id` of each pick, in the model's order. */
+  picks: { productId: string; reason: string }[];
+  question?: string;
+  replyId: string;
+  /** The customer's message number this answers. */
+  turn: number;
+  rating?: PerfumerRating;
+}
+
+/** A saved chat as the page starts from it. */
+export interface PerfumerThreadView {
+  /** How the conversation was opened (#166). */
+  entry: PerfumerEntry;
+  items: ThreadItem[];
+}
+
+/** The chat page shows at most this many of the newest stored messages. */
+export const PERFUMER_MAX_THREAD_ITEMS = 50;
 
 /**
  * The chat action's result: locale-independent, so it can be rendered in either language.

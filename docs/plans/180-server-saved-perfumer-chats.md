@@ -37,7 +37,8 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
     `user_id integer null → users.id on delete cascade` (a chat is personal data; cart history uses
     `restrict`, chats don't need to survive the user), `entry text not null` (CHECK in
     `PERFUMER_ENTRIES`), `created_at`, `updated_at` (`updatedAt()` helper, bumped on every append),
-    `closed_at timestamptz null`.
+    `closed_at timestamptz null`, `deleted_at timestamptz null` (soft delete, Q1: "Delete chat"
+    hides the thread from the customer but keeps it in the database until the retention job).
   - `perfumer_messages`: `id serial`, `thread_id → perfumer_threads.id on delete cascade`, `role`
     (CHECK `user | perfumer`), `text text null` (customer's message or the intro), `reply jsonb null`,
     `error_key text null` (CHECK: `PERFUMER_ERROR_KEYS` + `cancelled`), `created_at`.
@@ -58,14 +59,15 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
 - **Owner.** `PerfumerOwner = { userId: number | null; anonymousId: string | undefined }`, built like
   `getCartOwner` (`getSessionUser` + `readVisitor`; a revoked session counts as a guest). A user's
   active thread is found by `user_id`; a guest's by `anonymous_id` **with `user_id is null`**, so a
-  logged-out browser never shows the account's chat **(unconfirmed, Q3)**. The loader never
+  logged-out browser never shows the account's chat (Q3, confirmed). The loader never
   creates a visitor (only `readVisitor`); actions use `ensureVisitor` as today.
 - **Threads are created lazily** on the first message (no empty threads). "New chat" sets
   `closed_at` on the active thread; the next message creates a new one.
 - **Writes and the model call.** One transaction locks/creates the thread (`FOR UPDATE`), appends
   the customer's message and reads the last `PERFUMER_MAX_MESSAGES` (10) stored messages for the
   history; the model call runs **outside** it; a second write saves the reply (or the error marker)
-  and touches the thread. If the thread was deleted meanwhile, the save is a no-op.
+  and touches the thread. If the thread was deleted (soft or by the job) meanwhile, the save is a
+  no-op.
 - **History from the database.** `user` rows → `{ role: "user", content: text }`; `perfumer` rows
   with a reply → `replyToHistoryText` (kept in `~/lib/perfumer`) over the intro, the picks' *current*
   titles/brands (one `getProductSummaries` call) and the question; error rows are skipped. The cut
@@ -103,36 +105,35 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
 - **UI** (C+ strip, `PerfumerPage.tsx` → `Strip`): "Почати спочатку" becomes **"Новий чат"**
   (`perfumer.newChat`, same `RestartIcon`, `outline-light sm`), posting `intent=new-chat`; next to it
   **"Видалити чат"** (`perfumer.deleteChat`) with an inline two-step confirm (the button turns into
-  "Видалити розмову? Так / Ні") **(unconfirmed, Q2)**; both post with a fetcher and clear the local
+  "Видалити розмову? Так / Ні") (Q2, confirmed); both post with a fetcher and clear the local
   thread optimistically, aborting any running stream. A short note under the strip title, e.g.
   "Розмова зберігається 90 днів", links to the privacy page.
 - **Rating** (`intent=feedback`): unchanged event; additionally sets `reply.rating` on the owner's
   matching message (by `replyId`), best effort.
-- **Delete** removes the owner's threads with their messages (cascade) **(scope unconfirmed, Q1)**.
+- **Delete is a soft delete (Q1, owner's decision).** `delete-chat` sets `deleted_at` (and
+  `closed_at`) on the owner's active thread; its messages stay in the database. Every customer-facing
+  lookup (loader, history, rating, merge, "one active thread" uniques via `closed_at`) ignores
+  deleted threads, so to the customer the chat is gone. The rows are removed for good by the
+  retention job, 90 days after the last update (setting `deleted_at` bumps `updated_at`). The text
+  still never goes to `user_events`, the generator or the warehouse. **This deviates from the
+  issue's "a deleted chat is gone from the database"**; the privacy copy says deleted chats are kept
+  up to 90 days, then erased.
 - **Retention job** `pnpm db:prune-perfumer-chats`: `delete from perfumer_threads where updated_at <
-  now() - N days` (cascade), `N` from `PERFUMER_CHAT_RETENTION_DAYS` parsed like
+  now() - N days` (cascade; deleted and closed threads included), `N` from `PERFUMER_CHAT_RETENTION_DAYS` parsed like
   `parseUnpaidOrderHours` (zod, positive int, empty = unset, default 90). Daily cron `45 3 * * *`.
   Not added to `production.mts`: the default applies there.
 - **No text in analytics.** `perfumer_message` properties are unchanged (already text-free); the
   warehouse and generator read perfumer data only from `user_events`. A guard test keeps it so.
 
-## Open questions
-
-- [ ] **Q1: Does "Delete chat" delete only the active thread, or every thread of the owner
-  (including ones closed by "New chat")?** — Why it matters: closed threads are invisible but kept
-  for up to 90 days; deleting only the active one would leave text the customer can't reach or
-  remove, which the privacy copy would have to explain. Recommended default: **delete all the
-  owner's threads** (for a user: by `user_id`; for a guest: `anonymous_id` with `user_id is null`),
-  and say "deletes your conversations" in the copy. Affects steps: 3, 6, 9.
-- [ ] **Q2: Should "Delete chat" ask for confirmation, and how?** — Why it matters: it's
-  irreversible; the design has no dialog component (`app/components/ui` has none). Recommended
-  default: an inline two-step confirm inside the strip (no modal), keyboard- and screen-reader-
-  friendly (`aria-live` announcement after deletion). Affects steps: 8.
-- [ ] **Q3: After logging out, should that browser still show the account's chat?** — Why it
-  matters: shared devices. Recommended default: **no**: guest lookups require `user_id is null`, so
-  after logout the page starts empty (the account's chat returns after login). Affects steps: 3, 5.
-
 ## Resolved questions
+
+- **Q1: What does "Delete chat" do?** — Keep deleted chats in the database: a soft delete
+  (`deleted_at`), hidden from the customer, erased by the 90-day retention job (owner's answer on
+  the plan, 2026-11-19).
+- **Q2: Confirmation before deleting?** — Yes: an inline two-step confirm in the strip, with an
+  `aria-live` announcement after deletion (owner's answer, 2026-11-19).
+- **Q3: Does a logged-out browser show the account's chat?** — No: guest lookups require
+  `user_id is null` (owner's answer, 2026-11-19).
 
 - **Where does the service go?** — Extend the existing `app/.server/services/perfumer-chat.ts`
   (rate limit, engine call, analytics) and put the queries in a new
@@ -215,7 +216,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   threadId, limit)` (newest N by id, returned oldest first), `deleteLastErrorMarker(tx, threadId)`,
   `saveReplyMessage` / `saveErrorMarker` (insert only if the thread still exists, touch
   `updated_at`), `setReplyRating(db, owner, replyId, rating)` (jsonb `||`, owner-scoped join),
-  `closeActiveThread(db, owner)`, `deleteOwnerThreads(db, owner)` (Q1),
+  `closeActiveThread(db, owner)`, `softDeleteActiveThread(db, owner)` (sets `deleted_at`, `closed_at`),
   `moveGuestThreadToUser(tx, anonymousId, userId)`, `deleteThreadsIdleSince(db, cutoff)` → count.
 - [ ] **4. Service** (`services/perfumer-chat.ts`):
   - `getPerfumerThreadView(owner, db?)` → `PerfumerThreadView | null` (rows → `ThreadItem`s,
@@ -239,7 +240,8 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
     append; history from the DB with errors skipped; only the last 10 reach the engine; a forged
     assistant text can't enter (no API for it); retry replaces the marker instead of duplicating;
     stream saves at `done`, cancel/error save only the user message + marker; deleted-mid-stream
-    saves nothing; new chat closes, next message opens a new thread; delete removes rows; merge
+    saves nothing; new chat closes, next message opens a new thread; delete hides the thread from
+    every lookup but keeps its rows (and the job removes them later); merge
     both cases; turn counting; rate-limited stores nothing; event properties contain no message or
     intro text (assert `JSON.stringify(event)` doesn't include them).
 - [ ] **5. Request schema and routes.**
@@ -270,7 +272,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   add the one-time `sessionStorage.removeItem("jassmin.perfumer.thread")` effect. Delete
   `thread-storage.ts` and its test.
 - [ ] **8. Page UI** (`PerfumerPage.tsx`, follow `docs/design.md`): pass `loaderData.thread` from the
-  route; `Strip` gets "Новий чат" and "Видалити чат" (inline confirm, Q2) and the retention note;
+  route; `Strip` gets "Новий чат" and "Видалити чат" (inline confirm) and the retention note;
   after a delete, an `aria-live="polite"` message ("Розмову видалено"), focus back to the input.
   i18n keys in both `uk.ts` and `en.ts`: `perfumer.newChat`, `perfumer.deleteChat`,
   `perfumer.deleteConfirm`, `perfumer.deleteYes`, `perfumer.deleteNo`, `perfumer.deleted`,
@@ -281,8 +283,8 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
 - [ ] **9. Privacy copy.** `privacy.collect.perfumer` (shown when the perfumer is enabled: add
   `perfumerEnabled: isPerfumerEnabled()` to the privacy loader): what is stored (messages and the
   perfumer's answers, linked to the browser id or the account), why (to continue the conversation
-  across visits and devices). `privacy.retention.perfumer`: deleted 90 days after the last message,
-  or at once with "Видалити чат". Rewrite `privacy.sharing.ai` ("we don't store the text" →
+  across visits and devices). `privacy.retention.perfumer`: kept 90 days after the last message, then
+  erased; "Видалити чат" hides the chat at once, and its text is erased with the rest after 90 days. Rewrite `privacy.sharing.ai` ("we don't store the text" →
   "messages are sent to {provider} only to prepare the answer; don't include personal data").
   Extend `privacy.cookies.anonymousId` to mention the guest's chat. Bump
   `PRIVACY_POLICY_UPDATED_AT`. Update the privacy component test if it asserts copy.
@@ -315,10 +317,11 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
 - Manual (`pnpm aspire run`, with a local model via `AI_BASE_URL`):
   1. As a guest, ask two questions, close the browser, reopen `/parfumer`: the thread is there; a
      follow-up ("а щось схоже на другий?") uses it.
-  2. Log in: the chat stays. Log in on another browser: the same chat. Log out: empty (Q3).
+  2. Log in: the chat stays. Log in on another browser: the same chat. Log out: empty.
   3. Post a forged `payload={"messages":[…]}` with curl: 400, nothing stored.
-  4. "Новий чат" empties the page and a reload stays empty; "Видалити чат" → rows gone in
-     `psql` (`select count(*) from perfumer_messages`).
+  4. "Новий чат" empties the page and a reload stays empty; "Видалити чат" (after the confirm)
+     empties the page on every device; in `psql` the thread has `deleted_at` set and its messages
+     are still there.
   5. Archive a picked product in Strapi: the saved answer reloads without its card; change a price:
      the card shows the new price.
   6. Cancel a streaming reply, reload: the message and a "cancelled" note are shown.
@@ -333,8 +336,9 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   device — steps 4, 5, 6
 - [ ] The server ignores any history sent by the client; only stored messages reach the model —
   steps 4, 5
-- [ ] Customers can start a new chat and delete their chat; a deleted chat is gone from the
-  database — steps 3, 4, 5, 7, 8
+- [ ] Customers can start a new chat and delete their chat; ~~a deleted chat is gone from the
+  database~~ **changed by the owner:** a deleted chat is hidden from the customer everywhere and
+  kept in the database until the 90-day job erases it — steps 3, 4, 5, 7, 8, 10
 - [ ] Chats older than 90 days are deleted by the daily job, scheduled in `deploy/crontab` and
   runnable from Aspire — step 10
 - [ ] Message text never appears in `user_events`, the analytics generator or the warehouse —

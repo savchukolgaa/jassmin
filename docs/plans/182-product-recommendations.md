@@ -78,7 +78,7 @@ lists fall back to the family-based "Similar perfumes" and then to popular perfu
   3. `listBestsellers`, also with `excludeIds`.
 
   A list is labelled "Customers also chose" only when step 1 gave at least one product. Otherwise
-  it keeps the family heading "Similar perfumes" **(unconfirmed, Q3)**.
+  it keeps the family heading "Similar perfumes" (Q3, default chosen).
 - **Service API** (`services/recommendations.ts`):
   - `forProduct(productId, product, { cartProductIds })` returns
     `{ source: "recs" | "similar", products }`.
@@ -91,11 +91,11 @@ lists fall back to the family-based "Similar perfumes" and then to popular perfu
   `user_id` or `anonymous_id`, read only when `isTrackingAllowed(request)`) plus a logged-in user's
   last 5 bought products. Purchases are always excluded. With no seeds, or no recommendations for
   them, the result is `null`: the section isn't shown, and the existing bestsellers block is the
-  "popular perfumes" everyone else sees **(unconfirmed, Q1)**.
+  "popular perfumes" everyone else sees (Q1, default chosen).
 - **"Complete your trio":** it's shown only when the tester-trio rule is live (`getTesterTrioOffer`
   is not `null`), the cart's qualifying units (lines matching the rule's `volumeMl`, `pack_size 1`)
   modulo `setSize` are 1 or 2, and fewer than `maxSets` sets are complete. The seeds are the
-  cart's products, and the cards preselect the trio's size (10 ml) **(unconfirmed, Q2)**.
+  cart's products, and the cards preselect the trio's size (10 ml) (Q2, default chosen).
 - **Exclusions:** the product itself and products already in the cart, everywhere. "For you" also
   excludes what the visitor has bought. The cart's product ids come from `getCartView(owner)`.
   On the product and home pages the loader reads them with `getCartOwner`. That read only happens
@@ -114,21 +114,23 @@ lists fall back to the family-based "Similar perfumes" and then to popular perfu
 
 ## Open questions
 
-- [ ] **Q1: What does a visitor without history see in the home page's "For you" slot?** Why it
+The user chose the recommended default for each of these (2026-11-19); they are decided.
+
+- [x] **Q1: What does a visitor without history see in the home page's "For you" slot?** Why it
   matters: the home page already shows bestsellers. A "popular" fallback in a second section would
   repeat them. Recommended default: don't render "For you" without history; the existing
   bestsellers section is the popular list. With history, "For you" sits above the bestsellers.
   Affects steps: 7.
-- [ ] **Q2: What counts as "a trio isn't complete yet" in the cart?** Why it matters: it decides
+- [x] **Q2: What counts as "a trio isn't complete yet" in the cart?** Why it matters: it decides
   when the block shows and which size the cards offer. Recommended default: the live tester-trio
   rule's qualifying units (single 10 ml sizes) are 1 or 2 more than a full set, and the cards
   preselect 10 ml. Not shown for a cart of only big bottles or an empty cart. Affects steps: 5, 8.
-- [ ] **Q3: What heading does the product page fallback use?** The options are the family-based
+- [x] **Q3: What heading does the product page fallback use?** The options are the family-based
   "Similar perfumes", or always "Customers also chose". Why it matters: the issue wants the family
   list kept, and tracking wants the two lists told apart. Recommended default: keep "Similar
   perfumes" with `list_id: "similar"` for the fallback, and use "Customers also chose" with
   `recs_product` only for real recommendations. Affects steps: 6.
-- [ ] **Q4: May a logged-in customer's purchases seed "For you" without cookie consent?** Why it
+- [x] **Q4: May a logged-in customer's purchases seed "For you" without cookie consent?** Why it
   matters: orders aren't analytics tracking, but this is personalisation. Recommended default: yes
   for purchases, which are their own account data; views are used only with consent. Affects
   steps: 5.
@@ -197,7 +199,7 @@ lists fall back to the family-based "Similar perfumes" and then to popular perfu
 
 ## Steps
 
-- [ ] **1. Table and migration.** Add `productRecommendations` to `db/schema.ts`: the columns
+- [x] **1. Table and migration.** Add `productRecommendations` to `db/schema.ts`: the columns
   above, PK `product_recommendations_pkey (product_id, recommended_product_id)`, index
   `product_recommendations_product_id_rank_idx`, and CHECKs
   `product_recommendations_not_self_check` and `product_recommendations_rank_check`
@@ -205,6 +207,9 @@ lists fall back to the family-based "Similar perfumes" and then to popular perfu
   `pnpm db:generate --name product_recommendations` and write
   `rollbacks/0033_product_recommendations.sql`. Check it with `pnpm db:migrate` then
   `pnpm db:rollback` then `pnpm db:migrate` on the dev DB, and update `schema.test.ts` if needed.
+  Done: verified through `migrator.test.ts` on a throwaway database instead of the shared dev DB
+  (the new table is in `ALL_TABLES`, and every rollback sequence rolls 0033 back first).
+  `RECOMMENDATIONS_PER_PRODUCT` lives in `~/lib/recommendations`, imported by the schema.
 - [ ] **2. Signal extraction and pure cosine.**
   - `listRecommendationSignals(db, since)` is one `db.execute(sql…)` that returns
     `{ basket: string, productId: number, weight: number }[]`. It's the `union all` of:

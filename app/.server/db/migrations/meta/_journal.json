@@ -232,6 +232,13 @@
       "when": 1794858357674,
       "tag": "0032_perfumer_event_types",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795046936972,
+      "tag": "0033_product_recommendations",
+      "breakpoints": true
     }
   ]
 }

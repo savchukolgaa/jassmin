@@ -218,7 +218,7 @@ No new packages (`marked` is already used by `markdown.ts`).
     `newsletter`; write `db/rollbacks/0033_newsletters.sql`. Add the new statuses' CHECKs to `schema.test.ts`. Check: `pnpm db:migrate`, `pnpm db:rollback`,
     migrate again; `migrator.test.ts`.
 
-- [ ] **3. Email building blocks.** Move `unsubscribeUrl`, `listUnsubscribeHeaders` and `photoOf`
+- [x] **3. Email building blocks.** Move `unsubscribeUrl`, `listUnsubscribeHeaders` and `photoOf`
   to `email/marketing.ts` (cart reminder imports them; its tests stay green) and add
   `withUtm(url, siteUrl, utm)`: resolves relative URLs against `siteUrl`, tags only same-origin
   `http(s)` URLs, replaces existing `utm_*`. Add `rich` and `list` to `EmailBlock` and

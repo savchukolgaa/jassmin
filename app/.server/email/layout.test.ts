@@ -163,6 +163,59 @@ describe("renderEmail", () => {
     expect(htmlWords(content)).toEqual(words(text.split("\n-- \n")[0] ?? ""));
   });
 
+  it("links a product's photo and name to its page, and writes the URL in the text (#181)", () => {
+    const url = "https://jassmin.ua/products/coco?utm_source=newsletter&utm_medium=email";
+    const { html, text } = render("uk", [
+      {
+        type: "products",
+        items: [
+          { name: "Chanel Coco", details: "від 450 ₴", imageUrl: "https://cdn.example/a.jpg", url },
+          { name: "B", details: "2", url: "javascript:alert(1)" },
+        ],
+      },
+    ]);
+    const content = htmlSection(html, "content");
+    const href = `href="${url.replaceAll("&", "&amp;")}"`;
+    expect(content.split(href)).toHaveLength(3);
+    expect(content).not.toContain("javascript:");
+    expect(text).toContain(`Chanel Coco\nвід 450 ₴\n${url}\nB\n2`);
+  });
+
+  it("renders formatted runs and lists, escaped, with only web links (#181)", () => {
+    const { html, text } = render("uk", [
+      {
+        type: "rich",
+        runs: [
+          { text: "Нові " },
+          { text: "аромати <осені>", strong: true },
+          { text: " і " },
+          { text: "знижки", em: true, href: "https://jassmin.ua/offers?a=1&b=2" },
+          { text: " — " },
+          { text: "пошта", href: "mailto:hello@jassmin.ua" },
+        ],
+      },
+      {
+        type: "list",
+        ordered: false,
+        items: [[{ text: "перший" }], [{ text: "другий", strong: true }]],
+      },
+      { type: "list", ordered: true, items: [[{ text: "раз" }], [{ text: "два" }]] },
+    ]);
+    const content = htmlSection(html, "content");
+
+    expect(content).toContain("<strong");
+    expect(content).toContain("аромати &lt;осені&gt;");
+    expect(content).toContain('<a href="https://jassmin.ua/offers?a=1&amp;b=2"');
+    expect(content).toContain("<em>знижки</em>");
+    expect(content).not.toContain("mailto:hello");
+    expect(content).toMatch(/<ul [^>]*><li [^>]*>перший<\/li>/);
+    expect(content).toMatch(/<ol [^>]*><li [^>]*>раз<\/li>/);
+    expect(text).toContain(
+      "Нові аромати <осені> і знижки (https://jassmin.ua/offers?a=1&b=2) — пошта",
+    );
+    expect(text).toContain("- перший\n- другий\n\n1. раз\n2. два");
+  });
+
   it("never shows a product photo from a non-http URL", () => {
     const { html } = render("uk", [
       {

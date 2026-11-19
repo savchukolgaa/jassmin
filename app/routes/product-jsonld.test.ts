@@ -48,7 +48,11 @@ const product: ProductDetail = {
 /** Renders the product page under a root route whose loader data holds the site URL (#85). */
 function render(detail: ProductDetail, available = true, locale: Locale = "uk") {
   const Page = Product as unknown as ComponentType<{
-    loaderData: { product: ProductDetail; available: boolean; similar: [] };
+    loaderData: {
+      product: ProductDetail;
+      available: boolean;
+      recommendations: { source: "similar"; products: [] };
+    };
   }>;
   const router = createMemoryRouter(
     [
@@ -59,7 +63,11 @@ function render(detail: ProductDetail, available = true, locale: Locale = "uk") 
           {
             path: "products/:handle",
             element: createElement(Page, {
-              loaderData: { product: detail, available, similar: [] },
+              loaderData: {
+                product: detail,
+                available,
+                recommendations: { source: "similar", products: [] },
+              },
             }),
           },
         ],

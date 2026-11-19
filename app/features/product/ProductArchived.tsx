@@ -1,9 +1,9 @@
 import { ButtonLink } from "~/components/ui/ButtonLink";
-import { ProductListProvider } from "~/features/analytics/ProductList";
-import { ProductCard } from "~/features/catalog/ProductCard";
+import { RecommendedProducts } from "~/features/recommendations/RecommendedProducts";
 import { CATALOG_TITLE_KEYS, type CatalogGender } from "~/lib/catalog";
 import { usePathFor, useT } from "~/lib/i18n";
 import type { ProductSummary } from "~/lib/products";
+import type { ProductRecsSource } from "~/lib/recommendations";
 
 /**
  * In place of the purchase form on an archived product's page (#88): the product can't be
@@ -24,29 +24,32 @@ export function ProductUnavailable({ catalog }: { catalog: CatalogGender }) {
   );
 }
 
-/** Listed perfumes like an archived one (#88); nothing when there are none. */
-export function SimilarProducts({ products }: { products: ProductSummary[] }) {
+/**
+ * A product page's suggestions (#88, #182): "Customers also chose" from the nightly
+ * recommendations, or the family-based similar perfumes while the product has too few signals.
+ * Nothing when there are none.
+ */
+export function SimilarProducts({
+  products,
+  source = "similar",
+}: {
+  products: ProductSummary[];
+  source?: ProductRecsSource;
+}) {
   const { t } = useT();
-  if (products.length === 0) {
-    return null;
-  }
-  return (
-    <section aria-labelledby="similar-heading" className="mt-16">
-      <h2
-        id="similar-heading"
-        className="text-3xl font-bold tracking-[-0.01em] text-ink md:text-4xl"
-      >
-        {t("product.similar")}
-      </h2>
-      <ProductListProvider listId="similar" productIds={products.map((product) => product.id)}>
-        <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((product, index) => (
-            <li key={product.id} className="flex">
-              <ProductCard product={product} headingLevel={3} listIndex={index} />
-            </li>
-          ))}
-        </ul>
-      </ProductListProvider>
-    </section>
+  return source === "recs" ? (
+    <RecommendedProducts
+      id="recs-product"
+      title={t("recommendations.product.title")}
+      listId="recs_product"
+      products={products}
+    />
+  ) : (
+    <RecommendedProducts
+      id="similar"
+      title={t("product.similar")}
+      listId="similar"
+      products={products}
+    />
   );
 }

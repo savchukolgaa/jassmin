@@ -127,6 +127,19 @@ function toCartLine({
   return { ...line, image: productImage({ imageUrl, imageWidth, imageHeight, imageFormats }) };
 }
 
+/**
+ * The `public_id`s of the products in the owner's cart, without pricing it: what recommendation
+ * lists leave out (#182). Empty without a cart.
+ */
+export async function getCartProductIds(owner: CartOwner, db: Db = defaultDb): Promise<string[]> {
+  const cartId = await getActiveCartId(owner, db);
+  if (cartId === undefined) {
+    return [];
+  }
+  const lines = await listCartLines(db, cartId);
+  return [...new Set(lines.map((line) => line.productId))];
+}
+
 /** The owner's cart lines, totals and discount; empty when they have no cart. */
 export async function getCartView(
   owner: CartOwner,

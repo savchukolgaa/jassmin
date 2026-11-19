@@ -295,7 +295,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
   Unit tests with injected DB fakes or a test DB cover each exclusion, the archived and
   out-of-stock filter, the fallback order and the trio counts (0, 1, 2, 3, 4 units; the max sets
   reached).
-- [ ] **6. Product page.**
+- [x] **6. Product page.**
   - The `product.tsx` loader calls `forProduct(found.id, product, { cartProductIds })` for
     available and archived products alike. It reads the cart ids from
     `getCartView(await getCartOwner(request))` only when an owner exists, and returns
@@ -323,7 +323,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
     `ProductCard` can't preselect a size yet, add an optional `preferredVolumeMl` prop to
     `ProductCard` → `CardVolumePicker`.
   - After an add, the cart loader revalidates, so the block updates or disappears.
-- [ ] **9. Tracking contract.** Add the three ids to `LIST_IDS`, document them in
+- [x] **9. Tracking contract.** Add the three ids to `LIST_IDS`, document them in
   `docs/analytics-events.md` → Lists, and extend the `analytics.schema` tests so that
   impressions and clicks with the new ids parse. `cart.schema.ts` accepts them automatically
   through `LIST_IDS`. Add a `RecommendedProducts.dom.test.ts` that checks the cards carry

@@ -191,7 +191,7 @@ No new packages (`marked` is already used by `markdown.ts`).
 
 ## Steps
 
-- [ ] **1. Enums, env and shared types.** Add `NEWSLETTER_STATUSES = ["sending", "sent"]`,
+- [x] **1. Enums, env and shared types.** Add `NEWSLETTER_STATUSES = ["sending", "sent"]`,
   `NEWSLETTER_DELIVERY_STATUSES = ["queued", "sent", "failed", "skipped"]` and `"newsletter"` in
   `CMS_SYNC_ENTITIES` (`app/lib/enums.ts`, `enums.test.ts`). Add `NEWSLETTER_DAILY_LIMIT`
   (`z.coerce.number().int().positive()`, default 200) to `mailEnvSchema` so both `getEnv()` and

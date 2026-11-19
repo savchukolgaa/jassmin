@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 
 const cart = vi.hoisted(() => ({ mergeGuestCart: vi.fn() }));
+const perfumer = vi.hoisted(() => ({ mergeGuestPerfumerThread: vi.fn() }));
 const analytics = vi.hoisted(() => ({
   readVisitor: vi.fn(),
   linkVisitorToUser: vi.fn(),
@@ -12,6 +13,7 @@ const analytics = vi.hoisted(() => ({
 const userQueries = vi.hoisted(() => ({ setUserLocale: vi.fn() }));
 
 vi.mock("./cart", () => cart);
+vi.mock("./perfumer-threads", () => perfumer);
 vi.mock("../db/queries/users", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../db/queries/users")>()),
   ...userQueries,
@@ -56,6 +58,8 @@ describe("onUserAuthenticated", () => {
 
     expect(analytics.readVisitor).toHaveBeenCalledWith(request);
     expect(cart.mergeGuestCart).toHaveBeenCalledWith(5, ANONYMOUS_ID);
+    // The guest's perfumer chat goes with the cart (#180).
+    expect(perfumer.mergeGuestPerfumerThread).toHaveBeenCalledWith(5, ANONYMOUS_ID);
     expect(analytics.linkVisitorToUser).toHaveBeenCalledWith(ANONYMOUS_ID, 5);
     expect(analytics.trackEvent).toHaveBeenCalledWith(loginArgs, "login", {
       userId: 5,
@@ -98,6 +102,7 @@ describe("onUserAuthenticated", () => {
     await onUserAuthenticated(registerArgs, 9, "register");
 
     expect(analytics.readVisitor).not.toHaveBeenCalled();
+    expect(perfumer.mergeGuestPerfumerThread).toHaveBeenCalledWith(9, ANONYMOUS_ID);
     expect(analytics.linkVisitorToUser).toHaveBeenCalledWith(ANONYMOUS_ID, 9);
     expect(analytics.trackEvent).toHaveBeenCalledWith(registerArgs, "login", {
       userId: 9,
@@ -112,6 +117,7 @@ describe("onUserAuthenticated", () => {
     await onUserAuthenticated(args(), 5, "register");
 
     expect(cart.mergeGuestCart).not.toHaveBeenCalled();
+    expect(perfumer.mergeGuestPerfumerThread).not.toHaveBeenCalled();
     expect(analytics.linkVisitorToUser).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
@@ -119,12 +125,14 @@ describe("onUserAuthenticated", () => {
   it("never makes logging in fail, and one failure doesn't stop the rest", async () => {
     analytics.readVisitor.mockResolvedValueOnce({ anonymousId: ANONYMOUS_ID });
     cart.mergeGuestCart.mockRejectedValueOnce(new Error("db down"));
+    perfumer.mergeGuestPerfumerThread.mockRejectedValueOnce(new Error("db down"));
     analytics.linkVisitorToUser.mockRejectedValueOnce(new Error("db down"));
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const { onUserAuthenticated } = await import("./auth");
 
     await expect(onUserAuthenticated(args(), 5, "login")).resolves.toBeUndefined();
-    expect(consoleError).toHaveBeenCalledTimes(2);
+    expect(consoleError).toHaveBeenCalledTimes(3);
+    expect(analytics.linkVisitorToUser).toHaveBeenCalled();
     expect(analytics.trackEvent).toHaveBeenCalled();
     consoleError.mockRestore();
   });

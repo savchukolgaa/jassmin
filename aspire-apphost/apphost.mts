@@ -123,6 +123,18 @@ async function addDevelopmentResources(builder: DistributedApplicationBuilder) {
     .withParentRelationship(db)
     .withExplicitStart();
 
+  // Deletes AI perfumer chats not updated for PERFUMER_CHAT_RETENTION_DAYS (default 90), deleted
+  // ones included (#180, daily cron in production).
+  await builder
+    .addJavaScriptApp("db-prune-perfumer-chats", "..", {
+      runScriptName: "db:prune-perfumer-chats",
+    })
+    .withPnpm({ install: false })
+    .withReference(db)
+    .waitForCompletion(dbMigrate)
+    .withParentRelationship(db)
+    .withExplicitStart();
+
   // Fills `jassmin_synth` with generated data (#131): `uv run analytics/generator/generate.py
   // --load-app-schema` migrates it with the app's migrations (`pnpm db:migrate`, hence waiting for
   // the root install of `db-migrate`) and loads `raw.*` and `public.*`. It gets only the synth

@@ -1,9 +1,10 @@
 import { data } from "react-router";
 import { isPerfumerEnabled } from "~/.server/ai/config";
-import { ensureVisitor, trackEvent } from "~/.server/analytics";
+import { trackEvent } from "~/.server/analytics";
 import { getLocale } from "~/.server/locale";
 import { getClientIp } from "~/.server/rate-limit";
 import { openPerfumerStream } from "~/.server/services/perfumer-chat";
+import { getPerfumerWriter } from "~/.server/services/perfumer-threads";
 import { eventStreamResponse } from "~/.server/sse";
 import type { PerfumerMessageProperties } from "~/lib/analytics";
 import type { PerfumerErrorKey, PerfumerEvent } from "~/lib/perfumer";
@@ -42,7 +43,7 @@ export async function action(args: Route.ActionArgs) {
     return refusal(parsed.error);
   }
   // The visitor's id works without analytics consent, like the guest cart's (#18).
-  const [locale, visitor] = await Promise.all([getLocale(request), ensureVisitor(args)]);
+  const [locale, owner] = await Promise.all([getLocale(request), getPerfumerWriter(args)]);
   // The model call stops when the customer closes the page or cancels: the request is aborted, or
   // the response body cancelled, whichever the server notices first.
   const stop = new AbortController();
@@ -52,16 +53,16 @@ export async function action(args: Route.ActionArgs) {
     void trackEvent(args, "perfumer_message", { properties: event });
   const result = await openPerfumerStream({
     locale,
-    messages: parsed.messages,
-    turn: parsed.turn,
+    owner,
+    message: parsed.message,
     entry: parsed.entry,
+    retry: parsed.retry,
     ipKey: getClientIp(request),
-    sessionKey: visitor.anonymousId,
     signal: AbortSignal.any([request.signal, stop.signal]),
     onEvent: record,
   });
   if (!result.ok) {
-    record(result.event);
+    if (result.event) record(result.event);
     return refusal(result.error);
   }
   return eventStreamResponse(result.events, { onCancel: () => stop.abort() });

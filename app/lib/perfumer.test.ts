@@ -9,8 +9,6 @@ import {
   perfumerPrefillSearch,
   replyToHistoryText,
   showPerfumerCorner,
-  type ThreadItem,
-  toHistory,
 } from "./perfumer";
 import type { ProductSummary } from "./products";
 
@@ -35,37 +33,6 @@ describe("replyToHistoryText", () => {
   it("is cut to the message limit", () => {
     const long = replyToHistoryText({ intro: "а".repeat(700), picks: [] });
     expect(long).toHaveLength(PERFUMER_MAX_INPUT_LENGTH);
-  });
-});
-
-describe("toHistory", () => {
-  it("keeps the customer's messages and the replies, skipping errors and cancelled turns", () => {
-    const items: ThreadItem[] = [
-      { id: "1", role: "user", text: "Щось свіже" },
-      { id: "2", role: "perfumer", reply: { intro: "Ось.", picks: [] } },
-      { id: "3", role: "user", text: "Дешевше" },
-      { id: "4", role: "error", error: "timeout", retryText: "Дешевше" },
-      { id: "5", role: "cancelled" },
-      { id: "6", role: "user", text: "До 400 ₴" },
-    ];
-    expect(toHistory(items)).toEqual([
-      { role: "user", content: "Щось свіже" },
-      { role: "assistant", content: "Ось." },
-      { role: "user", content: "Дешевше" },
-      { role: "user", content: "До 400 ₴" },
-    ]);
-  });
-
-  it("sends only the last 10 messages", () => {
-    const items: ThreadItem[] = Array.from({ length: 14 }, (_, n) => ({
-      id: String(n),
-      role: "user",
-      text: `m${n}`,
-    }));
-    const history = toHistory(items);
-    expect(history).toHaveLength(10);
-    expect(history[0]?.content).toBe("m4");
-    expect(history.at(-1)?.content).toBe("m13");
   });
 });
 

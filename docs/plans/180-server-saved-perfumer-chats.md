@@ -312,7 +312,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   db:prune-perfumer-chats` with a comment; `apphost.mts`: explicit-start
   `db-prune-perfumer-chats` child of `jassmindb` after `db-migrate`. Test (DB): a thread idle 91 days
   and its messages are deleted, an 89-day one stays, a second run deletes nothing; parser cases.
-- [ ] **11. Analytics guard.** `app/.server/perfumer-privacy.guard.test.ts`: walk
+- [x] **11. Analytics guard.** `app/.server/perfumer-privacy.guard.test.ts`: walk
   `analytics/generator`, `analytics/warehouse` (models, fixtures, seeds) and `analytics/notebooks`
   and fail if any file mentions `perfumer_messages` or `perfumer_threads`. Note in
   `docs/analytics-events.md` that `perfumer_message.turn` now comes from the stored thread.

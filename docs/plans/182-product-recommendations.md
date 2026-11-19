@@ -313,7 +313,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
     "Для вас", `listId: "recs_for_you"`) above `Bestsellers` only when the list isn't empty.
   - Tests: `HomePage.test.ts` checks it's absent for `null` and present for a list, and
     `home.test.ts` checks the loader's wiring.
-- [ ] **8. Cart "Complete your trio".**
+- [x] **8. Cart "Complete your trio".**
   - The `cart.tsx` loader adds `getTesterTrioOffer()` and `forCart(cart, offer)` and returns
     `trioSuggestions`.
   - The page renders `RecommendedProducts` with `recommendations.cart.title` ("Complete your trio"
@@ -328,7 +328,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
   impressions and clicks with the new ids parse. `cart.schema.ts` accepts them automatically
   through `LIST_IDS`. Add a `RecommendedProducts.dom.test.ts` that checks the cards carry
   `listIndex` and the provider's `listId`.
-- [ ] **10. i18n and UI polish.**
+- [x] **10. i18n and UI polish.**
   - Add `recommendations.{product,forYou,cart}.{title,subtitle?}` to `uk.ts` (the source) and
     `en.ts`.
   - Make the `RecommendedProducts` section follow C+ (`docs/design.md`): the same heading scale

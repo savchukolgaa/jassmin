@@ -305,7 +305,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   "messages are sent to {provider} only to prepare the answer; don't include personal data").
   Extend `privacy.cookies.anonymousId` to mention the guest's chat. Bump
   `PRIVACY_POLICY_UPDATED_AT`. Update the privacy component test if it asserts copy.
-- [ ] **10. Retention job.** `db/prune-perfumer-chats.ts`: `DEFAULT_PERFUMER_CHAT_RETENTION_DAYS =
+- [x] **10. Retention job.** `db/prune-perfumer-chats.ts`: `DEFAULT_PERFUMER_CHAT_RETENTION_DAYS =
   90`, `parsePerfumerChatRetentionDays(env)`, `prunePerfumerChatsJob(db, days, now)` → `{ deleted,
   message }`; `db/scripts/prune-perfumer-chats.ts` wrapper (exit 1 on a bad value, like
   `cancel-unpaid-orders`); `package.json` script; `deploy/crontab`: `45 3 * * * pnpm --silent

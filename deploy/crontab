@@ -15,3 +15,7 @@
 # Expire gift cards past their 12 months (#125), and delete ended rate-limit windows (#143).
 15 3 * * * pnpm --silent db:expire-gift-cards
 30 3 * * * pnpm --silent db:prune-rate-limits
+
+# Delete AI perfumer chats not updated for PERFUMER_CHAT_RETENTION_DAYS (default 90), deleted ones
+# included (#180).
+45 3 * * * pnpm --silent db:prune-perfumer-chats

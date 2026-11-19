@@ -112,6 +112,19 @@ lists fall back to the family-based "Similar perfumes" and then to popular perfu
   default `ProductCard`s with the volume picker), placed in `app/features/recommendations/`. The
   C+ tokens follow `SimilarProducts`, which becomes a thin wrapper around it, or is replaced by it.
 
+- **Deviations found while implementing (steps 4–5):**
+  - The recommendable filter is a `RecommendableFilter` (`excludePublicIds`, `excludeIds`,
+    `volumeMl`) applied in `db/queries/products.ts` (`recommendable`). `listSimilarProducts` and
+    `listBestsellers` take it as an optional `filter`, so their existing callers don't change.
+    `listRecommendedProducts` also lives there, because it shares the card columns.
+  - The cart's fallback is recommendations, then bestsellers with the trio size in stock. A cart
+    line has no gender or family list, so the similar list doesn't fit there.
+  - `TrioOffer` has no `maxSets`, so the cart shows the block for any incomplete set. Checkout
+    still prices at most the rule's sets.
+  - The trio cards get the 10 ml size through `preselectVolume`, which overrides the summary's
+    `defaultVariant`, so `ProductCard` needs no new prop.
+  - "For you" is topped up with bestsellers once it has at least one recommendation.
+
 ## Open questions
 
 The user chose the recommended default for each of these (2026-11-19); they are decided.
@@ -250,7 +263,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
     views, one of them older than 365 days and one of them from an order with a cancelled status.
     Check that the job writes the expected rows and ignores the old view and the cancelled order,
     and that a second run replaces the rows rather than duplicating them.
-- [ ] **4. Read queries.**
+- [x] **4. Read queries.**
   - In `db/queries/products.ts`, add `isInStock`: `exists (select 1 from product_variants v where
     v.product_id = products.id and <variantStock> > 0)`. Add an optional `excludeIds` to
     `listSimilarProducts` and `listBestsellers`, and use `isInStock` in both when called for
@@ -264,7 +277,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
       viewed product ids;
     - `listPurchasedProductIds(db, userId)` returns the ids from sold orders (and pending ones, so
       a just-placed order isn't suggested again).
-- [ ] **5. Service.** Put `services/recommendations.ts` together from steps 2–4 with a shared
+- [x] **5. Service.** Put `services/recommendations.ts` together from steps 2–4 with a shared
   `fillUp(primary, fallbacks…)` that dedupes and stops at `RECS_LIST_LIMIT`.
   - `forProduct`: recommendations seeded by the product, excluding the cart. If none come back,
     `source: "similar"`, built from `listSimilarProducts`, then `listBestsellers`.

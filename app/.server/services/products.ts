@@ -64,7 +64,7 @@ export function productImage(row: ProductImageColumns): ResponsiveImage | null {
 }
 
 // The only place rows become DTOs.
-function toSummary(row: ProductSummaryRow): ProductSummary {
+export function toSummary(row: ProductSummaryRow): ProductSummary {
   const { variants } = row;
   // Never undefined: the catalog queries inner-join the variants, so every row has one.
   const preselected = defaultVariant(variants);

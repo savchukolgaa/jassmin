@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/182
 Branch: `issue/182`
 Worktree: `.claude/worktrees/issue-182`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -343,7 +343,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
     `db/build-recommendations.ts`, the simplified weights and the cold-start fallback.
   - `app/.server/AGENTS.md`: a short Recommendations bullet with the table, the job, the service
     and the rule that it reads only the app's own tables.
-- [ ] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Then
+- [x] **12. Verify.** Run `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Then
   check manually under `pnpm aspire run` (see Testing).
 
 ## Testing & verification
@@ -378,18 +378,19 @@ The user chose the recommended default for each of these (2026-11-19); they are 
 
 ## Acceptance criteria
 
-- [ ] `db:build-recommendations` computes item-item cosine recommendations from real orders and
+- [x] `db:build-recommendations` computes item-item cosine recommendations from real orders and
   consented views, and a unit test checks it against a hand-computed example — steps 1, 2, 3
-- [ ] Product pages show "Customers also chose", and fall back to the family-based list when a
+- [x] Product pages show "Customers also chose", and fall back to the family-based list when a
   product has too few signals — steps 5, 6
-- [ ] Visitors with history see "For you" on the home page, without products they already bought;
+- [x] Visitors with history see "For you" on the home page, without products they already bought;
   others see popular perfumes — steps 5, 7 (Q1)
-- [ ] The cart suggests perfumes to complete a trio — steps 5, 8 (Q2)
-- [ ] Only active, in-stock products are recommended, never the product itself or one already in
+- [x] The cart suggests perfumes to complete a trio — steps 5, 8 (Q2)
+- [x] Only active, in-stock products are recommended, never the product itself or one already in
   the cart — steps 4, 5
-- [ ] Clicks are tracked with their list and position — steps 6–9
-- [ ] The job runs nightly in production and from the Aspire dashboard — step 3
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
+- [x] Clicks are tracked with their list and position — steps 6–9
+- [x] The job runs nightly in production and from the Aspire dashboard — step 3 (configured in
+  `deploy/crontab` and `apphost.mts`; not yet observed on the server)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 12
 
 ## Out of scope
 

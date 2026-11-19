@@ -163,7 +163,11 @@ const PRODUCT: ProductDetail = {
 function productPage() {
   return () =>
     createElement(Product, {
-      loaderData: { product: PRODUCT, available: false, similar: [] },
+      loaderData: {
+        product: PRODUCT,
+        available: false,
+        recommendations: { source: "similar", products: [] },
+      },
     } as unknown as ProductProps);
 }
 

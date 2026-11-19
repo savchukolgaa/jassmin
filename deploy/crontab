@@ -16,6 +16,9 @@
 # Cancel card orders still unpaid after UNPAID_ORDER_HOURS (#128).
 30 * * * * pnpm --silent db:cancel-unpaid-orders
 
+# Rebuild the product recommendations from the last year's orders and views (#182).
+45 2 * * * pnpm --silent db:build-recommendations
+
 # Expire gift cards past their 12 months (#125), and delete ended rate-limit windows (#143).
 15 3 * * * pnpm --silent db:expire-gift-cards
 30 3 * * * pnpm --silent db:prune-rate-limits

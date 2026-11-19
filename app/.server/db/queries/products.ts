@@ -9,6 +9,7 @@ import {
   inArray,
   isNotNull,
   ne,
+  notInArray,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -18,7 +19,7 @@ import type { Gender, OrderStatus } from "~/lib/enums";
 import type { ImageFormat } from "~/lib/images";
 import type { CardVariant } from "~/lib/products";
 import type { Db } from "../client";
-import { orderItems, orders, products, productVariants } from "../schema";
+import { orderItems, orders, productRecommendations, products, productVariants } from "../schema";
 
 export interface ProductFilters {
   genders: readonly Gender[];
@@ -61,6 +62,37 @@ function familyFilter(families: readonly string[] | undefined): SQL | undefined 
 
 function genderFilter(genders: readonly Gender[] | undefined): SQL | undefined {
   return genders?.length ? inArray(products.gender, [...genders]) : undefined;
+}
+
+/**
+ * What a recommendation list (#182) may show: a listed single perfume (`pack_size 1`) with a size
+ * in stock (`volumeMl`: that size), and none of `excludePublicIds` (the product itself, the
+ * cart, what the visitor bought).
+ */
+export interface RecommendableFilter {
+  excludePublicIds?: readonly string[];
+  /** The same by `products.id`, e.g. what a customer bought. */
+  excludeIds?: readonly number[];
+  volumeMl?: number | null;
+}
+
+function recommendable({
+  excludePublicIds = [],
+  excludeIds = [],
+  volumeMl,
+}: RecommendableFilter): SQL | undefined {
+  const ofSize = volumeMl ? sql` and ${productVariants.volumeMl} = ${volumeMl}` : sql``;
+  const inStock = sql`exists (
+    select 1 from ${productVariants}
+    where ${productVariants.productId} = ${products.id} and ${variantStock} > 0${ofSize}
+  )`;
+  return and(
+    isListed,
+    eq(products.packSize, 1),
+    inStock,
+    excludePublicIds.length ? notInArray(products.publicId, [...excludePublicIds]) : undefined,
+    excludeIds.length ? notInArray(products.id, [...excludeIds]) : undefined,
+  );
 }
 
 // Shared by the list and the count, so the total always matches the listed products.
@@ -166,8 +198,8 @@ export function listProductSummariesByPublicIds(
     .where(and(isListed, inArray(products.publicId, [...publicIds])));
 }
 
-/** Orders whose units count as sold for the bestsellers (#64). */
-const SOLD_ORDER_STATUSES: OrderStatus[] = ["paid", "shipped", "completed"];
+/** Orders whose units count as sold: the bestsellers (#64) and recommendations (#182). */
+export const SOLD_ORDER_STATUSES: OrderStatus[] = ["paid", "shipped", "completed"];
 
 /** Units sold per product in paid, shipped or completed orders (#64). */
 function soldUnits(db: Db) {
@@ -194,7 +226,12 @@ function bestsellerOrder(sold: SoldUnits): SQL[] {
  * The listed products with the most units sold in paid, shipped or completed orders, then the
  * newest ones, so the list is full whenever enough products are listed (#64).
  */
-export function listBestsellers(db: Db, limit: number): Promise<ProductSummaryRow[]> {
+export function listBestsellers(
+  db: Db,
+  limit: number,
+  /** Only what a recommendation list may show (#182), e.g. as its last fallback. */
+  filter?: RecommendableFilter,
+): Promise<ProductSummaryRow[]> {
   const stats = variantStats(db);
   const sold = soldUnits(db);
   return db
@@ -202,7 +239,7 @@ export function listBestsellers(db: Db, limit: number): Promise<ProductSummaryRo
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
     .leftJoin(sold, eq(sold.productId, products.id))
-    .where(isListed)
+    .where(filter ? recommendable(filter) : isListed)
     .orderBy(...bestsellerOrder(sold))
     .limit(limit);
 }
@@ -441,6 +478,8 @@ export interface SimilarProductsQuery {
   fragranceFamilies: readonly string[];
   brand: string;
   limit: number;
+  /** Only what a recommendation list may show (#182): the fallback for "Customers also chose". */
+  filter?: RecommendableFilter;
 }
 
 /**
@@ -450,7 +489,7 @@ export interface SimilarProductsQuery {
  */
 export function listSimilarProducts(
   db: Db,
-  { excludeId, genders, fragranceFamilies, brand, limit }: SimilarProductsQuery,
+  { excludeId, genders, fragranceFamilies, brand, limit, filter }: SimilarProductsQuery,
 ): Promise<ProductSummaryRow[]> {
   const stats = variantStats(db);
   const sold = soldUnits(db);
@@ -462,7 +501,13 @@ export function listSimilarProducts(
     .from(products)
     .innerJoin(stats, eq(stats.productId, products.id))
     .leftJoin(sold, eq(sold.productId, products.id))
-    .where(and(isListed, ne(products.id, excludeId), inArray(products.gender, [...genders])))
+    .where(
+      and(
+        filter ? recommendable(filter) : isListed,
+        ne(products.id, excludeId),
+        inArray(products.gender, [...genders]),
+      ),
+    )
     .orderBy(
       sql`${sharesFamily} desc`,
       sql`${products.brand} = ${brand} desc`,
@@ -471,6 +516,65 @@ export function listSimilarProducts(
       ...bestsellerOrder(sold),
     )
     .limit(limit);
+}
+
+export interface RecommendedProductsQuery extends RecommendableFilter {
+  /** The products to recommend for (`products.id`), left out of the list themselves. */
+  seedIds: readonly number[];
+  limit: number;
+}
+
+/**
+ * The nightly recommendations (#182) for one or more products, blended: a product recommended
+ * for several seeds adds up its scores, then the best rank decides. Only what a recommendation
+ * list may show (`RecommendableFilter`), never a seed.
+ */
+export function listRecommendedProducts(
+  db: Db,
+  { seedIds, limit, ...filter }: RecommendedProductsQuery,
+): Promise<ProductSummaryRow[]> {
+  if (seedIds.length === 0) {
+    return Promise.resolve([]);
+  }
+  const stats = variantStats(db);
+  const recs = db
+    .select({
+      productId: productRecommendations.recommendedProductId,
+      score: sql<number>`sum(${productRecommendations.score})`.as("score"),
+      bestRank: sql<number>`min(${productRecommendations.rank})`.as("best_rank"),
+    })
+    .from(productRecommendations)
+    .where(
+      and(
+        inArray(productRecommendations.productId, [...seedIds]),
+        notInArray(productRecommendations.recommendedProductId, [...seedIds]),
+      ),
+    )
+    .groupBy(productRecommendations.recommendedProductId)
+    .as("recs");
+  return db
+    .select(summaryColumns(stats))
+    .from(recs)
+    .innerJoin(products, eq(products.id, recs.productId))
+    .innerJoin(stats, eq(stats.productId, products.id))
+    .where(recommendable(filter))
+    .orderBy(desc(recs.score), asc(recs.bestRank), asc(products.id))
+    .limit(limit);
+}
+
+/** `products.id` of the products with these `public_id`s (UUIDs), listed or not. */
+export async function findProductIdsByPublicIds(
+  db: Db,
+  publicIds: readonly string[],
+): Promise<number[]> {
+  if (publicIds.length === 0) {
+    return [];
+  }
+  const rows = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(inArray(products.publicId, [...publicIds]));
+  return rows.map((row) => row.id);
 }
 
 export type ProductDetailRow = NonNullable<Awaited<ReturnType<typeof findProductByPublicId>>>;

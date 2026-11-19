@@ -93,6 +93,15 @@ describe("parseEventProperties", () => {
     expect(parseEventProperties("checkout_start", { subtotal: "1.00", itemCount: 1 })).toBeNull();
   });
 
+  it.each(["recs_product", "recs_for_you", "recs_cart"] as const)(
+    "accepts clicks and cart adds in the %s recommendation list (#182)",
+    (listId) => {
+      const inList = { ...listed, list_id: listId, list_position: 3 };
+      expect(parseEventProperties("product_click", inList)).toEqual(inList);
+      expect(parseEventProperties("product_impression", inList)).toEqual(inList);
+    },
+  );
+
   it("needs the list and a 1-based position on impressions and clicks", () => {
     expect(parseEventProperties("product_impression", product)).toBeNull();
     expect(parseEventProperties("product_click", { ...listed, list_position: 0 })).toBeNull();

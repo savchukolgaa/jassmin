@@ -18,7 +18,11 @@ const analytics = vi.hoisted(() => ({ ensureVisitor: vi.fn(), trackEvent: vi.fn(
 
 vi.mock("~/.server/services/products", () => products);
 vi.mock("~/.server/services/cart", () => cart);
+const recommendations = vi.hoisted(() => ({ forCart: vi.fn() }));
+const trio = vi.hoisted(() => ({ getTesterTrioOffer: vi.fn() }));
 vi.mock("~/.server/analytics", () => analytics);
+vi.mock("~/.server/services/recommendations", () => recommendations);
+vi.mock("~/.server/services/trio", () => trio);
 
 type ActionArgs = Parameters<typeof import("./cart").action>[0];
 type LoaderArgs = Parameters<typeof import("./cart").loader>[0];
@@ -88,11 +92,14 @@ function trackedEvents() {
 }
 
 const add = { intent: "add", productId: PRODUCT_ID, variantId: VARIANT_ID };
+const TRIO_OFFER = { price: "499.00", setSize: 3, volumeMl: 10 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   cart.getCartOwner.mockResolvedValue(owner);
   cart.getRestorableCart.mockResolvedValue(null);
+  trio.getTesterTrioOffer.mockResolvedValue(TRIO_OFFER);
+  recommendations.forCart.mockResolvedValue({ missing: 0, products: [] });
 });
 
 describe("cart loader", () => {
@@ -105,10 +112,25 @@ describe("cart loader", () => {
     expect(await loader({ request, params: {}, context: {} } as unknown as LoaderArgs)).toEqual({
       ...view,
       restorable: null,
+      trioSuggestions: null,
     });
     expect(cart.getCartOwner).toHaveBeenCalledWith(request);
     expect(cart.getCartView).toHaveBeenCalledWith(owner);
     expect(cart.getRestorableCart).toHaveBeenCalledWith(owner);
+  });
+
+  it("suggests perfumes to complete the tester trio (#182)", async () => {
+    const view = { lines: [{ productId: PRODUCT_ID, packSize: 1, volumeMl: 10, quantity: 1 }] };
+    const products = [{ id: "other" }];
+    cart.getCartView.mockResolvedValueOnce(view);
+    recommendations.forCart.mockResolvedValueOnce({ missing: 2, products });
+    const { loader } = await import("./cart");
+    const request = new Request("http://localhost/cart");
+
+    expect(
+      await loader({ request, params: {}, context: {} } as unknown as LoaderArgs),
+    ).toMatchObject({ trioSuggestions: { missing: 2, price: "499.00", products } });
+    expect(recommendations.forCart).toHaveBeenCalledWith(view, TRIO_OFFER);
   });
 
   it("offers a logged-in user the cart a reminder was about (#139)", async () => {

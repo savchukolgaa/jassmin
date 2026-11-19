@@ -135,6 +135,18 @@ async function addDevelopmentResources(builder: DistributedApplicationBuilder) {
     .withParentRelationship(db)
     .withExplicitStart();
 
+  // Rebuilds `product_recommendations` from orders and consented views (#182, nightly cron in
+  // production). Set RECS_MIN_SIGNALS in `.env` (e.g. 1) to see recommendations on little data.
+  await builder
+    .addJavaScriptApp("db-build-recommendations", "..", {
+      runScriptName: "db:build-recommendations",
+    })
+    .withPnpm({ install: false })
+    .withReference(db)
+    .waitForCompletion(dbMigrate)
+    .withParentRelationship(db)
+    .withExplicitStart();
+
   // Fills `jassmin_synth` with generated data (#131): `uv run analytics/generator/generate.py
   // --load-app-schema` migrates it with the app's migrations (`pnpm db:migrate`, hence waiting for
   // the root install of `db-migrate`) and loads `raw.*` and `public.*`. It gets only the synth

@@ -1,7 +1,9 @@
 import { data, isRouteErrorResponse, redirect } from "react-router";
 import { trackEvent } from "~/.server/analytics";
 import { getLocale } from "~/.server/locale";
-import { getSimilarProducts, resolveProductHandle } from "~/.server/services/products";
+import { getCartOwner, getCartProductIds } from "~/.server/services/cart";
+import { resolveProductHandle } from "~/.server/services/products";
+import { forProduct } from "~/.server/services/recommendations";
 import { JsonLd } from "~/components/JsonLd";
 import { Breadcrumbs } from "~/components/layout/Breadcrumbs";
 import { ErrorContent } from "~/components/layout/ErrorContent";
@@ -114,9 +116,11 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
     // The preselected size, as the page first shows it (#129).
     properties: productEventContext(product),
   });
-  // An archived product (#88) suggests listed perfumes like it instead.
-  const similar = available ? [] : await getSimilarProducts(found.id, product);
-  return { product, available, similar };
+  // "Customers also chose" (#182), or the similar perfumes by family while the product has too
+  // few signals (#88), without what's already in the cart. An archived product gets them too.
+  const cartProductIds = await getCartProductIds(await getCartOwner(request));
+  const recommendations = await forProduct(found.id, product, { cartProductIds });
+  return { product, available, recommendations };
 }
 
 // Adding to the cart doesn't change the product, and reloading would record a second view.
@@ -126,7 +130,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const translator = useT();
   const { t } = translator;
   const siteUrl = useSiteUrl();
-  const { product, available, similar } = loaderData;
+  const { product, available, recommendations } = loaderData;
   // How long the page is read and how far down, sent when the visitor leaves (#129).
   useProductDwell(product);
   const catalog = catalogOf(product.gender);
@@ -203,7 +207,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           )}
         </div>
       </div>
-      <SimilarProducts products={similar} />
+      <SimilarProducts products={recommendations.products} source={recommendations.source} />
     </main>
   );
 }

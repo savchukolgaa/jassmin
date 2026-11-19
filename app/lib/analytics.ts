@@ -30,6 +30,10 @@ export const LIST_IDS = [
   "trio",
   "home",
   "perfumer",
+  // Recommendations (#182): "Customers also chose", "For you" and "Complete your trio".
+  "recs_product",
+  "recs_for_you",
+  "recs_cart",
 ] as const;
 
 export type ListId = (typeof LIST_IDS)[number];

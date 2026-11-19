@@ -65,6 +65,7 @@ describe("buildHomePageView", () => {
       selectedFamilies: ["квіткові"],
       selectedGender: "men",
       bestsellers: [],
+      forYou: null,
     });
 
     expect(view.trioOffer).toEqual(trioOffer);
@@ -77,6 +78,7 @@ describe("buildHomePageView", () => {
 
     expect(view.trioOffer).toBeNull();
     expect(view.trio).toEqual({ families: [], selected: [], gender: "women" });
+    expect(view.forYou).toBeNull();
   });
 
   it("passes on the locale the home page copy was served in", () => {

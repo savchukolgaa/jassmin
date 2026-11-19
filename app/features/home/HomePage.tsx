@@ -5,6 +5,7 @@ import { Bestsellers } from "./Bestsellers";
 import { CategoryTiles } from "./CategoryTiles";
 import { ContactForm } from "./ContactForm";
 import { ContactsSection } from "./ContactsSection";
+import { ForYou } from "./ForYou";
 import { HeroSection } from "./HeroSection";
 import { HowItWorks } from "./HowItWorks";
 import { LocationSection } from "./LocationSection";
@@ -31,6 +32,7 @@ export function HomePage({ view, actionData }: HomePageProps) {
         trioOffer={view.trioOffer}
       />
       <CategoryTiles />
+      <ForYou products={view.forYou} />
       <Bestsellers products={view.bestsellers} />
       <AboutSection about={view.about} contentLocale={view.contentLocale} />
       <LocationSection location={view.location} contentLocale={view.contentLocale} />

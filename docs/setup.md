@@ -15,6 +15,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Newsletter](#newsletter)
 - [Email delivery in production](#email-delivery-in-production)
 - [Gift cards](#gift-cards)
+- [Recommendations](#recommendations)
 - [Card payments (simulator)](#card-payments-simulator)
 - [Database migrations](#database-migrations)
 - [Project structure](#project-structure)
@@ -109,6 +110,7 @@ pnpm dev                    # http://localhost:5173
 | `ABANDONED_CART_HOURS` | no | Hours without activity after which `pnpm db:mark-abandoned-carts` marks a cart with items `abandoned` (whole number, default `24`). Only the job reads it. |
 | `UNPAID_ORDER_HOURS` | no | Hours after checkout after which `pnpm db:cancel-unpaid-orders` cancels a card order that is still unpaid (whole number, default `48`). Only the job reads it. |
 | `PERFUMER_CHAT_RETENTION_DAYS` | no | Days without a new message after which `pnpm db:prune-perfumer-chats` deletes a saved AI perfumer chat, closed and deleted ones included (whole number, default `90`, #180). Only the job reads it. |
+| `RECS_MIN_SIGNALS` | no | Baskets (a customer's orders or a session's views) a product needs before `pnpm db:build-recommendations` gives it recommendations (whole number, default `5`). Only the job reads it; see [Recommendations](#recommendations). |
 
 The variables are validated with zod in `app/.server/env.ts`, and the server fails at startup with a readable error if any are missing or invalid. A `.env` file is loaded automatically, but variables already set in the environment take precedence.
 
@@ -146,6 +148,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:expire-gift-cards` | Mark active gift cards past their 12 months as expired (safe to re-run), see [Gift cards](#gift-cards) |
 | `pnpm db:prune-rate-limits` | Delete ended rate-limit windows (safe to re-run), see [Rate limits](#rate-limits) |
 | `pnpm db:prune-perfumer-chats` | Delete AI perfumer chats not updated for `PERFUMER_CHAT_RETENTION_DAYS` (safe to re-run), see [Perfumer chats](#perfumer-chats) |
+| `pnpm db:build-recommendations` | Rebuild the product recommendations from the last year's orders and views (safe to re-run), see [Recommendations](#recommendations) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:send-newsletters` | Send the queued newsletter emails within `NEWSLETTER_DAILY_LIMIT` and push their counts to Strapi (safe to re-run), see [Newsletter](#newsletter) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
@@ -242,6 +245,24 @@ The AI perfumer's conversations are saved per visitor and customer account (#180
 ```
 
 In production it's in `deploy/crontab`. It needs only the database URL. Under Aspire, start the `db-prune-perfumer-chats` resource from the dashboard.
+
+## Recommendations
+
+"Customers also chose" on product pages, "For you" on the home page and "Complete your trio" in the cart (#182) come from the `product_recommendations` table, which `pnpm db:build-recommendations` rebuilds from the shop's own data. It's the item-item cosine model that won in notebook 04 ([analytics/README.md](../analytics/README.md#from-notebook-to-production)):
+
+- each customer (a user, or a guest's email) is one basket of the perfumes in their paid, shipped or completed orders, weight 3;
+- each analytics session is one basket of the perfumes viewed in it, weight 1. Views are only recorded with cookie consent, so nothing else is read;
+- only the last 365 days count. Every product in at least `RECS_MIN_SIGNALS` baskets (default 5) keeps its 12 most similar products.
+
+The job replaces the whole table in one transaction and logs how many products had enough signals, so it's safe to re-run. In production it runs nightly from `deploy/crontab`:
+
+```cron
+45 2 * * * pnpm --silent db:build-recommendations
+```
+
+Under Aspire, start the `db-build-recommendations` resource from the dashboard. On a fresh database, set `RECS_MIN_SIGNALS=1` in `.env` to see recommendations after a few orders and views.
+
+At read time the lists show only active single perfumes with a size in stock, never the product itself or one already in the cart. While a product has no recommendations, its page keeps the family-based "Similar perfumes". "For you" appears only for a visitor with history (views with consent, or a logged-in customer's orders) and leaves out what they ordered. "Complete your trio" appears while the cart's 10 ml testers don't fill a whole tester trio, and its cards preselect 10 ml. Clicks are tracked as the `recs_product`, `recs_for_you` and `recs_cart` lists ([docs/analytics-events.md](analytics-events.md)).
 
 ## Card payments (simulator)
 

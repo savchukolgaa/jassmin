@@ -73,9 +73,12 @@ browser showed.
 | `popular` | The popular perfumes page. |
 | `trio` | The popular page opened from the home page's "Build your trio" (with `family` params). |
 | `offers` | The products under each offer on the offers page; positions count within that offer. |
-| `similar` | The perfumes suggested on an archived product's page. |
+| `similar` | The family-based "Similar perfumes" on a product page: an archived product's, or one without enough signals for recommendations (#88, #182). |
 | `home` | The home page's bestsellers. |
 | `perfumer` | The perfumes an AI perfumer answer recommends (#166); each answer is its own list, positions 1–4. |
+| `recs_product` | "Customers also chose" on a product page (#182): the nightly item-item recommendations. While the product has too few signals, the page shows the family-based list as `similar` instead. |
+| `recs_for_you` | "For you" on the home page (#182), for visitors with views (with consent) or orders. |
+| `recs_cart` | "Complete your trio" in the cart (#182), while the cart's testers don't fill a whole tester trio. |
 
 A list render is one set of products on one page of one list. Each card sends at most one
 impression per list render: going to another page, changing the filters or coming back to the

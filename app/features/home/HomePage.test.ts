@@ -35,6 +35,7 @@ const view: HomePageView = {
     gender: "women",
   },
   bestsellers: [],
+  forYou: null,
   location: {
     address: "вул. Хрещатик, 1, Київ",
     openingHours: "Mon–Fri 10:00–20:00\nSat–Sun 11:00–18:00",
@@ -286,6 +287,19 @@ describe("HomePage", () => {
     expect(section).toMatch(/<h3[^>]*><a[^>]*>La Vie Est Belle<\/a><\/h3>/);
     expect(section).toContain("quick-add");
     expect(render()).not.toContain('id="bestsellers-title"');
+  });
+
+  it('shows "For you" above the bestsellers only for a visitor with history (#182)', () => {
+    const forYou = { ...BESTSELLER, id: "01a1652b-6e25-7c03-ae47-000000000099", title: "Picked" };
+    const html = render({ bestsellers: [BESTSELLER], forYou: [forYou] });
+
+    expect(html).toMatch(/<h2 id="for-you-heading"[^>]*>For you<\/h2>/);
+    expect(html).toContain('name="listId" value="recs_for_you"');
+    expect(html.indexOf('id="for-you-heading"')).toBeLessThan(
+      html.indexOf('id="bestsellers-title"'),
+    );
+    expect(render({ bestsellers: [BESTSELLER], forYou: null })).not.toContain("for-you-heading");
+    expect(render({ bestsellers: [BESTSELLER], forYou: [] })).not.toContain("for-you-heading");
   });
 
   it("describes the hero and store photos in the visitor's language when Strapi's alt is blank (#88)", () => {

@@ -38,6 +38,7 @@
     "db:import-catalog": "tsx app/.server/db/scripts/import-catalog.ts",
     "db:apply-catalog-prices": "tsx app/.server/db/scripts/apply-catalog-prices.ts",
     "db:backfill-product-images": "tsx app/.server/db/scripts/backfill-product-images.ts",
+    "db:build-recommendations": "tsx app/.server/db/scripts/build-recommendations.ts",
     "analytics:export-catalog": "tsx app/.server/db/scripts/export-synthetic-catalog.ts",
     "ai:perfumer-eval": "tsx app/.server/ai/scripts/perfumer-eval.ts"
   },

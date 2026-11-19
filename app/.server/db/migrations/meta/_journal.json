@@ -246,6 +246,13 @@
       "when": 1795074599021,
       "tag": "0034_newsletters",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795075176766,
+      "tag": "0035_product_recommendations",
+      "breakpoints": true
     }
   ]
 }

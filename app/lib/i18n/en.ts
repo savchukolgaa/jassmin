@@ -345,6 +345,22 @@ export const en = {
     },
     similar: "Similar perfumes",
   },
+  recommendations: {
+    product: {
+      title: "Customers also chose",
+    },
+    forYou: {
+      title: "For you",
+      subtitle: "Picked from what you viewed and bought",
+    },
+    cart: {
+      title: "Complete your trio",
+      subtitle: {
+        one: "Add {count} more tester to get the trio for {price}.",
+        other: "Add {count} more testers to get the trio for {price}.",
+      },
+    },
+  },
   cart: {
     title: "Cart",
     heading: "Your cart",

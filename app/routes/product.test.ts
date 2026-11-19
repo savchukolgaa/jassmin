@@ -3,10 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parseEventProperties } from "~/lib/analytics.schema";
 import type { ProductDetail } from "~/lib/products";
 
-const products = vi.hoisted(() => ({ resolveProductHandle: vi.fn(), getSimilarProducts: vi.fn() }));
+const products = vi.hoisted(() => ({ resolveProductHandle: vi.fn() }));
+const recommendations = vi.hoisted(() => ({ forProduct: vi.fn() }));
+const cart = vi.hoisted(() => ({ getCartOwner: vi.fn(), getCartProductIds: vi.fn() }));
 const analytics = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 
 vi.mock("~/.server/services/products", () => products);
+vi.mock("~/.server/services/recommendations", () => recommendations);
+vi.mock("~/.server/services/cart", () => cart);
 vi.mock("~/.server/analytics", () => analytics);
 
 const { loader, meta, shouldRevalidate } = await import("./product");
@@ -37,8 +41,14 @@ async function redirected(promise: Promise<unknown>) {
   return { status: response.status, location: response.headers.get("Location") };
 }
 
+const OWNER = { userId: null, anonymousId: "visitor", sessionId: null };
+const NO_RECS = { source: "similar", products: [] };
+
 beforeEach(() => {
   vi.clearAllMocks();
+  cart.getCartOwner.mockResolvedValue(OWNER);
+  cart.getCartProductIds.mockResolvedValue([]);
+  recommendations.forProduct.mockResolvedValue(NO_RECS);
 });
 
 describe("product loader", () => {
@@ -56,8 +66,7 @@ describe("product loader", () => {
       available: true,
     });
 
-    expect(await load(SLUG)).toEqual({ product, available: true, similar: [] });
-    expect(products.getSimilarProducts).not.toHaveBeenCalled();
+    expect(await load(SLUG)).toEqual({ product, available: true, recommendations: NO_RECS });
     expect(products.resolveProductHandle).toHaveBeenCalledWith(SLUG, "uk");
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ context }),
@@ -95,19 +104,38 @@ describe("product loader", () => {
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 
+  it("recommends perfumes without what's already in the cart (#182)", async () => {
+    const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco", variants: [] };
+    const recs = { source: "recs", products: [{ id: "other" }] };
+    products.resolveProductHandle.mockResolvedValueOnce({
+      kind: "product",
+      id: 42,
+      product,
+      available: true,
+    });
+    cart.getCartProductIds.mockResolvedValueOnce(["in-cart"]);
+    recommendations.forProduct.mockResolvedValueOnce(recs);
+
+    expect(await load(SLUG)).toEqual({ product, available: true, recommendations: recs });
+    expect(cart.getCartProductIds).toHaveBeenCalledWith(OWNER);
+    expect(recommendations.forProduct).toHaveBeenCalledWith(42, product, {
+      cartProductIds: ["in-cart"],
+    });
+  });
+
   it("keeps an archived product's page (200) with similar perfumes (#88)", async () => {
     const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco", gender: "women", variants: [] };
-    const similar = [{ id: "other" }];
+    const similar = { source: "similar", products: [{ id: "other" }] };
     products.resolveProductHandle.mockResolvedValueOnce({
       kind: "product",
       id: 42,
       product,
       available: false,
     });
-    products.getSimilarProducts.mockResolvedValueOnce(similar);
+    recommendations.forProduct.mockResolvedValueOnce(similar);
 
-    expect(await load(SLUG)).toEqual({ product, available: false, similar });
-    expect(products.getSimilarProducts).toHaveBeenCalledWith(42, product);
+    expect(await load(SLUG)).toEqual({ product, available: false, recommendations: similar });
+    expect(recommendations.forProduct).toHaveBeenCalledWith(42, product, { cartProductIds: [] });
     // Without sizes there's no size, price or stock to record (#129).
     expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "product_view", {
       productId: 42,
@@ -208,7 +236,7 @@ describe("product meta", () => {
     meta({
       matches,
       location,
-      loaderData: { product: { ...product, ...overrides }, available, similar: [] },
+      loaderData: { product: { ...product, ...overrides }, available, recommendations: NO_RECS },
     } as unknown as MetaArgs);
   const content = (tags: ReturnType<typeof run>, property: string) => {
     const tag = tags.find((tag) => "property" in tag && tag.property === property);
@@ -263,7 +291,7 @@ describe("product meta", () => {
       loaderData: {
         product: { ...product, description: "A fresh oriental scent.", descriptionLocale: "en" },
         available: true,
-        similar: [],
+        recommendations: NO_RECS,
       },
     } as unknown as MetaArgs);
 

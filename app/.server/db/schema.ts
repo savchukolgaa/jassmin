@@ -16,6 +16,7 @@ import {
   boolean,
   check,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -23,7 +24,9 @@ import {
   pgEnum,
   pgTable,
   pgView,
+  primaryKey,
   serial,
+  smallint,
   text,
   timestamp,
   unique,
@@ -86,6 +89,7 @@ import {
   type PerfumerStoredErrorKey,
   type StoredPerfumerReply,
 } from "~/lib/perfumer";
+import { RECOMMENDATIONS_PER_PRODUCT } from "~/lib/recommendations";
 
 export const genderType = pgEnum("gender_type", GENDERS);
 export const orderStatusType = pgEnum("order_status_type", ORDER_STATUSES);
@@ -1100,5 +1104,43 @@ export const newsletterDeliveries = pgTable(
     check("newsletter_deliveries_attempts_check", sql`${t.attempts} >= 0`),
     index("newsletter_deliveries_status_next_attempt_at_idx").on(t.status, t.nextAttemptAt),
     index("newsletter_deliveries_sent_at_idx").on(t.sentAt),
+  ],
+);
+
+/**
+ * Item-item cosine recommendations (#182), rebuilt nightly by `pnpm db:build-recommendations`
+ * from the shop's own orders and consented product views. Only products with at least
+ * `RECS_MIN_SIGNALS` interactions get rows; the storefront falls back to the family-based list
+ * otherwise. `signals` is how many baskets hold both products.
+ */
+export const productRecommendations = pgTable(
+  "product_recommendations",
+  {
+    productId: integer()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    recommendedProductId: integer()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    score: doublePrecision().notNull(),
+    rank: smallint().notNull(),
+    signals: integer().notNull(),
+    computedAt: timestamp({ withTimezone: true }).notNull(),
+  },
+  (t) => [
+    primaryKey({
+      name: "product_recommendations_pkey",
+      columns: [t.productId, t.recommendedProductId],
+    }),
+    index("product_recommendations_product_id_rank_idx").on(t.productId, t.rank),
+    check(
+      "product_recommendations_not_self_check",
+      sql`${t.productId} <> ${t.recommendedProductId}`,
+    ),
+    check(
+      "product_recommendations_rank_check",
+      sql`${t.rank} between 1 and ${sql.raw(String(RECOMMENDATIONS_PER_PRODUCT))}`,
+    ),
+    check("product_recommendations_signals_check", sql`${t.signals} > 0`),
   ],
 );

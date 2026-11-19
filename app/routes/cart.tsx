@@ -15,10 +15,13 @@ import {
   updateQuantity,
 } from "~/.server/services/cart";
 import { checkVariantForCart } from "~/.server/services/products";
+import { forCart } from "~/.server/services/recommendations";
+import { getTesterTrioOffer } from "~/.server/services/trio";
 import { CartLineItem } from "~/features/cart/CartLineItem";
 import { CartSummary } from "~/features/cart/CartSummary";
 import { EmptyCart } from "~/features/cart/EmptyCart";
 import { RestoreCartBanner } from "~/features/cart/RestoreCartBanner";
+import { RecommendedProducts } from "~/features/recommendations/RecommendedProducts";
 import type { ListContext, ListId } from "~/lib/analytics";
 import { loginRedirectPath } from "~/lib/auth";
 import { type CartActionResult, type CartIntent, cartErrorMessage } from "~/lib/cart";
@@ -43,8 +46,16 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (owner.userId === null && new URL(request.url).searchParams.get("restore") === "1") {
     throw redirect(loginRedirectPath(pageUrl(request)));
   }
-  const [cart, restorable] = await Promise.all([getCartView(owner), getRestorableCart(owner)]);
-  return { ...cart, restorable };
+  const [cart, restorable, trioOffer] = await Promise.all([
+    getCartView(owner),
+    getRestorableCart(owner),
+    getTesterTrioOffer(),
+  ]);
+  // "Complete your trio" (#182): while the cart's testers don't fill a whole tester trio.
+  const { missing, products } = await forCart(cart, trioOffer);
+  const trioSuggestions =
+    trioOffer && missing > 0 ? { missing, price: trioOffer.price, products } : null;
+  return { ...cart, restorable, trioSuggestions };
 }
 
 function respond(result: CartChangeResult, intent: CartIntent) {
@@ -185,9 +196,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function Cart({ loaderData, actionData }: Route.ComponentProps) {
-  const { restorable, ...cart } = loaderData;
+  const { restorable, trioSuggestions, ...cart } = loaderData;
   const translator = useT();
-  const { t } = translator;
+  const { t, formatPrice } = translator;
   // Only set after a plain form post without JS; fetchers show their errors on the line.
   const error = actionData?.ok === false ? cartErrorMessage(actionData, translator) : null;
 
@@ -222,6 +233,18 @@ export default function Cart({ loaderData, actionData }: Route.ComponentProps) {
           </ul>
           <CartSummary cart={cart} />
         </div>
+      )}
+      {trioSuggestions && (
+        <RecommendedProducts
+          id="recs-cart"
+          title={t("recommendations.cart.title")}
+          subtitle={t("recommendations.cart.subtitle", {
+            count: trioSuggestions.missing,
+            price: formatPrice(trioSuggestions.price),
+          })}
+          listId="recs_cart"
+          products={trioSuggestions.products}
+        />
       )}
     </main>
   );

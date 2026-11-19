@@ -29,6 +29,8 @@ import {
   giftCards,
   type inventoryDaily,
   inventoryMovements,
+  newsletterDeliveries,
+  newsletters,
   orderEmails,
   orderItems,
   orderStatusHistory,
@@ -649,6 +651,73 @@ describe("cms_outbox", () => {
       checks: ["cms_outbox_attempts_check", "cms_outbox_entity_check"],
       uniques: ["cms_outbox_entity_entity_id_unique"],
       indexes: ["cms_outbox_synced_at_next_attempt_at_idx"],
+    });
+  });
+});
+
+describe("newsletters", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(newsletters)).toEqual({
+      id: ["serial", true, true],
+      strapiDocumentId: ["text", true, false],
+      slug: ["text", true, false],
+      subjectUk: ["text", true, false],
+      preheaderUk: ["text", false, false],
+      bodyUk: ["text", true, false],
+      subjectEn: ["text", false, false],
+      preheaderEn: ["text", false, false],
+      bodyEn: ["text", false, false],
+      productPublicIds: ["uuid[]", true, true],
+      status: ["text", true, true],
+      sentAt: ["timestamp with time zone", true, true],
+      completedAt: ["timestamp with time zone", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("keeps one row per Strapi document and slug and indexes the send time", () => {
+    expect(describeForeignKeys(newsletters)).toEqual({});
+    expect(describeConstraints(newsletters)).toEqual({
+      checks: ["newsletters_en_check", "newsletters_products_check", "newsletters_status_check"],
+      uniques: ["newsletters_slug_unique", "newsletters_strapi_document_id_unique"],
+      indexes: ["newsletters_sent_at_idx"],
+    });
+  });
+});
+
+describe("newsletter_deliveries", () => {
+  it("has the specified columns", () => {
+    expect(describeColumns(newsletterDeliveries)).toEqual({
+      id: ["serial", true, true],
+      newsletterId: ["integer", true, false],
+      userId: ["integer", true, false],
+      locale: ["text", true, false],
+      status: ["text", true, true],
+      attempts: ["integer", true, true],
+      nextAttemptAt: ["timestamp with time zone", true, true],
+      sentAt: ["timestamp with time zone", false, false],
+      error: ["text", false, false],
+      messageId: ["text", false, false],
+      createdAt: ["timestamp with time zone", true, true],
+    });
+  });
+
+  it("keeps one delivery per user and newsletter and indexes the due and sent rows", () => {
+    expect(describeForeignKeys(newsletterDeliveries)).toEqual({
+      newsletterId: ["newsletters", "restrict"],
+      userId: ["users", "cascade"],
+    });
+    expect(describeConstraints(newsletterDeliveries)).toEqual({
+      checks: [
+        "newsletter_deliveries_attempts_check",
+        "newsletter_deliveries_locale_check",
+        "newsletter_deliveries_status_check",
+      ],
+      uniques: ["newsletter_deliveries_newsletter_id_user_id_unique"],
+      indexes: [
+        "newsletter_deliveries_sent_at_idx",
+        "newsletter_deliveries_status_next_attempt_at_idx",
+      ],
     });
   });
 });

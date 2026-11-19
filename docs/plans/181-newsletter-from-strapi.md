@@ -200,7 +200,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   `NEWSLETTER_INTERVAL_DAYS = 7`, `NEWSLETTER_MAX_ATTEMPTS = 3`) and `NewsletterContent`,
   `NewsletterCounts`, `NewsletterSendResult` types. Check: `pnpm typecheck`.
 
-- [ ] **2. Schema and migration.** In `db/schema.ts`:
+- [x] **2. Schema and migration.** In `db/schema.ts`:
   - `newsletters`: `id` serial, `strapiDocumentId` varchar(64) unique
     (`newsletters_strapi_document_id_unique`), `slug` varchar(80) unique, `subjectUk`,
     `preheaderUk`, `bodyUk` (text, not null except preheader), `subjectEn`, `preheaderEn`,

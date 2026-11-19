@@ -29,6 +29,7 @@
     "db:expire-gift-cards": "tsx app/.server/db/scripts/expire-gift-cards.ts",
     "db:cancel-unpaid-orders": "tsx app/.server/db/scripts/cancel-unpaid-orders.ts",
     "db:prune-rate-limits": "tsx app/.server/db/scripts/prune-rate-limits.ts",
+    "db:prune-perfumer-chats": "tsx app/.server/db/scripts/prune-perfumer-chats.ts",
     "db:send-order-emails": "tsx app/.server/db/scripts/send-order-emails.ts",
     "db:send-cart-reminders": "tsx app/.server/db/scripts/send-cart-reminders.ts",
     "db:send-newsletters": "tsx app/.server/db/scripts/send-newsletters.ts",

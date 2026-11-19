@@ -59,7 +59,10 @@ then the header and mobile menu show "AI парфумер" after "Offers" (six i
 the serif `h1`, an intro and "Спробуйте:" with four example requests as white pills
 (`primary-dark` text, `chip-hover`), each sending itself; a muted tip paragraph follows. Once the
 thread has messages the hero becomes a slim strip: a white round bottle icon, the `h1` at 28px, "Радить
-лише аромати, які є в наявності" and an `outline-light` `sm` "Почати спочатку". The thread is an
+лише аромати, які є в наявності", a note that the chat is kept 90 days with a link to the privacy
+policy (#180), and two `outline-light` `sm` buttons: "Новий чат" and "Видалити чат". "Видалити чат"
+asks first inside the strip ("Видалити цю розмову?" with "Так, видалити" / "Ні, залишити", focus
+on the safe answer), then announces "Розмову видалено." to screen readers. The thread is an
 `<ol aria-live="polite">` in a ~800px column: the customer's bubbles right-aligned, `primary` with
 white text (radius 24, bottom-right 8); each perfumer turn starts with a blush bottle avatar and the
 name in `muted`, then the intro in a white bubble with a `line` border (top-left 8), the picks as

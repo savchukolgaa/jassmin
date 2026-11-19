@@ -9,10 +9,12 @@ import {
   answerPerfumerMessage,
   openPerfumerStream,
   type PerfumerChatDeps,
+  type PerfumerChatStore,
   type PerfumerStreamDeps,
   perfumerMessageProperties,
   toolCallSummary,
 } from "./perfumer-chat";
+import type { PerfumerTurnEnd } from "./perfumer-threads";
 
 const REPLY_ID = "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d";
 const PRODUCT = "01a1652b-6e25-7c03-ae47-25b57131fb06";
@@ -53,6 +55,16 @@ const messages = [{ role: "user" as const, content: CUSTOMER }];
 
 let now = 0;
 let clock = 0;
+/** The turn the fake store gives the next message. */
+let turn = 3;
+/** What the fake store saved: [threadId, end]. */
+let saved: [number, PerfumerTurnEnd][] = [];
+let store: PerfumerChatStore & {
+  begin: ReturnType<typeof vi.fn<PerfumerChatStore["begin"]>>;
+  nextTurn: ReturnType<typeof vi.fn<PerfumerChatStore["nextTurn"]>>;
+};
+
+const owner = (anonymousId: string) => ({ userId: null, anonymousId });
 let deps: PerfumerChatDeps & { reply: ReturnType<typeof vi.fn<PerfumerChatDeps["reply"]>> };
 
 function limiter(name: string) {
@@ -68,7 +80,22 @@ function limiter(name: string) {
 beforeEach(() => {
   now = Date.parse("2026-11-16T12:00:00Z");
   clock = 1000;
+  turn = 3;
+  saved = [];
+  store = {
+    nextTurn: vi.fn<PerfumerChatStore["nextTurn"]>(async () => turn),
+    begin: vi.fn<PerfumerChatStore["begin"]>(async ({ entry }) => ({
+      threadId: 7,
+      turn,
+      entry,
+      history: messages,
+    })),
+    end: async (threadId, end) => {
+      saved.push([threadId, end]);
+    },
+  };
   deps = {
+    store,
     reply: vi.fn<PerfumerChatDeps["reply"]>(async () => {
       clock += 8400;
       return result(answer, []);
@@ -82,9 +109,9 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
-const ask = (ipKey: string | undefined, sessionKey: string | undefined, signal?: AbortSignal) =>
+const ask = (ipKey: string | undefined, sessionKey: string, signal?: AbortSignal) =>
   answerPerfumerMessage(
-    { locale: "uk", messages, turn: 3, entry: "catalog", ipKey, sessionKey, signal },
+    { locale: "uk", owner: owner(sessionKey), message: CUSTOMER, entry: "catalog", ipKey, signal },
     deps,
   );
 
@@ -287,6 +314,7 @@ describe("openPerfumerStream (#164)", () => {
     return {
       replyStream: vi.fn<PerfumerStreamDeps["replyStream"]>(replyStream),
       limiters: deps.limiters,
+      store: deps.store,
       model: deps.model,
       now: deps.now,
       newReplyId: deps.newReplyId,
@@ -303,9 +331,9 @@ describe("openPerfumerStream (#164)", () => {
     sd: PerfumerStreamDeps,
     ipKey: string | undefined = "1.1.1.1",
     signal?: AbortSignal,
-  ): Promise<PerfumerEvent[] | "rateLimited"> {
+  ): Promise<PerfumerEvent[] | "rateLimited" | "unavailable"> {
     const result = await openPerfumerStream(
-      { locale: "en", messages, turn: 1, entry: "menu", ipKey, sessionKey: "visitor", signal },
+      { locale: "en", owner: owner("visitor"), message: CUSTOMER, entry: "menu", ipKey, signal },
       sd,
     );
     return result.ok ? collect(result.events) : result.error;
@@ -367,14 +395,14 @@ describe("openPerfumerStream (#164)", () => {
       { signal, stopAfter }: { signal?: AbortSignal; stopAfter?: number } = {},
     ) {
       const events: unknown[] = [];
+      turn = 4;
       const result = await openPerfumerStream(
         {
           locale: "uk",
-          messages,
-          turn: 4,
+          owner: owner("visitor"),
+          message: CUSTOMER,
           entry: "corner",
           ipKey: "3.3.3.3",
-          sessionKey: "visitor",
           signal,
           onEvent: (event) => events.push(event),
         },
@@ -445,14 +473,14 @@ describe("openPerfumerStream (#164)", () => {
       for (let n = 0; n < 10; n++) {
         await ask("4.4.4.4", "visitor-4");
       }
+      turn = 2;
       const result = await openPerfumerStream(
         {
           locale: "uk",
-          messages,
-          turn: 2,
+          owner: owner("visitor-4"),
+          message: CUSTOMER,
           entry: "menu",
           ipKey: "4.4.4.4",
-          sessionKey: "visitor-4",
         },
         streamDeps(),
       );
@@ -461,6 +489,180 @@ describe("openPerfumerStream (#164)", () => {
         error: "rateLimited",
         event: { error: "rate_limited", model: null, latency_ms: 0, turn: 2 },
       });
+    });
+  });
+});
+
+describe("saving the conversation (#180)", () => {
+  const history = [
+    { role: "user" as const, content: "Щось тепле" },
+    { role: "assistant" as const, content: "Ось теплі аромати." },
+    { role: "user" as const, content: CUSTOMER },
+  ];
+
+  it("sends the model the stored history and saves the answer as product ids", async () => {
+    store.begin.mockImplementation(async ({ entry }) => ({ threadId: 9, turn: 2, entry, history }));
+    deps.reply.mockResolvedValue(result(rich));
+    const outcome = await ask("1.1.1.1", "visitor");
+    expect(store.begin).toHaveBeenCalledWith({
+      owner: { userId: null, anonymousId: "visitor" },
+      message: CUSTOMER,
+      entry: "catalog",
+      retry: false,
+    });
+    expect(deps.reply).toHaveBeenCalledWith("uk", history, {});
+    expect(saved).toEqual([
+      [
+        9,
+        {
+          intro: INTRO,
+          reply: {
+            picks: [{ productId: PRODUCT, reason: REASON }],
+            question: QUESTION,
+            replyId: REPLY_ID,
+            turn: 2,
+          },
+        },
+      ],
+    ]);
+    expect(outcome.event.turn).toBe(2);
+  });
+
+  it("passes a retry on to the store", async () => {
+    await answerPerfumerMessage(
+      {
+        locale: "uk",
+        owner: owner("visitor"),
+        message: CUSTOMER,
+        entry: "direct",
+        retry: true,
+        ipKey: "1.1.1.1",
+      },
+      deps,
+    );
+    expect(store.begin).toHaveBeenCalledWith(expect.objectContaining({ retry: true }));
+  });
+
+  it("saves an error marker for a failed or cancelled answer", async () => {
+    deps.reply.mockRejectedValueOnce(new AiError("timeout", "slow"));
+    await ask("1.1.1.1", "visitor");
+    const controller = new AbortController();
+    deps.reply.mockImplementationOnce(async () => {
+      controller.abort();
+      throw new AiError("timeout", "aborted");
+    });
+    await ask("1.1.1.1", "visitor", controller.signal);
+    expect(saved).toEqual([
+      [7, { errorKey: "timeout" }],
+      [7, { errorKey: "cancelled" }],
+    ]);
+  });
+
+  it("saves nothing for a rate-limited message, and takes its turn from the thread", async () => {
+    for (let n = 0; n < 10; n++) {
+      await ask("1.1.1.1", "visitor");
+    }
+    store.begin.mockClear();
+    saved = [];
+    turn = 6;
+    const { event } = await ask("1.1.1.1", "visitor");
+    expect(store.begin).not.toHaveBeenCalled();
+    expect(saved).toEqual([]);
+    expect(event.turn).toBe(6);
+  });
+
+  it("answers unavailable without calling the model when the message can't be saved", async () => {
+    store.begin.mockRejectedValue(new Error("database down"));
+    await expect(resultOf("1.1.1.1", "visitor")).resolves.toEqual({
+      ok: false,
+      error: "unavailable",
+    });
+    expect(deps.reply).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it("still answers when saving the answer fails", async () => {
+    store.end = async () => {
+      throw new Error("database down");
+    };
+    expect((await resultOf("1.1.1.1", "visitor")).ok).toBe(true);
+  });
+
+  describe("when streamed", () => {
+    function streamWith(replyStream: PerfumerStreamDeps["replyStream"], signal?: AbortSignal) {
+      return openPerfumerStream(
+        {
+          locale: "uk",
+          owner: owner("visitor"),
+          message: CUSTOMER,
+          entry: "menu",
+          ipKey: "5.5.5.5",
+          signal,
+        },
+        { ...deps, replyStream },
+      );
+    }
+
+    it("saves the answer before `done` reaches the page", async () => {
+      const result = await streamWith(async function* () {
+        yield { type: "intro", text: "Ось що є. " };
+        yield { type: "intro", text: INTRO };
+        yield { type: "picks", picks: [{ product, reason: REASON }] };
+        yield { type: "question", text: QUESTION };
+        yield { type: "done" };
+      });
+      if (!result.ok) throw new Error("refused");
+      for await (const event of result.events) {
+        if (event.type === "done") {
+          expect(saved).toEqual([
+            [
+              7,
+              {
+                intro: `Ось що є. ${INTRO}`,
+                reply: {
+                  picks: [{ productId: PRODUCT, reason: REASON }],
+                  question: QUESTION,
+                  replyId: REPLY_ID,
+                  turn: 3,
+                },
+              },
+            ],
+          ]);
+        }
+      }
+      expect(saved).toHaveLength(1);
+    });
+
+    it("saves an error marker for a failed stream, and `cancelled` for a stopped one", async () => {
+      const failed = await streamWith(async function* () {
+        yield* [];
+        throw new AiError("unavailable", "down");
+      });
+      if (!failed.ok) throw new Error("refused");
+      for await (const _event of failed.events) {
+        // Read to the end.
+      }
+      const stopped = await streamWith(async function* () {
+        yield { type: "intro", text: INTRO };
+        yield { type: "done" };
+      });
+      if (!stopped.ok) throw new Error("refused");
+      for await (const _event of stopped.events) {
+        break;
+      }
+      expect(saved).toEqual([
+        [7, { errorKey: "unavailable" }],
+        [7, { errorKey: "cancelled" }],
+      ]);
+    });
+
+    it("streams nothing when the message can't be saved", async () => {
+      store.begin.mockRejectedValue(new Error("database down"));
+      await expect(
+        streamWith(async function* () {
+          yield { type: "done" };
+        }),
+      ).resolves.toEqual({ ok: false, error: "unavailable" });
     });
   });
 });

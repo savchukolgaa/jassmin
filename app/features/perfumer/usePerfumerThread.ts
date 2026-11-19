@@ -10,17 +10,20 @@ import {
   type PerfumerPick,
   type PerfumerRating,
   type PerfumerStep,
+  type PerfumerThreadView,
   type ThreadItem,
-  toHistory,
 } from "~/lib/perfumer";
 import { canStream, StreamFailedError, streamPerfumerReply } from "./perfumer-stream";
-import { loadThread, loadThreadEntry, saveThread } from "./thread-storage";
 
-// The perfumer chat's state (#163): the thread (restored from `sessionStorage` after hydration, so
-// the server render and the first client render match), the message being answered, and how it's
-// sent. Each message is streamed from `/parfumer/stream` first (#164), so the turn fills in as the
-// perfumer works: its steps, the intro sentence by sentence, then the cards. When streaming isn't
-// possible or fails, the fetcher posts the same conversation to the route's action.
+// The perfumer chat's state (#163): the thread (the saved chat from the loader, #180, so the
+// server render shows it), the message being answered, and how it's sent. Only the new message is
+// posted: the server keeps the conversation and gives the model its stored history. Each message
+// is streamed from `/parfumer/stream` first (#164), so the turn fills in as the perfumer works:
+// its steps, the intro sentence by sentence, then the cards. When streaming isn't possible or
+// fails, the fetcher posts the same message to the route's action.
+
+/** Where the chat lived before #180, cleared once from browsers that still have it. */
+const OLD_THREAD_STORAGE_KEY = "jassmin.perfumer.thread";
 
 export interface PendingTurn {
   id: string;
@@ -39,7 +42,7 @@ export interface PendingTurn {
 export interface PerfumerThread {
   items: ThreadItem[];
   pending: PendingTurn | null;
-  /** Whether the stored thread has been read, so a message sent now joins it (#165). */
+  /** Whether the saved thread is shown, so a message sent now joins it (#165); always, since #180. */
   restored: boolean;
   /** Counts finished turns (a reply, an error or a cancel), so the page can move focus back. */
   finishedTurns: number;
@@ -49,8 +52,10 @@ export interface PerfumerThread {
   cancel: () => void;
   /** Sends the message behind an error again, without repeating its bubble. */
   retry: (errorId: string) => void;
-  /** Clears the thread and its stored copy. */
-  startOver: () => void;
+  /** "New chat" (#180): closes the saved chat on the server and empties the page. */
+  newChat: () => void;
+  /** "Delete chat" (#180): deletes the saved chat for the customer and empties the page. */
+  deleteChat: () => void;
   /** Notes the customer's rating of a perfumer answer (#166); the button posts it. */
   rate: (itemId: string, rating: PerfumerRating) => void;
 }
@@ -68,33 +73,39 @@ function turnOf(thread: readonly ThreadItem[]): number {
 }
 
 /**
- * `urlEntry`: how this page was opened (`?from=`, #166). A restored conversation keeps the entry it
- * was started with, unless the page was opened from an entry point again; a new one (also after
- * "Start over") takes the page's.
+ * `initial`: the saved chat from the loader (#180), `null` without one; read once, so later
+ * loader runs never replace the live thread. `urlEntry`: how this page was opened (`?from=`,
+ * #166). A saved conversation keeps the entry it was started with, unless the page was opened from
+ * an entry point again; a new one (also after "New chat") takes the page's. The server decides the
+ * entry it records; the page sends what it knows.
  */
-export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerThread {
+export function usePerfumerThread(
+  initial: PerfumerThreadView | null = null,
+  urlEntry: PerfumerEntry = "direct",
+): PerfumerThread {
   const fetcher = useFetcher<PerfumerActionResult>();
   const { reset, submit: submitForm } = fetcher;
+  const chatFetcher = useFetcher<{ ok: boolean }>();
+  const submitChat = chatFetcher.submit;
   const pathFor = usePathFor();
   const streamUrl = pathFor("perfumerStream");
-  const [items, setItems] = useState<ThreadItem[]>([]);
+  const [items, setItems] = useState<ThreadItem[]>(() => initial?.items ?? []);
   const [pending, setPending] = useState<PendingTurn | null>(null);
-  const [restored, setRestored] = useState(false);
   const [finishedTurns, setFinishedTurns] = useState(0);
-  const [entry, setEntry] = useState<PerfumerEntry>(urlEntry);
+  const [entry, setEntry] = useState<PerfumerEntry>(() =>
+    urlEntry === "direct" && initial ? initial.entry : urlEntry,
+  );
   /** The stream being read; replaced or cleared when it's no longer wanted. */
   const streamRef = useRef<AbortController | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: restored once, on hydration.
+  // The chat used to live in `sessionStorage`; the server has it now (#180).
   useEffect(() => {
-    setItems(loadThread());
-    setEntry(urlEntry === "direct" ? (loadThreadEntry() ?? urlEntry) : urlEntry);
-    setRestored(true);
+    try {
+      window.sessionStorage.removeItem(OLD_THREAD_STORAGE_KEY);
+    } catch {
+      // Blocked storage: there's nothing to clear.
+    }
   }, []);
-
-  useEffect(() => {
-    if (restored) saveThread(items, undefined, entry);
-  }, [items, restored, entry]);
 
   // Leaving the page stops the stream, and with it the model call on the server.
   useEffect(() => () => streamRef.current?.abort(), []);
@@ -133,11 +144,16 @@ export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerT
   }, []);
 
   const submit = useCallback(
-    (thread: readonly ThreadItem[], text: string) => {
+    (thread: readonly ThreadItem[], text: string, retry = false) => {
       const id = newId();
       const turn = turnOf(thread);
-      const payload = JSON.stringify({ messages: toHistory(thread), turn, entry });
-      const viaAction = () => void submitForm({ payload }, { method: "post" });
+      const payload = JSON.stringify({ message: text, entry, ...(retry ? { retry } : {}) });
+      // After a broken stream the server may have saved the message already: a retry reuses it.
+      const viaAction = (fallback = false) =>
+        void submitForm(
+          { payload: fallback ? JSON.stringify({ message: text, entry, retry: true }) : payload },
+          { method: "post" },
+        );
       setPending({ id, text, turn, steps: [], intro: "" });
       if (!canStream()) {
         viaAction();
@@ -199,7 +215,7 @@ export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerT
           }
           // Fall back to the normal request; the steps already shown stay, the rest starts over.
           update((turn) => ({ ...turn, intro: "", picks: undefined }));
-          viaAction();
+          viaAction(true);
         },
       );
     },
@@ -234,18 +250,25 @@ export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerT
       if (pending || error?.id !== errorId || error.role !== "error") return;
       const thread = items.filter((item) => item.id !== errorId);
       setItems(thread);
-      submit(thread, error.retryText);
+      submit(thread, error.retryText, true);
     },
     [items, pending, submit],
   );
 
-  const startOver = useCallback(() => {
-    stopStream();
-    reset({ reason: "start over" });
-    setPending(null);
-    setItems([]);
-    setEntry(urlEntry);
-  }, [reset, stopStream, urlEntry]);
+  /** Ends the chat on the page and posts `intent` for the saved one. */
+  const endChat = useCallback(
+    (intent: "new-chat" | "delete-chat") => {
+      stopStream();
+      reset({ reason: intent });
+      setPending(null);
+      setItems([]);
+      setEntry(urlEntry);
+      void submitChat({ intent }, { method: "post" });
+    },
+    [reset, stopStream, urlEntry, submitChat],
+  );
+  const newChat = useCallback(() => endChat("new-chat"), [endChat]);
+  const deleteChat = useCallback(() => endChat("delete-chat"), [endChat]);
 
   const rate = useCallback((itemId: string, rating: PerfumerRating) => {
     setItems((current) =>
@@ -255,5 +278,16 @@ export function usePerfumerThread(urlEntry: PerfumerEntry = "direct"): PerfumerT
     );
   }, []);
 
-  return { items, pending, restored, finishedTurns, send, cancel, retry, startOver, rate };
+  return {
+    items,
+    pending,
+    restored: true,
+    finishedTurns,
+    send,
+    cancel,
+    retry,
+    newChat,
+    deleteChat,
+    rate,
+  };
 }

@@ -10,51 +10,61 @@ import { I18nProvider, type Locale } from "~/lib/i18n";
 import type {
   PerfumerActionResult,
   PerfumerEvent,
-  PerfumerMessage,
+  PerfumerThreadView,
   ThreadItem,
 } from "~/lib/perfumer";
 import type { ProductSummary } from "~/lib/products";
 import { PerfumerPage } from "./PerfumerPage";
 import { CANCEL_AFTER_MS } from "./ThinkingBubble";
-import { THREAD_STORAGE_KEY } from "./thread-storage";
 
 // The chat page in the browser (#163): example chips, sending, the thinking state, cancel, errors
-// with retry, the thread surviving a reload, start over, focus and an axe check. Streaming (#164):
+// with retry, the saved chat from the loader (#180), "New chat" and "Delete chat", focus and an axe
+// check. Streaming (#164):
 // by default `fetch` fails, so these tests also show the fallback to the action; the streaming
 // tests at the end answer through a stream they control.
 
 /** A request the test answers when it wants to. */
 interface Call {
-  messages: PerfumerMessage[];
-  turn: unknown;
+  /** The posted payload: only the new message, never the conversation (#180). */
+  payload: Record<string, unknown>;
   entry: unknown;
   answer: (result: PerfumerActionResult) => void;
 }
 
 let calls: Call[] = [];
+/** The chat intents posted: `new-chat`, `delete-chat` (#180). */
+let intents: string[] = [];
 
 let router: ReturnType<typeof createMemoryRouter>;
 
+/** The route's action as the tests see it: chat intents answer at once, messages wait. */
+async function chatAction({ request }: { request: Request }) {
+  const form = await request.formData();
+  const intent = form.get("intent");
+  if (typeof intent === "string") {
+    intents.push(intent);
+    return { ok: true };
+  }
+  const payload = JSON.parse(String(form.get("payload"))) as Record<string, unknown>;
+  return new Promise<PerfumerActionResult>((resolve) => {
+    calls.push({ payload, entry: payload.entry, answer: resolve });
+  });
+}
+
 function renderPage(
   locale: Locale = "uk",
-  { prefill = null as string | null, url = "/parfumer" } = {},
+  {
+    prefill = null as string | null,
+    url = "/parfumer",
+    thread = null as PerfumerThreadView | null,
+  } = {},
 ) {
   router = createMemoryRouter(
     [
       {
         path: "/parfumer",
-        element: createElement(PerfumerPage, { prefill }),
-        action: async ({ request }) => {
-          const form = await request.formData();
-          const { messages, turn, entry } = JSON.parse(String(form.get("payload"))) as {
-            messages: PerfumerMessage[];
-            turn: unknown;
-            entry: unknown;
-          };
-          return new Promise<PerfumerActionResult>((resolve) => {
-            calls.push({ messages, turn, entry, answer: resolve });
-          });
-        },
+        element: createElement(PerfumerPage, { prefill, thread }),
+        action: chatAction,
       },
     ],
     { initialEntries: [url] },
@@ -124,6 +134,7 @@ function streamReplies() {
 
 beforeEach(() => {
   calls = [];
+  intents = [];
   streams = [];
   sessionStorage.clear();
   // No server to stream from: every message falls back to the action, as when streaming fails.
@@ -151,11 +162,12 @@ describe("PerfumerPage", () => {
     expect(screen.getByText("Подарунок чоловікові", { selector: "p" })).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain("Парфумер підбирає аромати…");
     expect(input().disabled).toBe(true);
-    // The hero gives way to the strip with "Start over".
+    // The hero gives way to the strip with "New chat" and "Delete chat" (#180).
     expect(screen.queryByRole("button", { name: "Подарунок чоловікові" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Почати спочатку" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Новий чат" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Видалити чат" })).toBeTruthy();
     await waitFor(() => expect(calls).toHaveLength(1));
-    expect(calls[0]?.messages).toEqual([{ role: "user", content: "Подарунок чоловікові" }]);
+    expect(calls[0]?.payload).toMatchObject({ message: "Подарунок чоловікові", entry: "direct" });
 
     await answerLast(reply("Ось кілька ідей."));
 
@@ -164,7 +176,7 @@ describe("PerfumerPage", () => {
     await waitFor(() => expect(document.activeElement).toBe(input()));
   });
 
-  it("sends with Enter, adds a line with Shift+Enter, and sends the conversation so far", async () => {
+  it("sends with Enter, adds a line with Shift+Enter, and sends only the new message", async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -177,11 +189,11 @@ describe("PerfumerPage", () => {
 
     await user.type(await screen.findByRole("textbox"), "Дешевше{Enter}");
     await waitFor(() => expect(calls).toHaveLength(2));
-    expect(calls[1]?.messages).toEqual([
-      { role: "user", content: "Щось свіже\nна літо" },
-      { role: "assistant", content: "Ось свіжі аромати." },
-      { role: "user", content: "Дешевше" },
-    ]);
+    expect(calls[0]?.payload).toMatchObject({ message: "Щось свіже\nна літо" });
+    // The server keeps the conversation (#180): the page never sends it.
+    expect(calls[1]?.payload).toMatchObject({ message: "Дешевше", entry: "direct" });
+    expect(calls[1]?.payload).not.toHaveProperty("messages");
+    expect(calls[1]?.payload).not.toHaveProperty("turn");
   });
 
   it("offers cancel after 10 s, and ignores the late answer", async () => {
@@ -216,7 +228,8 @@ describe("PerfumerPage", () => {
     expect(await screen.findByText(/думав надто довго/)).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Спробувати ще раз" }));
     await waitFor(() => expect(calls).toHaveLength(2));
-    expect(calls[1]?.messages).toEqual([{ role: "user", content: "Щось морське" }]);
+    // A retry, so the server answers its saved message again instead of saving a copy (#180).
+    expect(calls[1]?.payload).toMatchObject({ message: "Щось морське", retry: true });
     expect(screen.queryByText(/думав надто довго/)).toBeNull();
     expect(screen.getAllByText("Щось морське", { selector: "p" })).toHaveLength(1);
 
@@ -224,86 +237,95 @@ describe("PerfumerPage", () => {
     expect(await screen.findByText("Ось морські аромати.")).toBeTruthy();
   });
 
-  it("keeps the thread across a reload and clears it on start over", async () => {
-    const stored: ThreadItem[] = [
+  const saved: PerfumerThreadView = {
+    entry: "direct",
+    items: [
       { id: "1", role: "user", text: "Щось ванільне" },
       { id: "2", role: "perfumer", reply: { intro: "Ось ванільні аромати.", picks: [] } },
-    ];
-    sessionStorage.setItem(THREAD_STORAGE_KEY, JSON.stringify({ v: 1, items: stored }));
+    ],
+  };
+
+  it('shows the saved chat from the first render, and "New chat" starts another (#180)', async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("uk", { thread: saved });
 
-    expect(await screen.findByText("Ось ванільні аромати.")).toBeTruthy();
+    // Rendered by the server already: no waiting for the browser.
+    expect(screen.getByText("Ось ванільні аромати.")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Почати спочатку" }));
+    await user.click(screen.getByRole("button", { name: "Новий чат" }));
 
     expect(screen.queryByText("Ось ванільні аромати.")).toBeNull();
     expect(screen.getByRole("button", { name: "Подарунок чоловікові" })).toBeTruthy();
-    expect(sessionStorage.getItem(THREAD_STORAGE_KEY)).toBeNull();
+    await waitFor(() => expect(intents).toEqual(["new-chat"]));
+    expect(document.activeElement).toBe(input());
   });
 
-  it("saves the thread as it grows", async () => {
+  it("deletes the chat after asking, and says so to screen readers (#180)", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("uk", { thread: saved });
 
-    await user.type(input(), "Щось легке{Enter}");
-    await waitFor(() => expect(calls).toHaveLength(1));
-    await answerLast(reply("Ось легкі."));
-    await screen.findByText("Ось легкі.");
+    await user.click(screen.getByRole("button", { name: "Видалити чат" }));
+    const question = screen.getByRole("group", { name: "Видалити цю розмову?" });
+    expect(question).toBeTruthy();
+    // The safe answer takes the focus; changing one's mind keeps the chat.
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Ні, залишити" }));
+    await user.click(screen.getByRole("button", { name: "Ні, залишити" }));
+    expect(screen.getByText("Ось ванільні аромати.")).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Видалити чат" }));
+    expect(intents).toEqual([]);
 
-    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
-      items: ThreadItem[];
-    };
-    expect(saved.items.map((item) => item.role)).toEqual(["user", "perfumer"]);
+    await user.click(screen.getByRole("button", { name: "Видалити чат" }));
+    await user.click(screen.getByRole("button", { name: "Так, видалити" }));
+
+    expect(screen.queryByText("Ось ванільні аромати.")).toBeNull();
+    expect(screen.getByText("Розмову видалено.")).toBeTruthy();
+    await waitFor(() => expect(intents).toEqual(["delete-chat"]));
   });
 
-  it("sends each message's turn and the entry the chat was opened from (#166)", async () => {
+  it("links the note about the saved chat to the privacy policy (#180)", () => {
+    renderPage("uk", { thread: saved });
+    expect(screen.getByText(/Ми зберігаємо розмову 90 днів/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Докладніше" }).getAttribute("href")).toBe(
+      "/konfidentsiinist",
+    );
+  });
+
+  it("clears the chat an older page kept in sessionStorage (#180)", async () => {
+    sessionStorage.setItem("jassmin.perfumer.thread", JSON.stringify({ v: 1, items: [] }));
+    renderPage();
+    await waitFor(() => expect(sessionStorage.getItem("jassmin.perfumer.thread")).toBeNull());
+  });
+
+  it("sends the entry the chat was opened from (#166)", async () => {
     const user = userEvent.setup();
     renderPage("uk", { url: "/parfumer?from=catalog" });
 
     await user.type(input(), "Щось легке{Enter}");
     await waitFor(() => expect(calls).toHaveLength(1));
-    expect(calls[0]).toMatchObject({ turn: 1, entry: "catalog" });
+    expect(calls[0]).toMatchObject({ entry: "catalog" });
     await answerLast(reply("Ось легкі.", "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d"));
 
     await user.type(await screen.findByRole("textbox"), "Дешевше{Enter}");
     await waitFor(() => expect(calls).toHaveLength(2));
-    expect(calls[1]).toMatchObject({ turn: 2, entry: "catalog" });
-
-    // The answer's reply id and turn are kept for its rating.
-    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
-      entry: string;
-      items: ThreadItem[];
-    };
-    expect(saved.entry).toBe("catalog");
-    expect(saved.items[1]).toMatchObject({
-      role: "perfumer",
-      replyId: "6f9b3c2a-1d4e-4b8a-9c7d-2e5f8a1b3c4d",
-      turn: 1,
-    });
+    expect(calls[1]).toMatchObject({ entry: "catalog" });
   });
 
-  it("keeps a restored conversation's entry, and counts an unknown one as direct", async () => {
-    sessionStorage.setItem(
-      THREAD_STORAGE_KEY,
-      JSON.stringify({
-        v: 1,
-        entry: "product",
-        items: [{ id: "1", role: "user", text: "Щось ванільне" }],
-      }),
-    );
+  it("keeps a saved conversation's entry, and counts an unknown one as direct", async () => {
     const user = userEvent.setup();
-    renderPage("uk", { url: "/parfumer?from=nonsense" });
+    renderPage("uk", {
+      url: "/parfumer?from=nonsense",
+      thread: { entry: "product", items: [{ id: "1", role: "user", text: "Щось ванільне" }] },
+    });
 
-    await user.type(await screen.findByRole("textbox"), "Ще{Enter}");
+    await user.type(screen.getByRole("textbox"), "Ще{Enter}");
     await waitFor(() => expect(calls).toHaveLength(1));
-    expect(calls[0]).toMatchObject({ turn: 2, entry: "product" });
+    expect(calls[0]).toMatchObject({ entry: "product" });
 
     await answerLast(reply("Ось."));
-    await user.click(await screen.findByRole("button", { name: "Почати спочатку" }));
+    await user.click(await screen.findByRole("button", { name: "Новий чат" }));
     await user.type(input(), "Нове{Enter}");
     await waitFor(() => expect(calls).toHaveLength(2));
-    expect(calls[1]).toMatchObject({ turn: 1, entry: "direct" });
+    expect(calls[1]).toMatchObject({ entry: "direct" });
   });
 
   it("renders in English", async () => {
@@ -339,7 +361,7 @@ describe("PerfumerPage", () => {
     });
 
     await waitFor(() => expect(calls).toHaveLength(1));
-    expect(calls[0]?.messages).toEqual([{ role: "user", content: message }]);
+    expect(calls[0]?.payload).toMatchObject({ message });
     expect(screen.getByText(message, { selector: "p" })).toBeTruthy();
     await waitFor(() => expect(router.state.location.search).toBe(""));
     expect(router.state.historyAction).toBe("REPLACE");
@@ -349,25 +371,28 @@ describe("PerfumerPage", () => {
     // A reload: the URL has no `q` any more, so nothing is sent again.
     unmount();
     renderPage("uk", { url: "/parfumer" });
-    expect(await screen.findByText("Ось схожі аромати.")).toBeTruthy();
+    await act(async () => {});
     expect(calls).toHaveLength(1);
   });
 
-  it("adds a prefilled message to the stored thread instead of replacing it (#165)", async () => {
+  it("adds a prefilled message to the saved chat instead of replacing it (#165, #180)", async () => {
     const stored: ThreadItem[] = [
       { id: "1", role: "user", text: "Щось ванільне" },
       { id: "2", role: "perfumer", reply: { intro: "Ось ванільні аромати.", picks: [] } },
     ];
-    sessionStorage.setItem(THREAD_STORAGE_KEY, JSON.stringify({ v: 1, items: stored }));
-    renderPage("uk", { prefill: "Схоже на Libre від YSL", url: "/parfumer?q=x&from=product" });
+    renderPage("uk", {
+      prefill: "Схоже на Libre від YSL",
+      url: "/parfumer?q=x&from=product",
+      thread: { entry: "direct", items: stored },
+    });
 
     await waitFor(() => expect(calls).toHaveLength(1));
-    expect(calls[0]?.messages).toEqual([
-      { role: "user", content: "Щось ванільне" },
-      { role: "assistant", content: "Ось ванільні аромати." },
-      { role: "user", content: "Схоже на Libre від YSL" },
-    ]);
+    expect(calls[0]?.payload).toMatchObject({
+      message: "Схоже на Libre від YSL",
+      entry: "product",
+    });
     expect(screen.getByText("Ось ванільні аромати.")).toBeTruthy();
+    expect(screen.getByText("Схоже на Libre від YSL", { selector: "p" })).toBeTruthy();
   });
 });
 
@@ -413,8 +438,7 @@ describe("PerfumerPage streaming (#164)", () => {
     const stream = streams[0];
     expect(stream?.url).toBe("/parfumer/stream");
     expect(JSON.parse(stream?.payload ?? "{}")).toEqual({
-      messages: [{ role: "user", content: "Щось морське" }],
-      turn: 1,
+      message: "Щось морське",
       entry: "direct",
     });
 
@@ -438,17 +462,6 @@ describe("PerfumerPage streaming (#164)", () => {
     expect(screen.queryByRole("status")).toBeNull();
     expect(input().disabled).toBe(false);
     expect(calls).toHaveLength(0);
-    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
-      items: ThreadItem[];
-    };
-    expect(saved.items.at(-1)).toMatchObject({
-      role: "perfumer",
-      reply: {
-        intro: "Ось свіжі морські аромати.",
-        picks: [{ reason: "Морський бриз." }],
-        question: "Для дня чи вечора?",
-      },
-    });
   });
 
   it("streams a prefilled message to the end while `q` leaves the URL (#165)", async () => {
@@ -457,8 +470,7 @@ describe("PerfumerPage streaming (#164)", () => {
     await waitFor(() => expect(streams).toHaveLength(1));
     const stream = streams[0];
     expect(JSON.parse(stream?.payload ?? "{}")).toEqual({
-      messages: [{ role: "user", content: "Схоже на Libre від YSL" }],
-      turn: 1,
+      message: "Схоже на Libre від YSL",
       // The entry point's `from` (#166), read before the URL is cleaned.
       entry: "product",
     });
@@ -510,7 +522,8 @@ describe("PerfumerPage streaming (#164)", () => {
 
     await user.type(input(), "Щось морське{Enter}");
     await waitFor(() => expect(calls).toHaveLength(1));
-    expect(calls[0]?.messages).toEqual([{ role: "user", content: "Щось морське" }]);
+    // The stream may have saved the message already: the fallback is a retry (#180).
+    expect(calls[0]?.payload).toEqual({ message: "Щось морське", entry: "direct", retry: true });
     await answerLast(reply("Ось морські аромати."));
 
     expect(await screen.findByText("Ось морські аромати.")).toBeTruthy();
@@ -612,15 +625,7 @@ describe("PerfumerPage cart adds (#169)", () => {
               shouldRevalidate: ({ formMethod, defaultShouldRevalidate }) =>
                 formMethod ? false : defaultShouldRevalidate,
               element: createElement(PerfumerPage, {}),
-              action: async ({ request }) => {
-                const form = await request.formData();
-                const { messages } = JSON.parse(String(form.get("payload"))) as {
-                  messages: PerfumerMessage[];
-                };
-                return new Promise<PerfumerActionResult>((resolve) => {
-                  calls.push({ messages, turn: 1, entry: "direct", answer: resolve });
-                });
-              },
+              action: chatAction,
             },
             {
               path: "koshyk",
@@ -679,10 +684,6 @@ describe("PerfumerPage cart adds (#169)", () => {
     expect(screen.getByText("Ось морські аромати.")).toBeTruthy();
     expect(input().value).toBe("А дешевше?");
     await waitFor(() => expect(document.activeElement).toBe(add));
-    const saved = JSON.parse(sessionStorage.getItem(THREAD_STORAGE_KEY) ?? "{}") as {
-      items: ThreadItem[];
-    };
-    expect(saved.items.map((item) => item.role)).toEqual(["user", "perfumer"]);
   });
 
   it('keeps "Added to cart" on a card added while its answer was still streaming', async () => {
@@ -701,6 +702,6 @@ describe("PerfumerPage cart adds (#169)", () => {
     await act(async () => cartRelease?.());
 
     expect(await screen.findByText("Додано в кошик")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Почати спочатку" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Новий чат" })).toBeTruthy();
   });
 });

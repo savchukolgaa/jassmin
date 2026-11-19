@@ -210,7 +210,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
   Done: verified through `migrator.test.ts` on a throwaway database instead of the shared dev DB
   (the new table is in `ALL_TABLES`, and every rollback sequence rolls 0033 back first).
   `RECOMMENDATIONS_PER_PRODUCT` lives in `~/lib/recommendations`, imported by the schema.
-- [ ] **2. Signal extraction and pure cosine.**
+- [x] **2. Signal extraction and pure cosine.**
   - `listRecommendationSignals(db, since)` is one `db.execute(sql…)` that returns
     `{ basket: string, productId: number, weight: number }[]`. It's the `union all` of:
     - distinct `('c:' || coalesce(o.user_id::text, lower(o.email)), oi.product_id, 3)` over sold
@@ -230,7 +230,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
 
     The test asserts these to 4 decimals and A's ranking (B, then C). It also covers `minSignals`
     filtering, the `topN` cut, no self pairs and an empty input.
-- [ ] **3. Job, script, scheduling.**
+- [x] **3. Job, script, scheduling.**
   - `buildRecommendationsJob(db, { now, minSignals })`:
     - `since = now − 365 days`;
     - extract, compute, then `db.transaction`: `delete from product_recommendations`, followed by

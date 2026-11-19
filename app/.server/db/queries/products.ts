@@ -166,8 +166,8 @@ export function listProductSummariesByPublicIds(
     .where(and(isListed, inArray(products.publicId, [...publicIds])));
 }
 
-/** Orders whose units count as sold for the bestsellers (#64). */
-const SOLD_ORDER_STATUSES: OrderStatus[] = ["paid", "shipped", "completed"];
+/** Orders whose units count as sold: the bestsellers (#64) and recommendations (#182). */
+export const SOLD_ORDER_STATUSES: OrderStatus[] = ["paid", "shipped", "completed"];
 
 /** Units sold per product in paid, shipped or completed orders (#64). */
 function soldUnits(db: Db) {

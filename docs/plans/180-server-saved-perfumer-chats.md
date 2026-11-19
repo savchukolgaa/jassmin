@@ -276,7 +276,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   - Route tests (mock the service like existing route tests): client history rejected with 400 and
     the engine not called; intents dispatch; loader returns saved cards with current prices and
     without archived products (DB integration through the service).
-- [ ] **6. Login merge.** In `onUserAuthenticated`, after `mergeGuestCart`, `try {
+- [x] **6. Login merge.** In `onUserAuthenticated`, after `mergeGuestCart`, `try {
   await mergeGuestPerfumerThread(userId, anonymousId) } catch { console.error(...) }`. Extend
   `auth.test.ts`: called with `(userId, ANONYMOUS_ID)` for login/register/reset, not called without
   a visitor, a failure doesn't fail login.

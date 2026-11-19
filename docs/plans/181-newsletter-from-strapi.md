@@ -368,7 +368,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   Ukrainian message from the error body) and refetch the document. Add `@strapi/admin` types only
   if the CMS build needs them. Check: `pnpm cms:build`, then click both in a local Strapi.
 
-- [ ] **11. Scheduling and Aspire.** `deploy/crontab`: `*/15 * * * * pnpm --silent
+- [x] **11. Scheduling and Aspire.** `deploy/crontab`: `*/15 * * * * pnpm --silent
   db:send-newsletters` with a comment. `aspire-apphost/apphost.mts`: explicit-start
   `db-send-newsletters` like `db-send-order-emails` (`SMTP_URL` = smtp4dev, `STRAPI_URL` = cms,
   waits for `db-migrate`). `production.mts`: `NEWSLETTER_DAILY_LIMIT` on `web` and `scheduler`

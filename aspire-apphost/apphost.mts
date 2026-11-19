@@ -250,6 +250,19 @@ async function addDevelopmentResources(builder: DistributedApplicationBuilder) {
     .withParentRelationship(db)
     .withExplicitStart();
 
+  // Sends the queued newsletter emails (`pnpm db:send-newsletters`, #181; every 15 minutes from
+  // cron in production) to smtp4dev, then pushes their counts to Strapi. Start it from the
+  // dashboard after pressing "Send to subscribers" on a newsletter in Strapi.
+  await builder
+    .addJavaScriptApp("db-send-newsletters", "..", { runScriptName: "db:send-newsletters" })
+    .withPnpm({ install: false })
+    .withReference(db)
+    .withEnvironment("SMTP_URL", smtp4dev.getEndpoint("smtp"))
+    .withEnvironment("STRAPI_URL", cms.getEndpoint("http"))
+    .waitForCompletion(dbMigrate)
+    .withParentRelationship(db)
+    .withExplicitStart();
+
   // Pushes queued order and stock changes to Strapi (`pnpm db:sync-cms`, #40; every 5 minutes from
   // cron in production), e.g. after Strapi was down at checkout. `STRAPI_SYNC_TOKEN` comes from the
   // root .env. Start it from the dashboard; run `pnpm db:sync-cms -- --all` once by hand to copy an

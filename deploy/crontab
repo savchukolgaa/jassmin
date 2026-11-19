@@ -9,6 +9,10 @@
 # Mark carts idle for 24 h as abandoned (#19), then send the cart reminders (#139).
 0 * * * * pnpm --silent db:mark-abandoned-carts && pnpm --silent db:send-cart-reminders
 
+# Send the queued newsletter emails within NEWSLETTER_DAILY_LIMIT, and push their counts to
+# Strapi (#181).
+*/15 * * * * pnpm --silent db:send-newsletters
+
 # Cancel card orders still unpaid after UNPAID_ORDER_HOURS (#128).
 30 * * * * pnpm --silent db:cancel-unpaid-orders
 

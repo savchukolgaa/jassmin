@@ -4,7 +4,8 @@ The shop sends every email over SMTP from `no-reply@jassmin.ua`, with replies go
 `hello@jassmin.ua` (#134). That covers order confirmations, the order status emails (shipped,
 arrived at the branch, cancelled, refunded; #138), gift card codes, contact form messages, the
 email-changed notice, the password reset and email verification links (#135), and the one
-abandoned-cart reminder for customers who agreed to marketing email (#139). In production the SMTP server is **Brevo**, a transactional email
+abandoned-cart reminder and the [newsletter](#newsletter) (#181) for customers who agreed to
+marketing email (#139). In production the SMTP server is **Brevo**, a transactional email
 provider. Locally it's smtp4dev, which catches everything.
 
 Mail from a domain without SPF, DKIM and DMARC lands in spam, or is rejected by Gmail, Yahoo and
@@ -25,8 +26,9 @@ whoever controls the `jassmin.ua` DNS zone (the registrar's or the DNS host's co
 9. [Suppressed addresses](#suppressed-addresses)
 10. [Order status emails](#order-status-emails)
 11. [Cart reminders](#cart-reminders)
-12. [Local development](#local-development)
-13. [Switching providers](#switching-providers)
+12. [Newsletter](#newsletter)
+13. [Local development](#local-development)
+14. [Switching providers](#switching-providers)
 
 ## Why Brevo
 
@@ -356,6 +358,101 @@ from user_events e
 where e.event_type = 'purchase' and e.campaign = 'abandoned_cart';
 ```
 
+## Newsletter
+
+The privacy policy promises customers who agreed to marketing email "new arrivals and offers, at
+most once a week". The newsletter (#181) is how staff send them: written in Strapi, sent once,
+delivered by the shop in batches within the provider's daily limit.
+
+### Writing it
+
+In the Strapi admin, **Content Manager → Newsletter → Create new entry** (Ukrainian first):
+
+- **Тема листа** (subject, up to 150 characters) and **Прехедер** (the preview line inboxes show
+  next to the subject, up to 200).
+- **Текст листа**: rich text (Markdown). Paragraphs, headings, bullet and numbered lists, bold,
+  italic and links reach the email; images, HTML and code don't (the product cards carry the
+  photos). Link to the shop with a path such as `/aktsii` or `/en/offers`.
+- **Кампанія (slug)**: lowercase Latin letters, digits and hyphens, up to 80 characters, unique
+  per newsletter. It becomes `utm_campaign`.
+- **Товари**: up to 4 products, shown as cards with a photo, the name and today's "від …" price
+  (the cheapest size in stock). A product that is archived or sold out when an email goes out is
+  left out of that email.
+- Switch the locale to **English** for the English version (subject and body). Without it, English
+  customers get the Ukrainian one.
+
+Save, then press **Надіслати тест собі**: the shop emails the saved newsletter only to your admin
+address, once per language, with "[Тест]" in the subject. Nothing is stored or counted, and the
+weekly rule and the daily limit don't apply. Its unsubscribe link works only when your address also
+has a shop account.
+
+### Sending it
+
+**Надіслати підписникам** asks for confirmation and sends what is saved. In one transaction the
+shop stores a copy of the newsletter and queues one delivery (`newsletter_deliveries`) for every
+customer who
+
+- agreed to marketing email (`users.marketing_opt_in`),
+- confirmed their address (`users.email_verified_at`, #135), and
+- isn't [suppressed](#suppressed-addresses),
+
+in their language (`users.locale`; Ukrainian when it isn't set or there is no English version).
+Strapi then shows **Статус** `sending` and the counts. The shop refuses, with a message in the
+admin:
+
+- a second send of the same newsletter (`already-sent`): clone it to send a similar one;
+- a slug another newsletter already used (`newsletter-slug-taken`);
+- a send while the previous newsletter is still going out (`another-sending`), or within 7 days of
+  the previous send (`too-soon`, with the date it becomes possible);
+- a newsletter nobody would get (`no-recipients`);
+- anything without `SMTP_URL`, `PUBLIC_SITE_URL` or `EMAIL_UNSUBSCRIBE_SECRET`
+  (`mail-not-configured`).
+
+A newsletter that is sending or sent can't be edited or deleted in Strapi.
+
+### The job and the daily limit
+
+`pnpm db:send-newsletters` (every 15 minutes from cron in production) sends the queued deliveries,
+at most `NEWSLETTER_DAILY_LIMIT` (default **200**) in any 24 hours; what doesn't fit goes out in
+later runs, so a long list takes several days. Brevo's free plan allows **300 emails a day for the
+whole account**, and order confirmations, status emails, password resets and cart reminders count
+too, so the default leaves about 100 a day for them. With a paid Brevo plan (no daily limit, a
+monthly quota instead) raise `NEWSLETTER_DAILY_LIMIT` in `aspire-apphost/production.mts`.
+
+Right before each email the job reads the customer again: someone who unsubscribed, lost their
+confirmed address or was suppressed since the newsletter was queued is **skipped**. A failed send
+is retried after 15 and 60 minutes and then counted as **failed**. When nothing is left queued the
+newsletter becomes `sent`. After each run the job pushes the counts to Strapi with
+`STRAPI_SYNC_TOKEN` (or `pnpm db:sync-cms` does later). Each email carries `X-Mailin-custom:
+newsletter:<delivery id>`; bounces and complaints suppress the address like any other email.
+
+Every newsletter has the same [one-click unsubscribe](#unsubscribing) as the cart reminder: the
+`List-Unsubscribe` headers and the link in the footer.
+
+### Measuring it
+
+Every link to the shop (the body's, the product cards' and the button's) carries
+`utm_source=newsletter&utm_medium=email&utm_campaign=<slug>`; links to other sites don't. Visits
+from it are stored with `sessions.traffic_source = 'newsletter'` and `traffic_campaign = <slug>`
+and the visit's events get `source = 'newsletter'` and `campaign = <slug>` (consented visitors
+only). The warehouse keeps them (`fct_sessions.traffic_source`), so the newsletter shows up as its
+own source next to Instagram or Google. (Recipients already have accounts, so their
+`users.acquisition_channel` stays where they first came from.)
+
+```sql
+-- Per newsletter: deliveries, visits and orders from its links.
+select n.slug, n.sent_at, n.status,
+  count(*) filter (where d.status = 'sent') as sent,
+  (select count(*) from sessions s where s.traffic_campaign = n.slug
+     and s.traffic_source = 'newsletter') as visits,
+  (select count(*) from user_events e where e.event_type = 'purchase'
+     and e.source = 'newsletter' and e.campaign = n.slug) as orders
+from newsletters n
+left join newsletter_deliveries d on d.newsletter_id = n.id
+group by n.id
+order by n.sent_at desc;
+```
+
 ## Local development
 
 Nothing changes locally: `pnpm aspire run` passes smtp4dev as `SMTP_URL`, and without Aspire you
@@ -364,7 +461,11 @@ run `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev:v3` with
 smtp4dev shows both the HTML and the text part of each message. To see a cart reminder, add
 `PUBLIC_SITE_URL=http://localhost:5173` and an `EMAIL_UNSUBSCRIBE_SECRET` to `.env`, put perfumes in
 the cart of a user who opted in, set the cart's `updated_at` back 25 hours in SQL, then run
-`pnpm db:mark-abandoned-carts` and `pnpm db:send-cart-reminders`. The webhook can't reach a local
+`pnpm db:mark-abandoned-carts` and `pnpm db:send-cart-reminders`. To see a newsletter, give a user
+`marketing_opt_in` and `email_verified_at` in SQL, press **Надіслати підписникам** on the seeded
+draft in Strapi, then start the `db-send-newsletters` resource (or run `pnpm db:send-newsletters`).
+To send the next one at once, move the previous newsletter's `sent_at` back 7 days and set its
+`status` to `sent`. The webhook can't reach a local
 machine; its behaviour is covered by tests (`app/routes/hooks.email.test.ts`), and you can try it
 with curl:
 

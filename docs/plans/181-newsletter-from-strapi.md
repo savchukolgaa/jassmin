@@ -374,7 +374,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   waits for `db-migrate`). `production.mts`: `NEWSLETTER_DAILY_LIMIT` on `web` and `scheduler`
   (plain value `200`). Check: `pnpm aspire run`, start the resource, see the emails in smtp4dev.
 
-- [ ] **12. Analytics check and docs.** Add a test in `app/lib/analytics.test.ts` for a URL with
+- [x] **12. Analytics check and docs.** Add a test in `app/lib/analytics.test.ts` for a URL with
   `utm_source=newsletter&utm_medium=email&utm_campaign=<slug>` → `{ source: "newsletter", medium:
   "email", campaign: <slug> }`. `docs/email.md`: a "Newsletter" section (writing it in Strapi,
   test, send, the weekly and daily rules, Brevo's free plan and shared budget, unsubscribe and

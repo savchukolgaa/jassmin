@@ -297,7 +297,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   unsubscribe URL in the footer and in `List-Unsubscribe` is the same and untagged,
   `List-Unsubscribe-Post` is set, a missing product is left out, HTML in the body is escaped.
 
-- [ ] **7. The send route.** `app/lib/newsletter.schema.ts`: `cmsNewsletterSendSchema` =
+- [x] **7. The send route.** `app/lib/newsletter.schema.ts`: `cmsNewsletterSendSchema` =
   discriminated union on `mode`: `test` (`testEmail`: trimmed, lowercased email) and `send`;
   both with `slug`, `content.uk` (`subject` 1–150, `preheader` ≤ 200 or blank → `null`, `body`
   1–20 000), optional `content.en` (all blank → absent; subject without body refused), and

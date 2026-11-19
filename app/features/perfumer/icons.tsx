@@ -71,6 +71,18 @@ export function RestartIcon(props: IconProps) {
   );
 }
 
+/** A bin, for "Delete chat" (#180). */
+export function TrashIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h16" />
+      <path d="M9 7V4.5h6V7" />
+      <path d="M6.5 7l1 13h9l1-13" />
+      <path d="M10 11v5.5M14 11v5.5" />
+    </Icon>
+  );
+}
+
 export function SendIcon(props: IconProps) {
   return (
     <Icon strokeWidth={2.4} {...props}>

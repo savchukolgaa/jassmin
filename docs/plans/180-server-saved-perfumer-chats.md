@@ -124,6 +124,23 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   Not added to `production.mts`: the default applies there.
 - **No text in analytics.** `perfumer_message` properties are unchanged (already text-free); the
   warehouse and generator read perfumer data only from `user_events`. A guard test keeps it so.
+- **Implementation notes (deviations recorded while implementing).**
+  - The database side of the chat lives in a new `app/.server/services/perfumer-threads.ts` (thread
+    view, history, begin/end turn, new/delete chat, rating, login merge, owners).
+    `perfumer-chat.ts` keeps the rate limits, engine and analytics, and reaches the threads through
+    a `PerfumerChatStore` loaded lazily (as the engine loads the database), so its unit tests need
+    no database.
+  - **Retry rule, broadened:** with `retry: true` the server reuses the thread's last message when
+    it has the same text and is either the last row (a broken stream saved it but not its end) or
+    is followed by any error marker. The page's fallback from a broken stream to the action posts
+    `retry: true`, so a message the stream already saved isn't saved twice.
+  - A forged or pre-#180 payload (`messages`, `turn`) is refused as `unavailable`, which the route
+    answers with **503** (the existing status for that key), not 400.
+  - The confirm's "no" button reads "Ні, залишити" / "No, keep it", so it never clashes with the
+    thinking state's "Скасувати"; the question group is a `<fieldset>` (Biome
+    `useSemanticElements`).
+  - Steps 2–5, 7 and 8 were committed together: the new request shape only typechecks with both
+    the server and the page changed.
 
 ## Resolved questions
 
@@ -205,12 +222,12 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   deletes their threads, a second active thread per user / per guest is refused (`23505`), bad
   role/error key refused (`23514`), rollback leaves no tables. Check: `pnpm db:migrate`,
   `pnpm db:rollback`, `pnpm db:migrate`.
-- [ ] **2. Stored reply contract.** `app/.server/services/perfumer-chat.schema.ts`:
+- [x] **2. Stored reply contract.** `app/.server/services/perfumer-chat.schema.ts`:
   `storedReplySchema` (`picks` 0–4 `{ productId: z.uuid(), reason: z.string().max(1000) }`,
   `question?`, `replyId: z.uuid()`, `turn`, `rating?`) and `parseStoredReply(unknown)` → value or
   `null`. In `~/lib/perfumer`: `PERFUMER_MAX_THREAD_ITEMS = 50`, `PerfumerThreadView = { entry,
   items: ThreadItem[] }`, update the "conversation isn't stored" comments. Unit-test the parser.
-- [ ] **3. Queries** (`db/queries/perfumer-chats.ts`, all taking `Db | Tx`): `findActiveThread(owner)`,
+- [x] **3. Queries** (`db/queries/perfumer-chats.ts`, all taking `Db | Tx`): `findActiveThread(owner)`,
   `lockOrCreateActiveThread(tx, owner, entry)` (insert `on conflict do nothing` on the partial
   unique, then `select … for update`), `appendMessage(tx, threadId, row)`, `listRecentMessages(db,
   threadId, limit)` (newest N by id, returned oldest first), `deleteLastErrorMarker(tx, threadId)`,
@@ -218,7 +235,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   `updated_at`), `setReplyRating(db, owner, replyId, rating)` (jsonb `||`, owner-scoped join),
   `closeActiveThread(db, owner)`, `softDeleteActiveThread(db, owner)` (sets `deleted_at`, `closed_at`),
   `moveGuestThreadToUser(tx, anonymousId, userId)`, `deleteThreadsIdleSince(db, cutoff)` → count.
-- [ ] **4. Service** (`services/perfumer-chat.ts`):
+- [x] **4. Service** (`services/perfumer-chat.ts`):
   - `getPerfumerThreadView(owner, db?)` → `PerfumerThreadView | null` (rows → `ThreadItem`s,
     cards via `getProductSummaries`, archived dropped, unparsable rows skipped).
   - `beginPerfumerTurn({ owner, message, entry, retry })` in one transaction: lock/create thread,
@@ -244,7 +261,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
     every lookup but keeps its rows (and the job removes them later); merge
     both cases; turn counting; rate-limited stores nothing; event properties contain no message or
     intro text (assert `JSON.stringify(event)` doesn't include them).
-- [ ] **5. Request schema and routes.**
+- [x] **5. Request schema and routes.**
   - `perfumer.schema.ts`: `perfumerRequestSchema = z.strictObject({ message: trimmed 1–500
     (TOO_LONG), entry, retry: z.literal(true).optional() })`; `parsePerfumerRequest` returns
     `{ ok, message, entry, retry }`; `perfumerChatIntentSchema` for `intent=new-chat|delete-chat`.
@@ -263,7 +280,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   await mergeGuestPerfumerThread(userId, anonymousId) } catch { console.error(...) }`. Extend
   `auth.test.ts`: called with `(userId, ANONYMOUS_ID)` for login/register/reset, not called without
   a visitor, a failure doesn't fail login.
-- [ ] **7. Client hook.** `usePerfumerThread({ initial, urlEntry })`: `useState(initial.items)`,
+- [x] **7. Client hook.** `usePerfumerThread({ initial, urlEntry })`: `useState(initial.items)`,
   entry = `urlEntry !== "direct" ? urlEntry : initial.entry ?? urlEntry`, `restored` always true
   (keep the field for `PerfumerPage`'s prefill effect, or drop it and simplify). `submit` posts
   `{ message: text, entry, retry? }` to the stream URL and the action fallback. `startOver` →
@@ -271,7 +288,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   `intent=delete-chat`; both stop the stream and clear local items. Remove `thread-storage` import;
   add the one-time `sessionStorage.removeItem("jassmin.perfumer.thread")` effect. Delete
   `thread-storage.ts` and its test.
-- [ ] **8. Page UI** (`PerfumerPage.tsx`, follow `docs/design.md`): pass `loaderData.thread` from the
+- [x] **8. Page UI** (`PerfumerPage.tsx`, follow `docs/design.md`): pass `loaderData.thread` from the
   route; `Strip` gets "Новий чат" and "Видалити чат" (inline confirm) and the retention note;
   after a delete, an `aria-live="polite"` message ("Розмову видалено"), focus back to the input.
   i18n keys in both `uk.ts` and `en.ts`: `perfumer.newChat`, `perfumer.deleteChat`,

@@ -166,6 +166,11 @@ export interface PerfumerThreadView {
   items: ThreadItem[];
 }
 
+/** The chat page's buttons: close the chat ("New chat") or delete it for the customer. */
+export const PERFUMER_CHAT_INTENTS = ["new-chat", "delete-chat"] as const;
+
+export type PerfumerChatIntent = (typeof PERFUMER_CHAT_INTENTS)[number];
+
 /** The chat page shows at most this many of the newest stored messages. */
 export const PERFUMER_MAX_THREAD_ITEMS = 50;
 
@@ -224,7 +229,7 @@ export const PERFUMER_RATINGS = ["up", "down"] as const;
 
 export type PerfumerRating = (typeof PERFUMER_RATINGS)[number];
 
-/** One entry of the chat thread the browser shows and keeps in `sessionStorage`. */
+/** One entry of the chat thread the page shows; the saved thread is the server's (#180). */
 export type ThreadItem =
   | { id: string; role: "user"; text: string }
   | {
@@ -245,6 +250,7 @@ export type ThreadItem =
  * A perfumer reply as the text of an assistant turn in the history: the intro, the picks' names
  * and the question, cut to `PERFUMER_MAX_INPUT_LENGTH`. The names come from the server's own
  * reply, so the model learns nothing new; they let a follow-up ("а щось схоже на другий?") work.
+ * The server builds the history from the saved thread with it (#180).
  */
 export function replyToHistoryText(reply: PerfumerReply): string {
   const lines = [
@@ -253,23 +259,6 @@ export function replyToHistoryText(reply: PerfumerReply): string {
     reply.question ?? "",
   ].filter((line) => line.trim() !== "");
   return lines.join("\n").slice(0, PERFUMER_MAX_INPUT_LENGTH).trim();
-}
-
-/**
- * The conversation sent with a message: the customer's messages and the perfumer's replies, without
- * errors and cancelled turns, at most the last `PERFUMER_MAX_MESSAGES`.
- */
-export function toHistory(items: readonly ThreadItem[]): PerfumerMessage[] {
-  const messages: PerfumerMessage[] = [];
-  for (const item of items) {
-    if (item.role === "user") {
-      messages.push({ role: "user", content: item.text });
-    } else if (item.role === "perfumer") {
-      const content = replyToHistoryText(item.reply);
-      if (content) messages.push({ role: "assistant", content });
-    }
-  }
-  return messages.slice(-PERFUMER_MAX_MESSAGES);
 }
 
 // Entry points to the chat (#165): the corner button, the catalog banner and the product link.

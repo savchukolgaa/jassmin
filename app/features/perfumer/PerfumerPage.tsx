@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate, useRouteLoaderData, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useRouteLoaderData, useSearchParams } from "react-router";
 import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import { cn } from "~/lib/cn";
-import { type TextKey, useT } from "~/lib/i18n";
-import { toPerfumerEntry } from "~/lib/perfumer";
+import { type TextKey, usePathFor, useT } from "~/lib/i18n";
+import { type PerfumerThreadView, toPerfumerEntry } from "~/lib/perfumer";
 import type { loader as shopLoader } from "~/routes/_shop";
-import { BottleIcon, RestartIcon } from "./icons";
+import { BottleIcon, RestartIcon, TrashIcon } from "./icons";
 import { MessageThread } from "./MessageThread";
 import { PerfumerInput } from "./PerfumerInput";
 import { usePerfumerThread } from "./usePerfumerThread";
@@ -20,21 +20,30 @@ const EXAMPLES = [
 
 /**
  * The AI perfumer chat page (#163), as drawn on the C+ canvas: a deep-pink hero with example
- * requests while the thread is empty, a slim strip with "Start over" once it isn't, the thread in
- * an 800px column and the message bar stuck to the bottom of the screen.
+ * requests while the thread is empty, a slim strip with "New chat" and "Delete chat" (#180) once
+ * it isn't, the thread in an 800px column and the message bar stuck to the bottom of the screen.
  *
- * `prefill`: a message from an entry point (`?q=`, #165), sent once the stored thread is restored
- * (so it joins it), then removed from the URL so a reload or Back doesn't send it again.
+ * `thread`: the saved chat (#180), `null` without one. `prefill`: a message from an entry point
+ * (`?q=`, #165), sent once (so it joins the saved chat), then removed from the URL so a reload or
+ * Back doesn't send it again.
  */
-export function PerfumerPage({ prefill = null }: { prefill?: string | null }) {
+export function PerfumerPage({
+  prefill = null,
+  thread: saved = null,
+}: {
+  prefill?: string | null;
+  thread?: PerfumerThreadView | null;
+}) {
   const { t } = useT();
   // How the chat was opened (#166): the header's link and #165's entry points add `?from=`.
   const [searchParams] = useSearchParams();
-  const thread = usePerfumerThread(toPerfumerEntry(searchParams.get("from")));
+  const thread = usePerfumerThread(saved, toPerfumerEntry(searchParams.get("from")));
   const navigate = useNavigate();
   const { pathname, hash } = useLocation();
   const prefillSent = useRef(false);
   const [draft, setDraft] = useState("");
+  /** Said to screen readers after "Delete chat" (#180). */
+  const [announcement, setAnnouncement] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // The fixed cookie banner (#18) would cover the stuck message bar: until it's answered the bar
   // stays in the flow, with room below it to scroll it above the banner.
@@ -55,12 +64,23 @@ export function PerfumerPage({ prefill = null }: { prefill?: string | null }) {
   }, [prefill, restored, sendMessage, navigate, pathname, hash]);
 
   function send(text: string) {
-    if (thread.send(text)) setDraft("");
+    if (thread.send(text)) {
+      setDraft("");
+      setAnnouncement("");
+    }
   }
 
-  function startOver() {
-    thread.startOver();
+  function newChat() {
+    thread.newChat();
     setDraft("");
+    setAnnouncement("");
+    inputRef.current?.focus();
+  }
+
+  function deleteChat() {
+    thread.deleteChat();
+    setDraft("");
+    setAnnouncement(t("perfumer.chatDeleted"));
     inputRef.current?.focus();
   }
 
@@ -68,7 +88,10 @@ export function PerfumerPage({ prefill = null }: { prefill?: string | null }) {
     <main
       className={cn("flex min-h-[calc(100dvh-4rem)] flex-col", cookieBanner && "pb-64 sm:pb-40")}
     >
-      {empty ? <Hero onExample={send} /> : <Strip onStartOver={startOver} />}
+      {empty ? <Hero onExample={send} /> : <Strip onNewChat={newChat} onDelete={deleteChat} />}
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
       <div className="mx-auto flex w-full max-w-212 flex-1 flex-col px-4 pt-8">
         {empty ? (
           <p className="pt-2 pb-10 leading-relaxed text-body">{t("perfumer.tips")}</p>
@@ -136,8 +159,25 @@ function Hero({ onExample }: { onExample: (text: string) => void }) {
   );
 }
 
-function Strip({ onStartOver }: { onStartOver: () => void }) {
+function Strip({ onNewChat, onDelete }: { onNewChat: () => void; onDelete: () => void }) {
   const { t } = useT();
+  const pathFor = usePathFor();
+  // "Delete chat" asks first, inside the strip (#180); the question's "Cancel" takes the focus,
+  // and it goes back to "Delete chat" when the customer changes their mind.
+  const [confirming, setConfirming] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  const askedRef = useRef(false);
+
+  useEffect(() => {
+    if (confirming) {
+      askedRef.current = true;
+      cancelRef.current?.focus();
+    } else if (askedRef.current) {
+      deleteRef.current?.focus();
+    }
+  }, [confirming]);
+
   return (
     <section aria-labelledby="perfumer-title" className="bg-primary text-white">
       <div className="container mx-auto flex flex-wrap items-center justify-between gap-x-5 gap-y-3 px-4 py-5.5">
@@ -156,12 +196,65 @@ function Strip({ onStartOver }: { onStartOver: () => void }) {
               {t("perfumer.title")}
             </h1>
             <p className="text-sm font-semibold">{t("perfumer.stripNote")}</p>
+            <p className="text-sm">
+              {t("perfumer.savedNote")}{" "}
+              <Link
+                to={pathFor("privacy")}
+                className={cn("font-semibold underline underline-offset-2", focusRing("onPrimary"))}
+              >
+                {t("perfumer.savedNoteLink")}
+              </Link>
+            </p>
           </div>
         </div>
-        <Button type="button" variant="outline-light" size="sm" onClick={onStartOver}>
-          <RestartIcon className="size-4.5" />
-          {t("perfumer.startOver")}
-        </Button>
+        {confirming ? (
+          <fieldset
+            aria-labelledby="perfumer-delete-question"
+            className="m-0 flex min-w-0 flex-wrap items-center gap-2.5 border-0 p-0"
+          >
+            <p id="perfumer-delete-question" className="font-extrabold">
+              {t("perfumer.deleteConfirm")}
+            </p>
+            <Button
+              type="button"
+              variant="outline-light"
+              size="sm"
+              onClick={() => {
+                askedRef.current = false;
+                setConfirming(false);
+                onDelete();
+              }}
+            >
+              {t("perfumer.deleteYes")}
+            </Button>
+            <Button
+              ref={cancelRef}
+              type="button"
+              variant="outline-light"
+              size="sm"
+              onClick={() => setConfirming(false)}
+            >
+              {t("perfumer.deleteNo")}
+            </Button>
+          </fieldset>
+        ) : (
+          <div className="flex flex-wrap gap-2.5">
+            <Button type="button" variant="outline-light" size="sm" onClick={onNewChat}>
+              <RestartIcon className="size-4.5" />
+              {t("perfumer.newChat")}
+            </Button>
+            <Button
+              ref={deleteRef}
+              type="button"
+              variant="outline-light"
+              size="sm"
+              onClick={() => setConfirming(true)}
+            >
+              <TrashIcon className="size-4.5" />
+              {t("perfumer.deleteChat")}
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

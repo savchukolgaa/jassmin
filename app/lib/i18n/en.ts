@@ -49,6 +49,8 @@ export const en = {
         "Your account: name, email, phone (optional), an encrypted password, the delivery city of your latest order and whether you agreed to our newsletter.",
       orders: "Your orders: products, amounts, delivery details and payment method.",
       cart: "Your cart: the products you added, even without logging in.",
+      perfumer:
+        "Your conversation with the AI perfumer, if you use it: your messages and the perfumer's answers with the perfumes it recommended. It's linked to your browser's id and, once you log in, to your account, so you can carry on later or on another device. The conversation's text never goes into our statistics.",
       analytics:
         "Only with your consent, statistics: the pages you visit, products you view, searches and filters, cart actions, your device type (phone, tablet or computer), where you came from (UTM tags or the referring site) and the first page of your visit. Once you log in or register, these statistics are linked to your account.",
       noIp: "We don't store IP addresses or use third-party advertising trackers.",
@@ -74,7 +76,7 @@ export const en = {
       locale: "Remembers the language you chose.",
       consent: "Remembers your answer to the cookie banner.",
       anonymousId:
-        "A random browser id: keeps a guest's cart and, with your consent, links your visit statistics.",
+        "A random browser id: keeps a guest's cart and conversation with the AI perfumer and, with your consent, links your visit statistics.",
       analyticsSession:
         "The id of your current visit, which ends after 30 minutes without activity. Also needed for a guest's cart.",
       days30: "30 days",
@@ -86,11 +88,13 @@ export const en = {
       account:
         "Account and order data while your account exists; order data also for as long as accounting law requires.",
       analytics: "Visit statistics for 26 months.",
+      perfumer:
+        "Your conversation with the AI perfumer for 90 days after its last message, then it's erased. “New chat” and “Delete chat” remove the conversation from the page on all your devices at once; we keep its records until the end of the same 90 days and then erase them.",
     },
     sharing: {
       heading: "Who we share data with",
       text: "We don't sell your data or share it for advertising. Only the services the store can't run without can access it: hosting, our email service and, for your orders, the delivery service.",
-      ai: "The messages you write to the AI perfumer are sent to the language model provider, {provider}, only to prepare the answer. We don't store the conversation's text, so please don't include personal data in it.",
+      ai: "The messages you write to the AI perfumer are sent to the language model provider, {provider}, only to prepare the answer. Please don't include personal data in the conversation.",
     },
     rights: {
       heading: "Your rights",
@@ -1043,7 +1047,15 @@ export const en = {
     },
     tips: "Write the way you'd talk to a shop assistant: “I love vanilla, but not too sweet”, “something for a date”, “like my favourite perfume”.",
     stripNote: "Only recommends perfumes in stock",
-    startOver: "Start over",
+    // Saved chats (#180).
+    newChat: "New chat",
+    deleteChat: "Delete chat",
+    deleteConfirm: "Delete this conversation?",
+    deleteYes: "Yes, delete",
+    deleteNo: "No, keep it",
+    chatDeleted: "Conversation deleted.",
+    savedNote: "We keep the conversation for 90 days.",
+    savedNoteLink: "Learn more",
     threadLabel: "Conversation with the AI perfumer",
     you: "You:",
     picksLabel: "Recommended perfumes",

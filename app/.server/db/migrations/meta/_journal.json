@@ -236,8 +236,15 @@
     {
       "idx": 33,
       "version": "7",
-      "when": 1795046936972,
-      "tag": "0033_product_recommendations",
+      "when": 1795047105456,
+      "tag": "0033_perfumer_chats",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795074610356,
+      "tag": "0034_product_recommendations",
       "breakpoints": true
     }
   ]

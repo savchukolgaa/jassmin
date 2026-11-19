@@ -107,6 +107,7 @@ pnpm dev                    # http://localhost:5173
 | `ORDER_FROM` | no | Sender of order confirmation emails (default: `CONTACT_FROM`). Replies go to `CONTACT_INBOX`. |
 | `ABANDONED_CART_HOURS` | no | Hours without activity after which `pnpm db:mark-abandoned-carts` marks a cart with items `abandoned` (whole number, default `24`). Only the job reads it. |
 | `UNPAID_ORDER_HOURS` | no | Hours after checkout after which `pnpm db:cancel-unpaid-orders` cancels a card order that is still unpaid (whole number, default `48`). Only the job reads it. |
+| `PERFUMER_CHAT_RETENTION_DAYS` | no | Days without a new message after which `pnpm db:prune-perfumer-chats` deletes a saved AI perfumer chat, closed and deleted ones included (whole number, default `90`, #180). Only the job reads it. |
 | `RECS_MIN_SIGNALS` | no | Baskets (a customer's orders or a session's views) a product needs before `pnpm db:build-recommendations` gives it recommendations (whole number, default `5`). Only the job reads it; see [Recommendations](#recommendations). |
 
 The variables are validated with zod in `app/.server/env.ts`, and the server fails at startup with a readable error if any are missing or invalid. A `.env` file is loaded automatically, but variables already set in the environment take precedence.
@@ -144,6 +145,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:cancel-unpaid-orders` | Cancel card orders still unpaid after `UNPAID_ORDER_HOURS` (safe to re-run), see [Unpaid card orders](#unpaid-card-orders) |
 | `pnpm db:expire-gift-cards` | Mark active gift cards past their 12 months as expired (safe to re-run), see [Gift cards](#gift-cards) |
 | `pnpm db:prune-rate-limits` | Delete ended rate-limit windows (safe to re-run), see [Rate limits](#rate-limits) |
+| `pnpm db:prune-perfumer-chats` | Delete AI perfumer chats not updated for `PERFUMER_CHAT_RETENTION_DAYS` (safe to re-run), see [Perfumer chats](#perfumer-chats) |
 | `pnpm db:build-recommendations` | Rebuild the product recommendations from the last year's orders and views (safe to re-run), see [Recommendations](#recommendations) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
@@ -220,6 +222,16 @@ A window whose time is up is harmless (the next hit restarts it), so `pnpm db:pr
 ```
 
 It needs only the database URL. Under Aspire, start the `db-prune-rate-limits` resource from the dashboard.
+
+## Perfumer chats
+
+The AI perfumer's conversations are saved per visitor and customer account (#180, [docs/ai-perfumer.md](ai-perfumer.md#saved-chats)). "Delete chat" only hides a chat from the customer; `pnpm db:prune-perfumer-chats` erases every chat not updated for `PERFUMER_CHAT_RETENTION_DAYS` (default 90), with its messages, which is the retention the privacy policy promises. Run it daily from cron, for example:
+
+```cron
+45 3 * * * cd /srv/jassmin && pnpm db:prune-perfumer-chats >> /var/log/jassmin/perfumer-chats.log 2>&1
+```
+
+In production it's in `deploy/crontab`. It needs only the database URL. Under Aspire, start the `db-prune-perfumer-chats` resource from the dashboard.
 
 ## Recommendations
 

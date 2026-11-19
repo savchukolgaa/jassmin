@@ -32,13 +32,16 @@ const COLLECTED: TextKey[] = [
  * The `/privacy` page (#18): who controls the data, what is collected and why, the cookies (from
  * `COOKIE_INVENTORY`), retention, sharing and the visitor's rights. The copy is a draft for the
  * store owner to review. `aiProvider`, when set, is the hosted AI perfumer's provider (#167).
+ * `perfumerEnabled`: the AI perfumer is on, so its saved chats (#180) are described.
  */
 export function PrivacyPolicy({
   contacts,
   aiProvider = null,
+  perfumerEnabled = false,
 }: {
   contacts: PrivacyContacts | null;
   aiProvider?: string | null;
+  perfumerEnabled?: boolean;
 }) {
   const { t, formatDate } = useT();
   const { pathname } = useLocation();
@@ -74,6 +77,7 @@ export function PrivacyPolicy({
             {COLLECTED.map((key) => (
               <li key={key}>{t(key)}</li>
             ))}
+            {perfumerEnabled ? <li>{t("privacy.collect.perfumer")}</li> : null}
           </ul>
           <p>{t("privacy.collect.noIp")}</p>
         </Section>
@@ -120,6 +124,7 @@ export function PrivacyPolicy({
         <Section heading={t("privacy.retention.heading")}>
           <p>{t("privacy.retention.account")}</p>
           <p>{t("privacy.retention.analytics")}</p>
+          {perfumerEnabled ? <p>{t("privacy.retention.perfumer")}</p> : null}
         </Section>
 
         <Section heading={t("privacy.sharing.heading")}>

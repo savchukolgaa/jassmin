@@ -20,6 +20,7 @@ import { getLocale } from "../locale";
 import { getDummyPasswordHash, hashPassword, verifyPassword } from "../password";
 import { pageUrl } from "../request-url";
 import { mergeGuestCart } from "./cart";
+import { mergeGuestPerfumerThread } from "./perfumer-threads";
 import { getSessionUser } from "./session-user";
 
 export type { PublicUser } from "../db/queries/users";
@@ -160,6 +161,12 @@ export async function onUserAuthenticated(
     await mergeGuestCart(userId, anonymousId);
   } catch (error: unknown) {
     console.error("Merging the guest cart failed", error);
+  }
+  // The guest's AI perfumer chat follows them into the account, like the cart (#180).
+  try {
+    await mergeGuestPerfumerThread(userId, anonymousId);
+  } catch (error: unknown) {
+    console.error("Merging the guest's perfumer chat failed", error);
   }
   try {
     await linkVisitorToUser(anonymousId, userId);

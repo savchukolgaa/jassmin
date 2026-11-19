@@ -1,5 +1,5 @@
 {
-  "id": "5312114d-5da8-447d-9598-b64cd7b1e432",
+  "id": "16eda010-4656-4cf5-979b-86abe6e5dce6",
   "prevId": "66aa2938-e0a6-4616-8737-f0880641e23a",
   "version": "7",
   "dialect": "postgresql",
@@ -2171,59 +2171,66 @@
       },
       "isRLSEnabled": false
     },
-    "public.product_recommendations": {
-      "name": "product_recommendations",
+    "public.perfumer_messages": {
+      "name": "perfumer_messages",
       "schema": "",
       "columns": {
-        "product_id": {
-          "name": "product_id",
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "recommended_product_id": {
-          "name": "recommended_product_id",
-          "type": "integer",
+        "role": {
+          "name": "role",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "score": {
-          "name": "score",
-          "type": "double precision",
+        "text": {
+          "name": "text",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "rank": {
-          "name": "rank",
-          "type": "smallint",
+        "reply": {
+          "name": "reply",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "signals": {
-          "name": "signals",
-          "type": "integer",
+        "error_key": {
+          "name": "error_key",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "computed_at": {
-          "name": "computed_at",
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {
-        "product_recommendations_product_id_rank_idx": {
-          "name": "product_recommendations_product_id_rank_idx",
+        "perfumer_messages_thread_id_id_idx": {
+          "name": "perfumer_messages_thread_id_id_idx",
           "columns": [
             {
-              "expression": "product_id",
+              "expression": "thread_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "rank",
+              "expression": "id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2236,25 +2243,12 @@
         }
       },
       "foreignKeys": {
-        "product_recommendations_product_id_products_id_fk": {
-          "name": "product_recommendations_product_id_products_id_fk",
-          "tableFrom": "product_recommendations",
-          "tableTo": "products",
+        "perfumer_messages_thread_id_perfumer_threads_id_fk": {
+          "name": "perfumer_messages_thread_id_perfumer_threads_id_fk",
+          "tableFrom": "perfumer_messages",
+          "tableTo": "perfumer_threads",
           "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "product_recommendations_recommended_product_id_products_id_fk": {
-          "name": "product_recommendations_recommended_product_id_products_id_fk",
-          "tableFrom": "product_recommendations",
-          "tableTo": "products",
-          "columnsFrom": [
-            "recommended_product_id"
+            "thread_id"
           ],
           "columnsTo": [
             "id"
@@ -2263,29 +2257,197 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "product_recommendations_pkey": {
-          "name": "product_recommendations_pkey",
-          "columns": [
-            "product_id",
-            "recommended_product_id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "product_recommendations_not_self_check": {
-          "name": "product_recommendations_not_self_check",
-          "value": "\"product_recommendations\".\"product_id\" <> \"product_recommendations\".\"recommended_product_id\""
+        "perfumer_messages_role_check": {
+          "name": "perfumer_messages_role_check",
+          "value": "\"perfumer_messages\".\"role\" in ('user', 'perfumer')"
         },
-        "product_recommendations_rank_check": {
-          "name": "product_recommendations_rank_check",
-          "value": "\"product_recommendations\".\"rank\" between 1 and 12"
+        "perfumer_messages_error_key_check": {
+          "name": "perfumer_messages_error_key_check",
+          "value": "\"perfumer_messages\".\"error_key\" in ('unavailable', 'timeout', 'rateLimited', 'tooLong', 'cancelled')"
         },
-        "product_recommendations_signals_check": {
-          "name": "product_recommendations_signals_check",
-          "value": "\"product_recommendations\".\"signals\" > 0"
+        "perfumer_messages_shape_check": {
+          "name": "perfumer_messages_shape_check",
+          "value": "(\"perfumer_messages\".\"role\" = 'user' and \"perfumer_messages\".\"text\" is not null and \"perfumer_messages\".\"reply\" is null and \"perfumer_messages\".\"error_key\" is null)\n        or (\"perfumer_messages\".\"role\" = 'perfumer' and num_nonnulls(\"perfumer_messages\".\"reply\", \"perfumer_messages\".\"error_key\") = 1)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.perfumer_threads": {
+      "name": "perfumer_threads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "anonymous_id": {
+          "name": "anonymous_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entry": {
+          "name": "entry",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "perfumer_threads_anonymous_id_closed_at_idx": {
+          "name": "perfumer_threads_anonymous_id_closed_at_idx",
+          "columns": [
+            {
+              "expression": "anonymous_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "closed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "perfumer_threads_user_id_closed_at_idx": {
+          "name": "perfumer_threads_user_id_closed_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "closed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "perfumer_threads_updated_at_idx": {
+          "name": "perfumer_threads_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "perfumer_threads_active_user_id_unique": {
+          "name": "perfumer_threads_active_user_id_unique",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"perfumer_threads\".\"closed_at\" is null and \"perfumer_threads\".\"user_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "perfumer_threads_active_anonymous_id_unique": {
+          "name": "perfumer_threads_active_anonymous_id_unique",
+          "columns": [
+            {
+              "expression": "anonymous_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"perfumer_threads\".\"closed_at\" is null and \"perfumer_threads\".\"user_id\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "perfumer_threads_user_id_users_id_fk": {
+          "name": "perfumer_threads_user_id_users_id_fk",
+          "tableFrom": "perfumer_threads",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "perfumer_threads_entry_check": {
+          "name": "perfumer_threads_entry_check",
+          "value": "\"perfumer_threads\".\"entry\" in ('menu', 'catalog', 'empty_results', 'product', 'corner', 'direct')"
+        },
+        "perfumer_threads_deleted_closed_check": {
+          "name": "perfumer_threads_deleted_closed_check",
+          "value": "\"perfumer_threads\".\"deleted_at\" is null or \"perfumer_threads\".\"closed_at\" is not null"
         }
       },
       "isRLSEnabled": false

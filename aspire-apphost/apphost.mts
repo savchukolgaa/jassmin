@@ -123,6 +123,18 @@ async function addDevelopmentResources(builder: DistributedApplicationBuilder) {
     .withParentRelationship(db)
     .withExplicitStart();
 
+  // Deletes AI perfumer chats not updated for PERFUMER_CHAT_RETENTION_DAYS (default 90), deleted
+  // ones included (#180, daily cron in production).
+  await builder
+    .addJavaScriptApp("db-prune-perfumer-chats", "..", {
+      runScriptName: "db:prune-perfumer-chats",
+    })
+    .withPnpm({ install: false })
+    .withReference(db)
+    .waitForCompletion(dbMigrate)
+    .withParentRelationship(db)
+    .withExplicitStart();
+
   // Rebuilds `product_recommendations` from orders and consented views (#182, nightly cron in
   // production). Set RECS_MIN_SIGNALS in `.env` (e.g. 1) to see recommendations on little data.
   await builder

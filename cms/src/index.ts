@@ -1,4 +1,9 @@
 import type { Core } from "@strapi/strapi";
+import {
+  NEWSLETTER_READ_ONLY_FIELDS,
+  NEWSLETTER_UID,
+  registerNewsletterRoutes,
+} from "./newsletter/send";
 import { createSyncMiddleware, GIFT_CARD_UID, ORDER_UID, PRODUCT_UID } from "./sync/middleware";
 
 /**
@@ -13,6 +18,7 @@ const PROTECTED_UIDS = [
   PRODUCT_UID,
   ORDER_UID,
   GIFT_CARD_UID,
+  NEWSLETTER_UID,
 ];
 
 interface RoleWithPermissions {
@@ -175,6 +181,25 @@ async function lockGiftCardFields(strapi: Core.Strapi): Promise<void> {
   }
 }
 
+/**
+ * Makes a newsletter's status, counts and send time read-only in its edit view (#181). Only a hint
+ * for staff: the sync middleware keeps the stored values whatever the form sends.
+ */
+async function lockNewsletterFields(strapi: Core.Strapi): Promise<void> {
+  const readOnly = new Set<string>(NEWSLETTER_READ_ONLY_FIELDS);
+  try {
+    await updateEditMetadata(strapi, "content-types", NEWSLETTER_UID, (field, edit) => {
+      if (!readOnly.has(field) || edit.editable === false) {
+        return false;
+      }
+      edit.editable = false;
+      return true;
+    });
+  } catch (error) {
+    strapi.log.warn(`Could not make the newsletter fields read-only: ${String(error)}`);
+  }
+}
+
 interface FieldHint {
   label: string;
   description: string;
@@ -292,6 +317,64 @@ const ORDER_FIELD_HINTS: { kind: ModelKind; uid: string; fields: Record<string, 
   },
 ];
 
+/** What staff need to know while writing a newsletter (#181). */
+const NEWSLETTER_FIELD_HINTS: {
+  kind: ModelKind;
+  uid: string;
+  fields: Record<string, FieldHint>;
+}[] = [
+  {
+    kind: "content-types",
+    uid: NEWSLETTER_UID,
+    fields: {
+      subject: {
+        label: "Тема листа",
+        description:
+          "До 150 символів. Англійська версія необов’язкова: без неї англомовні клієнти отримають українську.",
+      },
+      preheader: {
+        label: "Прехедер",
+        description:
+          "Короткий рядок, який поштові скриньки показують поруч із темою. До 200 символів.",
+      },
+      body: {
+        label: "Текст листа",
+        description:
+          "Абзаци, заголовки, списки, жирний, курсив і посилання. Зображення й HTML у лист не потрапляють: фото дають картки товарів.",
+      },
+      slug: {
+        label: "Кампанія (slug)",
+        description:
+          "Латинські літери, цифри й дефіси, до 80 символів. У кожної розсилки свій: за ним рахуємо відвідування й замовлення з листа (utm_campaign).",
+      },
+      products: {
+        label: "Товари",
+        description:
+          "До 4 товарів: картки з фото й актуальною ціною. Проданий або архівний товар у лист не потрапить.",
+      },
+      newsletterStatus: {
+        label: "Статус",
+        description: "Чернетка, надсилається або надіслано. Ставить магазин.",
+      },
+      queuedCount: {
+        label: "У черзі (усього)",
+        description: "Скільки клієнтів отримують розсилку.",
+      },
+      sentCount: { label: "Надіслано", description: "Скільки листів уже пішло." },
+      failedCount: {
+        label: "Не вдалося",
+        description: "Листи, які не вдалося надіслати після кількох спроб.",
+      },
+      skippedCount: {
+        label: "Пропущено",
+        description:
+          "Клієнти, які відписалися або чия адреса перестала приймати листи, поки розсилка була в черзі.",
+      },
+      sentAt: { label: "Надіслано о", description: "Коли натиснули «Надіслати підписникам»." },
+    },
+  },
+];
+
 /**
  * Labels and describes the shared, per-language and alt image fields, the product descriptions
  * and the order's delivery fields, cancel reason and return time in the edit views.
@@ -301,6 +384,7 @@ async function describeFields(strapi: Core.Strapi): Promise<void> {
     ...IMAGE_FIELD_HINTS,
     ...PRODUCT_FIELD_HINTS,
     ...ORDER_FIELD_HINTS,
+    ...NEWSLETTER_FIELD_HINTS,
   ]) {
     try {
       await updateEditMetadata(strapi, kind, uid, (field, edit) => {
@@ -322,6 +406,8 @@ export default {
   register({ strapi }: { strapi: Core.Strapi }) {
     // Product and order edits made in the admin write through to the shop's database (#40).
     strapi.documents.use(createSyncMiddleware(strapi));
+    // The newsletter's "send" and "send a test" buttons (#181).
+    registerNewsletterRoutes(strapi);
   },
 
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
@@ -329,6 +415,7 @@ export default {
     await warnAboutPublicAccess(strapi);
     await lockOrderFields(strapi);
     await lockGiftCardFields(strapi);
+    await lockNewsletterFields(strapi);
     await describeFields(strapi);
   },
 };

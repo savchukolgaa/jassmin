@@ -76,6 +76,46 @@ describe("describeAppSyncError", () => {
   });
 });
 
+describe("describeAppSyncError for newsletters (#181)", () => {
+  it("explains each refusal of a send", () => {
+    expect(describeAppSyncError(409, { error: "already-sent" })).toMatch(
+      /^Цю розсилку вже надіслано\..*\[already-sent\]$/,
+    );
+    expect(describeAppSyncError(409, { error: "newsletter-slug-taken", slug: "autumn" })).toContain(
+      "Slug «autumn» уже мала інша розсилка",
+    );
+    expect(describeAppSyncError(409, { error: "another-sending" })).toContain(
+      "Попередня розсилка ще надсилається",
+    );
+    expect(
+      describeAppSyncError(422, { error: "too-soon", nextAllowedAt: "2026-11-26T10:00:00.000Z" }),
+    ).toContain("з 26.11.2026, 12:00");
+    expect(describeAppSyncError(422, { error: "no-recipients" })).toContain("Немає кому надсилати");
+    expect(
+      describeAppSyncError(503, { error: "mail-not-configured", missing: ["SMTP_URL"] }),
+    ).toContain("бракує SMTP_URL");
+    expect(describeAppSyncError(422, { error: "test-suppressed" })).toContain("тест не надіслано");
+  });
+
+  it("names the newsletter's invalid fields, and keeps the product message for products", () => {
+    expect(
+      describeAppSyncError(422, {
+        error: "invalid-newsletter",
+        issues: [{ path: "slug" }, { path: "content.en.body" }],
+      }),
+    ).toContain("Перевірте поля розсилки: slug, content.en.body.");
+    expect(
+      describeAppSyncError(422, {
+        error: "invalid-newsletter",
+        issues: [{ path: "productPublicIds" }],
+      }),
+    ).toContain("щонайбільше 4 різні товари");
+    expect(
+      describeAppSyncError(422, { error: "invalid-input", issues: [{ path: "slug" }] }),
+    ).toContain("не у вигляді UUID");
+  });
+});
+
 describe("postToApp", () => {
   it("posts JSON with the bearer secret and returns the answer", async () => {
     vi.stubEnv("JASSMIN_APP_URL", "http://app.test");

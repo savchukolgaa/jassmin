@@ -605,6 +605,17 @@ export const uk = {
     signature: "Команда Jassmin",
     why: "Ви отримали цей лист, бо погодилися отримувати новинки й пропозиції Jassmin.",
   },
+  newsletterEmail: {
+    greeting: "Вітаємо, {name}!",
+    productsHeading: "Обрані аромати",
+    priceFrom: "від {price}",
+    button: "До магазину",
+    contact: "Маєте запитання про аромат? Відповідайте на цей лист або пишіть на {email}.",
+    signature: "Команда Jassmin",
+    why: "Ви отримали цей лист, бо погодилися отримувати новинки й пропозиції Jassmin. Ми пишемо не частіше разу на тиждень.",
+    testSubject: "[Тест] {subject}",
+    testNote: "Це тестовий лист: його отримали лише ви. Клієнтам його ще не надіслано.",
+  },
   giftCardEmail: {
     subject: "Ваша подарункова картка Jassmin на {amount}",
     greeting: "Вітаємо!",

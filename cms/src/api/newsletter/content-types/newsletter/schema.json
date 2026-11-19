@@ -1,0 +1,79 @@
+{
+  "kind": "collectionType",
+  "collectionName": "newsletters",
+  "info": {
+    "singularName": "newsletter",
+    "pluralName": "newsletters",
+    "displayName": "Newsletter",
+    "description": "Email newsletters to customers who agreed to news and offers (#181). Send a test to yourself, then send it once; the shop sends it in batches."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": { "localized": true }
+  },
+  "attributes": {
+    "subject": {
+      "type": "string",
+      "required": true,
+      "maxLength": 150,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "preheader": {
+      "type": "string",
+      "maxLength": 200,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "body": {
+      "type": "richtext",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "subject",
+      "required": true,
+      "maxLength": 80,
+      "regex": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "products": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::product.product",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "newsletterStatus": {
+      "type": "enumeration",
+      "enum": ["draft", "sending", "sent"],
+      "default": "draft",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "queuedCount": {
+      "type": "integer",
+      "default": 0,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "sentCount": {
+      "type": "integer",
+      "default": 0,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "failedCount": {
+      "type": "integer",
+      "default": 0,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "skippedCount": {
+      "type": "integer",
+      "default": 0,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "sentAt": {
+      "type": "datetime",
+      "pluginOptions": { "i18n": { "localized": false } }
+    }
+  }
+}

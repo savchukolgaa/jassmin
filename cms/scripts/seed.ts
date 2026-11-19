@@ -2,7 +2,8 @@
  * Seeds local Strapi content for the Jassmin app in Ukrainian (`uk`, the default locale) and
  * English (`en`): the home page, site settings, two published blog posts (one of them only in
  * `uk`, to exercise the app's fallback), one draft, and special offers for /offers (a current
- * campaign, an expired one, a tester trio, a couple offer, gift cards and three perks). Safe to
+ * campaign, an expired one, a tester trio, a couple offer, gift cards and three perks), and a
+ * draft newsletter (#181). Safe to
  * run repeatedly: existing localizations (single types by locale, posts and offers by slug and
  * locale) are left alone, and missing ones are added.
  *
@@ -44,6 +45,10 @@ const SYNC_TOKEN_PERMISSIONS = [
   "api::gift-card.gift-card.findOne",
   "api::gift-card.gift-card.create",
   "api::gift-card.gift-card.update",
+  // Newsletters (#181): the app updates their status and counts while it sends them.
+  "api::newsletter.newsletter.find",
+  "api::newsletter.newsletter.findOne",
+  "api::newsletter.newsletter.update",
 ];
 
 const SEED_DATA_DIR = path.join(__dirname, "seed-data");
@@ -610,6 +615,58 @@ async function seedOffers(strapi: Core.Strapi, images: SeedImageIds): Promise<vo
   }
 }
 
+const NEWSLETTER_SLUG = "osinni-novynky";
+
+const NEWSLETTER_COPY = {
+  uk: {
+    subject: "Осінні новинки Jassmin",
+    preheader: "Теплі аромати для холодних вечорів",
+    body: [
+      "### Осінь пахне інакше",
+      "",
+      "Ми додали в каталог теплі **деревні** та **пряні** аромати. Спробуйте їх у форматі тестера: [три тестери за 499 ₴](/aktsii).",
+      "",
+      "- нові аромати щотижня",
+      "- безкоштовна доставка від 1500 ₴",
+    ].join("\n"),
+  },
+  en: {
+    subject: "Autumn arrivals at Jassmin",
+    preheader: "Warm fragrances for cold evenings",
+    body: [
+      "### Autumn smells different",
+      "",
+      "We've added warm **woody** and **spicy** fragrances. Try them as testers: [three testers for ₴499](/en/offers).",
+      "",
+      "- new fragrances every week",
+      "- free delivery from ₴1,500",
+    ].join("\n"),
+  },
+} as const;
+
+/**
+ * A draft newsletter (#181) in both languages, to try "Send a test to me" locally. Without
+ * products: those reach Strapi from the shop (`pnpm db:sync-cms -- --all`), so staff pick them.
+ */
+async function seedNewsletter(strapi: Core.Strapi): Promise<void> {
+  const newsletters = strapi.documents("api::newsletter.newsletter");
+  const uk = await newsletters.findFirst({ filters: { slug: NEWSLETTER_SLUG }, locale: "uk" });
+  if (uk) {
+    strapi.log.info(`Newsletter "${NEWSLETTER_SLUG}" already exists, skipping`);
+    return;
+  }
+  const created = await newsletters.create({
+    locale: "uk",
+    data: { ...NEWSLETTER_COPY.uk, slug: NEWSLETTER_SLUG, newsletterStatus: "draft" },
+  });
+  await newsletters.update({
+    documentId: created.documentId,
+    locale: "en",
+    data: { ...NEWSLETTER_COPY.en, slug: NEWSLETTER_SLUG },
+  });
+  strapi.log.info(`Created the draft newsletter "${NEWSLETTER_SLUG}" (uk, en)`);
+}
+
 interface SeedToken {
   name: string;
   description: string;
@@ -678,6 +735,7 @@ async function main(): Promise<void> {
     await seedSiteSettings(strapi);
     await seedBlogPosts(strapi, coverImageId);
     await seedOffers(strapi, { hero: heroImageId, cover: coverImageId });
+    await seedNewsletter(strapi);
     if (withToken) {
       for (const token of APP_TOKENS) {
         await seedApiToken(strapi, token);

@@ -34,6 +34,20 @@ const label = (value: unknown): string => {
   return STATUS_LABELS[key] ? `«${STATUS_LABELS[key]}» (${key})` : `«${key}»`;
 };
 
+/** An ISO time as Kyiv time for staff, e.g. «26.11.2026, 12:00»; the value itself when it isn't one. */
+function formatKyivTime(value: unknown): string {
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("uk-UA", {
+    timeZone: "Europe/Kyiv",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 /** The admin message for an app answer that isn't 200. */
 export function describeAppSyncError(status: number, body: unknown): string {
   const data: ErrorBody = typeof body === "object" && body !== null ? (body as ErrorBody) : {};
@@ -66,6 +80,22 @@ export function describeAppSyncError(status: number, body: unknown): string {
           descriptionHint,
       );
     }
+    case "invalid-newsletter": {
+      // A newsletter's fields (#181).
+      const issues = Array.isArray(data.issues) ? data.issues : [];
+      const fields = issues
+        .map((issue) =>
+          typeof issue === "object" && issue !== null && "path" in issue ? String(issue.path) : "",
+        )
+        .filter(Boolean);
+      if (fields.some((field) => field.startsWith("productPublicIds"))) {
+        return withCode("У розсилці може бути щонайбільше 4 різні товари.");
+      }
+      return withCode(
+        `Перевірте поля розсилки: ${fields.join(", ") || "—"}. Тема — до 150 символів, прехедер — до 200, текст обов’язковий; ` +
+          "для англійської версії потрібні і тема, і текст. Slug — латинські літери, цифри й дефіси, до 80 символів.",
+      );
+    }
     case "unknown-product":
       return withCode("Цього товару немає в базі магазину.");
     case "unknown-order":
@@ -92,6 +122,36 @@ export function describeAppSyncError(status: number, body: unknown): string {
       return withCode(
         `Розмір ${String(data.volumeMl)} мл уже має історію складу, тому його не можна видалити. Вимкніть «Track stock» або поставте залишок 0.`,
       );
+    case "already-sent":
+      return withCode("Цю розсилку вже надіслано. Щоб надіслати схожу, дублюйте її.");
+    case "newsletter-slug-taken":
+      return withCode(
+        `Slug «${String(data.slug)}» уже мала інша розсилка. Дайте цій свій slug: за ним рахуємо відвідування з листа.`,
+      );
+    case "another-sending":
+      return withCode(
+        "Попередня розсилка ще надсилається. Нову можна надіслати, коли вона завершиться і мине тиждень.",
+      );
+    case "too-soon":
+      return withCode(
+        `Ми обіцяємо клієнтам щонайбільше один лист на тиждень. Наступну розсилку можна надіслати з ${formatKyivTime(data.nextAllowedAt)}.`,
+      );
+    case "no-recipients":
+      return withCode(
+        "Немає кому надсилати: жоден клієнт із підтвердженою адресою не погодився отримувати новинки.",
+      );
+    case "mail-not-configured":
+      return withCode(
+        `Магазин не налаштований для розсилок (бракує ${Array.isArray(data.missing) ? data.missing.join(", ") : "налаштувань"}). Див. docs/email.md.`,
+      );
+    case "mail-failed":
+      return withCode("Не вдалося надіслати тестовий лист. Спробуйте пізніше.");
+    case "test-suppressed":
+      return withCode(
+        "Ваша адреса в списку заблокованих (лист раніше повернувся або позначений як спам), тому тест не надіслано.",
+      );
+    case "unknown-newsletter":
+      return withCode("Магазин не розпізнав цю розсилку.");
     case "unauthorized":
     case "not-configured":
       return withCode(

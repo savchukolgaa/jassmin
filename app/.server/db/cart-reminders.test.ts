@@ -9,6 +9,7 @@ const env: MailEnv = {
   CONTACT_FROM: "Jassmin <no-reply@jassmin.ua>",
   PUBLIC_SITE_URL: "https://jassmin.ua",
   EMAIL_UNSUBSCRIBE_SECRET: "j".repeat(32),
+  NEWSLETTER_DAILY_LIMIT: 200,
 };
 
 describe("sendCartRemindersJob without configuration", () => {

@@ -53,6 +53,10 @@ import {
   INVENTORY_MOVEMENT_SOURCES,
   type InventoryMovementReason,
   type InventoryMovementSource,
+  NEWSLETTER_DELIVERY_STATUSES,
+  NEWSLETTER_STATUSES,
+  type NewsletterDeliveryStatus,
+  type NewsletterStatus,
   ORDER_EMAIL_STATUSES,
   ORDER_EMAIL_TYPES,
   ORDER_STATUS_SOURCES,
@@ -1013,5 +1017,88 @@ export const perfumerMessages = pgTable(
         or (${t.role} = 'perfumer' and num_nonnulls(${t.reply}, ${t.errorKey}) = 1)`,
     ),
     index("perfumer_messages_thread_id_id_idx").on(t.threadId, t.id),
+  ],
+);
+
+/**
+ * A newsletter staff sent from Strapi (#181): a snapshot of what they wrote when they pressed
+ * "send", so later Strapi edits can't change what is still queued. One row per Strapi document
+ * (a second send is refused), `sending` until no delivery is queued, then `sent`.
+ */
+export const newsletters = pgTable(
+  "newsletters",
+  {
+    id: serial().primaryKey(),
+    /** The Strapi document it was sent from, also its key when the app pushes the counts. */
+    strapiDocumentId: text().notNull(),
+    /** The campaign: `utm_campaign` of every shop link in it. */
+    slug: text().notNull(),
+    subjectUk: text().notNull(),
+    preheaderUk: text(),
+    /** Markdown (Strapi's rich text). */
+    bodyUk: text().notNull(),
+    /** The English version; `null` when there is none (English customers get the Ukrainian). */
+    subjectEn: text(),
+    preheaderEn: text(),
+    bodyEn: text(),
+    /** The featured products by `public_id`, in the order staff picked them; read when sent. */
+    productPublicIds: uuid().array().notNull().default(sql`'{}'::uuid[]`),
+    status: text().$type<NewsletterStatus>().notNull().default("sending"),
+    /** When "send" was pressed and its deliveries were queued; the weekly rule counts from it. */
+    sentAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** When the last delivery was done with; `null` while sending. */
+    completedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("newsletters_strapi_document_id_unique").on(t.strapiDocumentId),
+    unique("newsletters_slug_unique").on(t.slug),
+    check("newsletters_status_check", oneOf(t.status, NEWSLETTER_STATUSES)),
+    check(
+      "newsletters_en_check",
+      sql`(${t.subjectEn} is null) = (${t.bodyEn} is null) and (${t.preheaderEn} is null or ${t.bodyEn} is not null)`,
+    ),
+    check("newsletters_products_check", sql`cardinality(${t.productPublicIds}) <= 4`),
+    index("newsletters_sent_at_idx").on(t.sentAt),
+  ],
+);
+
+/**
+ * One customer's copy of a newsletter (#181), queued when it was sent and sent by
+ * `pnpm db:send-newsletters` within `NEWSLETTER_DAILY_LIMIT`. Like `order_emails`, a sender claims
+ * a row by pushing `next_attempt_at` out (a lease). At most one per customer and newsletter.
+ */
+export const newsletterDeliveries = pgTable(
+  "newsletter_deliveries",
+  {
+    id: serial().primaryKey(),
+    newsletterId: integer()
+      .notNull()
+      .references(() => newsletters.id, { onDelete: "restrict" }),
+    userId: integer()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** The language of the email: the user's, or `uk` when the newsletter has no such version. */
+    locale: text().$type<Locale>().notNull(),
+    status: text().$type<NewsletterDeliveryStatus>().notNull().default("queued"),
+    /** Send attempts so far, counted when a sender claims the row. */
+    attempts: integer().notNull().default(0),
+    /** When the row is next due; claiming moves it to the retry time. */
+    nextAttemptAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** When the email was last handed to the provider (sent, or the last failed attempt). */
+    sentAt: timestamp({ withTimezone: true }),
+    /** Why it failed or was skipped, without the email body. */
+    error: text(),
+    /** The Message-ID it was sent with. */
+    messageId: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("newsletter_deliveries_newsletter_id_user_id_unique").on(t.newsletterId, t.userId),
+    check("newsletter_deliveries_locale_check", oneOf(t.locale, LOCALES)),
+    check("newsletter_deliveries_status_check", oneOf(t.status, NEWSLETTER_DELIVERY_STATUSES)),
+    check("newsletter_deliveries_attempts_check", sql`${t.attempts} >= 0`),
+    index("newsletter_deliveries_status_next_attempt_at_idx").on(t.status, t.nextAttemptAt),
+    index("newsletter_deliveries_sent_at_idx").on(t.sentAt),
   ],
 );

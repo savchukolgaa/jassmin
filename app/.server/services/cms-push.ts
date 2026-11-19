@@ -8,6 +8,8 @@
 // retry job can use it with its own connection.
 import { z } from "zod";
 import type { CmsGiftCardState, CmsOrderState, CmsProductState } from "~/lib/cms-sync";
+import type { NewsletterState } from "~/lib/newsletter";
+import { CmsError } from "../cms/errors";
 import { cmsWrite } from "../cms/writer";
 import type { Db } from "../db/client";
 import {
@@ -17,6 +19,7 @@ import {
   markCmsSyncFailed,
 } from "../db/queries/cms-outbox";
 import { findGiftCardSyncState, type GiftCardSyncRow } from "../db/queries/gift-cards";
+import { findNewsletterSyncState } from "../db/queries/newsletters";
 import { findOrderSyncState, type OrderSyncRow } from "../db/queries/orders";
 import {
   backfillProductSlugs,
@@ -154,12 +157,33 @@ export function toStrapiProductData({ fragranceFamilies, notes, ...product }: Cm
   };
 }
 
+/** A newsletter's status and counts as Strapi shows them (#181), keyed by its document id. */
+export interface CmsNewsletterState extends NewsletterState {
+  documentId: string;
+}
+
+/**
+ * The `data` of a newsletter document in Strapi (#181): `newsletterStatus` (Strapi reserves
+ * `status`), the counts and when it was sent. Staff can't change these fields in the admin.
+ */
+export function toStrapiNewsletterData({ status, counts, sentAt }: CmsNewsletterState) {
+  return {
+    newsletterStatus: status,
+    queuedCount: counts.queued,
+    sentCount: counts.sent,
+    failedCount: counts.failed,
+    skippedCount: counts.skipped,
+    sentAt,
+  };
+}
+
 export interface CmsSyncDeps {
   env: CmsSyncEnv;
   claim(options: { only?: ClaimOnly; limit: number }): Promise<ClaimedCmsSync[]>;
   loadOrder(orderId: number): Promise<CmsOrderState | undefined>;
   loadProduct(productId: number): Promise<CmsProductState | undefined>;
   loadGiftCard(giftCardId: number): Promise<CmsGiftCardState | undefined>;
+  loadNewsletter(newsletterId: number): Promise<CmsNewsletterState | undefined>;
   markSynced(id: number, version: number): Promise<void>;
   markFailed(id: number, version: number, error: string): Promise<void>;
 }
@@ -184,6 +208,17 @@ export function cmsSyncDeps(db: Db, env: CmsSyncEnv): CmsSyncDeps {
     loadGiftCard: async (giftCardId) => {
       const row = await findGiftCardSyncState(db, giftCardId);
       return row && toCmsGiftCardState(row);
+    },
+    loadNewsletter: async (newsletterId) => {
+      const row = await findNewsletterSyncState(db, newsletterId);
+      return (
+        row && {
+          documentId: row.documentId,
+          status: row.status,
+          counts: row.counts,
+          sentAt: row.sentAt.toISOString(),
+        }
+      );
     },
     markSynced: (id, version) => markCmsSynced(db, id, version),
     markFailed: (id, version, error) => markCmsSyncFailed(db, id, version, error),
@@ -239,6 +274,26 @@ async function pushOne(row: ClaimedCmsSync, deps: CmsSyncDeps): Promise<void> {
         { field: "publicId", value: product.publicId },
         toStrapiProductData(product),
       );
+    }
+  } else if (row.entity === "newsletter") {
+    const newsletter = await deps.loadNewsletter(row.entityId);
+    if (newsletter) {
+      // Strapi created the document (the send came from it), so it is updated, never created.
+      // One staff deleted is gone for good: nothing is left to show the counts on.
+      try {
+        await cmsWrite(
+          deps.env,
+          {
+            method: "PUT",
+            path: `newsletters/${encodeURIComponent(newsletter.documentId)}`,
+            data: toStrapiNewsletterData(newsletter),
+          },
+          documentOne,
+        );
+      } catch (error) {
+        if (!(error instanceof CmsError && error.status === 404)) throw error;
+        console.info(`[cms-sync] Newsletter ${row.entityId}'s Strapi document is gone`);
+      }
     }
   } else {
     const card = await deps.loadGiftCard(row.entityId);

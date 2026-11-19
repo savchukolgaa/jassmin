@@ -26,6 +26,10 @@ const mailEnvSchema = z.object({
   // without it no cart reminders are sent and production logs a warning. Changing it breaks the
   // links in emails already sent.
   EMAIL_UNSUBSCRIBE_SECRET: z.string().min(32).optional(),
+  // The most newsletter emails sent in any 24 hours (#181, `pnpm db:send-newsletters`). The
+  // provider's daily quota (Brevo's free plan: 300) is shared with order, auth and reminder
+  // emails, so the default leaves room for them.
+  NEWSLETTER_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000).default(200),
 });
 
 /** Production needs a real SMTP server (#134): without one no email would ever go out. */
@@ -126,6 +130,7 @@ function mailSource(source: NodeJS.ProcessEnv) {
     ORDER_FROM: source.ORDER_FROM || undefined,
     PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
     EMAIL_UNSUBSCRIBE_SECRET: source.EMAIL_UNSUBSCRIBE_SECRET || undefined,
+    NEWSLETTER_DAILY_LIMIT: source.NEWSLETTER_DAILY_LIMIT || undefined,
   };
 }
 

@@ -91,7 +91,7 @@ describe("cms newsletter send route", () => {
 
   it.each([
     [{ ok: false, error: "already-sent" }, 409],
-    [{ ok: false, error: "slug-taken", slug: "autumn-news" }, 409],
+    [{ ok: false, error: "newsletter-slug-taken", slug: "autumn-news" }, 409],
     [{ ok: false, error: "another-sending" }, 409],
     [{ ok: false, error: "too-soon", nextAllowedAt: "2026-11-26T10:00:00.000Z" }, 422],
     [{ ok: false, error: "no-recipients" }, 422],
@@ -121,7 +121,7 @@ describe("cms newsletter send route", () => {
     const invalid = await action(post({ ...body, slug: "Not A Slug" }));
     expect(invalid.status).toBe(422);
     expect(await invalid.json()).toMatchObject({
-      error: "invalid-input",
+      error: "invalid-newsletter",
       issues: [{ path: "slug" }],
     });
 

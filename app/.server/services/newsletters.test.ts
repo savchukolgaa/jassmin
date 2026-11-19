@@ -210,7 +210,7 @@ describe.skipIf(!hasDatabase)("newsletters", () => {
     // Each newsletter is its own campaign.
     expect(await send("doc-2", week)).toEqual({
       ok: false,
-      error: "slug-taken",
+      error: "newsletter-slug-taken",
       slug: "autumn-news",
     });
     expect(await send("doc-2", week, winter)).toMatchObject({

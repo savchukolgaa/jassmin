@@ -112,11 +112,24 @@ No new packages (`marked` is already used by `markdown.ts`).
   `PUBLIC_SITE_URL` or `EMAIL_UNSUBSCRIBE_SECRET` (nothing queued), and the job logs the same and
   sends nothing, like `sendCartRemindersJob`.
 - **Implementation notes (deviations, recorded while implementing):**
-  - A newsletter whose slug another newsletter already used is refused with `slug-taken`: the slug
+  - A newsletter whose slug another newsletter already used is refused with `newsletter-slug-taken` (`slug-taken` already means a product's slug in Strapi's messages): the slug
     is the campaign in the analytics, and a cloned or re-created Strapi document could reuse one.
   - Steps 4–6 and 8 were built and committed together, since the send, the job and the push share
     one service (`services/newsletters.ts`). `toStrapiNewsletterData` lives in `cms-push.ts` next to
     the other `toStrapi*Data` mappers rather than in `~/lib/cms-sync`.
+  - Strapi 5.59 treats every route in `src/api/*/routes` as content API (a router's `type` is
+    overwritten), so the buttons' routes are registered from `register()` with
+    `strapi.server.routes({ type: "admin", prefix: "/jassmin", … })`: `POST
+    /jassmin/newsletters/:documentId/send` and `…/test`, behind the admin login
+    (`admin::isAuthenticatedAdmin`). The handler lives in `cms/src/newsletter/send.ts`.
+  - After a send the handler writes the status and counts with `strapi.db.query(…).updateMany`
+    (every language's row, bypassing the document middleware); the "send" button reloads the page
+    to show them.
+  - Validation errors from the newsletter route are `invalid-newsletter`, not `invalid-input`, so
+    Strapi's message for a product's invalid `slug` stays the product one.
+  - `products` is a one-way `manyToMany` relation (a product can feature in many newsletters).
+  - The seeded draft newsletter has no products: Strapi only has products after the shop pushes
+    them (`pnpm db:sync-cms -- --all`).
   - A test send greets the staff member by the name Strapi sends (the admin's first name).
   - A product card shows the lowest price of a size **in stock**, "від" only when the sizes in
     stock differ; a product with no size in stock is left out.
@@ -318,7 +331,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   in `pushOne` that `PUT`s `newsletters/<documentId>` (no upsert: the document exists; a 404 is
   logged and the row marked synced). Tests in `cms-push.test.ts`.
 
-- [ ] **9. Strapi content type, handler and middleware.**
+- [x] **9. Strapi content type, handler and middleware.**
   - `cms/src/api/newsletter/content-types/newsletter/schema.json`: collection type, Draft &
     Publish off, i18n localized; `subject` (string, required, max 150, localized), `preheader`
     (string, max 200, localized), `body` (richtext, required, localized), `slug` (uid from
@@ -346,7 +359,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   - `cms/scripts/seed.ts`: grant the sync token `find`/`findOne`/`update` on newsletters; seed one
     draft newsletter (uk + en, two products).
 
-- [ ] **10. Admin buttons.** `cms/src/admin/app.tsx`: `bootstrap(app)` registers two document
+- [x] **10. Admin buttons.** `cms/src/admin/app.tsx`: `bootstrap(app)` registers two document
   actions on the content-manager for `api::newsletter.newsletter` only
   (`app.getPlugin("content-manager").apis.addDocumentAction`): "Надіслати тест собі" (enabled for
   a saved document without unsaved changes) and "Надіслати підписникам" (only while `draft`, with

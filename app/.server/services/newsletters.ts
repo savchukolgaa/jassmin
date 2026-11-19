@@ -92,7 +92,7 @@ export type SendNewsletterResult =
   | { ok: true; newsletterId: number; state: NewsletterState }
   | { ok: false; error: "mail-not-configured"; missing: string[] }
   | { ok: false; error: "already-sent" }
-  | { ok: false; error: "slug-taken"; slug: string }
+  | { ok: false; error: "newsletter-slug-taken"; slug: string }
   | { ok: false; error: "another-sending" }
   | { ok: false; error: "too-soon"; nextAllowedAt: string }
   | { ok: false; error: "no-recipients" };
@@ -123,7 +123,7 @@ export async function sendNewsletter(
       }
       // The slug is the campaign in the analytics, so each newsletter needs its own.
       if (await isNewsletterSlugTaken(tx, content.slug)) {
-        return { ok: false, error: "slug-taken", slug: content.slug } as const;
+        return { ok: false, error: "newsletter-slug-taken", slug: content.slug } as const;
       }
       const block = await findNewsletterSendBlock(tx, at, NEWSLETTER_INTERVAL_DAYS);
       if (block?.error === "too-soon") {

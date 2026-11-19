@@ -13,7 +13,7 @@ const DOCUMENT_ID = /^[a-z0-9]{10,64}$/;
 
 const STATUS_BY_ERROR = {
   "already-sent": 409,
-  "slug-taken": 409,
+  "newsletter-slug-taken": 409,
   "another-sending": 409,
   "too-soon": 422,
   "no-recipients": 422,
@@ -26,7 +26,7 @@ const STATUS_BY_ERROR = {
 // newsletter (#181), with `CMS_SYNC_SECRET`. A send answers 200 with the newsletter's status and
 // counts (Strapi stores them; the job's later pushes keep them current); a test answers 200 with
 // how many emails went out. Refusals are `{ error, … }` with 409/422/502/503, an invalid body 422
-// `invalid-input`, a body that isn't JSON 400, and 401/503 from `checkCmsSyncAuth`.
+// `invalid-newsletter`, a body that isn't JSON 400, and 401/503 from `checkCmsSyncAuth`.
 export async function action({ request, params }: Route.ActionArgs) {
   const denied = checkCmsSyncAuth(request);
   if (denied) return denied;
@@ -41,7 +41,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const parsed = cmsNewsletterSendSchema.safeParse(body);
   if (!parsed.success) {
     return Response.json(
-      { error: "invalid-input", issues: toSyncIssues(parsed.error) },
+      { error: "invalid-newsletter", issues: toSyncIssues(parsed.error) },
       { status: 422 },
     );
   }

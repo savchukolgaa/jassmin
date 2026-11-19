@@ -316,7 +316,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   `analytics/generator`, `analytics/warehouse` (models, fixtures, seeds) and `analytics/notebooks`
   and fail if any file mentions `perfumer_messages` or `perfumer_threads`. Note in
   `docs/analytics-events.md` that `perfumer_message.turn` now comes from the stored thread.
-- [ ] **12. Docs.** `docs/ai-perfumer.md`: rewrite "Chat page" bullets (no `sessionStorage`, one
+- [x] **12. Docs.** `docs/ai-perfumer.md`: rewrite "Chat page" bullets (no `sessionStorage`, one
   message per request) and add **"Saved chats"** (tables, owner rules, login merge, what is stored
   when, retry, new/delete, retention, nothing in analytics); fix "Privacy" ("stores no message
   text"). `docs/setup.md`: env table row `PERFUMER_CHAT_RETENTION_DAYS`, scripts table row and a

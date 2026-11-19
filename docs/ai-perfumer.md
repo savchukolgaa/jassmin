@@ -81,14 +81,16 @@ Errors are `AiError` with `kind`: `unavailable` (server down, unknown model, HTT
 
 - **Only while enabled.** Without `AI_BASE_URL` the page and its action are 404s, and the header,
   mobile menu and sitemap leave it out (`perfumerEnabled` from the `_shop` loader).
-- **The conversation lives in the browser**, in component state and `sessionStorage`
-  (`jassmin.perfumer.thread`, the last 50 items), so a reload keeps it and closing the tab ends it.
-  Nothing is stored on the server. Both languages share the thread: older replies stay in the
-  language they were written in.
-- **Each message** posts the last 10 messages as JSON (`payload`) to the route's action
-  (`app/routes/perfumer.tsx`). A message is at most 500 characters (the engine allows 1000); the
-  perfumer's earlier replies go back as text: the intro, the picks' names and the question
-  (`replyToHistoryText`). The action validates with zod (`app/lib/perfumer.schema.ts`).
+- **The conversation is saved on the server** (#180, see [Saved chats](#saved-chats)): the
+  loader returns the visitor's or customer's chat and the page starts from it, so a reload, a
+  closed browser or another device after login keeps it. Both languages share the thread: older
+  replies stay in the language they were written in.
+- **Each message** posts only the new text as JSON (`payload`: `{ message, entry, retry? }`) to
+  the stream (or the route's action, `app/routes/perfumer.tsx`). A message is at most 500
+  characters (the engine allows 1000). The server reads the model's history from the database:
+  the last 10 stored messages, the perfumer's replies as text (the intro, the picks' current names
+  and the question, `replyToHistoryText`). Any other key, such as a history the page sends, is
+  refused (`unavailable`). The action validates with zod (`app/lib/perfumer.schema.ts`).
 - **Rate limit:** 10 messages per 5 minutes per IP and per visitor (`anonymousId`), in the
   `rate_limits` table (`perfumerLimiters`). Every accepted message counts, answered or not.
 - **Errors** come back as keys the page translates: `unavailable` (503; also `bad_response` and
@@ -101,11 +103,45 @@ Errors are `AiError` with `kind`: `unavailable` (server down, unknown model, HTT
   (`AddToCartForm` posting to the cart action with a fetcher), so the customer stays in the chat:
   the thread, its scroll and the draft stay, focus goes back to the button, and the header badge
   updates through the `_shop` loader (the page's own loader isn't rerun, `shouldRevalidate`).
-  Each answer's cards keep their own "Added to cart" state (`fetcherKey`). Picks restored from
-  `sessionStorage` can be stale: the cart action re-checks stock and price and the card shows its
-  normal error.
+  Each answer's cards keep their own "Added to cart" state (`fetcherKey`). A saved answer's cards
+  show today's prices and stock (archived products are left out); the cart action re-checks them
+  anyway.
 - **Plain text only:** the intro, reasons, question and the customer's words are rendered as text
   nodes, never HTML or Markdown. Product cards come from the database, like the engine's picks.
+
+## Saved chats
+
+Since #180 the chat is stored in PostgreSQL, not in the browser.
+
+- **Tables.** `perfumer_threads` (`anonymous_id`, `user_id`, `entry`, `updated_at`,
+  `closed_at`, `deleted_at`) and `perfumer_messages` (`role` `user | perfumer`, `text`,
+  `reply` jsonb, `error_key`). A customer's message has `text`; an answer has the intro as
+  `text` and `reply` = the picks as product ids with reasons, the question, `replyId`, `turn`
+  and the customer's rating; a turn without an answer has an `error_key` (`unavailable`,
+  `timeout`, `cancelled`, …). Never product data: a reloaded answer shows today's prices, and
+  products archived since are left out.
+- **Owners.** One active thread (`closed_at` null) per customer (`user_id`) and per guest
+  (`anonymous_id` with `user_id` null), enforced by partial unique indexes. A logged-out browser
+  never sees the account's chat. At login (`onUserAuthenticated`, next to `mergeGuestCart`) the
+  guest's chat becomes the account's; if the account has one too, the more recent stays and the
+  other is closed.
+- **Saving a turn** (`services/perfumer-threads.ts`, reached from `services/perfumer-chat.ts`
+  through its store). One transaction finds or creates the thread and appends the message; the
+  model call runs outside it; the answer is saved once, before `done` is streamed, or an error
+  marker on a failure or a cancel. A refused message (`tooLong`, `rateLimited`) is not saved.
+  `turn` (#166) is counted from the stored thread. `retry: true` (the page's "Try again", and its
+  fallback from a broken stream to the action) reuses the stored message when the thread ends with
+  it, alone or followed by an error marker, instead of saving a copy.
+- **New chat / Delete chat.** `intent=new-chat` closes the active thread; the next message opens
+  another. `intent=delete-chat` (after an inline confirm) closes it and sets `deleted_at`: no
+  lookup returns it again, but its rows stay until the retention job. Old threads aren't listed.
+- **Retention.** `pnpm db:prune-perfumer-chats` (daily in `deploy/crontab`, Aspire resource
+  `db-prune-perfumer-chats`) deletes threads not updated for `PERFUMER_CHAT_RETENTION_DAYS`
+  (default 90), with their messages, closed and deleted ones included.
+- **Privacy.** The text stays in these two tables: never in `user_events` (the events carry no
+  text), the generator, the warehouse or the notebooks (`app/.server/perfumer-privacy.guard.test.ts`
+  fails if `analytics/` names them), or training data. The privacy policy describes the saved chat
+  and its 90 days while the perfumer is on.
 
 ## Streaming
 
@@ -144,10 +180,11 @@ the intro sentence by sentence, then the cards.
   (AGENTS.md): `useFetcher` can't stream. Don't copy it for anything else.
 - **Fallback:** when the stream can't be used (`fetch` fails, the answer isn't
   `text/event-stream`, an event isn't valid) or ends before `done`/`error`, the chat posts the same
-  conversation to the action, keeping the steps already shown. This reruns the reply and counts
+  message to the action as a retry (#180: the stream may have saved it already), keeping the steps
+  already shown. This reruns the reply and counts
   against the rate limit again; it's rare. An `error` event is shown as it is, without a fallback.
-- **Only the finished reply** joins the thread and `sessionStorage`; a reload mid-stream loses the
-  answer in progress, like a reload during the action.
+- **Only the finished reply** is saved (at `done`, #180); a reload mid-stream shows the customer's
+  message with a "cancelled" note, like a reload during the action.
 
 Measured on 2026-11-16 on the owner's laptop (CPU, Ollama, `granite4.1:3b` already loaded),
 "Щось свіже з морськими нотами до 600 грн", three runs:
@@ -601,7 +638,8 @@ the model or key is a parameter change and a redeploy.
 ### Privacy
 
 When the model runs at a third party, the customer's messages (and the catalog rows the model
-reads) leave the shop's servers. The shop itself still stores no message text ([Analytics](#analytics)).
+reads) leave the shop's servers. The shop keeps the conversation for 90 days to continue it
+([Saved chats](#saved-chats)), but never in analytics ([Analytics](#analytics)).
 Setting `AI_PROVIDER_NAME` adds a paragraph to the privacy policy's "Who we share data with" naming
 the provider (`privacy.sharing.ai`); it's shown only while the perfumer is on. Pick a provider whose
 terms say API inputs aren't used for training, and where possible turn off prompt logging in its

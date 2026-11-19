@@ -65,13 +65,13 @@ No new packages (`marked` is already used by `markdown.ts`).
 - **Weekly rule:** a send is refused with `too-soon` (and the next allowed time) when another
   newsletter's `sent_at` (when it was queued) is less than 7 days ago, and with `another-sending`
   while one is still `sending`. Two simultaneous presses are serialized with
-  `pg_advisory_xact_lock` on a fixed key inside the send transaction. **(unconfirmed, Q2)**
+  `pg_advisory_xact_lock` on a fixed key inside the send transaction.
 - **No recipients:** a send with zero eligible customers is refused (`no-recipients`) so it doesn't
   use up the week.
 - **Daily limit:** `NEWSLETTER_DAILY_LIMIT` caps newsletter emails attempted in the **last 24
   hours** (rolling window, so no calendar day can exceed it, whatever timezone Brevo resets in).
-  Each run sends `limit − attempted in the last 24 h`, at most. The default is **(unconfirmed,
-  Q1)**.
+  Each run sends `limit − attempted in the last 24 h`, at most. The default is **200**, leaving ~100 a day of Brevo's
+  free 300 for transactional mail.
 - **Delivery queue:** the same lease as `claimOrderEmails` (`UPDATE … WHERE id IN (… FOR UPDATE
   SKIP LOCKED)`, counting `attempts`, moving `next_attempt_at`), so concurrent runs never share a
   row. A send error retries up to 3 attempts (delays 15 min, 60 min) and then becomes `failed`;
@@ -84,14 +84,13 @@ No new packages (`marked` is already used by `markdown.ts`).
   pass the document middleware untouched).
 - **Locked after sending:** the Strapi document middleware keeps staff from changing the read-only
   fields (it restores the stored values) and refuses update and delete once `newsletterStatus` isn't
-  `draft`; a clone starts as a fresh `draft` with zero counts and a new slug. **(unconfirmed, Q3)**
+  `draft`; a clone starts as a fresh `draft` with zero counts and a new slug.
 - **Test send** goes only to the Strapi admin user who pressed it (their admin email, taken from the
   admin session on the Strapi side, never from the browser), once per available language, with
   `[Тест]` / `[Test]` before the subject. It creates no deliveries, isn't counted, ignores the weekly
   rule and the daily limit, and goes through `getMailer()` (a suppressed address still gets
   nothing). Its unsubscribe link is signed for the shop user with that email when there is one,
   otherwise left out (the headers too). Sent synchronously, so the admin sees success or the error.
-  **(unconfirmed, Q4 for "both languages")**
 - **Body:** Strapi `richtext` is Markdown. A new `email/markdown.ts` turns it into email blocks with
   `marked`'s lexer, supporting paragraphs, `###`/`####` headings, bullet and numbered lists, bold,
   italic and links; images, HTML and code are dropped (product cards carry the photos). Two new
@@ -101,7 +100,7 @@ No new packages (`marked` is already used by `markdown.ts`).
 - **UTM:** every link to the shop (relative links, and absolute ones on `PUBLIC_SITE_URL`'s origin)
   in the body, the product cards and the "to the shop" button gets
   `utm_source=newsletter&utm_medium=email&utm_campaign=<slug>` (existing `utm_*` replaced). External
-  links, `mailto:`/`tel:` and the unsubscribe link are left alone. **(unconfirmed, Q5)**
+  links, `mailto:`/`tel:` and the unsubscribe link are left alone.
 - **Slug** (the campaign): Strapi `uid` from the uk subject, non-localized, validated by the app as
   `^[a-z0-9]+(?:-[a-z0-9]+)*$`, at most 80 characters (it goes into `utm_campaign`, which
   `utmParam` cuts at 100 and lowercases).
@@ -116,31 +115,18 @@ No new packages (`marked` is already used by `markdown.ts`).
   `cart-reminder-email.ts` to `email/marketing.ts` and are re-imported by the reminder, so both
   marketing emails use one implementation.
 
-## Open questions
-
-- [ ] **Q1: What should `NEWSLETTER_DAILY_LIMIT` default to?** — Why it matters: Brevo's free 300
-  emails a day are shared with order emails, status emails, cart reminders and auth emails; a
-  newsletter using all 300 could make a checkout confirmation bounce off the provider's limit.
-  Recommended default: **200**, leaving ~100 a day for transactional mail; production sets it
-  explicitly in `production.mts`, and `docs/email.md` explains raising it on a paid plan.
-  Affects steps: 1, 5, 11.
-- [ ] **Q2: Is "within 7 days" measured from when the previous newsletter was queued (send pressed),
-  and should a send also be refused while the previous one is still going out?** — Why it matters:
-  with ~600 recipients and 200/day, a newsletter takes 3 days; measuring from the press keeps it
-  simple, and refusing while `sending` stops two newsletters interleaving. Recommended default: yes
-  to both. Affects steps: 4.
-- [ ] **Q3: Should a sent (or sending) newsletter be locked in Strapi?** — Why it matters: edits
-  after sending don't change what customers get (the app keeps a snapshot) but would make Strapi
-  show different text from what went out. Recommended default: refuse edits and deletes once it
-  isn't `draft`; staff clone it to reuse it. Affects steps: 8.
-- [ ] **Q4: Should "Send a test to me" send both language versions?** — Why it matters: checking
-  the en version otherwise needs a separate button or a locale switch. Recommended default: one
-  email per language the newsletter has (uk, and en when filled). Affects steps: 4, 9.
-- [ ] **Q5: Should UTM tags go on external links too (e.g. Instagram)?** — Why it matters: the issue
-  says "every link", but tags only help analytics on the shop's own site and look odd on others.
-  Recommended default: shop links only. Affects steps: 3.
-
 ## Resolved questions
+
+- **Default `NEWSLETTER_DAILY_LIMIT`?** — 200, leaving ~100 a day of Brevo's free 300 for order,
+  status, reminder and auth emails; production sets it explicitly. (source: owner, 2026-11-19)
+- **When does the 7-day rule start?** — From when the previous newsletter was queued (send
+  pressed); a send is also refused while the previous one is still `sending`. (source: owner,
+  2026-11-19)
+- **Lock a sending or sent newsletter in Strapi?** — Yes: edits and deletes are refused once it
+  isn't `draft`; staff clone it to reuse it. (source: owner, 2026-11-19)
+- **Does the test send both languages?** — Yes, one email per language the newsletter has.
+  (source: owner, 2026-11-19)
+- **UTM tags on external links?** — No, only links to the shop. (source: owner, 2026-11-19)
 
 - **Does `utm_source=newsletter` show up as `newsletter` in acquisition analytics without changes?**
   — Yes: `resolveTrafficAttribution` stores `utm_source` as `sessions.traffic_source` (and
@@ -208,7 +194,7 @@ No new packages (`marked` is already used by `markdown.ts`).
 - [ ] **1. Enums, env and shared types.** Add `NEWSLETTER_STATUSES = ["sending", "sent"]`,
   `NEWSLETTER_DELIVERY_STATUSES = ["queued", "sent", "failed", "skipped"]` and `"newsletter"` in
   `CMS_SYNC_ENTITIES` (`app/lib/enums.ts`, `enums.test.ts`). Add `NEWSLETTER_DAILY_LIMIT`
-  (`z.coerce.number().int().positive()`, default per Q1) to `mailEnvSchema` so both `getEnv()` and
+  (`z.coerce.number().int().positive()`, default 200) to `mailEnvSchema` so both `getEnv()` and
   `parseMailEnv` see it; `.env.example`, the README table and `env.test.ts`. Create
   `app/lib/newsletter.ts` with the constants (`NEWSLETTER_MAX_PRODUCTS = 4`,
   `NEWSLETTER_INTERVAL_DAYS = 7`, `NEWSLETTER_MAX_ATTEMPTS = 3`) and `NewsletterContent`,
@@ -235,7 +221,7 @@ No new packages (`marked` is already used by `markdown.ts`).
 - [ ] **3. Email building blocks.** Move `unsubscribeUrl`, `listUnsubscribeHeaders` and `photoOf`
   to `email/marketing.ts` (cart reminder imports them; its tests stay green) and add
   `withUtm(url, siteUrl, utm)`: resolves relative URLs against `siteUrl`, tags only same-origin
-  `http(s)` URLs (Q5), replaces existing `utm_*`. Add `rich` and `list` to `EmailBlock` and
+  `http(s)` URLs, replaces existing `utm_*`. Add `rich` and `list` to `EmailBlock` and
   `url?` / `price?` to `EmailProduct` in `email/layout.ts`; render with inline C+ styles, escaped,
   `http(s)` links only (else plain text), text part `text (url)`; tests in `layout.test.ts` with
   `htmlWords` / `words`. Create `email/markdown.ts`: `markdownToEmailBlocks(markdown, linkFn)`
@@ -257,7 +243,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   `db.transaction`: `pg_advisory_xact_lock`, already-sent check, send block, insert, zero → throw
   to roll back and return `no-recipients`, `enqueueCmsSync(tx, "newsletter", id)`; after commit
   `void pushToCms()` in the route. `23505` on the document id → `already-sent`.
-  `sendNewsletterTest(input, testEmail, deps)` builds the email per language (Q4) for the staff
+  `sendNewsletterTest(input, testEmail, deps)` builds the email per language for the staff
   address with the shop user's unsubscribe token when a user has that email, sends through the
   injected mailer, returns `{ sent: n }` or `mail-failed`. Integration tests with
   `createTestDatabase()`: recipient selection (opted out, unverified, suppressed incl. mixed-case
@@ -341,7 +327,7 @@ No new packages (`marked` is already used by `markdown.ts`).
     address is `ctx.state.user.email` (the admin user).
   - `cms/src/sync/middleware.ts`: for `NEWSLETTER_UID` staff edits, restore the read-only fields
     from the stored document on update, reset them on create/clone, and refuse update/delete when
-    the stored `newsletterStatus` isn't `draft` (Q3) with a Ukrainian `ApplicationError`. Tests in
+    the stored `newsletterStatus` isn't `draft` with a Ukrainian `ApplicationError`. Tests in
     `middleware.test.ts`.
   - `cms/src/utils/app-sync.ts`: messages for `already-sent`, `too-soon` (with the date in
     Kyiv time), `another-sending`, `no-recipients`, `mail-not-configured`, `mail-failed`, and
@@ -364,7 +350,7 @@ No new packages (`marked` is already used by `markdown.ts`).
   db:send-newsletters` with a comment. `aspire-apphost/apphost.mts`: explicit-start
   `db-send-newsletters` like `db-send-order-emails` (`SMTP_URL` = smtp4dev, `STRAPI_URL` = cms,
   waits for `db-migrate`). `production.mts`: `NEWSLETTER_DAILY_LIMIT` on `web` and `scheduler`
-  (plain value per Q1). Check: `pnpm aspire run`, start the resource, see the emails in smtp4dev.
+  (plain value `200`). Check: `pnpm aspire run`, start the resource, see the emails in smtp4dev.
 
 - [ ] **12. Analytics check and docs.** Add a test in `app/lib/analytics.test.ts` for a URL with
   `utm_source=newsletter&utm_medium=email&utm_campaign=<slug>` → `{ source: "newsletter", medium:

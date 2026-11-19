@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/180
 Branch: `issue/180`
 Worktree: `.claude/worktrees/issue-180`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -323,7 +323,7 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   "Perfumer chats" section with the cron line. `.env.example`: commented
   `# PERFUMER_CHAT_RETENTION_DAYS=90`. `aspire-apphost/AGENTS.md`: the resource.
   `app/.server/AGENTS.md`: "AI perfumer" no longer stateless; add the tables and rules.
-- [ ] **13. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual checks below.
+- [x] **13. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual checks below.
 
 ## Testing & verification
 
@@ -345,23 +345,33 @@ customers can start a new chat or delete theirs, and a daily job deletes chats i
   7. Set `updated_at` back 91 days, start `db-prune-perfumer-chats` in the Aspire dashboard: gone.
   8. `select event_properties from user_events where event_type = 'perfumer_message'`: no text.
 
+**Verification status (implementation).** `pnpm typecheck`, `pnpm lint`, `pnpm test` (243 files,
+2648 tests; the one skip is the existing Windows-only symlink test) and `pnpm build` pass. The
+criteria below are verified by automated tests: DB integration tests on a throwaway database for
+the thread service, migration and prune job, route tests for refusing a client history, DOM tests
+for the page, the privacy page tests and the analytics guard. `pnpm db:migrate` and
+`pnpm db:prune-perfumer-chats` ran against the local dev database. **Not run:** the manual checks
+1–8 above (they need `pnpm aspire run` with a local model), and the Aspire apphost wasn't
+typechecked or started locally (its dependencies aren't installed in this worktree); the
+`db-prune-perfumer-chats` resource copies the existing `db-prune-rate-limits` block.
+
 ## Acceptance criteria
 
-- [ ] After closing and reopening the browser, the customer's perfumer chat is still there, and a
+- [x] After closing and reopening the browser, the customer's perfumer chat is still there, and a
   follow-up question uses the earlier messages — steps 1, 3, 4, 5, 7
-- [ ] A guest's chat is kept after login, and a logged-in customer sees the same chat on another
+- [x] A guest's chat is kept after login, and a logged-in customer sees the same chat on another
   device — steps 4, 5, 6
-- [ ] The server ignores any history sent by the client; only stored messages reach the model —
+- [x] The server ignores any history sent by the client; only stored messages reach the model —
   steps 4, 5
-- [ ] Customers can start a new chat and delete their chat; ~~a deleted chat is gone from the
+- [x] Customers can start a new chat and delete their chat; ~~a deleted chat is gone from the
   database~~ **changed by the owner:** a deleted chat is hidden from the customer everywhere and
   kept in the database until the 90-day job erases it — steps 3, 4, 5, 7, 8, 10
-- [ ] Chats older than 90 days are deleted by the daily job, scheduled in `deploy/crontab` and
+- [x] Chats older than 90 days are deleted by the daily job, scheduled in `deploy/crontab` and
   runnable from Aspire — step 10
-- [ ] Message text never appears in `user_events`, the analytics generator or the warehouse —
+- [x] Message text never appears in `user_events`, the analytics generator or the warehouse —
   steps 4, 11
-- [ ] The privacy policy (uk/en) describes the saved chats and their retention — step 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
+- [x] The privacy policy (uk/en) describes the saved chats and their retention — step 9
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 13
 
 ## Out of scope
 

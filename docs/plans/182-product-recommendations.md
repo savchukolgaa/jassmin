@@ -335,7 +335,7 @@ The user chose the recommended default for each of these (2026-11-19); they are 
     and grid as `SimilarProducts`, nothing rendered when the list is empty, and
     `aria-labelledby` set.
   - Make `SimilarProducts` call it.
-- [ ] **11. Documentation.**
+- [x] **11. Documentation.**
   - `docs/setup.md`: the Scripts table row, a "Recommendations" section (what it reads, the
     nightly cron, the Aspire resource, re-run safety) and `RECS_MIN_SIGNALS` in the env table.
   - `.env.example`: commented `RECS_MIN_SIGNALS=5`.

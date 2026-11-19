@@ -234,6 +234,19 @@ randomises its top slots.
 table is trivial to serve. Customers who bought several perfumes in one order (the tester trio)
 are cold-start and need the popularity or in-cart fallback.
 
+#### From notebook to production
+
+The shop now runs this model (#182). `pnpm db:build-recommendations`
+([`app/.server/db/build-recommendations.ts`](../app/.server/db/build-recommendations.ts)) computes
+the item-item cosine nightly in TypeScript from the shop's own tables, with no Python in
+production. The analytics projects keep reading only `jassmin_synth`, and this notebook stays the
+place where the method is chosen and evaluated. The production version is deliberately simpler:
+a customer's purchases count 3 and a session's views 1, once per basket, over the last 365 days.
+It doesn't use cart adds, dwell or log damping. Products with fewer than `RECS_MIN_SIGNALS` baskets
+fall back to the family-based "Similar perfumes", then the bestsellers, which covers the cold start
+of the first weeks. The lists' clicks carry `list_id` `recs_product`, `recs_for_you` and `recs_cart`,
+so the warehouse can compare their click-through with the family-based `similar` list.
+
 ### 5. Demand forecasting ([`05_demand_forecast`](notebooks/05_demand_forecast.ipynb))
 
 Daily units per full bottle (384 sizes), with stock-out days treated as **censored demand**: masked

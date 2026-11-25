@@ -602,6 +602,10 @@ async function buildEmail(
   if (email.type === "cart_reminder") {
     return buildCartReminder(email, translator, deps);
   }
+  if (email.type === "tester_followup") {
+    // Built in #191's email step; nothing queues these yet.
+    return { notEligible: "tester follow-ups are not built yet" };
+  }
   const card = email.giftCardId === null ? undefined : await deps.loadGiftCard(email.giftCardId);
   return card ? GIFT_CARD_BUILDERS[email.type](card, translator, deps.env) : null;
 }

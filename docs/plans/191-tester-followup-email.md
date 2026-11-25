@@ -51,7 +51,7 @@ New: one migration (rewrites `order_emails_type_check`), two optional env variab
   row for any of the user's orders created in the last 30 days (any status); no cart reminder in
   the last 7 days (`carts.reminder_sent_at`, set at queue time, so pending ones count) and no
   newsletter delivery sent in the last 7 days or still `queued`; no order (not `cancelled`) placed
-  after the tester order with a full-bottle line of any tried perfume **(unconfirmed, Q1)**; at
+  after the tester order with a full-bottle line of any tried perfume (Q1: confirmed); at
   least one tried perfume still `active` with a full-bottle size in stock (`availableStock > 0`,
   untracked counts as in stock). `distinct on (user_id)` picks the user's latest due order, so
   one user never gets two in a run. Batch limit 100.
@@ -65,14 +65,13 @@ New: one migration (rewrites `order_emails_type_check`), two optional env variab
   `on conflict do nothing`; if nothing was inserted, roll back). The email finds its discount by
   slug, so no new column.
 - **Personal** means a unique random code with one redemption; it isn't tied to the account
-  **(unconfirmed, Q2)**. One discount per order still applies (`priceCart` picks the best).
+  (Q2: confirmed). One discount per order still applies (`priceCart` picks the best).
 - **Send-time re-check** (`testerFollowupNotEligible`, like `reminderNotEligible`): unsubscribed,
   unverified, order now cancelled/returned/unclaimed, a bottle bought since, the discount gone,
   inactive or expired, or no tried perfume with a full size in stock → `failed` with
   `not eligible: …`. Sold-out perfumes are dropped from the cards at send time too; suppression is
   already handled by `withSuppressions` / `SuppressedRecipientError`.
-- **Spacing only constrains the follow-up**: cart reminders and newsletters don't wait for it
-  **(unconfirmed, Q3)**.
+- **Spacing only constrains the follow-up**: cart reminders and newsletters don't wait for it (Q3: confirmed).
 - **Email** (`services/tester-followup-email.ts`, `composeEmail` blocks like the cart reminder):
   greeting, "Який аромат вам сподобався?" intro, a `products` block (one card per perfume:
   `photoOf(imageUrl)`, brand + title, "from <lowest full-size price>", and `url` = the product
@@ -97,9 +96,10 @@ New: one migration (rewrites `order_emails_type_check`), two optional env variab
   next to the query, like the cart reminder's.
 
 ## Open questions
-- [ ] **Q1: When the customer already bought a bottle of one of several tried perfumes, skip the whole email or just drop that perfume?** — Why it matters: the issue says "hasn't ordered a full bottle of any of those perfumes since", which reads as skipping; dropping would still offer the others. Recommended default: skip the whole email (literal reading; the customer already converted). Affects steps: 3, 4.
-- [ ] **Q2: Should the code work only for the customer's own account?** — Why it matters: "personal" could mean bound to `user_id`, which needs a `discounts.user_id` column and a check in `priceCart`/`applyPromoCode`/checkout. Recommended default: no binding; a unique random code with `max_redemptions = 1` (forwarding it to a friend is harmless and still a sale). Affects steps: 2, 4.
-- [ ] **Q3: Should cart reminders and newsletters also hold off for 7 days after a tester follow-up?** — Why it matters: the issue only constrains the follow-up; a reminder could still land a day after it. Recommended default: no (reminders are time-sensitive, newsletters are staff-triggered to everyone); revisit if it shows up in practice. Affects steps: 3.
+All three answered on 2026-11-25: use the recommended defaults.
+- [x] **Q1: When the customer already bought a bottle of one of several tried perfumes, skip the whole email or just drop that perfume?** — Why it matters: the issue says "hasn't ordered a full bottle of any of those perfumes since", which reads as skipping; dropping would still offer the others. Recommended default: skip the whole email (literal reading; the customer already converted). Affects steps: 3, 4.
+- [x] **Q2: Should the code work only for the customer's own account?** — Why it matters: "personal" could mean bound to `user_id`, which needs a `discounts.user_id` column and a check in `priceCart`/`applyPromoCode`/checkout. Recommended default: no binding; a unique random code with `max_redemptions = 1` (forwarding it to a friend is harmless and still a sale). Affects steps: 2, 4.
+- [x] **Q3: Should cart reminders and newsletters also hold off for 7 days after a tester follow-up?** — Why it matters: the issue only constrains the follow-up; a reminder could still land a day after it. Recommended default: no (reminders are time-sensitive, newsletters are staff-triggered to everyone); revisit if it shows up in practice. Affects steps: 3.
 
 ## Resolved questions
 - **Is there a "delivered" date?** — No single column; `completed_at`, `arrived_at` (set by staff in Strapi) and `shipped_at` exist, and the tracking job #137 was closed as not planned. Hence the `coalesce` with shipped + 3 days (source: `app/.server/db/schema.ts` orders, `gh issue view 137`).
@@ -133,7 +133,7 @@ New: one migration (rewrites `order_emails_type_check`), two optional env variab
 | check | `app/lib/i18n/uk.ts`/`en.ts` privacy copy (`privacy.*`) | marketing-email wording still covers it |
 
 ## Steps
-- [ ] **1. Email type and migration** — Add `"tester_followup"` (comment: #191, target `order_id`) to `ORDER_EMAIL_TYPES`; `pnpm db:generate` a migration that drops and re-adds `order_emails_type_check`, plus a rollback that deletes `tester_followup` rows and restores the old check. Fix any exhaustive switch/record over `OrderEmailType` (`ORDER_STATUS_BUILDERS`, `GIFT_CARD_BUILDERS` narrowing in `buildEmail`, CMS/Strapi mappings – grep `OrderEmailType`). Check: `pnpm typecheck`, migrator tests.
+- [x] **1. Email type and migration** — Add `"tester_followup"` (comment: #191, target `order_id`) to `ORDER_EMAIL_TYPES`; `pnpm db:generate` a migration that drops and re-adds `order_emails_type_check`, plus a rollback that deletes `tester_followup` rows and restores the old check. Fix any exhaustive switch/record over `OrderEmailType` (`ORDER_STATUS_BUILDERS`, `GIFT_CARD_BUILDERS` narrowing in `buildEmail`, CMS/Strapi mappings – grep `OrderEmailType`). Check: `pnpm typecheck`, migrator tests.
 - [ ] **2. Env variables** — `TESTER_FOLLOWUP_DAYS` and `TESTER_FOLLOWUP_PERCENT` in `mailEnvSchema` (and `parseMailEnv`'s source mapping, `|| undefined` like `NEWSLETTER_DAILY_LIMIT`), `.env.example`, `env.test.ts` cases (defaults, bounds).
 - [ ] **3. Eligibility query** — `app/.server/db/queries/tester-followups.ts`: constants (`TESTER_FOLLOWUP_WINDOW_DAYS = 14`, `TESTER_FOLLOWUP_INTERVAL_DAYS = 30`, `MARKETING_GAP_DAYS = 7`, `TESTER_FOLLOWUP_VALID_DAYS = 30`, `TESTER_FOLLOWUP_BATCH_SIZE = 100`, `TESTER_VOLUME_ML = 10`, `FULL_BOTTLE_VOLUMES_ML = [30, 50, 100]`) and `findTesterFollowupCandidates(db, { days, now? })` – one SQL statement with every rule in Decisions, returning `{ orderId, userId, locale, productPublicIds }` (the tried perfumes still active with a full size in stock). Integration tests with `test-utils.ts`: consent, unverified, suppressed, guest, not delivered / pending, cancelled, returned, unclaimed, too early / too late (window), shipped-only fallback (+3 days), bottle bought since (and a cancelled bottle order doesn't count), 30-day per-user spacing, 7-day gap after a cart reminder and after a newsletter (sent and queued), sold-out perfume dropped, all sold out → no row, the set product (`pack_size 3`) ignored, one row per user.
 - [ ] **4. Queue** — `queueTesterFollowups(db, { days, percent, now?, generateCode? })`: for each candidate, `db.transaction`: insert the discount (retry the code on a `discounts_code_unique` conflict, as gift cards do), insert the `order_emails` row `on conflict do nothing returning id`; nothing returned → throw a sentinel and roll back. Return the queued order ids. `findTesterFollowup(db, orderId)`: user (name, email, opt-in, verified), order status / `returned_at`, `boughtBottleSince`, the discount by slug (code, value, `ends_at`, active, `redemption_count`), and the products in its scope with `public_id`, slug, brand, title, `image_url`, lowest available full-size price, in stock. Tests: discount scope/volumes/pack/`max_redemptions = 1`/`ends_at = +30 d`/percent from the option; running twice queues once; concurrent runs (two `queueTesterFollowups` in parallel) queue once.

@@ -144,6 +144,9 @@ export const ORDER_EMAIL_TYPES = [
   "refunded",
   // The one reminder for an abandoned cart (#139); its row's target is `cart_id`.
   "cart_reminder",
+  // The one follow-up after a delivered tester order (#191): a personal discount on a full bottle
+  // of the perfumes tried. Its row's target is `order_id`.
+  "tester_followup",
 ] as const;
 
 export type OrderEmailType = (typeof ORDER_EMAIL_TYPES)[number];

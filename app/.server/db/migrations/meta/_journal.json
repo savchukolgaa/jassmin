@@ -267,6 +267,13 @@
       "when": 1795630387351,
       "tag": "0037_liqpay_provider",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795644303323,
+      "tag": "0038_tester_followup_email",
+      "breakpoints": true
     }
   ]
 }

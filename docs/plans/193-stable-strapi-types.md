@@ -159,7 +159,7 @@ Both answered by the owner (2026-11-25): use the recommended defaults.
     ```
   Check locally: change a `description` in a `cms/src/**/schema.json`, run the same shell snippet,
   see it fail with the message; revert.
-- [ ] **6. Docs: `docs/setup.md`** — Scripts table: `pnpm cms:types` ("Regenerate Strapi's types in
+- [x] **6. Docs: `docs/setup.md`** — Scripts table: `pnpm cms:types` ("Regenerate Strapi's types in
   `cms/types/generated` from the schemas; commit the result"). Under "Content (Strapi CMS)" add a
   "### Generated types" subsection: Strapi rewrites the two files on every start; after changing a
   content type or component, run `pnpm cms:types` (or start Strapi) and commit them with the schema
@@ -167,7 +167,7 @@ Both answered by the owner (2026-11-25): use the recommended defaults.
   `cms/package.json` only fixes the generator's output format (Q2). Recovery note: if `git pull`
   refuses because of these files, run `git restore cms/types/generated`, pull, then restart Strapi
   (or `pnpm cms:types`). Add it to the Contents list.
-- [ ] **7. Docs: `docs/ci.md` and agent docs** — `docs/ci.md`: update the `cms` row (trigger now
+- [x] **7. Docs: `docs/ci.md` and agent docs** — `docs/ci.md`: update the `cms` row (trigger now
   includes `ci.yml`; steps `pnpm cms:types` check + `pnpm cms:build`) and add a Troubleshooting
   entry for "cms/types/generated is out of date". `app/.server/AGENTS.md` → "CMS: `cms/`": bullet
   "A change to `cms/src/**/schema.json` (content types and components) commits the regenerated

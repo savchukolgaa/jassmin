@@ -211,7 +211,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
 | modify | `analytics/README.md`, `analytics/warehouse/README.md`, `docs/deploy.md`, `AGENTS.md` | Documentation |
 
 ## Steps
-- [ ] **1. Allow-list and transforms** — `allowlist.py`: `TABLES: dict[str, dict[str, Transform]]` for
+- [x] **1. Allow-list and transforms** — `allowlist.py`: `TABLES: dict[str, dict[str, Transform]]` for
   the 13 tables of `frames.COLUMNS` (minus `customer_truth`), keyed by the generator's column names,
   with the app column each one reads (`email` → `users.email`; `null` columns read nothing).
   `transforms.py` implements decision 3/4 as pure functions. Tests: `test_transforms.py` (each

@@ -1,6 +1,6 @@
 import { PAYMENT_KEYS } from "~/lib/checkout";
 import { cn } from "~/lib/cn";
-import { SELECTABLE_PAYMENT_METHODS } from "~/lib/enums";
+import { type PaymentProvider, SELECTABLE_PAYMENT_METHODS } from "~/lib/enums";
 import { useT } from "~/lib/i18n";
 
 export interface PaymentMethodFieldProps {
@@ -8,6 +8,8 @@ export interface PaymentMethodFieldProps {
   error?: string;
   /** `false` when no card payment provider is configured (#44): the card option is disabled. */
   cardAvailable?: boolean;
+  /** The card payment provider, when its page is worth naming (LiqPay, #192). */
+  cardProvider?: PaymentProvider | null;
 }
 
 /** The payment method radios (`card` / `cod`); the payment fieldset's legend labels the group. */
@@ -15,6 +17,7 @@ export function PaymentMethodField({
   defaultValue = "cod",
   error,
   cardAvailable = true,
+  cardProvider = null,
 }: PaymentMethodFieldProps) {
   const { t } = useT();
   const errorId = "field-paymentMethod-error";
@@ -49,7 +52,13 @@ export function PaymentMethodField({
             <span className="flex flex-col gap-0.5">
               <span className="font-extrabold text-ink">{t(PAYMENT_KEYS[method].label)}</span>
               <span id={`${id}-note`} className="text-sm text-muted">
-                {t(disabled ? "checkout.payment.cardUnavailable" : PAYMENT_KEYS[method].note)}
+                {t(
+                  disabled
+                    ? "checkout.payment.cardUnavailable"
+                    : method === "card" && cardProvider === "liqpay"
+                      ? "checkout.payment.cardNoteLiqPay"
+                      : PAYMENT_KEYS[method].note,
+                )}
               </span>
             </span>
           </label>

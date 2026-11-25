@@ -84,6 +84,16 @@ callback, sandbox mode for development, the CSP and production settings, and a g
   GET page and the `SameSite=Lax` session cookie (`app/.server/session.ts`) is sent again, which
   `canViewOrder` / `canViewGiftCard` need. The callback stays the only thing that marks anything
   paid. **(verify in the sandbox; drop the action if LiqPay only GETs)**
+- **Deviation: the public origin is resolved in the payments service**, not the routes.
+  `PaymentDeps` gets `siteUrl` (`PUBLIC_SITE_URL` in the default deps) and `startPayment` /
+  `startGiftCardPayment` use it over the request's `origin`. Same effect, but the routes and their
+  mocked tests don't change, and the service tests cover it.
+- **Deviation: the gift card page's "Pay" / "Try again" form now posts `intent=pay`.** That page
+  already had an `action` that starts a new attempt; any other POST (a provider sending the
+  shopper back) is redirected (303) to the GET page and never starts one.
+- **Deviation: the copy reads the provider name** with `getCardPaymentProviderName(getEnv())` in
+  `payments/provider.ts` (no database import, so `/privacy` can use it), returned by the loaders
+  as `cardProvider`.
 - **Migration** `0036_liqpay_provider.sql`: drop and re-add `payments_provider_check` with
   `('simulator', 'liqpay')`, generated with drizzle-kit from `schema.ts` (which already uses
   `oneOf(t.provider, PAYMENT_PROVIDERS)`), plus the updated `schema.test.ts` expectation if it
@@ -142,7 +152,8 @@ The four open questions were answered with their recommended defaults (2026-11-2
 |--------|------|---------|
 | modify | `app/lib/enums.ts` | `PAYMENT_PROVIDERS = ["simulator", "liqpay"]` |
 | create | `app/.server/db/migrations/0036_liqpay_provider.sql` (+ `meta/`) | extend `payments_provider_check` |
-| modify | `app/.server/db/schema.test.ts` | expected check values, if listed |
+| create | `app/.server/db/rollbacks/0036_liqpay_provider.sql` | rollback (every migration has one) |
+| modify | `app/.server/db/migrator.test.ts` | 0036 in the rollback chains, plus its own test |
 | create | `app/.server/payments/liqpay.schema.ts` | zod schema of the decoded callback `data` |
 | create | `app/.server/payments/liqpay.ts` | `createLiqPay`, `sign`, `toOutcome` |
 | create | `app/.server/payments/liqpay.test.ts` | signature vector, checkout URL, statuses, bad input |
@@ -182,15 +193,15 @@ The four open questions were answered with their recommended defaults (2026-11-2
   Export `isLiqPaySandbox(env)`. Warn once at startup in production when sandbox is on. Tests in
   `env.test.ts`: missing keys, defaults per `NODE_ENV`, explicit `LIQPAY_SANDBOX=true` in
   production accepted, `false` in development accepted.
-- [ ] **5. Public URLs and the POST return** — Replace `new URL(request.url).origin` with
+- [x] **5. Public URLs and the POST return** — Replace `new URL(request.url).origin` with
   `getSiteUrl(getEnv(), request)` in the three routes. Add an `action` to `checkout-success.tsx`
   and `gift-card-success.tsx` that returns `redirect(new URL(request.url).pathname, 303)` (no
   body parsing, no state change); route tests for it.
-- [ ] **6. CSP** — `["form-action", "'self'", LIQPAY_ORIGIN]` with `LIQPAY_ORIGIN =
+- [x] **6. CSP** — `["form-action", "'self'", LIQPAY_ORIGIN]` with `LIQPAY_ORIGIN =
   "https://www.liqpay.ua"` exported from `payments/liqpay.ts` (or a constant in
   `security-headers.ts`, to keep the middleware free of payment imports); update
   `security-headers.test.ts` and the policy line in `docs/security.md`.
-- [ ] **7. Copy** — uk/en keys: `checkout.payment.cardNoteLiqPay`, `giftCards.steps.buyLiqPay` (or
+- [x] **7. Copy** — uk/en keys: `checkout.payment.cardNoteLiqPay`, `giftCards.steps.buyLiqPay` (or
   a `{provider}`-free sentence, per Q3), `privacy.sharing.payments`. Loaders of `/checkout`,
   `/podarunkovi-kartky` and `/privacy` return `cardProvider: provider?.name ?? null` (or
   `isLiqPay`), and the components pick the text. Component tests for both providers, uk and en.

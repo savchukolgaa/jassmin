@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Form, useLocation } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { COOKIE_INVENTORY, PRIVACY_POLICY_UPDATED_AT } from "~/lib/consent";
+import type { PaymentProvider } from "~/lib/enums";
 import { type TextKey, useT } from "~/lib/i18n";
 
 /** Who controls the data and how to reach them, from the CMS site settings. */
@@ -33,15 +34,18 @@ const COLLECTED: TextKey[] = [
  * `COOKIE_INVENTORY`), retention, sharing and the visitor's rights. The copy is a draft for the
  * store owner to review. `aiProvider`, when set, is the hosted AI perfumer's provider (#167).
  * `perfumerEnabled`: the AI perfumer is on, so its saved chats (#180) are described.
+ * `cardProvider`: LiqPay, when it takes the shop's card payments, is named as their processor (#192).
  */
 export function PrivacyPolicy({
   contacts,
   aiProvider = null,
   perfumerEnabled = false,
+  cardProvider = null,
 }: {
   contacts: PrivacyContacts | null;
   aiProvider?: string | null;
   perfumerEnabled?: boolean;
+  cardProvider?: PaymentProvider | null;
 }) {
   const { t, formatDate } = useT();
   const { pathname } = useLocation();
@@ -129,6 +133,7 @@ export function PrivacyPolicy({
 
         <Section heading={t("privacy.sharing.heading")}>
           <p>{t("privacy.sharing.text")}</p>
+          {cardProvider === "liqpay" ? <p>{t("privacy.sharing.payments")}</p> : null}
           {aiProvider ? <p>{t("privacy.sharing.ai", { provider: aiProvider })}</p> : null}
         </Section>
 

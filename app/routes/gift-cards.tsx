@@ -1,5 +1,7 @@
 import { data, redirect } from "react-router";
+import { getEnv } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
+import { getCardPaymentProviderName } from "~/.server/payments/provider";
 import { getUser } from "~/.server/services/auth";
 import { createGiftCard } from "~/.server/services/gift-cards";
 import { isCardPaymentAvailable, startGiftCardPayment } from "~/.server/services/payments";
@@ -35,7 +37,11 @@ export function meta({ matches, location, error }: Route.MetaArgs) {
 // The gift card page (#125), linked from the offers page (#126): three amounts, paid by card only.
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await getUser(request);
-  return { cardPaymentAvailable: isCardPaymentAvailable(), prefillEmail: user?.email ?? null };
+  return {
+    cardPaymentAvailable: isCardPaymentAvailable(),
+    cardProvider: getCardPaymentProviderName(getEnv()),
+    prefillEmail: user?.email ?? null,
+  };
 }
 
 /** The submitted values, to refill the form after an error. */
@@ -129,7 +135,13 @@ export default function GiftCards({ loaderData, actionData }: Route.ComponentPro
                 >
                   {index + 1}
                 </span>
-                <p className="text-lg text-body">{t(`giftCards.steps.${step}`)}</p>
+                <p className="text-lg text-body">
+                  {t(
+                    step === "buy" && loaderData.cardProvider === "liqpay"
+                      ? "giftCards.steps.buyLiqPay"
+                      : `giftCards.steps.${step}`,
+                  )}
+                </p>
               </li>
             ))}
           </ol>

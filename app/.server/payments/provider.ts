@@ -84,6 +84,16 @@ export function getPaymentProvider(env: PaymentEnv): PaymentProvider | null {
   }
 }
 
+/**
+ * The configured provider's name, or `null` when card payment is off: for copy that names the
+ * provider (checkout, gift cards, privacy policy, #192) without building it.
+ */
+export function getCardPaymentProviderName(
+  env: Pick<Env, "PAYMENT_PROVIDER">,
+): PaymentProviderName | null {
+  return env.PAYMENT_PROVIDER ?? null;
+}
+
 /** The simulator when it's the configured provider, for its hosted page; `null` otherwise. */
 export function getSimulator(env: PaymentEnv): Simulator | null {
   return env.PAYMENT_PROVIDER === "simulator" ? createSimulator(env.SESSION_SECRET) : null;

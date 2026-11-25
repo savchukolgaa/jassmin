@@ -72,6 +72,11 @@ const aiEnvSchema = z.object({
   AI_PROVIDER_NAME: z.string().trim().min(1).max(80).optional(),
 });
 
+/** A LiqPay key that is set and isn't the deploy's `pending` placeholder (docs/payments.md). */
+function isLiqPayKey(key: string | undefined): boolean {
+  return key !== undefined && key !== "pending";
+}
+
 const envSchema = z
   .object({
     DATABASE_URL: z.url(),
@@ -84,8 +89,9 @@ const envSchema = z
     // those routes answer 503 and product and order edits in Strapi fail with a clear error.
     CMS_SYNC_SECRET: z.string().min(32).optional(),
     ...cmsSyncEnvSchema.shape,
-    // Where card payments go (#44). Optional: without it the app still starts and card payment is
-    // unavailable at checkout. `simulator` is the local fake payment page, never for production.
+    // Where card payments go (#44). Optional: without it (or with `none`, production's default) the
+    // app still starts and card payment is unavailable at checkout. `simulator` is the local fake
+    // payment page, never for production; `liqpay` is LiqPay (#192).
     PAYMENT_PROVIDER: z.enum(PAYMENT_PROVIDERS).optional(),
     // LiqPay's merchant keys (#192), required with `PAYMENT_PROVIDER=liqpay`. Production secrets
     // only, never committed. See docs/payments.md.
@@ -128,7 +134,7 @@ const envSchema = z
   .refine(
     (env) =>
       env.PAYMENT_PROVIDER !== "liqpay" ||
-      (env.LIQPAY_PUBLIC_KEY !== undefined && env.LIQPAY_PRIVATE_KEY !== undefined),
+      (isLiqPayKey(env.LIQPAY_PUBLIC_KEY) && isLiqPayKey(env.LIQPAY_PRIVATE_KEY)),
     {
       path: ["PAYMENT_PROVIDER"],
       message: "PAYMENT_PROVIDER=liqpay needs LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY",
@@ -201,7 +207,8 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     STRAPI_API_TOKEN: source.STRAPI_API_TOKEN || undefined,
     CMS_SYNC_SECRET: source.CMS_SYNC_SECRET || undefined,
     ...cmsSyncSource(source),
-    PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
+    PAYMENT_PROVIDER:
+      source.PAYMENT_PROVIDER === "none" ? undefined : source.PAYMENT_PROVIDER || undefined,
     LIQPAY_PUBLIC_KEY: source.LIQPAY_PUBLIC_KEY?.trim() || undefined,
     LIQPAY_PRIVATE_KEY: source.LIQPAY_PRIVATE_KEY?.trim() || undefined,
     LIQPAY_SANDBOX: source.LIQPAY_SANDBOX || undefined,

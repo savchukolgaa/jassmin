@@ -94,6 +94,11 @@ callback, sandbox mode for development, the CSP and production settings, and a g
 - **Deviation: the copy reads the provider name** with `getCardPaymentProviderName(getEnv())` in
   `payments/provider.ts` (no database import, so `/privacy` can use it), returned by the loaders
   as `cardProvider`.
+- **Production switch (Q1).** Aspire's TypeScript SDK can't read a parameter's value, so the
+  switch can't be an `if`. `payment-provider` is a parameter with the default `none` that goes
+  straight into `PAYMENT_PROVIDER`; `parseEnv` reads `none` as unset. The LiqPay keys are secret
+  parameters, `pending` until LiqPay approves the shop (Aspire 17 rejects empty answers), and
+  `parseEnv` refuses `liqpay` with a `pending` key. Production always gets `LIQPAY_SANDBOX=false`.
 - **Migration** `0036_liqpay_provider.sql`: drop and re-add `payments_provider_check` with
   `('simulator', 'liqpay')`, generated with drizzle-kit from `schema.ts` (which already uses
   `oneOf(t.provider, PAYMENT_PROVIDERS)`), plus the updated `schema.test.ts` expectation if it
@@ -205,7 +210,7 @@ The four open questions were answered with their recommended defaults (2026-11-2
   a `{provider}`-free sentence, per Q3), `privacy.sharing.payments`. Loaders of `/checkout`,
   `/podarunkovi-kartky` and `/privacy` return `cardProvider: provider?.name ?? null` (or
   `isLiqPay`), and the components pick the text. Component tests for both providers, uk and en.
-- [ ] **8. Production config** — In `production.mts`: `liqpay-public-key` and
+- [x] **8. Production config** — In `production.mts`: `liqpay-public-key` and
   `liqpay-private-key` secret parameters, `LIQPAY_SANDBOX=false`, and `PAYMENT_PROVIDER` per Q1
   (default: a `card-payments` parameter, `liqpay` only when set to `on`). Update the comment that
   says there is no provider, and `aspire-apphost/AGENTS.md`'s environment list.

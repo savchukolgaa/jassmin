@@ -146,9 +146,10 @@ describe("parseEnv", () => {
 });
 
 describe("parseEnv: PAYMENT_PROVIDER", () => {
-  it("leaves card payment unconfigured by default and treats an empty value as unset", () => {
+  it("leaves card payment unconfigured by default and treats an empty value or none as unset", () => {
     expect(parseEnv(valid).PAYMENT_PROVIDER).toBeUndefined();
     expect(parseEnv({ ...valid, PAYMENT_PROVIDER: "" }).PAYMENT_PROVIDER).toBeUndefined();
+    expect(parseEnv({ ...production, PAYMENT_PROVIDER: "none" }).PAYMENT_PROVIDER).toBeUndefined();
   });
 
   it("accepts the simulator outside production", () => {
@@ -184,6 +185,19 @@ describe("parseEnv: LiqPay", () => {
     expect(() =>
       parseEnv({ ...valid, PAYMENT_PROVIDER: "liqpay", ...keys, LIQPAY_PRIVATE_KEY: " " }),
     ).toThrow(/LIQPAY_PRIVATE_KEY/);
+    // The deploy's placeholder until LiqPay approves the shop.
+    expect(() =>
+      parseEnv({
+        ...production,
+        PAYMENT_PROVIDER: "liqpay",
+        ...keys,
+        LIQPAY_PUBLIC_KEY: "pending",
+      }),
+    ).toThrow(/LIQPAY_PUBLIC_KEY/);
+    expect(
+      parseEnv({ ...production, PAYMENT_PROVIDER: "none", LIQPAY_PUBLIC_KEY: "pending" })
+        .PAYMENT_PROVIDER,
+    ).toBeUndefined();
   });
 
   it("doesn't need the keys while LiqPay isn't the provider", () => {

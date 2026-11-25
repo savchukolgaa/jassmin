@@ -27,6 +27,7 @@ pnpm lint           # biome check .
 pnpm format         # biome check --write .
 pnpm test           # vitest run
 pnpm build
+pnpm cms:types      # regenerate cms/types/generated after a Strapi schema change; commit, never hand-edit
 pnpm aspire run     # never plain `aspire run`, see aspire-apphost/AGENTS.md
 pnpm aspire:deploy  # production: build, push to GHCR, Compose over SSH (docs/deploy.md)
 ```

@@ -19,7 +19,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Card payments](#card-payments)
 - [Database migrations](#database-migrations)
 - [Project structure](#project-structure)
-- [Content (Strapi CMS)](#content-strapi-cms)
+- [Content (Strapi CMS)](#content-strapi-cms) (including [Generated types](#generated-types))
 - [Special offers](#special-offers)
 - [Home page and contact form](#home-page-and-contact-form)
 - [Products and orders in Strapi](#products-and-orders-in-strapi)
@@ -137,6 +137,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm cms:dev` | Strapi in development mode (admin at http://localhost:1337/admin) |
 | `pnpm cms:build` | Build the Strapi admin panel |
 | `pnpm cms:seed` | Seed Strapi with demo content (`-- --token` also creates the app's read-only and sync API tokens) |
+| `pnpm cms:types` | Regenerate Strapi's types in `cms/types/generated` from the content types and components (no database needed); commit the result, see [Generated types](#generated-types) |
 | `pnpm db:generate` | Generate a migration from `app/.server/db/schema.ts` (`--name <name>`) |
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:create-databases <name> [<name> ...]` | Create the named databases on the app database's server if they're missing (the production `db-migrate` runs it with `jassmindb strapidb`, #176) |
@@ -338,6 +339,23 @@ node -e "console.log(require('node:crypto').randomBytes(16).toString('base64'))"
 ```
 
 `APP_KEYS` is a comma-separated list of at least two such values.
+
+### Generated types
+
+Strapi rewrites `cms/types/generated/components.d.ts` and `contentTypes.d.ts` from the schemas in `cms/src` every time it starts (#193). The committed copies must be exactly what it writes, or a Strapi start leaves them changed and the next `git pull` refuses to overwrite them.
+
+- After changing a content type or component (`cms/src/**/schema.json`, `cms/src/components/**/*.json`), run `pnpm cms:types` (or start Strapi) and commit both files with the schema change. Never edit them by hand.
+- CI's `cms` job runs `pnpm cms:types` and fails when the files change ([docs/ci.md](ci.md)).
+- The `"prettier"` key in `cms/package.json` only fixes how Strapi's built-in type generator formats these files, so a Prettier config elsewhere on your machine can't change them. Prettier isn't a project tool; Biome formats everything else and ignores this folder.
+
+If `git pull` stops with "Your local changes to the following files would be overwritten" for these files, discard them and pull again:
+
+```bash
+git restore cms/types/generated
+git pull
+```
+
+Then restart Strapi (or run `pnpm cms:types`): the files come out identical to the pulled ones.
 
 ### First-time setup
 

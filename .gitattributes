@@ -3,3 +3,6 @@
 # Notebooks are saved with outputs (#133): collapse them in PR diffs.
 *.ipynb linguist-generated
 *.png binary
+# Strapi rewrites these on every start (#193): always LF, and collapsed in PR diffs.
+# Regenerate with `pnpm cms:types`, never edit by hand.
+cms/types/generated/** text eol=lf linguist-generated

@@ -10,7 +10,7 @@ on each PR's **Checks** section.
 |-----|------|-------|
 | `check` | Every PR and push to `main` | `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (with PostgreSQL), skipped-test check, `pnpm build` |
 | `changes` | Every run | Decides whether `cms` and `analytics` have to run |
-| `cms` | Only when `cms/**`, `pnpm-lock.yaml` or `pnpm-workspace.yaml` changed | `pnpm install --frozen-lockfile`, `pnpm cms:build` |
+| `cms` | Only when `cms/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml` or the workflow changed | `pnpm install --frozen-lockfile`, `pnpm cms:types` and a check that `cms/types/generated` didn't change (#193, no database), `pnpm cms:build` |
 | `analytics` | Only when `analytics/**`, the catalog, the migrations, the pricing, the event schemas or the workflow changed | `pnpm install --frozen-lockfile`, `uv run --project analytics --locked pytest analytics` (with PostgreSQL), `uv run --project analytics/notebooks --locked pytest analytics/notebooks` (#133: the notebook helpers only; the notebooks run locally) |
 
 - **Runner:** `ubuntu-latest`. Node comes from `.nvmrc`, pnpm from `packageManager` in
@@ -106,6 +106,10 @@ or switch the rule off to get a PR in: fix the check instead.
   test, look for an `it.skip`, `describe.skip` or a `skipIf` condition that is true on Linux.
 - **`ERR_PNPM_OUTDATED_LOCKFILE`:** `package.json` changed without `pnpm install`. Run it locally and
   commit `pnpm-lock.yaml`.
+- **`cms/types/generated is out of date`:** a content type or component under `cms/src` changed
+  without its regenerated types (or someone edited them by hand). Run `pnpm cms:types` locally and
+  commit `cms/types/generated`; the job log shows the expected diff. See
+  [Generated types](setup.md#generated-types).
 - **`Invalid environment variables`:** a test loads the app's env and a required variable has no
   value in CI. Add a dummy value to the `check` job's `env` in `ci.yml`, never a real secret.
 - **Works locally, fails in CI:** CI starts from a clean checkout, without `.env`, on Linux. Look for

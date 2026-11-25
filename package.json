@@ -34,6 +34,7 @@
     "db:send-order-emails": "tsx app/.server/db/scripts/send-order-emails.ts",
     "db:send-cart-reminders": "tsx app/.server/db/scripts/send-cart-reminders.ts",
     "db:send-newsletters": "tsx app/.server/db/scripts/send-newsletters.ts",
+    "db:send-tester-followups": "tsx app/.server/db/scripts/send-tester-followups.ts",
     "db:sync-cms": "tsx app/.server/db/scripts/sync-cms.ts",
     "db:convert-catalog": "tsx app/.server/db/scripts/convert-catalog.ts",
     "db:import-catalog": "tsx app/.server/db/scripts/import-catalog.ts",

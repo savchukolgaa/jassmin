@@ -42,6 +42,9 @@ const siteSettings: SiteSettings = {
   email: "hello@jassmin.ua",
   customerServiceHours: null,
   legalName: null,
+  taxId: null,
+  legalAddress: null,
+  registrationNote: null,
   socialLinks: [],
 };
 

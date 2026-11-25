@@ -103,6 +103,156 @@ export const en = {
       text: "Under the Law of Ukraine “On Personal Data Protection” you can find out what data we keep, have it corrected or deleted, and withdraw your consent to statistics. Write to us, or change your choice in the cookie settings.",
     },
   },
+  legal: {
+    updated: "Version of {date}",
+    seller: {
+      heading: "Seller details",
+      legalName: "Seller",
+      legalNameValue: "Sole proprietor (ФОП) {name}",
+      taxId: "Tax number (РНОКПП)",
+      legalAddress: "Address",
+      registrationNote: "Registration",
+      phone: "Phone",
+      email: "Email",
+      missing: "not filled in the site settings (Strapi)",
+      unavailable:
+        "The seller's details couldn't be loaded right now. Refresh the page later or use the contacts on the home page.",
+    },
+    offer: {
+      title: "Public offer",
+      description:
+        "The contract of sale at the Jassmin perfume shop: the seller, placing an order, prices, payment, delivery and returns.",
+      intro:
+        "This is a public offer to enter into a contract of sale at the Jassmin online shop. Please read it before you place an order.",
+      parties: {
+        heading: "1. Parties",
+        seller:
+          "The seller is the sole proprietor (ФОП) whose details are given below and who sells perfume through the Jassmin online shop (the Shop).",
+        buyer:
+          "The buyer is any person with full legal capacity who places an order in the Shop for personal use.",
+        offer:
+          "This offer is a public contract within the meaning of Articles 633 and 641 of the Civil Code of Ukraine: its terms are the same for every buyer.",
+      },
+      subject: {
+        heading: "2. Subject of the contract",
+        text: "The seller undertakes to transfer the goods ordered in the Shop to the buyer's ownership, and the buyer undertakes to accept and pay for them on the terms of this offer.",
+        info: "Each product's description, size, price and availability are on its page. Bottle images may differ from the actual packaging.",
+      },
+      order: {
+        heading: "3. Placing an order",
+        place:
+          "The buyer places an order on the site: chooses the products and gives their name, phone, email, city, Nova Poshta branch or parcel locker, and payment method.",
+        accept:
+          "By clicking “Place order”, the buyer fully and unconditionally accepts this offer in the version in force at the time of the order. The contract is concluded at that moment.",
+        confirm:
+          "After placing the order, the buyer receives an email with its number and contents. If a product turns out to be out of stock, the seller tells the buyer and refunds what was paid for it.",
+      },
+      prices: {
+        heading: "4. Prices and payment",
+        currency: "Prices are in hryvnias and are final for an order placed at them.",
+        payment:
+          "Payment is cash on delivery at Nova Poshta, or by card online when that option is offered at checkout. An order can be paid in full or in part with a gift card.",
+        change:
+          "The seller may change prices on the site; the price of a placed order doesn't change.",
+      },
+      delivery: {
+        heading: "5. Delivery",
+        text: "Nova Poshta delivers the goods to the branch or parcel locker the buyer chooses at checkout. From {threshold} the seller pays for delivery; below that the recipient pays Nova Poshta's rates.",
+        more: "More details:",
+      },
+      ownership: {
+        heading: "6. Transfer of ownership",
+        text: "Ownership of the goods and the risk of accidental damage pass to the buyer when they collect the parcel at the Nova Poshta branch or parcel locker.",
+      },
+      returns: {
+        heading: "7. Returns and exchanges",
+        text: "Returns and exchanges follow the Law of Ukraine “On Consumer Rights Protection”, on the terms set out on a separate page.",
+        more: "Return terms:",
+      },
+      discounts: {
+        heading: "8. Gift cards and discounts",
+        giftCards:
+          "Gift cards are sold in amounts of {amounts} and paid by card online. The card's code is sent to the buyer's email.",
+        giftCardUse:
+          "A card is valid for {months} months from the day it's paid. It can pay for one or more orders until its amount is used up; the balance can't be exchanged for cash.",
+        promotions:
+          "Discounts, promo codes and special offers apply on the terms and for the period stated on the site. One discount, the best for the buyer, applies to an order.",
+        more: "Current offers:",
+      },
+      personalData: {
+        heading: "9. Personal data",
+        text: "By placing an order, the buyer provides the data needed to fulfil it. The seller processes it under the Law of Ukraine “On Personal Data Protection”.",
+        more: "More details:",
+      },
+      liability: {
+        heading: "10. Liability and disputes",
+        liability:
+          "The parties are liable for failing to meet their obligations under the laws of Ukraine. The seller isn't liable for delays caused by the carrier or by force majeure.",
+        disputes:
+          "Disputes are settled by negotiation. If that fails, the buyer may turn to the State Service on Food Safety and Consumer Protection or to a court under the laws of Ukraine.",
+      },
+      details: {
+        heading: "11. Seller details",
+      },
+    },
+    delivery: {
+      title: "Delivery and payment",
+      description:
+        "Nova Poshta delivery across Ukraine, free from a set amount, and the ways to pay for an order at the Jassmin perfume shop.",
+      intro: "How we deliver orders and how you can pay for them.",
+      shipping: {
+        heading: "Delivery",
+        carrier:
+          "We deliver with Nova Poshta across Ukraine to the branch or parcel locker you choose at checkout.",
+        tracking:
+          "Once we hand the parcel to Nova Poshta, you get an email with its waybill number (ТТН). Use it to track the parcel on Nova Poshta's site or app.",
+      },
+      cost: {
+        heading: "Delivery cost",
+        free: "From {threshold} delivery is free: we pay for it.",
+        paid: "For a smaller order, the recipient pays Nova Poshta's rates when collecting the parcel.",
+        afterDiscount: "The threshold counts the products' total after the discount.",
+      },
+      payment: {
+        heading: "Payment",
+        currency: "All prices are in hryvnias.",
+        cod: "Cash on delivery: pay when you collect the parcel at the branch or parcel locker. Nova Poshta may charge its own money transfer fee.",
+        card: "By card online, when you place the order.",
+        giftCard:
+          "With a gift card: enter its code at checkout. If the card covers the whole amount, there's nothing more to pay.",
+      },
+      inspect: {
+        heading: "Collecting the parcel",
+        text: "You can inspect the parcel at the Nova Poshta branch. If it's damaged, you can refuse it before paying.",
+        more: "Return terms:",
+      },
+    },
+    returns: {
+      title: "Returns and exchanges",
+      description:
+        "Returns and exchanges at the Jassmin perfume shop: what can be returned, within what time, and who pays the shipping.",
+      intro:
+        "We check every order carefully. If something goes wrong, this is how we put it right.",
+      quality: {
+        heading: "Products of proper quality",
+        text: "Perfume and cosmetics of proper quality are on the list of goods that can't be returned or exchanged (Cabinet of Ministers of Ukraine resolution No. 172 of 19 March 1994). So we don't take back or exchange opened or unsealed products of proper quality.",
+      },
+      defects: {
+        heading: "Defective, damaged or wrong items",
+        text: "If a product is defective, was damaged in delivery, or isn't what you ordered, we replace it or refund you under the Law of Ukraine “On Consumer Rights Protection”.",
+        report:
+          "Tell us within {days} days of receiving it: email {email} or call {phone}. Give the order number and add photos of the product and its packaging.",
+        reportFallback:
+          "Tell us within {days} days of receiving it, using the contacts on the home page. Give the order number and add photos of the product and its packaging.",
+        shipping: "In that case we pay for sending the item back.",
+        refund: "We refund the card you paid with, or your bank account if you paid on delivery.",
+      },
+      refuse: {
+        heading: "Refusing a parcel",
+        text: "You can inspect the parcel at the Nova Poshta branch and refuse it before paying; it then comes back to us. If the order was already paid by card, we refund it as soon as the parcel is back.",
+      },
+    },
+  },
   nav: {
     main: "Main",
     footer: "Footer",
@@ -114,6 +264,10 @@ export const en = {
     bestsellers: "Bestsellers",
     offers: "Offers",
     perfumer: "AI perfumer",
+    legal: "Legal information",
+    offerTerms: "Public offer",
+    deliveryAndPayment: "Delivery and payment",
+    returns: "Returns",
     menu: "Menu",
     account: "My account",
     logIn: "Log in",
@@ -468,6 +622,8 @@ export const en = {
     freeShippingHint: "Add {amount} more for free delivery (from {threshold}).",
     total: "Total",
     submit: "Place order",
+    offerNotice: "By placing an order, you accept the",
+    offerLink: "public offer",
     errors: {
       fullNameRequired: "Enter your full name",
       fullNameTooLong: "Your name must be at most 255 characters",
@@ -531,6 +687,8 @@ export const en = {
     footer: {
       note: "This email was sent by Jassmin, a perfume shop in Ukraine.",
       unsubscribe: "Unsubscribe from news and offers",
+      offer: "Public offer",
+      returns: "Returns and exchanges",
     },
   },
   orderEmail: {
@@ -964,6 +1122,8 @@ export const en = {
       recipientEmailHint:
         "If you add it, we'll send the code to the recipient too. Leave it blank to pass the code on yourself.",
       submit: "Pay {amount}",
+      offerNotice: "By paying for the card, you accept the",
+      offerLink: "public offer",
     },
     unavailable:
       "Card payment isn't available right now, so gift cards can't be bought. Please try again later.",

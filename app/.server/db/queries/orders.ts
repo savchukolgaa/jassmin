@@ -9,6 +9,7 @@ import {
 } from "~/lib/checkout";
 import type { DiscountLine } from "~/lib/discounts";
 import type { CartStatus, InventoryMovementSource, PaymentMethod } from "~/lib/enums";
+import { OFFER_UPDATED_AT } from "~/lib/legal";
 import type { OrderLifecyclePatch } from "~/lib/order-status";
 import type { Db } from "../client";
 import {
@@ -143,6 +144,8 @@ export async function insertOrder(db: Executor, order: NewOrder): Promise<number
       totalAmount: sql`(${subtotal} - ${discount} + ${SHIPPING_AMOUNT}::numeric - ${giftCard})::numeric(10, 2)`,
       freeShipping: sql`(${subtotal} - ${discount}) >= ${FREE_SHIPPING_THRESHOLD}::numeric`,
       createdAt: placedAt,
+      // Placing the order accepts the public offer in its current version (#190).
+      offerVersion: OFFER_UPDATED_AT,
       ...paid,
     })
     .returning({ id: orders.id });

@@ -24,11 +24,12 @@ whoever controls the `jassmin.ua` DNS zone (the registrar's or the DNS host's co
 7. [Check that it works](#6-check-that-it-works)
 8. [Tighten DMARC after two weeks](#7-tighten-dmarc-after-two-weeks)
 9. [Suppressed addresses](#suppressed-addresses)
-10. [Order status emails](#order-status-emails)
-11. [Cart reminders](#cart-reminders)
-12. [Newsletter](#newsletter)
-13. [Local development](#local-development)
-14. [Switching providers](#switching-providers)
+10. [Links to the legal pages](#links-to-the-legal-pages)
+11. [Order status emails](#order-status-emails)
+12. [Cart reminders](#cart-reminders)
+13. [Newsletter](#newsletter)
+14. [Local development](#local-development)
+15. [Switching providers](#switching-providers)
 
 ## Why Brevo
 
@@ -234,6 +235,13 @@ WHERE id = <id>;
 
 If Brevo itself also blocked the address, remove it from Brevo's list too, under
 **Transactional → Contacts → Blocked contacts**.
+
+## Links to the legal pages
+
+The order confirmation and the gift card's code to its buyer are emails about a sale, so their
+footer also links to the public offer and the returns page (#190, [legal.md](legal.md)), in the
+email's language. The links need `PUBLIC_SITE_URL`; without it they're left out, like the site
+link.
 
 ## Order status emails
 

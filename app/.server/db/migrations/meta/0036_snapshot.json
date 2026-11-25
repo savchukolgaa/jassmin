@@ -1,5 +1,5 @@
 {
-  "id": "f50ebd9d-c858-4dbd-927a-9906e372faff",
+  "id": "96a9d173-5c32-4b6d-a44c-4d311cf4f2df",
   "prevId": "b6dd12a1-d5fc-41ad-8259-457678e94227",
   "version": "7",
   "dialect": "postgresql",
@@ -2160,6 +2160,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "offer_version": {
+          "name": "offer_version",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -2468,7 +2474,7 @@
       "checkConstraints": {
         "payments_provider_check": {
           "name": "payments_provider_check",
-          "value": "\"payments\".\"provider\" in ('simulator', 'liqpay')"
+          "value": "\"payments\".\"provider\" in ('simulator')"
         },
         "payments_status_check": {
           "name": "payments_status_check",

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CheckoutInput } from "~/lib/checkout";
 import type { OrderStatus } from "~/lib/enums";
+import { OFFER_UPDATED_AT } from "~/lib/legal";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
 import { canViewOrder } from "./orders";
 
@@ -186,6 +187,8 @@ describe.skipIf(!hasDatabase)("order service", () => {
         totalAmount: "6430.00",
         currency: "UAH",
         freeShipping: true,
+        // Placing the order accepted the public offer in its current version (#190).
+        offerVersion: OFFER_UPDATED_AT,
       }),
     ]);
     const items = await testDb.db

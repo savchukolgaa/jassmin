@@ -96,6 +96,9 @@ export const siteSettingEntry = z.object({
   email: z.string(),
   customerServiceHours: z.string().nullish(),
   legalName: z.string().nullish(),
+  taxId: z.string().nullish(),
+  legalAddress: z.string().nullish(),
+  registrationNote: z.string().nullish(),
   socialLinks: z.array(socialLinkComponent).nullish(),
 });
 

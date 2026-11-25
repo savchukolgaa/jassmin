@@ -1,6 +1,7 @@
 import { CATALOG_GENDERS } from "~/lib/catalog";
 import { PRIVACY_POLICY_UPDATED_AT } from "~/lib/consent";
 import { LOCALES, type Locale } from "~/lib/i18n";
+import { DELIVERY_UPDATED_AT, OFFER_UPDATED_AT, RETURNS_UPDATED_AT } from "~/lib/legal";
 import { type Page, type PathArgs, pathFor } from "~/lib/paths";
 import { isPerfumerEnabled } from "../ai/config";
 import { listBlogPostsForSitemap, type SitemapBlogPost } from "../cms/content";
@@ -35,6 +36,9 @@ export const SITEMAP_PAGES = [
   "perfumer",
   "blog",
   "privacy",
+  "offerTerms",
+  "deliveryAndPayment",
+  "returns",
   "giftCards",
   "product",
   "blogPost",
@@ -84,6 +88,10 @@ export function sitemapPages({
     ...(perfumerEnabled ? [{ paths: everyLocale("perfumer") }] : []),
     { paths: everyLocale("blog"), lastmod: latest((posts ?? []).map((post) => post.updatedAt)) },
     { paths: everyLocale("privacy"), lastmod: PRIVACY_POLICY_UPDATED_AT },
+    // The legal pages (#190), dated by their version.
+    { paths: everyLocale("offerTerms"), lastmod: OFFER_UPDATED_AT },
+    { paths: everyLocale("deliveryAndPayment"), lastmod: DELIVERY_UPDATED_AT },
+    { paths: everyLocale("returns"), lastmod: RETURNS_UPDATED_AT },
   ];
 
   for (const product of products) {

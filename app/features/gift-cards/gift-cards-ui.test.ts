@@ -70,6 +70,15 @@ describe("GiftCardPurchaseForm", () => {
     expect(html).toContain("Pay ₴1,000");
   });
 
+  it("says under the button that paying accepts the public offer (#190)", () => {
+    expect(renderForm()).toMatch(
+      /Оплачуючи картку, ви погоджуєтеся з умовами <a[^>]*href="\/oferta"[^>]*>публічної оферти<\/a>\./,
+    );
+    expect(renderForm({}, "en")).toMatch(
+      /By paying for the card, you accept the <a[^>]*href="\/en\/offer-terms"[^>]*>public offer<\/a>\./,
+    );
+  });
+
   it("prefills the buyer's email, and submitted values win", () => {
     expect(tag(renderForm({ prefillEmail: "me@example.com" }), 'name="email"')).toContain(
       'value="me@example.com"',

@@ -9,7 +9,8 @@
     "develop": "strapi develop",
     "seed": "tsx scripts/seed.ts",
     "start": "strapi start",
-    "strapi": "strapi"
+    "strapi": "strapi",
+    "types": "strapi ts:generate-types"
   },
   "dependencies": {
     "@strapi/database": "5.59.0",
@@ -35,5 +36,12 @@
   "strapi": {
     "uuid": "85f8df74-82be-4841-8ed1-64d95aa896ce",
     "installId": "96b3d9b9353f02bb00a7e948d1f9f0389a9093004c9de32905f49c5ef297cbf2"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "tabWidth": 2,
+    "useTabs": false,
+    "printWidth": 80,
+    "endOfLine": "lf"
   }
 }

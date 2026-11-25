@@ -92,6 +92,7 @@ jobs:
               - "cms/**"
               - "pnpm-lock.yaml"
               - "pnpm-workspace.yaml"
+              - ".github/workflows/ci.yml"
             analytics:
               - "analytics/**"
               - "app/.server/db/catalog-data.ts"
@@ -127,6 +128,17 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Strapi rewrites cms/types/generated on every start, so the committed copies must be exactly
+      # what it generates for the committed schemas (#193). Needs no database.
+      - name: Check generated Strapi types
+        run: |
+          pnpm cms:types
+          if [ -n "$(git status --porcelain -- cms/types/generated)" ]; then
+            git --no-pager diff -- cms/types/generated
+            echo "::error::cms/types/generated is out of date. Run \`pnpm cms:types\` and commit the result."
+            exit 1
+          fi
 
       - name: Build Strapi
         run: pnpm cms:build

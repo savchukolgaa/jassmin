@@ -226,7 +226,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   `layout.test.ts` and `order-email.test.ts`; other emails unchanged.
 - [x] **11. Sitemap.** Add the three pages to `SITEMAP_PAGES` and `sitemapPages` with
   `lastmod` = their version dates; tests in `sitemap.test.ts` (entries with hreflang alternates).
-- [ ] **12. Startup warning.** `app/.server/legal.ts` → `warnIfSellerDetailsMissing({ env, load })`:
+- [x] **12. Startup warning.** `app/.server/legal.ts` → `warnIfSellerDetailsMissing({ env, load })`:
   once, production only, async and non-throwing; warns
   `[legal] Seller details missing in Strapi site settings: taxId, legalAddress (see docs/legal.md)`
   or that Strapi couldn't be reached. Call from `entry.server.tsx`. Tests with injected deps

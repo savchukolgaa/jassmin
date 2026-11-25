@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/193
 Branch: `issue/193`
 Worktree: `.claude/worktrees/issue-193`
-Status: Planned
+Status: Implemented
 
 ## Goal
 As a developer, I want Strapi's generated type files (`cms/types/generated/*.d.ts`) to stay unchanged
@@ -173,9 +173,12 @@ Both answered by the owner (2026-11-25): use the recommended defaults.
   "A change to `cms/src/**/schema.json` (content types and components) commits the regenerated
   `cms/types/generated/*.d.ts` from `pnpm cms:types` in the same commit. Never edit them by hand
   (#193)." Root `AGENTS.md`: add `pnpm cms:types` to Commands with a short comment.
-- [ ] **8. Verify and write the cause into the PR** — run `pnpm typecheck`, `pnpm lint`, `pnpm test`,
+- [x] **8. Verify and write the cause into the PR** — run `pnpm typecheck`, `pnpm lint`, `pnpm test`,
   `pnpm build`, and `pnpm cms:types` (+ `git status` clean). Copy "Findings: the cause" above into the
   PR description (with the Q1 answer).
+  Done locally: typecheck, lint, build, `pnpm cms:build` and `pnpm cms:types` (clean afterwards) pass;
+  `pnpm test` passed against a throwaway `postgres:18` (4 DB files hit setup timeouts in the full run
+  under load and passed on rerun). The PR text is written by `/open-pr`.
 
 ## Testing & verification
 - `pnpm cms:types` on the branch leaves `git status` clean (Windows, locally); the CI `cms` job runs on
@@ -187,11 +190,11 @@ Both answered by the owner (2026-11-25): use the recommended defaults.
 - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` pass. No new Vitest tests (see Decisions).
 
 ## Acceptance criteria
-- [ ] On a clean `main`, starting Strapi (or `pnpm cms:types`) leaves `git status` clean on Windows and in CI — steps 1–4, 5 (CI run), 8
-- [ ] CI fails when a content-type change isn't followed by its regenerated types — step 5
-- [ ] The cause of the earlier differences is written in the PR — Findings section, step 8
-- [ ] `docs/setup.md` and the agent docs explain how to update the types — steps 6, 7
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 8
+- [x] On a clean `main`, starting Strapi (or `pnpm cms:types`) leaves `git status` clean on Windows and in CI — steps 1–4, 5 (CI run), 8. Windows verified; the Linux CI run happens on the PR
+- [x] CI fails when a content-type change isn't followed by its regenerated types — step 5 (the CI snippet failed locally on an edited `variant.json`)
+- [ ] The cause of the earlier differences is written in the PR — Findings section, step 8 (left open until `/open-pr` writes the PR)
+- [x] `docs/setup.md` and the agent docs explain how to update the types — steps 6, 7
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 8
 
 ## Out of scope
 - Changing content types or components, and upgrading Strapi (per the issue).

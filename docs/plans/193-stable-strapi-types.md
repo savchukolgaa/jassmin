@@ -39,8 +39,8 @@ Checked on a clean `issue/193` (= `origin/main` at 131cf50), Windows 11:
    with `ts.factory.createStringLiteral`, and the TS printer escapes non-ASCII in synthesized literals;
    Prettier keeps escapes as they are). No commit of the files has ever contained plain Cyrillic
    (checked every commit touching `cms/types/generated`). So the plain-text copy was an uncommitted
-   local edit (most likely an agent editing the file by hand), not Strapi output. **(unconfirmed —
-   see Q1)**
+   local edit (most likely an agent editing the file by hand), not Strapi output (Q1: not
+   reproducible, accepted as the explanation).
 5. **A latent source of machine-dependent output**: `format()` in
    `@strapi/typescript-utils/dist/generators/utils.js:62` calls `prettier.resolveConfigFile()` from the
    process cwd (`cms/`) upwards. With no config found it uses `{ singleQuote: true, tabWidth: 2 }` and
@@ -49,6 +49,11 @@ Checked on a clean `issue/193` (= `origin/main` at 131cf50), Windows 11:
    the wrapping on that machine only. None exists on this machine or in the repo today.
 6. Line endings: Prettier emits LF and `fs.writeFile` keeps it, so Windows output is LF; the root
    `.gitattributes` (`* text=auto eol=lf`) already normalizes. Biome ignores the folder (`biome.json`).
+
+7. **The pin works** (checked while implementing step 2): with a `.prettierrc` of
+   `{"printWidth":120,"singleQuote":false}` in the repo root, `pnpm cms:types` rewrote both files
+   (454 insertions, 695 deletions) without the `"prettier"` key in `cms/package.json`, and changed
+   nothing with it.
 
 So the fix is mostly process (regenerate, never hand-edit, enforce in CI) plus pinning the Prettier
 config so no machine-level config can leak in.
@@ -63,7 +68,7 @@ config so no machine-level config can leak in.
   directory can no longer change the output, and today's output stays byte-identical (same values).
   This doesn't add Prettier as a tool: it's only read by Strapi's bundled generator; Biome stays the
   formatter. A key in `package.json` avoids a `.prettierrc` file that editors would pick up for
-  every file under `cms/`. **(unconfirmed — see Q2)**
+  every file under `cms/`.
 - **Scripts**: `cms/package.json` gets `"types": "strapi ts:generate-types"`, the root gets
   `"cms:types": "pnpm --filter jassmin-cms types"` (same shape as `cms:build` / `cms:seed`).
 - **CI check goes in the existing `cms` job**, which already runs whenever `cms/**` or the lockfile
@@ -80,13 +85,14 @@ config so no machine-level config can leak in.
   Testing).
 
 ## Open questions
-- [ ] **Q1: Do you still have the diff with plain Ukrainian letters, or know where it came from?** —
+Both answered by the owner (2026-11-25): use the recommended defaults.
+- [x] **Q1: Do you still have the diff with plain Ukrainian letters, or know where it came from?** —
   Why it matters: no commit and no Strapi run produces plain Cyrillic, so the plan explains it as an
   uncommitted hand edit. If it actually came from Strapi (e.g. a different Strapi/TypeScript install,
   or Strapi started from another folder), the fix would also need pinning that. Recommended default:
   write it in the PR as "not reproducible; most likely a hand edit, which the CI check now catches".
   Affects steps: 8 (PR text only).
-- [ ] **Q2: Is a `"prettier"` key in `cms/package.json` acceptable, given AGENTS.md's "never add
+- [x] **Q2: Is a `"prettier"` key in `cms/package.json` acceptable, given AGENTS.md's "never add
   Prettier"?** — Why it matters: it's the only way to stop a Prettier config elsewhere on a machine
   from changing Strapi's output, but it is Prettier configuration in the repo. Recommended default:
   add it, with a docs line saying it is read only by Strapi's type generator (Prettier isn't installed
@@ -125,10 +131,10 @@ config so no machine-level config can leak in.
 | modify | `AGENTS.md` | `pnpm cms:types` in Commands, one-line rule pointing to the scoped file |
 
 ## Steps
-- [ ] **1. Add the scripts** — `cms/package.json`: `"types": "strapi ts:generate-types"`. Root
+- [x] **1. Add the scripts** — `cms/package.json`: `"types": "strapi ts:generate-types"`. Root
   `package.json`: `"cms:types": "pnpm --filter jassmin-cms types"` next to `cms:build`. Check: `pnpm
   cms:types` runs and `git status` stays clean.
-- [ ] **2. Pin the generator's Prettier config (Q2)** — add to `cms/package.json`:
+- [x] **2. Pin the generator's Prettier config (Q2)** — add to `cms/package.json`:
   `"prettier": { "singleQuote": true, "tabWidth": 2, "useTabs": false, "printWidth": 80,
   "endOfLine": "lf" }`. Check: `pnpm cms:types` leaves `git status -- cms/types/generated` clean.
   Then prove the pin works: temporarily put a `.prettierrc` with `{"printWidth": 120}` in the

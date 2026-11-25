@@ -116,6 +116,18 @@ describe("CheckoutForm", () => {
     expect(renderForm({ prefill: null }, "uk")).toContain("Підтвердити замовлення");
   });
 
+  it("says under the button that placing the order accepts the public offer (#190)", () => {
+    const html = renderForm({ prefill: null });
+    const after = html.slice(html.indexOf("Place order"));
+    expect(after).toMatch(
+      /By placing an order, you accept the <a[^>]*href="\/en\/offer-terms"[^>]*>public offer<\/a>\./,
+    );
+
+    expect(renderForm({ prefill: null }, "uk")).toMatch(
+      /Оформлюючи замовлення, ви погоджуєтеся з умовами <a[^>]*href="\/oferta"[^>]*>публічної оферти<\/a>\./,
+    );
+  });
+
   it("disables the submit button while the order is being placed", async () => {
     const router = routerFor(createElement(CheckoutForm, { prefill: null }));
     expect(tag(render(router), 'type="submit"', "button")).not.toContain(' disabled=""');

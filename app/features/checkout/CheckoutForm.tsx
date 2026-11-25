@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Form, useNavigation } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { TextField } from "~/components/ui/TextField";
+import { OfferNotice } from "~/features/legal/OfferNotice";
 import type { CheckoutField, CheckoutPrefill } from "~/lib/checkout";
 import { type TextKey, useT } from "~/lib/i18n";
 import { PaymentMethodField } from "./PaymentMethodField";
@@ -118,6 +119,7 @@ export function CheckoutForm({
       <Button type="submit" size="lg" className="rounded-full" loading={submitting}>
         {t("checkout.submit")}
       </Button>
+      <OfferNotice notice="checkout.offerNotice" link="checkout.offerLink" />
     </Form>
   );
 }

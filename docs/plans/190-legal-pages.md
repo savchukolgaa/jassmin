@@ -164,7 +164,8 @@ All answered on 2026-11-25: the owner accepted every recommended default.
 | modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `legal` namespace, `checkout.offerNotice/offerLink`, email footer labels |
 | modify | `app/components/layout/nav.ts`, `Footer.tsx`, `Footer.test.ts` | legal links |
 | modify | `app/features/checkout/CheckoutForm.tsx`, `checkout-ui.test.ts` | acceptance line under submit |
-| modify | `app/features/gift-cards/…` purchase form | acceptance line (Q2) |
+| modify | `app/features/gift-cards/GiftCardPurchaseForm.tsx`, `gift-cards-ui.test.ts` | acceptance line (Q2) |
+| create | `app/features/legal/OfferNotice.tsx` | the shared acceptance line with the offer link |
 | modify | `app/.server/db/schema.ts` | `orders.offerVersion` |
 | create | `app/.server/db/migrations/0036_*.sql` (+ meta) | generated migration |
 | modify | `app/.server/db/queries/orders.ts` | set `offerVersion: OFFER_UPDATED_AT` |
@@ -212,7 +213,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   meta has title/description/canonical.
 - [x] **7. Footer.** Add the three links to `navLinks()` and render them per Q4; update
   `Footer.test.ts` (labels, order, hrefs in uk and en). Check the footer at phone width.
-- [ ] **8. Checkout (and gift-card form).** Add the acceptance line with the offer link under the
+- [x] **8. Checkout (and gift-card form).** Add the acceptance line with the offer link under the
   submit button in `CheckoutForm.tsx`; test in `checkout-ui.test.ts`. Same on the gift-card purchase
   form if Q2 = yes.
 - [ ] **9. `orders.offer_version`.** Add `offerVersion: date({ mode: "string" })` with a doc comment

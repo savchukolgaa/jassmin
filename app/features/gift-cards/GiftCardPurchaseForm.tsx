@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Form, useNavigation } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { TextField } from "~/components/ui/TextField";
+import { OfferNotice } from "~/features/legal/OfferNotice";
 import { cn } from "~/lib/cn";
 import { GIFT_CARD_AMOUNTS, type GiftCardAmount } from "~/lib/gift-cards";
 import { type TextKey, useT } from "~/lib/i18n";
@@ -124,6 +125,7 @@ export function GiftCardPurchaseForm({
       >
         {t("giftCards.form.submit", { amount: formatPrice(String(amount)) })}
       </Button>
+      <OfferNotice notice="giftCards.form.offerNotice" link="giftCards.form.offerLink" />
     </Form>
   );
 }

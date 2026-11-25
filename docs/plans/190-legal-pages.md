@@ -183,10 +183,10 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   schema (localization as above), update the content type's description, run Strapi once
   (`pnpm aspire run` or `pnpm cms:dev`) to regenerate `contentTypes.d.ts`. Fill test values in the
   admin to check the fields save.
-- [ ] **2. CMS read path.** Extend `siteSettingEntry`, `SiteSettings` and `toSiteSettings` (trim,
+- [x] **2. CMS read path.** Extend `siteSettingEntry`, `SiteSettings` and `toSiteSettings` (trim,
   empty → `null`); update both fixtures (one with values, one with `null`s); tests in
-  `content.test.ts`. If Q3 = fallback, add the Ukrainian `legalAddress`/`registrationNote` fallback
-  here. Update the privacy loader test's `getSiteSettings` mock shape.
+  `content.test.ts`. The Q3 fallback to the Ukrainian `legalAddress`/`registrationNote` lives in
+  `getSellerDetails` (`app/.server/legal.ts`, step 6) so `getSiteSettings` stays one request. Update the privacy loader test's `getSiteSettings` mock shape.
 - [ ] **3. `app/lib/legal.ts`.** Version constants, `RETURN_REPORT_DAYS`, `SellerDetails`
   (`legalName`, `taxId`, `legalAddress`, `registrationNote`, `phone`, `email`),
   `REQUIRED_SELLER_FIELDS`, `missingSellerDetails()`, `sellerDetailsOf(settings)`. Unit tests.

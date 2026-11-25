@@ -51,6 +51,7 @@ export function GiftCardStatus({ card, payment }: GiftCardStatusProps) {
         </p>
         <div className="flex flex-wrap items-center gap-4">
           <Form method="post">
+            <input type="hidden" name="intent" value="pay" />
             <Button type="submit" loading={submitting}>
               {t(failed ? "giftCards.success.retry" : "giftCards.success.pay")}
             </Button>

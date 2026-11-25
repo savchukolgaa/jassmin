@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrderStatus, PaymentMethod } from "~/lib/enums";
 import { hasDatabase, type TestDatabase } from "../db/test-utils";
+import { createLiqPay, signLiqPay } from "../payments/liqpay";
 import { createSimulator, type SimulatorOutcome } from "../payments/simulator";
 
 const SECRET = "s".repeat(32);
@@ -477,6 +478,162 @@ describe.skipIf(!hasDatabase)("payments service", () => {
         ok: false,
         error: "unavailable",
       });
+    });
+  });
+
+  describe("with LiqPay (#192)", () => {
+    const PUBLIC_KEY = "sandbox_i00000001";
+    const PRIVATE_KEY = "sandbox_private_key_for_tests";
+    const SITE = "https://jassmin.ua";
+    const liqpay = createLiqPay({ publicKey: PUBLIC_KEY, privateKey: PRIVATE_KEY, sandbox: true });
+    const liqpayDeps = () => ({ db: testDb.db, provider: liqpay, siteUrl: SITE });
+
+    /** The decoded checkout `data` LiqPay's page would get. */
+    function checkoutData(redirectUrl: string): Record<string, unknown> {
+      const data = new URL(redirectUrl).searchParams.get("data") ?? "";
+      return JSON.parse(Buffer.from(data, "base64").toString("utf8")) as Record<string, unknown>;
+    }
+
+    /** The signed form LiqPay POSTs to `server_url`. */
+    function liqpayCallback(fields: Record<string, unknown>, key = PRIVATE_KEY): FormData {
+      const data = Buffer.from(
+        JSON.stringify({ public_key: PUBLIC_KEY, action: "pay", payment_id: 555, ...fields }),
+      ).toString("base64");
+      const form = new FormData();
+      form.set("data", data);
+      form.set("signature", signLiqPay(key, data));
+      return form;
+    }
+
+    async function payOrder(orderId: number) {
+      const { startPayment } = await import("./payments");
+      const result = await startPayment({ orderId, locale: "uk", origin: ORIGIN }, liqpayDeps());
+      if (!result.ok) throw new Error(result.error);
+      return checkoutData(result.redirectUrl);
+    }
+
+    async function send(form: FormData) {
+      const { handlePaymentCallback } = await import("./payments");
+      return handlePaymentCallback(form, liqpayDeps());
+    }
+
+    it("sends LiqPay the stored total and the public site's URLs, not the request's", async () => {
+      const orderId = await order();
+
+      expect(await payOrder(orderId)).toMatchObject({
+        order_id: `${orderId}-1`,
+        amount: 2450,
+        currency: "UAH",
+        result_url: `${SITE}/oformlennia/uspikh/${orderId}`,
+        server_url: `${SITE}/payments/callback`,
+        sandbox: 1,
+      });
+      expect(await paymentRows(orderId)).toMatchObject([{ provider: "liqpay", amount: "2450.00" }]);
+    });
+
+    it("marks the order paid once on a signed success, however often LiqPay repeats it", async () => {
+      const orderId = await order();
+      const checkout = await payOrder(orderId);
+      const success = {
+        order_id: checkout.order_id,
+        status: "success",
+        amount: 2450,
+        currency: "UAH",
+      };
+
+      expect(await send(liqpayCallback(success))).toEqual({ ok: true, result: "paid" });
+      expect(await send(liqpayCallback(success))).toEqual({ ok: true, result: "ignored" });
+      expect(await orderRow(orderId)).toMatchObject({ paymentStatus: "paid", status: "paid" });
+      expect(await paymentRows(orderId)).toMatchObject([
+        { status: "succeeded", providerPaymentId: "555" },
+      ]);
+    });
+
+    it("never marks anything paid for a forged, malformed or mismatched callback", async () => {
+      const orderId = await order();
+      const checkout = await payOrder(orderId);
+      const success = {
+        order_id: checkout.order_id,
+        status: "success",
+        amount: 2450,
+        currency: "UAH",
+      };
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      expect(await send(liqpayCallback(success, "forged"))).toEqual({
+        ok: false,
+        error: "invalid-signature",
+      });
+      expect(await send(liqpayCallback({ ...success, amount: undefined }))).toEqual({
+        ok: false,
+        error: "malformed",
+      });
+      expect(await send(liqpayCallback({ ...success, amount: 1 }))).toEqual({
+        ok: true,
+        result: "ignored",
+      });
+      expect(await send(liqpayCallback({ ...success, currency: "USD" }))).toEqual({
+        ok: true,
+        result: "ignored",
+      });
+      error.mockRestore();
+
+      expect(await orderRow(orderId)).toMatchObject({ paymentStatus: "unpaid", status: "pending" });
+      expect(await paymentRows(orderId)).toMatchObject([{ status: "pending" }]);
+    });
+
+    it("leaves the order unpaid after a failure and lets a new attempt pay it", async () => {
+      const { getPaymentView } = await import("./payments");
+      const orderId = await order();
+      const first = await payOrder(orderId);
+      const paid = { status: "success", amount: 2450, currency: "UAH" };
+
+      expect(
+        await send(liqpayCallback({ ...paid, order_id: first.order_id, status: "failure" })),
+      ).toEqual({ ok: true, result: "failed" });
+      expect(await orderRow(orderId)).toMatchObject({ paymentStatus: "unpaid", status: "pending" });
+      expect(await getPaymentView(orderId, testDb.db)).toBe("failed");
+
+      const second = await payOrder(orderId);
+      expect(second.order_id).toBe(`${orderId}-2`);
+      expect(await send(liqpayCallback({ ...paid, order_id: second.order_id }))).toEqual({
+        ok: true,
+        result: "paid",
+      });
+    });
+
+    it("buys a gift card the same way", async () => {
+      const { createGiftCard } = await import("./gift-cards");
+      const { startGiftCardPayment } = await import("./payments");
+      const { findGiftCard } = await import("../db/queries/gift-cards");
+      const id = await createGiftCard(
+        { amount: 500, email: "buyer@example.com", userId: null, locale: "en" },
+        { db: testDb.db },
+      );
+      const result = await startGiftCardPayment(
+        { giftCardId: id, locale: "en", origin: ORIGIN },
+        liqpayDeps(),
+      );
+      if (!result.ok) throw new Error(result.error);
+      const checkout = checkoutData(result.redirectUrl);
+      expect(checkout).toMatchObject({
+        order_id: `G${id}-1`,
+        amount: 500,
+        language: "en",
+        result_url: `${SITE}/en/gift-cards/success/${id}`,
+      });
+
+      expect(
+        await send(
+          liqpayCallback({
+            order_id: checkout.order_id,
+            status: "success",
+            amount: 500,
+            currency: "UAH",
+          }),
+        ),
+      ).toEqual({ ok: true, result: "paid", giftCardId: id });
+      expect((await findGiftCard(testDb.db, id))?.status).toBe("active");
     });
   });
 });

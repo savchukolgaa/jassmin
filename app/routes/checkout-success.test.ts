@@ -26,6 +26,26 @@ beforeEach(() => {
   session.getSessionOrderIds.mockResolvedValue([]);
 });
 
+describe("checkout success action", () => {
+  it("sends a provider's POST back to the page as a GET and reads nothing from it", async () => {
+    const { action } = await import("./checkout-success");
+    const request = new Request("http://localhost/oformlennia/uspikh/42", {
+      method: "POST",
+      body: new URLSearchParams({ data: "eyJ9", signature: "c2ln" }),
+    });
+
+    const response = action({
+      request,
+      params: { orderId: "42" },
+      context: {},
+    } as unknown as Parameters<typeof action>[0]);
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe("/oformlennia/uspikh/42");
+    expect(orders.getOrderConfirmation).not.toHaveBeenCalled();
+  });
+});
+
 describe("checkout success loader", () => {
   it("shows a guest the order placed in their browser", async () => {
     session.getSessionOrderIds.mockResolvedValueOnce([42, 7]);

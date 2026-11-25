@@ -17,8 +17,10 @@ comes from, in order (the same rules as #131's generator):
 
 For the ``synth`` target the database name must be ``jassmin_synth`` (optionally with a
 ``_suffix`` for throwaway test databases) and differ from the app's database, so dbt can never
-create schemas in the shop's own database. ``--target prod`` reads ``WAREHOUSE_PROD_URL`` instead
-(a read-only replica; not run yet, see README.md).
+create schemas in the shop's own database. ``--target prod`` (#183) reads ``WAREHOUSE_PROD_URL``
+instead, which must name ``jassmin_wh`` (or ``jassmin_wh_<suffix>``): the nightly pseudonymised copy
+of the shop's data (``extract/``), never the shop's database itself. On ``prod``, ``build``, ``run``
+and ``test`` exclude anything downstream of #131's generator-only ``raw.customer_truth``.
 """
 
 from __future__ import annotations
@@ -35,6 +37,11 @@ PROJECT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = PROJECT_DIR.parents[1]
 SYNTH_DATABASE = "jassmin_synth"
 SYNTH_NAME_RE = re.compile(r"^jassmin_synth(_[a-z0-9_]+)?$")
+PROD_DATABASE = "jassmin_wh"
+PROD_NAME_RE = re.compile(r"^jassmin_wh(_[a-z0-9_]+)?$")
+#: dbt commands that select nodes; on prod they skip what reads the generator's ground truth.
+SELECTING_COMMANDS = ("build", "run", "test", "compile", "seed", "snapshot")
+PROD_EXCLUDE = "source:raw.customer_truth+"
 
 
 class UnsafeDatabaseError(Exception):
@@ -137,6 +144,17 @@ def guard_synth(dbname: str, app_dbname: str | None) -> None:
         raise UnsafeDatabaseError(f"Refusing to build the warehouse in the app's database {dbname!r}.")
 
 
+def guard_prod(dbname: str, app_dbname: str | None) -> None:
+    """Refuse any database that isn't ``jassmin_wh[_suffix]`` or that is the app's database."""
+    if not PROD_NAME_RE.match(dbname):
+        raise UnsafeDatabaseError(
+            f"Refusing to build the warehouse in {dbname!r}: the prod target only writes to "
+            "jassmin_wh (or jassmin_wh_<suffix>), the pseudonymised copy of the shop's data."
+        )
+    if app_dbname is not None and dbname == app_dbname:
+        raise UnsafeDatabaseError(f"Refusing to build the warehouse in the app's database {dbname!r}.")
+
+
 def target_of(args: Sequence[str]) -> str:
     """The dbt target named by ``--target`` / ``-t``, else ``WAREHOUSE_TARGET``, else ``synth``."""
     for i, arg in enumerate(args):
@@ -153,8 +171,12 @@ def resolve(target: str, env: Mapping[str, str]) -> Connection:
     if target == "prod":
         url = env.get("WAREHOUSE_PROD_URL")
         if not url:
-            raise UnsafeDatabaseError("--target prod needs WAREHOUSE_PROD_URL (a read-only replica).")
-        return parse_url(url)
+            raise UnsafeDatabaseError(
+                "--target prod needs WAREHOUSE_PROD_URL (the jassmin_wh copy, see README.md)."
+            )
+        connection = parse_url(url)
+        guard_prod(connection.dbname, app_database_name(env))
+        return connection
     raise UnsafeDatabaseError(f"Unknown target {target!r}: use synth or prod.")
 
 
@@ -166,6 +188,14 @@ def dbt_args(args: Sequence[str]) -> list[str]:
     if "--profiles-dir" not in args:
         extra += ["--profiles-dir", str(PROJECT_DIR)]
     return [*args, *extra]
+
+
+def prod_args(args: Sequence[str]) -> list[str]:
+    """``args`` with ``--exclude source:raw.customer_truth+`` for a selecting command, unless the
+    caller already passed ``--exclude``."""
+    if not args or args[0] not in SELECTING_COMMANDS or "--exclude" in args:
+        return list(args)
+    return [*args, "--exclude", PROD_EXCLUDE]
 
 
 def docs_serve_args(args: Sequence[str], env: Mapping[str, str]) -> list[str]:
@@ -204,6 +234,8 @@ def main(argv: Sequence[str]) -> int:
         if not runner.invoke(dbt_args(["docs", "generate", "--target", target])).success:
             return 1
         args = docs_serve_args(args, env)
+    if target == "prod":
+        args = prod_args(args)
     result = runner.invoke(dbt_args(args))
     return 0 if result.success else 1
 

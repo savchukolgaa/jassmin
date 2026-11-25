@@ -1,5 +1,6 @@
-{#- Casts for the raw layer. #131 loads every raw column as text, so anomalies survive; the app's own
-    tables (the `prod` target) are typed. Each macro goes through `::text` first, so it works on both. -#}
+{#- Casts for the raw layer. #131 loads every raw column as text, so anomalies survive, and the prod
+    copy (#183) has the same all-text shape. Each macro goes through `::text` first, so it would work
+    on typed tables too. -#}
 
 {#- The trimmed value, `null` when empty. -#}
 {% macro clean_text(column) -%}

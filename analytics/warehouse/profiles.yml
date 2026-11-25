@@ -1,6 +1,6 @@
 # Connection settings come only from the environment, set by `wh.py` (see README.md), so no secret is
-# ever committed. `synth` (default) is #131's jassmin_synth database; `prod` is a read-only replica of
-# the shop's database, defined but not run yet (#132, Q2).
+# ever committed. `synth` (default) is #131's jassmin_synth database; `prod` is jassmin_wh, the nightly
+# pseudonymised copy of the shop's data (#183), as its owner role.
 jassmin_warehouse:
   target: "{{ env_var('WAREHOUSE_TARGET', 'synth') }}"
   outputs:

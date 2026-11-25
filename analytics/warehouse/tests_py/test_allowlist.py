@@ -2,7 +2,6 @@
 
 import ast
 import re
-from pathlib import Path
 
 from extract.allowlist import TABLES, readable_columns
 from extract.transforms import Transform
@@ -64,7 +63,7 @@ def test_chats_and_secrets_are_not_listed():
 def test_every_readable_column_exists_in_the_app_schema():
     """A rename in schema.ts must update the allow-list, or setup's GRANT would fail on deploy."""
     schema = SCHEMA.read_text(encoding="utf-8")
-    for table, mapping in TABLES.items():
+    for table in TABLES:
         match = re.search(rf'pgTable\(\s*"{table}",\s*\{{(.*?)\n  \}}', schema, re.S)
         assert match, f"table {table} not in schema.ts"
         body = match.group(1)

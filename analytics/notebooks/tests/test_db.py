@@ -27,7 +27,19 @@ def test_order_of_explicit_urls():
     assert db.resolve_url(env).endswith("/jassmin_synth_b")
 
 
-@pytest.mark.parametrize("name", ["jassmin", "jassmindb", "postgres", "jassmin_synthetic", "Jassmin_synth"])
+@pytest.mark.parametrize(
+    "name",
+    # jassmin_wh is the real-data copy (#183): the notebooks never read it.
+    [
+        "jassmin",
+        "jassmindb",
+        "postgres",
+        "jassmin_synthetic",
+        "Jassmin_synth",
+        "jassmin_wh",
+        "jassmin_wh_test",
+    ],
+)
 def test_refuses_other_databases(name):
     with pytest.raises(db.UnsafeDatabaseError):
         db.resolve_url({"WAREHOUSE_DATABASE_URL": f"postgres://h/{name}"})

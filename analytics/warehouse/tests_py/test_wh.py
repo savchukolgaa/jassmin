@@ -5,8 +5,10 @@ from wh import (
     UnsafeDatabaseError,
     dbt_args,
     docs_serve_args,
+    guard_prod,
     guard_synth,
     parse_url,
+    prod_args,
     read_dotenv,
     resolve,
     resolve_synth,
@@ -88,12 +90,33 @@ def test_the_guard_accepts_synth_and_test_suffixes():
     guard_synth("jassmin_synth_test_42", app_dbname="jassmin")
 
 
-def test_prod_needs_its_own_url_and_skips_the_synth_guard():
+def test_prod_needs_its_own_url_and_only_accepts_jassmin_wh():
     with pytest.raises(UnsafeDatabaseError, match="WAREHOUSE_PROD_URL"):
         resolve("prod", {"DATABASE_URL": "postgres://u@h/jassmin"})
-    assert resolve("prod", {"WAREHOUSE_PROD_URL": "postgres://ro@replica/jassmin"}).dbname == "jassmin"
+    assert resolve("prod", {"WAREHOUSE_PROD_URL": "postgres://o@h/jassmin_wh"}).dbname == "jassmin_wh"
+    assert resolve("prod", {"WAREHOUSE_PROD_URL": "postgres://o@h/jassmin_wh_test_1"}).dbname == (
+        "jassmin_wh_test_1"
+    )
+    for dbname in ("jassmindb", "jassmin", "jassmin_synth", "jassmin_wh2", "postgres"):
+        with pytest.raises(UnsafeDatabaseError, match="Refusing"):
+            resolve("prod", {"WAREHOUSE_PROD_URL": f"postgres://o@h/{dbname}"})
+    with pytest.raises(UnsafeDatabaseError, match="app's database"):
+        guard_prod("jassmin_wh", "jassmin_wh")
     with pytest.raises(UnsafeDatabaseError, match="Unknown target"):
         resolve("staging", {})
+
+
+def test_synth_still_refuses_the_warehouse_copy():
+    with pytest.raises(UnsafeDatabaseError):
+        resolve("synth", {"WAREHOUSE_DATABASE_URL": "postgres://u@h/jassmin_wh"})
+
+
+def test_prod_args_exclude_the_generators_ground_truth():
+    assert prod_args(["build"]) == ["build", "--exclude", "source:raw.customer_truth+"]
+    assert prod_args(["test", "--select", "marts"])[-2:] == ["--exclude", "source:raw.customer_truth+"]
+    assert prod_args(["build", "--exclude", "x"]) == ["build", "--exclude", "x"]
+    assert prod_args(["docs", "generate"]) == ["docs", "generate"]
+    assert prod_args([]) == []
 
 
 def test_target_of_reads_the_dbt_flag(monkeypatch):

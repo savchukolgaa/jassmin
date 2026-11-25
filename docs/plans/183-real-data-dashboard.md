@@ -219,7 +219,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   (columns equal `frames.COLUMNS` per table; every name matching
   `full_name|email|phone|address|password|waybill|note|ip|referrer|landing_page|anonymous_id|event_properties`
   has a non-`copy` transform; nothing reads `perfumer_*`). `uv run --project analytics/warehouse pytest`.
-- [ ] **2. Setup script** — `setup.py` (psycopg, admin URL from `WH_ADMIN_URL`): create database
+- [x] **2. Setup script** — `setup.py` (psycopg, admin URL from `WH_ADMIN_URL`): create database
   `jassmin_wh` if missing; create/alter roles `wh_extract`, `wh_owner`, `wh_reader` with passwords
   from env; `REVOKE ALL` on `public` tables from `wh_extract` then `GRANT SELECT (cols)` from the
   allow-list; `ALTER ROLE wh_extract SET default_transaction_read_only = on`; `ALTER DATABASE
@@ -227,14 +227,14 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   wh_owner IN SCHEMA marts GRANT SELECT TO wh_reader`). Identifiers via `psycopg.sql`. The app
   database is named explicitly (`--app-db jassmindb`) and must differ from `jassmin_wh`. Idempotent
   (the test runs it twice).
-- [ ] **3. Extract** — `extract.py`: connect to the app with `WH_EXTRACT_URL` (assert the session is
+- [x] **3. Extract** — `extract.py`: connect to the app with `WH_EXTRACT_URL` (assert the session is
   read-only: `show transaction_read_only` = on, else exit 2) and to `WH_TARGET_URL` (guard: name
   `jassmin_wh[_suffix]`, never equal to the app DB name + host). In one `jassmin_wh` transaction:
   `drop schema if exists raw_next cascade`, create text tables, stream each table
   (`COPY (select <granted cols> from public.<t>) TO STDOUT (FORMAT csv)`), transform row by row,
   `COPY … FROM STDIN`; insert `raw_next.extract_runs`; swap schemas; commit. Re-grant
   `raw.extract_runs` to `wh_reader`. Logs row counts, never values.
-- [ ] **4. Extract privacy test** — `test_extract.py` (skipped without a server, like `test_build.py`):
+- [x] **4. Extract privacy test** — `test_extract.py` (skipped without a server, like `test_build.py`):
   create `jassmin_app_test_<pid>`, run `pnpm db:migrate` against it (as the generator's `db.migrate`
   does), insert a user, guest order, session, events (`page_view` with `?token=SECRET`, `search` with a
   query), payment with `last_callback`, inventory note and a perfumer thread/message, each with unique
@@ -243,12 +243,12 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   address, waybill, password hash, token, query, note, message text) → none found. Also: `wh_extract`
   can't `select *` from `users` (permission denied) and can't `insert` (read-only). Assert the app DB's
   row counts and `pg_stat_user_tables.n_tup_ins/upd/del` are unchanged by the extract.
-- [ ] **5. `wh.py` prod target** — `resolve("prod")`: `WAREHOUSE_PROD_URL`, guard `jassmin_wh(_suffix)?`
+- [x] **5. `wh.py` prod target** — `resolve("prod")`: `WAREHOUSE_PROD_URL`, guard `jassmin_wh(_suffix)?`
   and ≠ app DB; `--target prod` adds `--exclude source:raw.customer_truth+` to `build`/`run`/`test`.
   `_sources.yml` schema → `raw`. Tests in `test_wh.py` (prod refuses `jassmindb`, `jassmin_synth`,
   missing URL; synth unchanged). Extend `test_extract.py`: after the extract, `wh.py build --target
   prod` on `jassmin_wh_test_<pid>` succeeds.
-- [ ] **6. Notebook guard check** — add a case to `analytics/notebooks/tests/test_db.py` that
+- [x] **6. Notebook guard check** — add a case to `analytics/notebooks/tests/test_db.py` that
   `jassmin_wh` is refused. No code change.
 - [ ] **7. New marts** — `mart_sales_daily`, `fct_gift_card_sales`, `mart_tester_conversion`,
   `mart_customer_rfm` (decision 7, RFM vars in `dbt_project.yml`), with yml docs and tests

@@ -3,10 +3,11 @@ version: 2
 sources:
   - name: raw
     description: >
-      The raw layer. On the `synth` target it's #131's `raw` schema in jassmin_synth: the app's
-      tables and column names, every column `text`, no constraints, and deliberate anomalies (see
-      analytics/README.md). On the `prod` target it's the app's own `public` tables (read-only).
-    schema: "{{ 'public' if target.name == 'prod' else 'raw' }}"
+      The raw layer: the app's tables and column names, every column `text`, no constraints. On the
+      `synth` target it's #131's `raw` schema in jassmin_synth, with deliberate anomalies (see
+      analytics/README.md). On the `prod` target it's the `raw` schema of jassmin_wh: the shop's real
+      data, copied nightly, read-only and pseudonymised, in the same shape (`extract/`, #183).
+    schema: raw
     tables:
       - name: users
         description: Registered customers (app table `users`).
@@ -14,11 +15,16 @@ sources:
           - name: id
             description: The user's serial id.
           - name: full_name
-            description: Name (personal data; never leaves staging).
+            description: Name (personal data; never leaves staging; always null in the prod copy).
           - name: email
-            description: Email as typed; may have stray spaces or capitals, or be an @example.com test account.
+            description: >
+              Email as typed; may have stray spaces or capitals, or be an @example.com test account.
+              In the prod copy, a keyed pseudonym (`<hash>@pseudonym.invalid`, test accounts keep
+              `@example.com`).
           - name: phone
-            description: Phone (personal data); missing for about 12% of users.
+            description: >
+              Phone (personal data); missing for about 12% of users. In the prod copy only
+              `present` or null.
           - name: acquisition_channel
             description: Where the customer came from at signup (#128).
           - name: created_at
@@ -92,7 +98,9 @@ sources:
           - name: id
             description: The order's serial id.
           - name: guest_email
-            description: The email given at checkout (personal data; never leaves staging).
+            description: >
+              The email given at checkout (personal data; never leaves staging). In the prod copy,
+              the same keyed pseudonym as the user's email.
           - name: total_amount
             description: What was left to pay; about 0.2% carry a x10 typo.
           - name: currency

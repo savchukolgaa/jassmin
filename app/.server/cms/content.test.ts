@@ -206,6 +206,19 @@ describe("mappers", () => {
     expect(toSiteSettings({ ...data, legalName: undefined }).legalName).toBeNull();
   });
 
+  it("map the seller's tax number, legal address and registration note (#190)", () => {
+    const { data } = singleResponse(siteSettingEntry).parse(siteSetting);
+    const settings = toSiteSettings({ ...data, taxId: " 1234567890 " });
+
+    expect(settings.taxId).toBe("1234567890");
+    expect(settings.legalAddress).toBe("м. Київ, вул. Хрещатик, 1, кв. 1");
+    expect(settings.registrationNote).toBe("Запис в ЄДР № 2010000000000123456 від 01.03.2024");
+    expect(toSiteSettings(data).taxId).toBeNull();
+    expect(
+      toSiteSettings({ ...data, legalAddress: " ", registrationNote: undefined }),
+    ).toMatchObject({ legalAddress: null, registrationNote: null });
+  });
+
   it("map a post without cover image, author or SEO to nulls", () => {
     const [entry] = collectionResponse(blogPostEntry).parse(blogPostBySlug).data;
     if (!entry) throw new Error("fixture has no post");

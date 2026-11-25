@@ -76,6 +76,10 @@ export default [
       localizedChild("accountProfile", "account", "routes/account.profile.tsx", locale),
     ]),
     ...localizedRoute("privacy", "routes/privacy.tsx"),
+    // The legal pages (#190), with the seller's details from the Strapi site settings.
+    ...localizedRoute("offerTerms", "routes/offer-terms.tsx"),
+    ...localizedRoute("deliveryAndPayment", "routes/delivery-and-payment.tsx"),
+    ...localizedRoute("returns", "routes/returns.tsx"),
     // Gift cards (#125): the purchase page and the provider's return page with its "Pay" action.
     ...localizedRoute("giftCards", "routes/gift-cards.tsx"),
     ...localizedRoute("giftCardSuccess", "routes/gift-card-success.tsx"),

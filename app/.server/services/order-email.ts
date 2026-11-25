@@ -54,6 +54,24 @@ function footerOf(env: OrderEmailEnv) {
   return { inbox: env.CONTACT_INBOX, siteUrl: env.PUBLIC_SITE_URL };
 }
 
+/**
+ * The footer with links to the public offer and the returns page (#190), for the emails about a
+ * sale: the order confirmation and the gift card's code to its buyer. Needs `PUBLIC_SITE_URL`.
+ */
+function saleFooterOf(env: OrderEmailEnv, translator: Translator) {
+  const site = env.PUBLIC_SITE_URL;
+  const { t, locale } = translator;
+  return {
+    ...footerOf(env),
+    legalLinks: site
+      ? [
+          { label: t("email.footer.offer"), url: `${site}${pathFor(locale, "offerTerms")}` },
+          { label: t("email.footer.returns"), url: `${site}${pathFor(locale, "returns")}` },
+        ]
+      : [],
+  };
+}
+
 /** The order's lines as the emails list them: name, size, quantity × price = total. */
 function orderLineItems(order: OrderConfirmation, translator: Translator): string[] {
   const { t, formatPrice } = translator;
@@ -149,7 +167,7 @@ export function buildOrderConfirmationEmail(
     subject: t("orderEmail.subject", { id: String(order.id) }),
     blocks,
     translator,
-    footer: footerOf(env),
+    footer: saleFooterOf(env, translator),
   });
 }
 
@@ -201,7 +219,7 @@ export function buildGiftCardEmail(
       { type: "signature", text: t("giftCardEmail.signature") },
     ],
     translator,
-    footer: footerOf(env),
+    footer: saleFooterOf(env, translator),
   });
 }
 

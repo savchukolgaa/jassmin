@@ -89,8 +89,17 @@ export interface SiteSettings {
   phone: string;
   email: string;
   customerServiceHours: string | null;
-  /** The sole proprietor (ФОП) responsible for personal data, named on the privacy page (#18). */
+  /**
+   * The sole proprietor (ФОП): the data controller on the privacy page (#18) and the seller on the
+   * public offer (#190).
+   */
   legalName: string | null;
+  /** The ФОП's tax number (РНОКПП, 10 digits), on the public offer (#190). */
+  taxId: string | null;
+  /** The ФОП's registration address, in the served locale (#190). */
+  legalAddress: string | null;
+  /** E.g. the date and number of the ФОП's registration, in the served locale (#190). */
+  registrationNote: string | null;
   socialLinks: SocialLink[];
 }
 

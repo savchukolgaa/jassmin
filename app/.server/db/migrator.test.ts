@@ -720,6 +720,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { db } = testDb;
 
     // 0007 to 0031 sit on top of 0006; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -775,6 +776,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { db } = testDb;
 
     // 0004 to 0031 sit on top of 0003; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -902,6 +904,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -963,6 +967,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     expect(updated.rows[0]?.image_formats).toEqual(formats);
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -1009,6 +1015,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await trio()).toEqual([{ value: "499.00", redemption_count: 0 }]);
 
     // A rule that was there already (e.g. seeded) keeps its values and redemptions.
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -1034,6 +1041,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     expect(await trio()).toEqual([{ value: "450.00", redemption_count: 7 }]);
 
     await db.execute(sql`delete from discounts where slug = 'tester-trio'`);
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -1069,6 +1077,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ]);
 
     // After the rollback the rule is gone and the old checks reject the kind again.
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -1109,6 +1118,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
           values ('Poured', 'Test', 'women', '119.00', 5) returning id`,
     );
     const productId = product.rows[0]?.id;
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -1135,6 +1145,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       sql`select track_stock from product_variants where product_id = ${productId}`,
     );
     expect(variants.rows).toEqual([{ track_stock: false }]);
+
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
 
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
@@ -1180,6 +1192,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       sql`update products set description_en = 'A description' where id = ${row?.id}`,
     );
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -1218,6 +1232,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
 
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
@@ -1304,6 +1320,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
 
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
@@ -1407,6 +1425,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { db } = testDb;
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -1509,6 +1529,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       totalAmount: "0.00",
     });
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -1588,6 +1610,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db.execute(sql`delete from users where id = ${user.id}`);
     expect(await db.select().from(authTokens)).toEqual([]);
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -1640,6 +1664,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ).toBe("23505");
 
     // 0025 to 0031 sit on top of 0024; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -1690,6 +1715,7 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     ).toBe("23505");
 
     // 0026 to 0031 sit on top of 0025; migrateLatest below reapplies them.
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await rollbackLatest(db)).toBe("0033_perfumer_chats");
@@ -1720,6 +1746,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
     const { pgErrorCode } = await import("./test-utils");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
 
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
@@ -1883,6 +1911,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -1926,6 +1956,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     const { pgErrorCode } = await import("./test-utils");
     const { inventoryMovements, orders, products, productVariants } = await import("./schema");
     const { db } = testDb;
+
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
 
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
@@ -2060,6 +2092,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     });
     await db.insert(userEvents).values([event("page_view"), event("product_impression")]);
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -2123,6 +2157,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       ),
     ).toBe("23514");
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -2164,6 +2200,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db
       .insert(userEvents)
       .values([event("page_view"), event("perfumer_message"), event("perfumer_feedback")]);
+
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
 
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
@@ -2272,6 +2310,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
       await db.select().from(perfumerMessages).where(eq(perfumerMessages.threadId, ownId)),
     ).toEqual([]);
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
 
@@ -2351,6 +2391,8 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     );
     await db.insert(cmsOutbox).values({ entity: "newsletter", entityId: newsletterId });
 
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+
     expect(await rollbackLatest(db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(db)).toBe("0034_newsletters");
     expect(await listTables()).toEqual(TABLES_BEFORE_0034);
@@ -2366,8 +2408,37 @@ describe.skipIf(!hasDatabase)("migrations", () => {
     await db.delete(users).where(eq(users.id, userId));
   });
 
+  it("adds orders.offer_version, null for older orders, and rolls it back (#190)", async () => {
+    const { migrateLatest, rollbackLatest } = await import("./migrator");
+    const { orders } = await import("./schema");
+    const { db } = testDb;
+    const columns = async () =>
+      (
+        await db.execute(
+          sql`select column_name from information_schema.columns where table_name = 'orders' and column_name = 'offer_version'`,
+        )
+      ).rows;
+
+    const [older] = await db.insert(orders).values(sampleOrder).returning();
+    expect(older?.offerVersion).toBeNull();
+    const [accepted] = await db
+      .insert(orders)
+      .values({ ...sampleOrder, offerVersion: "2026-11-25" })
+      .returning();
+    expect(accepted?.offerVersion).toBe("2026-11-25");
+
+    expect(await rollbackLatest(db)).toBe("0036_orders_offer_version");
+    expect(await columns()).toEqual([]);
+
+    await migrateLatest(db);
+    expect(await columns()).toEqual([{ column_name: "offer_version" }]);
+    await db.delete(orders).where(inArray(orders.id, [older?.id ?? 0, accepted?.id ?? 0]));
+  });
+
   it("rolls back to an empty database and migrates up again", async () => {
     const { migrateLatest, rollbackLatest } = await import("./migrator");
+
+    expect(await rollbackLatest(testDb.db)).toBe("0036_orders_offer_version");
 
     expect(await rollbackLatest(testDb.db)).toBe("0035_product_recommendations");
     expect(await rollbackLatest(testDb.db)).toBe("0034_newsletters");

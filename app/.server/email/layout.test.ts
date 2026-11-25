@@ -258,6 +258,28 @@ describe("renderEmail", () => {
     expect(unsafe.html).not.toContain("javascript:");
   });
 
+  it("adds the legal links to both footers, http(s) only (#190)", () => {
+    const legalLinks = [
+      { label: "Публічна оферта", url: "https://jassmin.ua/oferta" },
+      { label: "Повернення та обмін", url: "https://jassmin.ua/povernennia" },
+      { label: "Bad", url: "javascript:alert(1)" },
+    ];
+    const { html, text } = renderEmail(blocks, {
+      translator: createTranslator("uk"),
+      footer: { ...footer, legalLinks },
+      subject: "Тема",
+    });
+    const footerHtml = htmlSection(html, "footer");
+    expect(footerHtml).toContain('<a href="https://jassmin.ua/oferta"');
+    expect(footerHtml).toContain(">Повернення та обмін</a>");
+    expect(footerHtml).not.toContain("javascript:");
+    expect(text).toContain("Публічна оферта: https://jassmin.ua/oferta");
+    expect(text).toContain("Повернення та обмін: https://jassmin.ua/povernennia");
+    expect(text).not.toContain("Bad");
+
+    expect(render("uk").text).not.toContain("Публічна оферта");
+  });
+
   it("never links a button to a non-http URL", () => {
     const { html } = render("uk", [
       { type: "button", label: "Click", url: 'javascript:alert("x")' },

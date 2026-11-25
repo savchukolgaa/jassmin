@@ -177,7 +177,10 @@ export function toSiteSettings(
     phone: entry.phone,
     email: entry.email,
     customerServiceHours: entry.customerServiceHours ?? null,
-    legalName: entry.legalName?.trim() || null,
+    legalName: textOrNull(entry.legalName),
+    taxId: textOrNull(entry.taxId),
+    legalAddress: textOrNull(entry.legalAddress),
+    registrationNote: textOrNull(entry.registrationNote),
     socialLinks: normalizeSocialLinks(entry.socialLinks ?? []),
   };
 }

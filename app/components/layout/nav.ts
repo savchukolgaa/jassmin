@@ -40,6 +40,19 @@ export function navLinks(locale: Locale) {
     to: pathFor(locale, "privacy"),
     labelKey: "consent.learnMore",
   } as const satisfies NavLinkItem;
+  /** The legal pages (#190), in the footer's second row with the privacy policy. */
+  const offerTerms = {
+    to: pathFor(locale, "offerTerms"),
+    labelKey: "nav.offerTerms",
+  } as const satisfies NavLinkItem;
+  const deliveryAndPayment = {
+    to: pathFor(locale, "deliveryAndPayment"),
+    labelKey: "nav.deliveryAndPayment",
+  } as const satisfies NavLinkItem;
+  const returns = {
+    to: pathFor(locale, "returns"),
+    labelKey: "nav.returns",
+  } as const satisfies NavLinkItem;
   const men = {
     to: pathFor(locale, "catalog", { gender: "men" }),
     labelKey: "catalog.title.men",
@@ -58,6 +71,9 @@ export function navLinks(locale: Locale) {
     offers,
     perfumer,
     privacy,
+    offerTerms,
+    deliveryAndPayment,
+    returns,
     catalog: [men, women],
     /** Links row of the site footer (women first, as in the C+ design). */
     footer: [
@@ -67,8 +83,9 @@ export function navLinks(locale: Locale) {
       blog,
       about,
       contacts,
-      privacy,
     ] satisfies NavLinkItem[],
+    /** The footer's second, smaller row (#190): the legal pages and the privacy policy. */
+    legal: [offerTerms, deliveryAndPayment, returns, privacy] satisfies NavLinkItem[],
   };
 }
 

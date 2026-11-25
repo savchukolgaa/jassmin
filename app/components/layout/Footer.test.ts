@@ -30,7 +30,7 @@ describe("Footer", () => {
     );
   });
 
-  it("links to both catalogs, offers, the blog, about us, contacts and the privacy policy in order", () => {
+  it("links to both catalogs, offers, the blog, about us and contacts in order", () => {
     const html = renderFooter();
     const positions = FOOTER_LINKS.map((link) => html.indexOf(`href="${link.to}"`));
 
@@ -42,13 +42,35 @@ describe("Footer", () => {
       "Blog",
       "About us",
       "Contacts",
-      "Privacy policy",
     ]);
-    expect(FOOTER_LINKS.at(-1)?.to).toBe("/en/privacy");
     expect(FOOTER_LINKS[0]?.to).toBe("/en/catalog/women");
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
     expect(html).toContain('<nav aria-label="Footer">');
+  });
+
+  it("links to the legal pages and the privacy policy in a second row (#190)", () => {
+    const html = renderFooter();
+    const legal = navLinks("en").legal;
+
+    expect(legal.map((link) => link.to)).toEqual([
+      "/en/offer-terms",
+      "/en/delivery-and-payment",
+      "/en/returns",
+      "/en/privacy",
+    ]);
+    expect(html).toContain('<nav aria-label="Legal information">');
+    const row = html.slice(html.indexOf('<nav aria-label="Legal information">'));
+    for (const label of ["Public offer", "Delivery and payment", "Returns", "Privacy policy"]) {
+      expect(row).toContain(`>${label}<`);
+    }
+    expect(row).toContain("Cookie settings");
+
+    const uk = renderFooter(null);
+    for (const href of ["/oferta", "/dostavka-i-oplata", "/povernennia", "/konfidentsiinist"]) {
+      expect(uk).toContain(`href="${href}"`);
+    }
+    expect(uk).toContain(">Публічна оферта<");
   });
 
   it("renders the links in Ukrainian by default", () => {

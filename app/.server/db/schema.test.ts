@@ -308,6 +308,7 @@ describe("orders", () => {
       discountId: ["integer", false, false],
       returnedAt: ["timestamp with time zone", false, false],
       cancelReason: ["text", false, false],
+      offerVersion: ["date", false, false],
     });
   });
 

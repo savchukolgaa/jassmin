@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { PRIVACY_POLICY_UPDATED_AT } from "~/lib/consent";
+import { DELIVERY_UPDATED_AT, OFFER_UPDATED_AT, RETURNS_UPDATED_AT } from "~/lib/legal";
 import { PAGE_KEYS, PAGES, pathFor } from "~/lib/paths";
 import { CmsError } from "../cms/errors";
 import type { SitemapProductRow } from "../db/queries/products";
@@ -50,7 +51,15 @@ describe("sitemapPages", () => {
         en: pathFor("en", "catalog", { gender }),
       });
     }
-    for (const page of ["offers", "popular", "blog", "privacy"] as const) {
+    for (const page of [
+      "offers",
+      "popular",
+      "blog",
+      "privacy",
+      "offerTerms",
+      "deliveryAndPayment",
+      "returns",
+    ] as const) {
       expect(pages.map((p) => p.paths)).toContainEqual({
         uk: pathFor("uk", page),
         en: pathFor("en", page),
@@ -74,7 +83,8 @@ describe("sitemapPages", () => {
       products: [product(null, "women", "2026-10-01T00:00:00.000Z")],
       posts: [],
     });
-    expect(withoutSlug).toHaveLength(7);
+    // Home, two catalogs, offers, popular, blog, privacy and the three legal pages (#190).
+    expect(withoutSlug).toHaveLength(10);
   });
 
   it("lists each post in the languages it's published in, under its own slug", () => {
@@ -101,6 +111,9 @@ describe("sitemapPages", () => {
     expect(lastmodOf(pathFor("uk", "catalog", { gender: "men" }))).toBe("2026-10-03T00:00:00.000Z");
     expect(lastmodOf(pathFor("uk", "blog"))).toBe("2026-10-05T00:00:00.000Z");
     expect(lastmodOf(pathFor("uk", "privacy"))).toBe(PRIVACY_POLICY_UPDATED_AT);
+    expect(lastmodOf(pathFor("uk", "offerTerms"))).toBe(OFFER_UPDATED_AT);
+    expect(lastmodOf(pathFor("uk", "deliveryAndPayment"))).toBe(DELIVERY_UPDATED_AT);
+    expect(lastmodOf(pathFor("uk", "returns"))).toBe(RETURNS_UPDATED_AT);
   });
 
   it("never lists a private page", () => {
@@ -126,7 +139,7 @@ describe("sitemapPages", () => {
 
   it("leaves out the posts, and the blog's lastmod, when Strapi was down", () => {
     const withoutCms = sitemapPages({ products: PRODUCTS, posts: null });
-    expect(withoutCms).toHaveLength(7 + PRODUCTS.length);
+    expect(withoutCms).toHaveLength(10 + PRODUCTS.length);
     expect(withoutCms.find((page) => page.paths.uk === pathFor("uk", "blog"))?.lastmod).toBe(
       undefined,
     );

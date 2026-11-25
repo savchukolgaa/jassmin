@@ -91,6 +91,11 @@ export interface EmailFooter {
    * parts. Left out when unset or not `http(s)`.
    */
   unsubscribeUrl?: string | undefined;
+  /**
+   * Links to the legal pages (#190): the public offer and the returns page, in the order
+   * confirmation and gift card emails. Only `http(s)` links are shown, in both parts.
+   */
+  legalLinks?: readonly { label: string; url: string }[] | undefined;
 }
 
 export interface RenderedEmail {
@@ -299,6 +304,13 @@ export function renderEmail(
     : null;
   const unsubscribeUrl = isWebUrl(footer.unsubscribeUrl) ? footer.unsubscribeUrl : undefined;
   const unsubscribe = t("email.footer.unsubscribe");
+  const legalLinks = (footer.legalLinks ?? []).filter((link) => isWebUrl(link.url));
+  const legalHtml = legalLinks
+    .map(
+      (link) =>
+        `<a href="${escapeHtml(link.url)}" style="color:${EMAIL_COLORS.white};text-decoration:underline;">${escapeHtml(link.label)}</a>`,
+    )
+    .join(" · ");
 
   const html = [
     "<!doctype html>",
@@ -327,6 +339,7 @@ export function renderEmail(
     "<!--footer-->",
     `<p style="margin:0 0 4px;">Jassmin · ${[inboxLink, siteLink].filter(Boolean).join(" · ")}</p>`,
     `<p style="margin:0;">${escapeHtml(note)}</p>`,
+    legalHtml ? `<p style="margin:4px 0 0;">${legalHtml}</p>` : "",
     unsubscribeUrl
       ? `<p style="margin:4px 0 0;"><a href="${escapeHtml(unsubscribeUrl)}" style="color:${EMAIL_COLORS.white};text-decoration:underline;">${escapeHtml(unsubscribe)}</a></p>`
       : "",
@@ -346,6 +359,7 @@ export function renderEmail(
     "-- ",
     ["Jassmin", footer.inbox, footer.siteUrl].filter(Boolean).join(" · "),
     note,
+    ...legalLinks.map((link) => `${link.label}: ${link.url}`),
     ...(unsubscribeUrl ? [`${unsubscribe}: ${unsubscribeUrl}`] : []),
   ].join("\n");
 

@@ -102,6 +102,8 @@ export interface Order {
   returnedAt: Date | null;
   /** Why the order was cancelled (#128); `null` unless cancelled (and for older orders). */
   cancelReason: CancelReason | null;
+  /** The public offer's version (`YYYY-MM-DD`) accepted at checkout (#190); `null` for older orders. */
+  offerVersion: string | null;
 }
 
 export interface OrderItem {

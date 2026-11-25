@@ -253,6 +253,13 @@
       "when": 1795075176766,
       "tag": "0035_product_recommendations",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795628426071,
+      "tag": "0036_orders_offer_version",
+      "breakpoints": true
     }
   ]
 }

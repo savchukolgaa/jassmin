@@ -17,6 +17,7 @@
     "cms:dev": "pnpm --filter jassmin-cms develop",
     "cms:build": "pnpm --filter jassmin-cms build",
     "cms:seed": "pnpm --filter jassmin-cms seed",
+    "cms:types": "pnpm --filter jassmin-cms types",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",

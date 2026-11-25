@@ -10,6 +10,8 @@ const env: MailEnv = {
   PUBLIC_SITE_URL: "https://jassmin.ua",
   EMAIL_UNSUBSCRIBE_SECRET: "j".repeat(32),
   NEWSLETTER_DAILY_LIMIT: 200,
+  TESTER_FOLLOWUP_DAYS: 12,
+  TESTER_FOLLOWUP_PERCENT: 10,
 };
 
 describe("sendCartRemindersJob without configuration", () => {

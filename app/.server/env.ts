@@ -30,6 +30,10 @@ const mailEnvSchema = z.object({
   // provider's daily quota (Brevo's free plan: 300) is shared with order, auth and reminder
   // emails, so the default leaves room for them.
   NEWSLETTER_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000).default(200),
+  // Days after a tester order's delivery when `pnpm db:send-tester-followups` emails the customer
+  // (#191), and the percent off a full bottle of the perfumes they tried.
+  TESTER_FOLLOWUP_DAYS: z.coerce.number().int().min(1).max(60).default(12),
+  TESTER_FOLLOWUP_PERCENT: z.coerce.number().int().min(1).max(50).default(10),
 });
 
 /** Production needs a real SMTP server (#134): without one no email would ever go out. */
@@ -159,6 +163,8 @@ function mailSource(source: NodeJS.ProcessEnv) {
     PUBLIC_SITE_URL: source.PUBLIC_SITE_URL || undefined,
     EMAIL_UNSUBSCRIBE_SECRET: source.EMAIL_UNSUBSCRIBE_SECRET || undefined,
     NEWSLETTER_DAILY_LIMIT: source.NEWSLETTER_DAILY_LIMIT || undefined,
+    TESTER_FOLLOWUP_DAYS: source.TESTER_FOLLOWUP_DAYS || undefined,
+    TESTER_FOLLOWUP_PERCENT: source.TESTER_FOLLOWUP_PERCENT || undefined,
   };
 }
 

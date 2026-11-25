@@ -44,6 +44,8 @@ describe("parseEnv", () => {
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
       NEWSLETTER_DAILY_LIMIT: 200,
+      TESTER_FOLLOWUP_DAYS: 12,
+      TESTER_FOLLOWUP_PERCENT: 10,
       AI_MODEL: "granite4.1:3b",
       AI_TIMEOUT_MS: 90_000,
     });
@@ -413,6 +415,8 @@ describe("parseMailEnv", () => {
       CONTACT_INBOX: "hello@jassmin.ua",
       CONTACT_FROM: "Jassmin website <no-reply@jassmin.ua>",
       NEWSLETTER_DAILY_LIMIT: 200,
+      TESTER_FOLLOWUP_DAYS: 12,
+      TESTER_FOLLOWUP_PERCENT: 10,
     });
   });
 
@@ -535,6 +539,30 @@ describe("EMAIL_UNSUBSCRIBE_SECRET", () => {
     );
     expect(() => parseMailEnv({ EMAIL_UNSUBSCRIBE_SECRET: "short" })).toThrow(
       /EMAIL_UNSUBSCRIBE_SECRET/,
+    );
+  });
+});
+
+describe("TESTER_FOLLOWUP_DAYS and TESTER_FOLLOWUP_PERCENT", () => {
+  it("default to 12 days and 10 %, in both schemas, and an empty value counts as unset", () => {
+    expect(parseEnv(valid)).toMatchObject({
+      TESTER_FOLLOWUP_DAYS: 12,
+      TESTER_FOLLOWUP_PERCENT: 10,
+    });
+    expect(parseMailEnv({ TESTER_FOLLOWUP_DAYS: "", TESTER_FOLLOWUP_PERCENT: "" })).toMatchObject({
+      TESTER_FOLLOWUP_DAYS: 12,
+      TESTER_FOLLOWUP_PERCENT: 10,
+    });
+  });
+
+  it("reads whole numbers within bounds", () => {
+    expect(
+      parseMailEnv({ TESTER_FOLLOWUP_DAYS: "14", TESTER_FOLLOWUP_PERCENT: "15" }),
+    ).toMatchObject({ TESTER_FOLLOWUP_DAYS: 14, TESTER_FOLLOWUP_PERCENT: 15 });
+    expect(() => parseMailEnv({ TESTER_FOLLOWUP_DAYS: "0" })).toThrow(/TESTER_FOLLOWUP_DAYS/);
+    expect(() => parseMailEnv({ TESTER_FOLLOWUP_DAYS: "1.5" })).toThrow(/TESTER_FOLLOWUP_DAYS/);
+    expect(() => parseMailEnv({ TESTER_FOLLOWUP_PERCENT: "51" })).toThrow(
+      /TESTER_FOLLOWUP_PERCENT/,
     );
   });
 });

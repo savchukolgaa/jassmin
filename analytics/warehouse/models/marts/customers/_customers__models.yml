@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: mart_tester_conversion
+    description: >
+      Tester to bottle (#183): one row per customer whose first trio (the tester-trio rule or a
+      tester set) is a revenue order, and whether they ordered a full bottle (a single 30, 50 or
+      100 ml size) within `tester_conversion_days` (60).
+    columns:
+      - name: customer_key
+        description: Surrogate key of the customer.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+      - name: trio_order_id
+        description: The customer's first trio order.
+        data_tests: [not_null]
+      - name: trio_date
+        description: Kyiv date of the trio order.
+      - name: trio_month
+        description: First day of the trio order's month (the cohort).
+      - name: bottle_order_id
+        description: The first full-bottle order within the window; null when there was none.
+      - name: bottle_date
+        description: Kyiv date of that order.
+      - name: days_to_bottle
+        description: Days from the trio to the bottle.
+      - name: converted
+        description: A full bottle followed within the window.
+        data_tests: [not_null]
+      - name: is_window_complete
+        description: The data covers the whole window, so `converted = false` is final.
+        data_tests: [not_null]
+
+  - name: mart_customer_rfm
+    description: >
+      Each customer's recency, frequency and monetary value as of the end of the data, and a
+      churn-risk segment from fixed rules (#183, no ML model): new, one_time, active, at_risk, lost.
+      The thresholds are the `rfm_*` vars.
+    columns:
+      - name: customer_key
+        description: Surrogate key of the customer.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+      - name: as_of_date
+        description: Kyiv date the data ends.
+      - name: first_order_date
+        description: Kyiv date of the first revenue order.
+      - name: last_order_date
+        description: Kyiv date of the last revenue order.
+      - name: tenure_days
+        description: Days from the first revenue order to the end of the data.
+      - name: recency_days
+        description: Days from the last revenue order to the end of the data.
+      - name: frequency
+        description: Revenue orders.
+        data_tests: [not_null]
+      - name: monetary
+        description: Net revenue of those orders, UAH.
+      - name: avg_order_value
+        description: monetary / frequency.
+      - name: median_gap_days
+        description: Median days between the customer's revenue orders; null with a single order.
+      - name: active_threshold_days
+        description: The recency up to which the customer is active (median gap x multiplier, at least the minimum).
+      - name: segment
+        description: new, one_time, active, at_risk or lost.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [new, one_time, active, at_risk, lost]
+      - name: city
+        description: The customer's city (from dim_customers).
+      - name: acquisition_channel
+        description: Where the customer came from (from dim_customers).

@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: mart_sales_daily
+    description: >
+      One row per Kyiv day the data covers (#183, the owner's dashboard): revenue orders, net revenue,
+      average order, units and first vs repeat orders. Days without orders are zeros.
+    columns:
+      - name: date_day
+        description: Kyiv calendar day.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: week_start
+        description: Monday of the day's ISO week.
+      - name: month_start
+        description: First day of the day's month.
+      - name: orders
+        description: Orders placed that day that are revenue (paid, shipped or completed).
+        data_tests: [not_null]
+      - name: first_orders
+        description: Of those, customers' first orders.
+      - name: repeat_orders
+        description: Of those, repeat orders.
+      - name: net_revenue
+        description: Net revenue of those orders (goods after discounts, without delivery), UAH.
+        data_tests: [not_null]
+      - name: avg_order_value
+        description: net_revenue / orders; null on a day without orders.
+      - name: items
+        description: Units in those orders.
+      - name: gift_card_redeemed
+        description: What gift cards paid of those orders, UAH.
+
+  - name: fct_gift_card_sales
+    description: >
+      One row per gift card bought (#125): a succeeded payment that pays no order. No code, buyer
+      or recipient. Spending is `fct_orders.gift_card_amount`.
+    columns:
+      - name: payment_id
+        description: The payment that bought the card.
+        data_tests: [unique, not_null]
+      - name: sale_date
+        description: Kyiv date the card was paid for.
+        data_tests: [not_null]
+      - name: sold_at
+        description: When the payment succeeded.
+      - name: amount
+        description: The card's value, UAH (500, 1000 or 2000).
+      - name: provider
+        description: The payment provider.

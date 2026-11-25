@@ -192,10 +192,11 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
 | modify | `analytics/warehouse/tests_py/test_wh.py` | Guard tests for `prod` |
 | modify | `analytics/warehouse/models/staging/_sources.yml` | Source schema `raw` on both targets; `extract_runs` |
 | modify | `analytics/warehouse/macros/casts.sql`, `profiles.yml` | Comments: prod reads the text copy |
-| create | `analytics/warehouse/models/marts/sales/mart_sales_daily.sql` (+ yml) | Daily sales |
+| create | `analytics/warehouse/models/marts/sales/mart_sales_daily.sql`, `_sales__models.yml` | Daily sales |
 | create | `analytics/warehouse/models/marts/sales/fct_gift_card_sales.sql` | Gift card purchases |
-| create | `analytics/warehouse/models/marts/core/mart_tester_conversion.sql` | Trio → full bottle within 60 days |
-| create | `analytics/warehouse/models/marts/core/mart_customer_rfm.sql` | RFM and churn-risk segment |
+| create | `analytics/warehouse/models/marts/customers/mart_tester_conversion.sql`, `_customers__models.yml` | Trio → full bottle within 60 days |
+| create | `analytics/warehouse/models/marts/customers/mart_customer_rfm.sql` | RFM and churn-risk segment |
+| create | `analytics/warehouse/tests/assert_sales_daily_reconciles.sql` | Daily sales add up to `fct_orders` |
 | modify | `analytics/warehouse/models/marts/**/_*__models.yml`, `dbt_project.yml` | Docs, tests, RFM vars |
 | modify | `analytics/warehouse/tests/assert_marts_have_no_personal_data.sql` | `depends_on` the new marts |
 | modify | `analytics/warehouse/fixtures/raw_fixture.sql` | Gift card payment, trio orders, RFM cases |
@@ -250,7 +251,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   prod` on `jassmin_wh_test_<pid>` succeeds.
 - [x] **6. Notebook guard check** — add a case to `analytics/notebooks/tests/test_db.py` that
   `jassmin_wh` is refused. No code change.
-- [ ] **7. New marts** — `mart_sales_daily`, `fct_gift_card_sales`, `mart_tester_conversion`,
+- [x] **7. New marts** — `mart_sales_daily`, `fct_gift_card_sales`, `mart_tester_conversion`,
   `mart_customer_rfm` (decision 7, RFM vars in `dbt_project.yml`), with yml docs and tests
   (`unique`/`not_null` keys, `accepted_values` for segments, a reconciliation test that
   `mart_sales_daily` revenue sums to `fct_orders` net revenue). Add them to

@@ -25,6 +25,15 @@ vars:
   price_outlier_ratio: 5
   # The churn label: no new order within this many days after the snapshot.
   churn_horizon_days: 90
+  # Tester to bottle (#183): a full bottle ordered within this many days of the trio converts.
+  tester_conversion_days: 60
+  # Churn-risk segments (#183, mart_customer_rfm): a customer is `new` for this many days after their
+  # first revenue order; `active` while their last order is within their usual gap x the multiplier
+  # (at least rfm_min_active_days); `at_risk` up to rfm_lost_days; `lost` after.
+  rfm_new_days: 90
+  rfm_gap_multiplier: 1.5
+  rfm_min_active_days: 60
+  rfm_lost_days: 180
 
 models:
   jassmin_warehouse:

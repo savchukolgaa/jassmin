@@ -11,6 +11,8 @@
 -- depends_on: {{ ref('fct_events') }} {{ ref('fct_inventory_daily') }}
 -- depends_on: {{ ref('mart_customer_features') }} {{ ref('int_perfumer_messages') }}
 -- depends_on: {{ ref('mart_perfumer_daily') }}
+-- depends_on: {{ ref('mart_sales_daily') }} {{ ref('fct_gift_card_sales') }}
+-- depends_on: {{ ref('mart_tester_conversion') }} {{ ref('mart_customer_rfm') }}
 select table_schema, table_name, column_name, data_type
 from information_schema.columns
 where table_schema in ('intermediate', 'marts')

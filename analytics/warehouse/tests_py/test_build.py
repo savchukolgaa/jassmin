@@ -195,3 +195,53 @@ def test_perfumer_messages_and_the_daily_mart(built: str) -> None:
             Decimal("1.0000"), 1, Decimal("1.0000"), 0, 1,
         )
     ]  # fmt: skip
+
+
+def test_daily_sales_and_gift_cards(built: str) -> None:
+    """#183: Olena's trio and bottle are revenue on their days; the gift card is its own sale."""
+    assert rows(
+        built,
+        "select date_day, orders, first_orders, repeat_orders, net_revenue, avg_order_value, items "
+        "from marts.mart_sales_daily where date_day in ('2025-06-01', '2025-06-02', '2025-07-15') "
+        "order by 1",
+    ) == [
+        (date(2025, 6, 1), 1, 0, 1, Decimal("499.00"), Decimal("499.00"), 3),
+        (date(2025, 6, 2), 0, 0, 0, Decimal("0.00"), None, 0),
+        (date(2025, 7, 15), 1, 0, 1, Decimal("629.00"), Decimal("629.00"), 1),
+    ]
+    assert rows(built, "select sale_date, amount from marts.fct_gift_card_sales") == [
+        (date(2025, 4, 1), Decimal("1000.00"))
+    ]
+
+
+def test_tester_conversion(built: str) -> None:
+    """Olena's trio converts in 44 days; the guest's bottle comes after 156 days: not converted."""
+    assert rows(
+        built,
+        "select trio_order_id, trio_month, bottle_order_id, days_to_bottle, converted, "
+        "is_window_complete from marts.mart_tester_conversion order by trio_order_id",
+    ) == [
+        (5, date(2025, 2, 1), None, None, False, True),
+        (10, date(2025, 6, 1), 11, Decimal("43.96"), True, True),
+    ]
+
+
+def test_rfm_segments(built: str) -> None:
+    """At the data's end (31 August): Olena and the guest buy regularly (active), Ivan bought once
+    in January (one_time), Maria's first revenue order is from 30 August (new)."""
+    segments = dict(
+        rows(
+            built,
+            "select o.order_id, r.segment from marts.mart_customer_rfm as r "
+            "join marts.fct_orders as o on o.customer_key = r.customer_key "
+            "where o.order_id in (1, 2, 5, 9)",
+        )
+    )
+    assert segments == {1: "active", 2: "one_time", 5: "active", 9: "new"}
+    olena = rows(
+        built,
+        "select r.frequency, r.monetary, r.median_gap_days from marts.mart_customer_rfm as r "
+        "join marts.fct_orders as o on o.customer_key = r.customer_key where o.order_id = 1",
+    )
+    # Orders 1, 10 and 11 (order 3 was returned): gaps of 147.00 and 43.96 days.
+    assert olena == [(3, Decimal("1827.00"), Decimal("95.48"))]

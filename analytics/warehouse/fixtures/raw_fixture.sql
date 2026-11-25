@@ -5,12 +5,15 @@
 -- +03:00 in summer) unless a row is the naive-UTC anomaly.
 --
 -- Cast of characters:
---   user 1  Olena: two revenue orders (one returned), a later visit; ordinary.
+--   user 1  Olena: two revenue orders (one returned), a later visit; ordinary. Later a tester trio
+--           (1 June) and a 50 ml bottle 44 days after it (#183's tester conversion).
 --   user 2  Ivan: email with stray spaces and capitals, no phone; a x10 price typo, lowercase `uah`,
 --           shipped after completion, a deleted product, a naive-UTC event, a payment_failed order.
 --   user 3  qa1@example.com: a test account with an order and a visit (must vanish downstream).
 --   user 4  Maria: an unclaimed cash-on-delivery parcel, an abandoned cart, a late order.
---   guest   guest.buyer@ukr.net: two guest orders with differently written emails (one customer).
+--   guest   guest.buyer@ukr.net: two guest orders with differently written emails (one customer);
+--           the first is a trio, the bottle comes 156 days later (not a conversion).
+--   gift    a gift card bought on 1 April: a succeeded payment with no order (#125).
 --   bot     an anonymous session with 80 product views 0.7 s apart.
 
 drop schema if exists raw cascade;
@@ -298,7 +301,19 @@ insert into raw.orders values
     ('9', '4', 'Марія Шевчук', 'maria@ukr.net', '+380671234567', 'Одеса, відділення 5', '9', 'false',
      'paid', 'paid', 'card', '119.00', '0.00', '0.00', '0.00', '119.00', 'UAH',
      '2025-08-30T12:05:00+03:00', null, '2025-08-30T12:06:00+03:00', null, null,
-     null, null, null, null, null, null, null);
+     null, null, null, null, null, null, null),
+    -- 10: Olena's tester trio (the tester-trio rule), completed.
+    ('10', '1', 'Олена Коваль', 'olena@gmail.com', '+380501112233', 'Київ, відділення 12', null, 'false',
+     'completed', 'paid', 'card', '720.00', '221.00', '0.00', '0.00', '499.00', 'UAH',
+     '2025-06-01T11:00:00+03:00', null, '2025-06-01T11:01:00+03:00', null, null,
+     '2025-06-02T12:00:00+03:00', '2025-06-05T15:00:00+03:00', '2025-06-04T09:00:00+03:00',
+     '20450000000010', '1', null, null),
+    -- 11: Olena's 50 ml bottle, 44 days after the trio, completed.
+    ('11', '1', 'Олена Коваль', 'olena@gmail.com', '+380501112233', 'Київ, відділення 12', null, 'false',
+     'completed', 'paid', 'card', '629.00', '0.00', '0.00', '0.00', '629.00', 'UAH',
+     '2025-07-15T10:00:00+03:00', null, '2025-07-15T10:01:00+03:00', null, null,
+     '2025-07-16T12:00:00+03:00', '2025-07-19T15:00:00+03:00', '2025-07-18T09:00:00+03:00',
+     '20450000000011', null, null, null);
 
 create table raw.order_items (
     id text, order_id text, product_id text, variant_id text, volume_ml text, quantity text,
@@ -318,7 +333,10 @@ insert into raw.order_items values
     ('9', '6', null, '14', '50', '1', '629.00', '0.00'),
     ('10', '7', '1', '12', '10', '1', '240.00', '0.00'),
     ('11', '8', '1', '15', '100', '1', '969.00', '0.00'),
-    ('12', '9', '2', '21', '5', '1', '119.00', '0.00');
+    ('12', '9', '2', '21', '5', '1', '119.00', '0.00'),
+    ('13', '10', '1', '12', '10', '2', '240.00', '147.33'),
+    ('14', '10', '2', '22', '10', '1', '240.00', '73.67'),
+    ('15', '11', '1', '14', '50', '1', '629.00', '0.00');
 
 create table raw.payments (
     id text, order_id text, gift_card_id text, provider text, reference text, status text,
@@ -333,7 +351,11 @@ insert into raw.payments values
     ('5', '7', null, 'simulator', '7-1', 'succeeded', '240.00', 'UAH', 'p5', null, '2025-02-01T09:04:00+02:00', null, '2025-02-01T09:05:00+02:00'),
     ('6', '8', null, 'simulator', '8-1', 'failed', '969.00', 'uah', 'p6', null, '2025-02-20T19:06:00+02:00', null, '2025-02-20T19:07:00+02:00'),
     ('7', '8', null, 'simulator', '8-2', 'failed', '969.00', 'UAH', 'p7', null, '2025-02-20T19:08:00+02:00', null, '2025-02-20T19:09:00+02:00'),
-    ('8', '9', null, 'simulator', '9-1', 'succeeded', '119.00', 'UAH', 'p8', null, '2025-08-30T12:05:00+03:00', null, '2025-08-30T12:06:00+03:00');
+    ('8', '9', null, 'simulator', '9-1', 'succeeded', '119.00', 'UAH', 'p8', null, '2025-08-30T12:05:00+03:00', null, '2025-08-30T12:06:00+03:00'),
+    ('9', '10', null, 'simulator', '10-1', 'succeeded', '499.00', 'UAH', 'p9', null, '2025-06-01T11:00:00+03:00', null, '2025-06-01T11:01:00+03:00'),
+    ('10', '11', null, 'simulator', '11-1', 'succeeded', '629.00', 'UAH', 'p10', null, '2025-07-15T10:00:00+03:00', null, '2025-07-15T10:01:00+03:00'),
+    -- A gift card purchase: no order (#125).
+    ('11', null, '1', 'simulator', 'G1-1', 'succeeded', '1000.00', 'UAH', 'p11', null, '2025-04-01T09:00:00+03:00', null, '2025-04-01T09:01:00+03:00');
 
 create table raw.order_status_history (
     id text, order_id text, status text, changed_at text, source text
@@ -366,7 +388,15 @@ insert into raw.order_status_history values
     ('25', '8', 'pending', '2025-02-20T19:06:00+02:00', 'checkout'),
     ('26', '8', 'cancelled', '2025-02-22T19:06:00+02:00', 'job'),
     ('27', '9', 'pending', '2025-08-30T12:05:00+03:00', 'checkout'),
-    ('28', '9', 'paid', '2025-08-30T12:06:00+03:00', 'payment');
+    ('28', '9', 'paid', '2025-08-30T12:06:00+03:00', 'payment'),
+    ('29', '10', 'pending', '2025-06-01T11:00:00+03:00', 'checkout'),
+    ('30', '10', 'paid', '2025-06-01T11:01:00+03:00', 'payment'),
+    ('31', '10', 'shipped', '2025-06-02T12:00:00+03:00', 'cms'),
+    ('32', '10', 'completed', '2025-06-05T15:00:00+03:00', 'cms'),
+    ('33', '11', 'pending', '2025-07-15T10:00:00+03:00', 'checkout'),
+    ('34', '11', 'paid', '2025-07-15T10:01:00+03:00', 'payment'),
+    ('35', '11', 'shipped', '2025-07-16T12:00:00+03:00', 'cms'),
+    ('36', '11', 'completed', '2025-07-19T15:00:00+03:00', 'cms');
 
 create table raw.inventory_movements (
     id text, variant_id text, occurred_at text, reason text, quantity_delta text, stock_after text,

@@ -143,7 +143,7 @@ Both answered by the owner (2026-11-25): use the recommended defaults.
   comment pointing to #193. Check: `git ls-files --eol cms/types/generated` shows `i/lf w/lf`.
 - [x] **4. Commit any regenerated types** — run `pnpm cms:types`; if it changes anything, commit the
   files (expected: nothing to commit).
-- [ ] **5. CI check** — in `.github/workflows/ci.yml`:
+- [x] **5. CI check** — in `.github/workflows/ci.yml`:
   - add `".github/workflows/ci.yml"` to the `cms` filter in `changes`;
   - in the `cms` job, after `Install dependencies` and before `Build Strapi`, add:
     ```yaml

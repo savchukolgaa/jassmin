@@ -49,6 +49,10 @@ export const PAGES = {
   accountOrder: { uk: "kabinet/zamovlennia/:id", en: "account/orders/:id", indexable: false },
   accountProfile: { uk: "kabinet/profil", en: "account/profile", indexable: false },
   privacy: { uk: "konfidentsiinist", en: "privacy", indexable: true },
+  // The legal pages (#190): the public offer, delivery and payment, and returns.
+  offerTerms: { uk: "oferta", en: "offer-terms", indexable: true },
+  deliveryAndPayment: { uk: "dostavka-i-oplata", en: "delivery-and-payment", indexable: true },
+  returns: { uk: "povernennia", en: "returns", indexable: true },
   // Gift cards (#125): the purchase page (linked from the offers page, #126) and the page the
   // payment provider sends the buyer back to.
   giftCards: { uk: "podarunkovi-kartky", en: "gift-cards", indexable: true },

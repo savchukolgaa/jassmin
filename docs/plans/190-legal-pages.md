@@ -160,7 +160,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
 | modify | `app/lib/paths.ts` | `offerTerms`, `deliveryAndPayment`, `returns` pages |
 | modify | `app/routes.ts` | register the three routes |
 | create | `app/routes/offer-terms.tsx`, `delivery-and-payment.tsx`, `returns.tsx` (+ `*.test.ts`) | loaders, meta, components |
-| create | `app/features/legal/LegalPage.tsx`, `SellerDetails.tsx`, `OfferTerms.tsx`, `DeliveryAndPayment.tsx`, `Returns.tsx` | page UI |
+| create | `app/features/legal/LegalPage.tsx`, `SellerDetailsList.tsx`, `OfferTerms.tsx`, `DeliveryAndPayment.tsx`, `Returns.tsx` | page UI |
 | modify | `app/lib/i18n/uk.ts`, `app/lib/i18n/en.ts` | `legal` namespace, `checkout.offerNotice/offerLink`, email footer labels |
 | modify | `app/components/layout/nav.ts`, `Footer.tsx`, `Footer.test.ts` | legal links |
 | modify | `app/features/checkout/CheckoutForm.tsx`, `checkout-ui.test.ts` | acceptance line under submit |
@@ -191,7 +191,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   (`legalName`, `taxId`, `legalAddress`, `registrationNote`, `phone`, `email`),
   `REQUIRED_SELLER_FIELDS`, `missingSellerDetails()`. Unit tests. (Building `SellerDetails` from
   the CMS moved to `getSellerDetails` in `app/.server/legal.ts`, with the Q3 fallback.)
-- [ ] **4. Paths and routes.** Add to `PAGES`: `offerTerms` (`oferta` / `offer-terms`),
+- [x] **4. Paths and routes.** Add to `PAGES`: `offerTerms` (`oferta` / `offer-terms`),
   `deliveryAndPayment` (`dostavka-i-oplata` / `delivery-and-payment`), `returns` (`povernennia` /
   `returns`), all `indexable: true`; register them in `app/routes.ts` next to `privacy`. Check
   `routes.test.ts` / `redirects.test.ts` still pass.
@@ -202,7 +202,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   `{days}`), seller labels and the missing-detail placeholder, the Strapi-down fallback, footer
   labels, `checkout.offerNotice`/`offerLink`, email footer link labels. Values via placeholders only.
   `pnpm typecheck` checks both files match.
-- [ ] **6. Pages.** Build `features/legal/*` and the three route modules after `privacy.tsx`: each
+- [x] **6. Pages.** Build `features/legal/*` and the three route modules after `privacy.tsx`: each
   loader catches CMS errors (`seller: null`), passes `showPlaceholders = NODE_ENV !== "production"`
   (Q1) and, on the delivery page, `cardPaymentEnabled`; `meta` uses `seoMeta` with title and
   description from the copy (canonical URL comes with it). The offer and returns pages show their
@@ -222,7 +222,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   and text, escaped, only `http(s)`); pass offer and returns URLs (`PUBLIC_SITE_URL` + `pathFor`
   in the email's locale) from `buildOrderConfirmationEmail` and `buildGiftCardEmail`. Tests in
   `layout.test.ts` and `order-email.test.ts`; other emails unchanged.
-- [ ] **11. Sitemap.** Add the three pages to `SITEMAP_PAGES` and `sitemapPages` with
+- [x] **11. Sitemap.** Add the three pages to `SITEMAP_PAGES` and `sitemapPages` with
   `lastmod` = their version dates; tests in `sitemap.test.ts` (entries with hreflang alternates).
 - [ ] **12. Startup warning.** `app/.server/legal.ts` → `warnIfSellerDetailsMissing({ env, load })`:
   once, production only, async and non-throwing; warns

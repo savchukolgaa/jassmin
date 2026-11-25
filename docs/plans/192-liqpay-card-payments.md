@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/192
 Branch: `issue/192`
 Worktree: `.claude/worktrees/issue-192`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -223,7 +223,7 @@ The four open questions were answered with their recommended defaults (2026-11-2
   Checkbox, a separate issue). Link it from `docs/deploy.md` (replace "card payments stay off…"),
   `docs/setup.md` (env table rows for the three vars, `PAYMENT_PROVIDER` now `simulator` or
   `liqpay`), `app/.server/AGENTS.md` → Payments (LiqPay notes), and `AGENTS.md` if useful.
-- [ ] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then a sandbox
+- [x] **10. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; then a sandbox
   run (step list under Testing).
 
 ## Testing & verification
@@ -254,15 +254,27 @@ The four open questions were answered with their recommended defaults (2026-11-2
 - [ ] With `PAYMENT_PROVIDER=liqpay` and sandbox keys, a customer can pay an order by card on
   LiqPay's page, and the order becomes paid through the signed callback — steps 1–5, 10
 - [ ] Gift cards can be bought by card the same way — steps 2–5, 10
-- [ ] Forged, malformed or mismatched callbacks never mark anything paid, and repeated callbacks
+- [x] Forged, malformed or mismatched callbacks never mark anything paid, and repeated callbacks
   change nothing twice — step 2 (tests), existing `handlePaymentCallback`
-- [ ] Failed and cancelled payments leave the order unpaid, and the customer can try again —
+- [x] Failed and cancelled payments leave the order unpaid, and the customer can try again —
   step 2 (status mapping), step 5 (return to the success page)
-- [ ] The CSP allows the LiqPay redirect, and production config takes the keys as secrets —
+- [x] The CSP allows the LiqPay redirect, and production config takes the keys as secrets —
   steps 6, 8
-- [ ] The setup guide explains the account, sandbox testing, the callback URL, going live, refunds
+- [x] The setup guide explains the account, sandbox testing, the callback URL, going live, refunds
   and the ПРРО question — step 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 10
+
+### Verification notes (2026-11-25)
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (2806 passed, against PostgreSQL 18) and `pnpm build`
+  pass; the apphost typechecks (`tsc -p tsconfig.apphost.json`). The one skipped test is
+  `scripts/link-env.test.mjs` (symlinks on Windows), which runs on the Linux CI runner.
+- The first two criteria are covered end to end by `services/payments.test.ts` with the real
+  adapter and LiqPay-signed callbacks, but **not yet against LiqPay's sandbox**: that needs sandbox
+  keys and a tunnel (`docs/payments.md` → Testing in the sandbox). Check there too: the SHA3-256
+  signature is accepted by LiqPay, the `sandbox` flag and status, and whether the shopper returns
+  to `result_url` with a POST.
+- `pnpm aspire:deploy` wasn't run: the new parameters are typechecked only.
 
 ## Out of scope
 

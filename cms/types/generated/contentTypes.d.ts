@@ -1099,7 +1099,7 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
 export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
   collectionName: 'site_settings';
   info: {
-    description: "Store contact details, social links and the data controller's legal name";
+    description: "Store contact details, social links and the seller's legal details (the ФОП's name, РНОКПП, registration address and note) shown on the public offer and privacy pages";
     displayName: 'Site settings';
     pluralName: 'site-settings';
     singularName: 'site-setting';
@@ -1132,6 +1132,15 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
           localized: false;
         };
       }>;
+    legalAddress: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }> &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
     legalName: Schema.Attribute.String &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
@@ -1157,11 +1166,29 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
         maxLength: 50;
       }>;
     publishedAt: Schema.Attribute.DateTime;
+    registrationNote: Schema.Attribute.Text &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }> &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
     socialLinks: Schema.Attribute.Component<'shared.social-link', true> &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
           localized: false;
         };
+      }>;
+    taxId: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }> &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
       }>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &

@@ -44,12 +44,12 @@ version of the offer the customer accepted.
   localized, maxLength 500). `legalName` stays non-localized (the ФОП's name is shown in
   Cyrillic on the English page too). Strapi serves the whole `en` entry, so an English
   `legalAddress` left empty arrives as `null`; whether that falls back to the Ukrainian value is
-  **(unconfirmed, see Q3)**.
+  settled by Q3 (fall back to Ukrainian).
 - **The seed** (`cms/scripts/seed.ts`) leaves the new fields empty, so a fresh dev setup shows the
   placeholders.
 - **Missing details on the page**: outside production a highlighted placeholder
   (`legal.seller.missing`: "⚠ {field} — не заповнено в налаштуваннях сайту (Strapi)") replaces the
-  value; in production the line is left out. **(unconfirmed, see Q1)**
+  value; in production the line is left out. (Q1: confirmed)
 - **Strapi down**: like `/konfidentsiinist`, the loaders catch the CMS error, log it and render the
   pages with `seller: null` (a fallback sentence pointing to the contacts on the home page) instead
   of a 503. A legal page must stay readable.
@@ -76,7 +76,7 @@ version of the offer the customer accepted.
   gift-card buyer email (`buildGiftCardEmail`) pass them, and only when `PUBLIC_SITE_URL` is set
   (absolute URLs). Links: offer and returns.
 - **Footer**: `navLinks().footer` keeps privacy last and adds offer, delivery & payment and returns
-  before it. **(see Q4 for the layout)**
+  before it. (Q4: a second row of legal links)
 - **Startup warning**: `warnIfSellerDetailsMissing()` in a new `app/.server/legal.ts`, called once
   from `app/entry.server.tsx` next to `warnIfNoTrustedProxy()`. In production only, it fetches the
   Ukrainian (and English) site settings without blocking start-up and `console.warn`s the missing
@@ -93,24 +93,27 @@ version of the offer the customer accepted.
 
 ## Open questions
 
-- [ ] **Q1: What should production show when a required seller detail is empty?** — Why it matters:
+All answered on 2026-11-25: the owner accepted every recommended default.
+
+
+- [x] **Q1: What should production show when a required seller detail is empty?** — Why it matters:
   the issue says "a clear placeholder in development" and only a log warning in production, leaving
   the production page unspecified. Recommended default: omit the empty line in production (no
   "not filled" text in front of customers); the startup warning tells the owner. Affects steps: 5, 6.
-- [ ] **Q2: Should the gift-card purchase form also say that paying accepts the offer?** — Why it
+- [x] **Q2: Should the gift-card purchase form also say that paying accepts the offer?** — Why it
   matters: a gift card is a sale too, and the offer gets a gift-card section. Recommended default:
   yes, the same one-line notice under the "Pay" button on `podarunkovi-kartky`, but no version column
   on `gift_cards` (storing it is out of scope per the issue). Affects steps: 8.
-- [ ] **Q3: Is an English legal address required, or may the English page fall back to the
+- [x] **Q3: Is an English legal address required, or may the English page fall back to the
   Ukrainian one?** — Why it matters: `legalAddress` is localized, so with only the Ukrainian value
   filled the English page would report it missing. Recommended default: fall back to the Ukrainian
   value (fetched alongside, as the sitemap/blog code does for translations) and warn only when the
   Ukrainian one is empty. Affects steps: 2, 6.
-- [ ] **Q4: Footer layout with four legal links.** — Why it matters: the C+ footer is one links row;
+- [x] **Q4: Footer layout with four legal links.** — Why it matters: the C+ footer is one links row;
   three more links make it long on mobile. Recommended default: keep the existing row and add a
   second, smaller row of legal links (offer · delivery & payment · returns · privacy) below it, per
   `docs/design.md` tokens. Affects steps: 7.
-- [ ] **Q5: Should `offer_version` be shown read-only on the order in Strapi?** — Why it matters:
+- [x] **Q5: Should `offer_version` be shown read-only on the order in Strapi?** — Why it matters:
   staff handling a dispute may want to see which offer the customer accepted. Recommended default:
   no for now (it's in the database; `cms-push`/order sync stay unchanged). Affects steps: none.
 
@@ -176,7 +179,7 @@ version of the offer the customer accepted.
 
 ## Steps
 
-- [ ] **1. Strapi fields.** Add `taxId`, `legalAddress`, `registrationNote` to the `site-setting`
+- [x] **1. Strapi fields.** Add `taxId`, `legalAddress`, `registrationNote` to the `site-setting`
   schema (localization as above), update the content type's description, run Strapi once
   (`pnpm aspire run` or `pnpm cms:dev`) to regenerate `contentTypes.d.ts`. Fill test values in the
   admin to check the fields save.

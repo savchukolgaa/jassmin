@@ -5,7 +5,7 @@
     "singularName": "site-setting",
     "pluralName": "site-settings",
     "displayName": "Site settings",
-    "description": "Store contact details, social links and the data controller's legal name"
+    "description": "Store contact details, social links and the seller's legal details (the ФОП's name, РНОКПП, registration address and note) shown on the public offer and privacy pages"
   },
   "options": {
     "draftAndPublish": false
@@ -34,6 +34,22 @@
       "type": "string",
       "maxLength": 255,
       "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "taxId": {
+      "type": "string",
+      "maxLength": 10,
+      "regex": "^[0-9]{10}$",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "legalAddress": {
+      "type": "string",
+      "maxLength": 255,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "registrationNote": {
+      "type": "text",
+      "maxLength": 500,
+      "pluginOptions": { "i18n": { "localized": true } }
     },
     "socialLinks": {
       "type": "component",

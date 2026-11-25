@@ -13,6 +13,10 @@
 # Strapi (#181).
 */15 * * * * pnpm --silent db:send-newsletters
 
+# Email tester buyers a personal discount on a full bottle about TESTER_FOLLOWUP_DAYS after
+# delivery (#191), at 07:00 UTC (09:00–10:00 in Kyiv).
+0 7 * * * pnpm --silent db:send-tester-followups
+
 # Cancel card orders still unpaid after UNPAID_ORDER_HOURS (#128).
 30 * * * * pnpm --silent db:cancel-unpaid-orders
 

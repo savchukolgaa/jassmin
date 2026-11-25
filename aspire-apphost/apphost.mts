@@ -274,6 +274,21 @@ async function addDevelopmentResources(builder: DistributedApplicationBuilder) {
     .withParentRelationship(db)
     .withExplicitStart();
 
+  // Emails tester buyers a personal discount on a full bottle (`pnpm db:send-tester-followups`,
+  // #191; daily from cron in production) to smtp4dev. It needs `PUBLIC_SITE_URL` and
+  // `EMAIL_UNSUBSCRIBE_SECRET` from the root .env; without them it queues nothing. Start it from
+  // the dashboard.
+  await builder
+    .addJavaScriptApp("db-send-tester-followups", "..", {
+      runScriptName: "db:send-tester-followups",
+    })
+    .withPnpm({ install: false })
+    .withReference(db)
+    .withEnvironment("SMTP_URL", smtp4dev.getEndpoint("smtp"))
+    .waitForCompletion(dbMigrate)
+    .withParentRelationship(db)
+    .withExplicitStart();
+
   // Sends the queued newsletter emails (`pnpm db:send-newsletters`, #181; every 15 minutes from
   // cron in production) to smtp4dev, then pushes their counts to Strapi. Start it from the
   // dashboard after pressing "Send to subscribers" on a newsletter in Strapi.

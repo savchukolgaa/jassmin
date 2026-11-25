@@ -174,7 +174,10 @@ export async function addProductionResources(builder: DistributedApplicationBuil
       .withEnvironment("LIQPAY_SANDBOX", "false")
       // Newsletter emails per 24 hours (#181): Brevo's free 300 a day, less room for order,
       // account and cart reminder emails. Raise it with a paid plan (docs/email.md).
-      .withEnvironment("NEWSLETTER_DAILY_LIMIT", "200");
+      .withEnvironment("NEWSLETTER_DAILY_LIMIT", "200")
+      // The tester follow-up (#191): days after delivery, and the percent off a full bottle.
+      .withEnvironment("TESTER_FOLLOWUP_DAYS", "12")
+      .withEnvironment("TESTER_FOLLOWUP_PERCENT", "10");
     await restartUnlessStopped(app);
   }
   // Strapi writes product and order edits through to the app (#40).

@@ -100,6 +100,8 @@ pnpm dev                    # http://localhost:5173
 | `SMTP_URL` | prod | SMTP server for every email (`smtp://` or `smtps://`, e.g. `smtp://localhost:2525` for smtp4dev). Under Aspire it's set to the `smtp4dev` container; in production it's the transactional provider (see [docs/email.md](email.md)). Required when `NODE_ENV=production`, for the app and `pnpm db:send-order-emails`. Without it, development logs contact messages instead of sending them, and order confirmations stay queued (see [Order emails](#order-emails)). |
 | `EMAIL_WEBHOOK_SECRET` | no* | Bearer secret (32+ characters) the email provider sends to `/hooks/email` with hard bounces and spam complaints (#134, see [docs/email.md](email.md)). *Without it the webhook answers 503, nothing is recorded, and production logs a warning at startup. |
 | `EMAIL_UNSUBSCRIBE_SECRET` | no* | Secret (32+ characters) that signs the one-click unsubscribe links in marketing emails (#139, see [docs/email.md](email.md)). *Without it `pnpm db:send-cart-reminders` sends no cart reminders, and production logs a warning at startup. Changing it breaks the links in emails already sent. |
+| `TESTER_FOLLOWUP_DAYS` | no | Days after a tester order's delivery when `pnpm db:send-tester-followups` emails the customer a personal discount on a full bottle (#191, whole number 1–60, default `12`). Only the job reads it. See [Tester follow-up](#tester-follow-up). |
+| `TESTER_FOLLOWUP_PERCENT` | no | The percent off a full bottle in that code (#191, whole number 1–50, default `10`). Only the job reads it. |
 | `NEWSLETTER_DAILY_LIMIT` | no | The most newsletter emails `pnpm db:send-newsletters` sends in any 24 hours (#181, default `200`). The provider's daily quota (Brevo's free plan: 300) is shared with order, account and cart reminder emails, so leave room for them (see [docs/email.md](email.md#newsletter)). |
 | `AI_BASE_URL` | no* | OpenAI-compatible chat-completions base URL for the AI perfumer (#162), e.g. `http://localhost:11434/v1` for local Ollama (see [docs/ai-perfumer.md](ai-perfumer.md)). *Without it the perfumer is off and nothing calls a model. |
 | `AI_MODEL` | no | Model name (default `granite4.1:3b`). |
@@ -154,6 +156,7 @@ The variables are validated with zod in `app/.server/env.ts`, and the server fai
 | `pnpm db:prune-perfumer-chats` | Delete AI perfumer chats not updated for `PERFUMER_CHAT_RETENTION_DAYS` (safe to re-run), see [Perfumer chats](#perfumer-chats) |
 | `pnpm db:build-recommendations` | Rebuild the product recommendations from the last year's orders and views (safe to re-run), see [Recommendations](#recommendations) |
 | `pnpm db:send-order-emails` | Send the queued order emails that are due (safe to re-run), see [Order emails](#order-emails) |
+| `pnpm db:send-tester-followups` | Email tester buyers a personal discount on a full bottle `TESTER_FOLLOWUP_DAYS` after delivery (safe to re-run), see [Tester follow-up](#tester-follow-up) |
 | `pnpm db:send-newsletters` | Send the queued newsletter emails within `NEWSLETTER_DAILY_LIMIT` and push their counts to Strapi (safe to re-run), see [Newsletter](#newsletter) |
 | `pnpm db:backfill-product-images` | Copy the size and resized formats of every product's Strapi image into the database (#88), so product photos load a fitting size. Run it once after upgrading past #88 (safe to re-run); later edits in Strapi keep them up to date |
 | `pnpm analytics:export-catalog` | Write the catalog and price table to `analytics/generator/data/catalog.json` for the synthetic data generator (#131); a test fails until you run it after changing either |
@@ -239,6 +242,16 @@ A window whose time is up is harmless (the next hit restarts it), so `pnpm db:pr
 ```
 
 It needs only the database URL. Under Aspire, start the `db-prune-rate-limits` resource from the dashboard.
+
+## Tester follow-up
+
+About `TESTER_FOLLOWUP_DAYS` (default 12) after a tester order is delivered, `pnpm db:send-tester-followups` emails a registered customer who agreed to marketing email one "Which one did you like?" with the perfumes they tried and a personal, single-use code for `TESTER_FOLLOWUP_PERCENT` (default 10) % off a full bottle of them, valid 30 days (#191). Each order gets at most one, each customer at most one in 30 days, and none within 7 days of a cart reminder or newsletter. Run it daily (the production `scheduler` does, at 07:00 UTC):
+
+```cron
+0 7 * * * cd /srv/jassmin && pnpm db:send-tester-followups >> /var/log/jassmin/tester-followups.log 2>&1
+```
+
+It needs the database URL and the mail variables (`SMTP_URL`, `PUBLIC_SITE_URL`, `EMAIL_UNSUBSCRIBE_SECRET`, `TESTER_FOLLOWUP_DAYS`, `TESTER_FOLLOWUP_PERCENT`, …); without the first three it queues nothing. Under Aspire, start the `db-send-tester-followups` resource from the dashboard; it sends to smtp4dev. The rules and the email: [docs/email.md → Tester follow-up](email.md#tester-follow-up).
 
 ## Perfumer chats
 

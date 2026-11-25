@@ -250,6 +250,65 @@ The perfumer's product cards are the `perfumer` list: their impressions and clic
 `list_position`, and an order is attributed to an answer through it. A card added in the moment
 before its answer finishes streaming has no list (those cards aren't a list yet).
 
+## Tester follow-up (#191)
+
+Not a `user_events` type: the follow-up email and its code are recorded in the app's own tables,
+whatever the customer's cookie consent, so the owner's dashboard (#183) can count them all.
+
+- **Sent:** an `order_emails` row with `type = 'tester_followup'` and `status = 'sent'`;
+  `order_id` is the tester order, `sent_at` when it went out. `failed` rows with
+  `last_error like 'not eligible:%'` were dropped by the send-time check.
+- **The code:** the `discounts` row with `slug = 'tester-followup-<tester order id>'`;
+  `scope_product_public_ids` are the perfumes offered, `redemption_count` 0 or 1.
+- **Used:** an order whose `discount_id` is that discount (`orders.discount_id`, #59).
+- **Visits:** sessions with `traffic_campaign = 'tester_followup'` (#18), for consenting visitors
+  only.
+
+Conversion: of the follow-ups sent, how many customers ordered a full bottle of a perfume they were
+offered within 30 days, with or without the code, by week of sending.
+
+```sql
+with followups as (
+  select e.order_id as tester_order_id, o.user_id, e.sent_at, d.id as discount_id,
+    d.scope_product_public_ids as offered
+  from order_emails e
+  join orders o on o.id = e.order_id
+  left join discounts d on d.slug = 'tester-followup-' || e.order_id
+  where e.type = 'tester_followup' and e.status = 'sent'
+),
+outcomes as (
+  select f.*,
+    exists (
+      select 1 from orders b
+      join order_items bi on bi.order_id = b.id
+      join products p on p.id = bi.product_id
+      where b.user_id = f.user_id
+        and b.created_at > f.sent_at
+        and b.created_at <= f.sent_at + interval '30 days'
+        and b.status <> 'cancelled'
+        and bi.volume_ml in (30, 50, 100)
+        and p.pack_size = 1
+        and p.public_id = any(f.offered)
+    ) as bought_bottle,
+    exists (
+      select 1 from orders b where b.discount_id = f.discount_id and b.status <> 'cancelled'
+    ) as used_code
+  from followups f
+)
+select
+  coalesce(to_char(date_trunc('week', sent_at), 'YYYY-MM-DD'), 'all') as week,
+  count(*) as sent,
+  count(*) filter (where bought_bottle) as bought_bottle_within_30_days,
+  count(*) filter (where used_code) as used_code,
+  round(100.0 * count(*) filter (where bought_bottle) / nullif(count(*), 0), 1) as conversion_pct
+from outcomes
+group by rollup (date_trunc('week', sent_at))
+order by date_trunc('week', sent_at) nulls last;
+```
+
+Revenue from the codes: `select count(*), sum(total_amount + gift_card_amount) from orders o join
+discounts d on d.id = o.discount_id where d.slug like 'tester-followup-%' and o.status <> 'cancelled'`.
+
 ## Rows recorded before #129
 
 Older rows weren't rewritten. They have camelCase keys, and their product events have no price,

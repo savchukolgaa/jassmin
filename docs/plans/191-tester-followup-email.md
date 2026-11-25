@@ -94,6 +94,18 @@ New: one migration (rewrites `order_emails_type_check`), two optional env variab
   that and the conversion SQL.
 - Not adding `TESTER_FOLLOWUP_WINDOW_DAYS` or the 30/7-day spacing as env variables: constants
   next to the query, like the cart reminder's.
+- **Implementation notes (deviations):**
+  - The email shows the code's last *whole* valid day (`ends_at` − 1 day), since `ends_at` is
+    exclusive and falls mid-day; the copy says "until … inclusive".
+  - The cards link through `EmailProduct.url`; one "Choose a bottle" button links the first
+    perfume.
+  - The add action applies the code with the `writer` (not the request's `owner`), so a guest's
+    first add, which creates their visitor cookies, still finds the cart.
+  - `pnpm aspire:build` can't run in this worktree (the generated `.aspire` SDK module is missing
+    until `aspire run`); the apphost change copies the neighbouring resources.
+  - Spacing promise: the profile says marketing email comes "at most once a week". With Q3's
+    default a cart reminder can still follow a follow-up within the week (as it can already follow
+    a newsletter).
 
 ## Open questions
 All three answered on 2026-11-25: use the recommended defaults.
@@ -142,7 +154,7 @@ All three answered on 2026-11-25: use the recommended defaults.
 - [x] **7. Job and script** — `app/.server/db/tester-followups.ts`: `sendTesterFollowupsJob(db, mailer, env)` mirroring `sendCartRemindersJob` (missing `SMTP_URL`/`PUBLIC_SITE_URL`/`EMAIL_UNSUBSCRIBE_SECRET` → queues nothing), then `deliverOrderEmails({ type: "tester_followup" }, …)`; must not import `db/index.ts`. `db/scripts/send-tester-followups.ts` copied from `send-cart-reminders.ts`; `package.json` `"db:send-tester-followups"`. Test the job like `cart-reminders.test.ts` (smtp-less, configured, message).
 - [x] **8. `?code=` in the cart** — `cart.schema.ts`: optional `promoCode` on `add`; `cart.ts` (`CartActionResult`): optional `promo` on the `add` success; `cart.tsx` action: after a successful add with a code, rate-limit check, `applyPromoCode`, `promoCodeLimiter.hit` on refusal, return the status; cart loader: `code` from `?code=` (parsed with `promoCodeSchema`, invalid → `null`) for `PromoCodeForm`'s default value. `product.tsx` loader returns `promoCode` (parsed the same way); `ProductPurchase`/`AddToCartForm` render a hidden `promoCode` input and a note under the button; after adding, the "Added to cart" status says the code was applied (or why not). Tests: `cart.test.ts` (add with a valid code applies it, an inapplicable or unknown code still adds, malformed code ignored, rate limit), `AddToCartForm.dom.test.ts` (hidden field), product loader test if one exists.
 - [x] **9. Scheduling** — `deploy/crontab`: `0 7 * * * pnpm --silent db:send-tester-followups` (10:00 Kyiv, a sensible hour to receive it; comment #191). `aspire-apphost/apphost.mts`: explicit-start `db-send-tester-followups` child of `jassmindb`, after `db-migrate`, `SMTP_URL` from `smtp4dev`, as `db-send-cart-reminders`. `production.mts`: `TESTER_FOLLOWUP_DAYS=12`, `TESTER_FOLLOWUP_PERCENT=10` in the web/scheduler env loop. Check: `pnpm aspire run` shows the resource and it sends to smtp4dev.
-- [ ] **10. Documentation** — `docs/email.md`: new "Tester follow-up" section (who, when, spacing, the offer, the job, local testing) and contents entry; `docs/setup.md`: env table rows, job table row, short section; `aspire-apphost/AGENTS.md`: resource and env; `app/.server/AGENTS.md`: Environment, outbox type list, marketing-email list (#191 is the third), Cart `?code=`; `docs/analytics-events.md`: "Tester follow-up (#191)" with the `order_emails`/slug definition and SQL "follow-up sent → full-bottle order of a tried perfume within 30 days" (overall, and how many used the code: `orders.discount_id` → `discounts.slug like 'tester-followup-%'`); re-read the privacy copy (`privacy.*`) and adjust only if it names the marketing emails individually.
+- [x] **10. Documentation** — `docs/email.md`: new "Tester follow-up" section (who, when, spacing, the offer, the job, local testing) and contents entry; `docs/setup.md`: env table rows, job table row, short section; `aspire-apphost/AGENTS.md`: resource and env; `app/.server/AGENTS.md`: Environment, outbox type list, marketing-email list (#191 is the third), Cart `?code=`; `docs/analytics-events.md`: "Tester follow-up (#191)" with the `order_emails`/slug definition and SQL "follow-up sent → full-bottle order of a tried perfume within 30 days" (overall, and how many used the code: `orders.discount_id` → `discounts.slug like 'tester-followup-%'`); re-read the privacy copy (`privacy.*`) and adjust only if it names the marketing emails individually.
 - [ ] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; run the analytics fixture tests only if the order-email enum is part of their contract (step 1 grep). Manual check under Aspire: seed a user with `marketing_opt_in` and a verified email, a completed tester order with `completed_at` 12 days ago, start `db-send-tester-followups`, open the email in smtp4dev, follow a link, add a 50 ml bottle and see the code applied in the cart.
 
 ## Testing & verification

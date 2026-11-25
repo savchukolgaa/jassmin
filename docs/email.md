@@ -28,8 +28,9 @@ whoever controls the `jassmin.ua` DNS zone (the registrar's or the DNS host's co
 11. [Order status emails](#order-status-emails)
 12. [Cart reminders](#cart-reminders)
 13. [Newsletter](#newsletter)
-14. [Local development](#local-development)
-15. [Switching providers](#switching-providers)
+14. [Tester follow-up](#tester-follow-up)
+15. [Local development](#local-development)
+16. [Switching providers](#switching-providers)
 
 ## Why Brevo
 
@@ -461,6 +462,69 @@ group by n.id
 order by n.sent_at desc;
 ```
 
+## Tester follow-up
+
+The shop's model is "try a tester, then buy the bottle". About **12 days** after a tester order is
+delivered, the customer gets **one** email (#191): "Який аромат вам сподобався?", a card per
+perfume they tried and a personal code for **10 %** off a full bottle (30, 50 or 100 ml) of those
+perfumes, valid 30 days. It's marketing email, so it follows the same rules as the cart reminder
+and the newsletter: consent, suppression and a one-click unsubscribe.
+
+### Who gets it
+
+`pnpm db:send-tester-followups` (daily) queues a `tester_followup` row in `order_emails` (with the
+order's `order_id`) for every order where all of these hold, then sends them;
+`pnpm db:send-order-emails` retries failures:
+
+- a registered customer's order with a **tester line** (10 ml of a single perfume; the 3 × 10 ml
+  set product doesn't say which perfumes were in it);
+- it is `shipped` or `completed` and didn't come back (`cancelled`, `returned` and `unclaimed`
+  orders never get one);
+- it was **delivered `TESTER_FOLLOWUP_DAYS` (12) days ago**: delivered means picked up
+  (`completed_at`), else arrived at the branch (`arrived_at`), else shipped + 3 days. An order stays
+  due for 14 days after that, so one held back by the spacing below goes out a little later, and
+  starting the job never emails months-old orders;
+- the customer agreed to marketing email, **confirmed their address** (#135) and isn't
+  [suppressed](#suppressed-addresses);
+- they got **no follow-up in the last 30 days**, and **no cart reminder or newsletter in the last 7
+  days** (nor a newsletter still queued for them), so marketing emails don't pile up;
+- they **haven't ordered a full bottle of any perfume they tried** since the tester order (then the
+  email is skipped altogether);
+- at least one perfume they tried is still sold with a full size in stock (or untracked).
+
+At most one follow-up per order, and only each customer's latest due order. For each one the job
+creates the personal discount in the same transaction as the email row: slug
+`tester-followup-<order id>`, a random code like `TRY-7KQ2M9XD`, `percent` `TESTER_FOLLOWUP_PERCENT`
+(10), only the tried perfumes still in stock (`scope_product_public_ids`), only 30/50/100 ml of
+single perfumes, one redemption, ending 30 days later. As always, one discount per order: if
+another offer saves more, the cart says so and keeps the code. The code isn't tied to the account:
+it works once, for whoever enters it.
+
+The rules are checked again just before sending (a retry can come hours later): a follow-up for
+someone who unsubscribed, bought a bottle, or whose order came back, or whose code was used,
+deactivated or expired, is marked `failed` with `not eligible: …`. A perfume that has sold out since
+is left out of the email; if none is left, it isn't sent.
+
+Without `SMTP_URL`, `PUBLIC_SITE_URL` or `EMAIL_UNSUBSCRIBE_SECRET` the job queues nothing (and
+creates no codes) and says which is missing.
+
+### The email
+
+In the customer's language (`users.locale`, else Ukrainian), from `ORDER_FROM`: the question, a card
+per perfume (photo, name, "флакон від …" at today's lowest full-size price), the offer, the code
+with its last valid day, the button **Обрати флакон** and the unsubscribe link. Each card and the
+button link to the product page with the code and the campaign:
+`/parfumy/<slug>?code=TRY-…&utm_source=email&utm_medium=email&utm_campaign=tester_followup`. The
+page says the code will be applied, and **Додати в кошик** applies it in the cart right after
+adding the bottle (a refused code never undoes the add). A `?code=` link to the cart fills in the
+promo field.
+
+### Measuring it
+
+Every order placed with a follow-up code has `orders.discount_id` pointing at a
+`tester-followup-*` discount; the conversion SQL (follow-up → full bottle within 30 days) is in
+[docs/analytics-events.md](analytics-events.md#tester-follow-up-191).
+
 ## Local development
 
 Nothing changes locally: `pnpm aspire run` passes smtp4dev as `SMTP_URL`, and without Aspire you
@@ -469,7 +533,10 @@ run `docker run --rm -p 5000:80 -p 2525:25 rnwood/smtp4dev:v3` with
 smtp4dev shows both the HTML and the text part of each message. To see a cart reminder, add
 `PUBLIC_SITE_URL=http://localhost:5173` and an `EMAIL_UNSUBSCRIBE_SECRET` to `.env`, put perfumes in
 the cart of a user who opted in, set the cart's `updated_at` back 25 hours in SQL, then run
-`pnpm db:mark-abandoned-carts` and `pnpm db:send-cart-reminders`. To see a newsletter, give a user
+`pnpm db:mark-abandoned-carts` and `pnpm db:send-cart-reminders`. To see a tester follow-up, give
+an opted-in user with `email_verified_at` an order with a 10 ml line, set it to `completed` with
+`completed_at` 12 days ago in SQL, then start the `db-send-tester-followups` resource (or run
+`pnpm db:send-tester-followups`). To see a newsletter, give a user
 `marketing_opt_in` and `email_verified_at` in SQL, press **Надіслати підписникам** on the seeded
 draft in Strapi, then start the `db-send-newsletters` resource (or run `pnpm db:send-newsletters`).
 To send the next one at once, move the previous newsletter's `sent_at` back 7 days and set its

@@ -195,7 +195,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   `deliveryAndPayment` (`dostavka-i-oplata` / `delivery-and-payment`), `returns` (`povernennia` /
   `returns`), all `indexable: true`; register them in `app/routes.ts` next to `privacy`. Check
   `routes.test.ts` / `redirects.test.ts` still pass.
-- [ ] **5. Copy.** Write the `legal` namespace in `uk.ts` first, then `en.ts`: offer sections
+- [x] **5. Copy.** Write the `legal` namespace in `uk.ts` first, then `en.ts`: offer sections
   (parties & details, subject, placing an order, prices & payment, delivery, transfer of ownership,
   returns → link, gift cards & discounts, personal data → privacy link, liability & disputes, seller
   details again), delivery & payment, returns (the four rules from the issue, 14 days via

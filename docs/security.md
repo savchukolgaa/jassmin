@@ -31,7 +31,7 @@ img-src 'self' data:;
 font-src 'self' data:;
 connect-src 'self';                      (+ ws: in development, for Vite's HMR)
 frame-src https://www.google.com https://maps.google.com;
-frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';
+frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://www.liqpay.ua; object-src 'none';
 report-uri /csp-report; report-to csp
 ```
 
@@ -47,7 +47,7 @@ report-uri /csp-report; report-to csp
 Edit `buildCsp` in `app/.server/security-headers.ts`, add a case to `security-headers.test.ts`, and check the affected page in the browser with `CSP_MODE=enforce`. Common cases:
 
 - **Another map provider** (OpenStreetMap, Mapbox): add its embed origin to `FRAME_ORIGINS`.
-- **A real card payment provider** (e.g. LiqPay's hosted checkout): add its origin to `form-action`. Chrome also checks `form-action` against the redirect after a form POST, so the checkout redirect to the provider's page is blocked without it.
+- **Card payments** (#192): `form-action` allows LiqPay's hosted checkout (`https://www.liqpay.ua`, `FORM_ACTION_ORIGINS`). Chrome also checks `form-action` against the redirect after a form POST, so the checkout redirect to LiqPay's page would be blocked without it. Another provider needs its origin there too. LiqPay's page is a redirect, not an embedded widget, so `script-src` and `frame-src` don't change. See [payments.md](payments.md).
 - **An image CDN or cloud upload provider for Strapi**: its files have absolute URLs outside `/uploads/`, so the proxy doesn't serve them; add its origin to `img-src`.
 - **Third-party scripts** (analytics, chat): a plain `<script src>` from another origin is blocked. Load it from a nonced script instead (`'strict-dynamic'` then trusts what that script loads), and add its beacon or font origin to `connect-src` / `font-src`.
 

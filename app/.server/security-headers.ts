@@ -4,6 +4,7 @@
 import { randomBytes } from "node:crypto";
 import { createContext, type MiddlewareFunction } from "react-router";
 import { type Env, getEnv } from "./env";
+import { LIQPAY_CHECKOUT_URL } from "./payments/liqpay";
 
 export type CspMode = Env["CSP_MODE"];
 
@@ -18,6 +19,13 @@ const CSP_REPORT_GROUP = "csp";
  * Maps embed URL from Strapi's `mapEmbedUrl`. Another map provider needs its origin here.
  */
 const FRAME_ORIGINS = ["https://www.google.com", "https://maps.google.com"];
+
+/**
+ * Where forms may go besides the shop: LiqPay's hosted checkout (#192). Checkout and the gift card
+ * page answer their form POST with a redirect there, and Chrome checks `form-action` against that
+ * redirect. Another card payment provider needs its origin here.
+ */
+const FORM_ACTION_ORIGINS = [new URL(LIQPAY_CHECKOUT_URL).origin];
 
 export interface CspOptions {
   nonce: string;
@@ -42,9 +50,8 @@ export function buildCsp({ nonce, isDev }: CspOptions): string {
     ["frame-src", ...FRAME_ORIGINS],
     ["frame-ancestors", "'none'"],
     ["base-uri", "'self'"],
-    // Forms post only to the shop. A real card payment provider's hosted page is cross-origin:
-    // add its origin here together with the provider (Chrome checks form-action on redirects).
-    ["form-action", "'self'"],
+    // Forms post to the shop, whose checkout redirects to the payment provider's page.
+    ["form-action", "'self'", ...FORM_ACTION_ORIGINS],
     ["object-src", "'none'"],
     ["report-uri", CSP_REPORT_PATH],
     ["report-to", CSP_REPORT_GROUP],

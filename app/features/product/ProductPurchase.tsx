@@ -7,7 +7,14 @@ import { defaultVariant, type ProductDetail } from "~/lib/products";
 import { VolumeSelect } from "./VolumeSelect";
 
 /** Price, stock and add to cart for the size chosen in the volume dropdown. */
-export function ProductPurchase({ product }: { product: ProductDetail }) {
+export function ProductPurchase({
+  product,
+  promoCode = null,
+}: {
+  product: ProductDetail;
+  /** A promo code from the page's `?code=` link (#191), applied in the cart on add. */
+  promoCode?: string | null;
+}) {
   const { t, formatPrice } = useT();
   const [selectedId, setSelectedId] = useState(() => defaultVariant(product.variants)?.id);
   const selected = product.variants.find((v) => v.id === selectedId);
@@ -37,9 +44,15 @@ export function ProductPurchase({ product }: { product: ProductDetail }) {
         stockQuantity={selected.trackStock ? selected.stockQuantity : undefined}
         className="self-start"
       />
+      {promoCode && (
+        <p className="max-w-sm rounded-card bg-success-bg px-4 py-3 text-sm font-bold text-success">
+          {t("product.promoCodeNote", { code: promoCode })}
+        </p>
+      )}
       <AddToCartForm
         productId={product.id}
         inStock={selected.inStock}
+        promoCode={promoCode ?? undefined}
         size="lg"
         className="flex max-w-sm flex-col gap-3"
       >

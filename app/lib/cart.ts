@@ -1,7 +1,7 @@
 // Cart form contract shared by the cart route's `action` and the forms that post to it, plus the
 // cart DTOs its `loader` returns.
 import type { CartIntent } from "./cart.schema";
-import type { CartPromo, DiscountLine } from "./discounts";
+import type { CartPromo, DiscountLine, PromoStatus } from "./discounts";
 import { createTranslator, type TextKey, type Translator } from "./i18n";
 import type { ResponsiveImage } from "./images";
 
@@ -76,8 +76,17 @@ export type PromoError =
   | "promo-not-applicable"
   | "promo-rate-limited";
 
+/**
+ * What became of the promo code an add-to-cart form brought along (#191): where the code stands
+ * once applied, or why it wasn't.
+ */
+export interface AddedPromo {
+  code: string;
+  outcome: PromoStatus | PromoError;
+}
+
 export type CartActionResult =
-  | { ok: true; intent: CartIntent }
+  | { ok: true; intent: CartIntent; promo?: AddedPromo }
   /** `available` is the variant's stock, for `exceeds-stock`. */
   | { ok: false; error: CartActionError; available?: number };
 

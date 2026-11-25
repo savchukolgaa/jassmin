@@ -14,3 +14,14 @@ export const promoCodeSchema = z
       .max(MAX_PROMO_CODE_LENGTH, msg("cart.errors.promoInvalid"))
       .regex(/^[A-Z0-9_-]+$/, msg("cart.errors.promoInvalid")),
   );
+
+/**
+ * A promo code from a link's `?code=` (#191: the tester follow-up email), normalised, or `null`
+ * when there is none or it isn't a well-formed code.
+ */
+export function promoCodeFromUrl(url: string | URL): string | null {
+  const value = new URL(url).searchParams.get("code");
+  if (value === null) return null;
+  const parsed = promoCodeSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}

@@ -4,8 +4,8 @@ import { createElement, Fragment } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CartActionResult } from "~/lib/cart";
-import { I18nProvider } from "~/lib/i18n";
-import { AddToCartForm, type AddToCartFormProps } from "./AddToCartForm";
+import { createTranslator, I18nProvider } from "~/lib/i18n";
+import { AddToCartForm, type AddToCartFormProps, addedPromoMessage } from "./AddToCartForm";
 
 // The add-to-cart form's options for the AI perfumer's cards (#169): its own fetcher per card,
 // focus back on the button after adding, and the confirmation scrolled into view.
@@ -107,5 +107,25 @@ describe("AddToCartForm (#169)", () => {
     expect(scrolled).toHaveBeenCalledWith(expect.objectContaining({ block: "nearest" }));
     const status = screen.getByRole("status").parentElement;
     expect(status?.className).toContain("scroll-mb-40");
+  });
+});
+
+describe("a promo code brought along (#191)", () => {
+  it("posts the code as a hidden field only when there is one", () => {
+    const { container } = renderForms([form({ promoCode: "TRY-7KQ2M9XD" }), form()]);
+    const fields = container.querySelectorAll<HTMLInputElement>('input[name="promoCode"]');
+    expect([...fields].map((field) => field.value)).toEqual(["TRY-7KQ2M9XD"]);
+  });
+
+  it("says whether the code took", () => {
+    const uk = createTranslator("uk");
+    const en = createTranslator("en");
+    expect(addedPromoMessage({ code: "TRY-1", outcome: "applied" }, uk)).toBe(
+      "Промокод TRY-1 застосовано.",
+    );
+    expect(addedPromoMessage({ code: "TRY-1", outcome: "not-best" }, en)).toMatch(/TRY-1/);
+    expect(addedPromoMessage({ code: "TRY-1", outcome: "promo-not-applicable" }, en)).toBe(
+      en.t("cart.errors.promoNotApplicable"),
+    );
   });
 });

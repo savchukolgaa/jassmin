@@ -19,6 +19,9 @@ export const cartActionSchema = z.discriminatedUnion("intent", [
     listId: z.enum(LIST_IDS).optional().catch(undefined),
     listPosition: z.coerce.number().int().min(1).max(100_000).optional().catch(undefined),
     searchId: z.uuid().optional().catch(undefined),
+    // A promo code to apply once the product is in the cart (#191: the product page opened from
+    // a `?code=` link). A malformed one is dropped, never an error: the add still goes through.
+    promoCode: promoCodeSchema.optional().catch(undefined),
   }),
   /** `variantId` identifies the line; the stepper posts the new quantity. */
   z.object({ intent: z.literal("update"), variantId: z.uuid(), quantity }),

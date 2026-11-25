@@ -485,6 +485,8 @@ export const uk = {
     imageAlt: "{brand} {title}",
     ml: "мл",
     fromPrice: "від {price}",
+    /** A `?code=` link (#191): the code goes into the cart with the bottle. */
+    promoCodeNote: "Ваш код {code} застосується в кошику, щойно ви додасте флакон.",
     quickAdd: "Додати {title} у кошик",
     volume: "Об’єм",
     volumeLegend: "Об’єм",

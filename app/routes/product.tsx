@@ -17,6 +17,7 @@ import { ProductFamilies, ProductNotes } from "~/features/product/ProductScent";
 import { productEventContext, shouldRevalidateView } from "~/lib/analytics";
 import { productBreadcrumbs } from "~/lib/breadcrumbs";
 import type { CatalogGender } from "~/lib/catalog";
+import { promoCodeFromUrl } from "~/lib/discounts.schema";
 import type { Gender } from "~/lib/enums";
 import { metaTranslator, useContentLang, useT } from "~/lib/i18n";
 import {
@@ -120,7 +121,8 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   // few signals (#88), without what's already in the cart. An archived product gets them too.
   const cartProductIds = await getCartProductIds(await getCartOwner(request));
   const recommendations = await forProduct(found.id, product, { cartProductIds });
-  return { product, available, recommendations };
+  // A `?code=` link (#191, the tester follow-up email): "add to cart" applies the code too.
+  return { product, available, recommendations, promoCode: promoCodeFromUrl(request.url) };
 }
 
 // Adding to the cart doesn't change the product, and reloading would record a second view.
@@ -130,7 +132,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const translator = useT();
   const { t } = translator;
   const siteUrl = useSiteUrl();
-  const { product, available, recommendations } = loaderData;
+  const { product, available, recommendations, promoCode } = loaderData;
   // How long the page is read and how far down, sent when the visitor leaves (#129).
   useProductDwell(product);
   const catalog = catalogOf(product.gender);
@@ -169,7 +171,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           </h1>
           <ProductFamilies families={product.fragranceFamilies} />
           {available ? (
-            <ProductPurchase product={product} />
+            <ProductPurchase product={product} promoCode={promoCode} />
           ) : (
             <ProductUnavailable catalog={catalog} />
           )}

@@ -66,7 +66,12 @@ describe("product loader", () => {
       available: true,
     });
 
-    expect(await load(SLUG)).toEqual({ product, available: true, recommendations: NO_RECS });
+    expect(await load(SLUG)).toEqual({
+      product,
+      available: true,
+      recommendations: NO_RECS,
+      promoCode: null,
+    });
     expect(products.resolveProductHandle).toHaveBeenCalledWith(SLUG, "uk");
     expect(analytics.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ context }),
@@ -116,7 +121,12 @@ describe("product loader", () => {
     cart.getCartProductIds.mockResolvedValueOnce(["in-cart"]);
     recommendations.forProduct.mockResolvedValueOnce(recs);
 
-    expect(await load(SLUG)).toEqual({ product, available: true, recommendations: recs });
+    expect(await load(SLUG)).toEqual({
+      product,
+      available: true,
+      recommendations: recs,
+      promoCode: null,
+    });
     expect(cart.getCartProductIds).toHaveBeenCalledWith(OWNER);
     expect(recommendations.forProduct).toHaveBeenCalledWith(42, product, {
       cartProductIds: ["in-cart"],
@@ -134,7 +144,12 @@ describe("product loader", () => {
     });
     recommendations.forProduct.mockResolvedValueOnce(similar);
 
-    expect(await load(SLUG)).toEqual({ product, available: false, recommendations: similar });
+    expect(await load(SLUG)).toEqual({
+      product,
+      available: false,
+      recommendations: similar,
+      promoCode: null,
+    });
     expect(recommendations.forProduct).toHaveBeenCalledWith(42, product, { cartProductIds: [] });
     // Without sizes there's no size, price or stock to record (#129).
     expect(analytics.trackEvent).toHaveBeenCalledWith(expect.anything(), "product_view", {
@@ -160,6 +175,18 @@ describe("product loader", () => {
       loader({ request, params: { handle: SLUG }, context } as unknown as LoaderArgs),
     ).rejects.toMatchObject({ init: { status: 404 } });
     expect(products.resolveProductHandle).toHaveBeenLastCalledWith(SLUG, "en");
+  });
+
+  it("passes a well-formed ?code= on to add to cart, and drops a malformed one (#191)", async () => {
+    const product = { id: PUBLIC_ID, slug: SLUG, title: "Coco", variants: [] };
+    const found = { kind: "product", id: 42, product, available: true };
+    products.resolveProductHandle.mockResolvedValue(found);
+
+    expect(await load(SLUG, "?code=try-7kq2m9xd&utm_source=email")).toMatchObject({
+      promoCode: "TRY-7KQ2M9XD",
+    });
+    expect(await load(SLUG, "?code=%3Cscript%3E")).toMatchObject({ promoCode: null });
+    products.resolveProductHandle.mockReset();
   });
 
   it("is a 404 without an event for an unknown handle", async () => {

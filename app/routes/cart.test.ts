@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseEventProperties } from "~/lib/analytics.schema";
 import type { EventType } from "~/lib/enums";
 
@@ -113,10 +113,27 @@ describe("cart loader", () => {
       ...view,
       restorable: null,
       trioSuggestions: null,
+      promoCode: null,
     });
     expect(cart.getCartOwner).toHaveBeenCalledWith(request);
     expect(cart.getCartView).toHaveBeenCalledWith(owner);
     expect(cart.getRestorableCart).toHaveBeenCalledWith(owner);
+  });
+
+  it("fills in a well-formed ?code= for the promo field, and drops a malformed one (#191)", async () => {
+    const { loader } = await import("./cart");
+    const load = async (url: string) => {
+      cart.getCartView.mockResolvedValueOnce({ lines: [] });
+      const request = new Request(url);
+      return loader({ request, params: {}, context: {} } as unknown as LoaderArgs);
+    };
+
+    expect(await load("http://localhost/cart?code=try-7kq2m9xd")).toMatchObject({
+      promoCode: "TRY-7KQ2M9XD",
+    });
+    expect(await load("http://localhost/cart?code=not%20a%20code")).toMatchObject({
+      promoCode: null,
+    });
   });
 
   it("suggests perfumes to complete the tester trio (#182)", async () => {
@@ -487,6 +504,75 @@ describe("cart action", () => {
       await action(post({ intent: "apply-promo", code: "MINE" }, nextIp()));
       expect(cart.applyPromoCode).toHaveBeenCalledTimes(11);
       cart.applyPromoCode.mockReset();
+    });
+
+    describe("brought along by add to cart (#191)", () => {
+      const visitor = { anonymousId: ANONYMOUS_ID, sessionId: SESSION_ID, headers: new Headers() };
+      const writer = { userId: null, anonymousId: ANONYMOUS_ID, sessionId: SESSION_ID };
+
+      beforeEach(() => {
+        products.checkVariantForCart.mockResolvedValue({ ok: true, variant });
+        analytics.ensureVisitor.mockResolvedValue(visitor);
+        cart.addItem.mockResolvedValue(changed(1));
+      });
+
+      afterEach(() => {
+        products.checkVariantForCart.mockReset();
+        analytics.ensureVisitor.mockReset();
+        cart.addItem.mockReset();
+      });
+
+      it("applies the code to the cart the product went into", async () => {
+        cart.applyPromoCode.mockResolvedValueOnce({ ok: true, status: "applied" });
+        const { action } = await import("./cart");
+
+        expect(unwrap(await action(post({ ...add, promoCode: "try-7kq2m9xd" }, nextIp())))).toEqual(
+          {
+            status: 200,
+            body: { ok: true, intent: "add", promo: { code: "TRY-7KQ2M9XD", outcome: "applied" } },
+          },
+        );
+        expect(cart.applyPromoCode).toHaveBeenCalledWith(writer, "TRY-7KQ2M9XD");
+      });
+
+      it("still adds when the code doesn't apply, and counts the refusal", async () => {
+        cart.applyPromoCode.mockResolvedValue({ ok: false, error: "promo-not-applicable" });
+        const { action } = await import("./cart");
+        const ip = nextIp();
+
+        expect(unwrap(await action(post({ ...add, promoCode: "TRY-1" }, ip)))).toEqual({
+          status: 200,
+          body: {
+            ok: true,
+            intent: "add",
+            promo: { code: "TRY-1", outcome: "promo-not-applicable" },
+          },
+        });
+        for (let i = 0; i < 9; i++) {
+          await action(post({ ...add, promoCode: `TRY-${i}` }, ip));
+        }
+        expect(unwrap(await action(post({ ...add, promoCode: "TRY-X" }, ip)))).toMatchObject({
+          body: { ok: true, promo: { code: "TRY-X", outcome: "promo-rate-limited" } },
+        });
+        expect(cart.applyPromoCode).toHaveBeenCalledTimes(10);
+        expect(cart.addItem).toHaveBeenCalledTimes(11);
+        cart.applyPromoCode.mockReset();
+      });
+
+      it("ignores a malformed code and doesn't apply one when the add failed", async () => {
+        const { action } = await import("./cart");
+
+        expect(unwrap(await action(post({ ...add, promoCode: "no spaces" }, nextIp())))).toEqual({
+          status: 200,
+          body: { ok: true, intent: "add" },
+        });
+        cart.addItem.mockResolvedValueOnce({ ok: false, error: "exceeds-stock", available: 0 });
+        expect(unwrap(await action(post({ ...add, promoCode: "TRY-1" }, nextIp())))).toMatchObject({
+          status: 409,
+          body: { ok: false, error: "exceeds-stock" },
+        });
+        expect(cart.applyPromoCode).not.toHaveBeenCalled();
+      });
     });
 
     it("removes the code", async () => {

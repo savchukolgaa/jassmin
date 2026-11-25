@@ -478,6 +478,7 @@ export const en = {
     imageAlt: "{brand} {title}",
     ml: "ml",
     fromPrice: "from {price}",
+    promoCodeNote: "Your code {code} is applied in the cart as soon as you add a bottle.",
     quickAdd: "Add {title} to cart",
     volume: "Volume",
     volumeLegend: "Volume",

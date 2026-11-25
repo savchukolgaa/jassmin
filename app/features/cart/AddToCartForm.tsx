@@ -4,9 +4,15 @@ import { focusRing } from "~/components/layout/nav";
 import { Button } from "~/components/ui/Button";
 import type { ButtonSize } from "~/components/ui/button-styles";
 import type { ListContext } from "~/lib/analytics";
-import { type CartActionResult, cartErrorMessage } from "~/lib/cart";
+import {
+  type AddedPromo,
+  type CartActionResult,
+  cartErrorMessage,
+  type PromoError,
+} from "~/lib/cart";
 import { cn } from "~/lib/cn";
-import { usePathFor, useT } from "~/lib/i18n";
+import { PROMO_STATUS_KEYS } from "~/lib/discounts";
+import { type Translator, usePathFor, useT } from "~/lib/i18n";
 
 export interface AddToCartFormProps {
   /** The product's public id. */
@@ -40,6 +46,11 @@ export interface AddToCartFormProps {
   statusClassName?: string;
   /** Fields rendered inside the form, before the button. */
   children?: ReactNode;
+  /**
+   * A promo code to apply once the product is in the cart (#191: the product page opened from a
+   * `?code=` link); the status line says whether it took.
+   */
+  promoCode?: string;
 }
 
 /**
@@ -62,6 +73,7 @@ export function AddToCartForm({
   revealResult = false,
   statusClassName,
   children,
+  promoCode,
 }: AddToCartFormProps) {
   const translator = useT();
   const path = usePathFor();
@@ -109,6 +121,7 @@ export function AddToCartForm({
       <input type="hidden" name="intent" value="add" />
       <input type="hidden" name="productId" value={productId} />
       {variantId && <input type="hidden" name="variantId" value={variantId} />}
+      {promoCode && <input type="hidden" name="promoCode" value={promoCode} />}
       {list && (
         <>
           <input type="hidden" name="listId" value={list.list_id} />
@@ -160,12 +173,26 @@ export function AddToCartForm({
             </Link>
           </p>
         )}
+        {result?.ok === true && result.promo && (
+          <p className="mt-2 text-muted">{addedPromoMessage(result.promo, translator)}</p>
+        )}
         {result?.ok === false && (
           <p className="text-muted">{cartErrorMessage(result, translator)}</p>
         )}
       </div>
     </fetcher.Form>
   );
+}
+
+/** What the status line says about the code an add brought along (#191). */
+export function addedPromoMessage({ code, outcome }: AddedPromo, translator: Translator): string {
+  return isPromoError(outcome)
+    ? cartErrorMessage({ error: outcome }, translator)
+    : translator.t(PROMO_STATUS_KEYS[outcome], { code });
+}
+
+function isPromoError(outcome: AddedPromo["outcome"]): outcome is PromoError {
+  return outcome.startsWith("promo-");
 }
 
 /** The round "+" of a compact product card; a green "✓" once the product is in the cart. */

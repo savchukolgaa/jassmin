@@ -6,6 +6,7 @@ import {
   addItem,
   applyPromoCode,
   type CartChangeResult,
+  type CartOwner,
   getCartOwner,
   getCartView,
   getRestorableCart,
@@ -24,8 +25,14 @@ import { RestoreCartBanner } from "~/features/cart/RestoreCartBanner";
 import { RecommendedProducts } from "~/features/recommendations/RecommendedProducts";
 import type { ListContext, ListId } from "~/lib/analytics";
 import { loginRedirectPath } from "~/lib/auth";
-import { type CartActionResult, type CartIntent, cartErrorMessage } from "~/lib/cart";
+import {
+  type AddedPromo,
+  type CartActionResult,
+  type CartIntent,
+  cartErrorMessage,
+} from "~/lib/cart";
 import { parseCartAction } from "~/lib/cart.schema";
+import { promoCodeFromUrl } from "~/lib/discounts.schema";
 import { metaTranslator, useT } from "~/lib/i18n";
 import { errorMeta, noindexMeta } from "~/lib/seo";
 import type { Route } from "./+types/cart";
@@ -55,7 +62,8 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { missing, products } = await forCart(cart, trioOffer);
   const trioSuggestions =
     trioOffer && missing > 0 ? { missing, price: trioOffer.price, products } : null;
-  return { ...cart, restorable, trioSuggestions };
+  // A `?code=` link (#191) fills in the promo field; the shopper still presses "Apply".
+  return { ...cart, restorable, trioSuggestions, promoCode: promoCodeFromUrl(request.url) };
 }
 
 function respond(result: CartChangeResult, intent: CartIntent) {
@@ -110,6 +118,28 @@ function listOf({
   };
 }
 
+/**
+ * Applies the promo code an add-to-cart form brought along (#191), right after the add, so a code
+ * for a full bottle finds the bottle in the cart. Refused codes count against the client like
+ * typed ones; a refusal never undoes the add.
+ */
+async function applyAddedPromo(
+  request: Request,
+  owner: CartOwner,
+  code: string,
+): Promise<AddedPromo> {
+  const key = getClientIp(request) ?? owner.anonymousId ?? "anonymous";
+  if (await promoCodeLimiter.isBlocked(key)) {
+    return { code, outcome: "promo-rate-limited" };
+  }
+  const result = await applyPromoCode(owner, code);
+  if (!result.ok) {
+    await promoCodeLimiter.hit(key);
+    return { code, outcome: result.error };
+  }
+  return { code, outcome: result.status };
+}
+
 // Posted by `fetcher.Form`s (add-to-cart buttons, the cart page's stepper and remove buttons), or
 // as a plain form without JS. The `_shop` loader revalidates afterwards, so the header badge
 // updates.
@@ -145,6 +175,11 @@ export async function action({ request, context }: Route.ActionArgs) {
       };
       const result = await addItem(writer, check.variant, quantity);
       trackChange(args, result, { list: listOf(input.data) });
+      if (result.ok && input.data.promoCode) {
+        // The writer, not `owner`: a guest's first add may have just created the visitor.
+        const promo = await applyAddedPromo(request, writer, input.data.promoCode);
+        return data<CartActionResult>({ ok: true, intent: "add", promo });
+      }
       return respond(result, "add");
     }
     case "update": {
@@ -196,7 +231,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function Cart({ loaderData, actionData }: Route.ComponentProps) {
-  const { restorable, trioSuggestions, ...cart } = loaderData;
+  const { restorable, trioSuggestions, promoCode, ...cart } = loaderData;
   const translator = useT();
   const { t, formatPrice } = translator;
   // Only set after a plain form post without JS; fetchers show their errors on the line.
@@ -231,7 +266,7 @@ export default function Cart({ loaderData, actionData }: Route.ComponentProps) {
               <CartLineItem key={line.variantId} line={line} />
             ))}
           </ul>
-          <CartSummary cart={cart} />
+          <CartSummary cart={cart} promoCode={promoCode} />
         </div>
       )}
       {trioSuggestions && (

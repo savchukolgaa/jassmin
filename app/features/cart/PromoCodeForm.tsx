@@ -14,7 +14,14 @@ export const PROMO_FETCHER_KEY = "cart-promo";
  * The cart's promo code (#59): a field to apply one, or the applied code with what it does and a
  * remove button. Posts to the cart action with a fetcher, or as a plain form without JS.
  */
-export function PromoCodeForm({ promo }: { promo: CartPromo | null }) {
+export function PromoCodeForm({
+  promo,
+  defaultCode,
+}: {
+  promo: CartPromo | null;
+  /** A code from the cart's `?code=` link (#191), filled in for the shopper to apply. */
+  defaultCode?: string | null;
+}) {
   const translator = useT();
   const path = usePathFor();
   const { t } = translator;
@@ -62,6 +69,7 @@ export function PromoCodeForm({ promo }: { promo: CartPromo | null }) {
         autoCapitalize="characters"
         spellCheck={false}
         maxLength={MAX_PROMO_CODE_LENGTH}
+        defaultValue={defaultCode ?? undefined}
         className="uppercase"
       />
       <Button type="submit" variant="dark" loading={busy} className="w-full">

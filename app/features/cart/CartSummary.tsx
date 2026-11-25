@@ -16,7 +16,14 @@ export function formatItemCount(count: number, { t }: Translator = createTransla
  * Item count, subtotal, the discount (#59) and what's left to pay, the promo code form and the
  * checkout button, next to the cart lines.
  */
-export function CartSummary({ cart }: { cart: CartView }) {
+export function CartSummary({
+  cart,
+  promoCode = null,
+}: {
+  cart: CartView;
+  /** A code from the page's `?code=` link (#191), filled into the promo field. */
+  promoCode?: string | null;
+}) {
   const translator = useT();
   const path = usePathFor();
   const { t, formatPrice } = translator;
@@ -66,7 +73,7 @@ export function CartSummary({ cart }: { cart: CartView }) {
           </div>
         )}
       </dl>
-      <PromoCodeForm promo={cart.promo} />
+      <PromoCodeForm promo={cart.promo} defaultCode={promoCode} />
       <p className="text-sm text-muted">
         {t("cart.deliveryNote", { threshold: formatPrice(FREE_SHIPPING_THRESHOLD) })}
       </p>

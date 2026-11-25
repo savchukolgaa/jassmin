@@ -5,6 +5,7 @@ import type { GiftCard } from "~/lib/commerce";
 import { createTranslator } from "~/lib/i18n";
 import type { CartReminder } from "../db/queries/cart-reminders";
 import type { ClaimedOrderEmail } from "../db/queries/order-emails";
+import type { TesterFollowup } from "../db/queries/tester-followups";
 import { htmlSection, htmlWords, words } from "../email/test-helpers";
 import { withSuppressions } from "../mail";
 import { verifyUnsubscribeToken } from "../unsubscribe-token";
@@ -295,6 +296,9 @@ function fakeDeps(
     loadCartReminder: vi.fn(async (cartId: number) =>
       cartId === cartReminder.cartId ? cartReminder : undefined,
     ),
+    loadTesterFollowup: vi.fn(async (orderId: number) =>
+      orderId === testerFollowup.orderId ? testerFollowup : undefined,
+    ),
     markSent: vi.fn(async () => {}),
     markFailed: vi.fn(async () => {}),
     ...overrides,
@@ -317,6 +321,46 @@ const cartReminder: CartReminder = {
 };
 
 const UNSUBSCRIBE_SECRET = "u".repeat(32);
+
+const testerFollowup: TesterFollowup = {
+  orderId: 66,
+  userId: 9,
+  fullName: "Олена Коваль",
+  email: "olena@example.com",
+  marketingOptIn: true,
+  emailVerified: true,
+  orderStatus: "completed",
+  returned: false,
+  boughtBottleSince: false,
+  discount: {
+    code: "TRY-7KQ2M9XD",
+    percent: "10.00",
+    endsAt: new Date(Date.now() + 29 * 24 * 60 * 60 * 1000),
+    active: true,
+    usedUp: false,
+  },
+  products: [
+    {
+      publicId: "0190a000-0000-7000-8000-000000000001",
+      slug: "coco",
+      title: "Coco",
+      brand: "Chanel",
+      imageUrl: null,
+      fromPrice: "1350.00",
+    },
+  ],
+};
+
+/** A queued tester follow-up for `testerFollowup`'s order (#191). */
+const followupRow = (id: number, orderId = testerFollowup.orderId): ClaimedOrderEmail => ({
+  id,
+  orderId,
+  giftCardId: null,
+  cartId: null,
+  type: "tester_followup",
+  locale: "en",
+  attempts: 1,
+});
 
 /** A queued reminder for `cartReminder`'s cart (#139). */
 const reminderRow = (id: number, cartId = cartReminder.cartId): ClaimedOrderEmail => ({
@@ -1036,5 +1080,106 @@ describe("describeOrderEmailReport", () => {
     expect(describeOrderEmailReport({ sent: 0, retrying: 0, gaveUp: 0, skipped: true })).toBe(
       "SMTP_URL is not set, so no order emails were sent; they stay queued.",
     );
+  });
+});
+
+describe("deliverOrderEmails: tester follow-ups (#191)", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "info").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const withSecret = { env: { ...env, EMAIL_UNSUBSCRIBE_SECRET: UNSUBSCRIBE_SECRET } };
+
+  it("sends the follow-up with its one-click unsubscribe headers and the bounce tag", async () => {
+    const deps = fakeDeps([queued(1, codOrder.id), followupRow(2)], withSecret);
+
+    const report = await deliverOrderEmails({ type: "tester_followup" }, deps);
+
+    expect(report).toEqual({ sent: 1, retrying: 0, gaveUp: 0, skipped: false });
+    const message = deps.sendMail.mock.calls[0]?.[0] as Mail.Options;
+    const headers = message.headers as Record<string, string>;
+    expect(message.subject).toBe("Which one did you like? — Jassmin");
+    expect(String(message.text)).toContain("TRY-7KQ2M9XD");
+    expect(String(message.text)).toContain("/en/perfumes/coco?code=TRY-7KQ2M9XD");
+    expect(headers["X-Mailin-custom"]).toBe("order-email:2");
+    expect(headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+    const token = /\/en\/unsubscribe\/([^>]+)>$/.exec(headers["List-Unsubscribe"] ?? "")?.[1];
+    expect(verifyUnsubscribeToken(token ?? "", UNSUBSCRIBE_SECRET)).toBe(testerFollowup.userId);
+    expect(deps.markSent).toHaveBeenCalledWith(2, expect.stringMatching(/@example\.com>$/));
+  });
+
+  const discount = testerFollowup.discount ?? {
+    code: "",
+    percent: "0",
+    endsAt: new Date(),
+    active: true,
+    usedUp: false,
+  };
+  const notEligible: [Partial<TesterFollowup>, string][] = [
+    [{ marketingOptIn: false }, "the user unsubscribed"],
+    [{ emailVerified: false }, "the address isn't verified"],
+    [{ orderStatus: "returned" }, "the order is returned"],
+    [{ returned: true }, "the order is returned"],
+    [{ orderStatus: "cancelled" }, "the order is cancelled"],
+    [{ boughtBottleSince: true }, "the user bought a bottle since"],
+    [{ discount: undefined }, "the code is gone"],
+    [{ discount: { ...discount, active: false } }, "the code is gone"],
+    [{ discount: { ...discount, usedUp: true } }, "the code is used"],
+    [{ discount: { ...discount, endsAt: new Date(Date.now() - 1000) } }, "the code expired"],
+    [{ products: [] }, "no perfume tried has a full bottle in stock"],
+  ];
+
+  it.each(notEligible)(
+    "doesn't send a follow-up that is no longer eligible: %o",
+    async (change, reason) => {
+      const deps = fakeDeps([followupRow(3)], {
+        ...withSecret,
+        loadTesterFollowup: vi.fn(
+          async (): Promise<TesterFollowup> => ({ ...testerFollowup, ...change }),
+        ),
+      });
+
+      expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
+      expect(deps.sendMail).not.toHaveBeenCalled();
+      expect(deps.markFailed).toHaveBeenCalledWith(3, {
+        error: `not eligible: ${reason}`,
+        final: true,
+      });
+    },
+  );
+
+  it("doesn't send without the unsubscribe secret, and gives up on a gone order", async () => {
+    const deps = fakeDeps([followupRow(4), followupRow(5, 999)]);
+
+    expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 2 });
+    expect(deps.markFailed).toHaveBeenCalledWith(4, {
+      error: "not eligible: PUBLIC_SITE_URL or EMAIL_UNSUBSCRIBE_SECRET is not set",
+      final: true,
+    });
+    expect(deps.markFailed).toHaveBeenCalledWith(5, {
+      error: "Order, gift card or cart not found",
+      final: true,
+    });
+  });
+
+  it("drops a follow-up to a suppressed address (#134)", async () => {
+    const deps = fakeDeps([followupRow(6)], withSecret);
+    const mailer = deps.mailer;
+    if (!mailer) throw new Error("fakeDeps has a mailer");
+    deps.mailer = withSuppressions(
+      mailer,
+      async () => new Map([["olena@example.com", "hard_bounce" as const]]),
+    );
+
+    expect(await deliverOrderEmails({}, deps)).toMatchObject({ sent: 0, gaveUp: 1 });
+    expect(deps.markFailed).toHaveBeenCalledWith(6, {
+      error: "suppressed: hard_bounce",
+      final: true,
+    });
   });
 });

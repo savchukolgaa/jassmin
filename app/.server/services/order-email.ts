@@ -26,10 +26,12 @@ import {
   markOrderEmailSent,
 } from "../db/queries/order-emails";
 import { findOrderConfirmation, findOrderStatusEmail } from "../db/queries/orders";
+import { findTesterFollowup, type TesterFollowup } from "../db/queries/tester-followups";
 import { composeEmail, type EmailAmount, type EmailBlock } from "../email/layout";
 import type { MailEnv } from "../env";
 import { type MailSender, SuppressedRecipientError, stripLineBreaks } from "../mail";
 import { buildCartReminderEmail } from "./cart-reminder-email";
+import { buildTesterFollowupEmail } from "./tester-followup-email";
 
 /**
  * Minutes to wait before retrying after the 1st, 2nd, … failed attempt: about two days in all.
@@ -503,6 +505,8 @@ export interface OrderEmailDeps {
   loadGiftCard(giftCardId: number): Promise<GiftCard | undefined>;
   /** An abandoned cart's reminder (#139), read when it is sent. */
   loadCartReminder(cartId: number): Promise<CartReminder | undefined>;
+  /** A delivered tester order's follow-up (#191), read when it is sent. */
+  loadTesterFollowup(orderId: number): Promise<TesterFollowup | undefined>;
   /** `messageId` is the Message-ID it went out with (#134), to match a later bounce. */
   markSent(id: number, messageId: string): Promise<void>;
   markFailed(id: number, failure: { error: string; final: boolean }): Promise<void>;
@@ -523,6 +527,7 @@ export function orderEmailDeps(
     loadOrderStatus: (orderId) => findOrderStatusEmail(db, orderId),
     loadGiftCard: (giftCardId) => findGiftCard(db, giftCardId),
     loadCartReminder: (cartId) => findCartReminder(db, cartId),
+    loadTesterFollowup: (orderId) => findTesterFollowup(db, orderId),
     markSent: (id, messageId) => markOrderEmailSent(db, id, messageId),
     markFailed: (id, failure) => markOrderEmailFailed(db, id, failure),
   };
@@ -543,7 +548,7 @@ function errorMessage(error: unknown): string {
   return message.slice(0, MAX_ERROR_LENGTH);
 }
 
-/** A queued email that mustn't go out any more, and why (a cart reminder, #139). */
+/** A queued email that mustn't go out any more, and why (a cart reminder, #139, or #191's follow-up). */
 interface NotEligible {
   notEligible: string;
 }
@@ -583,8 +588,57 @@ async function buildCartReminder(
 }
 
 /**
+ * Why a tester follow-up may no longer be sent, or `undefined` (#191): it was queued up to a day
+ * ago, or is a retry, so the rules are checked again. A suppressed address is the sender's to
+ * refuse.
+ */
+export function testerFollowupNotEligible(
+  followup: TesterFollowup,
+  now: Date = new Date(),
+): string | undefined {
+  if (!followup.marketingOptIn) return "the user unsubscribed";
+  if (!followup.emailVerified) return "the address isn't verified";
+  if (followup.returned || !["shipped", "completed"].includes(followup.orderStatus)) {
+    return `the order is ${followup.returned ? "returned" : followup.orderStatus}`;
+  }
+  if (followup.boughtBottleSince) return "the user bought a bottle since";
+  const { discount } = followup;
+  if (!discount?.active) return "the code is gone";
+  if (discount.usedUp) return "the code is used";
+  if (discount.endsAt.getTime() <= now.getTime()) return "the code expired";
+  if (followup.products.length === 0) return "no perfume tried has a full bottle in stock";
+  return undefined;
+}
+
+/** A tester follow-up (#191): the message, `null` when the order is gone, or why it isn't sent. */
+async function buildTesterFollowup(
+  email: ClaimedOrderEmail,
+  translator: Translator,
+  deps: OrderEmailDeps,
+): Promise<OrderEmailMessage | NotEligible | null> {
+  const followup =
+    email.orderId === null ? undefined : await deps.loadTesterFollowup(email.orderId);
+  if (!followup) {
+    return null;
+  }
+  const reason = testerFollowupNotEligible(followup);
+  if (reason || !followup.discount) {
+    return { notEligible: reason ?? "the code is gone" };
+  }
+  const { PUBLIC_SITE_URL: siteUrl, EMAIL_UNSUBSCRIBE_SECRET: unsubscribeSecret } = deps.env;
+  if (!siteUrl || !unsubscribeSecret) {
+    // The job doesn't queue any then, so only a misconfigured retry job gets here.
+    return { notEligible: "PUBLIC_SITE_URL or EMAIL_UNSUBSCRIBE_SECRET is not set" };
+  }
+  return buildTesterFollowupEmail(followup, followup.discount, translator, deps.env, {
+    siteUrl,
+    unsubscribeSecret,
+  });
+}
+
+/**
  * The queued email's message, `null` when its order, gift card or cart is gone, or why a cart
- * reminder isn't sent any more.
+ * reminder or a tester follow-up isn't sent any more.
  */
 async function buildEmail(
   email: ClaimedOrderEmail,
@@ -603,8 +657,7 @@ async function buildEmail(
     return buildCartReminder(email, translator, deps);
   }
   if (email.type === "tester_followup") {
-    // Built in #191's email step; nothing queues these yet.
-    return { notEligible: "tester follow-ups are not built yet" };
+    return buildTesterFollowup(email, translator, deps);
   }
   const card = email.giftCardId === null ? undefined : await deps.loadGiftCard(email.giftCardId);
   return card ? GIFT_CARD_BUILDERS[email.type](card, translator, deps.env) : null;

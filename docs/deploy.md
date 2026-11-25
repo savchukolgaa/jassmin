@@ -18,8 +18,8 @@ Browsers never talk to Strapi for images: the shop serves Strapi's uploads at `/
 own domain and fetches them from `cms` inside the server (`app/.server/cms/uploads-proxy.ts`).
 
 The deployment is declared in `aspire-apphost/production.mts`; `pnpm aspire run` (development) is
-unaffected. Card payments stay off (there's no real payment provider yet, and the simulator is
-refused in production), and so does the AI perfumer (#167).
+unaffected. Card payments (LiqPay, #192) stay off until you turn them on after LiqPay approves the
+shop ([payments.md → Going live](payments.md#going-live)), and the AI perfumer stays off (#167).
 
 ## Contents
 
@@ -179,9 +179,13 @@ The first time, Aspire asks for these values:
 | `email-webhook-secret` | 32+ random characters, the same as in Brevo's webhook ([docs/email.md](email.md)) |
 | `strapi-api-token` | `pending` for now (see step 6) |
 | `strapi-sync-token` | `pending` for now |
+| `liqpay-public-key` | `pending` until LiqPay approves the shop ([payments.md](payments.md#going-live)) |
+| `liqpay-private-key` | `pending` too |
 
 Every one of them is required: since Aspire 17.0 an empty answer is rejected, which is why the
-tokens get `pending` until Strapi exists.
+tokens get `pending` until Strapi exists, and the LiqPay keys until LiqPay approves the shop.
+`payment-provider` isn't asked for: it defaults to `none`, so card payment is off until you set it
+to `liqpay` ([payments.md → Going live](payments.md#going-live)).
 
 Aspire **generates** the other secrets on the first deploy: the Postgres password,
 `SESSION_SECRET`, `CMS_SYNC_SECRET`, `EMAIL_UNSUBSCRIBE_SECRET` and Strapi's `APP_KEYS`,

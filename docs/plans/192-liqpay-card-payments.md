@@ -172,7 +172,7 @@ The four open questions were answered with their recommended defaults (2026-11-2
 | modify | checkout payment UI in `app/features/checkout/`, `routes/gift-cards.tsx`, `routes/privacy.tsx` | show the LiqPay copy when it's the provider |
 | modify | `aspire-apphost/production.mts`, `aspire-apphost/AGENTS.md` | secret parameters, `LIQPAY_SANDBOX`, go-live switch |
 | create | `docs/payments.md` | card payments / go-live guide |
-| modify | `docs/setup.md`, `docs/deploy.md`, `docs/security.md`, `app/.server/AGENTS.md`, `AGENTS.md` | env table, links, CSP, provider notes |
+| modify | `docs/setup.md`, `docs/deploy.md`, `docs/security.md`, `README.md`, `.env.example`, `app/.server/AGENTS.md`, `AGENTS.md` | env table, links, CSP, provider notes |
 
 ## Steps
 
@@ -214,7 +214,7 @@ The four open questions were answered with their recommended defaults (2026-11-2
   `liqpay-private-key` secret parameters, `LIQPAY_SANDBOX=false`, and `PAYMENT_PROVIDER` per Q1
   (default: a `card-payments` parameter, `liqpay` only when set to `on`). Update the comment that
   says there is no provider, and `aspire-apphost/AGENTS.md`'s environment list.
-- [ ] **9. Documentation** — New `docs/payments.md`: how card payments flow (attempts, callback,
+- [x] **9. Documentation** — New `docs/payments.md`: how card payments flow (attempts, callback,
   idempotency); opening the LiqPay account for the ФОП and what it checks (#190 pages, seller
   details); sandbox keys, `LIQPAY_SANDBOX`, LiqPay's sandbox test cards (link to their docs page),
   the tunnel for local callbacks (Q4); the callback URL `https://<site>/payments/callback` and the

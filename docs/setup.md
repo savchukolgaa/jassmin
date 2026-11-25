@@ -16,7 +16,7 @@ How to run, configure and operate Jassmin. Start with [Getting started](../READM
 - [Email delivery in production](#email-delivery-in-production)
 - [Gift cards](#gift-cards)
 - [Recommendations](#recommendations)
-- [Card payments (simulator)](#card-payments-simulator)
+- [Card payments](#card-payments)
 - [Database migrations](#database-migrations)
 - [Project structure](#project-structure)
 - [Content (Strapi CMS)](#content-strapi-cms)
@@ -90,7 +90,10 @@ pnpm dev                    # http://localhost:5173
 | `STRAPI_API_TOKEN` | no* | Read-only Strapi API token. *Without it the app still starts, but CMS-backed pages answer with a 503. |
 | `STRAPI_SYNC_TOKEN` | no* | Strapi API token that may write products and orders (#40). *Without it, new orders and stock changes stay queued for Strapi (`pnpm db:sync-cms` pushes them later). |
 | `CMS_SYNC_SECRET` | no* | Shared secret (32+ characters) that Strapi sends to the app's `/cms/*` sync routes; the same value goes in `cms/.env`. *Without it, saving a product or an order in the Strapi admin fails. |
-| `PAYMENT_PROVIDER` | no* | Where card payments go. Only `simulator` for now, a local fake payment page that's refused when `NODE_ENV=production` (see [Card payments](#card-payments-simulator)). *Without it the app still starts, but card payment is unavailable at checkout. |
+| `PAYMENT_PROVIDER` | no* | Where card payments go: `liqpay` (LiqPay, #192, see [payments.md](payments.md)) or `simulator`, a local fake payment page that's refused when `NODE_ENV=production` (see [Card payments](#card-payments)). *Unset, empty or `none`: the app still starts, but card payment is unavailable at checkout. |
+| `LIQPAY_PUBLIC_KEY` / `LIQPAY_PRIVATE_KEY` | with `liqpay` | The shop's LiqPay keys (sandbox keys in development). The private key is a secret. See [payments.md](payments.md#settings). |
+| `LIQPAY_SANDBOX` | no | `true`/`false`: LiqPay's test mode. Unset, it's on outside production and off in production. |
+| `LIQPAY_ORDER_PREFIX` | no | Put in front of every LiqPay `order_id` (e.g. `dev-olga-`), so a reset development or staging database never reuses one LiqPay has seen. Unset in production. |
 | `ROBOTS_DISALLOW_ALL` | no | `true` makes `/robots.txt` answer `Disallow: /`, for a staging or preview server running with `NODE_ENV=production`. Outside production that is always the case (see [SEO](#seo)). |
 | `CSP_MODE` | no | `report-only` (default) sends the Content-Security-Policy as `Content-Security-Policy-Report-Only`, so violations are only logged; `enforce` blocks them (#143, see [Security](security.md)). |
 | `TRUSTED_PROXY_HOPS` | prod* | How many reverse proxies in front of the app append to `X-Forwarded-For` (default `0`, #143). The per-IP rate limits take the client IP that many entries from the right, so a client can't spoof one. *With `0` the header is ignored and the IP is unknown, so behind a hosting proxy set it to `1`; production logs a warning at startup when it's `0` (see [Security](security.md#client-ip)). |
@@ -264,9 +267,9 @@ Under Aspire, start the `db-build-recommendations` resource from the dashboard. 
 
 At read time the lists show only active single perfumes with a size in stock, never the product itself or one already in the cart. While a product has no recommendations, its page keeps the family-based "Similar perfumes". "For you" appears only for a visitor with history (views with consent, or a logged-in customer's orders) and leaves out what they ordered. "Complete your trio" appears while the cart's 10 ml testers don't fill a whole tester trio, and its cards preselect 10 ml. Clicks are tracked as the `recs_product`, `recs_for_you` and `recs_cart` lists ([docs/analytics-events.md](analytics-events.md)).
 
-## Card payments (simulator)
+## Card payments
 
-A shopper who picks card is sent to a hosted payment page right after checkout (#44), and the page's signed callback marks the order paid. Cash on delivery isn't affected. For now the only provider is a **local simulator**: set `PAYMENT_PROVIDER=simulator` in `.env` and restart the app. It needs no merchant account, tunnel or network access, and the app refuses it when `NODE_ENV=production`. Without `PAYMENT_PROVIDER`, the card option is disabled at checkout.
+A shopper who picks card is sent to a hosted payment page right after checkout (#44), and the page's signed callback marks the order paid. Cash on delivery isn't affected. The real provider is **LiqPay** (#192): sandbox testing, the merchant account, going live, refunds and fiscal receipts are in [payments.md](payments.md). For development without a LiqPay account or network there's a **local simulator**: set `PAYMENT_PROVIDER=simulator` in `.env` and restart the app. It needs no merchant account, tunnel or network access, and the app refuses it when `NODE_ENV=production`. Without `PAYMENT_PROVIDER`, the card option is disabled at checkout.
 
 After a card checkout, the simulator page at `/payments/simulator` shows the payment's reference and the exact order total. Its buttons play the bank: each one POSTs a signed callback to `/payments/callback` over HTTP, like a real provider, and then returns you to the order's success page.
 
@@ -275,7 +278,7 @@ After a card checkout, the simulator page at `/payments/simulator` shows the pay
 - **Decline the payment**: the attempt is `failed` and the order stays `unpaid`. The success page offers **Try again**, which starts a new attempt.
 - **Return without paying**: no callback. The success page shows the payment as pending, with a **Pay now** button.
 
-Every attempt is a row in `payments`, with a reference like `42-1`, `42-2`. The amount always comes from the order's stored `total_amount`. A real Ukrainian provider (LiqPay, WayForPay or monobank) is a follow-up: one more `PaymentProvider` in `app/.server/payments/` plus a migration that allows it in `payments_provider_check`.
+Every attempt is a row in `payments`, with a reference like `42-1`, `42-2`. The amount always comes from the order's stored `total_amount`. Another provider (e.g. monobank acquiring) would be one more `PaymentProvider` in `app/.server/payments/`, a migration that allows it in `payments_provider_check`, and its origin in the CSP's `form-action`.
 
 ## Database migrations
 

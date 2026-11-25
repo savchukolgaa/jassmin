@@ -100,6 +100,22 @@ const cardOrder: OrderConfirmation = {
 };
 
 describe("buildOrderConfirmationEmail", () => {
+  it("links to the public offer and the returns page in the footer, in its language (#190)", () => {
+    const uk = buildOrderConfirmationEmail(codOrder, createTranslator("uk"), env);
+    expect(String(uk.text)).toContain("Публічна оферта: https://jassmin.ua/oferta");
+    expect(String(uk.text)).toContain("Повернення та обмін: https://jassmin.ua/povernennia");
+    expect(htmlSection(String(uk.html), "footer")).toContain('href="https://jassmin.ua/oferta"');
+
+    const en = buildOrderConfirmationEmail(codOrder, createTranslator("en"), env);
+    expect(String(en.text)).toContain("Public offer: https://jassmin.ua/en/offer-terms");
+
+    const noSite = buildOrderConfirmationEmail(codOrder, createTranslator("uk"), {
+      ...env,
+      PUBLIC_SITE_URL: undefined,
+    });
+    expect(String(noSite.text)).not.toContain("Публічна оферта");
+  });
+
   it("writes a Ukrainian cash-on-delivery order below the free-shipping threshold", () => {
     const email = buildOrderConfirmationEmail(codOrder, createTranslator("uk"), env);
 
@@ -372,6 +388,11 @@ describe("gift card emails (#125)", () => {
 
   it("sends the buyer the code, the expiry and how to use it, in Ukrainian", () => {
     const email = buildGiftCardEmail(giftCard, createTranslator("uk"), env);
+    // The buyer bought under the public offer (#190); the recipient's email has no such links.
+    expect(String(email.text)).toContain("Публічна оферта: https://jassmin.ua/oferta");
+    expect(
+      String(buildGiftCardRecipientEmail(giftCard, createTranslator("uk"), env).text),
+    ).not.toContain("Публічна оферта");
     expect(email.to).toBe("buyer@example.com");
     expect(email.from).toBe(env.CONTACT_FROM);
     expect(email.replyTo).toBe("shop@example.com");

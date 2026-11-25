@@ -220,7 +220,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
 - [x] **9. `orders.offer_version`.** Add `offerVersion: date({ mode: "string" })` with a doc comment
   to `orders`; `pnpm db:generate`; set it in the insert in `queries/orders.ts`. Tests: migrator test
   that older rows are `NULL`; checkout/orders test that a new order stores `OFFER_UPDATED_AT`.
-- [ ] **10. Email links.** Add `legalLinks` to `EmailFooter` and render them in `renderEmail` (HTML
+- [x] **10. Email links.** Add `legalLinks` to `EmailFooter` and render them in `renderEmail` (HTML
   and text, escaped, only `http(s)`); pass offer and returns URLs (`PUBLIC_SITE_URL` + `pathFor`
   in the email's locale) from `buildOrderConfirmationEmail` and `buildGiftCardEmail`. Tests in
   `layout.test.ts` and `order-email.test.ts`; other emails unchanged.

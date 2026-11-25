@@ -210,7 +210,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   the placeholder (and is omitted with `showPlaceholders: false`), Strapi down still renders, prices
   come from the constants (assert the formatted `FREE_SHIPPING_THRESHOLD` and gift-card amounts),
   meta has title/description/canonical.
-- [ ] **7. Footer.** Add the three links to `navLinks()` and render them per Q4; update
+- [x] **7. Footer.** Add the three links to `navLinks()` and render them per Q4; update
   `Footer.test.ts` (labels, order, hrefs in uk and en). Check the footer at phone width.
 - [ ] **8. Checkout (and gift-card form).** Add the acceptance line with the offer link under the
   submit button in `CheckoutForm.tsx`; test in `checkout-ui.test.ts`. Same on the gift-card purchase

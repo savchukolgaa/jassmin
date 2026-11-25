@@ -33,6 +33,18 @@ export function Footer({ socialLinks = [] }: FooterProps) {
                 </Link>
               </li>
             ))}
+          </ul>
+        </nav>
+        {/* The legal pages (#190) and the privacy policy, in a second row. */}
+        <nav aria-label={t("nav.legal")}>
+          <ul className="-mx-3 -mt-4 flex flex-wrap gap-x-1">
+            {links.legal.map((link) => (
+              <li key={link.to}>
+                <Link to={link.to} className={navItemClasses()}>
+                  {t(link.labelKey)}
+                </Link>
+              </li>
+            ))}
             <li>
               {/* Forgets the cookie banner's answer (`/consent`), so the banner shows again. */}
               <Form method="post" action="/consent">

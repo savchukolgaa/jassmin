@@ -765,6 +765,25 @@ export const en = {
     signature: "The Jassmin team",
     why: "You're getting this email because you agreed to receive news and offers from Jassmin.",
   },
+  testerFollowupEmail: {
+    subject: "Which one did you like? — Jassmin",
+    preheader: "Your personal code: {percent}% off a full bottle.",
+    greeting: "Hello, {name}!",
+    intro:
+      "It's been a few weeks since your testers arrived. We hope you've had time to wear each scent — which one became yours?",
+    productsHeading: "You tried",
+    priceFrom: "bottle from {price}",
+    offer:
+      "Here's {percent}% off a full bottle (30, 50 or 100 ml) of any of these fragrances, just for you.",
+    codeLabel: "Your personal code",
+    codeNote: "Valid until {date} inclusive, for one order.",
+    button: "Choose a bottle",
+    howTo:
+      "Click a fragrance: the code is applied in your cart as soon as you add a bottle. Or enter it in the cart yourself.",
+    contact: "Not sure which to choose? Reply to this email or write to {email}.",
+    signature: "The Jassmin team",
+    why: "You're getting this email because you agreed to receive news and offers from Jassmin and ordered testers from us.",
+  },
   newsletterEmail: {
     greeting: "Hello, {name}!",
     productsHeading: "Picked for you",

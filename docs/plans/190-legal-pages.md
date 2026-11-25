@@ -187,9 +187,10 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   empty → `null`); update both fixtures (one with values, one with `null`s); tests in
   `content.test.ts`. The Q3 fallback to the Ukrainian `legalAddress`/`registrationNote` lives in
   `getSellerDetails` (`app/.server/legal.ts`, step 6) so `getSiteSettings` stays one request. Update the privacy loader test's `getSiteSettings` mock shape.
-- [ ] **3. `app/lib/legal.ts`.** Version constants, `RETURN_REPORT_DAYS`, `SellerDetails`
+- [x] **3. `app/lib/legal.ts`.** Version constants, `RETURN_REPORT_DAYS`, `SellerDetails`
   (`legalName`, `taxId`, `legalAddress`, `registrationNote`, `phone`, `email`),
-  `REQUIRED_SELLER_FIELDS`, `missingSellerDetails()`, `sellerDetailsOf(settings)`. Unit tests.
+  `REQUIRED_SELLER_FIELDS`, `missingSellerDetails()`. Unit tests. (Building `SellerDetails` from
+  the CMS moved to `getSellerDetails` in `app/.server/legal.ts`, with the Q3 fallback.)
 - [ ] **4. Paths and routes.** Add to `PAGES`: `offerTerms` (`oferta` / `offer-terms`),
   `deliveryAndPayment` (`dostavka-i-oplata` / `delivery-and-payment`), `returns` (`povernennia` /
   `returns`), all `indexable: true`; register them in `app/routes.ts` next to `privacy`. Check

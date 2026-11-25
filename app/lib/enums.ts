@@ -171,10 +171,10 @@ export const EMAIL_SUPPRESSION_REASONS = [
 export type EmailSuppressionReason = (typeof EMAIL_SUPPRESSION_REASONS)[number];
 
 /**
- * Where card payments go (#44). Only the local `simulator` for now (never in production); a real
+ * Where card payments go (#44): the local `simulator` (never in production) or LiqPay (#192). A new
  * provider joins this list with a migration that rewrites the `payments_provider_check`.
  */
-export const PAYMENT_PROVIDERS = ["simulator"] as const;
+export const PAYMENT_PROVIDERS = ["simulator", "liqpay"] as const;
 
 export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
 

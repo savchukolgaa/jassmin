@@ -32,11 +32,16 @@ callback, sandbox mode for development, the CSP and production settings, and a g
 
 ## Decisions & assumptions
 
-- **Adapter** `app/.server/payments/liqpay.ts`, `createLiqPay({ publicKey, privateKey, sandbox })`
-  returning `PaymentProvider` with `name: "liqpay"`. Signature: `base64(sha1(private + data +
-  private))`, compared with `timingSafeEqual` after a length check (same helper shape as the
-  simulator).
-- **Checkout `data`**: `{ version: 3, public_key, action: "pay", amount, currency, description,
+- **Adapter** `app/.server/payments/liqpay.ts`, `createLiqPay({ publicKey, privateKey, sandbox,
+  orderPrefix })` returning `PaymentProvider` with `name: "liqpay"`.
+- **Deviation from the issue: API version 7 and SHA3-256.** The issue describes version 3 with a
+  SHA-1 signature. LiqPay's current checkout docs specify `version: 7` and
+  `base64(sha3-256(private + data + private))`, and their worked example (private key
+  `a4825234…`, signature `0adgJ8F2…`) only matches SHA3-256 (checked locally). Their older code
+  samples still show SHA-1, so callbacks are accepted with either digest (both computed and
+  compared in constant time; both need the private key). Checkouts are signed with SHA3-256. The
+  test uses the documented example. Verify in the sandbox.
+- **Checkout `data`**: `{ version: 7, public_key, action: "pay", amount, currency, description,
   order_id: reference, result_url, server_url: callbackUrl, language, sandbox?: 1 }`. `amount` is
   sent as a number parsed from the exact decimal string (LiqPay expects a number); `currency` comes
   from the request (always `UAH` today, from the stored row) rather than being hard-coded, so the
@@ -91,33 +96,20 @@ callback, sandbox mode for development, the CSP and production settings, and a g
   the same; `privacy.sharing` gets a `payments` sentence naming LiqPay as the processor of card
   data (the shop never sees card numbers). The copy is provider-specific, so it's shown only when
   the provider is `liqpay`: the loaders pass the provider name (or a boolean) and the simulator
-  keeps today's generic text. **(unconfirmed, see Q3)**
+  keeps today's generic text. (Q3)
 - **Simulator** stays as is for offline development and tests; `docs/setup.md` documents both.
 
-## Open questions
-
-- [ ] **Q1: Should this PR switch production to `PAYMENT_PROVIDER=liqpay`, or only wire the
-  secrets and leave card payment off until #190 ships and LiqPay approves the shop?** — Why it
-  matters: a deploy with `liqpay` but no approved merchant account shows customers a LiqPay error
-  page, and the deploy prompts for keys that don't exist yet. Recommended default: add
-  `liqpay-public-key` / `liqpay-private-key` secret parameters and `LIQPAY_SANDBOX=false`, but
-  gate `PAYMENT_PROVIDER=liqpay` behind a `card-payments` parameter (`off` by default →
-  `PAYMENT_PROVIDER` unset), documented as the go-live switch. Affects steps: 8, 9.
-- [ ] **Q2: Duplicate `order_id`s in LiqPay.** References are `<order id>-<attempt>`, so a reset
-  development database, or a staging server sharing the account, reuses `1-1`, which LiqPay
-  rejects as a duplicate order. Why it matters: sandbox testing breaks after a DB reset.
-  Recommended default: optional `LIQPAY_ORDER_PREFIX` (e.g. `dev-olga-`); the adapter prepends it
-  to `order_id` and strips it in `parseCallback` (a callback without it is `malformed`).
-  Production leaves it empty, so its order ids stay the plain references. Affects steps: 2, 4.
-- [ ] **Q3: Provider-specific copy.** Show "card, Apple Pay, Google Pay on LiqPay's page" only
-  when LiqPay is the provider (recommended, keeps the simulator honest), or always? Affects
-  step: 7.
-- [ ] **Q4: Local callbacks.** LiqPay's sandbox POSTs `server_url` from the internet, so on
-  `localhost` the callback never arrives and orders stay pending. Recommended default: document a
-  tunnel (`cloudflared tunnel --url http://localhost:<port>`) and setting `PUBLIC_SITE_URL` to the
-  tunnel URL for sandbox testing; no code for it. Affects step: 9.
-
 ## Resolved questions
+
+The four open questions were answered with their recommended defaults (2026-11-25):
+
+- **Q1: Switch production to LiqPay in this PR?** — No. The keys become secret parameters and
+  `LIQPAY_SANDBOX=false` is set, but `PAYMENT_PROVIDER=liqpay` is only set when the `card-payments`
+  parameter is `on` (off by default), the go-live switch after #190 and LiqPay's approval.
+- **Q2: Duplicate `order_id`s** — optional `LIQPAY_ORDER_PREFIX`, prepended to `order_id` and
+  stripped (and required) in `parseCallback`; empty in production.
+- **Q3: Provider-specific copy** — the LiqPay wording shows only when LiqPay is the provider.
+- **Q4: Local callbacks** — documented tunnel (`cloudflared`) with `PUBLIC_SITE_URL`; no code.
 
 - **Does the `PaymentProvider` interface need changing?** — No: `createCheckout` is pure and
   `parseCallback(form)` gets the `data`/`signature` form (source:
@@ -168,23 +160,23 @@ callback, sandbox mode for development, the CSP and production settings, and a g
 
 ## Steps
 
-- [ ] **1. Provider enum and migration** — Add `"liqpay"` to `PAYMENT_PROVIDERS`; run
+- [x] **1. Provider enum and migration** — Add `"liqpay"` to `PAYMENT_PROVIDERS`; run
   `pnpm db:generate` (drizzle-kit) to produce `0036_liqpay_provider.sql` that drops and re-adds
   `payments_provider_check` with both values; update `schema.test.ts` if it lists them. Update the
   `env.test.ts` case that expects `liqpay` to be refused (it becomes "requires keys"). Check:
   `pnpm typecheck` (the `getPaymentProvider` switch now fails exhaustiveness → fixed in step 3).
-- [ ] **2. Callback schema and adapter** — `liqpay.schema.ts` (callback fields above, loose).
+- [x] **2. Callback schema and adapter** — `liqpay.schema.ts` (callback fields above, loose).
   `liqpay.ts`: `sign(privateKey, data)`, `encode(payload)`, constant-time `hasValidSignature`,
   `decode`, `toOutcome(status, { sandbox })`, `normaliseAmount`, and `createLiqPay` with
   `createCheckout` / `parseCallback` (missing fields → `malformed`, bad signature →
   `invalid-signature`, wrong `public_key` or schema failure → `malformed`, never throws; wrap the
   body in try/catch as a backstop). `raw` = the decoded payload. `providerPaymentId` =
   `String(payment_id)` or `null`. Include the Q2 prefix if confirmed.
-- [ ] **3. Wire the provider** — `getPaymentProvider` gets `case "liqpay"` (keys are guaranteed by
+- [x] **3. Wire the provider** — `getPaymentProvider` gets `case "liqpay"` (keys are guaranteed by
   `parseEnv`; narrow with a guard that throws a clear error if not, for type-safety);
   `getSimulator` unchanged. Update the header comment and `services/payments.ts`'s `PaymentDeps`
   doc comment.
-- [ ] **4. Env rules** — `LIQPAY_PUBLIC_KEY`, `LIQPAY_PRIVATE_KEY` (`z.string().min(1).optional()`),
+- [x] **4. Env rules** — `LIQPAY_PUBLIC_KEY`, `LIQPAY_PRIVATE_KEY` (`z.string().min(1).optional()`),
   `LIQPAY_SANDBOX` (`z.stringbool().optional()`), (Q2: `LIQPAY_ORDER_PREFIX`), empty → unset in
   `parseEnv`. Refine: `PAYMENT_PROVIDER === "liqpay"` requires both keys (message names them).
   Export `isLiqPaySandbox(env)`. Warn once at startup in production when sandbox is on. Tests in

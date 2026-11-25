@@ -253,6 +253,13 @@
       "when": 1795075176766,
       "tag": "0035_product_recommendations",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795626018923,
+      "tag": "0036_liqpay_provider",
+      "breakpoints": true
     }
   ]
 }

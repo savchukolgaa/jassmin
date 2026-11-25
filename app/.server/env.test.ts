@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getDatabaseUrl,
   getSiteUrl,
+  isLiqPaySandbox,
   parseAiEnv,
   parseCmsSyncEnv,
   parseEnv,
@@ -163,7 +164,49 @@ describe("parseEnv: PAYMENT_PROVIDER", () => {
   });
 
   it("rejects an unknown provider", () => {
-    expect(() => parseEnv({ ...valid, PAYMENT_PROVIDER: "liqpay" })).toThrow(/PAYMENT_PROVIDER/);
+    expect(() => parseEnv({ ...valid, PAYMENT_PROVIDER: "stripe" })).toThrow(/PAYMENT_PROVIDER/);
+  });
+});
+
+describe("parseEnv: LiqPay", () => {
+  const keys = { LIQPAY_PUBLIC_KEY: "sandbox_i123", LIQPAY_PRIVATE_KEY: "sandbox_secret" };
+
+  it("accepts LiqPay with both keys, in development and production", () => {
+    const env = parseEnv({ ...valid, PAYMENT_PROVIDER: "liqpay", ...keys });
+    expect(env).toMatchObject({ PAYMENT_PROVIDER: "liqpay", ...keys });
+    expect(parseEnv({ ...production, PAYMENT_PROVIDER: "liqpay", ...keys }).PAYMENT_PROVIDER).toBe(
+      "liqpay",
+    );
+  });
+
+  it("refuses LiqPay without its keys, and treats empty keys as missing", () => {
+    expect(() => parseEnv({ ...valid, PAYMENT_PROVIDER: "liqpay" })).toThrow(/LIQPAY_PUBLIC_KEY/);
+    expect(() =>
+      parseEnv({ ...valid, PAYMENT_PROVIDER: "liqpay", ...keys, LIQPAY_PRIVATE_KEY: " " }),
+    ).toThrow(/LIQPAY_PRIVATE_KEY/);
+  });
+
+  it("doesn't need the keys while LiqPay isn't the provider", () => {
+    expect(parseEnv(valid).LIQPAY_PUBLIC_KEY).toBeUndefined();
+  });
+
+  it("reads LIQPAY_SANDBOX as a boolean and LIQPAY_ORDER_PREFIX as a short id", () => {
+    expect(parseEnv({ ...valid, LIQPAY_SANDBOX: "false" }).LIQPAY_SANDBOX).toBe(false);
+    expect(parseEnv({ ...valid, LIQPAY_SANDBOX: "" }).LIQPAY_SANDBOX).toBeUndefined();
+    expect(parseEnv({ ...valid, LIQPAY_ORDER_PREFIX: "dev-olga-" }).LIQPAY_ORDER_PREFIX).toBe(
+      "dev-olga-",
+    );
+    expect(() => parseEnv({ ...valid, LIQPAY_ORDER_PREFIX: "a b" })).toThrow(/LIQPAY_ORDER_PREFIX/);
+  });
+});
+
+describe("isLiqPaySandbox", () => {
+  it("is on outside production and off in production unless LIQPAY_SANDBOX says otherwise", () => {
+    expect(isLiqPaySandbox({ NODE_ENV: "development" })).toBe(true);
+    expect(isLiqPaySandbox({ NODE_ENV: "test" })).toBe(true);
+    expect(isLiqPaySandbox({ NODE_ENV: "production" })).toBe(false);
+    expect(isLiqPaySandbox({ NODE_ENV: "production", LIQPAY_SANDBOX: true })).toBe(true);
+    expect(isLiqPaySandbox({ NODE_ENV: "development", LIQPAY_SANDBOX: false })).toBe(false);
   });
 });
 

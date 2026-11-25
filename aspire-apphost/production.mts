@@ -68,6 +68,15 @@ export async function addProductionResources(builder: DistributedApplicationBuil
   // Created in the Strapi admin after the first deploy; enter `pending` until then (docs/deploy.md).
   const strapiApiToken = await builder.addParameter("strapi-api-token", { secret: true });
   const strapiSyncToken = await builder.addParameter("strapi-sync-token", { secret: true });
+  // Card payments (#192, docs/payments.md). The LiqPay keys are `pending` until LiqPay approves the
+  // shop. `payment-provider` is the go-live switch: `none` (card payment off) until it's set to
+  // `liqpay` in the deployment state; a pipeline can't read a parameter, so it goes straight into
+  // PAYMENT_PROVIDER, where env.ts reads `none` as unset.
+  const liqpayPublicKey = await builder.addParameter("liqpay-public-key", { secret: true });
+  const liqpayPrivateKey = await builder.addParameter("liqpay-private-key", { secret: true });
+  const paymentProvider = await builder
+    .addParameter("payment-provider", { value: "none" })
+    .withDescription("Card payments: none (off) or liqpay, once LiqPay has approved the shop.");
 
   // Random secrets nobody types. Losing Aspire's deployment state would change them, so
   // docs/deploy.md has the owner back it up.
@@ -141,9 +150,9 @@ export async function addProductionResources(builder: DistributedApplicationBuil
     .waitForCompletion(dbMigrate)
     .withContainerRegistry(ghcr);
 
-  // The app's environment, shared by the site and the jobs. No PAYMENT_PROVIDER: card payment
-  // stays off until a real provider exists (env.ts refuses the simulator in production). No AI_*
-  // variables: the AI perfumer stays off until #167.
+  // The app's environment, shared by the site and the jobs. Card payment is LiqPay, live (never
+  // its sandbox) once `payment-provider` says so. No AI_* variables: the AI perfumer stays off
+  // until #167.
   for (const app of [web, scheduler]) {
     await app
       .withReference(db)
@@ -159,6 +168,10 @@ export async function addProductionResources(builder: DistributedApplicationBuil
       .withEnvironment("SMTP_URL", smtpUrl)
       .withEnvironment("EMAIL_WEBHOOK_SECRET", emailWebhookSecret)
       .withEnvironment("EMAIL_UNSUBSCRIBE_SECRET", emailUnsubscribeSecret)
+      .withEnvironment("PAYMENT_PROVIDER", paymentProvider)
+      .withEnvironment("LIQPAY_PUBLIC_KEY", liqpayPublicKey)
+      .withEnvironment("LIQPAY_PRIVATE_KEY", liqpayPrivateKey)
+      .withEnvironment("LIQPAY_SANDBOX", "false")
       // Newsletter emails per 24 hours (#181): Brevo's free 300 a day, less room for order,
       // account and cart reminder emails. Raise it with a paid plan (docs/email.md).
       .withEnvironment("NEWSLETTER_DAILY_LIMIT", "200");

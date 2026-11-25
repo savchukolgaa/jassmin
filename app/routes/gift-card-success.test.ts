@@ -24,9 +24,9 @@ const load = async (giftCardId: string) => {
   return loader({ request, params: { giftCardId }, context: {} } as unknown as LoaderArgs);
 };
 
-const pay = async (giftCardId: string) => {
+const pay = async (giftCardId: string, body = new URLSearchParams({ intent: "pay" })) => {
   const { action } = await import("./gift-card-success");
-  const request = new Request(path(giftCardId), { method: "POST" });
+  const request = new Request(path(giftCardId), { method: "POST", body });
   return action({ request, params: { giftCardId }, context: {} } as unknown as ActionArgs);
 };
 
@@ -64,6 +64,15 @@ describe("gift card result loader", () => {
 });
 
 describe("gift card result action", () => {
+  it("sends a provider's POST back to the page as a GET without starting a payment", async () => {
+    const liqpayReturn = new URLSearchParams({ data: "eyJ9", signature: "c2ln" });
+    const response = (await pay("12", liqpayReturn)) as Response;
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe("/podarunkovi-kartky/uspikh/12");
+    expect(payments.startGiftCardPayment).not.toHaveBeenCalled();
+  });
+
   it("starts a new attempt for the buyer and sends them to the provider", async () => {
     auth.getUser.mockResolvedValueOnce({ id: 3 });
     payments.startGiftCardPayment.mockResolvedValueOnce({

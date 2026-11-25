@@ -1,4 +1,4 @@
-import { data } from "react-router";
+import { data, redirect } from "react-router";
 import { getUser } from "~/.server/services/auth";
 import { getOrderConfirmation } from "~/.server/services/orders";
 import { getPaymentView } from "~/.server/services/payments";
@@ -35,6 +35,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   // Card orders show where their online payment stands (#44); cash on delivery has nothing to show.
   const payment = order.paymentMethod === "card" ? await getPaymentView(order.id) : null;
   return { ...order, payment };
+}
+
+// The payment provider can send the shopper back here with a POST (LiqPay can, #192). That
+// cross-site POST carries no session cookie, so the page is shown with a GET, which does. Nothing
+// is read from the body: only the provider's signed server callback marks an order paid.
+export function action({ request }: Route.ActionArgs) {
+  return redirect(new URL(request.url).pathname, 303);
 }
 
 export default function CheckoutSuccess({ loaderData: order }: Route.ComponentProps) {

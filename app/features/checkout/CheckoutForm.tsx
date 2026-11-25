@@ -4,6 +4,7 @@ import { Button } from "~/components/ui/Button";
 import { TextField } from "~/components/ui/TextField";
 import { OfferNotice } from "~/features/legal/OfferNotice";
 import type { CheckoutField, CheckoutPrefill } from "~/lib/checkout";
+import type { PaymentProvider } from "~/lib/enums";
 import { type TextKey, useT } from "~/lib/i18n";
 import { PaymentMethodField } from "./PaymentMethodField";
 
@@ -14,6 +15,8 @@ export interface CheckoutFormProps {
   values?: Partial<Record<CheckoutField, string>>;
   /** Whether card payment can be chosen (a payment provider is configured, #44). */
   cardAvailable?: boolean;
+  /** The card payment provider, named in the card option's note when it's LiqPay (#192). */
+  cardProvider?: PaymentProvider | null;
   /** The total the page shows (#59); the order isn't placed if it came out higher. */
   expectedTotal?: string;
   /**
@@ -41,6 +44,7 @@ export function CheckoutForm({
   fieldErrors,
   values,
   cardAvailable = true,
+  cardProvider = null,
   expectedTotal,
   paidByGiftCard = false,
 }: CheckoutFormProps) {
@@ -113,6 +117,7 @@ export function CheckoutForm({
             defaultValue={value("paymentMethod")}
             error={error("paymentMethod")}
             cardAvailable={cardAvailable}
+            cardProvider={cardProvider}
           />
         )}
       </Section>

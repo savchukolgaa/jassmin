@@ -1,6 +1,8 @@
 import { data, Link, redirect, type ShouldRevalidateFunctionArgs, useFetcher } from "react-router";
 import { trackEvent } from "~/.server/analytics";
+import { getEnv } from "~/.server/env";
 import { getLocale } from "~/.server/locale";
+import { getCardPaymentProviderName } from "~/.server/payments/provider";
 import { getClientIp, giftCardCodeLimiter } from "~/.server/rate-limit";
 import {
   type CartOwner,
@@ -81,6 +83,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     // Free delivery is decided on what's left after the discount (#59), before the gift card.
     shipping: freeShippingInfo(cart.total),
     cardPaymentAvailable: isCardPaymentAvailable(),
+    cardProvider: getCardPaymentProviderName(getEnv()),
     giftCard,
     // What is left to pay after the gift card (#125); the form posts it as `expectedTotal`.
     amountDue: amountDueAfter(cart.total, giftCard),
@@ -263,7 +266,7 @@ async function paymentRedirect(
 export default function Checkout({ loaderData, actionData }: Route.ComponentProps) {
   const { t } = useT();
   const path = usePathFor();
-  const { cart, prefill, shipping, cardPaymentAvailable } = loaderData;
+  const { cart, prefill, shipping, cardPaymentAvailable, cardProvider } = loaderData;
   // The gift card form's answer, until the next load brings the same (#125).
   const giftCardFetcher = useFetcher<CheckoutGiftCardResult>({ key: CHECKOUT_GIFT_CARD_FETCHER });
   const latest = giftCardFetcher.data?.ok ? giftCardFetcher.data : null;
@@ -294,6 +297,7 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
           fieldErrors={formErrors?.fieldErrors}
           values={formErrors?.values}
           cardAvailable={cardPaymentAvailable}
+          cardProvider={cardProvider}
           expectedTotal={amountDue}
           paidByGiftCard={giftCard !== null && Number(amountDue) === 0}
         />

@@ -1,10 +1,11 @@
 // The seam between card payments (#44) and whoever takes the money. Checkout, the callback route
 // and the success page only talk to a `PaymentProvider`; `getPaymentProvider` picks the one
-// `PAYMENT_PROVIDER` names. Only the local simulator exists for now, so a real provider is one
-// more implementation here plus a migration that extends `payments_provider_check`.
+// `PAYMENT_PROVIDER` names: the local simulator or LiqPay (#192). Another provider is one more
+// implementation here plus a migration that extends `payments_provider_check`.
 import type { PaymentProvider as PaymentProviderName } from "~/lib/enums";
 import type { Locale } from "~/lib/i18n";
-import type { Env } from "../env";
+import { type Env, isLiqPaySandbox } from "../env";
+import { createLiqPay } from "./liqpay";
 import { createSimulator, type Simulator } from "./simulator";
 
 /** What a provider needs to show its hosted payment page for one attempt. */
@@ -49,21 +50,51 @@ export interface PaymentProvider {
   parseCallback(form: FormData): ParsedCallback;
 }
 
+/** What `getPaymentProvider` reads; the LiqPay keys are only needed when it's the provider. */
+export type PaymentEnv = Pick<Env, "PAYMENT_PROVIDER" | "SESSION_SECRET"> &
+  Partial<
+    Pick<
+      Env,
+      | "NODE_ENV"
+      | "LIQPAY_PUBLIC_KEY"
+      | "LIQPAY_PRIVATE_KEY"
+      | "LIQPAY_SANDBOX"
+      | "LIQPAY_ORDER_PREFIX"
+    >
+  >;
+
 /** The configured provider, or `null` when card payment is off (`PAYMENT_PROVIDER` unset). */
-export function getPaymentProvider(
-  env: Pick<Env, "PAYMENT_PROVIDER" | "SESSION_SECRET">,
-): PaymentProvider | null {
+export function getPaymentProvider(env: PaymentEnv): PaymentProvider | null {
   switch (env.PAYMENT_PROVIDER) {
     case "simulator":
       return createSimulator(env.SESSION_SECRET);
+    case "liqpay":
+      if (!env.LIQPAY_PUBLIC_KEY || !env.LIQPAY_PRIVATE_KEY) {
+        // `parseEnv` refuses this, so only a hand-built env gets here.
+        throw new Error("PAYMENT_PROVIDER=liqpay needs LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY");
+      }
+      return createLiqPay({
+        publicKey: env.LIQPAY_PUBLIC_KEY,
+        privateKey: env.LIQPAY_PRIVATE_KEY,
+        sandbox: isLiqPaySandbox(env),
+        orderPrefix: env.LIQPAY_ORDER_PREFIX,
+      });
     case undefined:
       return null;
   }
 }
 
+/**
+ * The configured provider's name, or `null` when card payment is off: for copy that names the
+ * provider (checkout, gift cards, privacy policy, #192) without building it.
+ */
+export function getCardPaymentProviderName(
+  env: Pick<Env, "PAYMENT_PROVIDER">,
+): PaymentProviderName | null {
+  return env.PAYMENT_PROVIDER ?? null;
+}
+
 /** The simulator when it's the configured provider, for its hosted page; `null` otherwise. */
-export function getSimulator(
-  env: Pick<Env, "PAYMENT_PROVIDER" | "SESSION_SECRET">,
-): Simulator | null {
+export function getSimulator(env: PaymentEnv): Simulator | null {
   return env.PAYMENT_PROVIDER === "simulator" ? createSimulator(env.SESSION_SECRET) : null;
 }

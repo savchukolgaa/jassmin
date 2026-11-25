@@ -72,6 +72,11 @@ const aiEnvSchema = z.object({
   AI_PROVIDER_NAME: z.string().trim().min(1).max(80).optional(),
 });
 
+/** A LiqPay key that is set and isn't the deploy's `pending` placeholder (docs/payments.md). */
+function isLiqPayKey(key: string | undefined): boolean {
+  return key !== undefined && key !== "pending";
+}
+
 const envSchema = z
   .object({
     DATABASE_URL: z.url(),
@@ -84,9 +89,23 @@ const envSchema = z
     // those routes answer 503 and product and order edits in Strapi fail with a clear error.
     CMS_SYNC_SECRET: z.string().min(32).optional(),
     ...cmsSyncEnvSchema.shape,
-    // Where card payments go (#44). Optional: without it the app still starts and card payment is
-    // unavailable at checkout. `simulator` is the local fake payment page, never for production.
+    // Where card payments go (#44). Optional: without it (or with `none`, production's default) the
+    // app still starts and card payment is unavailable at checkout. `simulator` is the local fake
+    // payment page, never for production; `liqpay` is LiqPay (#192).
     PAYMENT_PROVIDER: z.enum(PAYMENT_PROVIDERS).optional(),
+    // LiqPay's merchant keys (#192), required with `PAYMENT_PROVIDER=liqpay`. Production secrets
+    // only, never committed. See docs/payments.md.
+    LIQPAY_PUBLIC_KEY: z.string().trim().min(1).optional(),
+    LIQPAY_PRIVATE_KEY: z.string().trim().min(1).optional(),
+    // LiqPay's test mode: test cards, no money moves. Unset, it's on outside production and off in
+    // production; a staging server in production mode sets `true` on purpose. See isLiqPaySandbox.
+    LIQPAY_SANDBOX: z.stringbool().optional(),
+    // Put in front of each LiqPay `order_id`, so a reset development database or a staging server
+    // never reuses one LiqPay has seen (e.g. `dev-olga-`). Production leaves it unset.
+    LIQPAY_ORDER_PREFIX: z
+      .string()
+      .regex(/^[\w-]{1,32}$/)
+      .optional(),
     // Bearer secret the email provider sends to `/hooks/email` with bounces and complaints
     // (#134). Optional: without it the webhook answers 503 and production logs a warning.
     EMAIL_WEBHOOK_SECRET: z.string().min(32).optional(),
@@ -111,7 +130,16 @@ const envSchema = z
   .refine((env) => !(env.PAYMENT_PROVIDER === "simulator" && env.NODE_ENV === "production"), {
     path: ["PAYMENT_PROVIDER"],
     message: "The payment simulator can't be used in production",
-  });
+  })
+  .refine(
+    (env) =>
+      env.PAYMENT_PROVIDER !== "liqpay" ||
+      (isLiqPayKey(env.LIQPAY_PUBLIC_KEY) && isLiqPayKey(env.LIQPAY_PRIVATE_KEY)),
+    {
+      path: ["PAYMENT_PROVIDER"],
+      message: "PAYMENT_PROVIDER=liqpay needs LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY",
+    },
+  );
 
 export type Env = z.infer<typeof envSchema>;
 
@@ -179,7 +207,12 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
     STRAPI_API_TOKEN: source.STRAPI_API_TOKEN || undefined,
     CMS_SYNC_SECRET: source.CMS_SYNC_SECRET || undefined,
     ...cmsSyncSource(source),
-    PAYMENT_PROVIDER: source.PAYMENT_PROVIDER || undefined,
+    PAYMENT_PROVIDER:
+      source.PAYMENT_PROVIDER === "none" ? undefined : source.PAYMENT_PROVIDER || undefined,
+    LIQPAY_PUBLIC_KEY: source.LIQPAY_PUBLIC_KEY?.trim() || undefined,
+    LIQPAY_PRIVATE_KEY: source.LIQPAY_PRIVATE_KEY?.trim() || undefined,
+    LIQPAY_SANDBOX: source.LIQPAY_SANDBOX || undefined,
+    LIQPAY_ORDER_PREFIX: source.LIQPAY_ORDER_PREFIX || undefined,
     EMAIL_WEBHOOK_SECRET: source.EMAIL_WEBHOOK_SECRET || undefined,
     ROBOTS_DISALLOW_ALL: source.ROBOTS_DISALLOW_ALL || undefined,
     CSP_MODE: source.CSP_MODE || undefined,
@@ -225,6 +258,15 @@ export function parseCmsSyncEnv(source: NodeJS.ProcessEnv): CmsSyncEnv {
 }
 
 /**
+ * Whether LiqPay runs in test mode (#192): `LIQPAY_SANDBOX` when set, otherwise on everywhere but
+ * production, so a live shop never takes test payments by accident and a developer never takes
+ * real ones.
+ */
+export function isLiqPaySandbox(env: Partial<Pick<Env, "LIQPAY_SANDBOX" | "NODE_ENV">>): boolean {
+  return env.LIQPAY_SANDBOX ?? env.NODE_ENV !== "production";
+}
+
+/**
  * The site's public origin without a trailing slash: `PUBLIC_SITE_URL`, or outside production
  * (where it is optional) the request's origin.
  */
@@ -249,6 +291,15 @@ export function getEnv(): Env {
     if (cached.NODE_ENV === "production" && !cached.EMAIL_UNSUBSCRIBE_SECRET) {
       console.warn(
         "[env] EMAIL_UNSUBSCRIBE_SECRET is not set: no cart reminders are sent and unsubscribe links don't work (see docs/email.md)",
+      );
+    }
+    if (
+      cached.NODE_ENV === "production" &&
+      cached.PAYMENT_PROVIDER === "liqpay" &&
+      isLiqPaySandbox(cached)
+    ) {
+      console.warn(
+        "[env] LIQPAY_SANDBOX=true in production: card payments are LiqPay test payments and no money is taken (see docs/payments.md)",
       );
     }
   }

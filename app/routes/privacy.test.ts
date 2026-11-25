@@ -14,6 +14,12 @@ const ai = vi.hoisted(() => ({
 
 vi.mock("~/.server/cms/content", () => content);
 vi.mock("~/.server/ai/config", () => ai);
+// Only the configured card payment provider (#192) is read from the env here.
+const env = vi.hoisted(() => ({ getEnv: vi.fn((): { PAYMENT_PROVIDER?: string } => ({})) }));
+vi.mock("~/.server/env", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/.server/env")>()),
+  getEnv: env.getEnv,
+}));
 
 const { loader, meta } = await import("./privacy");
 
@@ -38,8 +44,14 @@ function renderPolicy(
   locale: Locale | null = "en",
   aiProvider: string | null = null,
   perfumerEnabled = false,
+  cardProvider: "liqpay" | null = null,
 ) {
-  const element = createElement(PrivacyPolicy, { contacts: props, aiProvider, perfumerEnabled });
+  const element = createElement(PrivacyPolicy, {
+    contacts: props,
+    aiProvider,
+    perfumerEnabled,
+    cardProvider,
+  });
   const router = createMemoryRouter([{ path: "*", element }], { initialEntries: ["/privacy"] });
   const app = createElement(RouterProvider, { router });
   return renderToStaticMarkup(locale ? createElement(I18nProvider, { locale }, app) : app);
@@ -58,7 +70,12 @@ describe("privacy loader", () => {
       socialLinks: [],
     });
 
-    expect(await load("en")).toEqual({ contacts, aiProvider: null, perfumerEnabled: false });
+    expect(await load("en")).toEqual({
+      contacts,
+      aiProvider: null,
+      perfumerEnabled: false,
+      cardProvider: null,
+    });
     expect(content.getSiteSettings).toHaveBeenCalledWith("en");
   });
 
@@ -72,6 +89,7 @@ describe("privacy loader", () => {
       contacts: null,
       aiProvider: "OpenRouter",
       perfumerEnabled: true,
+      cardProvider: null,
     });
     consoleError.mockRestore();
     ai.getAiProviderName.mockReturnValue(null);
@@ -82,12 +100,36 @@ describe("privacy loader", () => {
     content.getSiteSettings.mockRejectedValueOnce(new Error("Strapi down"));
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(await load()).toEqual({ contacts: null, aiProvider: null, perfumerEnabled: false });
+    expect(await load()).toEqual({
+      contacts: null,
+      aiProvider: null,
+      perfumerEnabled: false,
+      cardProvider: null,
+    });
+    consoleError.mockRestore();
+  });
+
+  it("names LiqPay as the card payment processor when it takes the payments (#192)", async () => {
+    env.getEnv.mockReturnValueOnce({ PAYMENT_PROVIDER: "liqpay" });
+    content.getSiteSettings.mockRejectedValueOnce(new Error("Strapi down"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(await load()).toMatchObject({ cardProvider: "liqpay" });
     consoleError.mockRestore();
   });
 });
 
 describe("PrivacyPolicy", () => {
+  it("names LiqPay as the card payment processor only when it is one (#192)", () => {
+    expect(renderPolicy(contacts, "en", null, false, "liqpay")).toContain(
+      "Card payments are taken by LiqPay (JSC CB PrivatBank)",
+    );
+    expect(renderPolicy(contacts, null, null, false, "liqpay")).toContain(
+      "Оплату карткою приймає LiqPay",
+    );
+    expect(renderPolicy(contacts)).not.toContain("LiqPay");
+  });
+
   it("names the ФОП and how to reach them", () => {
     const html = renderPolicy(contacts);
 

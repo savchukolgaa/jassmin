@@ -260,6 +260,13 @@
       "when": 1795628426071,
       "tag": "0036_orders_offer_version",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795630387351,
+      "tag": "0037_liqpay_provider",
+      "breakpoints": true
     }
   ]
 }

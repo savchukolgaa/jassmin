@@ -48,7 +48,7 @@ describe("buildCsp", () => {
       "connect-src": ["'self'"],
       "frame-ancestors": ["'none'"],
       "base-uri": ["'self'"],
-      "form-action": ["'self'"],
+      "form-action": ["'self'", "https://www.liqpay.ua"],
       "object-src": ["'none'"],
     });
   });

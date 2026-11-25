@@ -40,12 +40,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   return { card, payment: await getGiftCardPaymentView(giftCardId) };
 }
 
-// POST only, from the "Pay" / "Try again" button: a new payment attempt for a still-pending card.
-// Starting one writes a `payments` row, so a GET never does.
+// POST only, from the "Pay" / "Try again" button (`intent=pay`): a new payment attempt for a
+// still-pending card. Starting one writes a `payments` row, so a GET never does.
 export async function action({ request, params }: Route.ActionArgs) {
   const giftCardId = parseGiftCardId(params.giftCardId);
   if (giftCardId === null) {
     throw data(null, { status: 404 });
+  }
+  const form = await request.formData().catch(() => null);
+  if (form?.get("intent") !== "pay") {
+    // The payment provider sending the shopper back with a POST (LiqPay can, #192). That cross-site
+    // POST carries no session cookie, so show the page with a GET, which does. Never a new attempt.
+    return redirect(new URL(request.url).pathname, 303);
   }
   const locale = await getLocale(request);
   const result = await startGiftCardPayment({

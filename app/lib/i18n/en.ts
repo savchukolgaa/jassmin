@@ -94,6 +94,8 @@ export const en = {
     sharing: {
       heading: "Who we share data with",
       text: "We don't sell your data or share it for advertising. Only the services the store can't run without can access it: hosting, our email service and, for your orders, the delivery service.",
+      payments:
+        "Card payments are taken by LiqPay (JSC CB PrivatBank): you enter your card number and other payment details on LiqPay's page, and they are processed there. We never see or store them; we only receive the amount, the status and the reference of the payment.",
       ai: "The messages you write to the AI perfumer are sent to the language model provider, {provider}, only to prepare the answer. Please don't include personal data in the conversation.",
     },
     rights: {
@@ -598,6 +600,8 @@ export const en = {
     payment: {
       card: "By card",
       cardNote: "Pay online by card right after placing your order.",
+      cardNoteLiqPay:
+        "By card, Apple Pay or Google Pay right after placing your order, on LiqPay's secure page (PrivatBank). Only LiqPay sees your card details.",
       cardUnavailable: "Card payment isn't available right now. Please choose cash on delivery.",
       cod: "Cash on delivery",
       codNote: "Pay when you collect the parcel at Nova Poshta.",
@@ -1103,6 +1107,8 @@ export const en = {
     steps: {
       heading: "How it works",
       buy: "Choose an amount and pay by card online.",
+      buyLiqPay:
+        "Choose an amount and pay by card, Apple Pay or Google Pay on LiqPay's secure page.",
       email: "The card's code is sent to your email and, if you like, to the recipient's.",
       use: "The recipient enters the code at checkout. Whatever is left stays on the card for next time.",
     },

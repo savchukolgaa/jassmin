@@ -112,6 +112,16 @@ describe("CheckoutForm", () => {
     expect(tag(html, 'value="cod"')).not.toContain("disabled");
   });
 
+  it("names card, Apple Pay, Google Pay and LiqPay's page when LiqPay takes the payments (#192)", () => {
+    expect(renderForm({ prefill: null, cardProvider: "liqpay" })).toContain(
+      "By card, Apple Pay or Google Pay right after placing your order, on LiqPay&#x27;s secure page",
+    );
+    expect(renderForm({ prefill: null, cardProvider: "liqpay" }, "uk")).toContain(
+      "Карткою, Apple Pay або Google Pay",
+    );
+    expect(renderForm({ prefill: null, cardProvider: "simulator" })).not.toContain("LiqPay");
+  });
+
   it("is in Ukrainian by default", () => {
     expect(renderForm({ prefill: null }, "uk")).toContain("Підтвердити замовлення");
   });

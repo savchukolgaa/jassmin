@@ -43,10 +43,17 @@ export interface PaymentDeps {
   db: Db;
   /** `null` when `PAYMENT_PROVIDER` isn't set. */
   provider: PaymentProvider | null;
+  /**
+   * The site's public origin (`PUBLIC_SITE_URL`), for the return and callback URLs the provider
+   * gets (#192). Behind the production proxy the request's own origin isn't the public `https://`
+   * one LiqPay must call back. Unset, the request's origin is used (development, tests).
+   */
+  siteUrl?: string;
 }
 
 function defaultDeps(): PaymentDeps {
-  return { db: defaultDb, provider: getPaymentProvider(getEnv()) };
+  const env = getEnv();
+  return { db: defaultDb, provider: getPaymentProvider(env), siteUrl: env.PUBLIC_SITE_URL };
 }
 
 /** Whether checkout can offer card payment: a provider is configured. */
@@ -69,7 +76,7 @@ export interface StartPaymentInput {
   orderId: number;
   /** The provider page's language. */
   locale: Locale;
-  /** This site's origin, for the absolute return and callback URLs. */
+  /** The request's origin, for the absolute return and callback URLs without `siteUrl`. */
   origin: string;
   /** When set, only an order this viewer may see can be paid; others are `not-found`. */
   viewer?: OrderViewer;
@@ -81,12 +88,13 @@ export type StartPaymentResult =
 
 /** Starts a new attempt for the order's stored total and returns the provider page to go to. */
 export async function startPayment(
-  { orderId, locale, origin, viewer }: StartPaymentInput,
-  { db, provider }: PaymentDeps = defaultDeps(),
+  { orderId, locale, origin: requestOrigin, viewer }: StartPaymentInput,
+  { db, provider, siteUrl }: PaymentDeps = defaultDeps(),
 ): Promise<StartPaymentResult> {
   if (!provider) {
     return { ok: false, error: "unavailable" };
   }
+  const origin = siteUrl ?? requestOrigin;
   return db.transaction(async (tx): Promise<StartPaymentResult> => {
     // Locked, so two tabs retrying at once get attempts 2 and 3 instead of clashing on 2.
     const order = await findPayableOrder(tx, orderId, { lock: true });
@@ -124,7 +132,7 @@ export interface StartGiftCardPaymentInput {
   giftCardId: number;
   /** The provider page's language. */
   locale: Locale;
-  /** This site's origin, for the absolute return and callback URLs. */
+  /** The request's origin, for the absolute return and callback URLs without `siteUrl`. */
   origin: string;
   /** When set, only a card this viewer bought can be paid; others are `not-found`. */
   viewer?: GiftCardViewer;
@@ -135,12 +143,13 @@ export interface StartGiftCardPaymentInput {
  * page to go to. A card that is paid already is `not-payable`.
  */
 export async function startGiftCardPayment(
-  { giftCardId, locale, origin, viewer }: StartGiftCardPaymentInput,
-  { db, provider }: PaymentDeps = defaultDeps(),
+  { giftCardId, locale, origin: requestOrigin, viewer }: StartGiftCardPaymentInput,
+  { db, provider, siteUrl }: PaymentDeps = defaultDeps(),
 ): Promise<StartPaymentResult> {
   if (!provider) {
     return { ok: false, error: "unavailable" };
   }
+  const origin = siteUrl ?? requestOrigin;
   return db.transaction(async (tx): Promise<StartPaymentResult> => {
     // Locked, so two tabs retrying at once get different attempt numbers.
     const card = await findGiftCard(tx, giftCardId, { lock: true });

@@ -32,6 +32,12 @@ vi.mock("~/.server/services/cms-sync", () => cmsSync);
 vi.mock("~/.server/analytics", () => analytics);
 vi.mock("~/.server/services/payments", () => payments);
 vi.mock("~/.server/services/gift-cards", () => giftCards);
+// Only the configured card payment provider (#192) is read from the env here.
+const env = vi.hoisted(() => ({ getEnv: vi.fn((): { PAYMENT_PROVIDER?: string } => ({})) }));
+vi.mock("~/.server/env", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/.server/env")>()),
+  getEnv: env.getEnv,
+}));
 
 type ActionArgs = Parameters<typeof import("./checkout").action>[0];
 type LoaderArgs = Parameters<typeof import("./checkout").loader>[0];
@@ -155,6 +161,7 @@ describe("checkout loader", () => {
       prefill: null,
       shipping: { free: false, remaining: "600.00" },
       cardPaymentAvailable: true,
+      cardProvider: null,
       giftCard: null,
       amountDue: "900.00",
     });
@@ -195,6 +202,16 @@ describe("checkout loader", () => {
     payments.isCardPaymentAvailable.mockReturnValue(false);
 
     expect(await loader(get())).toMatchObject({ cardPaymentAvailable: false });
+  });
+
+  it("names LiqPay when it takes the card payments (#192)", async () => {
+    const { loader } = await import("./checkout");
+    cart.getCartView.mockResolvedValueOnce(
+      cartView({ lines: [line], itemCount: 2, subtotal: "900.00" }),
+    );
+    env.getEnv.mockReturnValueOnce({ PAYMENT_PROVIDER: "liqpay" });
+
+    expect(await loader(get())).toMatchObject({ cardProvider: "liqpay" });
   });
 
   it("prefills a logged-in user's contact details", async () => {

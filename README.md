@@ -170,7 +170,7 @@ Open the Aspire dashboard and click the `web` resource's endpoint. Until you've 
 - [Products and orders in Strapi](docs/setup.md#products-and-orders-in-strapi)
 - [Email delivery: Brevo, SPF/DKIM/DMARC and bounces](docs/email.md)
 - [Order emails](docs/setup.md#order-emails), [abandoned carts](docs/setup.md#abandoned-carts) and [gift cards](docs/setup.md#gift-cards), with their cron jobs
-- [Card payments (simulator)](docs/setup.md#card-payments-simulator)
+- [Card payments with LiqPay](docs/payments.md) and the [local simulator](docs/setup.md#card-payments)
 - [Legal pages: public offer, delivery and payment, returns](docs/legal.md), and what the owner must review before launch
 - [Security headers, CSP and rate limits](docs/security.md)
 - [Deploying to a Hetzner server](docs/deploy.md) (`pnpm aspire:deploy`)

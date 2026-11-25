@@ -12,6 +12,12 @@ vi.mock("~/.server/services/auth", () => auth);
 vi.mock("~/.server/services/gift-cards", () => giftCards);
 vi.mock("~/.server/services/payments", () => payments);
 vi.mock("~/.server/session", () => session);
+// Only the configured card payment provider (#192) is read from the env here.
+const env = vi.hoisted(() => ({ getEnv: vi.fn((): { PAYMENT_PROVIDER?: string } => ({})) }));
+vi.mock("~/.server/env", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/.server/env")>()),
+  getEnv: env.getEnv,
+}));
 
 type ActionArgs = Parameters<typeof import("./gift-cards").action>[0];
 type LoaderArgs = Parameters<typeof import("./gift-cards").loader>[0];
@@ -54,13 +60,20 @@ describe("gift card page loader", () => {
       context: {},
     } as unknown as LoaderArgs;
 
-    expect(await loader(args)).toEqual({ cardPaymentAvailable: true, prefillEmail: null });
+    expect(await loader(args)).toEqual({
+      cardPaymentAvailable: true,
+      cardProvider: null,
+      prefillEmail: null,
+    });
     auth.getUser.mockResolvedValueOnce({ id: 3, email: "me@example.com" });
     payments.isCardPaymentAvailable.mockReturnValueOnce(false);
     expect(await loader(args)).toEqual({
       cardPaymentAvailable: false,
+      cardProvider: null,
       prefillEmail: "me@example.com",
     });
+    env.getEnv.mockReturnValueOnce({ PAYMENT_PROVIDER: "liqpay" });
+    expect(await loader(args)).toMatchObject({ cardProvider: "liqpay" });
   });
 });
 

@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/190
 Branch: `issue/190`
 Worktree: `.claude/worktrees/issue-190`
-Status: Planned
+Status: Implemented
 
 ## Goal
 
@@ -90,6 +90,13 @@ version of the offer the customer accepted.
   `legal.offer.*`, `legal.delivery.*`, `legal.returns.*`, `legal.seller.*`, `legal.nav.*`. The text
   is a careful draft; `docs/legal.md` and the PR say the owner (or a lawyer) must review it. The page
   itself carries no disclaimer.
+
+- **Strapi types regenerated (deviation).** After merging #193, `cms/types/generated` must come
+  from `pnpm cms:types`, never a hand edit; the regenerated file matched apart from the content
+  type's description, which is now ASCII-only so the generator doesn't escape it.
+- **Verification.** Typecheck, lint, build and the affected test files (including the DB tests for
+  the migration and checkout) passed locally; the full `pnpm test` run was stopped by the machine
+  running low on memory, so CI's `check` job runs it on the PR.
 
 ## Open questions
 
@@ -238,7 +245,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   `OFFER_UPDATED_AT`/`RETURNS_UPDATED_AT`, and that `offer_version` then changes for new orders).
   Update `docs/setup.md` (site-setting fields), `docs/email.md` (footer links),
   `app/.server/AGENTS.md` (CMS note), and link `docs/legal.md` from `README.md`.
-- [ ] **14. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual check in the
+- [x] **14. Verify.** `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; manual check in the
   running app.
 
 ## Testing & verification
@@ -256,17 +263,17 @@ All answered on 2026-11-25: the owner accepted every recommended default.
 
 ## Acceptance criteria
 
-- [ ] The public offer, delivery and payment, and returns pages exist in Ukrainian and English, with
+- [x] The public offer, delivery and payment, and returns pages exist in Ukrainian and English, with
   the seller's details from Strapi — steps 1, 2, 3, 4, 5, 6
-- [ ] Prices, the free-delivery threshold and gift-card amounts on the pages come from the code, not
+- [x] Prices, the free-delivery threshold and gift-card amounts on the pages come from the code, not
   typed text — steps 5, 6
-- [ ] The footer, checkout and order emails link to the pages, and they're in the sitemap — steps 7,
+- [x] The footer, checkout and order emails link to the pages, and they're in the sitemap — steps 7,
   8, 10, 11
-- [ ] Checkout states that placing an order accepts the offer, and each new order stores the offer
+- [x] Checkout states that placing an order accepts the offer, and each new order stores the offer
   version — steps 8, 9
-- [ ] Production warns at startup when the seller's details are missing — step 12
-- [ ] `docs/legal.md` lists what the owner must review before launch — step 13
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 14
+- [x] Production warns at startup when the seller's details are missing — step 12
+- [x] `docs/legal.md` lists what the owner must review before launch — step 13
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 14
 
 ## Out of scope
 

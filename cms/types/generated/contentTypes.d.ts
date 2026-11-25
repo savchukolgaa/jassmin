@@ -1099,7 +1099,7 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
 export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
   collectionName: 'site_settings';
   info: {
-    description: "Store contact details, social links and the seller's legal details (the ФОП's name, РНОКПП, registration address and note) shown on the public offer and privacy pages";
+    description: "Store contact details, social links and the seller's legal details (the sole proprietor's name, tax number, registration address and note) shown on the public offer and privacy pages";
     displayName: 'Site settings';
     pluralName: 'site-settings';
     singularName: 'site-setting';

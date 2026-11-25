@@ -5,7 +5,7 @@
     "singularName": "site-setting",
     "pluralName": "site-settings",
     "displayName": "Site settings",
-    "description": "Store contact details, social links and the seller's legal details (the ФОП's name, РНОКПП, registration address and note) shown on the public offer and privacy pages"
+    "description": "Store contact details, social links and the seller's legal details (the sole proprietor's name, tax number, registration address and note) shown on the public offer and privacy pages"
   },
   "options": {
     "draftAndPublish": false

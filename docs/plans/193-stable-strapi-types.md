@@ -139,9 +139,9 @@ Both answered by the owner (2026-11-25): use the recommended defaults.
   "endOfLine": "lf" }`. Check: `pnpm cms:types` leaves `git status -- cms/types/generated` clean.
   Then prove the pin works: temporarily put a `.prettierrc` with `{"printWidth": 120}` in the
   worktree root, run `pnpm cms:types` (still clean), remove it, and note the result for the PR.
-- [ ] **3. `.gitattributes`** — add `cms/types/generated/** text eol=lf linguist-generated` with a
+- [x] **3. `.gitattributes`** — add `cms/types/generated/** text eol=lf linguist-generated` with a
   comment pointing to #193. Check: `git ls-files --eol cms/types/generated` shows `i/lf w/lf`.
-- [ ] **4. Commit any regenerated types** — run `pnpm cms:types`; if it changes anything, commit the
+- [x] **4. Commit any regenerated types** — run `pnpm cms:types`; if it changes anything, commit the
   files (expected: nothing to commit).
 - [ ] **5. CI check** — in `.github/workflows/ci.yml`:
   - add `".github/workflows/ci.yml"` to the `cms` filter in `changes`;

@@ -167,7 +167,8 @@ All answered on 2026-11-25: the owner accepted every recommended default.
 | modify | `app/features/gift-cards/GiftCardPurchaseForm.tsx`, `gift-cards-ui.test.ts` | acceptance line (Q2) |
 | create | `app/features/legal/OfferNotice.tsx` | the shared acceptance line with the offer link |
 | modify | `app/.server/db/schema.ts` | `orders.offerVersion` |
-| create | `app/.server/db/migrations/0036_*.sql` (+ meta) | generated migration |
+| create | `app/.server/db/migrations/0036_orders_offer_version.sql` (+ meta), `app/.server/db/rollbacks/0036_orders_offer_version.sql` | generated migration and its rollback |
+| modify | `app/lib/commerce.ts`, `app/.server/db/schema.test.ts` | `Order.offerVersion` |
 | modify | `app/.server/db/queries/orders.ts` | set `offerVersion: OFFER_UPDATED_AT` |
 | modify | `app/.server/db/migrator.test.ts`, `app/.server/services/orders.test.ts` | column and stored version |
 | modify | `app/.server/email/layout.ts` (+ test) | `EmailFooter.legalLinks` |
@@ -216,7 +217,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
 - [x] **8. Checkout (and gift-card form).** Add the acceptance line with the offer link under the
   submit button in `CheckoutForm.tsx`; test in `checkout-ui.test.ts`. Same on the gift-card purchase
   form if Q2 = yes.
-- [ ] **9. `orders.offer_version`.** Add `offerVersion: date({ mode: "string" })` with a doc comment
+- [x] **9. `orders.offer_version`.** Add `offerVersion: date({ mode: "string" })` with a doc comment
   to `orders`; `pnpm db:generate`; set it in the insert in `queries/orders.ts`. Tests: migrator test
   that older rows are `NULL`; checkout/orders test that a new order stores `OFFER_UPDATED_AT`.
 - [ ] **10. Email links.** Add `legalLinks` to `EmailFooter` and render them in `renderEmail` (HTML

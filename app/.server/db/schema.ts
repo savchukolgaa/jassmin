@@ -501,6 +501,11 @@ export const orders = pgTable(
     returnedAt: timestamp({ withTimezone: true }),
     /** Why the order was cancelled (#128); set with `cancelled`, `null` for older orders. */
     cancelReason: text().$type<CancelReason>(),
+    /**
+     * The version (date) of the public offer the customer accepted by placing the order (#190):
+     * `OFFER_UPDATED_AT` at checkout. `null` for orders placed before the offer existed.
+     */
+    offerVersion: date(),
   },
   (t) => [
     check(

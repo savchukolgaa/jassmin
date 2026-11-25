@@ -231,7 +231,7 @@ All answered on 2026-11-25: the owner accepted every recommended default.
   `[legal] Seller details missing in Strapi site settings: taxId, legalAddress (see docs/legal.md)`
   or that Strapi couldn't be reached. Call from `entry.server.tsx`. Tests with injected deps
   (production vs development, all filled, missing, CMS error).
-- [ ] **13. Docs.** Write `docs/legal.md` (each page's content, the laws: Civil Code arts. 633,
+- [x] **13. Docs.** Write `docs/legal.md` (each page's content, the laws: Civil Code arts. 633,
   641; Law "On Consumer Rights Protection"; CMU resolution No. 172 of 19.03.1994; Law "On
   Electronic Commerce"; the owner's pre-launch checklist: review the copy, fill the Strapi details,
   confirm return rules, check the payment provider's requirements; how to edit the text and bump

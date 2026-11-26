@@ -24,13 +24,16 @@ COPY --from=uv /uv /uvx /usr/local/bin/
 
 # uv installs the Python of analytics/warehouse/.python-version into /opt/python, readable by `node`.
 # pnpm comes from Corepack at the dashboard's `packageManager` version, kept in /opt/corepack.
+# Evidence's build needs a JS heap of 1.5-2 GB (its own baseline, whatever the pages); the cap keeps
+# it bounded. The container's memory cap and swap are in deploy/docker-compose.override.yaml.
 ENV UV_PYTHON_INSTALL_DIR=/opt/python \
     UV_LINK_MODE=copy \
     UV_NO_CACHE=1 \
     COREPACK_HOME=/opt/corepack \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     CI=true \
-    SEND_ANONYMOUS_USAGE_STATS=no
+    SEND_ANONYMOUS_USAGE_STATS=no \
+    NODE_OPTIONS=--max-old-space-size=2560
 RUN corepack enable
 WORKDIR /app
 

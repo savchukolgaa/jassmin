@@ -31,6 +31,17 @@ const REMOTE_DIR = "/srv/jassmin";
 const OUTPUT_DIR = resolve(import.meta.dirname, "..", "aspire-output");
 
 /**
+ * Compose settings the publisher can't express (the analytics service's memory cap and OOM score,
+ * #183). `docker compose` merges it with docker-compose.yaml by its name.
+ */
+const COMPOSE_OVERRIDE = resolve(
+  import.meta.dirname,
+  "..",
+  "deploy",
+  "docker-compose.override.yaml",
+);
+
+/**
  * The .env with the values, written by `prepare-jassmin` for the deploy environment (`aspire do`
  * defaults to Production). `publish` writes only `.env`, an empty template.
  */
@@ -317,7 +328,7 @@ async function deployOverSsh(context: PipelineStepContext): Promise<void> {
   }
   const composeFile = join(OUTPUT_DIR, "docker-compose.yaml");
   const envFile = join(OUTPUT_DIR, ENV_FILE);
-  const missing = [composeFile, envFile].filter((file) => !existsSync(file));
+  const missing = [composeFile, envFile, COMPOSE_OVERRIDE].filter((file) => !existsSync(file));
   if (missing.length > 0) {
     throw new Error(`Aspire didn't write ${missing.join(", ")}; run \`pnpm aspire:deploy\`.`);
   }
@@ -325,6 +336,11 @@ async function deployOverSsh(context: PipelineStepContext): Promise<void> {
   const step = await context.reportingStep();
   const copy = await step.createTask(`Copying the Compose files to ${target}:${REMOTE_DIR}`);
   await run("scp", ["-q", composeFile, `${target}:${REMOTE_DIR}/docker-compose.yaml`]);
+  await run("scp", [
+    "-q",
+    COMPOSE_OVERRIDE,
+    `${target}:${REMOTE_DIR}/docker-compose.override.yaml`,
+  ]);
   // The secrets go through stdin into a file only the deploy user can read, from its first byte.
   await run("ssh", [target, `umask 077 && cat > ${REMOTE_DIR}/.env`], envFile);
   await copy.completeTask();

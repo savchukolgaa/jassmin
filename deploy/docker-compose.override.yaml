@@ -1,0 +1,13 @@
+# Settings Aspire's Compose publisher can't express (#183), merged by `docker compose` with the
+# generated docker-compose.yaml (both live in /srv/jassmin; `deploy-ssh` copies this file there).
+#
+# The owner's dashboard: Evidence's nightly build needs about 3 GB for a few minutes, more than the
+# 4 GB server can spare next to Postgres, Strapi and the shop. So `analytics` may use at most 2 GB
+# of RAM and the rest from the server's swap (docs/deploy.md → Prepare the server), and if memory
+# still runs out, the kernel kills it first, never Postgres or the shop. Measured: 2 GB RAM plus
+# about 2 GB of swap at the peak, about 3.5 minutes a night.
+services:
+  analytics:
+    mem_limit: 2g
+    memswap_limit: 6g
+    oom_score_adj: 1000

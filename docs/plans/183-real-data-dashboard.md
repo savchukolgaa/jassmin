@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/183
 Branch: `issue/183`
 Worktree: `.claude/worktrees/issue-183`
-Status: Planned
+Status: Implemented
 
 ## Goal
 The owner wants a private dashboard of the shop's **real** numbers: sales, best-selling perfumes and
@@ -353,7 +353,7 @@ All answered: the owner chose the recommended defaults for Q1–Q5 (2026-11-25),
   rebuildable and not backed up; `aspire-apphost/AGENTS.md`: services and parameters; root
   `AGENTS.md`: the rule "analytics reads real data only through the pseudonymised `jassmin_wh` copy;
   a new app column reaches it only by being added to `extract/allowlist.py`".
-- [ ] **16. Full check** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; warehouse pytest
+- [x] **16. Full check** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; warehouse pytest
   (with a server) and `wh.py build` on synth; generator and notebook pytest unchanged and green.
 
 ## Testing & verification
@@ -372,13 +372,18 @@ All answered: the owner chose the recommended defaults for Q1–Q5 (2026-11-25),
   password, then shows the pages.
 
 ## Acceptance criteria
-- [ ] A nightly job copies the shop's data into `jassmin_wh` using a read-only role; the app's database is never written — steps 2, 3, 4, 8, 13, 14
-- [ ] No email, phone, name, password hash, address, IP or perfumer message text reaches `jassmin_wh` (tested) — steps 1, 3, 4
-- [ ] `dbt build --target prod` builds and tests the marts on the copy; a failing test keeps the previous dashboard — steps 5, 7, 8
-- [ ] `stats.<domain>` shows sales, products, tester-to-bottle conversion, customers and AI perfumer pages, behind a password — steps 10, 11, 13, 14
-- [ ] The notebooks still refuse every database except `jassmin_synth` — step 6
-- [ ] The synthetic pipeline (#131–#133) works as before — steps 5, 7, 16
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass, and the warehouse's pytest and dbt tests pass — steps 9, 16
+- [x] A nightly job copies the shop's data into `jassmin_wh` using a read-only role; the app's database is never written — steps 2, 3, 4, 8, 13, 14
+- [x] No email, phone, name, password hash, address, IP or perfumer message text reaches `jassmin_wh` (tested) — steps 1, 3, 4
+- [x] `dbt build --target prod` builds and tests the marts on the copy; a failing test keeps the previous dashboard — steps 5, 7, 8
+- [x] `stats.<domain>` shows sales, products, tester-to-bottle conversion, customers and AI perfumer pages, behind a password — steps 10, 11, 13, 14
+- [x] The notebooks still refuse every database except `jassmin_synth` — step 6
+- [x] The synthetic pipeline (#131–#133) works as before — steps 5, 7, 16
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass, and the warehouse's pytest and dbt tests pass — steps 9, 16
+
+Verified locally, not yet on the server: the nightly run in the production image against a test
+Postgres (setup, extract, `dbt build --target prod`, Evidence, publish) under the production memory
+limits, and the `proxy` image serving `stats.localhost` with basic auth. The first deploy checks
+the rest (`docs/deploy.md` → Check that it works).
 
 ## Out of scope
 - Training or scoring ML models on real data; the notebooks stay on `jassmin_synth`.

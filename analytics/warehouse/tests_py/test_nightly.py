@@ -29,10 +29,10 @@ echo "uv $*" >> "$STUB_LOG"
 """
 
 STUB_PNPM = """#!/usr/bin/env bash
-# `pnpm --dir <dashboard> run build:strict` writes a site that names the run.
+# `pnpm run build:strict`, in the dashboard's folder, writes a site that names the run.
 echo "pnpm $*" >> "$STUB_LOG"
-if [ "$4" = "build:strict" ]; then
-  mkdir -p "$2/build" && echo "run $RUN_ID" > "$2/build/index.html"
+if [ "$2" = "build:strict" ]; then
+  mkdir -p build && echo "run $RUN_ID" > build/index.html
 fi
 """
 

@@ -35,14 +35,14 @@ fi
 
 started=$SECONDS
 log "1/4 extract"
-uv run --project "$repo/analytics/warehouse" --frozen "$repo/analytics/warehouse/extract/extract.py"
+uv run --project "$repo/analytics/warehouse" --frozen --no-dev "$repo/analytics/warehouse/extract/extract.py"
 
 log "2/4 dbt build --target prod"
-uv run --project "$repo/analytics/warehouse" --frozen "$repo/analytics/warehouse/wh.py" build --target prod
+uv run --project "$repo/analytics/warehouse" --frozen --no-dev "$repo/analytics/warehouse/wh.py" build --target prod
 
 log "3/4 evidence sources and build"
-pnpm --dir "$repo/analytics/dashboard" run sources
-pnpm --dir "$repo/analytics/dashboard" run build:strict
+# From the dashboard's folder: Corepack picks pnpm's version from the package.json it runs in.
+(cd "$repo/analytics/dashboard" && pnpm run sources && pnpm run build:strict)
 
 log "4/4 publish"
 mkdir -p "$site_dir/releases"

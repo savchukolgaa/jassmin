@@ -1,0 +1,6 @@
+# The owner's dashboard (#183), run by supercronic in the `analytics` container. Times are UTC.
+# Logs: `docker compose logs analytics`. See docs/deploy.md → The owner's dashboard.
+
+# Copy the shop's data into jassmin_wh, build and test the marts, rebuild and publish the site:
+# 01:00 UTC (03:00 or 04:00 in Kyiv), after the Kyiv day has ended and before the 02:00 backups.
+0 1 * * * bash /app/analytics/warehouse/scripts/nightly.sh

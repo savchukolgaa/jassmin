@@ -1,0 +1,21 @@
+# Build context of deploy/analytics/Dockerfile (#183), which BuildKit reads instead of the root
+# .dockerignore: only the warehouse, the dashboard and this folder, without installs, build output,
+# dbt's artifacts or secrets.
+*
+!analytics/warehouse
+!analytics/dashboard
+!deploy/analytics
+**/.env
+**/.env.*
+**/.venv
+**/__pycache__
+**/.pytest_cache
+analytics/dashboard/node_modules
+analytics/dashboard/.evidence
+analytics/dashboard/build
+analytics/dashboard/static/data
+analytics/warehouse/target
+analytics/warehouse/logs
+analytics/warehouse/dbt_packages
+analytics/warehouse/tests_py
+analytics/warehouse/fixtures

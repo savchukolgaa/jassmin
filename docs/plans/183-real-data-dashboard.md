@@ -286,7 +286,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   pointed at the synth test DB built by `test_build.py`) so `pnpm --dir analytics/dashboard build`
   is exercised in CI after the warehouse tests, if it fits the job's time limit; otherwise documented
   as a manual pre-PR check.
-- [ ] **13. Image, Caddy, cron** — `deploy/analytics/Dockerfile` (+ `.dockerignore` allowing only
+- [x] **13. Image, Caddy, cron** — `deploy/analytics/Dockerfile` (+ `.dockerignore` allowing only
   `analytics/warehouse`, `analytics/dashboard`, `analytics/generator/frames.py` if imported,
   `deploy/analytics`), non-root user, `uv sync --locked`, `dbt deps`, `pnpm install --frozen-lockfile
   --ignore-workspace`; `crontab`: `0 1 * * * /app/analytics/warehouse/scripts/nightly.sh`. Caddy:

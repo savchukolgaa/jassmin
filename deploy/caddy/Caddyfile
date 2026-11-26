@@ -1,5 +1,5 @@
 # HTTPS reverse proxy for production (#176). Caddy gets and renews Let's Encrypt certificates for
-# both domains by itself; they're kept on the `caddy-data` volume. The domains come from the
+# every domain by itself; they're kept on the `caddy-data` volume. The domains come from the
 # deploy parameters as SITE_DOMAIN and ADMIN_DOMAIN. `web` and `cms` aren't published on the host,
 # so this is the only way in. Caddy appends the client to X-Forwarded-For, hence
 # TRUSTED_PROXY_HOPS=1 for the app (docs/security.md).
@@ -19,4 +19,37 @@ www.{$SITE_DOMAIN} {
 		max_size 200MB
 	}
 	reverse_proxy cms:1337
+}
+
+# The owner's dashboard (#183): the static Evidence site the `analytics` container rebuilds every
+# night into the jassmin-stats-site volume (mounted read-only at /srv/stats; `current` links to the
+# latest good build). One user, `owner`, with the `stats-password` parameter, hashed at start by
+# entrypoint.sh. Until the first build there's a "not built yet" page.
+stats.{$SITE_DOMAIN} {
+	encode zstd gzip
+	basic_auth {
+		owner {$STATS_PASSWORD_HASH}
+	}
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		Cache-Control "no-store"
+		Referrer-Policy "no-referrer"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Strict-Transport-Security "max-age=31536000"
+	}
+
+	@built file {
+		root /srv/stats/current
+		try_files /index.html
+	}
+	handle @built {
+		root * /srv/stats/current
+		file_server
+	}
+	handle {
+		root * /etc/caddy/no-data
+		rewrite * /index.html
+		file_server
+	}
 }

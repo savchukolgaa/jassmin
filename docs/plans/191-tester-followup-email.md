@@ -3,7 +3,7 @@
 Issue: https://github.com/savchukolgaa/jassmin/issues/191
 Branch: `issue/191`
 Worktree: `.claude/worktrees/issue-191`
-Status: Planned
+Status: Implemented
 
 ## Goal
 Customers who bought testers (10 ml) and agreed to marketing email get one email about
@@ -155,7 +155,7 @@ All three answered on 2026-11-25: use the recommended defaults.
 - [x] **8. `?code=` in the cart** — `cart.schema.ts`: optional `promoCode` on `add`; `cart.ts` (`CartActionResult`): optional `promo` on the `add` success; `cart.tsx` action: after a successful add with a code, rate-limit check, `applyPromoCode`, `promoCodeLimiter.hit` on refusal, return the status; cart loader: `code` from `?code=` (parsed with `promoCodeSchema`, invalid → `null`) for `PromoCodeForm`'s default value. `product.tsx` loader returns `promoCode` (parsed the same way); `ProductPurchase`/`AddToCartForm` render a hidden `promoCode` input and a note under the button; after adding, the "Added to cart" status says the code was applied (or why not). Tests: `cart.test.ts` (add with a valid code applies it, an inapplicable or unknown code still adds, malformed code ignored, rate limit), `AddToCartForm.dom.test.ts` (hidden field), product loader test if one exists.
 - [x] **9. Scheduling** — `deploy/crontab`: `0 7 * * * pnpm --silent db:send-tester-followups` (10:00 Kyiv, a sensible hour to receive it; comment #191). `aspire-apphost/apphost.mts`: explicit-start `db-send-tester-followups` child of `jassmindb`, after `db-migrate`, `SMTP_URL` from `smtp4dev`, as `db-send-cart-reminders`. `production.mts`: `TESTER_FOLLOWUP_DAYS=12`, `TESTER_FOLLOWUP_PERCENT=10` in the web/scheduler env loop. Check: `pnpm aspire run` shows the resource and it sends to smtp4dev.
 - [x] **10. Documentation** — `docs/email.md`: new "Tester follow-up" section (who, when, spacing, the offer, the job, local testing) and contents entry; `docs/setup.md`: env table rows, job table row, short section; `aspire-apphost/AGENTS.md`: resource and env; `app/.server/AGENTS.md`: Environment, outbox type list, marketing-email list (#191 is the third), Cart `?code=`; `docs/analytics-events.md`: "Tester follow-up (#191)" with the `order_emails`/slug definition and SQL "follow-up sent → full-bottle order of a tried perfume within 30 days" (overall, and how many used the code: `orders.discount_id` → `discounts.slug like 'tester-followup-%'`); re-read the privacy copy (`privacy.*`) and adjust only if it names the marketing emails individually.
-- [ ] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; run the analytics fixture tests only if the order-email enum is part of their contract (step 1 grep). Manual check under Aspire: seed a user with `marketing_opt_in` and a verified email, a completed tester order with `completed_at` 12 days ago, start `db-send-tester-followups`, open the email in smtp4dev, follow a link, add a 50 ml bottle and see the code applied in the cart.
+- [x] **11. Verify** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`; run the analytics fixture tests only if the order-email enum is part of their contract (step 1 grep). Manual check under Aspire: seed a user with `marketing_opt_in` and a verified email, a completed tester order with `completed_at` 12 days ago, start `db-send-tester-followups`, open the email in smtp4dev, follow a link, add a 50 ml bottle and see the code applied in the cart.
 
 ## Testing & verification
 - Unit/integration: steps 3–8 as listed (eligibility matrix, one email per order, discount scope/single use/expiry, sold-out drop, locale, unsubscribe headers, `?code=` link and cart application, job configuration).
@@ -163,13 +163,17 @@ All three answered on 2026-11-25: use the recommended defaults.
 - Manual: Aspire run with smtp4dev (step 11), both locales (a user with `locale = 'en'`).
 
 ## Acceptance criteria
-- [ ] About 12 days after a tester order is delivered, an opted-in customer gets exactly one email with the perfumes they tried — steps 1, 3, 4, 5, 6, 7
-- [ ] The email has a personal code for 10 % off a full bottle (30/50/100 ml) of those perfumes, single-use and valid for 30 days — steps 2, 4, 5
-- [ ] No email goes to guests, customers without consent, suppressed addresses, cancelled or returned orders, or customers who already bought a bottle of those perfumes — steps 3, 6
-- [ ] Marketing emails are spaced: at most one follow-up per 30 days, and none within 7 days of another marketing email — step 3
-- [ ] The link opens the product with the code applied in the cart — steps 5, 8
-- [ ] The job runs daily in production and from the Aspire dashboard — steps 7, 9
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
+- [x] About 12 days after a tester order is delivered, an opted-in customer gets exactly one email with the perfumes they tried — steps 1, 3, 4, 5, 6, 7
+- [x] The email has a personal code for 10 % off a full bottle (30/50/100 ml) of those perfumes, single-use and valid for 30 days — steps 2, 4, 5
+- [x] No email goes to guests, customers without consent, suppressed addresses, cancelled or returned orders, or customers who already bought a bottle of those perfumes — steps 3, 6
+- [x] Marketing emails are spaced: at most one follow-up per 30 days, and none within 7 days of another marketing email — step 3
+- [x] The link opens the product with the code applied in the cart — steps 5, 8
+- [ ] The job runs daily in production and from the Aspire dashboard — steps 7, 9 (configured in `deploy/crontab`, `production.mts` and the `db-send-tester-followups` resource, and the job is covered by tests; not yet run under `pnpm aspire run` or in production)
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass — step 11
+
+Verified on 2026-11-26: `pnpm typecheck`, `pnpm lint`, `pnpm build` pass, and `pnpm test` passes
+against a throwaway `postgres:18` (264 files, 2896 tests; 1 skipped by design: the Windows symlink
+test). The manual Aspire/smtp4dev check from step 11 is still to do.
 
 ## Out of scope
 - Guest buyers, several follow-up emails, a rating question, A/B testing the discount (per the issue).

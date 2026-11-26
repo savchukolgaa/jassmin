@@ -1,9 +1,10 @@
 # Jassmin warehouse (dbt)
 
 A layered warehouse built from the shop's data with dbt (#132): **raw → staging → intermediate →
-marts**. BI dashboards and ML models read the marts, never the app's tables. The raw layer is #131's
-synthetic data in `jassmin_synth` (`analytics/README.md`); later, the same models can run on a
-read-only replica of the real database (the `prod` target, not run yet).
+marts**. BI dashboards and ML models read the marts, never the app's tables. On the `synth` target
+the raw layer is #131's synthetic data in `jassmin_synth` (`analytics/README.md`); on the `prod`
+target (#183) it's `jassmin_wh`, a nightly, read-only, pseudonymised copy of the real shop's data,
+for the owner's dashboard ([below](#real-data-the-prod-target)).
 
 ```
 raw.*  (text, anomalies)        staging.stg_*            intermediate.int_*          marts.*
@@ -36,7 +37,8 @@ uv run --project analytics/warehouse pytest analytics/warehouse               # 
 `SYNTH_DATABASE_URL`, else the app's `DATABASE_URL` from the repo's `.env` with the database name
 replaced by `jassmin_synth`. The same rules as the generator. The `synth` target refuses any
 database not named `jassmin_synth` (or `jassmin_synth_<suffix>`) and the app's own database, so a
-build can never create schemas in the shop's database. `--target prod` reads `WAREHOUSE_PROD_URL`.
+build can never create schemas in the shop's database. `--target prod` reads `WAREHOUSE_PROD_URL`,
+which must name `jassmin_wh` (or `jassmin_wh_<suffix>`), and never the app's database.
 
 **Output.** Three schemas in `jassmin_synth`: `staging` and `intermediate` (views) and `marts`
 (tables). A full build on #131's default data (10,000 customers, about 1 million events) takes about
@@ -78,6 +80,10 @@ raw format, so the warehouse is tested without generating data.
 | `fct_inventory_daily` | size × Kyiv day | Sold, returned, received, closing stock, backorders, stock-outs; censored-demand flag |
 | `mart_perfumer_daily` | Kyiv day | The AI perfumer (#166): messages, conversations, rate-limited, error rate, answer time p50/p95, answers with picks, click-through, 7-day conversion, 👍/👎 |
 | `mart_customer_features` | customer × month | RFM, tenure, AOV, discount share, return and unclaimed rates, recent visits; `churned_next_90d` |
+| `mart_sales_daily` | Kyiv day | The owner's dashboard (#183): revenue orders, net revenue, average order, units, first vs repeat; zeros on days without orders |
+| `fct_gift_card_sales` | gift card | A gift card bought (#125): a succeeded payment that pays no order; spending is `fct_orders.gift_card_amount` |
+| `mart_tester_conversion` | customer | First tester trio (the `tester-trio` rule or a tester set) and whether a full bottle followed within `tester_conversion_days` (60) |
+| `mart_customer_rfm` | customer | RFM as of the data's end and a churn-risk segment from fixed rules (`rfm_*` vars): new, one_time, active, at_risk, lost |
 
 **Keys and time.** Every date is a Kyiv calendar date (`var('timezone')`); timestamps are
 `timestamptz`. Money is `numeric(12, 2)` in UAH. A customer is `customer_key`, an md5 surrogate of
@@ -106,7 +112,7 @@ the generator's default run (seed 42, 10,000 customers):
 
 The thresholds are dbt vars in `dbt_project.yml` (`duplicate_event_seconds`,
 `bot_max_product_views_10min`, `bot_min_product_views_for_gap`, `bot_median_gap_seconds`,
-`price_outlier_ratio`, `churn_horizon_days`).
+`price_outlier_ratio`, `churn_horizon_days`, and #183's `tester_conversion_days` and `rfm_*`).
 
 One quirk of the generated ledger: a few supplier receipts are written after a sale that happened
 minutes later, so `occurred_at` disagrees with the write order. `stock_after` follows the write order
@@ -135,9 +141,76 @@ as of the snapshot).
 On the default run it has about 102,500 rows for 8,100 customers over 33 snapshots, with a churn rate
 of about 86 % where labelled.
 
-## The `prod` target
+## Real data: the `prod` target
 
-`--target prod` reads the app's own tables (`public`, typed rather than text; the casts work on both)
-from `WAREHOUSE_PROD_URL`. It's defined but not run yet: dbt has to write its schemas somewhere, and
-a read-only replica can't hold them. Where the production warehouse lives (a separate database
-reading the replica through `postgres_fdw`, or a writable schema) is a later decision.
+Since #183 the same models run every night on the real shop, for the owner's dashboard
+(`analytics/dashboard/`). The rules of this one exception to "synthetic data only" are in
+`analytics/README.md` → Real data; how it works:
+
+```
+jassmindb (the app)  --wh_extract, read-only,-->  jassmin_wh.raw  --dbt, wh_owner-->  staging,       --wh_reader-->  Evidence
+public.*             allow-listed columns only    text, #131's      --target prod    intermediate,                   site
+                     (extract/extract.py)         raw shape                          marts
+```
+
+- **`extract/allowlist.py`** lists every app table and column that may be read, in #131's raw
+  shape (the columns of `analytics/generator/frames.py`, so the staging models work unchanged), with
+  a transform each (`extract/transforms.py`): `copy`; `null` (never read: names, password hashes,
+  guest phones, addresses, waybill numbers, staff notes); `email_pseudonym` (HMAC of
+  `lower(trim(email))` with `WH_PSEUDONYM_KEY`, as `<hash>@pseudonym.invalid`, or `@example.com` for
+  test accounts, so staging still drops them and a guest's orders stay one customer);
+  `id_pseudonym` (the visitor cookie); `presence` (a phone becomes `present`); `path_only` and
+  `origin_only` (URLs without query strings, which can hold tokens; referrers as their site only);
+  `event_properties` (`path` without its query, `search.query` null). Payments' provider id and
+  callback, and every table not listed (AI perfumer chats, gift cards, auth tokens, ...), are never
+  read.
+- **`extract/setup.py`** (once per deploy, as the superuser) creates `jassmin_wh` and three roles:
+  `wh_extract` with column-level `SELECT` on exactly the readable allow-listed columns and
+  `default_transaction_read_only`, `wh_owner` owning `jassmin_wh`, and `wh_reader` reading `marts`
+  and `meta` (default privileges, so dbt's rebuilt tables stay readable). Idempotent; it revokes
+  earlier grants first, so dropping a column from the allow-list takes its grant away.
+- **`extract/extract.py`** (nightly) reads every table in one read-only, repeatable-read snapshot,
+  transforms the rows and `COPY`s them into `raw_next`, then swaps it for `raw` in the same
+  transaction: a failed run leaves the previous copy. It refuses a source role that isn't read-only
+  by default and any target but `jassmin_wh[_suffix]`, logs only row counts, and records each run in
+  `meta.extract_runs` (the dashboard's "data as of").
+- **`wh.py build --target prod`** builds and tests everything in `jassmin_wh`, as on `synth`, and
+  excludes anything downstream of #131's `raw.customer_truth` (no model reads it, which
+  `tests_py/test_allowlist.py` checks). A failing test stops the night before the dashboard build.
+- **`scripts/nightly.sh`** runs the extract, dbt, Evidence's `sources` and `build:strict`, and only
+  then switches the served site (`/srv/stats/current`, the last 3 releases kept). One run at a time
+  (`flock`). In production it's the `analytics` container's cron at 01:00 UTC (`docs/deploy.md`).
+
+A shop with no visits at all fails `int_data_window`'s not-null tests (there is no data window), so
+the dashboard stays at its "not built yet" page until the first visit; from then on a shop without
+orders yet builds, with empty charts.
+
+### Running it by hand
+
+Against a local app database (any migrated one, e.g. `jassmin_synth` after `generate.py
+--load-app-schema`, as a stand-in) and a superuser URL:
+
+```bash
+export WH_ADMIN_URL=postgres://postgres:...@localhost:5432/postgres WH_APP_DATABASE=jassmin \
+  WH_DATABASE=jassmin_wh WH_EXTRACT_PASSWORD=... WH_OWNER_PASSWORD=... WH_READER_PASSWORD=...
+uv run --project analytics/warehouse analytics/warehouse/extract/setup.py
+export WH_EXTRACT_URL=postgres://wh_extract:...@localhost:5432/jassmin \
+  WH_TARGET_URL=postgres://wh_owner:...@localhost:5432/jassmin_wh WH_PSEUDONYM_KEY=<32+ characters>
+uv run --project analytics/warehouse analytics/warehouse/extract/extract.py
+WAREHOUSE_PROD_URL=$WH_TARGET_URL uv run --project analytics/warehouse analytics/warehouse/wh.py build --target prod
+```
+
+Then build the dashboard with the `wh_reader` role (`analytics/dashboard/README.md`). Roles are
+server-wide: `WH_ROLE_PREFIX` (default `wh`) names them differently for a second setup on one server.
+
+### Tests
+
+`tests_py/test_extract.py` creates a throwaway `jassmin_app_test_<pid>` with the app's migrations
+(`pnpm db:migrate`), fills it with rows whose personal values are unique markers, runs `setup.py`
+(twice) and `extract.py` (twice) into `jassmin_wh_test_<pid>` with `wh_test_<pid>_*` roles, and
+checks: no marker in any column of any table or view (raw, and after `dbt build --target prod` the
+marts too); the pseudonyms keep one customer per person; `wh_extract` can't read a personal column,
+`select *`, or write; the app's database is byte for byte unchanged; `wh_reader` can't read `raw`;
+and, when `analytics/dashboard/node_modules` exists, the Evidence site builds as `wh_reader`. It
+needs a superuser URL (`WAREHOUSE_TEST_SERVER_URL`) and pnpm. `tests_py/test_nightly.py` runs
+`nightly.sh` with stub `uv` and `pnpm` (Linux only): a failing dbt keeps the previous site.

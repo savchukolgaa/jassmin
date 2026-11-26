@@ -3,7 +3,9 @@
 A portfolio case study built on Jassmin, a small Ukrainian perfume shop: how the app's
 event-driven behavioural tracking becomes a tested warehouse and then four models with a business
 decision attached to each. Everything here runs on reproducible synthetic data, so every number in
-this page can be regenerated, and the models can be checked against a known truth.
+this page can be regenerated, and the models can be checked against a known truth. The one
+exception is the owner's dashboard of the real shop (#183, [below](#real-data-the-one-exception)):
+the same warehouse on a nightly, pseudonymised copy of the shop's data.
 
 | Part | Where | Issue |
 |------|-------|-------|
@@ -11,6 +13,7 @@ this page can be regenerated, and the models can be checked against a known trut
 | Synthetic shop data with a planted customer model | `generator/` ([below](#the-synthetic-data-generator-131)) | #131 |
 | Layered ELT warehouse with data tests (dbt) | [`warehouse/`](warehouse/README.md) | #132 |
 | EDA and four models (Jupyter) | [`notebooks/`](notebooks/README.md) | #133 |
+| The owner's dashboard of the real shop (Evidence) | [`dashboard/`](dashboard/README.md), [`warehouse/extract/`](warehouse/README.md#real-data-the-prod-target) | #183 |
 
 ## The problem
 
@@ -284,9 +287,10 @@ those sizes were out of stock on 42–62 of 91 days.
   Real decisions need an A/B test, and later an uplift model that targets *persuadable* customers.
 - **Offline only.** Nothing is served yet. Serving the recommendations on the site, scoring churn
   monthly and feeding reorder points to the Strapi admin would be follow-up issues.
-- **With real data** the same marts should work unchanged: the dbt `prod` target is defined to read
-  the app's tables (not run yet). The first steps would be to rerun the anomaly profiling, expect new anomaly types, retrain on a
-  rolling window, and monitor calibration and data drift.
+- **With real data** the same marts work unchanged: since #183 the dbt `prod` target builds them
+  every night on `jassmin_wh`, a pseudonymised copy of the shop's data, for the owner's dashboard
+  (below). Training the models on it is a later step: rerun the anomaly profiling, expect new
+  anomaly types, retrain on a rolling window, and monitor calibration and data drift.
 
 ## Running it
 
@@ -300,6 +304,36 @@ Under `pnpm aspire run`, the same three steps are the dashboard resources `synth
 `dbt-build` and `ml-notebooks` (children of `jassmin-synth`); start them in that order, and
 `jupyter-lab` opens the notebooks in JupyterLab (#159). See
 [`notebooks/README.md`](notebooks/README.md) for JupyterLab and the tests.
+
+## Real data: the one exception
+
+Everything above runs on `jassmin_synth`. The owner decided on 18 November 2026 that their dashboard
+shows the **real** shop (#183), which needs one controlled exception, with these rules:
+
+- **The app's database is only read,** by `wh_extract`, a role that can `SELECT` only the
+  allow-listed columns (Postgres column grants) and whose every transaction is read-only. Nothing
+  else in analytics connects to it.
+- **The copy is a separate database, `jassmin_wh`,** rebuilt every night in production, not backed
+  up (it can be rebuilt), and readable by the dashboard only through `wh_reader`, which sees
+  `marts` and `meta` and nothing else.
+- **No personal data is copied.** One allow-list (`warehouse/extract/allowlist.py`) names every
+  table and column that may be read and how it's changed: names, password hashes, phones, guest
+  phones, addresses, waybill numbers, staff notes and payment callbacks are never read; emails and
+  the visitor cookie become keyed pseudonyms (HMAC with a secret key), so a guest's repeat orders
+  are still one customer; a phone becomes "has a phone"; URLs lose their query strings (reset and
+  unsubscribe tokens) and referrers keep only their site. AI perfumer chats (#180), gift card codes
+  and every table not listed are never read. A column added to the app later is invisible to the
+  warehouse until someone adds it to the allow-list. City stays: it's an ML feature.
+- **Tested:** `warehouse/tests_py/test_extract.py` plants unique markers in every personal column
+  of a migrated app database and checks that none reaches any table or view of the warehouse, marts
+  included; that the extract role can't read the other columns or write; and that the app's
+  database is unchanged.
+- **The ML guards stay strict:** `wh.py --target prod` accepts only `jassmin_wh`, `--target synth`
+  only `jassmin_synth`, and the notebooks refuse everything but `jassmin_synth`. Training models on
+  real data is out of scope.
+
+How it works and how to run it by hand: [`warehouse/README.md`](warehouse/README.md#real-data-the-prod-target),
+[`dashboard/README.md`](dashboard/README.md) and `docs/deploy.md` → The owner's dashboard.
 
 ---
 

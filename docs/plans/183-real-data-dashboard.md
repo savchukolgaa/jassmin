@@ -124,37 +124,74 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
 11. **Backups:** `pg-backup` dumps only `BACKUP_DATABASES=jassmindb strapidb`, so `jassmin_wh` is
     already excluded; this is made explicit in `production.mts`'s comment, `backup.sh`'s header and
     `docs/deploy.md`.
-12. **Evidence under pnpm:** `analytics/dashboard/` is a standalone pnpm package with its own lockfile
-    (like `aspire-apphost/`), installed with `pnpm install --ignore-workspace`, not in
-    `pnpm-workspace.yaml`; Biome and `tsc` already ignore `analytics/` **(unconfirmed, Q3)**.
+12. **Evidence under pnpm:** `analytics/dashboard/` is its own pnpm workspace with its own lockfile
+    (its own `pnpm-workspace.yaml`, so plain `pnpm install` there never touches the root workspace).
+    *Deviation:* it needs `nodeLinker: hoisted` (Evidence's generated SvelteKit app imports
+    `@sveltejs/kit` as if `node_modules` were flat) and `allowBuilds` for `@sveltejs/kit` and
+    `esbuild`. Biome and `tsc` already ignore `analytics/`.
 13. **Dashboard copy is Ukrainian only** (owner-only page, not the shop's i18n system), with UAH
     formats (`#,##0 ₴`) and Kyiv dates. Each page starts with "Дані на <extract finished_at, Kyiv>"
-    from `raw.extract_runs`, and a warning banner when it's older than 36 hours.
+    and a warning banner when it's older than 36 hours (`components/DataDate.svelte`).
+    *Deviation:* the run log is `meta.extract_runs`, not `raw.extract_runs`: `raw` is replaced every
+    night, so a stable `meta` schema keeps `wh_reader`'s grant (default privileges) without re-granting.
 14. **CI:** the `analytics` job gains a step for `uv run --project analytics/warehouse --locked pytest
     analytics/warehouse` with `WAREHOUSE_TEST_SERVER_URL` pointed at its Postgres service, so the
     warehouse build test and the new extract privacy tests run on every analytics change. Evidence's
     build is checked in CI with a fixture source (step 12) if it fits the 15-minute job, else locally.
+    *Done as:* the job installs `analytics/dashboard` and `test_extract.py` builds the site on its
+    throwaway warehouse as `wh_reader`; the job's timeout is 30 minutes. `app/.server/db/schema.ts`
+    joined the job's path filter, since `test_allowlist.py` checks the allow-list against it.
+15. **Evidence's memory (Q6: swap + guard).** The server gets a 4 GB swapfile (`vm.swappiness=10`,
+    `docs/deploy.md` → Prepare the server). `deploy/docker-compose.override.yaml` caps `analytics` at
+    2 GB of RAM (`mem_limit`, `memswap_limit: 6g`) and sets `oom_score_adj: 1000`, so the kernel stops
+    it first, never Postgres or the shop. Aspire's Compose publisher can't express those, so
+    `deploy-ssh` copies the override next to `docker-compose.yaml`, and Compose merges it by name.
+    The image sets `NODE_OPTIONS=--max-old-space-size=2560`. Measured under exactly those limits: the
+    night succeeds in ~3.8 minutes with 2 GB of RAM plus ~1.7 GB of swap at the peak.
+16. **Other deviations found while implementing:**
+    - Evidence can't store a source with no rows (an empty Parquet file fails the build) and infers
+      column types from values, and a new shop has no orders, gift cards or perfumer messages. Every
+      source query returns a typed placeholder row (`is_placeholder`) when empty, pages read
+      `(select * from warehouse.<source> where not is_placeholder)`, and every component has
+      `emptySet=pass emptyMessage="Ще немає даних"`. Checked: the site builds on a warehouse with one
+      visit and no orders.
+    - A shop with no visits at all fails `int_data_window`'s not-null tests, so the night stops there
+      and the "not built yet" page stays. Kept: it's correct and safe.
+    - The new marts live in `marts/sales/` and `marts/customers/` (not `core/`), and gained a
+      reconciliation test, `assert_sales_daily_reconciles`.
+    - `nightly.sh` runs pnpm from the dashboard's folder (Corepack picks pnpm's version from the
+      `package.json` it runs in), uses `uv run --frozen --no-dev`, and `flock` against overlapping
+      runs; `test_nightly.py` tests it with stub `uv`/`pnpm` (Linux only; CI runs it).
+    - Evidence's usage telemetry is off (`SEND_ANONYMOUS_USAGE_STATS=no`) wherever it runs.
+    - The Caddy entrypoint locks the dashboard with a random password when `STATS_PASSWORD` is empty,
+      instead of failing, so the shop's proxy always starts.
 
 ## Open questions
-- [ ] **Q1: Pseudonymise emails and visitor ids with a keyed hash, or drop them?** — Why it matters:
+All answered: the owner chose the recommended defaults for Q1–Q5 (2026-11-25), and
+"swap + guard" for Q6 (2026-11-26).
+- [x] **Q1: Pseudonymise emails and visitor ids with a keyed hash, or drop them?** — Why it matters:
   dropping `email` / `guest_email` breaks guest identity (each guest order becomes a new customer, so
   "returning customers" and cohorts undercount) and test-account filtering; a keyed hash with a secret
   key keeps both and is not reversible without the key. Recommended default: HMAC with the persisted
   `wh-pseudonym-key` secret, as in decision 4. Affects steps: 2, 3.
-- [ ] **Q2: Is `stats.<site-domain>` right, or should the dashboard have its own domain parameter
+- [x] **Q2: Is `stats.<site-domain>` right, or should the dashboard have its own domain parameter
   (like `admin-domain`)?** — Why it matters: DNS and Caddy config. Recommended default: derived
   `stats.{$SITE_DOMAIN}`, no new parameter. Affects steps: 13, 14.
-- [ ] **Q3: Is Evidence allowed as a pnpm package with its own lockfile?** — Why it matters: Evidence's
+- [x] **Q3: Is Evidence allowed as a pnpm package with its own lockfile?** — Why it matters: Evidence's
   own docs use npm, and AGENTS.md forbids npm/yarn. Recommended default: pnpm with `--ignore-workspace`;
   if Evidence doesn't build under pnpm, stop and ask rather than switching tools. Affects steps: 10–12.
-- [ ] **Q4: Churn-risk rules.** — Why it matters: segment counts on the customers page. Recommended
+- [x] **Q4: Churn-risk rules.** — Why it matters: segment counts on the customers page. Recommended
   default: `one_time` = 1 revenue order and last order > 90 days ago; `new` = first order ≤ 90 days
   ago; `active` = ≥ 2 orders and recency ≤ 1.5 × their median gap (min 60 days); `at_risk` = ≥ 2
   orders and recency between that and 180 days; `lost` = > 180 days. Thresholds as dbt vars so they
   can be tuned. Affects steps: 7, 11.
-- [ ] **Q5: Basic-auth password: asked for on deploy, or generated?** — Why it matters: a generated
+- [x] **Q5: Basic-auth password: asked for on deploy, or generated?** — Why it matters: a generated
   one has to be looked up in Aspire's state. Recommended default: asked-for secret parameter
   `stats-password`, user name `owner`. Affects steps: 13, 14.
+- [x] **Q6 (found while implementing): Evidence's build needs ~3 GB; how to fit it on the 4 GB
+  server?** — Measured on 2 CPUs: the build needs a JS heap of over 1.5 GB and peaks at ~3.1 GB
+  RSS for a one-line page (Evidence's own baseline; our pages add ~0.2 GB). Options: swap + guard,
+  an 8 GB server, or replacing Evidence. Answer: **swap + guard** — decision 15.
 
 ## Resolved questions
 - **Does any model read `raw.customer_truth` or another generator-only table?** — No: only
@@ -208,7 +245,11 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
 | modify | `aspire-apphost/production.mts` | Parameters, `analytics-setup`, `analytics`, volume, Caddy env |
 | modify | `aspire-apphost/AGENTS.md` | Services and parameters |
 | modify | `deploy/pg-backup/backup.sh` | Header: `jassmin_wh` deliberately not dumped |
-| modify | `.github/workflows/ci.yml` | Warehouse pytest step |
+| modify | `.github/workflows/ci.yml`, `docs/ci.md` | Warehouse pytest step, dashboard install, schema.ts in the path filter |
+| create | `analytics/warehouse/tests_py/test_nightly.py` | nightly.sh with stub uv/pnpm: publish, keep the last good site, prune |
+| create | `analytics/dashboard/components/DataDate.svelte`, `pnpm-workspace.yaml` | "Дані на …" with the stale warning; the dashboard's own workspace |
+| create | `deploy/docker-compose.override.yaml` | The analytics service's memory cap and OOM score (decision 15) |
+| modify | `analytics/notebooks/tests/test_db.py` | The notebooks refuse `jassmin_wh` |
 | modify | `analytics/README.md`, `analytics/warehouse/README.md`, `docs/deploy.md`, `AGENTS.md` | Documentation |
 
 ## Steps
@@ -303,7 +344,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   `restartUnlessStopped`); `proxy` gets the volume read-only and `STATS_PASSWORD`. Comment that
   `jassmin_wh` isn't backed up. `pnpm aspire:build` and `pnpm aspire publish -o aspire-output` to
   inspect the Compose file (no secrets in it, `analytics` has no superuser password).
-- [ ] **15. Documentation** — `analytics/README.md`: "Real data: the one exception" (what's copied, by
+- [x] **15. Documentation** — `analytics/README.md`: "Real data: the one exception" (what's copied, by
   whom, the allow-list, pseudonyms, what never leaves the app, notebooks stay synth-only);
   `analytics/warehouse/README.md`: replace "The `prod` target" section, document the extract and the
   new marts; `analytics/dashboard/README.md`: running locally, adding a page; `docs/deploy.md`: DNS

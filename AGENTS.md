@@ -16,6 +16,8 @@ The database schema is designed for later LTV and churn analytics. Columns such 
 
 `analytics/` is a separate Python project (uv, pytest) with the synthetic data generator (#131, see `analytics/README.md`). It writes only to the separate `jassmin_synth` database, never the app's; pnpm, Biome and `tsc` ignore it. Changing the catalog, the prices, the pricing rules or the event contract can make its fixture tests fail: see its README.
 
+Analytics reads real shop data only through `jassmin_wh`, the nightly, read-only, pseudonymised copy behind the owner's dashboard (#183, `analytics/README.md` → Real data). The copy reads only the columns listed in `analytics/warehouse/extract/allowlist.py` (Postgres grants enforce it), so a new app column reaches the warehouse only when it's added there, with a transform: never copy a name, email, phone, address, free text or token as is. Renaming or dropping a listed column needs the allow-list changed in the same PR (`test_allowlist.py` checks it against `schema.ts`). Nothing else in analytics may connect to the app's database. The dashboard itself is `analytics/dashboard/` (Evidence, its own pnpm workspace).
+
 ## Commands
 
 Always use **pnpm**, never npm or yarn.

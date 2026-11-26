@@ -2,6 +2,8 @@
 # Dumps every database in BACKUP_DATABASES (custom format, for pg_restore) into /backups as
 # <db>-<UTC timestamp>.dump, then deletes dumps older than BACKUP_KEEP_DAYS (default 7).
 # Connection: PGHOST, PGPORT, PGUSER, PGPASSWORD from the environment. See docs/deploy.md.
+# jassmin_wh, the owner's dashboard warehouse (#183), is deliberately not in BACKUP_DATABASES: it's
+# a copy of jassmindb, rebuilt every night.
 set -euo pipefail
 
 dir=/backups

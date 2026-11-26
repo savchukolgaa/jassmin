@@ -6,13 +6,15 @@ Registry (GHCR) and starts them on the server over SSH. The server runs everythi
 
 | Service | What it is |
 |---------|------------|
-| `proxy` | Caddy: HTTPS with automatic Let's Encrypt certificates for the shop and the admin domain. The only service reachable from the internet (ports 80 and 443). |
+| `proxy` | Caddy: HTTPS with automatic Let's Encrypt certificates for the shop, the admin domain and `stats.<shop-domain>` (the owner's dashboard, behind a password). The only service reachable from the internet (ports 80 and 443). |
 | `web` | The shop (React Router, `react-router-serve`). |
 | `cms` | Strapi, the admin for products, orders and content, on the admin domain. Uploads are on the `jassmin-strapi-uploads` volume. |
 | `postgres` | PostgreSQL 18 with `jassmindb` (the shop) and `strapidb` (Strapi), on the `jassmin-postgres-data` volume. Not reachable from the internet. |
 | `db-migrate` | Runs once per deploy: creates the two databases if they're missing, then applies the migrations. `web`, `cms` and `scheduler` start after it. |
 | `scheduler` | The scheduled jobs from `deploy/crontab` (supercronic): CMS sync and order emails every 5 minutes, abandoned carts, cart reminders and unpaid orders hourly, gift cards and rate limits nightly. |
 | `pg-backup` | A `pg_dump` of both databases every night at 02:00 UTC into `/srv/jassmin/backups`, kept 7 days. |
+| `analytics-setup` | Runs once per deploy, after `db-migrate`: creates the `jassmin_wh` database and the warehouse's read-only roles (#183). |
+| `analytics` | The owner's dashboard, every night at 01:00 UTC: a pseudonymised copy of the shop's data into `jassmin_wh`, the dbt marts, and the Evidence site on the `jassmin-stats-site` volume ([The owner's dashboard](#the-owners-dashboard)). |
 
 Browsers never talk to Strapi for images: the shop serves Strapi's uploads at `/uploads/…` from its
 own domain and fetches them from `cms` inside the server (`app/.server/cms/uploads-proxy.ts`).
@@ -37,7 +39,8 @@ shop ([payments.md → Going live](payments.md#going-live)), and the AI perfumer
 12. [Changing a setting or a secret](#changing-a-setting-or-a-secret)
 13. [Logs and one-off commands](#logs-and-one-off-commands)
 14. [Backups and restoring](#backups-and-restoring)
-15. [Troubleshooting](#troubleshooting)
+15. [The owner's dashboard](#the-owners-dashboard)
+16. [Troubleshooting](#troubleshooting)
 
 ## What it costs
 
@@ -109,6 +112,11 @@ chown -R deploy:deploy /home/deploy/.ssh && chmod 700 /home/deploy/.ssh
 # Where the Compose files and the database dumps live.
 mkdir -p /srv/jassmin/backups && chown -R deploy:deploy /srv/jassmin
 
+# 4 GB of swap for the owner's dashboard's nightly build (#183), used only under memory pressure.
+fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+echo 'vm.swappiness=10' > /etc/sysctl.d/99-swap.conf && sysctl --system
+
 # SSH: keys only, no root login.
 sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication no/; s/^#\?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config
 systemctl restart ssh
@@ -116,6 +124,13 @@ systemctl restart ssh
 
 Before you close the root session, check from your computer in a **second** terminal that
 `ssh deploy@<server-ip>` works. From now on you only log in as `deploy`.
+
+Why swap: the dashboard's nightly build (Evidence) needs about 3 GB for a few minutes, which the
+4 GB server can't spare next to Postgres, Strapi and the shop. `deploy/docker-compose.override.yaml`
+caps the `analytics` service at 2 GB of RAM, lets it use swap for the rest, and makes it the
+kernel's first choice if memory still runs out, so Postgres and the shop are never the ones killed.
+On a server that already runs without it, add the swap the same way (as root, or with `sudo`).
+`free -h` shows it.
 
 Docker's own port publishing bypasses `ufw`, so the Hetzner firewall from step 1 is what keeps the
 server closed; only `proxy` publishes ports anyway.
@@ -130,6 +145,7 @@ At your DNS host, add (TTL 1 hour is fine):
 | `<shop-domain>` | AAAA | the server's IPv6 |
 | `www.<shop-domain>` | A / AAAA | the same (it redirects to `<shop-domain>`) |
 | `admin.<shop-domain>` | A / AAAA | the same |
+| `stats.<shop-domain>` | A / AAAA | the same (the owner's dashboard, #183) |
 
 Keep the email records from [docs/email.md](email.md) as they are. Wait until
 `nslookup <shop-domain>` shows the server's address: Caddy can only get a certificate once the
@@ -181,6 +197,7 @@ The first time, Aspire asks for these values:
 | `strapi-sync-token` | `pending` for now |
 | `liqpay-public-key` | `pending` until LiqPay approves the shop ([payments.md](payments.md#going-live)) |
 | `liqpay-private-key` | `pending` too |
+| `stats-password` | A password for the owner's dashboard on `stats.<shop-domain>` (user `owner`); keep it in your password manager |
 
 Every one of them is required: since Aspire 17.0 an empty answer is rejected, which is why the
 tokens get `pending` until Strapi exists, and the LiqPay keys until LiqPay approves the shop.
@@ -189,11 +206,12 @@ to `liqpay` ([payments.md → Going live](payments.md#going-live)).
 
 Aspire **generates** the other secrets on the first deploy: the Postgres password,
 `SESSION_SECRET`, `CMS_SYNC_SECRET`, `EMAIL_UNSUBSCRIBE_SECRET` and Strapi's `APP_KEYS`,
-`API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET` and `ENCRYPTION_KEY`.
-`registry-endpoint` is `ghcr.io` by default.
+`API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET` and `ENCRYPTION_KEY`,
+and the warehouse's `wh-extract-password`, `wh-owner-password`, `wh-reader-password` and
+`wh-pseudonym-key` (#183). `registry-endpoint` is `ghcr.io` by default.
 
-The deploy then builds the six images (a few minutes the first time), pushes them, copies
-`docker-compose.yaml` and the `.env` with the values to `/srv/jassmin` (the `.env` readable only by
+The deploy then builds the images (a few minutes the first time), pushes them, copies
+`docker-compose.yaml` (with `deploy/docker-compose.override.yaml`) and the `.env` with the values to `/srv/jassmin` (the `.env` readable only by
 `deploy`), and runs `docker compose pull` and `docker compose up -d` on the server.
 
 ### Back up the deployment state
@@ -253,6 +271,9 @@ Then create the home page, site settings and offers in the Strapi admin. After t
 - `docker compose ps` on the server shows every service `running` (and `db-migrate` exited 0).
 - `docker compose logs scheduler` shows a job run within 5 minutes.
 - The next morning, `ls -l /srv/jassmin/backups` shows two `.dump` files.
+- `https://stats.<shop-domain>` asks for a password (user `owner`, the `stats-password`); before
+  the first night it shows "Статистика ще не зібрана", from the next morning the dashboard with
+  "Дані на …" at the top of every page. `docker compose logs analytics` shows the night's run.
 - The security headers check in [docs/security.md](security.md) passes for `https://<shop-domain>`.
 - Upload an image in Strapi, use it on a product, and check it shows on the shop at
   `https://<shop-domain>/uploads/…`. Then `sudo reboot` the server: after a minute everything is
@@ -304,7 +325,8 @@ There are two layers:
   Restore (this replaces the whole disk with that day's state).
 - **Database dumps**: `pg-backup` writes `jassmindb-<time>.dump` and `strapidb-<time>.dump` to
   `/srv/jassmin/backups` every night at 02:00 UTC and deletes those older than 7 days. Make one by
-  hand any time with `docker compose exec pg-backup backup.sh`.
+  hand any time with `docker compose exec pg-backup backup.sh`. The warehouse, `jassmin_wh`, is
+  deliberately not dumped: the next night rebuilds it from `jassmindb`.
 
 For a copy off the server, download a dump now and then:
 `scp deploy@<server-ip>:/srv/jassmin/backups/jassmindb-*.dump .`
@@ -356,6 +378,47 @@ docker run --rm -v jassmin_jassmin-strapi-uploads:/u -v /srv/jassmin:/in alpine 
 ```
 
 (`docker volume ls` shows the exact volume name.) Then move the DNS records to the new address.
+
+## The owner's dashboard
+
+`https://stats.<shop-domain>` (user `owner`, the `stats-password` parameter) shows the shop's real
+sales, products, tester-to-bottle conversion, customers and the AI perfumer, in Ukrainian (#183,
+`analytics/dashboard/README.md`). It's a static site, rebuilt every night by the `analytics`
+service at 01:00 UTC (03:00 or 04:00 in Kyiv):
+
+1. a read-only copy of the shop's data, without names, emails, phones, addresses or chat text, into
+   the `jassmin_wh` database (`analytics/README.md` → Real data);
+2. the dbt marts built and tested on it;
+3. the site built and switched in, only if everything before succeeded.
+
+If a night fails (a dbt data test, say), the site keeps the last good build and every page shows a
+warning that the data is more than 36 hours old. Look at the log, fix the cause, and run the night
+by hand:
+
+```bash
+docker compose logs --since 24h analytics                                    # the last runs
+docker compose exec analytics bash /app/analytics/warehouse/scripts/nightly.sh  # run it now (a few minutes)
+docker compose run --rm analytics-setup                                      # re-create the roles and grants
+docker compose exec pg-backup psql -d jassmin_wh -c 'select * from meta.extract_runs order by finished_at desc limit 3'
+```
+
+- **The password:** change `stats-password` like any setting
+  ([Changing a setting or a secret](#changing-a-setting-or-a-secret)); only `proxy` restarts.
+- **`wh-pseudonym-key` must never change:** customers who order as guests are recognised by a keyed
+  hash of their email, so a new key makes every guest a new customer (the history is rebuilt each
+  night, so the counts change at once, but nothing is lost). The other `wh-*` passwords can change
+  any time: the next deploy's `analytics-setup` sets them.
+- **Memory:** Evidence's build needs about 3 GB for a few minutes, whatever the pages (measured:
+  2 GB of RAM, the service's cap, plus about 2 GB of swap at the peak; about 3.5 minutes a night
+  in all). That's why the server has swap ([Prepare the server](#2-prepare-the-server)) and
+  `deploy/docker-compose.override.yaml` caps the service and makes it the first one the kernel
+  stops if memory runs out. Nothing runs between nights; the site itself is static files served by
+  Caddy. If `docker compose logs analytics` shows exit code 137, the build ran out of memory:
+  check `free -h` (is the swap on?).
+- **A new column in the app** doesn't reach the dashboard until it's added to
+  `analytics/warehouse/extract/allowlist.py` (and deployed): the copy reads only listed columns.
+- Until the shop has had its first visit, the night stops at a dbt test (there's no data yet) and
+  the site keeps its "not built yet" page. That's expected.
 
 ## Troubleshooting
 

@@ -11,7 +11,7 @@ on each PR's **Checks** section.
 | `check` | Every PR and push to `main` | `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (with PostgreSQL), skipped-test check, `pnpm build` |
 | `changes` | Every run | Decides whether `cms` and `analytics` have to run |
 | `cms` | Only when `cms/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml` or the workflow changed | `pnpm install --frozen-lockfile`, `pnpm cms:types` and a check that `cms/types/generated` didn't change (#193, no database), `pnpm cms:build` |
-| `analytics` | Only when `analytics/**`, the catalog, the migrations, the pricing, the event schemas or the workflow changed | `pnpm install --frozen-lockfile`, `uv run --project analytics --locked pytest analytics` (with PostgreSQL), `uv run --project analytics/notebooks --locked pytest analytics/notebooks` (#133: the notebook helpers only; the notebooks run locally) |
+| `analytics` | Only when `analytics/**`, the catalog, the migrations, the app schema, the pricing, the event schemas or the workflow changed | `pnpm install --frozen-lockfile`, `uv run --project analytics --locked pytest analytics` (with PostgreSQL), `pnpm --dir analytics/dashboard install --frozen-lockfile` and `uv run --project analytics/warehouse --locked pytest analytics/warehouse` (#132, #183: dbt on the fixture, the pseudonymised copy's privacy tests against a migrated app database, and the dashboard build), `uv run --project analytics/notebooks --locked pytest analytics/notebooks` (#133: the notebook helpers only; the notebooks run locally) |
 
 - **Runner:** `ubuntu-latest`. Node comes from `.nvmrc`, pnpm from `packageManager` in
   `package.json`, so CI uses the same versions as local development.

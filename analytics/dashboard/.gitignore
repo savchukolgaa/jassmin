@@ -1,0 +1,5 @@
+# Evidence's generated app, its query cache and the built site (#183).
+.evidence/
+build/
+node_modules/
+static/data/

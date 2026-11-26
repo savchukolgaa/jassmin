@@ -2,7 +2,8 @@
 with rows whose personal values are unique markers; then ``setup.py``, ``extract.py`` and
 ``wh.py build --target prod`` into a throwaway ``jassmin_wh_test_<pid>``. No marker may appear
 anywhere in the warehouse, the extract role can't read or write more than it should, and the app's
-database is left exactly as it was.
+database is left exactly as it was. Last, when ``analytics/dashboard`` is installed, the Evidence site
+builds from the marts as the reader role.
 
 Needs a PostgreSQL server where the URL's user is a superuser (it creates roles):
 ``WAREHOUSE_TEST_SERVER_URL``, else the app's ``DATABASE_URL``. Skipped without one; and pnpm, which
@@ -361,3 +362,41 @@ def test_dbt_builds_the_marts_on_the_copy(env: Env):
     assert customers == (2,)  # The registered user and the guest.
     # dbt's staging layer read the copy: still no marker anywhere, marts included.
     assert_no_marker(env.owner_url)
+
+
+DASHBOARD = REPO_ROOT / "analytics" / "dashboard"
+
+
+@pytest.mark.skipif(
+    not (DASHBOARD / "node_modules").is_dir(),
+    reason="the dashboard isn't installed (pnpm --dir analytics/dashboard install)",
+)
+def test_dashboard_builds_from_the_marts_as_the_reader(env: Env):
+    """The Evidence site (#183) builds on the copy, reading only marts and meta as the reader role."""
+    test_dbt_builds_the_marts_on_the_copy(env)  # Idempotent; makes this test runnable on its own.
+    parts = urlsplit(env.reader_url)
+    evidence_env = {
+        **os.environ,
+        "EVIDENCE_SOURCE__warehouse__host": parts.hostname or "localhost",
+        "EVIDENCE_SOURCE__warehouse__port": str(parts.port or 5432),
+        "EVIDENCE_SOURCE__warehouse__database": WH_DB,
+        "EVIDENCE_SOURCE__warehouse__user": env.settings.reader_role,
+        "EVIDENCE_SOURCE__warehouse__password": "reader-pw",
+        "SEND_ANONYMOUS_USAGE_STATS": "no",
+    }
+    pnpm = shutil.which("pnpm")
+    assert pnpm
+    for script in ("sources", "build:strict"):
+        result = subprocess.run(
+            [pnpm, "--dir", str(DASHBOARD), "run", script],
+            env=evidence_env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout[-6000:] + result.stderr[-3000:]
+    for page in ("index", "sales", "products", "testers", "customers", "perfumer"):
+        path = DASHBOARD / "build" / ("index.html" if page == "index" else f"{page}/index.html")
+        assert "Дані на" in path.read_text(encoding="utf-8"), page

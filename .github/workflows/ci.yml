@@ -98,6 +98,7 @@ jobs:
               - "app/.server/db/catalog-data.ts"
               - "app/.server/db/catalog-prices.ts"
               - "app/.server/db/migrations/**"
+              - "app/.server/db/schema.ts"
               - "app/.server/services/pricing.ts"
               - "app/lib/analytics.schema.ts"
               - ".github/workflows/ci.yml"
@@ -144,13 +145,15 @@ jobs:
         run: pnpm cms:build
 
   # The synthetic data generator (#131, Python): its pytest suite, including a load into a
-  # throwaway jassmin_synth_test_* database migrated with the app's migrations (hence pnpm).
+  # throwaway jassmin_synth_test_* database migrated with the app's migrations (hence pnpm). Then the
+  # warehouse (#132, #183): the dbt build on a fixture, the pseudonymised copy of a migrated app
+  # database, and the owner's dashboard built from it.
   analytics:
     name: analytics
     needs: changes
     if: ${{ needs.changes.outputs.analytics == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:18
@@ -183,6 +186,18 @@ jobs:
 
       - name: Test the generator
         run: uv run --project analytics --locked pytest analytics
+
+      # The dashboard's own workspace (#183): Evidence, installed so the warehouse tests build it.
+      - name: Install the dashboard
+        run: pnpm --dir analytics/dashboard install --frozen-lockfile
+
+      # The warehouse (#132, #183): dbt on the fixture, the extract's privacy tests against a
+      # migrated app database (they create roles, so the URL is the superuser), and the dashboard.
+      - name: Test the warehouse
+        env:
+          WAREHOUSE_TEST_SERVER_URL: postgres://postgres:postgres@localhost:5432/postgres
+          SEND_ANONYMOUS_USAGE_STATS: "no"
+        run: uv run --project analytics/warehouse --locked pytest analytics/warehouse
 
       # The ML notebooks' helpers (#133): unit tests only, no database. The notebooks themselves
       # need a generated and built jassmin_synth and run locally (analytics/notebooks/README.md).

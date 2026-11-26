@@ -262,16 +262,16 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   `uv run … wh.py build --target prod`; `pnpm --dir analytics/dashboard sources && … build`; copy
   `build/` to `$SITE_DIR/releases/<UTC stamp>`; `ln -sfn` + `mv -T` to switch `current`; keep the last
   3 releases. Logs each stage with timings. Exit non-zero on any failure (supercronic logs it).
-- [ ] **9. CI** — add the warehouse pytest step to the `analytics` job (`WAREHOUSE_TEST_SERVER_URL`),
+- [x] **9. CI** — add the warehouse pytest step to the `analytics` job (`WAREHOUSE_TEST_SERVER_URL`),
   and `analytics/dashboard/**` is already under the `analytics/**` path filter.
-- [ ] **10. Evidence project** — scaffold `analytics/dashboard/` from Evidence's template by hand
+- [x] **10. Evidence project** — scaffold `analytics/dashboard/` from Evidence's template by hand
   (package.json with exact versions, `"packageManager"` matching the root, `pnpm install
   --ignore-workspace`), `evidence.config.yaml` with only the postgres plugin, `sources/warehouse/
   connection.yaml` reading `EVIDENCE_SOURCE__warehouse__*` env vars (host, port, database
   `jassmin_wh`, user `wh_reader`, password, `schema: marts`). Source queries: one per mart used, plus
   `extract_runs`. `.gitignore` for `.evidence/`, `build/`, `node_modules/`. Check `pnpm build` works
   against a locally extracted `jassmin_wh` (or the synth marts via a dev-only connection override).
-- [ ] **11. Dashboard pages (uk)** — every page opens with the "Дані на …" line and the stale banner.
+- [x] **11. Dashboard pages (uk)** — every page opens with the "Дані на …" line and the stale banner.
   - `index.md`: headline numbers for yesterday / last 7 / last 30 days vs the previous period.
   - `sales.md`: revenue, orders, average order by day/week/month (selector), vs previous period.
   - `products.md`: top perfumes and sizes (net revenue, units), families, gift card sales and
@@ -282,7 +282,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
     channels, RFM segment counts and trend.
   - `perfumer.md`: `mart_perfumer_daily` — messages, conversations, p50/p95 answer time, error and
     rate-limited share, click-through, 7-day conversion, 👍/👎.
-- [ ] **12. Dashboard build check** — a small fixture mode (`EVIDENCE_SOURCE__warehouse__database`
+- [x] **12. Dashboard build check** — a small fixture mode (`EVIDENCE_SOURCE__warehouse__database`
   pointed at the synth test DB built by `test_build.py`) so `pnpm --dir analytics/dashboard build`
   is exercised in CI after the warehouse tests, if it fits the job's time limit; otherwise documented
   as a manual pre-PR check.

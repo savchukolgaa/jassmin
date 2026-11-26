@@ -1,0 +1,7 @@
+# jassmin_wh's marts (#183), read-only as the reader role. Every setting comes from the environment
+# (EVIDENCE_SOURCE__warehouse__host, __port, __database, __user, __password), so nothing secret is
+# committed; see analytics/dashboard/README.md.
+name: warehouse
+type: postgres
+options:
+  ssl: false

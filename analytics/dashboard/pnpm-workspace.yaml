@@ -1,0 +1,14 @@
+# The owner's dashboard (#183) is its own pnpm workspace, with its own lockfile: Evidence's
+# dependencies (Svelte, DuckDB) stay out of the shop's install, and the root workspace stays as it is.
+packages:
+  - "."
+
+# Packages whose install scripts may run (pnpm blocks all others).
+allowBuilds:
+  "@sveltejs/kit": true
+  esbuild: true
+  svelte-preprocess: false
+
+# Evidence generates a SvelteKit app in .evidence/template that imports its packages (e.g.
+# @sveltejs/kit) as if node_modules were flat, as npm lays it out; pnpm's isolated layout hides them.
+nodeLinker: hoisted

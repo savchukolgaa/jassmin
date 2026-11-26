@@ -292,7 +292,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   --ignore-workspace`; `crontab`: `0 1 * * * /app/analytics/warehouse/scripts/nightly.sh`. Caddy:
   `stats.{$SITE_DOMAIN}` block (decision 10), `entrypoint.sh`, `no-data` fallback via
   `try_files`. Build both images locally (`docker build`) to check.
-- [ ] **14. Aspire production** — in `production.mts`: parameters `stats-password` (secret, asked)
+- [x] **14. Aspire production** — in `production.mts`: parameters `stats-password` (secret, asked)
   and generated `wh-extract-password`, `wh-owner-password`, `wh-reader-password`, `wh-pseudonym-key`;
   `postgres.addDatabase` is **not** used for `jassmin_wh` (setup creates it with its owner);
   `analytics-setup` (`addDockerfile("analytics-setup", "..", { dockerfilePath:

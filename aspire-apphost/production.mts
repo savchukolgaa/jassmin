@@ -3,9 +3,11 @@
 //
 // Services: `postgres` (jassmindb + strapidb on a named volume), `db-migrate` (runs once per
 // deploy, `web` waits for it), `web`, `cms` (Strapi, uploads on a named volume), `scheduler`
-// (supercronic running deploy/crontab), `pg-backup` (nightly dumps into /srv/jassmin/backups) and
-// `proxy` (Caddy with automatic HTTPS, the only service with host ports). The site, Strapi and the
-// jobs images are pushed to GHCR; the server pulls them. `deploy-ssh` copies the generated
+// (supercronic running deploy/crontab), `pg-backup` (nightly dumps into /srv/jassmin/backups),
+// `analytics-setup` and `analytics` (the owner's dashboard, #183: a nightly pseudonymised copy of the
+// shop's data in jassmin_wh, the dbt marts and an Evidence site) and `proxy` (Caddy with automatic
+// HTTPS, the only service with host ports). The site, Strapi, the jobs and the analytics images are
+// pushed to GHCR; the server pulls them. `deploy-ssh` copies the generated
 // docker-compose.yaml and .env to the server and runs `docker compose up -d` there over SSH;
 // run it all with `pnpm aspire:deploy`.
 // Secrets are Aspire parameters (asked for or generated on the first deploy), never committed.
@@ -77,6 +79,10 @@ export async function addProductionResources(builder: DistributedApplicationBuil
   const paymentProvider = await builder
     .addParameter("payment-provider", { value: "none" })
     .withDescription("Card payments: none (off) or liqpay, once LiqPay has approved the shop.");
+  // The owner's dashboard on stats.<site-domain> (#183): user `owner`, this password.
+  const statsPassword = await builder
+    .addParameter("stats-password", { secret: true })
+    .withDescription("Password of the owner's dashboard on stats.<site-domain> (user: owner).");
 
   // Random secrets nobody types. Losing Aspire's deployment state would change them, so
   // docs/deploy.md has the owner back it up.
@@ -84,6 +90,12 @@ export async function addProductionResources(builder: DistributedApplicationBuil
   const sessionSecret = await generatedSecret(builder, "session-secret");
   const cmsSyncSecret = await generatedSecret(builder, "cms-sync-secret");
   const emailUnsubscribeSecret = await generatedSecret(builder, "email-unsubscribe-secret");
+  // The warehouse's roles (#183), and the key of its email and visitor pseudonyms: if the key
+  // changed, every guest would become a new customer in the dashboard.
+  const whExtractPassword = await generatedSecret(builder, "wh-extract-password", 32);
+  const whOwnerPassword = await generatedSecret(builder, "wh-owner-password", 32);
+  const whReaderPassword = await generatedSecret(builder, "wh-reader-password", 32);
+  const whPseudonymKey = await generatedSecret(builder, "wh-pseudonym-key");
   const strapiSecrets: [string, ParameterResource][] = [
     ["APP_KEYS", await generatedSecret(builder, "strapi-app-keys")],
     ["API_TOKEN_SALT", await generatedSecret(builder, "strapi-api-token-salt")],
@@ -192,7 +204,63 @@ export async function addProductionResources(builder: DistributedApplicationBuil
     .withContainerRegistry(ghcr);
   await restartUnlessStopped(pgBackup);
 
-  // Caddy: HTTPS for both domains, the only service published on the host (80 and 443).
+  // The owner's dashboard (#183, analytics/warehouse/README.md → Real data). `analytics-setup` runs
+  // once per deploy, after the app's migrations, and is the only one with the superuser's password:
+  // it creates jassmin_wh and three roles, wh_extract (reads only the allow-listed columns of
+  // jassmindb, read-only), wh_owner (owns jassmin_wh) and wh_reader (reads its marts, for Evidence).
+  // `analytics` runs deploy/analytics/crontab: every night the extract, `dbt build --target prod`,
+  // the Evidence build, and the switch of the site in the jassmin-stats-site volume, which `proxy`
+  // serves. jassmin_wh isn't backed up (pg-backup's BACKUP_DATABASES): it's rebuilt every night.
+  const pgHost = await postgres.getEndpoint("tcp").property(EndpointProperty.Host);
+  const pgPort = await postgres.getEndpoint("tcp").property(EndpointProperty.TargetPort);
+  const warehouseRoles: [string, ParameterResource][] = [
+    ["WH_EXTRACT_PASSWORD", whExtractPassword],
+    ["WH_OWNER_PASSWORD", whOwnerPassword],
+    ["WH_READER_PASSWORD", whReaderPassword],
+  ];
+  const analyticsSetup = await builder
+    .addDockerfile("analytics-setup", "..", { dockerfilePath: "deploy/analytics/Dockerfile" })
+    .withArgs([
+      "uv",
+      "run",
+      "--project",
+      "/app/analytics/warehouse",
+      "--frozen",
+      "--no-dev",
+      "/app/analytics/warehouse/extract/setup.py",
+    ])
+    .withEnvironment("WH_ADMIN_URL", await db.uriExpression())
+    .withEnvironment("WH_APP_DATABASE", "jassmindb")
+    .withEnvironment("WH_DATABASE", "jassmin_wh")
+    .waitForCompletion(dbMigrate)
+    .withContainerRegistry(ghcr);
+  for (const [name, value] of warehouseRoles) {
+    await analyticsSetup.withEnvironment(name, value);
+  }
+
+  const analytics = await builder
+    .addDockerfile("analytics", "..", { dockerfilePath: "deploy/analytics/Dockerfile" })
+    .withVolume("/srv/stats", { name: "jassmin-stats-site" })
+    .withEnvironment(
+      "WH_EXTRACT_URL",
+      refExpr`postgres://wh_extract:${whExtractPassword}@${pgHost}:${pgPort}/jassmindb`,
+    )
+    .withEnvironment(
+      "WH_TARGET_URL",
+      refExpr`postgres://wh_owner:${whOwnerPassword}@${pgHost}:${pgPort}/jassmin_wh`,
+    )
+    .withEnvironment("WH_PSEUDONYM_KEY", whPseudonymKey)
+    .withEnvironment("EVIDENCE_SOURCE__warehouse__host", pgHost)
+    .withEnvironment("EVIDENCE_SOURCE__warehouse__port", pgPort)
+    .withEnvironment("EVIDENCE_SOURCE__warehouse__database", "jassmin_wh")
+    .withEnvironment("EVIDENCE_SOURCE__warehouse__user", "wh_reader")
+    .withEnvironment("EVIDENCE_SOURCE__warehouse__password", whReaderPassword)
+    .waitForCompletion(analyticsSetup)
+    .withContainerRegistry(ghcr);
+  await restartUnlessStopped(analytics);
+
+  // Caddy: HTTPS for every domain, the only service published on the host (80 and 443). It serves
+  // the dashboard from the jassmin-stats-site volume, read-only, behind `stats-password` (#183).
   const proxy = await builder
     .addDockerfile("proxy", "../deploy/caddy")
     .withEndpoint({ name: "http", port: 80, targetPort: 80, scheme: "http" })
@@ -202,6 +270,8 @@ export async function addProductionResources(builder: DistributedApplicationBuil
     .withVolume("/config", { name: "jassmin-caddy-config" })
     .withEnvironment("SITE_DOMAIN", siteDomain)
     .withEnvironment("ADMIN_DOMAIN", adminDomain)
+    .withVolume("/srv/stats", { name: "jassmin-stats-site", isReadOnly: true })
+    .withEnvironment("STATS_PASSWORD", statsPassword)
     .withContainerRegistry(ghcr);
   await restartUnlessStopped(proxy);
 

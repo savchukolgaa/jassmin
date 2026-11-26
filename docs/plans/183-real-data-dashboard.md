@@ -258,7 +258,7 @@ separate `jassmin_wh` database; the existing dbt warehouse (#132) builds its mar
   `assert_marts_have_no_personal_data`'s `depends_on`. Extend `raw_fixture.sql` and `test_build.py`
   with rows that pin each result (a trio buyer converting on day 59 and one on day 61, a gift card
   payment, one customer per RFM segment). Run the synth build test and `scripts/check_docs.py`.
-- [ ] **8. Nightly script** — `scripts/nightly.sh`: `set -euo pipefail`; `uv run … extract/extract.py`;
+- [x] **8. Nightly script** — `scripts/nightly.sh`: `set -euo pipefail`; `uv run … extract/extract.py`;
   `uv run … wh.py build --target prod`; `pnpm --dir analytics/dashboard sources && … build`; copy
   `build/` to `$SITE_DIR/releases/<UTC stamp>`; `ln -sfn` + `mv -T` to switch `current`; keep the last
   3 releases. Logs each stage with timings. Exit non-zero on any failure (supercronic logs it).
